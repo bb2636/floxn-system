@@ -28,7 +28,9 @@ The system is a full-stack web application with a React-based frontend and an Ex
 - **Authentication**: Username-based login, bcrypt for password hashing, express-session with memorystore for session management, role-based access control (Assessor, Investigator, Insurer, Partner, Administrator), and protected routes.
 - **User Management (Admin)**:
     - User account table with search and role-based filtering.
-    - Detailed account view modal with user profiles and role-specific information.
+    - **Detailed Account View Modal**: Right-sliding panel (609px width) with role-specific section titles:
+      - First section: "기본 정보" for 보험사 only; "사용자 정보" for all other roles (심사사, 조사사, 협력사, 관리자)
+      - Second section: Role-specific titles (e.g., "심사사 정보", "보험사 정보", "관리자 정보")
     - Two-step account creation flow with form validation, password generation, and cancellation confirmation modals.
     - Password reset functionality (defaulting to "0000").
     - Soft delete for user accounts, preserving historical data.

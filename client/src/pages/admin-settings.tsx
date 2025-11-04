@@ -853,9 +853,7 @@ export default function AdminSettings() {
                     letterSpacing: '-0.02em',
                     color: 'rgba(12, 12, 12, 0.9)',
                   }}>
-                    {selectedUser.role === '심사사' || selectedUser.role === '조사사' || selectedUser.role === '협력사' 
-                      ? '사용자 정보' 
-                      : '기본 정보'}
+                    {selectedUser.role === '보험사' ? '기본 정보' : '사용자 정보'}
                   </span>
                 </div>
                 <div className="flex flex-col gap-4">
