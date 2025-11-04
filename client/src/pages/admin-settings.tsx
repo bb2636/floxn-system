@@ -1275,7 +1275,7 @@ export default function AdminSettings() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-row" style={{ width: '177px', height: '20px', gap: '24px' }}>
+                      <div className="flex flex-row" style={{ width: '400px', height: '20px', gap: '24px' }}>
                         <span style={{
                           fontFamily: 'Pretendard',
                           fontSize: '16px',
@@ -1648,7 +1648,7 @@ export default function AdminSettings() {
                     <div 
                       className="flex flex-row"
                       style={{
-                        width: '177px',
+                        width: '400px',
                         height: '20px',
                         gap: '24px',
                       }}
