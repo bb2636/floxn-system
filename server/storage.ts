@@ -151,9 +151,18 @@ export class MemStorage implements IStorage {
     const hashedPassword = await bcrypt.hash(insertUser.password, SALT_ROUNDS);
     const id = randomUUID();
     const user: User = {
-      ...insertUser,
       id,
+      username: insertUser.username,
       password: hashedPassword,
+      role: insertUser.role || "사원",
+      name: insertUser.name,
+      company: insertUser.company,
+      department: insertUser.department || null,
+      position: insertUser.position || null,
+      email: insertUser.email || null,
+      phone: insertUser.phone || null,
+      office: insertUser.office || null,
+      address: insertUser.address || null,
       status: insertUser.status || "active",
     };
     this.users.set(id, user);
