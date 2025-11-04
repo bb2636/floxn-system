@@ -189,6 +189,11 @@ export class MemStorage implements IStorage {
       phone: insertUser.phone || null,
       office: insertUser.office || null,
       address: insertUser.address || null,
+      bankName: insertUser.bankName || null,
+      accountNumber: insertUser.accountNumber || null,
+      accountHolder: insertUser.accountHolder || null,
+      serviceRegions: insertUser.serviceRegions || null,
+      attachments: insertUser.attachments || null,
       status: insertUser.status || "active",
       createdAt,
     };

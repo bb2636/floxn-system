@@ -1079,6 +1079,135 @@ export default function AdminSettings() {
                       }}>{selectedUser.address}</span>
                     </div>
                   </div>
+
+                  {/* Partner-specific fields */}
+                  {selectedUser.role === '협력사' && (
+                    <>
+                      {/* Row 4: Bank Info */}
+                      <div className="flex gap-5">
+                        <div className="flex-1 flex flex-col gap-2">
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.01em',
+                            color: 'rgba(12, 12, 12, 0.5)',
+                          }}>은행명</span>
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}>{selectedUser.bankName || '-'}</span>
+                        </div>
+                        <div className="flex-1 flex flex-col gap-2">
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.01em',
+                            color: 'rgba(12, 12, 12, 0.5)',
+                          }}>계좌번호</span>
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}>{selectedUser.accountNumber || '-'}</span>
+                        </div>
+                      </div>
+
+                      {/* Row 5: Account Holder */}
+                      <div className="flex gap-5">
+                        <div className="flex-1 flex flex-col gap-2">
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.01em',
+                            color: 'rgba(12, 12, 12, 0.5)',
+                          }}>예금주</span>
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}>{selectedUser.accountHolder || '-'}</span>
+                        </div>
+                      </div>
+
+                      {/* Row 6: Service Regions */}
+                      {selectedUser.serviceRegions && selectedUser.serviceRegions.length > 0 && (
+                        <div className="flex gap-5">
+                          <div className="flex-1 flex flex-col gap-2">
+                            <span style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              letterSpacing: '-0.01em',
+                              color: 'rgba(12, 12, 12, 0.5)',
+                            }}>출동가능지역</span>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedUser.serviceRegions.map((region, index) => (
+                                <div
+                                  key={index}
+                                  className="px-3 py-1.5"
+                                  style={{
+                                    background: '#E3F2FD',
+                                    borderRadius: '6px',
+                                  }}
+                                  data-testid={`detail-region-${index}`}
+                                >
+                                  <span style={{
+                                    fontFamily: 'Pretendard',
+                                    fontSize: '13px',
+                                    fontWeight: 400,
+                                    color: '#008FED',
+                                  }}>
+                                    {region}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Row 7: Attachments */}
+                      {selectedUser.attachments && selectedUser.attachments.length > 0 && (
+                        <div className="flex gap-5">
+                          <div className="flex-1 flex flex-col gap-2">
+                            <span style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              letterSpacing: '-0.01em',
+                              color: 'rgba(12, 12, 12, 0.5)',
+                            }}>첨부파일</span>
+                            <div className="flex flex-col gap-1">
+                              {selectedUser.attachments.map((file, index) => (
+                                <span
+                                  key={index}
+                                  style={{
+                                    fontFamily: 'Pretendard',
+                                    fontSize: '14px',
+                                    fontWeight: 400,
+                                    color: '#008FED',
+                                  }}
+                                  data-testid={`detail-attachment-${index}`}
+                                >
+                                  {file}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             </div>
