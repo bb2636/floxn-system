@@ -6,6 +6,13 @@ import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { User, VALID_ROLES } from "@shared/schema";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AdminSettings() {
   const [, setLocation] = useLocation();
@@ -2269,24 +2276,42 @@ export default function AdminSettings() {
                         }}>
                           직급
                         </label>
-                        <input
-                          type="text"
-                          placeholder="직급"
+                        <Select
                           value={createAccountForm.position}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, position: e.target.value })}
-                          className="w-full px-4 py-3 outline-none"
-                          style={{
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
-                          data-testid="input-position"
-                        />
+                          onValueChange={(value) => setCreateAccountForm({ ...createAccountForm, position: value })}
+                        >
+                          <SelectTrigger
+                            className="w-full px-4 py-3 outline-none"
+                            style={{
+                              background: '#FDFDFD',
+                              border: '2px solid rgba(12, 12, 12, 0.08)',
+                              borderRadius: '8px',
+                              fontFamily: 'Pretendard',
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              letterSpacing: '-0.02em',
+                              color: 'rgba(12, 12, 12, 0.9)',
+                              height: '48px',
+                            }}
+                            data-testid="select-position"
+                          >
+                            <SelectValue placeholder="직급 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="사원">사원</SelectItem>
+                            <SelectItem value="주임">주임</SelectItem>
+                            <SelectItem value="대리">대리</SelectItem>
+                            <SelectItem value="과장">과장</SelectItem>
+                            <SelectItem value="차장">차장</SelectItem>
+                            <SelectItem value="부장">부장</SelectItem>
+                            <SelectItem value="이사">이사</SelectItem>
+                            <SelectItem value="상무">상무</SelectItem>
+                            <SelectItem value="전무">전무</SelectItem>
+                            <SelectItem value="부사장">부사장</SelectItem>
+                            <SelectItem value="사장">사장</SelectItem>
+                            <SelectItem value="대표이사">대표이사</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="flex-1">
                         <label className="block mb-2" style={{
@@ -2667,24 +2692,42 @@ export default function AdminSettings() {
                       }}>
                         직급
                       </label>
-                      <input
-                        type="text"
-                        placeholder="직급"
+                      <Select
                         value={createAccountForm.position}
-                        onChange={(e) => setCreateAccountForm({ ...createAccountForm, position: e.target.value })}
-                        className="w-full px-4 py-3 outline-none"
-                        style={{
-                          background: '#FDFDFD',
-                          border: '2px solid rgba(12, 12, 12, 0.08)',
-                          borderRadius: '8px',
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}
-                        data-testid="input-position"
-                      />
+                        onValueChange={(value) => setCreateAccountForm({ ...createAccountForm, position: value })}
+                      >
+                        <SelectTrigger
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                            height: '48px',
+                          }}
+                          data-testid="select-position"
+                        >
+                          <SelectValue placeholder="직급 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="사원">사원</SelectItem>
+                          <SelectItem value="주임">주임</SelectItem>
+                          <SelectItem value="대리">대리</SelectItem>
+                          <SelectItem value="과장">과장</SelectItem>
+                          <SelectItem value="차장">차장</SelectItem>
+                          <SelectItem value="부장">부장</SelectItem>
+                          <SelectItem value="이사">이사</SelectItem>
+                          <SelectItem value="상무">상무</SelectItem>
+                          <SelectItem value="전무">전무</SelectItem>
+                          <SelectItem value="부사장">부사장</SelectItem>
+                          <SelectItem value="사장">사장</SelectItem>
+                          <SelectItem value="대표이사">대표이사</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex-1">
                       <label className="block mb-2" style={{

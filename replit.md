@@ -31,7 +31,9 @@ The system is a full-stack web application with a React-based frontend and an Ex
     - **Detailed Account View Modal**: Right-sliding panel (609px width) with role-specific section titles:
       - First section: "기본 정보" for 보험사 only; "사용자 정보" for all other roles (심사사, 조사사, 협력사, 관리자)
       - Second section: Role-specific titles (e.g., "심사사 정보", "보험사 정보", "관리자 정보")
-    - Two-step account creation flow with form validation, password generation, and cancellation confirmation modals.
+    - **Account Creation**: Two-step flow with form validation, password generation, and cancellation confirmation modals.
+      - Position field: Dropdown selection with standard Korean titles (사원, 주임, 대리, 과장, 차장, 부장, 이사, 상무, 전무, 부사장, 사장, 대표이사)
+      - Partner-specific fields: Bank details (name, account number, account holder), service regions (tag-based selection with search), file attachments
     - Password reset functionality (defaulting to "0000").
     - Soft delete for user accounts, preserving historical data.
 - **Dashboard**: Comprehensive overview as the main landing page post-login.
