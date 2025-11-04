@@ -2297,7 +2297,7 @@ export default function AdminSettings() {
                           >
                             <SelectValue placeholder="직급 선택" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="z-[10001]">
                             <SelectItem value="사원">사원</SelectItem>
                             <SelectItem value="주임">주임</SelectItem>
                             <SelectItem value="대리">대리</SelectItem>
@@ -2713,7 +2713,7 @@ export default function AdminSettings() {
                         >
                           <SelectValue placeholder="직급 선택" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-[10001]">
                           <SelectItem value="사원">사원</SelectItem>
                           <SelectItem value="주임">주임</SelectItem>
                           <SelectItem value="대리">대리</SelectItem>
