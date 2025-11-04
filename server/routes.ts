@@ -87,6 +87,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ authenticated: false });
   });
 
+  // Get all users endpoint (admin only)
+  app.get("/api/users", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check admin authorization
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const users = await storage.getAllUsers();
+      // Remove passwords from all users
+      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Get users error:", error);
+      res.status(500).json({ error: "사용자 목록을 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Update password endpoint (admin only)
   app.post("/api/update-password", async (req, res) => {
     // Check authentication

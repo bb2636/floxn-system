@@ -3,24 +3,9 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X, ChevronDown } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { User, VALID_ROLES } from "@shared/schema";
-
-type UserData = {
-  id: number;
-  role: string;
-  company: string;
-  name: string;
-  department: string;
-  position: string;
-  email: string;
-  username: string;
-  phone: string;
-  office: string;
-  createdAt: string;
-  address?: string;
-};
 
 export default function AdminSettings() {
   const [, setLocation] = useLocation();
@@ -29,7 +14,7 @@ export default function AdminSettings() {
   const [roleFilter, setRoleFilter] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [selectedUser, setSelectedUser] = useState<Omit<User, 'password'> | null>(null);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetPasswordValue, setResetPasswordValue] = useState("0000");
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
@@ -48,118 +33,22 @@ export default function AdminSettings() {
     address: "",
   });
 
-  // Sample user data - now as state so it can be updated
-  const [allUsers, setAllUsers] = useState<UserData[]>([
-    {
-      id: 1,
-      role: "관리자",
-      company: "플록슨",
-      name: "김블락",
-      department: "개발팀",
-      position: "팀장",
-      email: "xblock@floxn.com",
-      username: "xblock01",
-      phone: "010-1234-5678",
-      office: "02-1234-5678",
-      createdAt: "2024.01.15",
-      address: "서울 강남구",
-    },
-    {
-      id: 2,
-      role: "사원",
-      company: "플록슨",
-      name: "이철수",
-      department: "영업팀",
-      position: "대리",
-      email: "chulsu@floxn.com",
-      username: "chulsu01",
-      phone: "010-2345-6789",
-      office: "02-2345-6789",
-      createdAt: "2024.02.20",
-      address: "서울 서초구",
-    },
-    {
-      id: 3,
-      role: "관리자",
-      company: "플록슨",
-      name: "박영희",
-      department: "기획팀",
-      position: "부장",
-      email: "park@floxn.com",
-      username: "park01",
-      phone: "010-3456-7890",
-      office: "02-3456-7890",
-      createdAt: "2024.01.20",
-      address: "서울 송파구",
-    },
-    {
-      id: 4,
-      role: "사원",
-      company: "플록슨",
-      name: "정민수",
-      department: "개발팀",
-      position: "사원",
-      email: "jung@floxn.com",
-      username: "jung01",
-      phone: "010-4567-8901",
-      office: "02-4567-8901",
-      createdAt: "2024.03.10",
-      address: "경기 성남시",
-    },
-    {
-      id: 5,
-      role: "사원",
-      company: "플록슨",
-      name: "최수정",
-      department: "마케팅팀",
-      position: "과장",
-      email: "choi@floxn.com",
-      username: "choi01",
-      phone: "010-5678-9012",
-      office: "02-5678-9012",
-      createdAt: "2024.02.15",
-      address: "서울 마포구",
-    },
-    {
-      id: 6,
-      role: "관리자",
-      company: "플록슨",
-      name: "김현우",
-      department: "인사팀",
-      position: "차장",
-      email: "kimh@floxn.com",
-      username: "kimh01",
-      phone: "010-6789-0123",
-      office: "02-6789-0123",
-      createdAt: "2024.01.05",
-      address: "서울 종로구",
-    },
-    {
-      id: 7,
-      role: "사원",
-      company: "플록슨",
-      name: "윤서연",
-      department: "영업팀",
-      position: "사원",
-      email: "yoon@floxn.com",
-      username: "yoon01",
-      phone: "010-7890-1234",
-      office: "02-7890-1234",
-      createdAt: "2024.03.25",
-      address: "서울 양천구",
-    },
-  ]);
-
   // Check authentication
-  const { data: user, isLoading } = useQuery<User>({
+  const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
+  // Fetch all users from server
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery<Omit<User, 'password'>[]>({
+    queryKey: ["/api/users"],
+    enabled: !!user,
+  });
+
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!userLoading && !user) {
       setLocation("/");
     }
-  }, [user, isLoading, setLocation]);
+  }, [user, userLoading, setLocation]);
 
   const sidebarMenus = [
     { name: "사용자 계정 관리", active: true },
@@ -174,13 +63,13 @@ export default function AdminSettings() {
   const roleFilters = ["전체", ...VALID_ROLES];
 
   // Apply filtering and search
-  const filteredUsers = allUsers.filter((user) => {
+  const filteredUsers = allUsers.filter((u) => {
     // Role filter
-    const matchesRole = roleFilter === "전체" || user.role === roleFilter;
+    const matchesRole = roleFilter === "전체" || u.role === roleFilter;
     
     // Search filter - improved with trim and lowercase
     const normalizedQuery = searchQuery.trim().toLowerCase();
-    const normalizedName = user.name.toLowerCase();
+    const normalizedName = u.name.toLowerCase();
     const matchesSearch = normalizedQuery === "" || normalizedName.includes(normalizedQuery);
     
     return matchesRole && matchesSearch;
@@ -196,7 +85,7 @@ export default function AdminSettings() {
     }
   };
 
-  if (isLoading) {
+  if (userLoading || usersLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">로딩 중...</div>
@@ -786,7 +675,7 @@ export default function AdminSettings() {
                       fontWeight: 400,
                       letterSpacing: '-0.02em',
                       color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.createdAt}</span>
+                    }}>-</span>
                   </div>
                   <div className="px-2 flex-1">
                     <span style={{
@@ -1032,7 +921,7 @@ export default function AdminSettings() {
                         fontWeight: 400,
                         letterSpacing: '-0.02em',
                         color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.createdAt}</span>
+                      }}>-</span>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
                       <span style={{
@@ -1845,10 +1734,8 @@ export default function AdminSettings() {
                         username: selectedUser.username,
                       });
                       
-                      // Update local user list - remove deleted user
-                      setAllUsers((prevUsers) => 
-                        prevUsers.filter((u) => u.username !== selectedUser.username)
-                      );
+                      // Invalidate users query to refetch from server
+                      await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
                       
                       // Show success message
                       toast({
@@ -2334,28 +2221,13 @@ export default function AdminSettings() {
                     const autoPassword = "0000";
 
                     // Call create account API with auto-generated password
-                    const response = await apiRequest("POST", "/api/create-account", {
+                    await apiRequest("POST", "/api/create-account", {
                       ...createAccountForm,
                       password: autoPassword,
                     });
                     
-                    // Add new user to local state
-                    const newUserData: UserData = {
-                      id: allUsers.length + 1,
-                      role: createAccountForm.role,
-                      company: createAccountForm.company,
-                      name: createAccountForm.name,
-                      department: createAccountForm.department,
-                      position: createAccountForm.position,
-                      email: createAccountForm.email,
-                      username: createAccountForm.username,
-                      phone: createAccountForm.phone,
-                      office: createAccountForm.office,
-                      createdAt: new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\. /g, '.').replace('.', ''),
-                      address: createAccountForm.address,
-                    };
-                    
-                    setAllUsers((prevUsers) => [...prevUsers, newUserData]);
+                    // Invalidate users query to refetch from server
+                    await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
                     
                     // Show success message with auto-generated password
                     toast({

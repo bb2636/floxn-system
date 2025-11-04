@@ -7,6 +7,7 @@ const SALT_ROUNDS = 10;
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   verifyPassword(username: string, password: string): Promise<User | null>;
   updatePassword(username: string, newPassword: string): Promise<User | null>;
@@ -144,6 +145,13 @@ export class MemStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
       (user) => user.username === username,
+    );
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    // Return all active users (not soft-deleted)
+    return Array.from(this.users.values()).filter(
+      (user) => user.status === "active",
     );
   }
 
