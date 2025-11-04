@@ -8,6 +8,7 @@ export default function AdminSettings() {
   const [activeMenu, setActiveMenu] = useState("사용자 계정 관리");
   const [roleFilter, setRoleFilter] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
 
   const sidebarMenus = [
     { name: "사용자 계정 관리", active: true },
@@ -20,8 +21,8 @@ export default function AdminSettings() {
 
   const roleFilters = ["전체", "관리자", "사원"];
 
-  // Sample user data
-  const users = [
+  // Sample user data - expanded for better testing
+  const allUsers = [
     {
       id: 1,
       role: "관리자",
@@ -48,7 +49,95 @@ export default function AdminSettings() {
       office: "02-2345-6789",
       createdAt: "2024.02.20",
     },
+    {
+      id: 3,
+      role: "관리자",
+      company: "플록슨",
+      name: "박영희",
+      department: "기획팀",
+      position: "부장",
+      email: "park@floxn.com",
+      username: "park01",
+      phone: "010-3456-7890",
+      office: "02-3456-7890",
+      createdAt: "2024.01.20",
+    },
+    {
+      id: 4,
+      role: "사원",
+      company: "플록슨",
+      name: "정민수",
+      department: "개발팀",
+      position: "사원",
+      email: "jung@floxn.com",
+      username: "jung01",
+      phone: "010-4567-8901",
+      office: "02-4567-8901",
+      createdAt: "2024.03.10",
+    },
+    {
+      id: 5,
+      role: "사원",
+      company: "플록슨",
+      name: "최수정",
+      department: "마케팅팀",
+      position: "과장",
+      email: "choi@floxn.com",
+      username: "choi01",
+      phone: "010-5678-9012",
+      office: "02-5678-9012",
+      createdAt: "2024.02.15",
+    },
+    {
+      id: 6,
+      role: "관리자",
+      company: "플록슨",
+      name: "김현우",
+      department: "인사팀",
+      position: "차장",
+      email: "kimh@floxn.com",
+      username: "kimh01",
+      phone: "010-6789-0123",
+      office: "02-6789-0123",
+      createdAt: "2024.01.05",
+    },
+    {
+      id: 7,
+      role: "사원",
+      company: "플록슨",
+      name: "윤서연",
+      department: "영업팀",
+      position: "사원",
+      email: "yoon@floxn.com",
+      username: "yoon01",
+      phone: "010-7890-1234",
+      office: "02-7890-1234",
+      createdAt: "2024.03.25",
+    },
   ];
+
+  // Apply filtering and search
+  const filteredUsers = allUsers.filter((user) => {
+    // Role filter
+    const matchesRole = roleFilter === "전체" || user.role === roleFilter;
+    
+    // Search filter - improved with trim and lowercase
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const normalizedName = user.name.toLowerCase();
+    const matchesSearch = normalizedQuery === "" || normalizedName.includes(normalizedQuery);
+    
+    return matchesRole && matchesSearch;
+  });
+
+  const handleSearch = () => {
+    setSearchQuery(searchInput);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   return (
     <div className="relative" style={{ height: '1223px', background: '#E7EDFE' }}>
@@ -291,20 +380,22 @@ export default function AdminSettings() {
                     <input
                       type="text"
                       placeholder="성함을 입력해주세요."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      onKeyDown={handleSearchKeyDown}
                       className="flex-1 outline-none bg-transparent"
                       style={{
                         fontFamily: 'Pretendard',
                         fontSize: '16px',
                         fontWeight: 600,
                         letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.4)',
+                        color: searchInput ? 'rgba(12, 12, 12, 0.9)' : 'rgba(12, 12, 12, 0.4)',
                       }}
                       data-testid="input-search"
                     />
                   </div>
                   <button
+                    onClick={handleSearch}
                     className="px-5 py-4"
                     style={{
                       width: '155px',
@@ -391,7 +482,7 @@ export default function AdminSettings() {
                   }}
                   data-testid="text-user-count"
                 >
-                  {users.length}
+                  {filteredUsers.length}
                 </span>
               </div>
               <button
@@ -522,7 +613,7 @@ export default function AdminSettings() {
               </div>
 
               {/* Table Rows */}
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <div 
                   key={user.id}
                   className="flex items-center px-3"
