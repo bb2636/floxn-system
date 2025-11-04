@@ -92,7 +92,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen relative" style={{ background: '#E7EDFE' }}>
+    <div className="relative" style={{ height: '1147px', background: '#E7EDFE' }}>
       {/* Blur Background Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div 
