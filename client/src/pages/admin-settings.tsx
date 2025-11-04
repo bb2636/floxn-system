@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { User } from "@shared/schema";
 
 type UserData = {
   id: number;
@@ -30,6 +32,17 @@ export default function AdminSettings() {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetPasswordValue, setResetPasswordValue] = useState("0000");
+
+  // Check authentication
+  const { data: user, isLoading } = useQuery<User>({
+    queryKey: ["/api/user"],
+  });
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      setLocation("/");
+    }
+  }, [user, isLoading, setLocation]);
 
   const sidebarMenus = [
     { name: "사용자 계정 관리", active: true },
@@ -166,6 +179,18 @@ export default function AdminSettings() {
       handleSearch();
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">로딩 중...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="relative" style={{ height: '1223px', background: '#E7EDFE' }}>
