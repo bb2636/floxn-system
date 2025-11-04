@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Search, X } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
+import { apiRequest } from "@/lib/queryClient";
 
 type UserData = {
   id: number;
@@ -25,6 +26,8 @@ export default function AdminSettings() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [resetPasswordValue, setResetPasswordValue] = useState("0000");
 
   const sidebarMenus = [
     { name: "사용자 계정 관리", active: true },
@@ -1143,6 +1146,9 @@ export default function AdminSettings() {
                   background: 'transparent',
                   boxShadow: '2px 4px 30px #BDD1F0',
                 }}
+                onClick={() => {
+                  setShowResetPasswordModal(true);
+                }}
                 data-testid="button-reset-password"
               >
                 <span style={{
@@ -1155,6 +1161,368 @@ export default function AdminSettings() {
                   비밀번호 초기화
                 </span>
               </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Password Reset Modal */}
+      {showResetPasswordModal && selectedUser && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 z-50"
+            style={{
+              background: 'rgba(0, 0, 0, 0.7)',
+              opacity: 0.4,
+            }}
+            onClick={() => setShowResetPasswordModal(false)}
+            data-testid="modal-overlay-reset"
+          />
+
+          {/* Modal */}
+          <div 
+            className="fixed z-50 bg-white flex flex-col"
+            style={{
+              width: '747px',
+              height: '516px',
+              left: 'calc(50% - 747px/2 + 0.5px)',
+              top: 'calc(50% - 516px/2 + 0.5px)',
+              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
+              borderRadius: '12px',
+              gap: '32px',
+            }}
+            data-testid="modal-reset-password"
+          >
+            {/* Header */}
+            <div 
+              className="flex flex-col items-center"
+              style={{
+                width: '747px',
+                height: '396px',
+                gap: '16px',
+              }}
+            >
+              <div 
+                className="flex flex-row justify-center items-center"
+                style={{
+                  width: '747px',
+                  height: '60px',
+                  gap: '321px',
+                }}
+              >
+                <h2 style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  color: '#0C0C0C',
+                }}>
+                  비밀번호 초기화
+                </h2>
+              </div>
+
+              {/* Content */}
+              <div 
+                className="flex flex-col"
+                style={{
+                  width: '707px',
+                  height: '320px',
+                  gap: '24px',
+                }}
+              >
+                {/* Selected Account Section */}
+                <div 
+                  className="flex flex-col"
+                  style={{
+                    width: '707px',
+                    height: '244px',
+                    gap: '20px',
+                  }}
+                >
+                  {/* Section Title */}
+                  <div className="flex flex-col" style={{ width: '707px', height: '114px', gap: '8px' }}>
+                    <div className="flex flex-row" style={{ width: '707px', height: '18px', gap: '2px' }}>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}>
+                        선택 계정
+                      </span>
+                    </div>
+
+                    {/* Profile Card */}
+                    <div 
+                      className="flex flex-col justify-center p-5"
+                      style={{
+                        width: '707px',
+                        height: '88px',
+                        background: 'rgba(12, 12, 12, 0.04)',
+                        backdropFilter: 'blur(7px)',
+                        borderRadius: '12px',
+                        gap: '8px',
+                      }}
+                    >
+                      <div className="flex flex-row items-center" style={{ width: '667px', height: '26px', gap: '16px' }}>
+                        <div className="flex flex-row items-center" style={{ width: '180px', height: '26px', gap: '9px' }}>
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '18px',
+                            fontWeight: 600,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}>
+                            {selectedUser.name}
+                          </span>
+                          <div 
+                            style={{
+                              width: '4px',
+                              height: '4px',
+                              background: 'rgba(0, 143, 237, 0.9)',
+                              borderRadius: '50%',
+                            }}
+                          />
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '18px',
+                            fontWeight: 600,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}>
+                            {selectedUser.company}
+                          </span>
+                          <div 
+                            className="flex items-center justify-center"
+                            style={{
+                              width: '57px',
+                              height: '26px',
+                              padding: '4px 10px',
+                              background: 'rgba(12, 12, 12, 0.1)',
+                              backdropFilter: 'blur(7px)',
+                              borderRadius: '20px',
+                            }}
+                          >
+                            <span style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              letterSpacing: '-0.01em',
+                              color: 'rgba(12, 12, 12, 0.7)',
+                            }}>
+                              {selectedUser.role}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-row" style={{ width: '177px', height: '20px', gap: '24px' }}>
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '16px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.7)',
+                        }}>
+                          {selectedUser.username}
+                        </span>
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '16px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.7)',
+                        }}>
+                          {selectedUser.phone}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* New Password Section */}
+                  <div 
+                    className="flex flex-col"
+                    style={{
+                      width: '707px',
+                      height: '110px',
+                      gap: '10px',
+                    }}
+                  >
+                    <div className="flex flex-col" style={{ width: '432px', height: '76px', gap: '8px' }}>
+                      <div className="flex flex-row" style={{ width: '432px', height: '18px', gap: '2px' }}>
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          letterSpacing: '-0.01em',
+                          color: '#686A6E',
+                        }}>
+                          새 비밀번호(자동)
+                        </span>
+                      </div>
+
+                      {/* Input Field + Reset Button */}
+                      <div className="flex flex-row items-center" style={{ width: '432px', height: '50px', gap: '8px' }}>
+                        <div 
+                          className="flex flex-row items-center"
+                          style={{
+                            width: '343px',
+                            height: '50px',
+                            padding: '10px 20px',
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            gap: '10px',
+                          }}
+                        >
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
+                            fontWeight: 600,
+                            letterSpacing: '-0.02em',
+                            color: '#0C0C0C',
+                          }}>
+                            {resetPasswordValue}
+                          </span>
+                        </div>
+
+                        <button
+                          className="flex flex-row items-center justify-center"
+                          style={{
+                            width: '81px',
+                            height: '50px',
+                            padding: '10px 20px',
+                            background: 'rgba(208, 43, 32, 0.1)',
+                            border: '1px solid #D02B20',
+                            borderRadius: '8px',
+                            gap: '10px',
+                          }}
+                          onClick={() => setResetPasswordValue("0000")}
+                          data-testid="button-trigger-reset"
+                        >
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
+                            fontWeight: 600,
+                            letterSpacing: '-0.02em',
+                            color: '#D02B20',
+                          }}>
+                            초기화
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Warning Message */}
+                    <div 
+                      className="flex flex-row justify-center items-center"
+                      style={{
+                        width: '707px',
+                        height: '52px',
+                        padding: '16px 12px',
+                        background: 'rgba(255, 226, 85, 0.2)',
+                        backdropFilter: 'blur(7px)',
+                        borderRadius: '20px',
+                        gap: '10px',
+                      }}
+                    >
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 500,
+                        letterSpacing: '-0.02em',
+                        color: '#A16000',
+                      }}>
+                        초기화 후 기존 세션은 로그아웃됩니다.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Buttons */}
+            <div 
+              className="flex flex-col"
+              style={{
+                width: '747px',
+                height: '88px',
+                padding: '20px',
+                background: '#FDFDFD',
+                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
+                gap: '10px',
+              }}
+            >
+              <div 
+                className="flex flex-row justify-between items-center"
+                style={{
+                  width: '707px',
+                  height: '48px',
+                }}
+              >
+                <button
+                  className="flex flex-row justify-center items-center"
+                  style={{
+                    width: '353.5px',
+                    height: '48px',
+                    padding: '10px',
+                    borderRadius: '6px',
+                    gap: '10px',
+                  }}
+                  onClick={() => setShowResetPasswordModal(false)}
+                  data-testid="button-cancel-reset"
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    letterSpacing: '-0.02em',
+                    color: '#D02B20',
+                  }}>
+                    취소
+                  </span>
+                </button>
+
+                <button
+                  className="flex flex-row justify-center items-center"
+                  style={{
+                    width: '353.5px',
+                    height: '48px',
+                    padding: '10px',
+                    background: '#008FED',
+                    borderRadius: '6px',
+                    gap: '10px',
+                  }}
+                  onClick={async () => {
+                    if (!selectedUser) return;
+                    
+                    try {
+                      await apiRequest("POST", "/api/update-password", {
+                        username: selectedUser.username,
+                        newPassword: resetPasswordValue,
+                      });
+                      
+                      // Close modals
+                      setShowResetPasswordModal(false);
+                      setSelectedUser(null);
+                    } catch (error) {
+                      console.error("Failed to reset password:", error);
+                    }
+                  }}
+                  data-testid="button-confirm-reset"
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    letterSpacing: '-0.02em',
+                    color: '#FDFDFD',
+                  }}>
+                    확인
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </>

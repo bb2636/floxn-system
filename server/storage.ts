@@ -9,6 +9,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   verifyPassword(username: string, password: string): Promise<User | null>;
+  updatePassword(username: string, newPassword: string): Promise<User | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -25,6 +26,15 @@ export class MemStorage implements IStorage {
       id: randomUUID(),
       username: "xblock01",
       password: hashedPassword,
+      role: "관리자",
+      name: "김블락",
+      company: "플록슨",
+      department: "개발팀",
+      position: "팀장",
+      email: "xblock@floxn.com",
+      phone: "010-1234-5678",
+      office: "02-1234-5678",
+      address: "서울 강남구",
     };
     this.users.set(testUser.id, testUser);
   }
@@ -59,6 +69,21 @@ export class MemStorage implements IStorage {
 
     const isValid = await bcrypt.compare(password, user.password);
     return isValid ? user : null;
+  }
+
+  async updatePassword(username: string, newPassword: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
+    if (!user) {
+      return null;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    const updatedUser: User = {
+      ...user,
+      password: hashedPassword,
+    };
+    this.users.set(user.id, updatedUser);
+    return updatedUser;
   }
 }
 
