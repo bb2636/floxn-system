@@ -6,9 +6,9 @@ const SALT_ROUNDS = 10;
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
-  getUserByAccidentNumber(accidentNumber: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  verifyPassword(accidentNumber: string, password: string): Promise<User | null>;
+  verifyPassword(username: string, password: string): Promise<User | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -20,10 +20,10 @@ export class MemStorage implements IStorage {
   }
 
   private async seedTestUser() {
-    const hashedPassword = await bcrypt.hash("test1234", SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash("1234", SALT_ROUNDS);
     const testUser: User = {
       id: randomUUID(),
-      accidentNumber: "TEST-2024-001",
+      username: "xblock01",
       password: hashedPassword,
     };
     this.users.set(testUser.id, testUser);
@@ -33,9 +33,9 @@ export class MemStorage implements IStorage {
     return this.users.get(id);
   }
 
-  async getUserByAccidentNumber(accidentNumber: string): Promise<User | undefined> {
+  async getUserByUsername(username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
-      (user) => user.accidentNumber === accidentNumber,
+      (user) => user.username === username,
     );
   }
 
@@ -51,8 +51,8 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  async verifyPassword(accidentNumber: string, password: string): Promise<User | null> {
-    const user = await this.getUserByAccidentNumber(accidentNumber);
+  async verifyPassword(username: string, password: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
     if (!user) {
       return null;
     }

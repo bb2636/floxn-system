@@ -70,7 +70,7 @@ export default function Dashboard() {
 
             <div className="flex items-center gap-4">
               <div className="text-right" data-testid="user-info">
-                <p className="text-sm font-medium text-foreground">{user?.accidentNumber}</p>
+                <p className="text-sm font-medium text-foreground">{user?.username}</p>
                 <p className="text-xs text-muted-foreground">사용자</p>
               </div>
               <Button

@@ -11,13 +11,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = loginSchema.parse(req.body);
       
       const user = await storage.verifyPassword(
-        validatedData.accidentNumber,
+        validatedData.username,
         validatedData.password
       );
 
       if (!user) {
         return res.status(401).json({ 
-          error: "보험사 사고번호 또는 비밀번호가 올바르지 않습니다" 
+          error: "아이디 또는 비밀번호가 올바르지 않습니다" 
         });
       }
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { TestCredentialsBanner } from "@/components/test-credentials-banner";
-import { Shield, Lock, User, Loader2 } from "lucide-react";
+import { Loader2, Truck } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -20,6 +20,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import loginIllustration from "@assets/generated_images/Business_login_illustration_b7564f6b.png";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -28,7 +29,7 @@ export default function Login() {
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      accidentNumber: "",
+      username: "",
       password: "",
       rememberMe: false,
     },
@@ -91,203 +92,142 @@ export default function Login() {
   };
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-background">
-      {/* Background blur ellipses */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[10%] left-[15%] w-[500px] h-[500px] rounded-full bg-primary/20 blur-[120px]" />
-        <div className="absolute top-[30%] left-[25%] w-[400px] h-[400px] rounded-full bg-primary/30 blur-[100px]" />
-        <div className="absolute top-[50%] left-[10%] w-[350px] h-[350px] rounded-full bg-primary/15 blur-[90px]" />
+    <div className="flex min-h-screen">
+      {/* Left Panel - Illustration */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-amber-50 to-orange-50 items-center justify-center p-12 relative">
+        {/* Logo */}
+        <div className="absolute top-8 left-8 flex items-center gap-2">
+          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
+            <Truck className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-xl font-bold text-gray-800">FLOXN</span>
+        </div>
+
+        {/* Illustration */}
+        <div className="max-w-lg">
+          <img 
+            src={loginIllustration} 
+            alt="Login Illustration" 
+            className="w-full h-auto object-contain drop-shadow-2xl"
+          />
+        </div>
       </div>
 
-      {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-8 py-6 border-b border-border/50 bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center gap-3" data-testid="logo-container">
-          <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary">
-            <Shield className="w-6 h-6 text-primary-foreground" />
+      {/* Right Panel - Login Form */}
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 p-6">
+        {/* Mobile Logo */}
+        <div className="lg:hidden absolute top-6 left-6 flex items-center gap-2">
+          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
+            <Truck className="w-5 h-5 text-white" />
           </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold text-foreground">보험 관리</span>
-            <span className="text-xs text-muted-foreground">Insurance System</span>
-          </div>
-        </div>
-      </header>
-
-      {/* Main content - two panels */}
-      <div className="relative flex min-h-[calc(100vh-80px)]">
-        {/* Left decorative panel */}
-        <div className="relative hidden lg:flex lg:w-[60%] items-center justify-center overflow-hidden">
-          {/* Duplicate blur effects for left panel */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-[20%] left-[30%] w-[450px] h-[450px] rounded-full bg-primary/25 blur-[110px]" />
-            <div className="absolute top-[40%] left-[40%] w-[350px] h-[350px] rounded-full bg-primary/35 blur-[95px]" />
-            <div className="absolute top-[60%] left-[25%] w-[300px] h-[300px] rounded-full bg-primary/20 blur-[85px]" />
-          </div>
-
-          {/* Decorative content */}
-          <div className="relative z-10 max-w-lg px-8 space-y-8">
-            <div className="space-y-4">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary/10 backdrop-blur-sm border border-primary/20">
-                <Shield className="w-12 h-12 text-primary" />
-              </div>
-              <h1 className="text-4xl font-bold text-foreground">
-                접수부터 종결까지
-                <br />
-                진행 흐름을 한눈에
-              </h1>
-              <p className="text-lg text-muted-foreground">
-                보험 사고 관리의 모든 과정을 효율적으로 처리하세요
-              </p>
-            </div>
-
-            {/* Feature highlights */}
-            <div className="space-y-4">
-              {[
-                { icon: Shield, text: "안전한 데이터 관리" },
-                { icon: Lock, text: "보안 인증 시스템" },
-                { icon: User, text: "사용자 맞춤 대시보드" },
-              ].map((feature, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-4 p-4 rounded-lg bg-card/50 backdrop-blur-sm border border-card-border"
-                >
-                  <div className="flex items-center justify-center w-10 h-10 rounded-md bg-primary/10">
-                    <feature.icon className="w-5 h-5 text-primary" />
-                  </div>
-                  <span className="text-sm font-medium text-card-foreground">
-                    {feature.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <span className="text-xl font-bold text-gray-800">FLOXN</span>
         </div>
 
-        {/* Right panel - login form */}
-        <div className="relative flex items-center justify-center w-full lg:w-[40%] px-6 py-12 bg-background/95 backdrop-blur-sm">
-          <div className="w-full max-w-[400px] space-y-8">
-            {/* Title section */}
-            <div className="space-y-2 text-center lg:text-left">
-              <h2 className="text-2xl font-bold text-foreground" data-testid="text-login-title">
-                로그인
-              </h2>
-              <p className="text-sm text-muted-foreground" data-testid="text-login-subtitle">
-                접수부터 종결까지 진행 흐름을 한눈에-
-              </p>
-            </div>
-
-            {/* Test credentials banner */}
-            <TestCredentialsBanner />
-
-            {/* Login form */}
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Accident Number Field */}
-                <FormField
-                  control={form.control}
-                  name="accidentNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-foreground">
-                        보험사 사고번호
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="사고번호를 입력해주세요"
-                          className="h-12 text-base"
-                          data-testid="input-accident-number"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Password Field */}
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-foreground">
-                        비밀번호
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="password"
-                          placeholder="••••••••••••"
-                          className="h-12 text-base"
-                          data-testid="input-password"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Remember Me Checkbox */}
-                <FormField
-                  control={form.control}
-                  name="rememberMe"
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex items-center space-x-2">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            data-testid="checkbox-remember-me"
-                            className="w-5 h-5"
-                          />
-                        </FormControl>
-                        <Label
-                          htmlFor="rememberMe"
-                          className="text-sm font-normal text-foreground cursor-pointer"
-                        >
-                          자동로그인
-                        </Label>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  className="w-full h-[52px] text-base font-semibold"
-                  data-testid="button-login"
-                  disabled={loginMutation.isPending}
-                >
-                  {loginMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      로그인 중...
-                    </>
-                  ) : (
-                    "로그인"
-                  )}
-                </Button>
-              </form>
-            </Form>
-
-            {/* Mobile only - show features */}
-            <div className="lg:hidden pt-8 space-y-3 border-t border-border">
-              {[
-                { icon: Shield, text: "안전한 데이터 관리" },
-                { icon: Lock, text: "보안 인증 시스템" },
-                { icon: User, text: "사용자 맞춤 대시보드" },
-              ].map((feature, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-3 p-3 rounded-md bg-card/30 border border-card-border"
-                >
-                  <feature.icon className="w-4 h-4 text-primary" />
-                  <span className="text-xs text-muted-foreground">{feature.text}</span>
-                </div>
-              ))}
-            </div>
+        <div className="w-full max-w-md space-y-8">
+          {/* Header */}
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-login-title">
+              로그인
+            </h1>
+            <p className="mt-2 text-sm text-gray-600" data-testid="text-login-subtitle">
+              접수부터 종결까지 진행 흐름을 한눈에-
+            </p>
           </div>
+
+          {/* Test Credentials Banner */}
+          <TestCredentialsBanner />
+
+          {/* Login Form */}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Username Field */}
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700">
+                      아이디
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="xblock01"
+                        className="h-12 bg-white border-gray-200 focus:border-primary focus:ring-primary"
+                        data-testid="input-username"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Password Field */}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium text-gray-700">
+                      비밀번호
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="password"
+                        placeholder="••••••••••••"
+                        className="h-12 bg-white border-gray-200 focus:border-primary focus:ring-primary"
+                        data-testid="input-password"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Remember Me Checkbox */}
+              <FormField
+                control={form.control}
+                name="rememberMe"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center space-x-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          data-testid="checkbox-remember-me"
+                        />
+                      </FormControl>
+                      <Label
+                        htmlFor="rememberMe"
+                        className="text-sm text-gray-600 cursor-pointer"
+                      >
+                        자동로그인
+                      </Label>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-medium bg-blue-500 hover:bg-blue-600 text-white"
+                data-testid="button-login"
+                disabled={loginMutation.isPending}
+              >
+                {loginMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    로그인 중...
+                  </>
+                ) : (
+                  "로그인"
+                )}
+              </Button>
+            </form>
+          </Form>
         </div>
       </div>
     </div>

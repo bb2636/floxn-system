@@ -5,7 +5,7 @@ import { z } from "zod";
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  accidentNumber: text("accident_number").notNull().unique(),
+  username: text("username").notNull().unique(),
   password: text("password").notNull(),
 });
 
@@ -14,7 +14,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
 });
 
 export const loginSchema = z.object({
-  accidentNumber: z.string().min(1, "보험사 사고번호를 입력해주세요"),
+  username: z.string().min(1, "아이디를 입력해주세요"),
   password: z.string().min(1, "비밀번호를 입력해주세요"),
   rememberMe: z.boolean().default(false),
 });
