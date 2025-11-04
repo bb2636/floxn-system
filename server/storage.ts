@@ -4,6 +4,15 @@ import bcrypt from "bcrypt";
 
 const SALT_ROUNDS = 10;
 
+// Get current date in KST (Korea Standard Time, UTC+9)
+function getKSTDate(): string {
+  const kstDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  const year = kstDate.getFullYear();
+  const month = String(kstDate.getMonth() + 1).padStart(2, '0');
+  const day = String(kstDate.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -24,6 +33,7 @@ export class MemStorage implements IStorage {
 
   private async seedTestUser() {
     const hashedPassword = await bcrypt.hash("1234", SALT_ROUNDS);
+    const currentDate = getKSTDate();
     
     const testUsers: User[] = [
       {
@@ -40,6 +50,7 @@ export class MemStorage implements IStorage {
         office: "02-1234-5678",
         address: "서울 강남구",
         status: "active",
+        createdAt: currentDate,
       },
       {
         id: randomUUID(),
@@ -55,6 +66,7 @@ export class MemStorage implements IStorage {
         office: "02-2345-6789",
         address: "서울 서초구",
         status: "active",
+        createdAt: currentDate,
       },
       {
         id: randomUUID(),
@@ -70,6 +82,7 @@ export class MemStorage implements IStorage {
         office: "02-3456-7890",
         address: "서울 송파구",
         status: "active",
+        createdAt: currentDate,
       },
       {
         id: randomUUID(),
@@ -85,6 +98,7 @@ export class MemStorage implements IStorage {
         office: "02-4567-8901",
         address: "경기 성남시",
         status: "active",
+        createdAt: currentDate,
       },
       {
         id: randomUUID(),
@@ -100,6 +114,7 @@ export class MemStorage implements IStorage {
         office: "02-5678-9012",
         address: "서울 마포구",
         status: "active",
+        createdAt: currentDate,
       },
       {
         id: randomUUID(),
@@ -115,6 +130,7 @@ export class MemStorage implements IStorage {
         office: "02-6789-0123",
         address: "서울 종로구",
         status: "active",
+        createdAt: currentDate,
       },
       {
         id: randomUUID(),
@@ -130,6 +146,7 @@ export class MemStorage implements IStorage {
         office: "02-7890-1234",
         address: "서울 양천구",
         status: "active",
+        createdAt: currentDate,
       },
     ];
 
@@ -158,6 +175,7 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const hashedPassword = await bcrypt.hash(insertUser.password, SALT_ROUNDS);
     const id = randomUUID();
+    const createdAt = getKSTDate();
     const user: User = {
       id,
       username: insertUser.username,
@@ -172,6 +190,7 @@ export class MemStorage implements IStorage {
       office: insertUser.office || null,
       address: insertUser.address || null,
       status: insertUser.status || "active",
+      createdAt,
     };
     this.users.set(id, user);
     return user;

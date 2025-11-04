@@ -580,14 +580,13 @@ export default function AdminSettings() {
               {filteredUsers.map((user) => (
                 <div 
                   key={user.id}
-                  className="flex items-center px-3 cursor-pointer hover:bg-black/5 transition-colors"
+                  className="flex items-center px-3 hover:bg-black/5 transition-colors"
                   style={{
                     height: '44px',
                   }}
-                  onClick={() => setSelectedUser(user)}
                   data-testid={`user-row-${user.id}`}
                 >
-                  <div className="px-2" style={{ width: '122px' }}>
+                  <div className="px-2 cursor-pointer" style={{ width: '122px' }} onClick={() => setSelectedUser(user)}>
                     <span style={{
                       fontFamily: 'Pretendard',
                       fontSize: '16px',
@@ -596,7 +595,7 @@ export default function AdminSettings() {
                       color: 'rgba(12, 12, 12, 0.8)',
                     }}>{user.role}</span>
                   </div>
-                  <div className="px-2" style={{ width: '155px' }}>
+                  <div className="px-2 cursor-pointer" style={{ width: '155px' }} onClick={() => setSelectedUser(user)}>
                     <span style={{
                       fontFamily: 'Pretendard',
                       fontSize: '16px',
@@ -605,7 +604,7 @@ export default function AdminSettings() {
                       color: 'rgba(12, 12, 12, 0.8)',
                     }}>{user.company}</span>
                   </div>
-                  <div className="px-2 flex-1">
+                  <div className="px-2 flex-1 cursor-pointer" onClick={() => setSelectedUser(user)}>
                     <span style={{
                       fontFamily: 'Pretendard',
                       fontSize: '16px',
@@ -614,7 +613,7 @@ export default function AdminSettings() {
                       color: 'rgba(12, 12, 12, 0.8)',
                     }}>{user.name}</span>
                   </div>
-                  <div className="px-2" style={{ width: '134px' }}>
+                  <div className="px-2 cursor-pointer" style={{ width: '134px' }} onClick={() => setSelectedUser(user)}>
                     <span style={{
                       fontFamily: 'Pretendard',
                       fontSize: '16px',
@@ -623,7 +622,7 @@ export default function AdminSettings() {
                       color: 'rgba(12, 12, 12, 0.8)',
                     }}>{user.department}</span>
                   </div>
-                  <div className="px-2 flex-1">
+                  <div className="px-2 flex-1 cursor-pointer" onClick={() => setSelectedUser(user)}>
                     <span style={{
                       fontFamily: 'Pretendard',
                       fontSize: '16px',
@@ -632,7 +631,7 @@ export default function AdminSettings() {
                       color: 'rgba(12, 12, 12, 0.8)',
                     }}>{user.position}</span>
                   </div>
-                  <div className="px-2" style={{ width: '190px' }}>
+                  <div className="px-2 cursor-pointer" style={{ width: '190px' }} onClick={() => setSelectedUser(user)}>
                     <span style={{
                       fontFamily: 'Pretendard',
                       fontSize: '16px',
@@ -641,7 +640,7 @@ export default function AdminSettings() {
                       color: 'rgba(12, 12, 12, 0.8)',
                     }}>{user.email}</span>
                   </div>
-                  <div className="px-2" style={{ width: '162px' }}>
+                  <div className="px-2 cursor-pointer" style={{ width: '162px' }} onClick={() => setSelectedUser(user)}>
                     <span style={{
                       fontFamily: 'Pretendard',
                       fontSize: '16px',
@@ -650,7 +649,7 @@ export default function AdminSettings() {
                       color: 'rgba(12, 12, 12, 0.8)',
                     }}>{user.username}</span>
                   </div>
-                  <div className="px-2" style={{ width: '163px' }}>
+                  <div className="px-2 cursor-pointer" style={{ width: '163px' }} onClick={() => setSelectedUser(user)}>
                     <span style={{
                       fontFamily: 'Pretendard',
                       fontSize: '16px',
@@ -659,7 +658,7 @@ export default function AdminSettings() {
                       color: 'rgba(12, 12, 12, 0.8)',
                     }}>{user.phone}</span>
                   </div>
-                  <div className="px-2" style={{ width: '163px' }}>
+                  <div className="px-2 cursor-pointer" style={{ width: '163px' }} onClick={() => setSelectedUser(user)}>
                     <span style={{
                       fontFamily: 'Pretendard',
                       fontSize: '16px',
@@ -668,23 +667,41 @@ export default function AdminSettings() {
                       color: 'rgba(12, 12, 12, 0.8)',
                     }}>{user.office}</span>
                   </div>
-                  <div className="px-2" style={{ width: '163px' }}>
+                  <div className="px-2 cursor-pointer" style={{ width: '163px' }} onClick={() => setSelectedUser(user)}>
                     <span style={{
                       fontFamily: 'Pretendard',
                       fontSize: '16px',
                       fontWeight: 400,
                       letterSpacing: '-0.02em',
                       color: 'rgba(12, 12, 12, 0.8)',
-                    }}>-</span>
+                    }}>{user.createdAt}</span>
                   </div>
                   <div className="px-2 flex-1">
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>-</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedUser(user);
+                      }}
+                      className="flex items-center justify-center"
+                      style={{
+                        width: '92px',
+                        height: '28px',
+                        background: '#FFFFFF',
+                        border: '1px solid rgba(12, 12, 12, 0.2)',
+                        borderRadius: '6px',
+                      }}
+                      data-testid={`button-view-detail-${user.id}`}
+                    >
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.8)',
+                      }}>
+                        자세히 보기
+                      </span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -921,7 +938,7 @@ export default function AdminSettings() {
                         fontWeight: 400,
                         letterSpacing: '-0.02em',
                         color: 'rgba(12, 12, 12, 0.9)',
-                      }}>-</span>
+                      }}>{selectedUser.createdAt}</span>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
                       <span style={{

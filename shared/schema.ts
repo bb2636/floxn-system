@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   office: text("office"),
   address: text("address"),
   status: text("status").notNull().default("active"), // "active" | "deleted"
+  createdAt: text("created_at").notNull(),
 });
 
 export const VALID_ROLES = ["심사사", "조사사", "보험사", "협력사", "관리자"] as const;
@@ -24,6 +25,7 @@ export type UserRole = typeof VALID_ROLES[number];
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
+  createdAt: true,
 }).extend({
   role: z.enum(VALID_ROLES).default("보험사"),
 });
