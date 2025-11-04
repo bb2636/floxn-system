@@ -155,7 +155,12 @@ export default function Dashboard() {
           {menuItems.map((item) => (
             <button
               key={item.name}
-              onClick={() => setActiveMenu(item.name)}
+              onClick={() => {
+                setActiveMenu(item.name);
+                if (item.name === "관리자 설정") {
+                  setLocation("/admin-settings");
+                }
+              }}
               className="px-6 py-3 rounded-lg transition-colors"
               style={{
                 fontFamily: 'Pretendard',
