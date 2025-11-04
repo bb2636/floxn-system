@@ -150,12 +150,11 @@ export default function Login() {
       </header>
 
       {/* Main Content */}
-      <div className="relative flex gap-0 px-8 py-0">
+      <div className="relative flex gap-0 px-8 py-0 max-w-[1856px] mx-auto">
         {/* Left Panel - Illustration */}
         <div 
-          className="hidden lg:block bg-white overflow-hidden"
+          className="hidden lg:block bg-white overflow-hidden flex-1"
           style={{
-            width: '928px',
             height: '990px',
             borderRadius: '12px',
             position: 'relative',
@@ -203,7 +202,6 @@ export default function Login() {
         <div 
           className="flex-1 flex items-center justify-center overflow-hidden"
           style={{
-            width: '960px',
             height: '990px',
             borderRadius: '12px',
           }}
