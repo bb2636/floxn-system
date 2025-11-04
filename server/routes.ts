@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -153,6 +153,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Delete account error:", error);
       res.status(500).json({ error: "계정 삭제 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Create account endpoint (admin only)
+  app.post("/api/create-account", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check admin authorization
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      // Validate request body with Zod
+      const validatedData = createAccountSchema.parse(req.body);
+
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(validatedData.username);
+      if (existingUser) {
+        return res.status(409).json({ error: "이미 사용 중인 아이디입니다" });
+      }
+
+      // Create new user
+      const newUser = await storage.createUser({
+        username: validatedData.username,
+        password: validatedData.password,
+        role: validatedData.role,
+        name: validatedData.name,
+        company: validatedData.company,
+        department: validatedData.department,
+        position: validatedData.position,
+        email: validatedData.email || undefined,
+        phone: validatedData.phone,
+        office: validatedData.office,
+        address: validatedData.address,
+        status: "active",
+      });
+
+      const { password, ...userWithoutPassword } = newUser;
+      res.status(201).json({ success: true, user: userWithoutPassword });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Create account error:", error);
+      res.status(500).json({ error: "계정 생성 중 오류가 발생했습니다" });
     }
   });
 
