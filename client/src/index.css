@@ -76,7 +76,7 @@
   --chart-4: 280 68% 58%;
   --chart-5: 340 82% 52%;
 
-  --font-sans: "Noto Sans KR", "Open Sans", system-ui, -apple-system, sans-serif;
+  --font-sans: "Noto Sans KR", system-ui, -apple-system, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem; /* 8px */
