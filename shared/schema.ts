@@ -16,6 +16,7 @@ export const users = pgTable("users", {
   phone: text("phone"),
   office: text("office"),
   address: text("address"),
+  status: text("status").notNull().default("active"), // "active" | "deleted"
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -33,7 +34,12 @@ export const updatePasswordSchema = z.object({
   newPassword: z.string().min(1, "새 비밀번호가 필요합니다"),
 });
 
+export const deleteAccountSchema = z.object({
+  username: z.string().min(1, "사용자 이름이 필요합니다"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
+export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;

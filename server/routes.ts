@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -120,6 +120,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Password update error:", error);
       res.status(500).json({ error: "비밀번호 변경 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Delete account endpoint (admin only - soft delete)
+  app.post("/api/delete-account", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check admin authorization
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      // Validate request body with Zod
+      const validatedData = deleteAccountSchema.parse(req.body);
+
+      const deletedUser = await storage.deleteAccount(validatedData.username);
+
+      if (!deletedUser) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+
+      const { password, ...userWithoutPassword } = deletedUser;
+      res.json({ success: true, user: userWithoutPassword });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Delete account error:", error);
+      res.status(500).json({ error: "계정 삭제 중 오류가 발생했습니다" });
     }
   });
 

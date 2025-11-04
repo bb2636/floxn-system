@@ -24,6 +24,12 @@
   - 선택된 사용자 프로필 카드
   - 자동 비밀번호 설정 (0000)
   - 초기화 및 확인 버튼
+- 계정 삭제 기능 (관리자 전용, Soft Delete)
+  - 747px × 386px 중앙 모달
+  - 사용자 정보 카드 표시
+  - 경고 메시지: "계정 삭제 시 즉시 로그아웃됩니다. 활동 로그/정산 기록 등 이력 데이터는 보존됩니다."
+  - 취소/영구 삭제 버튼
+  - Soft delete: status 필드만 "deleted"로 변경
 
 ### 대시보드
 - 종합 대시보드 (로그인 후 메인 화면)
@@ -114,6 +120,18 @@ shared/
   - 404 (사용자 없음)
   - 400 (검증 오류)
 
+### POST /api/delete-account
+계정 삭제 (관리자 전용, Soft Delete)
+- Auth: 세션 필수 + 관리자 권한 필수
+- Body: `{ username: string }`
+- Response: `{ success: true, user: User }`
+- 동작: 사용자 데이터는 보존하고 status만 "deleted"로 변경
+- Error:
+  - 401 (인증되지 않음)
+  - 403 (관리자 권한 없음)
+  - 404 (사용자 없음)
+  - 400 (검증 오류)
+
 ## 데이터 모델
 
 ### User
@@ -131,6 +149,7 @@ shared/
   phone?: string;              // 휴대폰
   office?: string;             // 사무실 전화
   address?: string;            // 주소
+  status: string;              // "active" | "deleted" (Soft delete용)
 }
 ```
 
@@ -167,9 +186,10 @@ npm run dev
    - sameSite: 'lax'
    - userId 및 userRole 저장
 3. **역할 기반 접근 제어**:
-   - 관리자 전용 API 엔드포인트 (/api/update-password)
+   - 관리자 전용 API 엔드포인트 (/api/update-password, /api/delete-account)
    - 세션에 role 정보 저장
    - API 요청 시 권한 검증
+   - Soft delete로 데이터 보존
 4. **입력 검증**: Zod 스키마로 모든 API 요청 검증
 5. **CSRF 보호**: sameSite 쿠키로 기본 보호
 6. **세션 타임아웃**: 24시간
@@ -181,13 +201,16 @@ npm run dev
 - ✅ 사용자 계정 테이블 (검색 및 필터링)
 - ✅ 계정 상세보기 모달 (우측 슬라이드 패널)
 - ✅ 비밀번호 초기화 기능 (관리자 전용)
+- ✅ 계정 삭제 기능 (관리자 전용, Soft Delete)
 - ✅ 역할 기반 접근 제어 (RBAC)
-- ✅ User 스키마 확장 (role, name, company 등)
+- ✅ User 스키마 확장 (role, name, company, status 등)
 - ✅ API 보안 강화 (인증 + 권한 검사)
 
 ### 보안 개선사항
 - 세션에 userRole 추가
 - POST /api/update-password에 관리자 권한 검사 추가
+- POST /api/delete-account에 관리자 권한 검사 추가
+- Soft delete 구현으로 데이터 보존
 - Zod 스키마로 API 요청 검증 강화
 - 인증되지 않은 요청 차단 (401)
 - 권한 없는 요청 차단 (403)
@@ -197,8 +220,8 @@ npm run dev
 1. **사용자 관리**:
    - 신규 사용자 생성 기능 (관리자 전용)
    - 사용자 정보 수정 기능
-   - 사용자 삭제/비활성화 기능
    - 정적 사용자 목록을 실제 백엔드 데이터로 교체
+   - 삭제된 계정 복원 기능
 2. **사고 관리**: CRUD 기능
    - 사고 등록
    - 사고 조회/검색

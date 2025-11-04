@@ -10,6 +10,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   verifyPassword(username: string, password: string): Promise<User | null>;
   updatePassword(username: string, newPassword: string): Promise<User | null>;
+  deleteAccount(username: string): Promise<User | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -35,6 +36,7 @@ export class MemStorage implements IStorage {
       phone: "010-1234-5678",
       office: "02-1234-5678",
       address: "서울 강남구",
+      status: "active",
     };
     this.users.set(testUser.id, testUser);
   }
@@ -56,6 +58,7 @@ export class MemStorage implements IStorage {
       ...insertUser,
       id,
       password: hashedPassword,
+      status: insertUser.status || "active",
     };
     this.users.set(id, user);
     return user;
@@ -84,6 +87,21 @@ export class MemStorage implements IStorage {
     };
     this.users.set(user.id, updatedUser);
     return updatedUser;
+  }
+
+  async deleteAccount(username: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
+    if (!user) {
+      return null;
+    }
+
+    // Soft delete: update status to "deleted" instead of removing from storage
+    const deletedUser: User = {
+      ...user,
+      status: "deleted",
+    };
+    this.users.set(user.id, deletedUser);
+    return deletedUser;
   }
 }
 

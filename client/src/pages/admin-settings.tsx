@@ -34,30 +34,8 @@ export default function AdminSettings() {
   const [resetPasswordValue, setResetPasswordValue] = useState("0000");
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
-  // Check authentication
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/user"],
-  });
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      setLocation("/");
-    }
-  }, [user, isLoading, setLocation]);
-
-  const sidebarMenus = [
-    { name: "사용자 계정 관리", active: true },
-    { name: "접근 권한 관리", active: false },
-    { name: "1:1 문의 관리", active: false },
-    { name: "DB 관리", active: false },
-    { name: "기준정보 관리", active: false },
-    { name: "알림 메시지 전송", active: false },
-  ];
-
-  const roleFilters = ["전체", "관리자", "사원"];
-
-  // Sample user data - expanded for better testing
-  const allUsers = [
+  // Sample user data - now as state so it can be updated
+  const [allUsers, setAllUsers] = useState<UserData[]>([
     {
       id: 1,
       role: "관리자",
@@ -156,7 +134,29 @@ export default function AdminSettings() {
       createdAt: "2024.03.25",
       address: "서울 양천구",
     },
+  ]);
+
+  // Check authentication
+  const { data: user, isLoading } = useQuery<User>({
+    queryKey: ["/api/user"],
+  });
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      setLocation("/");
+    }
+  }, [user, isLoading, setLocation]);
+
+  const sidebarMenus = [
+    { name: "사용자 계정 관리", active: true },
+    { name: "접근 권한 관리", active: false },
+    { name: "1:1 문의 관리", active: false },
+    { name: "DB 관리", active: false },
+    { name: "기준정보 관리", active: false },
+    { name: "알림 메시지 전송", active: false },
   ];
+
+  const roleFilters = ["전체", "관리자", "사원"];
 
   // Apply filtering and search
   const filteredUsers = allUsers.filter((user) => {
@@ -1818,13 +1818,36 @@ export default function AdminSettings() {
                     borderRadius: '6px',
                   }}
                   onClick={async () => {
-                    // TODO: Implement delete account API call
-                    toast({
-                      variant: "destructive",
-                      title: "기능 준비 중",
-                      description: "계정 삭제 기능은 현재 개발 중입니다.",
-                    });
-                    setShowDeleteAccountModal(false);
+                    try {
+                      // Call delete account API
+                      await apiRequest("POST", "/api/delete-account", {
+                        username: selectedUser.username,
+                      });
+                      
+                      // Update local user list - remove deleted user
+                      setAllUsers((prevUsers) => 
+                        prevUsers.filter((u) => u.username !== selectedUser.username)
+                      );
+                      
+                      // Show success message
+                      toast({
+                        title: "계정 삭제 완료",
+                        description: `${selectedUser.name}님의 계정이 삭제되었습니다. 활동 로그 및 정산 기록은 보존됩니다.`,
+                      });
+                      
+                      // Close modals
+                      setShowDeleteAccountModal(false);
+                      setSelectedUser(null);
+                    } catch (error) {
+                      console.error("Failed to delete account:", error);
+                      
+                      // Show error message
+                      toast({
+                        variant: "destructive",
+                        title: "계정 삭제 실패",
+                        description: error instanceof Error ? error.message : "계정 삭제 중 오류가 발생했습니다.",
+                      });
+                    }
                   }}
                   data-testid="button-confirm-delete"
                 >
