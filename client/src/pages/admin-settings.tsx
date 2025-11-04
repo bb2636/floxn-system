@@ -20,6 +20,7 @@ export default function AdminSettings() {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
   const [showAccountCreatedModal, setShowAccountCreatedModal] = useState(false);
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
   const [sendEmailNotification, setSendEmailNotification] = useState(false);
   const [sendSmsNotification, setSendSmsNotification] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("0000");
@@ -1806,7 +1807,7 @@ export default function AdminSettings() {
               background: 'rgba(0, 0, 0, 0.28)',
               zIndex: 9999,
             }}
-            onClick={() => setShowCreateAccountModal(false)}
+            onClick={() => setShowCancelConfirmModal(true)}
           />
 
           {/* Modal */}
@@ -1850,7 +1851,7 @@ export default function AdminSettings() {
                   width: '28px',
                   height: '28px',
                 }}
-                onClick={() => setShowCreateAccountModal(false)}
+                onClick={() => setShowCancelConfirmModal(true)}
                 data-testid="button-close-create-modal"
               >
                 <X size={20} style={{ color: 'rgba(12, 12, 12, 0.8)' }} />
@@ -2242,7 +2243,7 @@ export default function AdminSettings() {
                   // Show account created modal
                   setShowAccountCreatedModal(true);
                 }}
-                data-testid="button-submit-create"
+                data-testid="button-generate-password"
               >
                 <span style={{
                   fontFamily: 'Pretendard',
@@ -2269,7 +2270,7 @@ export default function AdminSettings() {
               background: 'rgba(0, 0, 0, 0.7)',
               opacity: 0.4,
             }}
-            onClick={() => setShowAccountCreatedModal(false)}
+            onClick={() => setShowCancelConfirmModal(true)}
             data-testid="modal-overlay-account-created"
           />
 
@@ -2706,6 +2707,160 @@ export default function AdminSettings() {
                     color: '#FDFDFD',
                   }}>
                     완료
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirmModal && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0"
+            style={{
+              background: 'rgba(0, 0, 0, 0.7)',
+              opacity: 0.4,
+              zIndex: 10001,
+            }}
+            onClick={() => setShowCancelConfirmModal(false)}
+            data-testid="modal-overlay-cancel-confirm"
+          />
+
+          {/* Modal */}
+          <div 
+            className="fixed flex flex-col items-center"
+            style={{
+              width: '400px',
+              height: '199px',
+              left: 'calc(50% - 400px/2)',
+              top: 'calc(50% - 199px/2)',
+              background: '#FFFFFF',
+              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
+              borderRadius: '12px',
+              padding: '32px 0px 0px',
+              gap: '24px',
+              zIndex: 10002,
+              boxSizing: 'border-box',
+            }}
+            onClick={(e) => e.stopPropagation()}
+            data-testid="modal-cancel-confirm"
+          >
+            {/* Content */}
+            <div 
+              className="flex flex-col items-center"
+              style={{
+                width: '222px',
+                height: '55px',
+                gap: '8px',
+              }}
+            >
+              <h2 style={{
+                fontFamily: 'Pretendard',
+                fontSize: '18px',
+                fontWeight: 600,
+                lineHeight: '148%',
+                textAlign: 'center',
+                letterSpacing: '-0.02em',
+                color: '#0C0C0C',
+              }}>
+                계정 생성을 그만두시겠습니까?
+              </h2>
+              <p style={{
+                fontFamily: 'Pretendard',
+                fontSize: '16px',
+                fontWeight: 500,
+                lineHeight: '128%',
+                textAlign: 'center',
+                letterSpacing: '-0.02em',
+                color: 'rgba(12, 12, 12, 0.8)',
+              }}>
+                지금 나가면 모든 입력이 사라집니다.
+              </p>
+            </div>
+
+            {/* Footer with Buttons */}
+            <div 
+              className="flex flex-col items-start p-5"
+              style={{
+                width: '400px',
+                height: '88px',
+                background: '#FDFDFD',
+                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
+                gap: '10px',
+              }}
+            >
+              <div 
+                className="flex flex-row justify-between items-center"
+                style={{
+                  width: '360px',
+                  height: '48px',
+                }}
+              >
+                {/* Cancel Button */}
+                <button
+                  className="flex-1 flex items-center justify-center"
+                  style={{
+                    height: '48px',
+                    borderRadius: '6px',
+                  }}
+                  onClick={() => setShowCancelConfirmModal(false)}
+                  data-testid="button-cancel-confirm-cancel"
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    letterSpacing: '-0.02em',
+                    color: '#D02B20',
+                  }}>
+                    취소
+                  </span>
+                </button>
+
+                {/* Confirm Exit Button */}
+                <button
+                  className="flex-1 flex items-center justify-center"
+                  style={{
+                    height: '48px',
+                    background: '#008FED',
+                    borderRadius: '6px',
+                  }}
+                  onClick={() => {
+                    // Close all modals and reset form
+                    setShowCancelConfirmModal(false);
+                    setShowAccountCreatedModal(false);
+                    setShowCreateAccountModal(false);
+                    setSendEmailNotification(false);
+                    setSendSmsNotification(false);
+                    setGeneratedPassword("0000");
+                    setCreateAccountForm({
+                      role: "보험사",
+                      name: "",
+                      company: "",
+                      department: "",
+                      position: "",
+                      email: "",
+                      username: "",
+                      password: "",
+                      phone: "",
+                      office: "",
+                      address: "",
+                    });
+                  }}
+                  data-testid="button-cancel-confirm-exit"
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    letterSpacing: '-0.02em',
+                    color: '#FDFDFD',
+                  }}>
+                    나가기
                   </span>
                 </button>
               </div>
