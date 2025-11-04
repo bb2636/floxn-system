@@ -19,7 +19,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import loginIllustration from "@assets/generated_images/Business_login_illustration_b7564f6b.png";
+import loginIllustration from "@assets/Vector_1762217883452.png";
+import logoIcon from "@assets/Frame 2_1762217940686.png";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -134,12 +135,17 @@ export default function Login() {
 
       {/* Header */}
       <header 
-        className="relative w-full h-[89px] px-8 flex items-center"
+        className="relative w-full h-[89px] px-8 flex items-center gap-2"
         style={{
           background: 'rgba(255, 255, 255, 0.06)',
           backdropFilter: 'blur(22px)',
         }}
       >
+        <img 
+          src={logoIcon} 
+          alt="FLOXN Logo" 
+          className="w-6 h-6"
+        />
         <div className="text-2xl font-bold text-gray-900">FLOXN</div>
       </header>
 
