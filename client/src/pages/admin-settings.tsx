@@ -2054,7 +2054,12 @@ export default function AdminSettings() {
                   color: '#0C0C0C',
                   marginTop: '12px',
                 }}>
-                  보험사 정보
+                  {createAccountForm.role === '보험사' ? '보험사 정보' : 
+                   createAccountForm.role === '관리자' ? '관리자 정보' : 
+                   createAccountForm.role === '심사사' ? '심사사 정보' :
+                   createAccountForm.role === '조사사' ? '조사사 정보' :
+                   createAccountForm.role === '협력사' ? '협력사 정보' :
+                   '회사 정보'}
                 </h3>
 
                 {/* 보험사 정보: 회사명, 소속부서, 직급, 사무실 전화 */}
