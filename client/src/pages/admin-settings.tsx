@@ -1,7 +1,22 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
+
+type UserData = {
+  id: number;
+  role: string;
+  company: string;
+  name: string;
+  department: string;
+  position: string;
+  email: string;
+  username: string;
+  phone: string;
+  office: string;
+  createdAt: string;
+  address?: string;
+};
 
 export default function AdminSettings() {
   const [, setLocation] = useLocation();
@@ -9,6 +24,7 @@ export default function AdminSettings() {
   const [roleFilter, setRoleFilter] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
 
   const sidebarMenus = [
     { name: "사용자 계정 관리", active: true },
@@ -35,6 +51,7 @@ export default function AdminSettings() {
       phone: "010-1234-5678",
       office: "02-1234-5678",
       createdAt: "2024.01.15",
+      address: "서울 강남구",
     },
     {
       id: 2,
@@ -48,6 +65,7 @@ export default function AdminSettings() {
       phone: "010-2345-6789",
       office: "02-2345-6789",
       createdAt: "2024.02.20",
+      address: "서울 서초구",
     },
     {
       id: 3,
@@ -61,6 +79,7 @@ export default function AdminSettings() {
       phone: "010-3456-7890",
       office: "02-3456-7890",
       createdAt: "2024.01.20",
+      address: "서울 송파구",
     },
     {
       id: 4,
@@ -74,6 +93,7 @@ export default function AdminSettings() {
       phone: "010-4567-8901",
       office: "02-4567-8901",
       createdAt: "2024.03.10",
+      address: "경기 성남시",
     },
     {
       id: 5,
@@ -87,6 +107,7 @@ export default function AdminSettings() {
       phone: "010-5678-9012",
       office: "02-5678-9012",
       createdAt: "2024.02.15",
+      address: "서울 마포구",
     },
     {
       id: 6,
@@ -100,6 +121,7 @@ export default function AdminSettings() {
       phone: "010-6789-0123",
       office: "02-6789-0123",
       createdAt: "2024.01.05",
+      address: "서울 종로구",
     },
     {
       id: 7,
@@ -113,6 +135,7 @@ export default function AdminSettings() {
       phone: "010-7890-1234",
       office: "02-7890-1234",
       createdAt: "2024.03.25",
+      address: "서울 양천구",
     },
   ];
 
@@ -616,10 +639,11 @@ export default function AdminSettings() {
               {filteredUsers.map((user) => (
                 <div 
                   key={user.id}
-                  className="flex items-center px-3"
+                  className="flex items-center px-3 cursor-pointer hover:bg-black/5 transition-colors"
                   style={{
                     height: '44px',
                   }}
+                  onClick={() => setSelectedUser(user)}
                   data-testid={`user-row-${user.id}`}
                 >
                   <div className="px-2" style={{ width: '122px' }}>
@@ -727,6 +751,414 @@ export default function AdminSettings() {
           </div>
         </div>
       </div>
+
+      {/* Account Detail Modal */}
+      {selectedUser && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 z-40"
+            style={{
+              background: 'rgba(0, 0, 0, 0.7)',
+              opacity: 0.4,
+            }}
+            onClick={() => setSelectedUser(null)}
+            data-testid="modal-overlay"
+          />
+
+          {/* Modal Panel */}
+          <div 
+            className="fixed right-0 top-0 z-50 bg-white"
+            style={{
+              width: '609px',
+              height: '100vh',
+              overflowY: 'auto',
+            }}
+            data-testid="modal-account-detail"
+          >
+            {/* Header */}
+            <div 
+              className="flex items-center justify-center relative"
+              style={{
+                height: '128px',
+                padding: '24px 20px',
+              }}
+            >
+              <h2 style={{
+                fontFamily: 'Pretendard',
+                fontSize: '22px',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                color: '#0C0C0C',
+              }}>
+                계정 상세보기
+              </h2>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="absolute right-5"
+                style={{
+                  width: '24px',
+                  height: '24px',
+                }}
+                data-testid="button-close-modal"
+              >
+                <X className="w-6 h-6" color="#1C1B1F" />
+              </button>
+            </div>
+
+            {/* Profile Card */}
+            <div 
+              className="mx-5 flex flex-col gap-2.5 p-4"
+              style={{
+                background: 'rgba(12, 12, 12, 0.04)',
+                backdropFilter: 'blur(7px)',
+                borderRadius: '12px',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  color: 'rgba(12, 12, 12, 0.9)',
+                }}>
+                  {selectedUser.name}
+                </span>
+                <div 
+                  className="w-1 h-1 rounded-full"
+                  style={{ background: 'rgba(0, 143, 237, 0.9)' }}
+                />
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  color: 'rgba(12, 12, 12, 0.9)',
+                }}>
+                  {selectedUser.company}
+                </span>
+                <div 
+                  className="flex items-center justify-center px-2.5 py-1 rounded-full"
+                  style={{
+                    background: 'rgba(12, 12, 12, 0.1)',
+                    backdropFilter: 'blur(7px)',
+                  }}
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    letterSpacing: '-0.01em',
+                    color: 'rgba(12, 12, 12, 0.7)',
+                  }}>
+                    {selectedUser.role}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-6">
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '16px',
+                  fontWeight: 400,
+                  letterSpacing: '-0.02em',
+                  color: 'rgba(12, 12, 12, 0.7)',
+                }}>
+                  {selectedUser.username}
+                </span>
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '16px',
+                  fontWeight: 400,
+                  letterSpacing: '-0.02em',
+                  color: 'rgba(12, 12, 12, 0.7)',
+                }}>
+                  {selectedUser.phone}
+                </span>
+              </div>
+            </div>
+
+            {/* Content Sections */}
+            <div className="flex flex-col px-5 mt-8">
+              {/* Basic Info Section */}
+              <div className="flex flex-col pb-7" style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.1)' }}>
+                <div className="px-4 py-2.5">
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    letterSpacing: '-0.02em',
+                    color: 'rgba(12, 12, 12, 0.9)',
+                  }}>
+                    기본 정보
+                  </span>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {/* Row 1 */}
+                  <div className="flex gap-5">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>성함</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.name}</span>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>ID</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.username}</span>
+                    </div>
+                  </div>
+                  {/* Row 2 */}
+                  <div className="flex gap-5">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>연락처</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.phone}</span>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>이메일 주소</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.email}</span>
+                    </div>
+                  </div>
+                  {/* Row 3 */}
+                  <div className="flex gap-5">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>계정 생성일</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.createdAt}</span>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>역할</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.role}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Company Info Section */}
+              <div className="flex flex-col py-7">
+                <div className="px-4 py-2.5">
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    letterSpacing: '-0.02em',
+                    color: 'rgba(12, 12, 12, 0.9)',
+                  }}>
+                    보험사 정보
+                  </span>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {/* Row 1 */}
+                  <div className="flex gap-5">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>회사명</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.company}</span>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>소속부서</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.department}</span>
+                    </div>
+                  </div>
+                  {/* Row 2 */}
+                  <div className="flex gap-5">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>직급</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.position}</span>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>사무실 전화</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.office}</span>
+                    </div>
+                  </div>
+                  {/* Row 3 */}
+                  <div className="flex gap-5">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>주소</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>{selectedUser.address}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Buttons */}
+            <div 
+              className="absolute bottom-0 left-0 right-0 flex gap-5 px-8"
+              style={{
+                height: '64px',
+                alignItems: 'center',
+              }}
+            >
+              <button
+                className="flex-1 flex items-center justify-center rounded-xl"
+                style={{
+                  height: '64px',
+                  background: '#D02B20',
+                  boxShadow: '2px 4px 30px #BDD1F0',
+                }}
+                data-testid="button-delete-account"
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '20px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  color: '#FDFDFD',
+                }}>
+                  계정 삭제
+                </span>
+              </button>
+              <button
+                className="flex-1 flex items-center justify-center rounded-xl"
+                style={{
+                  height: '64px',
+                  background: 'transparent',
+                  boxShadow: '2px 4px 30px #BDD1F0',
+                }}
+                data-testid="button-reset-password"
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '20px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  color: '#D02B20',
+                }}>
+                  비밀번호 초기화
+                </span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
