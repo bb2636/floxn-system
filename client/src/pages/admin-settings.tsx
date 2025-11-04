@@ -853,7 +853,9 @@ export default function AdminSettings() {
                     letterSpacing: '-0.02em',
                     color: 'rgba(12, 12, 12, 0.9)',
                   }}>
-                    기본 정보
+                    {selectedUser.role === '심사사' || selectedUser.role === '조사사' || selectedUser.role === '협력사' 
+                      ? '사용자 정보' 
+                      : '기본 정보'}
                   </span>
                 </div>
                 <div className="flex flex-col gap-4">
@@ -977,6 +979,9 @@ export default function AdminSettings() {
                   }}>
                     {selectedUser.role === '보험사' ? '보험사 정보' : 
                      selectedUser.role === '관리자' ? '관리자 정보' : 
+                     selectedUser.role === '심사사' ? '심사사 정보' :
+                     selectedUser.role === '조사사' ? '조사사 정보' :
+                     selectedUser.role === '협력사' ? '협력사 정보' :
                      '회사 정보'}
                   </span>
                 </div>
@@ -2221,6 +2226,7 @@ export default function AdminSettings() {
               </button>
 
               <button
+                type="button"
                 className="flex items-center justify-center hover-elevate active-elevate-2"
                 style={{
                   height: '48px',
