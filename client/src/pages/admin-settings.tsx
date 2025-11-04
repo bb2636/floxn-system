@@ -19,6 +19,9 @@ export default function AdminSettings() {
   const [resetPasswordValue, setResetPasswordValue] = useState("0000");
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
+  const [showAccountCreatedModal, setShowAccountCreatedModal] = useState(false);
+  const [sendEmailNotification, setSendEmailNotification] = useState(false);
+  const [sendSmsNotification, setSendSmsNotification] = useState(false);
   const [createAccountForm, setCreateAccountForm] = useState({
     role: "보험사",
     name: "",
@@ -2221,62 +2224,19 @@ export default function AdminSettings() {
                   background: '#008FED',
                   borderRadius: '6px',
                 }}
-                onClick={async () => {
-                  try {
-                    // Validate required fields
-                    if (!createAccountForm.name || !createAccountForm.company || !createAccountForm.username) {
-                      toast({
-                        variant: "destructive",
-                        title: "입력 오류",
-                        description: "필수 항목을 모두 입력해주세요.",
-                      });
-                      return;
-                    }
-
-                    // Generate automatic password
-                    const autoPassword = "0000";
-
-                    // Call create account API with auto-generated password
-                    await apiRequest("POST", "/api/create-account", {
-                      ...createAccountForm,
-                      password: autoPassword,
-                    });
-                    
-                    // Invalidate users query to refetch from server
-                    await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                    
-                    // Show success message with auto-generated password
-                    toast({
-                      title: "계정 생성 완료",
-                      description: `${createAccountForm.name}님의 계정이 생성되었습니다. 초기 비밀번호: ${autoPassword}`,
-                    });
-                    
-                    // Close modal and reset form
-                    setShowCreateAccountModal(false);
-                    setCreateAccountForm({
-                      role: "보험사",
-                      name: "",
-                      company: "",
-                      department: "",
-                      position: "",
-                      email: "",
-                      username: "",
-                      password: "",
-                      phone: "",
-                      office: "",
-                      address: "",
-                    });
-                  } catch (error: any) {
-                    console.error("Failed to create account:", error);
-                    
-                    // Show error message
-                    const errorMessage = error?.error || error?.message || "계정 생성 중 오류가 발생했습니다.";
+                onClick={() => {
+                  // Validate required fields
+                  if (!createAccountForm.name || !createAccountForm.company || !createAccountForm.username) {
                     toast({
                       variant: "destructive",
-                      title: "계정 생성 실패",
-                      description: errorMessage,
+                      title: "입력 오류",
+                      description: "필수 항목을 모두 입력해주세요.",
                     });
+                    return;
                   }
+
+                  // Show account created modal
+                  setShowAccountCreatedModal(true);
                 }}
                 data-testid="button-submit-create"
               >
@@ -2290,6 +2250,463 @@ export default function AdminSettings() {
                   비밀번호 생성
                 </span>
               </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Account Created Modal */}
+      {showAccountCreatedModal && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 z-50"
+            style={{
+              background: 'rgba(0, 0, 0, 0.7)',
+              opacity: 0.4,
+            }}
+            onClick={() => setShowAccountCreatedModal(false)}
+            data-testid="modal-overlay-account-created"
+          />
+
+          {/* Modal */}
+          <div 
+            className="fixed z-50 bg-white flex flex-col"
+            style={{
+              width: '747px',
+              height: '516px',
+              left: 'calc(50% - 747px/2 + 0.5px)',
+              top: 'calc(50% - 516px/2 + 0.5px)',
+              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
+              borderRadius: '12px',
+              gap: '32px',
+            }}
+            data-testid="modal-account-created"
+          >
+            {/* Content */}
+            <div 
+              className="flex flex-col items-center"
+              style={{
+                width: '747px',
+                height: '428px',
+                gap: '16px',
+              }}
+            >
+              {/* Header */}
+              <div 
+                className="flex flex-row justify-center items-center"
+                style={{
+                  width: '747px',
+                  height: '60px',
+                  gap: '321px',
+                }}
+              >
+                <h2 style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  color: '#0C0C0C',
+                }}>
+                  계정 생성 완료
+                </h2>
+              </div>
+
+              {/* Body */}
+              <div 
+                className="flex flex-col"
+                style={{
+                  width: '707px',
+                  height: '352px',
+                  gap: '24px',
+                }}
+              >
+                {/* Profile Card Section */}
+                <div 
+                  className="flex flex-col"
+                  style={{
+                    width: '707px',
+                    height: '114px',
+                    gap: '20px',
+                  }}
+                >
+                  {/* Section Title */}
+                  <div className="flex flex-row" style={{ width: '707px', height: '18px', gap: '2px' }}>
+                    <span style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      letterSpacing: '-0.01em',
+                      color: '#686A6E',
+                    }}>
+                      생성 계정
+                    </span>
+                  </div>
+
+                  {/* Profile Card */}
+                  <div 
+                    className="flex flex-col justify-center p-5"
+                    style={{
+                      width: '707px',
+                      height: '88px',
+                      background: 'rgba(12, 12, 12, 0.04)',
+                      backdropFilter: 'blur(7px)',
+                      borderRadius: '12px',
+                      gap: '8px',
+                    }}
+                  >
+                    {/* Top row: Name, Company, Role */}
+                    <div 
+                      className="flex flex-row items-center"
+                      style={{
+                        width: '667px',
+                        height: '26px',
+                        gap: '16px',
+                      }}
+                    >
+                      <div className="flex flex-row items-center gap-2.5">
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '18px',
+                          fontWeight: 600,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}>{createAccountForm.name}</span>
+                        <div style={{ width: '4px', height: '4px', background: 'rgba(0, 143, 237, 0.9)', borderRadius: '50%' }} />
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '18px',
+                          fontWeight: 600,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}>{createAccountForm.company}</span>
+                      </div>
+                      <div 
+                        className="flex items-center justify-center px-2.5"
+                        style={{
+                          height: '26px',
+                          background: 'rgba(12, 12, 12, 0.1)',
+                          backdropFilter: 'blur(7px)',
+                          borderRadius: '20px',
+                        }}
+                      >
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: 'rgba(12, 12, 12, 0.7)',
+                        }}>{createAccountForm.role}</span>
+                      </div>
+                    </div>
+
+                    {/* Bottom row: Username, Phone */}
+                    <div 
+                      className="flex flex-row"
+                      style={{
+                        width: '400px',
+                        height: '20px',
+                        gap: '24px',
+                      }}
+                    >
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.7)',
+                      }}>{createAccountForm.username}</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.7)',
+                      }}>{createAccountForm.phone || '010-0000-0000'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Password Section */}
+                <div 
+                  className="flex flex-col"
+                  style={{
+                    width: '707px',
+                    height: '110px',
+                    gap: '10px',
+                  }}
+                >
+                  <div className="flex flex-col" style={{ width: '419px', height: '76px', gap: '8px' }}>
+                    <div className="flex flex-row" style={{ width: '419px', height: '18px', gap: '2px' }}>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}>
+                        비밀번호 생성(자동)
+                      </span>
+                    </div>
+
+                    {/* Input Field + Copy Button */}
+                    <div className="flex flex-row items-center" style={{ width: '419px', height: '50px', gap: '8px' }}>
+                      <div 
+                        className="flex flex-row items-center"
+                        style={{
+                          width: '343px',
+                          height: '50px',
+                          padding: '10px 20px',
+                          background: '#FDFDFD',
+                          border: '2px solid rgba(12, 12, 12, 0.08)',
+                          borderRadius: '8px',
+                          gap: '10px',
+                        }}
+                      >
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '16px',
+                          fontWeight: 600,
+                          letterSpacing: '-0.02em',
+                          color: '#0C0C0C',
+                        }}>
+                          0000
+                        </span>
+                      </div>
+
+                      <button
+                        className="flex flex-row items-center justify-center"
+                        style={{
+                          width: '68px',
+                          height: '50px',
+                          padding: '10px 20px',
+                          background: 'rgba(0, 143, 237, 0.1)',
+                          border: '1px solid rgba(0, 143, 237, 0.3)',
+                          borderRadius: '8px',
+                          gap: '10px',
+                        }}
+                        onClick={() => {
+                          navigator.clipboard.writeText("0000");
+                          toast({
+                            title: "복사 완료",
+                            description: "비밀번호가 클립보드에 복사되었습니다.",
+                          });
+                        }}
+                        data-testid="button-copy-password"
+                      >
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '16px',
+                          fontWeight: 600,
+                          letterSpacing: '-0.02em',
+                          color: '#008FED',
+                        }}>
+                          복사
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Notification Options */}
+                  <div 
+                    className="flex flex-row items-center"
+                    style={{
+                      gap: '32px',
+                    }}
+                  >
+                    {/* Email notification checkbox */}
+                    <div 
+                      className="flex flex-row items-center cursor-pointer"
+                      style={{ gap: '6px' }}
+                      onClick={() => setSendEmailNotification(!sendEmailNotification)}
+                    >
+                      <div 
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          border: '2px solid rgba(12, 12, 12, 0.24)',
+                          borderRadius: '4px',
+                          background: sendEmailNotification ? '#008FED' : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {sendEmailNotification && (
+                          <span style={{ color: 'white', fontSize: '16px' }}>✓</span>
+                        )}
+                      </div>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.8)',
+                      }}>
+                        이메일로 안내 발송
+                      </span>
+                    </div>
+
+                    {/* SMS notification checkbox */}
+                    <div 
+                      className="flex flex-row items-center cursor-pointer"
+                      style={{ gap: '6px' }}
+                      onClick={() => setSendSmsNotification(!sendSmsNotification)}
+                    >
+                      <div 
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          border: '2px solid rgba(12, 12, 12, 0.24)',
+                          borderRadius: '4px',
+                          background: sendSmsNotification ? '#008FED' : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {sendSmsNotification && (
+                          <span style={{ color: 'white', fontSize: '16px' }}>✓</span>
+                        )}
+                      </div>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.8)',
+                      }}>
+                        문자로 안내 발송
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer with Buttons */}
+            <div 
+              className="flex flex-col items-start p-5"
+              style={{
+                width: '747px',
+                height: '88px',
+                background: '#FDFDFD',
+                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
+                gap: '10px',
+              }}
+            >
+              <div 
+                className="flex flex-row justify-between items-center"
+                style={{
+                  width: '707px',
+                  height: '48px',
+                }}
+              >
+                {/* Cancel Button */}
+                <button
+                  className="flex-1 flex items-center justify-center"
+                  style={{
+                    height: '48px',
+                    borderRadius: '6px',
+                  }}
+                  onClick={() => {
+                    setShowAccountCreatedModal(false);
+                    setSendEmailNotification(false);
+                    setSendSmsNotification(false);
+                  }}
+                  data-testid="button-cancel-account-created"
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    letterSpacing: '-0.02em',
+                    color: '#D02B20',
+                  }}>
+                    취소
+                  </span>
+                </button>
+
+                {/* Confirm Button */}
+                <button
+                  className="flex-1 flex items-center justify-center"
+                  style={{
+                    height: '48px',
+                    background: '#008FED',
+                    borderRadius: '6px',
+                  }}
+                  onClick={async () => {
+                    try {
+                      // Generate automatic password
+                      const autoPassword = "0000";
+
+                      // Call create account API with auto-generated password
+                      await apiRequest("POST", "/api/create-account", {
+                        ...createAccountForm,
+                        password: autoPassword,
+                      });
+                      
+                      // Invalidate users query to refetch from server
+                      await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                      
+                      // Show success message
+                      let description = `${createAccountForm.name}님의 계정이 생성되었습니다. 초기 비밀번호: ${autoPassword}`;
+                      if (sendEmailNotification && sendSmsNotification) {
+                        description += "\n이메일과 문자로 안내가 발송됩니다.";
+                      } else if (sendEmailNotification) {
+                        description += "\n이메일로 안내가 발송됩니다.";
+                      } else if (sendSmsNotification) {
+                        description += "\n문자로 안내가 발송됩니다.";
+                      }
+                      
+                      toast({
+                        title: "계정 생성 완료",
+                        description,
+                      });
+                      
+                      // Close modals and reset form
+                      setShowAccountCreatedModal(false);
+                      setShowCreateAccountModal(false);
+                      setSendEmailNotification(false);
+                      setSendSmsNotification(false);
+                      setCreateAccountForm({
+                        role: "보험사",
+                        name: "",
+                        company: "",
+                        department: "",
+                        position: "",
+                        email: "",
+                        username: "",
+                        password: "",
+                        phone: "",
+                        office: "",
+                        address: "",
+                      });
+                    } catch (error: any) {
+                      console.error("Failed to create account:", error);
+                      
+                      // Show error message
+                      const errorMessage = error?.error || error?.message || "계정 생성 중 오류가 발생했습니다.";
+                      toast({
+                        variant: "destructive",
+                        title: "계정 생성 실패",
+                        description: errorMessage,
+                      });
+                    }
+                  }}
+                  data-testid="button-confirm-account-created"
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    letterSpacing: '-0.02em',
+                    color: '#FDFDFD',
+                  }}>
+                    완료
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </>
