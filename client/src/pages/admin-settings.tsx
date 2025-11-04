@@ -22,6 +22,7 @@ export default function AdminSettings() {
   const [showAccountCreatedModal, setShowAccountCreatedModal] = useState(false);
   const [sendEmailNotification, setSendEmailNotification] = useState(false);
   const [sendSmsNotification, setSendSmsNotification] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState("0000");
   const [createAccountForm, setCreateAccountForm] = useState({
     role: "보험사",
     name: "",
@@ -2235,6 +2236,9 @@ export default function AdminSettings() {
                     return;
                   }
 
+                  // Set default password
+                  setGeneratedPassword("0000");
+                  
                   // Show account created modal
                   setShowAccountCreatedModal(true);
                 }}
@@ -2451,7 +2455,10 @@ export default function AdminSettings() {
 
                     {/* Input Field + Copy Button */}
                     <div className="flex flex-row items-center" style={{ width: '419px', height: '50px', gap: '8px' }}>
-                      <div 
+                      <input
+                        type="text"
+                        value={generatedPassword}
+                        onChange={(e) => setGeneratedPassword(e.target.value)}
                         className="flex flex-row items-center"
                         style={{
                           width: '343px',
@@ -2460,19 +2467,15 @@ export default function AdminSettings() {
                           background: '#FDFDFD',
                           border: '2px solid rgba(12, 12, 12, 0.08)',
                           borderRadius: '8px',
-                          gap: '10px',
-                        }}
-                      >
-                        <span style={{
                           fontFamily: 'Pretendard',
                           fontSize: '16px',
                           fontWeight: 600,
                           letterSpacing: '-0.02em',
                           color: '#0C0C0C',
-                        }}>
-                          0000
-                        </span>
-                      </div>
+                          outline: 'none',
+                        }}
+                        data-testid="input-password"
+                      />
 
                       <button
                         className="flex flex-row items-center justify-center"
@@ -2486,7 +2489,7 @@ export default function AdminSettings() {
                           gap: '10px',
                         }}
                         onClick={() => {
-                          navigator.clipboard.writeText("0000");
+                          navigator.clipboard.writeText(generatedPassword);
                           toast({
                             title: "복사 완료",
                             description: "비밀번호가 클립보드에 복사되었습니다.",
@@ -2613,6 +2616,7 @@ export default function AdminSettings() {
                     setShowAccountCreatedModal(false);
                     setSendEmailNotification(false);
                     setSendSmsNotification(false);
+                    setGeneratedPassword("0000");
                   }}
                   data-testid="button-cancel-account-created"
                 >
@@ -2637,20 +2641,17 @@ export default function AdminSettings() {
                   }}
                   onClick={async () => {
                     try {
-                      // Generate automatic password
-                      const autoPassword = "0000";
-
-                      // Call create account API with auto-generated password
+                      // Call create account API with user-entered password
                       await apiRequest("POST", "/api/create-account", {
                         ...createAccountForm,
-                        password: autoPassword,
+                        password: generatedPassword,
                       });
                       
                       // Invalidate users query to refetch from server
                       await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
                       
                       // Show success message
-                      let description = `${createAccountForm.name}님의 계정이 생성되었습니다. 초기 비밀번호: ${autoPassword}`;
+                      let description = `${createAccountForm.name}님의 계정이 생성되었습니다. 초기 비밀번호: ${generatedPassword}`;
                       if (sendEmailNotification && sendSmsNotification) {
                         description += "\n이메일과 문자로 안내가 발송됩니다.";
                       } else if (sendEmailNotification) {
@@ -2669,6 +2670,7 @@ export default function AdminSettings() {
                       setShowCreateAccountModal(false);
                       setSendEmailNotification(false);
                       setSendSmsNotification(false);
+                      setGeneratedPassword("0000");
                       setCreateAccountForm({
                         role: "보험사",
                         name: "",
