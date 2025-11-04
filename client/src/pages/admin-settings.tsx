@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { Search, X } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 type UserData = {
   id: number;
@@ -21,6 +22,7 @@ type UserData = {
 
 export default function AdminSettings() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("사용자 계정 관리");
   const [roleFilter, setRoleFilter] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
@@ -1503,11 +1505,24 @@ export default function AdminSettings() {
                         newPassword: resetPasswordValue,
                       });
                       
+                      // Show success message
+                      toast({
+                        title: "비밀번호 초기화 완료",
+                        description: `${selectedUser.name}님의 비밀번호가 ${resetPasswordValue}로 변경되었습니다.`,
+                      });
+                      
                       // Close modals
                       setShowResetPasswordModal(false);
                       setSelectedUser(null);
                     } catch (error) {
                       console.error("Failed to reset password:", error);
+                      
+                      // Show error message
+                      toast({
+                        variant: "destructive",
+                        title: "비밀번호 초기화 실패",
+                        description: error instanceof Error ? error.message : "비밀번호 변경 중 오류가 발생했습니다.",
+                      });
                     }
                   }}
                   data-testid="button-confirm-reset"
