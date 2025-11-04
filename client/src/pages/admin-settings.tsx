@@ -2251,7 +2251,8 @@ export default function AdminSettings() {
                   // Set default password
                   setGeneratedPassword("0000");
                   
-                  // Show account created modal
+                  // Close account creation modal and show password generation modal
+                  setShowCreateAccountModal(false);
                   setShowAccountCreatedModal(true);
                 }}
                 data-testid="button-generate-password"
