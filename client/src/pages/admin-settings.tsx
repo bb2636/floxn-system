@@ -1988,7 +1988,7 @@ export default function AdminSettings() {
                     </label>
                     <input
                       type="tel"
-                      placeholder="** 배포 입력"
+                      placeholder="- 빼고 입력"
                       value={createAccountForm.phone}
                       onChange={(e) => setCreateAccountForm({ ...createAccountForm, phone: e.target.value })}
                       className="w-full px-4 py-3 outline-none"
@@ -2148,7 +2148,7 @@ export default function AdminSettings() {
                     </label>
                     <input
                       type="tel"
-                      placeholder="** 배포 입력"
+                      placeholder="-빼고 입력"
                       value={createAccountForm.office}
                       onChange={(e) => setCreateAccountForm({ ...createAccountForm, office: e.target.value })}
                       className="w-full px-4 py-3 outline-none"
@@ -2186,7 +2186,6 @@ export default function AdminSettings() {
                   borderRadius: '6px',
                 }}
                 onClick={() => {
-                  setShowCreateAccountModal(false);
                   setCreateAccountForm({
                     role: "보험사",
                     name: "",
@@ -2201,16 +2200,16 @@ export default function AdminSettings() {
                     address: "",
                   });
                 }}
-                data-testid="button-cancel-create"
+                data-testid="button-reset-form"
               >
                 <span style={{
                   fontFamily: 'Pretendard',
                   fontSize: '16px',
                   fontWeight: 500,
                   letterSpacing: '-0.02em',
-                  color: '#686A6E',
+                  color: '#0C0C0C4D',
                 }}>
-                  취소하기
+                  초기화
                 </span>
               </button>
 
