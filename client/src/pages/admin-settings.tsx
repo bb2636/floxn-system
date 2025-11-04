@@ -975,7 +975,9 @@ export default function AdminSettings() {
                     letterSpacing: '-0.02em',
                     color: 'rgba(12, 12, 12, 0.9)',
                   }}>
-                    보험사 정보
+                    {selectedUser.role === '보험사' ? '보험사 정보' : 
+                     selectedUser.role === '관리자' ? '관리자 정보' : 
+                     '회사 정보'}
                   </span>
                 </div>
                 <div className="flex flex-col gap-4">
