@@ -36,6 +36,12 @@ export default function AdminSettings() {
     phone: "",
     office: "",
     address: "",
+    language: "",
+    salaryGrade: "",
+    contractNumber: "",
+    accountHolder: "",
+    availableHours: "",
+    serviceRegion: "",
   });
 
   // Check authentication
@@ -2062,125 +2068,433 @@ export default function AdminSettings() {
                    '회사 정보'}
                 </h3>
 
-                {/* 보험사 정보: 회사명, 소속부서, 직급, 사무실 전화 */}
-                <div className="flex gap-3" style={{ width: '100%' }}>
-                  <div className="flex-1">
-                    <label className="block mb-2" style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.01em',
-                      color: '#686A6E',
-                    }}>
-                      회사명
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="회사명"
-                      value={createAccountForm.company}
-                      onChange={(e) => setCreateAccountForm({ ...createAccountForm, company: e.target.value })}
-                      className="w-full px-4 py-3 outline-none"
-                      style={{
-                        background: '#FDFDFD',
-                        border: '2px solid rgba(12, 12, 12, 0.08)',
-                        borderRadius: '8px',
+{createAccountForm.role === '협력사' ? (
+                  <>
+                    {/* 협력사 정보: Row 1 - 회사명, 소속부서, 직급, 사용할 언어 */}
+                    <div className="flex gap-3" style={{ width: '100%' }}>
+                      <div className="flex-1">
+                        <label className="block mb-2" style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: '#686A6E',
+                        }}>
+                          회사명
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="회사명"
+                          value={createAccountForm.company}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, company: e.target.value })}
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="input-company"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block mb-2" style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: '#686A6E',
+                        }}>
+                          소속부서
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="소속부서"
+                          value={createAccountForm.department}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, department: e.target.value })}
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="input-department"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block mb-2" style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: '#686A6E',
+                        }}>
+                          직급
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="직급"
+                          value={createAccountForm.position}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, position: e.target.value })}
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="input-position"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block mb-2" style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: '#686A6E',
+                        }}>
+                          사용할 언어
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="사용할 언어"
+                          value={createAccountForm.language}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, language: e.target.value })}
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="input-language"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 협력사 정보: Row 2 - 연봉 산대, 계약번호, 예금주 */}
+                    <div className="flex gap-3" style={{ width: '100%' }}>
+                      <div className="flex-1">
+                        <label className="block mb-2" style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: '#686A6E',
+                        }}>
+                          연봉 산대
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="연봉 산대"
+                          value={createAccountForm.salaryGrade}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, salaryGrade: e.target.value })}
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="input-salary-grade"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block mb-2" style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: '#686A6E',
+                        }}>
+                          계약번호
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="** 빼고 입력"
+                          value={createAccountForm.contractNumber}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, contractNumber: e.target.value })}
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="input-contract-number"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block mb-2" style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: '#686A6E',
+                        }}>
+                          예금주
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="예금주"
+                          value={createAccountForm.accountHolder}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, accountHolder: e.target.value })}
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="input-account-holder"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 협력사 정보: Row 3 - 주소 (full width) */}
+                    <div style={{ width: '100%' }}>
+                      <label className="block mb-2" style={{
                         fontFamily: 'Pretendard',
                         fontSize: '14px',
                         fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}
-                      data-testid="input-company"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block mb-2" style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.01em',
-                      color: '#686A6E',
-                    }}>
-                      소속부서
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="소속부서"
-                      value={createAccountForm.department}
-                      onChange={(e) => setCreateAccountForm({ ...createAccountForm, department: e.target.value })}
-                      className="w-full px-4 py-3 outline-none"
-                      style={{
-                        background: '#FDFDFD',
-                        border: '2px solid rgba(12, 12, 12, 0.08)',
-                        borderRadius: '8px',
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}>
+                        주소
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="주소"
+                        value={createAccountForm.address}
+                        onChange={(e) => setCreateAccountForm({ ...createAccountForm, address: e.target.value })}
+                        className="w-full px-4 py-3 outline-none"
+                        style={{
+                          background: '#FDFDFD',
+                          border: '2px solid rgba(12, 12, 12, 0.08)',
+                          borderRadius: '8px',
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}
+                        data-testid="input-address"
+                      />
+                    </div>
+
+                    {/* 협력사 정보: Row 4 - 활동가능시간 + 지역 선택 */}
+                    <div className="flex gap-3" style={{ width: '100%' }}>
+                      <div style={{ flex: '0 0 69%' }}>
+                        <label className="block mb-2" style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: '#686A6E',
+                        }}>
+                          활동가능시간
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="활동가능시간"
+                          value={createAccountForm.availableHours}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, availableHours: e.target.value })}
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="input-available-hours"
+                        />
+                      </div>
+                      <div style={{ flex: '0 0 31%' }}>
+                        <label className="block mb-2" style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: '#686A6E',
+                        }}>
+                          지역 선택
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="지역 선택"
+                          value={createAccountForm.serviceRegion}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, serviceRegion: e.target.value })}
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="input-service-region"
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  /* 다른 역할: 회사명, 소속부서, 직급, 사무실 전화 */
+                  <div className="flex gap-3" style={{ width: '100%' }}>
+                    <div className="flex-1">
+                      <label className="block mb-2" style={{
                         fontFamily: 'Pretendard',
                         fontSize: '14px',
                         fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}
-                      data-testid="input-department"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block mb-2" style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.01em',
-                      color: '#686A6E',
-                    }}>
-                      직급
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="직급"
-                      value={createAccountForm.position}
-                      onChange={(e) => setCreateAccountForm({ ...createAccountForm, position: e.target.value })}
-                      className="w-full px-4 py-3 outline-none"
-                      style={{
-                        background: '#FDFDFD',
-                        border: '2px solid rgba(12, 12, 12, 0.08)',
-                        borderRadius: '8px',
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}>
+                        회사명
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="회사명"
+                        value={createAccountForm.company}
+                        onChange={(e) => setCreateAccountForm({ ...createAccountForm, company: e.target.value })}
+                        className="w-full px-4 py-3 outline-none"
+                        style={{
+                          background: '#FDFDFD',
+                          border: '2px solid rgba(12, 12, 12, 0.08)',
+                          borderRadius: '8px',
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}
+                        data-testid="input-company"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block mb-2" style={{
                         fontFamily: 'Pretendard',
                         fontSize: '14px',
                         fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}
-                      data-testid="input-position"
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block mb-2" style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.01em',
-                      color: '#686A6E',
-                    }}>
-                      사무실 전화
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="-빼고 입력"
-                      value={createAccountForm.office}
-                      onChange={(e) => setCreateAccountForm({ ...createAccountForm, office: e.target.value })}
-                      className="w-full px-4 py-3 outline-none"
-                      style={{
-                        background: '#FDFDFD',
-                        border: '2px solid rgba(12, 12, 12, 0.08)',
-                        borderRadius: '8px',
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}>
+                        소속부서
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="소속부서"
+                        value={createAccountForm.department}
+                        onChange={(e) => setCreateAccountForm({ ...createAccountForm, department: e.target.value })}
+                        className="w-full px-4 py-3 outline-none"
+                        style={{
+                          background: '#FDFDFD',
+                          border: '2px solid rgba(12, 12, 12, 0.08)',
+                          borderRadius: '8px',
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}
+                        data-testid="input-department"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block mb-2" style={{
                         fontFamily: 'Pretendard',
                         fontSize: '14px',
                         fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}
-                      data-testid="input-office"
-                    />
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}>
+                        직급
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="직급"
+                        value={createAccountForm.position}
+                        onChange={(e) => setCreateAccountForm({ ...createAccountForm, position: e.target.value })}
+                        className="w-full px-4 py-3 outline-none"
+                        style={{
+                          background: '#FDFDFD',
+                          border: '2px solid rgba(12, 12, 12, 0.08)',
+                          borderRadius: '8px',
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}
+                        data-testid="input-position"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block mb-2" style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}>
+                        사무실 전화
+                      </label>
+                      <input
+                        type="tel"
+                        placeholder="-빼고 입력"
+                        value={createAccountForm.office}
+                        onChange={(e) => setCreateAccountForm({ ...createAccountForm, office: e.target.value })}
+                        className="w-full px-4 py-3 outline-none"
+                        style={{
+                          background: '#FDFDFD',
+                          border: '2px solid rgba(12, 12, 12, 0.08)',
+                          borderRadius: '8px',
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}
+                        data-testid="input-office"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -2213,6 +2527,12 @@ export default function AdminSettings() {
                     phone: "",
                     office: "",
                     address: "",
+                    language: "",
+                    salaryGrade: "",
+                    contractNumber: "",
+                    accountHolder: "",
+                    availableHours: "",
+                    serviceRegion: "",
                   });
                 }}
                 data-testid="button-reset-form"
@@ -2696,6 +3016,12 @@ export default function AdminSettings() {
                         phone: "",
                         office: "",
                         address: "",
+                        language: "",
+                        salaryGrade: "",
+                        contractNumber: "",
+                        accountHolder: "",
+                        availableHours: "",
+                        serviceRegion: "",
                       });
                     } catch (error: any) {
                       console.error("Failed to create account:", error);
@@ -2861,6 +3187,12 @@ export default function AdminSettings() {
                       phone: "",
                       office: "",
                       address: "",
+                      language: "",
+                      salaryGrade: "",
+                      contractNumber: "",
+                      accountHolder: "",
+                      availableHours: "",
+                      serviceRegion: "",
                     });
                   }}
                   data-testid="button-cancel-confirm-exit"
