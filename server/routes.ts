@@ -214,6 +214,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone: validatedData.phone,
         office: validatedData.office,
         address: validatedData.address,
+        bankName: validatedData.bankName,
+        accountNumber: validatedData.accountNumber,
+        accountHolder: validatedData.accountHolder,
+        serviceRegions: validatedData.serviceRegions,
+        attachments: validatedData.attachments,
         status: "active",
       });
 
