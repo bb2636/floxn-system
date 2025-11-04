@@ -528,7 +528,7 @@ export default function AdminSettings() {
           {/* User List Section */}
           <div>
             {/* Header with Count */}
-            <div className="flex items-center px-5 py-6">
+            <div className="flex items-center justify-between px-5 py-6">
               <div className="flex items-center gap-4">
                 <span 
                   style={{
@@ -554,6 +554,26 @@ export default function AdminSettings() {
                   {filteredUsers.length}
                 </span>
               </div>
+              <button
+                className="flex items-center justify-center px-6 hover-elevate active-elevate-2"
+                style={{
+                  height: '48px',
+                  background: '#008FED',
+                  borderRadius: '6px',
+                }}
+                onClick={() => setShowCreateAccountModal(true)}
+                data-testid="button-create-account"
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '16px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  color: '#FDFDFD',
+                }}>
+                  계정 생성
+                </span>
+              </button>
             </div>
 
             {/* User Table */}
@@ -779,30 +799,6 @@ export default function AdminSettings() {
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* Create Account Button at Bottom Right */}
-            <div className="flex justify-end px-5 pb-6 pt-4">
-              <button
-                className="flex items-center justify-center px-6 hover-elevate active-elevate-2"
-                style={{
-                  height: '48px',
-                  background: '#008FED',
-                  borderRadius: '6px',
-                }}
-                onClick={() => setShowCreateAccountModal(true)}
-                data-testid="button-create-account"
-              >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#FDFDFD',
-                }}>
-                  계정 생성
-                </span>
-              </button>
             </div>
           </div>
         </div>
