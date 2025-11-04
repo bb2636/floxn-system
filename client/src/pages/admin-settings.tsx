@@ -32,6 +32,7 @@ export default function AdminSettings() {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetPasswordValue, setResetPasswordValue] = useState("0000");
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   // Check authentication
   const { data: user, isLoading } = useQuery<User>({
@@ -1154,6 +1155,9 @@ export default function AdminSettings() {
                   background: '#D02B20',
                   boxShadow: '2px 4px 30px #BDD1F0',
                 }}
+                onClick={() => {
+                  setShowDeleteAccountModal(true);
+                }}
                 data-testid="button-delete-account"
               >
                 <span style={{
@@ -1560,6 +1564,278 @@ export default function AdminSettings() {
                     color: '#FDFDFD',
                   }}>
                     확인
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteAccountModal && selectedUser && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 z-50"
+            style={{
+              background: 'rgba(0, 0, 0, 0.7)',
+              opacity: 0.4,
+            }}
+            onClick={() => setShowDeleteAccountModal(false)}
+            data-testid="modal-overlay-delete"
+          />
+
+          {/* Modal */}
+          <div 
+            className="fixed z-50 bg-white flex flex-col"
+            style={{
+              width: '747px',
+              height: '386px',
+              left: 'calc(50% - 747px/2 + 0.5px)',
+              top: 'calc(50% - 386px/2 + 0.5px)',
+              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
+              borderRadius: '12px',
+              gap: '32px',
+            }}
+            data-testid="modal-delete-account"
+          >
+            {/* Content */}
+            <div 
+              className="flex flex-col items-center"
+              style={{
+                width: '747px',
+                height: '266px',
+                gap: '16px',
+              }}
+            >
+              {/* Header */}
+              <div 
+                className="flex flex-row justify-center items-center"
+                style={{
+                  width: '747px',
+                  height: '60px',
+                  gap: '321px',
+                }}
+              >
+                <h2 style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  letterSpacing: '-0.02em',
+                  color: '#0C0C0C',
+                }}>
+                  계정 삭제
+                </h2>
+              </div>
+
+              {/* Body */}
+              <div 
+                className="flex flex-col"
+                style={{
+                  width: '707px',
+                  height: '190px',
+                  gap: '24px',
+                }}
+              >
+                {/* Selected Account Section */}
+                <div 
+                  className="flex flex-col"
+                  style={{
+                    width: '707px',
+                    height: '114px',
+                    gap: '20px',
+                  }}
+                >
+                  {/* Section Title */}
+                  <div className="flex flex-row" style={{ width: '707px', height: '18px', gap: '2px' }}>
+                    <span style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      letterSpacing: '-0.01em',
+                      color: '#686A6E',
+                    }}>
+                      선택 계정
+                    </span>
+                  </div>
+
+                  {/* Profile Card */}
+                  <div 
+                    className="flex flex-col justify-center p-5"
+                    style={{
+                      width: '707px',
+                      height: '88px',
+                      background: 'rgba(12, 12, 12, 0.04)',
+                      backdropFilter: 'blur(7px)',
+                      borderRadius: '12px',
+                      gap: '8px',
+                    }}
+                  >
+                    {/* Top row: Name, Company, Role */}
+                    <div 
+                      className="flex flex-row items-center"
+                      style={{
+                        width: '667px',
+                        height: '26px',
+                        gap: '16px',
+                      }}
+                    >
+                      <div className="flex flex-row items-center gap-2.5">
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '18px',
+                          fontWeight: 600,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}>{selectedUser.name}</span>
+                        <div style={{ width: '4px', height: '4px', background: 'rgba(0, 143, 237, 0.9)', borderRadius: '50%' }} />
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '18px',
+                          fontWeight: 600,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}>{selectedUser.company}</span>
+                      </div>
+                      <div 
+                        className="flex items-center justify-center px-2.5"
+                        style={{
+                          height: '26px',
+                          background: 'rgba(12, 12, 12, 0.1)',
+                          backdropFilter: 'blur(7px)',
+                          borderRadius: '20px',
+                        }}
+                      >
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.01em',
+                          color: 'rgba(12, 12, 12, 0.7)',
+                        }}>{selectedUser.role}</span>
+                      </div>
+                    </div>
+
+                    {/* Bottom row: Username, Phone */}
+                    <div 
+                      className="flex flex-row"
+                      style={{
+                        width: '177px',
+                        height: '20px',
+                        gap: '24px',
+                      }}
+                    >
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.7)',
+                      }}>{selectedUser.username}</span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.7)',
+                      }}>{selectedUser.phone}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Warning Message */}
+                <div 
+                  className="flex flex-row justify-center items-center"
+                  style={{
+                    width: '707px',
+                    height: '52px',
+                    padding: '16px 12px',
+                    gap: '10px',
+                    background: 'rgba(208, 43, 32, 0.2)',
+                    backdropFilter: 'blur(7px)',
+                    borderRadius: '20px',
+                  }}
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    letterSpacing: '-0.02em',
+                    color: '#D02B20',
+                  }}>
+                    계정 삭제 시 즉시 로그아웃됩니다. 활동 로그/정산 기록 등 이력 데이터는 보존됩니다.
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer with Buttons */}
+            <div 
+              className="flex flex-col items-start p-5"
+              style={{
+                width: '747px',
+                height: '88px',
+                background: '#FDFDFD',
+                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
+                gap: '10px',
+              }}
+            >
+              <div 
+                className="flex flex-row justify-between items-center"
+                style={{
+                  width: '707px',
+                  height: '48px',
+                }}
+              >
+                {/* Cancel Button */}
+                <button
+                  className="flex-1 flex items-center justify-center"
+                  style={{
+                    height: '48px',
+                    borderRadius: '6px',
+                  }}
+                  onClick={() => setShowDeleteAccountModal(false)}
+                  data-testid="button-cancel-delete"
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    letterSpacing: '-0.02em',
+                    color: '#D02B20',
+                  }}>
+                    취소
+                  </span>
+                </button>
+
+                {/* Confirm Delete Button */}
+                <button
+                  className="flex-1 flex items-center justify-center"
+                  style={{
+                    height: '48px',
+                    background: '#D02B20',
+                    borderRadius: '6px',
+                  }}
+                  onClick={async () => {
+                    // TODO: Implement delete account API call
+                    toast({
+                      variant: "destructive",
+                      title: "기능 준비 중",
+                      description: "계정 삭제 기능은 현재 개발 중입니다.",
+                    });
+                    setShowDeleteAccountModal(false);
+                  }}
+                  data-testid="button-confirm-delete"
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    letterSpacing: '-0.02em',
+                    color: '#FDFDFD',
+                  }}>
+                    영구 삭제
                   </span>
                 </button>
               </div>
