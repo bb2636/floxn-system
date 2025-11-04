@@ -10,15 +10,21 @@
 - 사용자명 기반 로그인 (관리자가 계정 생성)
 - 비밀번호 암호화 (bcrypt)
 - 세션 기반 인증 (express-session + memorystore)
-- 역할 기반 접근 제어 (관리자/사원)
+- 역할 기반 접근 제어 (5가지 역할: 심사사, 조사사, 보험사, 협력사, 관리자)
 - 자동 로그인 기능 (localStorage)
 - 보호된 라우트
 
 ### 관리자 설정
 - 사용자 계정 테이블 (검색 및 필터링)
 - 이름 기반 검색
-- 역할 필터 (전체/관리자/사원)
+- 역할 필터 (전체 + 5가지 역할 타입)
 - 계정 상세보기 모달 (우측 슬라이드 패널)
+- 계정 생성 기능 (관리자 전용)
+  - 1596px × 652px 중앙 모달
+  - 역할 선택 드롭다운 (5가지 역할)
+  - 기본 정보 입력 폼 (성함, 회사명, 소속부서, 직급, 이메일, ID, 비밀번호, 연락처, 사무실 전화, 주소)
+  - 필수 항목 표시 (성함, 회사명, ID, 비밀번호)
+  - 생성 버튼
 - 비밀번호 초기화 기능 (관리자 전용)
   - 747px × 516px 중앙 모달
   - 선택된 사용자 프로필 카드
@@ -132,6 +138,18 @@ shared/
   - 404 (사용자 없음)
   - 400 (검증 오류)
 
+### POST /api/create-account
+계정 생성 (관리자 전용)
+- Auth: 세션 필수 + 관리자 권한 필수
+- Body: `{ role, name, company, department, position, email, username, password, phone, office, address }`
+- Response: `{ success: true, user: User }`
+- 동작: 새로운 사용자 계정 생성 (비밀번호 bcrypt 해싱)
+- Error:
+  - 401 (인증되지 않음)
+  - 403 (관리자 권한 없음)
+  - 409 (아이디 중복)
+  - 400 (검증 오류)
+
 ## 데이터 모델
 
 ### User
@@ -140,7 +158,7 @@ shared/
   id: string;                  // UUID
   username: string;            // 사용자명 (고유)
   password: string;            // bcrypt 해시
-  role: string;                // "관리자" | "사원"
+  role: string;                // "심사사" | "조사사" | "보험사" | "협력사" | "관리자"
   name: string;                // 이름
   company: string;             // 소속 회사
   department?: string;         // 부서
@@ -152,6 +170,14 @@ shared/
   status: string;              // "active" | "deleted" (Soft delete용)
 }
 ```
+
+### 역할 타입 (VALID_ROLES)
+시스템에서 지원하는 5가지 역할:
+- **심사사**: 보험 청구 심사 담당
+- **조사사**: 보험 사고 조사 담당
+- **보험사**: 보험사 직원
+- **협력사**: 협력 업체 직원
+- **관리자**: 시스템 관리자 (전체 권한)
 
 ## 테스트 계정
 
@@ -186,9 +212,10 @@ npm run dev
    - sameSite: 'lax'
    - userId 및 userRole 저장
 3. **역할 기반 접근 제어**:
-   - 관리자 전용 API 엔드포인트 (/api/update-password, /api/delete-account)
+   - 관리자 전용 API 엔드포인트 (/api/update-password, /api/delete-account, /api/create-account)
    - 세션에 role 정보 저장
    - API 요청 시 권한 검증
+   - 5가지 역할 타입 지원 (심사사, 조사사, 보험사, 협력사, 관리자)
    - Soft delete로 데이터 보존
 4. **입력 검증**: Zod 스키마로 모든 API 요청 검증
 5. **CSRF 보호**: sameSite 쿠키로 기본 보호
@@ -200,28 +227,37 @@ npm run dev
 - ✅ 관리자 설정 페이지 구현
 - ✅ 사용자 계정 테이블 (검색 및 필터링)
 - ✅ 계정 상세보기 모달 (우측 슬라이드 패널)
+- ✅ 계정 생성 기능 (관리자 전용, 1596px × 652px 모달)
+  - 5가지 역할 타입 지원 (심사사, 조사사, 보험사, 협력사, 관리자)
+  - 폼 유효성 검증 (필수 항목: 성함, 회사명, ID, 비밀번호)
+  - 아이디 중복 체크
+  - 비밀번호 자동 해싱 (bcrypt)
+  - 계정 생성 후 목록에 즉시 반영
 - ✅ 비밀번호 초기화 기능 (관리자 전용)
 - ✅ 계정 삭제 기능 (관리자 전용, Soft Delete)
 - ✅ 역할 기반 접근 제어 (RBAC)
-- ✅ User 스키마 확장 (role, name, company, status 등)
+- ✅ User 스키마 확장 (5가지 역할 타입, 추가 필드)
+- ✅ 역할 필터 업데이트 (전체 + 5가지 역할 타입)
 - ✅ API 보안 강화 (인증 + 권한 검사)
 
 ### 보안 개선사항
 - 세션에 userRole 추가
+- POST /api/create-account에 관리자 권한 검사 추가
 - POST /api/update-password에 관리자 권한 검사 추가
 - POST /api/delete-account에 관리자 권한 검사 추가
 - Soft delete 구현으로 데이터 보존
 - Zod 스키마로 API 요청 검증 강화
 - 인증되지 않은 요청 차단 (401)
 - 권한 없는 요청 차단 (403)
+- 아이디 중복 방지 (409)
 
 ## 향후 개발 계획
 
 1. **사용자 관리**:
-   - 신규 사용자 생성 기능 (관리자 전용)
    - 사용자 정보 수정 기능
    - 정적 사용자 목록을 실제 백엔드 데이터로 교체
    - 삭제된 계정 복원 기능
+   - 레거시 역할 데이터 마이그레이션 (사원 → 새로운 역할 타입)
 2. **사고 관리**: CRUD 기능
    - 사고 등록
    - 사고 조회/검색
