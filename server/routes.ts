@@ -192,8 +192,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      console.log("Create account request body:", JSON.stringify(req.body, null, 2));
+      
       // Validate request body with Zod
       const validatedData = createAccountSchema.parse(req.body);
+      
+      console.log("Validated data:", JSON.stringify(validatedData, null, 2));
 
       // Check if username already exists
       const existingUser = await storage.getUserByUsername(validatedData.username);
@@ -221,6 +225,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         attachments: validatedData.attachments,
         status: "active",
       });
+      
+      console.log("Created user:", JSON.stringify(newUser, null, 2));
 
       const { password, ...userWithoutPassword } = newUser;
       res.status(201).json({ success: true, user: userWithoutPassword });
