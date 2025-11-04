@@ -10,8 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { TestCredentialsBanner } from "@/components/test-credentials-banner";
-import { Loader2, Truck } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -92,142 +91,292 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left Panel - Illustration */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-amber-50 to-orange-50 items-center justify-center p-12 relative">
-        {/* Logo */}
-        <div className="absolute top-8 left-8 flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-            <Truck className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold text-gray-800">FLOXN</span>
-        </div>
-
-        {/* Illustration */}
-        <div className="max-w-lg">
-          <img 
-            src={loginIllustration} 
-            alt="Login Illustration" 
-            className="w-full h-auto object-contain drop-shadow-2xl"
-          />
-        </div>
+    <div className="min-h-screen relative" style={{ background: '#E7EDFE' }}>
+      {/* Blur Background Orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div 
+          className="absolute"
+          style={{
+            width: '1095px',
+            height: '777px',
+            left: '-250px',
+            top: '170px',
+            background: 'rgba(254, 240, 230, 0.40)',
+            borderRadius: '9999px',
+            filter: 'blur(212px)',
+          }}
+        />
+        <div 
+          className="absolute"
+          style={{
+            width: '1335px',
+            height: '1323px',
+            left: '160px',
+            top: '160px',
+            background: 'rgba(233, 230, 254, 0.50)',
+            borderRadius: '9999px',
+            filter: 'blur(212px)',
+          }}
+        />
+        <div 
+          className="absolute"
+          style={{
+            width: '348px',
+            height: '1323px',
+            right: '-100px',
+            top: '-30px',
+            background: 'rgba(233, 230, 254, 0.50)',
+            borderRadius: '9999px',
+            filter: 'blur(212px)',
+          }}
+        />
       </div>
 
-      {/* Right Panel - Login Form */}
-      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 p-6">
-        {/* Mobile Logo */}
-        <div className="lg:hidden absolute top-6 left-6 flex items-center gap-2">
-          <div className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-            <Truck className="w-5 h-5 text-white" />
+      {/* Header */}
+      <header 
+        className="relative w-full h-[89px] px-8 flex items-center"
+        style={{
+          background: 'rgba(255, 255, 255, 0.06)',
+          backdropFilter: 'blur(22px)',
+        }}
+      >
+        <div className="text-2xl font-bold text-gray-900">FLOXN</div>
+      </header>
+
+      {/* Main Content */}
+      <div className="relative flex gap-0 px-8 py-0">
+        {/* Left Panel - Illustration */}
+        <div 
+          className="hidden lg:block bg-white overflow-hidden"
+          style={{
+            width: '928px',
+            height: '990px',
+            borderRadius: '12px',
+            position: 'relative',
+          }}
+        >
+          {/* Blur orbs inside left panel */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div 
+              className="absolute"
+              style={{
+                width: '1095px',
+                height: '777px',
+                left: '-609px',
+                top: '-300px',
+                background: 'rgba(254, 240, 230, 0.40)',
+                borderRadius: '9999px',
+                filter: 'blur(212px)',
+              }}
+            />
+            <div 
+              className="absolute"
+              style={{
+                width: '1335px',
+                height: '1323px',
+                left: '200px',
+                top: '160px',
+                background: 'rgba(233, 230, 254, 0.50)',
+                borderRadius: '9999px',
+                filter: 'blur(212px)',
+              }}
+            />
           </div>
-          <span className="text-xl font-bold text-gray-800">FLOXN</span>
+          
+          {/* Illustration */}
+          <div className="relative z-10 flex items-center justify-center h-full p-12">
+            <img 
+              src={loginIllustration} 
+              alt="Login Illustration" 
+              className="max-w-2xl w-full h-auto object-contain"
+            />
+          </div>
         </div>
 
-        <div className="w-full max-w-md space-y-8">
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-login-title">
-              로그인
-            </h1>
-            <p className="mt-2 text-sm text-gray-600" data-testid="text-login-subtitle">
-              접수부터 종결까지 진행 흐름을 한눈에-
-            </p>
-          </div>
-
-          {/* Test Credentials Banner */}
-          <TestCredentialsBanner />
-
-          {/* Login Form */}
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* Username Field */}
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
-                      아이디
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="xblock01"
-                        className="h-12 bg-white border-gray-200 focus:border-primary focus:ring-primary"
-                        data-testid="input-username"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Password Field */}
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium text-gray-700">
-                      비밀번호
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        type="password"
-                        placeholder="••••••••••••"
-                        className="h-12 bg-white border-gray-200 focus:border-primary focus:ring-primary"
-                        data-testid="input-password"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Remember Me Checkbox */}
-              <FormField
-                control={form.control}
-                name="rememberMe"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center space-x-2">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          data-testid="checkbox-remember-me"
-                        />
-                      </FormControl>
-                      <Label
-                        htmlFor="rememberMe"
-                        className="text-sm text-gray-600 cursor-pointer"
-                      >
-                        자동로그인
-                      </Label>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full h-12 text-base font-medium bg-blue-500 hover:bg-blue-600 text-white"
-                data-testid="button-login"
-                disabled={loginMutation.isPending}
+        {/* Right Panel - Login Form */}
+        <div 
+          className="flex-1 flex items-center justify-center overflow-hidden"
+          style={{
+            width: '960px',
+            height: '990px',
+            borderRadius: '12px',
+          }}
+        >
+          <div className="w-full max-w-lg px-8 py-12">
+            {/* Header */}
+            <div className="mb-[91px]">
+              <h1 
+                className="font-medium mb-3"
+                style={{ 
+                  color: 'rgba(12, 12, 12, 0.90)',
+                  fontSize: '28px',
+                  lineHeight: '35.84px',
+                }}
+                data-testid="text-login-title"
               >
-                {loginMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    로그인 중...
-                  </>
-                ) : (
-                  "로그인"
-                )}
-              </Button>
-            </form>
-          </Form>
+                로그인
+              </h1>
+              <p 
+                style={{ 
+                  color: 'rgba(12, 12, 12, 0.70)',
+                  fontSize: '18px',
+                  lineHeight: '23.04px',
+                }}
+                data-testid="text-login-subtitle"
+              >
+                접수부터 종결까지 진행 흐름을 한눈에-
+              </p>
+            </div>
+
+            {/* Login Form */}
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-[38px]">
+                <div className="space-y-5">
+                  {/* Username Field */}
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel 
+                          className="font-semibold"
+                          style={{
+                            color: '#0C0C0C',
+                            fontSize: '15px',
+                            lineHeight: '19.20px',
+                          }}
+                        >
+                          아이디
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="xblock01"
+                            className="font-semibold"
+                            style={{
+                              height: '68px',
+                              paddingLeft: '20px',
+                              paddingRight: '20px',
+                              background: '#FDFDFD',
+                              borderRadius: '8px',
+                              border: 'none',
+                              outline: '2px solid rgba(12, 12, 12, 0.08)',
+                              outlineOffset: '-2px',
+                              color: '#0C0C0C',
+                              fontSize: '16px',
+                              lineHeight: '20.48px',
+                            }}
+                            data-testid="input-username"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Password Field */}
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel 
+                          className="font-semibold"
+                          style={{
+                            color: '#0C0C0C',
+                            fontSize: '15px',
+                            lineHeight: '19.20px',
+                          }}
+                        >
+                          비밀번호
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type="password"
+                            placeholder="••••••••••••"
+                            className="font-semibold"
+                            style={{
+                              height: '68px',
+                              paddingLeft: '20px',
+                              paddingRight: '20px',
+                              background: '#FDFDFD',
+                              borderRadius: '8px',
+                              border: 'none',
+                              outline: '2px solid rgba(12, 12, 12, 0.08)',
+                              outlineOffset: '-2px',
+                              color: '#0C0C0C',
+                              fontSize: '16px',
+                              lineHeight: '20.48px',
+                            }}
+                            data-testid="input-password"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Remember Me Checkbox */}
+                  <FormField
+                    control={form.control}
+                    name="rememberMe"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center gap-1">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              data-testid="checkbox-remember-me"
+                            />
+                          </FormControl>
+                          <Label
+                            htmlFor="rememberMe"
+                            className="cursor-pointer font-medium"
+                            style={{
+                              color: '#686A6E',
+                              fontSize: '14px',
+                              lineHeight: '17.92px',
+                            }}
+                          >
+                            자동로그인
+                          </Label>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Submit Button */}
+                <Button
+                  type="submit"
+                  className="w-full font-bold"
+                  style={{
+                    height: '68px',
+                    paddingLeft: '20px',
+                    paddingRight: '20px',
+                    background: '#008FED',
+                    borderRadius: '8px',
+                    color: '#FDFDFD',
+                    fontSize: '18px',
+                    lineHeight: '23.04px',
+                  }}
+                  data-testid="button-login"
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      로그인 중...
+                    </>
+                  ) : (
+                    "로그인"
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </div>
         </div>
       </div>
     </div>
