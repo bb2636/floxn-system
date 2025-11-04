@@ -170,7 +170,8 @@ export default function AdminSettings() {
     { name: "알림 메시지 전송", active: false },
   ];
 
-  const roleFilters = ["전체", "관리자", "사원"];
+  // Use VALID_ROLES from schema for role filter options
+  const roleFilters = ["전체", ...VALID_ROLES];
 
   // Apply filtering and search
   const filteredUsers = allUsers.filter((user) => {
