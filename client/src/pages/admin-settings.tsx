@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X, ChevronDown } from "lucide-react";
+import { Search, X, ChevronDown, Upload } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -36,13 +36,13 @@ export default function AdminSettings() {
     phone: "",
     office: "",
     address: "",
-    language: "",
-    salaryGrade: "",
-    contractNumber: "",
+    bankName: "",
+    accountNumber: "",
     accountHolder: "",
-    availableHours: "",
-    serviceRegion: "",
+    serviceRegions: [] as string[],
+    attachments: [] as string[],
   });
+  const [regionSearchTerm, setRegionSearchTerm] = useState("");
 
   // Check authentication
   const { data: user, isLoading: userLoading } = useQuery<User>({
@@ -2070,7 +2070,7 @@ export default function AdminSettings() {
 
 {createAccountForm.role === '협력사' ? (
                   <>
-                    {/* 협력사 정보: Row 1 - 회사명, 소속부서, 직급, 사용할 언어 */}
+                    {/* 협력사 정보: Row 1 - 회사명, 소속부서, 직급, 사무실 전화 */}
                     <div className="flex gap-3" style={{ width: '100%' }}>
                       <div className="flex-1">
                         <label className="block mb-2" style={{
@@ -2167,13 +2167,13 @@ export default function AdminSettings() {
                           letterSpacing: '-0.01em',
                           color: '#686A6E',
                         }}>
-                          사용할 언어
+                          사무실 전화
                         </label>
                         <input
-                          type="text"
-                          placeholder="사용할 언어"
-                          value={createAccountForm.language}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, language: e.target.value })}
+                          type="tel"
+                          placeholder="-빼고 입력"
+                          value={createAccountForm.office}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, office: e.target.value })}
                           className="w-full px-4 py-3 outline-none"
                           style={{
                             background: '#FDFDFD',
@@ -2185,12 +2185,12 @@ export default function AdminSettings() {
                             letterSpacing: '-0.02em',
                             color: 'rgba(12, 12, 12, 0.9)',
                           }}
-                          data-testid="input-language"
+                          data-testid="input-office"
                         />
                       </div>
                     </div>
 
-                    {/* 협력사 정보: Row 2 - 연봉 산대, 계약번호, 예금주 */}
+                    {/* 협력사 정보: Row 2 - 은행 선택, 계좌번호, 예금주 */}
                     <div className="flex gap-3" style={{ width: '100%' }}>
                       <div className="flex-1">
                         <label className="block mb-2" style={{
@@ -2200,26 +2200,43 @@ export default function AdminSettings() {
                           letterSpacing: '-0.01em',
                           color: '#686A6E',
                         }}>
-                          연봉 산대
+                          은행 선택
                         </label>
-                        <input
-                          type="text"
-                          placeholder="연봉 산대"
-                          value={createAccountForm.salaryGrade}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, salaryGrade: e.target.value })}
-                          className="w-full px-4 py-3 outline-none"
-                          style={{
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
-                          data-testid="input-salary-grade"
-                        />
+                        <div className="relative">
+                          <select
+                            value={createAccountForm.bankName}
+                            onChange={(e) => setCreateAccountForm({ ...createAccountForm, bankName: e.target.value })}
+                            className="w-full px-4 pr-8 appearance-none cursor-pointer outline-none"
+                            style={{
+                              height: '46px',
+                              background: '#FDFDFD',
+                              border: '2px solid rgba(12, 12, 12, 0.08)',
+                              borderRadius: '8px',
+                              fontFamily: 'Pretendard',
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              letterSpacing: '-0.02em',
+                              color: 'rgba(12, 12, 12, 0.9)',
+                            }}
+                            data-testid="select-bank"
+                          >
+                            <option value="">은행명</option>
+                            <option value="KB국민은행">KB국민은행</option>
+                            <option value="신한은행">신한은행</option>
+                            <option value="우리은행">우리은행</option>
+                            <option value="하나은행">하나은행</option>
+                            <option value="NH농협은행">NH농협은행</option>
+                            <option value="IBK기업은행">IBK기업은행</option>
+                            <option value="SC제일은행">SC제일은행</option>
+                            <option value="카카오뱅크">카카오뱅크</option>
+                            <option value="토스뱅크">토스뱅크</option>
+                          </select>
+                          <ChevronDown 
+                            size={22} 
+                            className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
+                            style={{ color: 'rgba(12, 12, 12, 0.6)' }}
+                          />
+                        </div>
                       </div>
                       <div className="flex-1">
                         <label className="block mb-2" style={{
@@ -2229,13 +2246,13 @@ export default function AdminSettings() {
                           letterSpacing: '-0.01em',
                           color: '#686A6E',
                         }}>
-                          계약번호
+                          계좌번호
                         </label>
                         <input
                           type="text"
                           placeholder="** 빼고 입력"
-                          value={createAccountForm.contractNumber}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, contractNumber: e.target.value })}
+                          value={createAccountForm.accountNumber}
+                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, accountNumber: e.target.value })}
                           className="w-full px-4 py-3 outline-none"
                           style={{
                             background: '#FDFDFD',
@@ -2247,7 +2264,7 @@ export default function AdminSettings() {
                             letterSpacing: '-0.02em',
                             color: 'rgba(12, 12, 12, 0.9)',
                           }}
-                          data-testid="input-contract-number"
+                          data-testid="input-account-number"
                         />
                       </div>
                       <div className="flex-1">
@@ -2312,53 +2329,24 @@ export default function AdminSettings() {
                       />
                     </div>
 
-                    {/* 협력사 정보: Row 4 - 활동가능시간 + 지역 선택 */}
-                    <div className="flex gap-3" style={{ width: '100%' }}>
-                      <div style={{ flex: '0 0 69%' }}>
-                        <label className="block mb-2" style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: '#686A6E',
-                        }}>
-                          활동가능시간
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="활동가능시간"
-                          value={createAccountForm.availableHours}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, availableHours: e.target.value })}
-                          className="w-full px-4 py-3 outline-none"
-                          style={{
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
-                          data-testid="input-available-hours"
-                        />
-                      </div>
-                      <div style={{ flex: '0 0 31%' }}>
-                        <label className="block mb-2" style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: '#686A6E',
-                        }}>
-                          지역 선택
-                        </label>
+                    {/* 협력사 정보: Row 4 - 출동가능지역선택 */}
+                    <div style={{ width: '100%' }}>
+                      <label className="block mb-2" style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}>
+                        출동가능지역선택
+                      </label>
+                      <div className="flex gap-2">
                         <input
                           type="text"
                           placeholder="지역 선택"
-                          value={createAccountForm.serviceRegion}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, serviceRegion: e.target.value })}
-                          className="w-full px-4 py-3 outline-none"
+                          value={regionSearchTerm}
+                          onChange={(e) => setRegionSearchTerm(e.target.value)}
+                          className="flex-1 px-4 py-3 outline-none"
                           style={{
                             background: '#FDFDFD',
                             border: '2px solid rgba(12, 12, 12, 0.08)',
@@ -2369,8 +2357,113 @@ export default function AdminSettings() {
                             letterSpacing: '-0.02em',
                             color: 'rgba(12, 12, 12, 0.9)',
                           }}
-                          data-testid="input-service-region"
+                          data-testid="input-region-search"
                         />
+                        <button
+                          type="button"
+                          className="flex items-center justify-center"
+                          style={{
+                            width: '46px',
+                            height: '46px',
+                            background: '#008FED',
+                            borderRadius: '8px',
+                          }}
+                          onClick={() => {
+                            if (regionSearchTerm.trim() && !createAccountForm.serviceRegions.includes(regionSearchTerm.trim())) {
+                              setCreateAccountForm({
+                                ...createAccountForm,
+                                serviceRegions: [...createAccountForm.serviceRegions, regionSearchTerm.trim()]
+                              });
+                              setRegionSearchTerm("");
+                            }
+                          }}
+                          data-testid="button-add-region"
+                        >
+                          <Search size={20} style={{ color: '#FFFFFF' }} />
+                        </button>
+                      </div>
+                      {/* Selected regions */}
+                      {createAccountForm.serviceRegions.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {createAccountForm.serviceRegions.map((region, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-2 px-3 py-1.5"
+                              style={{
+                                background: '#E3F2FD',
+                                borderRadius: '6px',
+                              }}
+                              data-testid={`tag-region-${index}`}
+                            >
+                              <span style={{
+                                fontFamily: 'Pretendard',
+                                fontSize: '13px',
+                                fontWeight: 400,
+                                color: '#008FED',
+                              }}>
+                                {region}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCreateAccountForm({
+                                    ...createAccountForm,
+                                    serviceRegions: createAccountForm.serviceRegions.filter((_, i) => i !== index)
+                                  });
+                                }}
+                                data-testid={`button-remove-region-${index}`}
+                              >
+                                <X size={14} style={{ color: '#008FED' }} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 협력사 정보: Row 5 - 첨부파일 */}
+                    <div style={{ width: '100%' }}>
+                      <label className="block mb-2" style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}>
+                        첨부파일
+                      </label>
+                      <div
+                        className="flex flex-col items-center justify-center"
+                        style={{
+                          width: '100%',
+                          height: '120px',
+                          background: '#F8FCFF',
+                          border: '2px dashed rgba(0, 143, 237, 0.3)',
+                          borderRadius: '8px',
+                        }}
+                        data-testid="file-upload-area"
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div
+                            className="flex items-center justify-center"
+                            style={{
+                              width: '48px',
+                              height: '48px',
+                              background: 'rgba(0, 143, 237, 0.1)',
+                              borderRadius: '50%',
+                            }}
+                          >
+                            <Upload size={24} style={{ color: '#008FED' }} />
+                          </div>
+                          <span style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '14px',
+                            fontWeight: 400,
+                            color: '#686A6E',
+                          }}>
+                            파일 또는 이미지를 이곳에 올려주세요
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </>
@@ -2527,13 +2620,13 @@ export default function AdminSettings() {
                     phone: "",
                     office: "",
                     address: "",
-                    language: "",
-                    salaryGrade: "",
-                    contractNumber: "",
+                    bankName: "",
+                    accountNumber: "",
                     accountHolder: "",
-                    availableHours: "",
-                    serviceRegion: "",
+                    serviceRegions: [] as string[],
+                    attachments: [] as string[],
                   });
+                  setRegionSearchTerm("");
                 }}
                 data-testid="button-reset-form"
               >
@@ -3016,13 +3109,13 @@ export default function AdminSettings() {
                         phone: "",
                         office: "",
                         address: "",
-                        language: "",
-                        salaryGrade: "",
-                        contractNumber: "",
+                        bankName: "",
+                        accountNumber: "",
                         accountHolder: "",
-                        availableHours: "",
-                        serviceRegion: "",
+                        serviceRegions: [] as string[],
+                        attachments: [] as string[],
                       });
+                      setRegionSearchTerm("");
                     } catch (error: any) {
                       console.error("Failed to create account:", error);
                       
@@ -3187,13 +3280,13 @@ export default function AdminSettings() {
                       phone: "",
                       office: "",
                       address: "",
-                      language: "",
-                      salaryGrade: "",
-                      contractNumber: "",
+                      bankName: "",
+                      accountNumber: "",
                       accountHolder: "",
-                      availableHours: "",
-                      serviceRegion: "",
+                      serviceRegions: [] as string[],
+                      attachments: [] as string[],
                     });
+                    setRegionSearchTerm("");
                   }}
                   data-testid="button-cancel-confirm-exit"
                 >

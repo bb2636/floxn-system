@@ -17,12 +17,11 @@ export const users = pgTable("users", {
   office: text("office"),
   address: text("address"),
   // Partner-specific fields
-  language: text("language"),
-  salaryGrade: text("salary_grade"),
-  contractNumber: text("contract_number"),
+  bankName: text("bank_name"),
+  accountNumber: text("account_number"),
   accountHolder: text("account_holder"),
-  availableHours: text("available_hours"),
-  serviceRegion: text("service_region"),
+  serviceRegions: text("service_regions").array(),
+  attachments: text("attachments").array(),
   status: text("status").notNull().default("active"), // "active" | "deleted"
   createdAt: text("created_at").notNull(),
 });
@@ -65,12 +64,11 @@ export const createAccountSchema = z.object({
   office: z.string().optional(),
   address: z.string().optional(),
   // Partner-specific fields
-  language: z.string().optional(),
-  salaryGrade: z.string().optional(),
-  contractNumber: z.string().optional(),
+  bankName: z.string().optional(),
+  accountNumber: z.string().optional(),
   accountHolder: z.string().optional(),
-  availableHours: z.string().optional(),
-  serviceRegion: z.string().optional(),
+  serviceRegions: z.array(z.string()).optional(),
+  attachments: z.array(z.string()).optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
