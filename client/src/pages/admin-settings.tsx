@@ -2290,9 +2290,9 @@ export default function AdminSettings() {
             className="fixed z-50 bg-white flex flex-col"
             style={{
               width: '747px',
-              height: '516px',
+              height: '440px',
               left: 'calc(50% - 747px/2 + 0.5px)',
-              top: 'calc(50% - 516px/2 + 0.5px)',
+              top: 'calc(50% - 440px/2 + 0.5px)',
               boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
               borderRadius: '12px',
               gap: '32px',
@@ -2304,7 +2304,7 @@ export default function AdminSettings() {
               className="flex flex-col items-center"
               style={{
                 width: '747px',
-                height: '428px',
+                height: '320px',
                 gap: '16px',
               }}
             >
@@ -2324,7 +2324,7 @@ export default function AdminSettings() {
                   letterSpacing: '-0.02em',
                   color: '#0C0C0C',
                 }}>
-                  계정 생성 완료
+                  비밀번호 생성
                 </h2>
               </div>
 
@@ -2333,8 +2333,8 @@ export default function AdminSettings() {
                 className="flex flex-col"
                 style={{
                   width: '707px',
-                  height: '352px',
-                  gap: '24px',
+                  height: '244px',
+                  gap: '20px',
                 }}
               >
                 {/* Profile Card Section */}
