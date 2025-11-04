@@ -12,6 +12,11 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("홈");
+  const [favorites, setFavorites] = useState([
+    { name: "홈", icon: <Home className="w-4 h-4" /> },
+    { name: "종합진행관리", icon: <Star className="w-4 h-4" /> },
+    { name: "관리자 설정", icon: <Star className="w-4 h-4" /> },
+  ]);
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -75,11 +80,13 @@ export default function Dashboard() {
     { title: "서류 양식 요청", status: "답변완료" },
   ];
 
-  const favorites = [
-    { name: "홈", icon: <Home className="w-4 h-4" /> },
-    { name: "종합진행관리", icon: <Star className="w-4 h-4" /> },
-    { name: "관리자 설정", icon: <Star className="w-4 h-4" /> },
-  ];
+  const handleRemoveFavorite = (favoriteName: string) => {
+    setFavorites(favorites.filter(fav => fav.name !== favoriteName));
+    toast({
+      title: "즐겨찾기 해제",
+      description: `"${favoriteName}"이(가) 즐겨찾기에서 제거되었습니다.`,
+    });
+  };
 
   return (
     <div className="relative" style={{ height: '1147px', background: '#E7EDFE' }}>
@@ -538,7 +545,13 @@ export default function Dashboard() {
                   >
                     {item.name}
                   </span>
-                  <Star className="w-[18px] h-[18px] fill-[#008FED] text-[#008FED]" />
+                  <button
+                    onClick={() => handleRemoveFavorite(item.name)}
+                    className="cursor-pointer transition-opacity hover:opacity-70"
+                    data-testid={`favorite-star-${item.name}`}
+                  >
+                    <Star className="w-[18px] h-[18px] fill-[#008FED] text-[#008FED]" />
+                  </button>
                 </div>
               ))}
             </div>
