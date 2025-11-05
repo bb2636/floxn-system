@@ -298,7 +298,7 @@ export default function Dashboard() {
                   color: 'rgba(0, 143, 237, 0.8)',
                 }}
               >
-                {user.role}, {user.position}
+                {user.company}({user.role}), {user.position}
               </span>
             </div>
             
