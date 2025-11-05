@@ -71,6 +71,30 @@ export const createAccountSchema = z.object({
   attachments: z.array(z.string()).optional(),
 });
 
+// Claims table for insurance accident management
+export const claims = pgTable("claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  claimNumber: text("claim_number").notNull().unique(),
+  assignedTo: text("assigned_to").notNull(), // username of assigned user
+  company: text("company").notNull(), // company name
+  status: text("status").notNull().default("접수 대기"), // "접수 대기" | "조사중" | "심사중" | "완료"
+  accidentDate: text("accident_date").notNull(),
+  claimAmount: text("claim_amount"), // stored as text to handle large numbers
+  settlementAmount: text("settlement_amount"),
+  insuranceType: text("insurance_type"), // "보험사 미정산" | "협력사 미정산" etc
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const insertClaimSchema = createInsertSchema(claims).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertClaim = z.infer<typeof insertClaimSchema>;
+export type Claim = typeof claims.$inferSelect;
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type LoginInput = z.infer<typeof loginSchema>;

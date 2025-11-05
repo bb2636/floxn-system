@@ -21,6 +21,20 @@ export default function Dashboard() {
     queryKey: ["/api/user"],
   });
 
+  const { data: stats } = useQuery<{
+    totalReception: number;
+    totalPending: number;
+    insuranceUnsettled: { count: number; amount: string };
+    partnerUnsettled: { count: number; amount: string };
+    receptionWaiting: number;
+    investigating: number;
+    reviewing: number;
+    completed: number;
+  }>({
+    queryKey: ["/api/dashboard/stats"],
+    enabled: !!user,
+  });
+
   const logoutMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest("POST", "/api/logout", {});
@@ -407,7 +421,7 @@ export default function Dashboard() {
                       color: 'rgba(12, 12, 12, 0.9)',
                     }}
                   >
-                    167건
+                    {stats?.totalReception || 0}건
                   </span>
                 </div>
                 <div 
@@ -423,7 +437,7 @@ export default function Dashboard() {
                       color: '#008FED',
                     }}
                   >
-                    상승
+                    접수건
                   </span>
                   <TrendingUp className="w-4 h-4" style={{ color: '#0C0C0C' }} />
                 </div>
@@ -473,7 +487,7 @@ export default function Dashboard() {
                       color: 'rgba(12, 12, 12, 0.9)',
                     }}
                   >
-                    167건
+                    {stats?.totalPending || 0}건
                   </span>
                 </div>
                 <div 
@@ -489,7 +503,7 @@ export default function Dashboard() {
                       color: '#D02B20',
                     }}
                   >
-                    감소
+                    미결건
                   </span>
                   <TrendingDown className="w-4 h-4" style={{ color: '#0C0C0C' }} />
                 </div>
@@ -526,7 +540,7 @@ export default function Dashboard() {
                         color: 'rgba(12, 12, 12, 0.9)',
                       }}
                     >
-                      89
+                      {stats?.insuranceUnsettled?.count || 0}
                     </span>
                     <span 
                       style={{
@@ -550,7 +564,7 @@ export default function Dashboard() {
                       color: 'rgba(12, 12, 12, 0.7)',
                     }}
                   >
-                    총 1,234,567,890 원
+                    총 {parseInt(stats?.insuranceUnsettled?.amount || "0").toLocaleString()} 원
                   </div>
                 </div>
                 <div 
@@ -596,7 +610,7 @@ export default function Dashboard() {
                         color: 'rgba(12, 12, 12, 0.9)',
                       }}
                     >
-                      56
+                      {stats?.partnerUnsettled?.count || 0}
                     </span>
                     <span 
                       style={{
@@ -620,7 +634,7 @@ export default function Dashboard() {
                       color: 'rgba(12, 12, 12, 0.7)',
                     }}
                   >
-                    총 987,654,321 원
+                    총 {parseInt(stats?.partnerUnsettled?.amount || "0").toLocaleString()} 원
                   </div>
                 </div>
                 <div 
@@ -702,7 +716,7 @@ export default function Dashboard() {
                         color: 'rgba(12, 12, 12, 0.9)',
                       }}
                     >
-                      12
+                      {stats?.receptionWaiting || 0}
                     </span>
                     <span 
                       style={{
@@ -761,7 +775,7 @@ export default function Dashboard() {
                         color: 'rgba(12, 12, 12, 0.9)',
                       }}
                     >
-                      45
+                      {stats?.investigating || 0}
                     </span>
                     <span 
                       style={{
@@ -820,7 +834,7 @@ export default function Dashboard() {
                         color: 'rgba(12, 12, 12, 0.9)',
                       }}
                     >
-                      78
+                      {stats?.reviewing || 0}
                     </span>
                     <span 
                       style={{
@@ -879,7 +893,7 @@ export default function Dashboard() {
                         color: 'rgba(12, 12, 12, 0.9)',
                       }}
                     >
-                      32
+                      {stats?.completed || 0}
                     </span>
                     <span 
                       style={{
