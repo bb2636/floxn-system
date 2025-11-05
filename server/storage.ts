@@ -1,6 +1,8 @@
-import { type User, type InsertUser } from "@shared/schema";
+import { type User, type InsertUser, users } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
 
@@ -277,4 +279,227 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DbStorage implements IStorage {
+  constructor() {
+    this.initDatabase();
+  }
+
+  private async initDatabase() {
+    try {
+      // Check if we have any users
+      const existingUsers = await db.select().from(users);
+      
+      // Only seed if database is empty
+      if (existingUsers.length === 0) {
+        await this.seedTestUsers();
+      }
+    } catch (error) {
+      console.error("Database initialization error:", error);
+    }
+  }
+
+  private async seedTestUsers() {
+    const hashedPassword = await bcrypt.hash("1234", SALT_ROUNDS);
+    const currentDate = getKSTDate();
+    
+    const testUsers = [
+      {
+        username: "xblock01",
+        password: hashedPassword,
+        role: "관리자",
+        name: "김블락",
+        company: "플록슨",
+        department: "개발팀",
+        position: "팀장",
+        email: "xblock@floxn.com",
+        phone: "010-1234-5678",
+        office: "02-1234-5678",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "chulsu01",
+        password: hashedPassword,
+        role: "사원",
+        name: "이철수",
+        company: "플록슨",
+        department: "영업팀",
+        position: "대리",
+        email: "chulsu@floxn.com",
+        phone: "010-2345-6789",
+        office: "02-2345-6789",
+        address: "서울 서초구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "park01",
+        password: hashedPassword,
+        role: "관리자",
+        name: "박영희",
+        company: "플록슨",
+        department: "기획팀",
+        position: "부장",
+        email: "park@floxn.com",
+        phone: "010-3456-7890",
+        office: "02-3456-7890",
+        address: "서울 송파구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "jung01",
+        password: hashedPassword,
+        role: "사원",
+        name: "정민수",
+        company: "플록슨",
+        department: "개발팀",
+        position: "사원",
+        email: "jung@floxn.com",
+        phone: "010-4567-8901",
+        office: "02-4567-8901",
+        address: "경기 성남시",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "choi01",
+        password: hashedPassword,
+        role: "사원",
+        name: "최지은",
+        company: "플록슨",
+        department: "마케팅팀",
+        position: "주임",
+        email: "choi@floxn.com",
+        phone: "010-5678-9012",
+        office: "02-5678-9012",
+        address: "서울 마포구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "kang01",
+        password: hashedPassword,
+        role: "사원",
+        name: "강동원",
+        company: "플록슨",
+        department: "총무팀",
+        position: "과장",
+        email: "kang@floxn.com",
+        phone: "010-6789-0123",
+        office: "02-6789-0123",
+        address: "서울 용산구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "han01",
+        password: hashedPassword,
+        role: "사원",
+        name: "한소희",
+        company: "플록슨",
+        department: "인사팀",
+        position: "차장",
+        email: "han@floxn.com",
+        phone: "010-7890-1234",
+        office: "02-7890-1234",
+        address: "서울 양천구",
+        status: "active",
+        createdAt: currentDate,
+      },
+    ];
+
+    await db.insert(users).values(testUsers);
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.id, id));
+    return result[0];
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    // Return all active users (not soft-deleted)
+    const result = await db.select().from(users).where(eq(users.status, "active"));
+    return result;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const hashedPassword = await bcrypt.hash(insertUser.password, SALT_ROUNDS);
+    const createdAt = getKSTDate();
+    
+    const newUser = {
+      username: insertUser.username,
+      password: hashedPassword,
+      role: insertUser.role || "사원",
+      name: insertUser.name,
+      company: insertUser.company,
+      department: insertUser.department || null,
+      position: insertUser.position || null,
+      email: insertUser.email || null,
+      phone: insertUser.phone || null,
+      office: insertUser.office || null,
+      address: insertUser.address || null,
+      bankName: insertUser.bankName || null,
+      accountNumber: insertUser.accountNumber || null,
+      accountHolder: insertUser.accountHolder || null,
+      serviceRegions: insertUser.serviceRegions || null,
+      attachments: insertUser.attachments || null,
+      status: insertUser.status || "active",
+      createdAt,
+    };
+
+    const result = await db.insert(users).values(newUser).returning();
+    return result[0];
+  }
+
+  async verifyPassword(username: string, password: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
+    if (!user) {
+      return null;
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+    return isValid ? user : null;
+  }
+
+  async updatePassword(username: string, newPassword: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
+    if (!user) {
+      return null;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    
+    const result = await db
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.username, username))
+      .returning();
+    
+    return result[0] || null;
+  }
+
+  async deleteAccount(username: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
+    if (!user) {
+      return null;
+    }
+
+    // Soft delete: update status to "deleted"
+    const result = await db
+      .update(users)
+      .set({ status: "deleted" })
+      .where(eq(users.username, username))
+      .returning();
+    
+    return result[0] || null;
+  }
+}
+
+export const storage = new DbStorage();

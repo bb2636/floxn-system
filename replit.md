@@ -49,7 +49,7 @@ The system is a full-stack web application with a React-based frontend and an Ex
 ### System Design Choices
 - **Frontend**: React with TypeScript, Wouter for routing, TanStack Query for data fetching, React Hook Form with Zod for form validation, Shadcn UI and Tailwind CSS for component styling, and Lucide React for icons.
 - **Backend**: Express.js with bcrypt for password hashing, express-session for session management, and memorystore as an in-memory session store. Zod is used for API validation.
-- **Database**: Currently uses an in-memory storage (MemStorage) with future plans for PostgreSQL integration in production.
+- **Database**: PostgreSQL (Neon-backed) for persistent data storage. Uses Drizzle ORM for database operations.
 
 ## External Dependencies
 
@@ -70,6 +70,7 @@ The system is a full-stack web application with a React-based frontend and an Ex
     - memorystore (in-memory session store)
     - Zod (API validation)
 - **Database**:
-    - In-memory storage (MemStorage) - intended for development/testing, with PostgreSQL as a planned production replacement.
+    - PostgreSQL (Neon-backed) with Drizzle ORM for persistent data storage
+    - Automatic table schema management via `npm run db:push`
 - **Development Tools**:
     - Vite (development server)
