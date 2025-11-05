@@ -5,7 +5,7 @@ import { User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Star, Calendar, Plus, AlertCircle, ChevronDown, TrendingUp, TrendingDown } from "lucide-react";
-import logoIcon from "@assets/Frame 2_1762217940686.png";
+import logoIcon from "@assets/Frame_2_1762217925411.png";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
