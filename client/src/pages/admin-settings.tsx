@@ -879,7 +879,7 @@ export default function AdminSettings() {
             </div>
 
             {/* Content Sections */}
-            <div className="flex flex-col px-5 mt-8">
+            <div className="flex flex-col px-5 mt-8 pb-28">
               {/* Basic Info Section */}
               <div className="flex flex-col pb-7" style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.1)' }}>
                 <div className="px-4 py-2.5">
