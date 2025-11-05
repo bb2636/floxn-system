@@ -10,6 +10,7 @@ import logoIcon from "@assets/Frame 2_1762217940686.png";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
+  const [activeTab, setActiveTab] = useState<'reception' | 'pending' | 'insurance' | 'partner'>('reception');
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("홈");
   const [favorites, setFavorites] = useState([
@@ -642,6 +643,368 @@ export default function Dashboard() {
                   }}
                 >
                   <Handshake style={{ width: '26px', height: '26px', color: '#008FED' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress Summary Section */}
+          <div className="flex flex-col gap-6">
+            {/* Section Header */}
+            <div 
+              className="flex items-center justify-between"
+              style={{ padding: '24px 0' }}
+            >
+              <h2
+                style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '20px',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.02em',
+                  color: '#0C0C0C',
+                }}
+              >
+                진행건 요약
+              </h2>
+              <button 
+                className="flex items-center justify-between"
+                style={{
+                  width: '128px',
+                  height: '44px',
+                  padding: '10px 8px',
+                  gap: '8px',
+                  background: '#FFFFFF',
+                  border: '1px solid rgba(12, 12, 12, 0.3)',
+                  borderRadius: '8px',
+                }}
+                data-testid="button-progress-period-selector"
+              >
+                <div className="flex items-center gap-2">
+                  <Calendar 
+                    style={{ 
+                      width: '22px', 
+                      height: '22px', 
+                      color: '#008FED' 
+                    }} 
+                  />
+                  <span 
+                    style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.02em',
+                      color: 'rgba(12, 12, 12, 0.9)',
+                    }}
+                  >
+                    이번 달
+                  </span>
+                </div>
+                <ChevronDown 
+                  style={{ 
+                    width: '24px', 
+                    height: '24px', 
+                    color: 'rgba(12, 12, 12, 0.6)' 
+                  }} 
+                />
+              </button>
+            </div>
+
+            {/* Summary Card */}
+            <div
+              style={{
+                width: '861px',
+                background: '#FDFDFD',
+                boxShadow: '0px 0px 20px #DBE9F5',
+                borderRadius: '12px',
+              }}
+              data-testid="card-progress-summary"
+            >
+              {/* Tabs */}
+              <div
+                className="flex flex-col"
+                style={{
+                  padding: '16px 20px',
+                  gap: '10px',
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setActiveTab('reception')}
+                    className="flex items-center justify-center"
+                    style={{
+                      padding: '12px 16px',
+                      background: activeTab === 'reception' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
+                      boxShadow: activeTab === 'reception' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
+                      backdropFilter: activeTab === 'reception' ? 'none' : 'blur(7px)',
+                      borderRadius: '6px',
+                    }}
+                    data-testid="tab-reception"
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: activeTab === 'reception' ? 600 : 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: activeTab === 'reception' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
+                      }}
+                    >
+                      접수
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('pending')}
+                    className="flex items-center justify-center"
+                    style={{
+                      padding: '12px 16px',
+                      background: activeTab === 'pending' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
+                      boxShadow: activeTab === 'pending' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
+                      backdropFilter: activeTab === 'pending' ? 'none' : 'blur(7px)',
+                      borderRadius: '6px',
+                    }}
+                    data-testid="tab-pending"
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: activeTab === 'pending' ? 600 : 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: activeTab === 'pending' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
+                      }}
+                    >
+                      미결
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('insurance')}
+                    className="flex items-center justify-center"
+                    style={{
+                      padding: '12px 16px',
+                      background: activeTab === 'insurance' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
+                      boxShadow: activeTab === 'insurance' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
+                      backdropFilter: activeTab === 'insurance' ? 'none' : 'blur(7px)',
+                      borderRadius: '6px',
+                    }}
+                    data-testid="tab-insurance"
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: activeTab === 'insurance' ? 600 : 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: activeTab === 'insurance' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
+                      }}
+                    >
+                      보험사 미정산
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('partner')}
+                    className="flex items-center justify-center"
+                    style={{
+                      padding: '12px 16px',
+                      background: activeTab === 'partner' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
+                      boxShadow: activeTab === 'partner' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
+                      backdropFilter: activeTab === 'partner' ? 'none' : 'blur(7px)',
+                      borderRadius: '6px',
+                    }}
+                    data-testid="tab-partner"
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: activeTab === 'partner' ? 600 : 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: activeTab === 'partner' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
+                      }}
+                    >
+                      협력사 미정산
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div
+                className="flex flex-col"
+                style={{
+                  padding: '0 20px',
+                  gap: '17px',
+                  paddingBottom: '20px',
+                }}
+              >
+                {/* Table Header */}
+                <div
+                  className="flex items-center"
+                  style={{
+                    background: 'rgba(12, 12, 12, 0.04)',
+                    borderRadius: '8px',
+                    height: '39px',
+                  }}
+                  data-testid="table-header"
+                >
+                  <div
+                    className="flex items-center justify-center"
+                    style={{ width: '68px', padding: '0 8px' }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '15px',
+                        fontWeight: 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.6)',
+                      }}
+                    >
+                      프로필
+                    </span>
+                  </div>
+                  <div
+                    className="flex items-center"
+                    style={{ width: '165px', padding: '0 8px' }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '15px',
+                        fontWeight: 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.6)',
+                      }}
+                    >
+                      성함
+                    </span>
+                  </div>
+                  <div
+                    className="flex items-center"
+                    style={{ width: '164px', padding: '0 8px' }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '15px',
+                        fontWeight: 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.6)',
+                      }}
+                    >
+                      직책
+                    </span>
+                  </div>
+                  <div
+                    className="flex items-center flex-1"
+                    style={{ padding: '0 8px' }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '15px',
+                        fontWeight: 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.6)',
+                      }}
+                    >
+                      건 수
+                    </span>
+                  </div>
+                </div>
+
+                {/* Table Body */}
+                <div className="flex flex-col gap-4">
+                  {[
+                    { name: '김블락', position: '사원', count: 30 },
+                    { name: '이블락', position: '주임', count: 25 },
+                    { name: '박블락', position: '대리', count: 28 },
+                    { name: '최블락', position: '과장', count: 22 },
+                    { name: '정블락', position: '차장', count: 27 },
+                    { name: '강블락', position: '부장', count: 24 },
+                    { name: '조블락', position: '사원', count: 21 },
+                  ].map((item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center"
+                      style={{ height: '39px' }}
+                      data-testid={`table-row-${index}`}
+                    >
+                      <div
+                        className="flex items-center justify-center"
+                        style={{ width: '68px', padding: '0 8px' }}
+                      >
+                        <div
+                          style={{
+                            width: '39px',
+                            height: '39px',
+                            background: 'rgba(0, 143, 237, 0.2)',
+                            borderRadius: '50px',
+                          }}
+                        />
+                      </div>
+                      <div
+                        className="flex items-center"
+                        style={{ width: '165px', padding: '0 8px' }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
+                            fontWeight: 500,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                        >
+                          {item.name}
+                        </span>
+                      </div>
+                      <div
+                        className="flex items-center"
+                        style={{ width: '164px', padding: '0 8px' }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
+                            fontWeight: 500,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                        >
+                          {item.position}
+                        </span>
+                      </div>
+                      <div
+                        className="flex items-center flex-1"
+                        style={{ padding: '0 8px' }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
+                            fontWeight: 500,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                        >
+                          {item.count}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
