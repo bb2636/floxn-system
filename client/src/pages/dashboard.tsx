@@ -5,7 +5,7 @@ import { User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown } from "lucide-react";
+import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 
 export default function Dashboard() {
@@ -226,24 +226,48 @@ export default function Dashboard() {
             >
               현황 요약
             </h1>
-            <div 
-              className="flex items-center gap-2 px-2 py-2 bg-white rounded-lg"
+            <button 
+              className="flex items-center justify-between"
               style={{
+                width: '128px',
+                height: '44px',
+                padding: '10px 8px',
+                gap: '8px',
+                background: '#FFFFFF',
                 border: '1px solid rgba(12, 12, 12, 0.3)',
+                borderRadius: '8px',
               }}
+              data-testid="button-period-selector"
             >
-              <span 
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 500,
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
-                }}
-              >
-                이번 달
-              </span>
-            </div>
+              <div className="flex items-center gap-2">
+                <Calendar 
+                  style={{ 
+                    width: '22px', 
+                    height: '22px', 
+                    color: '#008FED' 
+                  }} 
+                />
+                <span 
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.02em',
+                    color: 'rgba(12, 12, 12, 0.9)',
+                  }}
+                >
+                  이번 달
+                </span>
+              </div>
+              <ChevronDown 
+                style={{ 
+                  width: '24px', 
+                  height: '24px', 
+                  color: 'rgba(12, 12, 12, 0.6)' 
+                }} 
+              />
+            </button>
           </div>
 
           {/* Stats Cards */}
