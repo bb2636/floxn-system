@@ -768,11 +768,10 @@ export default function AdminSettings() {
 
           {/* Modal Panel */}
           <div 
-            className="fixed right-0 top-0 z-50 bg-white"
+            className="fixed right-0 top-0 z-50 bg-white flex flex-col"
             style={{
               width: '609px',
               height: '100vh',
-              overflowY: 'auto',
             }}
             data-testid="modal-account-detail"
           >
@@ -878,8 +877,8 @@ export default function AdminSettings() {
               </div>
             </div>
 
-            {/* Content Sections */}
-            <div className="flex flex-col px-5 mt-8 pb-28">
+            {/* Content Sections - Scrollable */}
+            <div className="flex flex-col px-5 mt-8 flex-1 overflow-y-auto">
               {/* Basic Info Section */}
               <div className="flex flex-col pb-7" style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.1)' }}>
                 <div className="px-4 py-2.5">
@@ -1243,12 +1242,14 @@ export default function AdminSettings() {
               </div>
             </div>
 
-            {/* Bottom Buttons */}
+            {/* Bottom Buttons - Fixed at bottom */}
             <div 
-              className="absolute bottom-0 left-0 right-0 flex gap-5 px-8"
+              className="flex gap-5 px-8 bg-white"
               style={{
-                height: '64px',
+                height: '84px',
                 alignItems: 'center',
+                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
+                flexShrink: 0,
               }}
             >
               <button
