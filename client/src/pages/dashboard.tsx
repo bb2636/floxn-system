@@ -418,10 +418,16 @@ export default function Dashboard() {
                   <ChevronDown className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: 'rgba(12, 12, 12, 0.6)' }} />
                 </div>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end" side="bottom" avoidCollisions={false} sideOffset={8}>
-                <div className="p-4 space-y-4">
+              <PopoverContent 
+                className="w-auto p-0 max-h-[90vh] overflow-auto" 
+                align="end" 
+                side="bottom" 
+                sideOffset={8}
+                collisionPadding={16}
+              >
+                <div className="p-3 lg:p-4 space-y-3 lg:space-y-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.9)' }}>
+                    <label className="text-xs lg:text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.9)' }}>
                       시작일
                     </label>
                     <Calendar
@@ -433,12 +439,12 @@ export default function Dashboard() {
                         }
                       }}
                       locale={ko}
-                      className="rounded-md border"
+                      className="rounded-md border scale-90 lg:scale-100 origin-top"
                       data-testid="calendar-start-date"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.9)' }}>
+                    <label className="text-xs lg:text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.9)' }}>
                       종료일
                     </label>
                     <Calendar
@@ -451,7 +457,7 @@ export default function Dashboard() {
                       }}
                       disabled={(date) => tempDateRange.from ? date < tempDateRange.from : false}
                       locale={ko}
-                      className="rounded-md border"
+                      className="rounded-md border scale-90 lg:scale-100 origin-top"
                       data-testid="calendar-end-date"
                     />
                   </div>
