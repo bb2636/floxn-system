@@ -4,13 +4,8 @@ import { useLocation } from "wouter";
 import { User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Star, Calendar as CalendarIcon, Plus, AlertCircle, ChevronDown, TrendingUp, TrendingDown } from "lucide-react";
+import { Star, Calendar, Plus, AlertCircle, ChevronDown, TrendingUp, TrendingDown } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
-import { format, startOfMonth, endOfMonth } from "date-fns";
-import { ko } from "date-fns/locale";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -21,17 +16,6 @@ export default function Dashboard() {
     { name: "종합진행관리", path: "/dashboard" },
     { name: "관리자 설정", path: "/admin-settings" },
   ]);
-
-  // 날짜 범위 상태 (기본값: 이번 달)
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
-  });
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [tempDateRange, setTempDateRange] = useState<{ from?: Date; to?: Date }>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
-  });
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -47,16 +31,7 @@ export default function Dashboard() {
     reviewing: number;
     completed: number;
   }>({
-    queryKey: ["/api/dashboard/stats", dateRange],
-    queryFn: async () => {
-      const params = new URLSearchParams({
-        startDate: format(dateRange.from, "yyyy-MM-dd"),
-        endDate: format(dateRange.to, "yyyy-MM-dd"),
-      });
-      const response = await fetch(`/api/dashboard/stats?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch stats");
-      return response.json();
-    },
+    queryKey: ["/api/dashboard/stats"],
     enabled: !!user,
   });
 
@@ -228,27 +203,42 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Logout Button */}
-        <button
-          onClick={() => logoutMutation.mutate()}
-          disabled={logoutMutation.isPending}
-          className="transition-colors"
-          style={{
-            padding: '10px 24px',
-            borderRadius: '10px',
-            fontSize: '16px',
-            fontWeight: 500,
-            lineHeight: '128%',
-            letterSpacing: '-0.02em',
-            color: 'rgba(12, 12, 12, 0.7)',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-          data-testid="button-logout"
-        >
-          로그아웃
-        </button>
+        {/* User Profile */}
+        <div className="flex items-center" style={{ gap: '12px', height: '32px' }}>
+          <div 
+            className="rounded-full"
+            style={{ 
+              width: '32px',
+              height: '32px',
+              background: 'rgba(0, 143, 237, 0.3)',
+            }}
+          />
+          <div className="flex items-center" style={{ gap: '8px' }}>
+            <span 
+              style={{
+                fontSize: '15px',
+                fontWeight: 600,
+                lineHeight: '128%',
+                letterSpacing: '-0.02em',
+                color: 'rgba(12, 12, 12, 0.7)',
+              }}
+              data-testid="user-name"
+            >
+              {user.name || user.username}
+            </span>
+            <span 
+              style={{
+                fontSize: '15px',
+                fontWeight: 500,
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                color: 'rgba(12, 12, 12, 0.4)',
+              }}
+            >
+              {user.role === "관리자" ? "관리자" : user.role}
+            </span>
+          </div>
+        </div>
       </header>
 
       {/* Mobile Header - visible only on mobile */}
@@ -266,26 +256,12 @@ export default function Dashboard() {
           className="h-6"
           data-testid="logo-mobile"
         />
-        <button
-          onClick={() => logoutMutation.mutate()}
-          disabled={logoutMutation.isPending}
-          className="transition-colors"
-          style={{
-            padding: '8px 16px',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: 500,
-            lineHeight: '128%',
-            letterSpacing: '-0.02em',
-            color: 'rgba(12, 12, 12, 0.7)',
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-          }}
-          data-testid="button-logout-mobile"
-        >
-          로그아웃
-        </button>
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-8 h-8 rounded-full"
+            style={{ background: 'rgba(0, 143, 237, 0.3)' }}
+          />
+        </div>
       </header>
 
       {/* Main Content */}
@@ -323,7 +299,7 @@ export default function Dashboard() {
                   color: 'rgba(0, 143, 237, 0.8)',
                 }}
               >
-                {user.company}({user.role}), {user.position}
+                관리자
               </span>
             </div>
             
@@ -392,113 +368,28 @@ export default function Dashboard() {
             >
               현황 요약
             </h1>
-            <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-              <PopoverTrigger asChild>
-                <div 
-                  className="flex items-center justify-between mt-3 lg:mt-0 px-3 lg:px-2 py-2 lg:py-2.5 bg-white border rounded-lg lg:rounded-lg cursor-pointer hover-elevate"
+            <div 
+              className="flex items-center justify-between mt-3 lg:mt-0 px-3 lg:px-2 py-2 lg:py-2.5 bg-white border rounded-lg lg:rounded-lg"
+              style={{
+                borderColor: 'rgba(12, 12, 12, 0.3)',
+                width: '100%',
+                maxWidth: '100%',
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <Calendar className="w-[18px] h-[18px] lg:w-[22px] lg:h-[22px]" style={{ color: '#008FED' }} />
+                <span 
+                  className="text-sm lg:text-base font-medium"
                   style={{
-                    borderColor: 'rgba(12, 12, 12, 0.3)',
-                    width: '100%',
-                    maxWidth: '100%',
+                    letterSpacing: '-0.02em',
+                    color: 'rgba(12, 12, 12, 0.8)',
                   }}
-                  data-testid="button-date-range"
                 >
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="w-[18px] h-[18px] lg:w-[22px] lg:h-[22px]" style={{ color: '#008FED' }} />
-                    <span 
-                      className="text-sm lg:text-base font-medium"
-                      style={{
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.8)',
-                      }}
-                    >
-                      {format(dateRange.from, "yyyy.MM.dd", { locale: ko })} - {format(dateRange.to, "yyyy.MM.dd", { locale: ko })}
-                    </span>
-                  </div>
-                  <ChevronDown className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: 'rgba(12, 12, 12, 0.6)' }} />
-                </div>
-              </PopoverTrigger>
-              <PopoverContent 
-                className="w-auto p-0 max-h-[90vh] overflow-auto" 
-                align="end" 
-                side="bottom" 
-                sideOffset={8}
-                collisionPadding={16}
-              >
-                <div className="p-3 lg:p-4 space-y-3 lg:space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-xs lg:text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.9)' }}>
-                      시작일
-                    </label>
-                    <Calendar
-                      mode="single"
-                      selected={tempDateRange.from}
-                      onSelect={(date) => {
-                        if (date) {
-                          setTempDateRange({ ...tempDateRange, from: date });
-                        }
-                      }}
-                      locale={ko}
-                      className="rounded-md border scale-90 lg:scale-100 origin-top"
-                      data-testid="calendar-start-date"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-xs lg:text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.9)' }}>
-                      종료일
-                    </label>
-                    <Calendar
-                      mode="single"
-                      selected={tempDateRange.to}
-                      onSelect={(date) => {
-                        if (date) {
-                          setTempDateRange({ ...tempDateRange, to: date });
-                        }
-                      }}
-                      disabled={(date) => tempDateRange.from ? date < tempDateRange.from : false}
-                      locale={ko}
-                      className="rounded-md border scale-90 lg:scale-100 origin-top"
-                      data-testid="calendar-end-date"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => {
-                        const now = new Date();
-                        const range = {
-                          from: startOfMonth(now),
-                          to: endOfMonth(now),
-                        };
-                        setTempDateRange(range);
-                        setDateRange(range);
-                        setIsDatePickerOpen(false);
-                      }}
-                      data-testid="button-this-month"
-                    >
-                      이번 달
-                    </Button>
-                    <Button
-                      className="flex-1"
-                      onClick={() => {
-                        if (tempDateRange.from && tempDateRange.to) {
-                          setDateRange({
-                            from: tempDateRange.from,
-                            to: tempDateRange.to,
-                          });
-                          setIsDatePickerOpen(false);
-                        }
-                      }}
-                      disabled={!tempDateRange.from || !tempDateRange.to}
-                      data-testid="button-apply-date"
-                    >
-                      적용
-                    </Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                  이번 달
+                </span>
+              </div>
+              <ChevronDown className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: 'rgba(12, 12, 12, 0.6)' }} />
+            </div>
           </div>
 
           {/* Stats Cards - Mobile: Column, Desktop: Row */}
