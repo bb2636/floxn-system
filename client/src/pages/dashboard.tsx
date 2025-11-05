@@ -418,7 +418,7 @@ export default function Dashboard() {
                   <ChevronDown className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: 'rgba(12, 12, 12, 0.6)' }} />
                 </div>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end" side="bottom">
+              <PopoverContent className="w-auto p-0" align="end" side="bottom" avoidCollisions={false} sideOffset={8}>
                 <div className="p-4 space-y-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.9)' }}>
