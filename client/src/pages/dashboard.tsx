@@ -203,42 +203,27 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* User Profile */}
-        <div className="flex items-center" style={{ gap: '12px', height: '32px' }}>
-          <div 
-            className="rounded-full"
-            style={{ 
-              width: '32px',
-              height: '32px',
-              background: 'rgba(0, 143, 237, 0.3)',
-            }}
-          />
-          <div className="flex items-center" style={{ gap: '8px' }}>
-            <span 
-              style={{
-                fontSize: '15px',
-                fontWeight: 600,
-                lineHeight: '128%',
-                letterSpacing: '-0.02em',
-                color: 'rgba(12, 12, 12, 0.7)',
-              }}
-              data-testid="user-name"
-            >
-              {user.name || user.username}
-            </span>
-            <span 
-              style={{
-                fontSize: '15px',
-                fontWeight: 500,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.4)',
-              }}
-            >
-              {user.role === "관리자" ? "관리자" : user.role}
-            </span>
-          </div>
-        </div>
+        {/* Logout Button */}
+        <button
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+          className="transition-colors"
+          style={{
+            padding: '10px 24px',
+            borderRadius: '10px',
+            fontSize: '16px',
+            fontWeight: 500,
+            lineHeight: '128%',
+            letterSpacing: '-0.02em',
+            color: 'rgba(12, 12, 12, 0.7)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+          data-testid="button-logout"
+        >
+          로그아웃
+        </button>
       </header>
 
       {/* Mobile Header - visible only on mobile */}
@@ -256,12 +241,26 @@ export default function Dashboard() {
           className="h-6"
           data-testid="logo-mobile"
         />
-        <div className="flex items-center gap-2">
-          <div 
-            className="w-8 h-8 rounded-full"
-            style={{ background: 'rgba(0, 143, 237, 0.3)' }}
-          />
-        </div>
+        <button
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+          className="transition-colors"
+          style={{
+            padding: '8px 16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: 500,
+            lineHeight: '128%',
+            letterSpacing: '-0.02em',
+            color: 'rgba(12, 12, 12, 0.7)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+          data-testid="button-logout-mobile"
+        >
+          로그아웃
+        </button>
       </header>
 
       {/* Main Content */}
