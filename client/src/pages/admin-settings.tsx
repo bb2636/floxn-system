@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X, ChevronDown, Upload } from "lucide-react";
+import { Search, X, ChevronDown, Upload, ChevronRight } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +13,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// 한국 행정구역 데이터
+const KOREA_REGIONS: Record<string, string[]> = {
+  "서울": ["강남구", "강동구", "강북구", "강서구", "관악구", "광진구", "구로구", "금천구", "노원구", "도봉구", "동대문구", "동작구", "마포구", "서대문구", "서초구", "성동구", "성북구", "송파구", "양천구", "영등포구", "용산구", "은평구", "종로구", "중구", "중랑구"],
+  "경기": ["고양시", "과천시", "광명시", "광주시", "구리시", "군포시", "김포시", "남양주시", "동두천시", "부천시", "성남시", "수원시", "시흥시", "안산시", "안성시", "안양시", "양주시", "오산시", "용인시", "의왕시", "의정부시", "이천시", "파주시", "평택시", "포천시", "하남시", "화성시", "가평군", "양평군", "여주군", "연천군"],
+  "인천": ["계양구", "남동구", "동구", "미추홀구", "부평구", "서구", "연수구", "중구", "강화군", "옹진군"],
+  "대전": ["대덕구", "동구", "서구", "유성구", "중구"],
+  "세종": ["세종시"],
+  "충남": ["계룡시", "공주시", "논산시", "당진시", "보령시", "서산시", "아산시", "천안시", "금산군", "부여군", "서천군", "예산군", "청양군", "태안군", "홍성군"],
+  "충북": ["제천시", "청주시", "충주시", "괴산군", "단양군", "보은군", "영동군", "옥천군", "음성군", "증평군", "진천군"],
+  "광주": ["광산구", "남구", "동구", "북구", "서구"],
+  "전남": ["광양시", "나주시", "목포시", "순천시", "여수시", "강진군", "고흥군", "곡성군", "구례군", "담양군", "무안군", "보성군", "신안군", "영광군", "영암군", "완도군", "장성군", "장흥군", "진도군", "함평군", "해남군", "화순군"],
+  "전북": ["군산시", "김제시", "남원시", "익산시", "전주시", "정읍시", "고창군", "무주군", "부안군", "순창군", "완주군", "임실군", "장수군", "진안군"],
+  "대구": ["남구", "달서구", "동구", "북구", "서구", "수성구", "중구", "달성군"],
+  "경북": ["경산시", "경주시", "구미시", "김천시", "문경시", "상주시", "안동시", "영주시", "영천시", "포항시", "고령군", "군위군", "봉화군", "성주군", "영덕군", "영양군", "예천군", "울릉군", "울진군", "의성군", "청도군", "청송군", "칠곡군"],
+  "부산": ["강서구", "금정구", "남구", "동구", "동래구", "부산진구", "북구", "사상구", "사하구", "서구", "수영구", "연제구", "영도구", "중구", "해운대구", "기장군"],
+  "울산": ["남구", "동구", "북구", "중구", "울주군"],
+  "경남": ["거제시", "김해시", "밀양시", "사천시", "양산시", "진주시", "창원시", "통영시", "거창군", "고성군", "남해군", "산청군", "의령군", "창녕군", "하동군", "함안군", "함양군", "합천군"],
+  "강원": ["강릉시", "동해시", "삼척시", "속초시", "원주시", "춘천시", "태백시", "고성군", "양구군", "양양군", "영월군", "인제군", "정선군", "철원군", "평창군", "홍천군", "화천군", "횡성군"],
+  "제주": ["서귀포시", "제주시"]
+};
 
 export default function AdminSettings() {
   const [, setLocation] = useLocation();
@@ -50,6 +71,9 @@ export default function AdminSettings() {
     attachments: [] as string[],
   });
   const [regionSearchTerm, setRegionSearchTerm] = useState("");
+  const [showRegionModal, setShowRegionModal] = useState(false);
+  const [selectedProvince, setSelectedProvince] = useState("서울");
+  const [tempSelectedRegions, setTempSelectedRegions] = useState<string[]>([]);
 
   // Check authentication
   const { data: user, isLoading: userLoading } = useQuery<User>({
@@ -2494,60 +2518,45 @@ export default function AdminSettings() {
                       }}>
                         출동가능지역선택
                       </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="지역 선택"
-                          value={regionSearchTerm}
-                          onChange={(e) => setRegionSearchTerm(e.target.value)}
-                          className="flex-1 px-4 py-3 outline-none"
-                          style={{
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
+                      <div 
+                        className="px-4 py-3 cursor-pointer flex flex-wrap gap-2 min-h-[46px]"
+                        style={{
+                          background: '#FDFDFD',
+                          border: '2px solid rgba(12, 12, 12, 0.08)',
+                          borderRadius: '8px',
+                        }}
+                        onClick={() => {
+                          setTempSelectedRegions([...createAccountForm.serviceRegions]);
+                          setShowRegionModal(true);
+                        }}
+                        data-testid="button-region-selector"
+                      >
+                        {createAccountForm.serviceRegions.length === 0 ? (
+                          <span style={{
                             fontFamily: 'Pretendard',
                             fontSize: '14px',
                             fontWeight: 400,
                             letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
-                          data-testid="input-region-search"
-                        />
-                        <button
-                          type="button"
-                          className="flex items-center justify-center"
-                          style={{
-                            width: '46px',
-                            height: '46px',
-                            background: '#008FED',
-                            borderRadius: '8px',
-                          }}
-                          onClick={() => {
-                            if (regionSearchTerm.trim() && !createAccountForm.serviceRegions.includes(regionSearchTerm.trim())) {
-                              setCreateAccountForm({
-                                ...createAccountForm,
-                                serviceRegions: [...createAccountForm.serviceRegions, regionSearchTerm.trim()]
-                              });
-                              setRegionSearchTerm("");
-                            }
-                          }}
-                          data-testid="button-add-region"
-                        >
-                          <Search size={20} style={{ color: '#FFFFFF' }} />
-                        </button>
-                      </div>
-                      {/* Selected regions */}
-                      {createAccountForm.serviceRegions.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {createAccountForm.serviceRegions.map((region, index) => (
+                            color: 'rgba(12, 12, 12, 0.4)',
+                          }}>
+                            지역 선택
+                          </span>
+                        ) : (
+                          createAccountForm.serviceRegions.map((region, idx) => (
                             <div
-                              key={index}
-                              className="flex items-center gap-2 px-3 py-1.5"
+                              key={idx}
+                              className="px-3 py-1"
                               style={{
                                 background: '#E3F2FD',
                                 borderRadius: '6px',
                               }}
-                              data-testid={`tag-region-${index}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setCreateAccountForm({
+                                  ...createAccountForm,
+                                  serviceRegions: createAccountForm.serviceRegions.filter((_, i) => i !== idx)
+                                });
+                              }}
                             >
                               <span style={{
                                 fontFamily: 'Pretendard',
@@ -2555,24 +2564,12 @@ export default function AdminSettings() {
                                 fontWeight: 400,
                                 color: '#008FED',
                               }}>
-                                {region}
+                                {region} ×
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCreateAccountForm({
-                                    ...createAccountForm,
-                                    serviceRegions: createAccountForm.serviceRegions.filter((_, i) => i !== index)
-                                  });
-                                }}
-                                data-testid={`button-remove-region-${index}`}
-                              >
-                                <X size={14} style={{ color: '#008FED' }} />
-                              </button>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          ))
+                        )}
+                      </div>
                     </div>
 
                     {/* 협력사 정보: Row 5 - 첨부파일 */}
@@ -3473,6 +3470,269 @@ export default function AdminSettings() {
                   </span>
                 </button>
               </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Region Selection Modal */}
+      {showRegionModal && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 flex items-center justify-center"
+            style={{
+              background: 'rgba(0, 0, 0, 0.28)',
+              zIndex: 10001,
+            }}
+            onClick={() => setShowRegionModal(false)}
+          />
+
+          {/* Modal */}
+          <div 
+            className="fixed flex flex-col"
+            style={{
+              width: '467px',
+              height: '690px',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: '#FFFFFF',
+              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
+              borderRadius: '12px',
+              zIndex: 10002,
+            }}
+            onClick={(e) => e.stopPropagation()}
+            data-testid="modal-region-selector"
+          >
+            {/* Header */}
+            <div 
+              className="flex flex-row justify-between items-center px-5 py-4"
+              style={{
+                height: '60px',
+              }}
+            >
+              <h2 style={{
+                fontFamily: 'Pretendard',
+                fontSize: '18px',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                color: '#0C0C0C',
+              }}>
+                출동가능지역 검색
+              </h2>
+              <button
+                className="flex items-center justify-center hover-elevate active-elevate-2"
+                style={{
+                  width: '24px',
+                  height: '24px',
+                }}
+                onClick={() => setShowRegionModal(false)}
+                data-testid="button-close-region-modal"
+              >
+                <X size={20} style={{ color: '#1C1B1F' }} />
+              </button>
+            </div>
+
+            {/* Tab Headers */}
+            <div 
+              className="flex flex-row mx-5 mt-4"
+              style={{
+                height: '39px',
+                background: '#F5F5F5',
+              }}
+            >
+              <div 
+                className="flex items-center px-3"
+                style={{
+                  width: '114px',
+                }}
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '15px',
+                  fontWeight: 500,
+                  letterSpacing: '-0.01em',
+                  color: '#686A6E',
+                }}>
+                  시/도
+                </span>
+              </div>
+              <div 
+                className="flex-1 flex items-center px-3"
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '15px',
+                  fontWeight: 500,
+                  letterSpacing: '-0.01em',
+                  color: '#686A6E',
+                }}>
+                  군/구
+                </span>
+              </div>
+            </div>
+
+            {/* Selection Area */}
+            <div 
+              className="flex flex-row mx-5 mt-0"
+              style={{
+                height: '342px',
+                paddingTop: '6px',
+              }}
+            >
+              {/* Province List */}
+              <div 
+                className="flex flex-col overflow-y-auto"
+                style={{
+                  width: '114px',
+                  borderRight: '1px solid rgba(12, 12, 12, 0.1)',
+                  paddingRight: '12px',
+                }}
+              >
+                {Object.keys(KOREA_REGIONS).map((province) => (
+                  <button
+                    key={province}
+                    className="flex flex-row justify-between items-center px-3 py-2.5"
+                    style={{
+                      height: '44px',
+                      background: selectedProvince === province ? 'rgba(0, 143, 237, 0.1)' : 'transparent',
+                    }}
+                    onClick={() => setSelectedProvince(province)}
+                    data-testid={`province-${province}`}
+                  >
+                    <span style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '15px',
+                      fontWeight: selectedProvince === province ? 600 : 500,
+                      letterSpacing: selectedProvince === province ? '-0.02em' : '-0.01em',
+                      color: selectedProvince === province ? '#008FED' : '#686A6E',
+                    }}>
+                      {province}
+                    </span>
+                    {selectedProvince === province && (
+                      <ChevronRight size={20} style={{ color: '#008FED' }} />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* District List */}
+              <div 
+                className="flex-1 flex flex-col overflow-y-auto px-3"
+              >
+                {KOREA_REGIONS[selectedProvince]?.map((district) => {
+                  const regionKey = `${selectedProvince} ${district}`;
+                  const isSelected = tempSelectedRegions.includes(regionKey);
+                  
+                  return (
+                    <button
+                      key={district}
+                      className="flex items-center px-3 py-2.5"
+                      style={{
+                        height: '44px',
+                        background: isSelected ? 'rgba(0, 143, 237, 0.1)' : 'transparent',
+                      }}
+                      onClick={() => {
+                        if (isSelected) {
+                          setTempSelectedRegions(tempSelectedRegions.filter(r => r !== regionKey));
+                        } else {
+                          setTempSelectedRegions([...tempSelectedRegions, regionKey]);
+                        }
+                      }}
+                      data-testid={`district-${district}`}
+                    >
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '15px',
+                        fontWeight: isSelected ? 600 : 500,
+                        letterSpacing: isSelected ? '-0.02em' : '-0.01em',
+                        color: isSelected ? '#008FED' : '#686A6E',
+                      }}>
+                        {district}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Selected Tags Area */}
+            <div 
+              className="flex flex-col mx-5 mt-4"
+              style={{
+                minHeight: '100px',
+                maxHeight: '180px',
+              }}
+            >
+              <div className="flex flex-wrap gap-2 overflow-y-auto">
+                {tempSelectedRegions.map((region, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center px-3 py-1.5 gap-1"
+                    style={{
+                      background: '#E3F2FD',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    <span style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '13px',
+                      fontWeight: 400,
+                      color: '#008FED',
+                    }}>
+                      {region}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setTempSelectedRegions(tempSelectedRegions.filter((_, i) => i !== idx));
+                      }}
+                      className="ml-1"
+                      style={{
+                        color: '#008FED',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer Button */}
+            <div 
+              className="flex justify-center items-center mx-5 mt-auto mb-5"
+              style={{
+                height: '48px',
+              }}
+            >
+              <button
+                className="w-full flex items-center justify-center"
+                style={{
+                  height: '48px',
+                  background: '#008FED',
+                  borderRadius: '6px',
+                }}
+                onClick={() => {
+                  setCreateAccountForm({
+                    ...createAccountForm,
+                    serviceRegions: tempSelectedRegions
+                  });
+                  setShowRegionModal(false);
+                }}
+                data-testid="button-region-confirm"
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  letterSpacing: '-0.02em',
+                  color: '#FDFDFD',
+                }}>
+                  완료
+                </span>
+              </button>
             </div>
           </div>
         </>
