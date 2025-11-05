@@ -421,28 +421,38 @@ export default function Dashboard() {
               <PopoverContent className="w-auto p-0" align="end">
                 <div className="p-4 space-y-4">
                   <div className="space-y-2">
-                    <div className="text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.8)' }}>
+                    <label className="text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.9)' }}>
                       시작일
-                    </div>
+                    </label>
                     <Calendar
                       mode="single"
                       selected={tempDateRange.from}
-                      onSelect={(date) => setTempDateRange({ ...tempDateRange, from: date })}
+                      onSelect={(date) => {
+                        if (date) {
+                          setTempDateRange({ ...tempDateRange, from: date });
+                        }
+                      }}
                       locale={ko}
                       className="rounded-md border"
+                      data-testid="calendar-start-date"
                     />
                   </div>
                   <div className="space-y-2">
-                    <div className="text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.8)' }}>
+                    <label className="text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.9)' }}>
                       종료일
-                    </div>
+                    </label>
                     <Calendar
                       mode="single"
                       selected={tempDateRange.to}
-                      onSelect={(date) => setTempDateRange({ ...tempDateRange, to: date })}
+                      onSelect={(date) => {
+                        if (date) {
+                          setTempDateRange({ ...tempDateRange, to: date });
+                        }
+                      }}
                       disabled={(date) => tempDateRange.from ? date < tempDateRange.from : false}
                       locale={ko}
                       className="rounded-md border"
+                      data-testid="calendar-end-date"
                     />
                   </div>
                   <div className="flex gap-2">

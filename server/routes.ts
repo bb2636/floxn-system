@@ -251,9 +251,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       }
 
-      // Extract date range from query parameters
-      const startDate = req.query.startDate as string | undefined;
-      const endDate = req.query.endDate as string | undefined;
+      // Validate query parameters
+      const dateRangeSchema = z.object({
+        startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "날짜 형식은 YYYY-MM-DD 여야 합니다").optional(),
+        endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "날짜 형식은 YYYY-MM-DD 여야 합니다").optional(),
+      }).refine((data) => {
+        // Both dates must be provided together or both must be absent
+        const hasBoth = data.startDate && data.endDate;
+        const hasNone = !data.startDate && !data.endDate;
+        return hasBoth || hasNone;
+      }, {
+        message: "시작일과 종료일을 모두 입력하거나 모두 비워두어야 합니다",
+      }).refine((data) => {
+        // If both dates exist, start must be before or equal to end
+        if (data.startDate && data.endDate) {
+          return data.startDate <= data.endDate;
+        }
+        return true;
+      }, {
+        message: "시작일은 종료일보다 이전이어야 합니다",
+      });
+
+      const validation = dateRangeSchema.safeParse(req.query);
+      if (!validation.success) {
+        const errorMessage = validation.error.errors[0]?.message || "잘못된 요청입니다";
+        return res.status(400).json({ error: errorMessage });
+      }
+
+      const { startDate, endDate } = validation.data;
 
       const stats = await storage.getDashboardStats(user, startDate, endDate);
       res.json(stats);
