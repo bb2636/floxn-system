@@ -251,7 +251,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
       }
 
-      const stats = await storage.getDashboardStats(user);
+      // Extract date range from query parameters
+      const startDate = req.query.startDate as string | undefined;
+      const endDate = req.query.endDate as string | undefined;
+
+      const stats = await storage.getDashboardStats(user, startDate, endDate);
       res.json(stats);
     } catch (error) {
       console.error("Dashboard stats error:", error);

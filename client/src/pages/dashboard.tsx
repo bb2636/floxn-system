@@ -4,8 +4,13 @@ import { useLocation } from "wouter";
 import { User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Star, Calendar, Plus, AlertCircle, ChevronDown, TrendingUp, TrendingDown } from "lucide-react";
+import { Star, Calendar as CalendarIcon, Plus, AlertCircle, ChevronDown, TrendingUp, TrendingDown } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
+import { format, startOfMonth, endOfMonth } from "date-fns";
+import { ko } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -16,6 +21,17 @@ export default function Dashboard() {
     { name: "종합진행관리", path: "/dashboard" },
     { name: "관리자 설정", path: "/admin-settings" },
   ]);
+
+  // 날짜 범위 상태 (기본값: 이번 달)
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [tempDateRange, setTempDateRange] = useState<{ from?: Date; to?: Date }>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -31,7 +47,16 @@ export default function Dashboard() {
     reviewing: number;
     completed: number;
   }>({
-    queryKey: ["/api/dashboard/stats"],
+    queryKey: ["/api/dashboard/stats", dateRange],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        startDate: format(dateRange.from, "yyyy-MM-dd"),
+        endDate: format(dateRange.to, "yyyy-MM-dd"),
+      });
+      const response = await fetch(`/api/dashboard/stats?${params}`);
+      if (!response.ok) throw new Error("Failed to fetch stats");
+      return response.json();
+    },
     enabled: !!user,
   });
 
@@ -367,28 +392,97 @@ export default function Dashboard() {
             >
               현황 요약
             </h1>
-            <div 
-              className="flex items-center justify-between mt-3 lg:mt-0 px-3 lg:px-2 py-2 lg:py-2.5 bg-white border rounded-lg lg:rounded-lg"
-              style={{
-                borderColor: 'rgba(12, 12, 12, 0.3)',
-                width: '100%',
-                maxWidth: '100%',
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <Calendar className="w-[18px] h-[18px] lg:w-[22px] lg:h-[22px]" style={{ color: '#008FED' }} />
-                <span 
-                  className="text-sm lg:text-base font-medium"
+            <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+              <PopoverTrigger asChild>
+                <div 
+                  className="flex items-center justify-between mt-3 lg:mt-0 px-3 lg:px-2 py-2 lg:py-2.5 bg-white border rounded-lg lg:rounded-lg cursor-pointer hover-elevate"
                   style={{
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.8)',
+                    borderColor: 'rgba(12, 12, 12, 0.3)',
+                    width: '100%',
+                    maxWidth: '100%',
                   }}
+                  data-testid="button-date-range"
                 >
-                  이번 달
-                </span>
-              </div>
-              <ChevronDown className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: 'rgba(12, 12, 12, 0.6)' }} />
-            </div>
+                  <div className="flex items-center gap-2">
+                    <CalendarIcon className="w-[18px] h-[18px] lg:w-[22px] lg:h-[22px]" style={{ color: '#008FED' }} />
+                    <span 
+                      className="text-sm lg:text-base font-medium"
+                      style={{
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.8)',
+                      }}
+                    >
+                      {format(dateRange.from, "yyyy.MM.dd", { locale: ko })} - {format(dateRange.to, "yyyy.MM.dd", { locale: ko })}
+                    </span>
+                  </div>
+                  <ChevronDown className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: 'rgba(12, 12, 12, 0.6)' }} />
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <div className="p-4 space-y-4">
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.8)' }}>
+                      시작일
+                    </div>
+                    <Calendar
+                      mode="single"
+                      selected={tempDateRange.from}
+                      onSelect={(date) => setTempDateRange({ ...tempDateRange, from: date })}
+                      locale={ko}
+                      className="rounded-md border"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium" style={{ color: 'rgba(12, 12, 12, 0.8)' }}>
+                      종료일
+                    </div>
+                    <Calendar
+                      mode="single"
+                      selected={tempDateRange.to}
+                      onSelect={(date) => setTempDateRange({ ...tempDateRange, to: date })}
+                      disabled={(date) => tempDateRange.from ? date < tempDateRange.from : false}
+                      locale={ko}
+                      className="rounded-md border"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        const now = new Date();
+                        const range = {
+                          from: startOfMonth(now),
+                          to: endOfMonth(now),
+                        };
+                        setTempDateRange(range);
+                        setDateRange(range);
+                        setIsDatePickerOpen(false);
+                      }}
+                      data-testid="button-this-month"
+                    >
+                      이번 달
+                    </Button>
+                    <Button
+                      className="flex-1"
+                      onClick={() => {
+                        if (tempDateRange.from && tempDateRange.to) {
+                          setDateRange({
+                            from: tempDateRange.from,
+                            to: tempDateRange.to,
+                          });
+                          setIsDatePickerOpen(false);
+                        }
+                      }}
+                      disabled={!tempDateRange.from || !tempDateRange.to}
+                      data-testid="button-apply-date"
+                    >
+                      적용
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Stats Cards - Mobile: Column, Desktop: Row */}

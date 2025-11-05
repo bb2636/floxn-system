@@ -25,7 +25,7 @@ export interface IStorage {
   deleteAccount(username: string): Promise<User | null>;
   // Claims methods
   getClaimsForUser(user: User): Promise<Claim[]>;
-  getDashboardStats(user: User): Promise<{
+  getDashboardStats(user: User, startDate?: string, endDate?: string): Promise<{
     totalReception: number;
     totalPending: number;
     insuranceUnsettled: { count: number; amount: string };
@@ -316,7 +316,7 @@ export class MemStorage implements IStorage {
     return allClaims.filter(c => c.assignedTo === user.username);
   }
 
-  async getDashboardStats(user: User): Promise<{
+  async getDashboardStats(user: User, startDate?: string, endDate?: string): Promise<{
     totalReception: number;
     totalPending: number;
     insuranceUnsettled: { count: number; amount: string };
@@ -326,7 +326,15 @@ export class MemStorage implements IStorage {
     reviewing: number;
     completed: number;
   }> {
-    const userClaims = await this.getClaimsForUser(user);
+    let userClaims = await this.getClaimsForUser(user);
+
+    // Filter by date range if provided
+    if (startDate && endDate) {
+      userClaims = userClaims.filter(claim => {
+        const accidentDate = claim.accidentDate;
+        return accidentDate >= startDate && accidentDate <= endDate;
+      });
+    }
 
     // Calculate statistics
     const totalReception = userClaims.length;
@@ -377,6 +385,10 @@ export class MemStorage implements IStorage {
     const newClaim: Claim = {
       id,
       ...insertClaim,
+      status: insertClaim.status || "접수 대기",
+      claimAmount: insertClaim.claimAmount || null,
+      settlementAmount: insertClaim.settlementAmount || null,
+      insuranceType: insertClaim.insuranceType || null,
       createdAt: currentDate,
       updatedAt: currentDate,
     };
@@ -712,7 +724,7 @@ export class DbStorage implements IStorage {
     }
   }
 
-  async getDashboardStats(user: User): Promise<{
+  async getDashboardStats(user: User, startDate?: string, endDate?: string): Promise<{
     totalReception: number;
     totalPending: number;
     insuranceUnsettled: { count: number; amount: string };
@@ -724,7 +736,15 @@ export class DbStorage implements IStorage {
   }> {
     try {
       // Get all claims the user can see
-      const userClaims = await this.getClaimsForUser(user);
+      let userClaims = await this.getClaimsForUser(user);
+
+      // Filter by date range if provided
+      if (startDate && endDate) {
+        userClaims = userClaims.filter(claim => {
+          const accidentDate = claim.accidentDate;
+          return accidentDate >= startDate && accidentDate <= endDate;
+        });
+      }
 
       // Calculate statistics
       const totalReception = userClaims.length;
