@@ -2583,38 +2583,123 @@ export default function AdminSettings() {
                       }}>
                         첨부파일
                       </label>
+                      <input
+                        type="file"
+                        id="file-upload-input"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length > 0) {
+                            const newFileNames = files.map(f => f.name);
+                            setCreateAccountForm({
+                              ...createAccountForm,
+                              attachments: [...createAccountForm.attachments, ...newFileNames]
+                            });
+                          }
+                          e.target.value = '';
+                        }}
+                        data-testid="input-file-upload"
+                      />
                       <div
-                        className="flex flex-col items-center justify-center"
+                        className="flex flex-col items-center justify-center cursor-pointer"
                         style={{
                           width: '100%',
-                          height: '120px',
+                          minHeight: '120px',
                           background: '#F8FCFF',
                           border: '2px dashed rgba(0, 143, 237, 0.3)',
                           borderRadius: '8px',
                         }}
+                        onClick={() => {
+                          document.getElementById('file-upload-input')?.click();
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.style.background = 'rgba(0, 143, 237, 0.05)';
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.style.background = '#F8FCFF';
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.currentTarget.style.background = '#F8FCFF';
+                          
+                          const files = Array.from(e.dataTransfer.files || []);
+                          if (files.length > 0) {
+                            const newFileNames = files.map(f => f.name);
+                            setCreateAccountForm({
+                              ...createAccountForm,
+                              attachments: [...createAccountForm.attachments, ...newFileNames]
+                            });
+                          }
+                        }}
                         data-testid="file-upload-area"
                       >
-                        <div className="flex flex-col items-center gap-2">
-                          <div
-                            className="flex items-center justify-center"
-                            style={{
-                              width: '48px',
-                              height: '48px',
-                              background: 'rgba(0, 143, 237, 0.1)',
-                              borderRadius: '50%',
-                            }}
-                          >
-                            <Upload size={24} style={{ color: '#008FED' }} />
+                        {createAccountForm.attachments.length === 0 ? (
+                          <div className="flex flex-col items-center gap-2 py-4">
+                            <div
+                              className="flex items-center justify-center"
+                              style={{
+                                width: '48px',
+                                height: '48px',
+                                background: 'rgba(0, 143, 237, 0.1)',
+                                borderRadius: '50%',
+                              }}
+                            >
+                              <Upload size={24} style={{ color: '#008FED' }} />
+                            </div>
+                            <span style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              color: '#686A6E',
+                            }}>
+                              파일 또는 이미지를 이곳에 올려주세요
+                            </span>
                           </div>
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            color: '#686A6E',
-                          }}>
-                            파일 또는 이미지를 이곳에 올려주세요
-                          </span>
-                        </div>
+                        ) : (
+                          <div className="flex flex-col gap-2 w-full p-4">
+                            {createAccountForm.attachments.map((fileName, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between px-3 py-2"
+                                style={{
+                                  background: '#FFFFFF',
+                                  border: '1px solid rgba(0, 143, 237, 0.2)',
+                                  borderRadius: '6px',
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                data-testid={`file-item-${idx}`}
+                              >
+                                <span style={{
+                                  fontFamily: 'Pretendard',
+                                  fontSize: '13px',
+                                  fontWeight: 400,
+                                  color: '#0C0C0C',
+                                }}>
+                                  {fileName}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setCreateAccountForm({
+                                      ...createAccountForm,
+                                      attachments: createAccountForm.attachments.filter((_, i) => i !== idx)
+                                    });
+                                  }}
+                                  data-testid={`button-remove-file-${idx}`}
+                                >
+                                  <X size={16} style={{ color: '#686A6E' }} />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </>
