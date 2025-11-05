@@ -95,9 +95,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#E7EDFE' }}>
-      {/* Blur Background Orbs */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+    <div className="relative min-h-screen overflow-x-hidden" style={{ background: '#E7EDFE', fontFamily: 'Pretendard' }}>
+      {/* Blur Background Orbs - hidden on mobile */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none hidden lg:block">
         {/* Ellipse 3 - Top Left Orange */}
         <div 
           className="absolute"
@@ -140,9 +140,9 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Header */}
+      {/* Header - hidden on mobile */}
       <header 
-        className="relative w-full flex items-center"
+        className="hidden lg:flex relative w-full items-center"
         style={{
           height: '89px',
           paddingRight: '32px',
@@ -167,7 +167,7 @@ export default function Dashboard() {
 
         {/* Navigation Menu */}
         <div className="flex items-center flex-1" style={{ gap: '0px', height: '50px' }}>
-          {menuItems.map((item, index) => (
+          {menuItems.map((item) => (
             <button
               key={item.name}
               onClick={() => handleMenuClick(item)}
@@ -175,7 +175,6 @@ export default function Dashboard() {
               style={{
                 padding: '10px 24px',
                 borderRadius: '10px',
-                fontFamily: 'Pretendard',
                 fontSize: '18px',
                 fontWeight: activeMenu === item.name ? 600 : 500,
                 lineHeight: '128%',
@@ -203,7 +202,6 @@ export default function Dashboard() {
           <div className="flex items-center" style={{ gap: '8px' }}>
             <span 
               style={{
-                fontFamily: 'Pretendard',
                 fontSize: '15px',
                 fontWeight: 600,
                 lineHeight: '128%',
@@ -216,7 +214,6 @@ export default function Dashboard() {
             </span>
             <span 
               style={{
-                fontFamily: 'Pretendard',
                 fontSize: '15px',
                 fontWeight: 500,
                 lineHeight: '128%',
@@ -230,245 +227,287 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Mobile Header - visible only on mobile */}
+      <header 
+        className="lg:hidden relative w-full flex items-center justify-between px-5 py-4"
+        style={{
+          background: 'rgba(255, 255, 255, 0.06)',
+          borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
+          backdropFilter: 'blur(22px)',
+        }}
+      >
+        <img 
+          src={logoIcon} 
+          alt="FLOXN Logo" 
+          className="h-6"
+          data-testid="logo-mobile"
+        />
+        <div className="flex items-center gap-2">
+          <div 
+            className="w-8 h-8 rounded-full"
+            style={{ background: 'rgba(0, 143, 237, 0.3)' }}
+          />
+        </div>
+      </header>
+
       {/* Main Content */}
-      <div className="relative flex">
+      <div className="relative flex flex-col lg:flex-row">
+        {/* Mobile Profile Card - visible only on mobile */}
+        <div className="lg:hidden w-full flex justify-center pt-5 px-5">
+          <div
+            className="flex flex-col w-full max-w-[335px]"
+            style={{
+              background: '#FDFDFD',
+              boxShadow: '12px 12px 24px rgba(0, 0, 0, 0.06)',
+              backdropFilter: 'blur(7px)',
+              borderRadius: '14px',
+              paddingBottom: '24px',
+            }}
+          >
+            <div className="flex items-center justify-between px-5 py-6">
+              <h3 
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.01em',
+                  color: 'rgba(12, 12, 12, 0.8)',
+                }}
+              >
+                내 프로필
+              </h3>
+              <span
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.01em',
+                  color: 'rgba(0, 143, 237, 0.8)',
+                }}
+              >
+                관리자
+              </span>
+            </div>
+            
+            <div className="flex flex-col items-center" style={{ gap: '8px' }}>
+              <div className="flex items-center" style={{ gap: '10px' }}>
+                <div 
+                  className="flex items-center justify-center rounded-full"
+                  style={{ 
+                    width: '58px',
+                    height: '58px',
+                    background: 'rgba(0, 143, 237, 0.1)',
+                  }}
+                />
+                <div className="flex flex-col" style={{ gap: '2px' }}>
+                  <div className="flex items-center" style={{ gap: '2px' }}>
+                    <span 
+                      style={{
+                        fontSize: '15px',
+                        fontWeight: 600,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: '#0C0C0C',
+                      }}
+                    >
+                      {user.name || user.username}
+                    </span>
+                    <span 
+                      style={{
+                        fontSize: '13px',
+                        fontWeight: 400,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}
+                    >
+                      {user.position || "사원"}
+                    </span>
+                  </div>
+                  <span 
+                    style={{
+                      fontSize: '14px',
+                      fontWeight: 400,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.01em',
+                      color: 'rgba(12, 12, 12, 0.7)',
+                    }}
+                  >
+                    {user.email || `${user.username}@example.com`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Main Section */}
-        <div className="flex-1" style={{ paddingLeft: '92px', paddingRight: '0px' }}>
+        <div className="flex-1 px-5 lg:px-0 lg:pl-[92px] pt-5 lg:pt-0">
           {/* 현황 요약 Header */}
-          <div className="flex items-center justify-between" style={{ paddingTop: '24px', paddingBottom: '24px', height: '92px' }}>
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between py-4 lg:py-6">
             <h1 
+              className="text-lg lg:text-xl font-semibold"
               style={{
-                fontFamily: 'Pretendard',
-                fontSize: '20px',
-                fontWeight: 600,
-                lineHeight: '128%',
                 letterSpacing: '-0.02em',
-                color: '#0C0C0C',
+                color: 'rgba(12, 12, 12, 0.9)',
               }}
             >
               현황 요약
             </h1>
             <div 
-              className="flex items-center justify-between"
+              className="flex items-center justify-between mt-3 lg:mt-0 px-3 lg:px-2 py-2 lg:py-2.5 bg-white border rounded-lg lg:rounded-lg"
               style={{
-                width: '128px',
-                height: '44px',
-                padding: '10px 8px',
-                background: '#FFFFFF',
-                border: '1px solid rgba(12, 12, 12, 0.3)',
-                borderRadius: '8px',
-                boxSizing: 'border-box',
+                borderColor: 'rgba(12, 12, 12, 0.3)',
+                width: '100%',
+                maxWidth: '100%',
               }}
             >
-              <div className="flex items-center" style={{ gap: '8px' }}>
-                <Calendar className="w-[22px] h-[22px]" style={{ color: '#008FED' }} />
+              <div className="flex items-center gap-2">
+                <Calendar className="w-[18px] h-[18px] lg:w-[22px] lg:h-[22px]" style={{ color: '#008FED' }} />
                 <span 
+                  className="text-sm lg:text-base font-medium"
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 500,
-                    lineHeight: '128%',
                     letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.9)',
+                    color: 'rgba(12, 12, 12, 0.8)',
                   }}
                 >
                   이번 달
                 </span>
               </div>
-              <ChevronDown className="w-6 h-6" style={{ color: 'rgba(12, 12, 12, 0.6)' }} />
+              <ChevronDown className="w-5 h-5 lg:w-6 lg:h-6" style={{ color: 'rgba(12, 12, 12, 0.6)' }} />
             </div>
           </div>
 
-          {/* Stats Cards Grid */}
-          <div className="flex items-start" style={{ gap: '18px', marginBottom: '89px' }}>
+          {/* Stats Cards - Mobile: Column, Desktop: Row */}
+          <div className="flex flex-col lg:flex-row lg:items-start gap-3 lg:gap-[18px] mb-6 lg:mb-[89px]">
             {/* 접수건 Card */}
             <div
-              className="flex flex-col items-start"
+              className="flex flex-col p-5 gap-1 lg:gap-3 bg-white rounded-xl lg:rounded-xl lg:flex-1"
               style={{
-                flex: '1 1 0',
-                padding: '20px',
-                gap: '12px',
-                height: '147px',
-                background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
+                minHeight: '105px',
               }}
               data-testid="stat-card-reception"
             >
               <div 
+                className="text-sm font-medium"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
                   letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.9)',
+                  color: 'rgba(12, 12, 12, 0.5)',
                 }}
               >
                 접수건
               </div>
-              <div className="flex items-start justify-between w-full">
-                <div className="flex flex-col" style={{ gap: '2px' }}>
-                  <div className="flex items-center" style={{ gap: '8px' }}>
-                    <TrendingUp className="w-[14px] h-[10px]" style={{ color: '#0C95F6' }} />
-                    <div className="flex items-center" style={{ gap: '8px' }}>
-                      <span 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '38px',
-                          fontWeight: 700,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}
-                      >
-                        167
-                      </span>
-                      <span 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '18px',
-                          fontWeight: 400,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.6)',
-                          paddingTop: '26px',
-                        }}
-                      >
-                        건
-                      </span>
-                    </div>
-                  </div>
-                  <div 
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span 
+                    className="text-2xl lg:text-[38px] font-semibold"
                     style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 500,
-                      lineHeight: '128%',
                       letterSpacing: '-0.02em',
-                      color: '#0C95F6',
+                      color: 'rgba(12, 12, 12, 0.9)',
                     }}
                   >
-                    전월 대비 +12.4% (18건)
-                  </div>
+                    167건
+                  </span>
                 </div>
                 <div 
-                  className="flex items-center justify-center rounded-full"
+                  className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded"
                   style={{
-                    width: '60px',
-                    height: '60px',
                     background: 'rgba(0, 143, 237, 0.2)',
                   }}
                 >
-                  <Plus className="w-[26px] h-[26px]" style={{ color: '#008FED' }} />
+                  <span 
+                    className="text-xs font-medium"
+                    style={{
+                      letterSpacing: '-0.01em',
+                      color: '#008FED',
+                    }}
+                  >
+                    상승
+                  </span>
+                  <TrendingUp className="w-4 h-4" style={{ color: '#0C0C0C' }} />
                 </div>
+              </div>
+              <div 
+                className="px-2.5 py-3 rounded-lg text-center"
+                style={{
+                  background: 'rgba(12, 12, 12, 0.05)',
+                }}
+              >
+                <span 
+                  className="text-sm font-normal"
+                  style={{
+                    letterSpacing: '-0.01em',
+                    color: 'rgba(12, 12, 12, 0.7)',
+                  }}
+                >
+                  접수건이 지난 달보다 12.4% 늘었어요
+                </span>
               </div>
             </div>
 
             {/* 미결건 Card */}
             <div
-              className="flex flex-col items-start"
+              className="flex flex-col p-5 gap-1 lg:gap-3 bg-white rounded-xl lg:rounded-xl lg:flex-1"
               style={{
-                flex: '1 1 0',
-                padding: '20px',
-                gap: '12px',
-                height: '147px',
-                background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
+                minHeight: '105px',
               }}
               data-testid="stat-card-pending"
             >
               <div 
+                className="text-sm font-medium"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
                   letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.9)',
+                  color: 'rgba(12, 12, 12, 0.5)',
                 }}
               >
                 미결건
               </div>
-              <div className="flex items-start justify-between w-full">
-                <div className="flex flex-col" style={{ gap: '2px' }}>
-                  <div className="flex items-center" style={{ gap: '8px' }}>
-                    <TrendingDown className="w-[14px] h-[10px]" style={{ color: '#D02B20' }} />
-                    <div className="flex items-center" style={{ gap: '8px' }}>
-                      <span 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '38px',
-                          fontWeight: 700,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}
-                      >
-                        42
-                      </span>
-                      <span 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '18px',
-                          fontWeight: 400,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.6)',
-                          paddingTop: '26px',
-                        }}
-                      >
-                        건
-                      </span>
-                    </div>
-                  </div>
-                  <div 
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span 
+                    className="text-2xl lg:text-[38px] font-semibold"
                     style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 500,
-                      lineHeight: '128%',
                       letterSpacing: '-0.02em',
+                      color: 'rgba(12, 12, 12, 0.9)',
+                    }}
+                  >
+                    167건
+                  </span>
+                </div>
+                <div 
+                  className="flex items-center justify-center gap-1 px-2.5 py-1.5 rounded"
+                  style={{
+                    background: 'rgba(208, 43, 32, 0.08)',
+                  }}
+                >
+                  <span 
+                    className="text-xs font-medium"
+                    style={{
+                      letterSpacing: '-0.01em',
                       color: '#D02B20',
                     }}
                   >
-                    전월 대비 -12.4% (18건)
-                  </div>
-                </div>
-                <div 
-                  className="flex items-center justify-center rounded-full"
-                  style={{
-                    width: '60px',
-                    height: '60px',
-                    background: 'rgba(0, 143, 237, 0.2)',
-                  }}
-                >
-                  <AlertCircle className="w-[26px] h-[26px]" style={{ color: '#008FED' }} />
+                    감소
+                  </span>
+                  <TrendingDown className="w-4 h-4" style={{ color: '#0C0C0C' }} />
                 </div>
               </div>
             </div>
 
-            {/* 보험사 미정산 Card */}
+            {/* 보험사 미정산 Card - Desktop only */}
             <div
-              className="flex flex-col items-start"
+              className="hidden lg:flex flex-col p-5 gap-3 bg-white rounded-xl flex-1"
               style={{
-                flex: '1 1 0',
-                padding: '20px',
-                gap: '12px',
-                height: '147px',
-                background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
+                height: '147px',
               }}
               data-testid="stat-card-insurance-unpaid"
             >
               <div 
+                className="text-sm font-medium"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
                   letterSpacing: '-0.01em',
                   color: 'rgba(12, 12, 12, 0.9)',
                 }}
@@ -478,37 +517,32 @@ export default function Dashboard() {
               <div className="flex items-start justify-between w-full">
                 <div className="flex flex-col justify-center" style={{ gap: '2px', height: '74px' }}>
                   <div className="flex items-center" style={{ gap: '8px' }}>
-                    <div className="flex items-center" style={{ gap: '8px' }}>
-                      <span 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '38px',
-                          fontWeight: 700,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}
-                      >
-                        89
-                      </span>
-                      <span 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '18px',
-                          fontWeight: 400,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.6)',
-                          paddingTop: '26px',
-                        }}
-                      >
-                        건
-                      </span>
-                    </div>
+                    <span 
+                      style={{
+                        fontSize: '38px',
+                        fontWeight: 700,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}
+                    >
+                      89
+                    </span>
+                    <span 
+                      style={{
+                        fontSize: '18px',
+                        fontWeight: 400,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.6)',
+                        paddingTop: '26px',
+                      }}
+                    >
+                      건
+                    </span>
                   </div>
                   <div 
                     style={{
-                      fontFamily: 'Pretendard',
                       fontSize: '16px',
                       fontWeight: 500,
                       lineHeight: '128%',
@@ -532,26 +566,18 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* 협력사 미정산 Card */}
+            {/* 협력사 미정산 Card - Desktop only */}
             <div
-              className="flex flex-col items-start"
+              className="hidden lg:flex flex-col p-5 gap-3 bg-white rounded-xl flex-1"
               style={{
-                flex: '1 1 0',
-                padding: '20px',
-                gap: '12px',
-                height: '147px',
-                background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
+                height: '147px',
               }}
               data-testid="stat-card-partner-unpaid"
             >
               <div 
+                className="text-sm font-medium"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
                   letterSpacing: '-0.01em',
                   color: 'rgba(12, 12, 12, 0.9)',
                 }}
@@ -561,37 +587,32 @@ export default function Dashboard() {
               <div className="flex items-start justify-between w-full">
                 <div className="flex flex-col justify-center" style={{ gap: '2px', height: '74px' }}>
                   <div className="flex items-center" style={{ gap: '8px' }}>
-                    <div className="flex items-center" style={{ gap: '8px' }}>
-                      <span 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '38px',
-                          fontWeight: 700,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}
-                      >
-                        56
-                      </span>
-                      <span 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '18px',
-                          fontWeight: 400,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.6)',
-                          paddingTop: '26px',
-                        }}
-                      >
-                        건
-                      </span>
-                    </div>
+                    <span 
+                      style={{
+                        fontSize: '38px',
+                        fontWeight: 700,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}
+                    >
+                      56
+                    </span>
+                    <span 
+                      style={{
+                        fontSize: '18px',
+                        fontWeight: 400,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.6)',
+                        paddingTop: '26px',
+                      }}
+                    >
+                      건
+                    </span>
                   </div>
                   <div 
                     style={{
-                      fontFamily: 'Pretendard',
                       fontSize: '16px',
                       fontWeight: 500,
                       lineHeight: '128%',
@@ -616,14 +637,11 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* 진행건 요약 Header */}
-          <div className="flex items-center justify-between" style={{ paddingTop: '24px', paddingBottom: '24px', height: '92px' }}>
+          {/* 진행건 요약 Header - Desktop only */}
+          <div className="hidden lg:flex items-center justify-between py-6">
             <h1 
+              className="text-xl font-semibold"
               style={{
-                fontFamily: 'Pretendard',
-                fontSize: '20px',
-                fontWeight: 600,
-                lineHeight: '128%',
                 letterSpacing: '-0.02em',
                 color: '#0C0C0C',
               }}
@@ -631,25 +649,17 @@ export default function Dashboard() {
               진행건 요약
             </h1>
             <div 
-              className="flex items-center justify-between"
+              className="flex items-center justify-between px-2 py-2.5 bg-white border rounded-lg"
               style={{
                 width: '128px',
-                height: '44px',
-                padding: '10px 8px',
-                background: '#FFFFFF',
-                border: '1px solid rgba(12, 12, 12, 0.3)',
-                borderRadius: '8px',
-                boxSizing: 'border-box',
+                borderColor: 'rgba(12, 12, 12, 0.3)',
               }}
             >
-              <div className="flex items-center" style={{ gap: '8px' }}>
+              <div className="flex items-center gap-2">
                 <Calendar className="w-[22px] h-[22px]" style={{ color: '#008FED' }} />
                 <span 
+                  className="text-base font-medium"
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 500,
-                    lineHeight: '128%',
                     letterSpacing: '-0.02em',
                     color: 'rgba(12, 12, 12, 0.9)',
                   }}
@@ -661,27 +671,19 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Progress Cards Grid */}
-          <div className="flex items-start pb-6" style={{ gap: '18px' }}>
+          {/* Progress Cards Grid - Desktop only */}
+          <div className="hidden lg:flex items-start pb-6 gap-[18px]">
             {/* 접수 대기 Card */}
             <div
-              className="flex flex-col items-start"
+              className="flex flex-col flex-1 p-5 gap-3 bg-white rounded-xl"
               style={{
-                flex: '1 1 0',
-                padding: '20px',
-                gap: '12px',
-                height: '147px',
-                background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
+                height: '147px',
               }}
             >
               <div 
+                className="text-sm font-medium"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
                   letterSpacing: '-0.01em',
                   color: 'rgba(12, 12, 12, 0.9)',
                 }}
@@ -689,11 +691,10 @@ export default function Dashboard() {
                 접수 대기
               </div>
               <div className="flex items-start justify-between w-full">
-                <div className="flex flex-col" style={{ gap: '2px' }}>
-                  <div className="flex items-center" style={{ gap: '8px' }}>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
                     <span 
                       style={{
-                        fontFamily: 'Pretendard',
                         fontSize: '38px',
                         fontWeight: 700,
                         lineHeight: '128%',
@@ -705,7 +706,6 @@ export default function Dashboard() {
                     </span>
                     <span 
                       style={{
-                        fontFamily: 'Pretendard',
                         fontSize: '18px',
                         fontWeight: 400,
                         lineHeight: '128%',
@@ -719,7 +719,6 @@ export default function Dashboard() {
                   </div>
                   <div 
                     style={{
-                      fontFamily: 'Pretendard',
                       fontSize: '16px',
                       fontWeight: 500,
                       lineHeight: '128%',
@@ -735,23 +734,15 @@ export default function Dashboard() {
 
             {/* 조사중 Card */}
             <div
-              className="flex flex-col items-start"
+              className="flex flex-col flex-1 p-5 gap-3 bg-white rounded-xl"
               style={{
-                flex: '1 1 0',
-                padding: '20px',
-                gap: '12px',
-                height: '147px',
-                background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
+                height: '147px',
               }}
             >
               <div 
+                className="text-sm font-medium"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
                   letterSpacing: '-0.01em',
                   color: 'rgba(12, 12, 12, 0.9)',
                 }}
@@ -759,11 +750,10 @@ export default function Dashboard() {
                 조사중
               </div>
               <div className="flex items-start justify-between w-full">
-                <div className="flex flex-col" style={{ gap: '2px' }}>
-                  <div className="flex items-center" style={{ gap: '8px' }}>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
                     <span 
                       style={{
-                        fontFamily: 'Pretendard',
                         fontSize: '38px',
                         fontWeight: 700,
                         lineHeight: '128%',
@@ -775,7 +765,6 @@ export default function Dashboard() {
                     </span>
                     <span 
                       style={{
-                        fontFamily: 'Pretendard',
                         fontSize: '18px',
                         fontWeight: 400,
                         lineHeight: '128%',
@@ -789,7 +778,6 @@ export default function Dashboard() {
                   </div>
                   <div 
                     style={{
-                      fontFamily: 'Pretendard',
                       fontSize: '16px',
                       fontWeight: 500,
                       lineHeight: '128%',
@@ -805,23 +793,15 @@ export default function Dashboard() {
 
             {/* 심사중 Card */}
             <div
-              className="flex flex-col items-start"
+              className="flex flex-col flex-1 p-5 gap-3 bg-white rounded-xl"
               style={{
-                flex: '1 1 0',
-                padding: '20px',
-                gap: '12px',
-                height: '147px',
-                background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
+                height: '147px',
               }}
             >
               <div 
+                className="text-sm font-medium"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
                   letterSpacing: '-0.01em',
                   color: 'rgba(12, 12, 12, 0.9)',
                 }}
@@ -829,11 +809,10 @@ export default function Dashboard() {
                 심사중
               </div>
               <div className="flex items-start justify-between w-full">
-                <div className="flex flex-col" style={{ gap: '2px' }}>
-                  <div className="flex items-center" style={{ gap: '8px' }}>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
                     <span 
                       style={{
-                        fontFamily: 'Pretendard',
                         fontSize: '38px',
                         fontWeight: 700,
                         lineHeight: '128%',
@@ -845,7 +824,6 @@ export default function Dashboard() {
                     </span>
                     <span 
                       style={{
-                        fontFamily: 'Pretendard',
                         fontSize: '18px',
                         fontWeight: 400,
                         lineHeight: '128%',
@@ -859,7 +837,6 @@ export default function Dashboard() {
                   </div>
                   <div 
                     style={{
-                      fontFamily: 'Pretendard',
                       fontSize: '16px',
                       fontWeight: 500,
                       lineHeight: '128%',
@@ -875,23 +852,15 @@ export default function Dashboard() {
 
             {/* 완료 Card */}
             <div
-              className="flex flex-col items-start"
+              className="flex flex-col flex-1 p-5 gap-3 bg-white rounded-xl"
               style={{
-                flex: '1 1 0',
-                padding: '20px',
-                gap: '12px',
-                height: '147px',
-                background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
+                height: '147px',
               }}
             >
               <div 
+                className="text-sm font-medium"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
                   letterSpacing: '-0.01em',
                   color: 'rgba(12, 12, 12, 0.9)',
                 }}
@@ -899,11 +868,10 @@ export default function Dashboard() {
                 완료
               </div>
               <div className="flex items-start justify-between w-full">
-                <div className="flex flex-col" style={{ gap: '2px' }}>
-                  <div className="flex items-center" style={{ gap: '8px' }}>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
                     <span 
                       style={{
-                        fontFamily: 'Pretendard',
                         fontSize: '38px',
                         fontWeight: 700,
                         lineHeight: '128%',
@@ -915,7 +883,6 @@ export default function Dashboard() {
                     </span>
                     <span 
                       style={{
-                        fontFamily: 'Pretendard',
                         fontSize: '18px',
                         fontWeight: 400,
                         lineHeight: '128%',
@@ -929,7 +896,6 @@ export default function Dashboard() {
                   </div>
                   <div 
                     style={{
-                      fontFamily: 'Pretendard',
                       fontSize: '16px',
                       fontWeight: 500,
                       lineHeight: '128%',
@@ -945,56 +911,43 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Sidebar */}
+        {/* Right Sidebar - Desktop only */}
         <div 
-          className="flex flex-col"
+          className="hidden lg:flex flex-col gap-3 pt-[92px] pr-[92px]"
           style={{ 
             width: '415px',
-            gap: '12px',
-            paddingTop: '92px',
-            paddingLeft: '0px',
-            paddingRight: '92px',
           }}
         >
           {/* My Profile Card */}
           <div
-            className="flex flex-col"
+            className="flex flex-col pb-8"
             style={{
               background: 'rgba(255, 255, 255, 0.2)',
               border: '1px solid #FFFFFF',
               boxShadow: '12px 12px 50px #DBE9F5',
               backdropFilter: 'blur(7px)',
               borderRadius: '14px',
-              paddingBottom: '32px',
             }}
           >
-            <div className="flex items-center justify-between" style={{ padding: '24px 20px' }}>
+            <div className="flex items-center justify-between px-5 py-6">
               <h3 
+                className="text-lg font-semibold"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  lineHeight: '128%',
                   letterSpacing: '-0.02em',
                   color: 'rgba(12, 12, 12, 0.8)',
-                  margin: '0 auto',
                 }}
               >
                 내 프로필
               </h3>
               <button
                 onClick={() => logoutMutation.mutate()}
+                className="text-[15px] font-medium"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
                   letterSpacing: '-0.01em',
                   color: 'rgba(0, 143, 237, 0.8)',
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  margin: '0 auto',
                 }}
                 data-testid="button-logout"
               >
@@ -1002,7 +955,7 @@ export default function Dashboard() {
               </button>
             </div>
             
-            <div className="flex flex-col items-center" style={{ gap: '12px' }}>
+            <div className="flex flex-col items-center gap-3">
               <div 
                 className="flex items-center justify-center rounded-full"
                 style={{ 
@@ -1011,15 +964,11 @@ export default function Dashboard() {
                   background: 'rgba(0, 143, 237, 0.2)',
                 }}
               />
-              <div className="flex flex-col items-center" style={{ gap: '4px' }}>
-                <div className="flex items-center" style={{ gap: '2px' }}>
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center gap-0.5">
                   <span 
+                    className="text-lg font-semibold text-center"
                     style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '18px',
-                      fontWeight: 600,
-                      lineHeight: '128%',
-                      textAlign: 'center',
                       letterSpacing: '-0.02em',
                       color: '#0C0C0C',
                     }}
@@ -1027,12 +976,8 @@ export default function Dashboard() {
                     {user.name || user.username}
                   </span>
                   <span 
+                    className="text-[15px] font-normal text-center"
                     style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '15px',
-                      fontWeight: 400,
-                      lineHeight: '128%',
-                      textAlign: 'center',
                       letterSpacing: '-0.01em',
                       color: 'rgba(12, 12, 12, 0.9)',
                     }}
@@ -1041,12 +986,8 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <span 
+                  className="text-[15px] font-normal text-center"
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 400,
-                    lineHeight: '128%',
-                    textAlign: 'center',
                     letterSpacing: '-0.01em',
                     color: 'rgba(12, 12, 12, 0.7)',
                   }}
@@ -1059,24 +1000,20 @@ export default function Dashboard() {
 
           {/* Prohibitions Card */}
           <div
-            className="flex flex-col"
+            className="flex flex-col pb-4"
             style={{
               background: 'rgba(255, 255, 255, 0.2)',
               border: '1px solid #FFFFFF',
               boxShadow: '12px 12px 50px #DBE9F5',
               backdropFilter: 'blur(7px)',
               borderRadius: '14px',
-              paddingBottom: '16px',
             }}
           >
-            <div className="flex items-center justify-between" style={{ padding: '24px 20px', gap: '6px' }}>
-              <div className="flex items-center" style={{ gap: '6px', margin: '0 auto' }}>
+            <div className="flex items-center justify-between px-5 py-6">
+              <div className="flex items-center gap-1.5">
                 <h3 
+                  className="text-lg font-semibold"
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    lineHeight: '128%',
                     letterSpacing: '-0.02em',
                     color: '#0C0C0C',
                   }}
@@ -1084,11 +1021,8 @@ export default function Dashboard() {
                   금지사항
                 </h3>
                 <span 
+                  className="text-[15px] font-medium"
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 500,
-                    lineHeight: '128%',
                     letterSpacing: '-0.01em',
                     color: '#D02B20',
                   }}
@@ -1097,47 +1031,30 @@ export default function Dashboard() {
                 </span>
               </div>
               <button
-                className="flex items-center justify-center"
+                className="flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium"
                 style={{
-                  padding: '8px 12px',
                   background: '#FDFDFD',
                   boxShadow: '2px 4px 30px #BDD1F0',
-                  borderRadius: '6px',
+                  letterSpacing: '-0.01em',
+                  color: 'rgba(12, 12, 12, 0.9)',
                   border: 'none',
                   cursor: 'pointer',
-                  margin: '0 auto',
                 }}
               >
-                <span
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(0, 143, 237, 0.8)',
-                  }}
-                >
-                  더보기
-                </span>
+                더보기
               </button>
             </div>
             
-            <div className="flex flex-col">
+            <div className="flex flex-col px-5 gap-4">
               {prohibitions.map((item, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center justify-between"
-                  style={{ padding: '12px 20px' }}
-                >
+                <div key={index} className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#D02B20' }} />
                   <span 
+                    className="text-sm font-normal"
                     style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.9)',
+                      letterSpacing: '-0.01em',
+                      color: 'rgba(12, 12, 12, 0.8)',
+                      lineHeight: '1.5',
                     }}
                   >
                     {item}
@@ -1149,87 +1066,68 @@ export default function Dashboard() {
 
           {/* 1:1 Inquiry Card */}
           <div
-            className="flex flex-col"
+            className="flex flex-col pb-4"
             style={{
               background: 'rgba(255, 255, 255, 0.2)',
               border: '1px solid #FFFFFF',
               boxShadow: '12px 12px 50px #DBE9F5',
               backdropFilter: 'blur(7px)',
               borderRadius: '14px',
-              paddingBottom: '16px',
             }}
           >
-            <div className="flex items-center justify-between" style={{ padding: '24px 20px' }}>
+            <div className="flex items-center justify-between px-5 py-6">
               <h3 
+                className="text-lg font-semibold"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  lineHeight: '128%',
                   letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
-                  margin: '0 auto',
+                  color: 'rgba(12, 12, 12, 0.8)',
                 }}
               >
                 1:1 문의
               </h3>
               <button
-                className="flex items-center justify-center"
+                className="flex items-center justify-center px-3 py-2 rounded-md text-sm font-medium gap-1"
                 style={{
-                  padding: '8px 12px',
                   background: '#FDFDFD',
                   boxShadow: '2px 4px 30px #BDD1F0',
-                  borderRadius: '6px',
+                  letterSpacing: '-0.01em',
+                  color: 'rgba(12, 12, 12, 0.9)',
                   border: 'none',
                   cursor: 'pointer',
-                  margin: '0 auto',
                 }}
               >
-                <span
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(0, 143, 237, 0.8)',
-                  }}
-                >
-                  새 문의
-                </span>
+                <Plus className="w-4 h-4" />
+                새 문의
               </button>
             </div>
             
-            <div className="flex flex-col">
-              {inquiries.map((item, index) => (
+            <div className="flex flex-col px-5 gap-3">
+              {inquiries.map((inquiry, index) => (
                 <div 
                   key={index}
-                  className="flex items-center justify-between"
-                  style={{ padding: '12px 20px' }}
+                  className="flex items-start justify-between p-3 rounded-lg"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.5)',
+                  }}
                 >
                   <span 
+                    className="text-sm font-medium"
                     style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
+                      letterSpacing: '-0.01em',
                       color: 'rgba(12, 12, 12, 0.9)',
                     }}
                   >
-                    {item.title}
+                    {inquiry.title}
                   </span>
                   <span 
+                    className="text-xs font-medium px-2 py-1 rounded"
                     style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '15px',
-                      fontWeight: 400,
-                      lineHeight: '128%',
                       letterSpacing: '-0.01em',
-                      color: 'rgba(12, 12, 12, 0.6)',
+                      color: inquiry.status === "처리중" ? '#008FED' : '#4CAF50',
+                      background: inquiry.status === "처리중" ? 'rgba(0, 143, 237, 0.1)' : 'rgba(76, 175, 80, 0.1)',
                     }}
                   >
-                    {item.status}
+                    {inquiry.status}
                   </span>
                 </div>
               ))}
@@ -1238,61 +1136,51 @@ export default function Dashboard() {
 
           {/* Favorites Card */}
           <div
-            className="flex flex-col"
+            className="flex flex-col pb-4"
             style={{
               background: 'rgba(255, 255, 255, 0.2)',
               border: '1px solid #FFFFFF',
               boxShadow: '12px 12px 50px #DBE9F5',
               backdropFilter: 'blur(7px)',
               borderRadius: '14px',
-              paddingBottom: '16px',
             }}
           >
-            <div className="flex items-center" style={{ padding: '24px 20px' }}>
+            <div className="flex items-center justify-between px-5 py-6">
               <h3 
+                className="text-lg font-semibold"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  lineHeight: '128%',
                   letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
+                  color: 'rgba(12, 12, 12, 0.8)',
                 }}
               >
                 즐겨찾기
               </h3>
             </div>
             
-            <div className="flex flex-col">
-              {favorites.map((item, index) => (
+            <div className="flex flex-col px-5 gap-2">
+              {favorites.map((fav, index) => (
                 <div 
                   key={index}
-                  className="flex items-center justify-between"
-                  style={{ padding: '12px 20px' }}
+                  className="flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-white/30 transition-colors"
+                  onClick={() => setLocation(fav.path)}
                 >
                   <span 
+                    className="text-sm font-medium"
                     style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
+                      letterSpacing: '-0.01em',
                       color: 'rgba(12, 12, 12, 0.9)',
                     }}
                   >
-                    {item.name}
+                    {fav.name}
                   </span>
                   <button
-                    onClick={() => handleRemoveFavorite(item.name)}
-                    className="cursor-pointer transition-opacity hover:opacity-70"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      padding: 0,
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFavorite(fav.name);
                     }}
-                    data-testid={`favorite-star-${item.name}`}
+                    data-testid={`favorite-star-${fav.name}`}
                   >
-                    <Star className="w-[18px] h-[18px] fill-[#008FED]" style={{ color: '#008FED' }} />
+                    <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                   </button>
                 </div>
               ))}
