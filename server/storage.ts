@@ -1,8 +1,8 @@
-import { type User, type InsertUser, users, type Claim, type InsertClaim, claims } from "@shared/schema";
+import { type User, type InsertUser, users } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { eq, and, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
 
@@ -23,28 +23,13 @@ export interface IStorage {
   verifyPassword(username: string, password: string): Promise<User | null>;
   updatePassword(username: string, newPassword: string): Promise<User | null>;
   deleteAccount(username: string): Promise<User | null>;
-  // Claims methods
-  getClaimsForUser(user: User): Promise<Claim[]>;
-  getDashboardStats(user: User): Promise<{
-    totalReception: number;
-    totalPending: number;
-    insuranceUnsettled: { count: number; amount: string };
-    partnerUnsettled: { count: number; amount: string };
-    receptionWaiting: number;
-    investigating: number;
-    reviewing: number;
-    completed: number;
-  }>;
-  createClaim(claim: InsertClaim): Promise<Claim>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
-  private claims: Map<string, Claim>;
 
   constructor() {
     this.users = new Map();
-    this.claims = new Map();
     this.seedTestUser();
   }
 
@@ -292,98 +277,6 @@ export class MemStorage implements IStorage {
     this.users.set(user.id, deletedUser);
     return deletedUser;
   }
-
-  // Helper function to check if user position is 과장 or above
-  private isManagerOrAbove(position: string | null): boolean {
-    const managerPositions = ["과장", "차장", "부장", "이사", "상무", "전무", "부사장", "사장", "대표이사"];
-    return position ? managerPositions.includes(position) : false;
-  }
-
-  async getClaimsForUser(user: User): Promise<Claim[]> {
-    const allClaims = Array.from(this.claims.values());
-
-    // 관리자는 모든 데이터를 볼 수 있음
-    if (user.role === "관리자") {
-      return allClaims;
-    }
-
-    // 과장 이상: 해당 회사의 모든 데이터
-    if (this.isManagerOrAbove(user.position)) {
-      return allClaims.filter(c => c.company === user.company);
-    }
-
-    // 과장 미만: 자기가 담당한 건만
-    return allClaims.filter(c => c.assignedTo === user.username);
-  }
-
-  async getDashboardStats(user: User): Promise<{
-    totalReception: number;
-    totalPending: number;
-    insuranceUnsettled: { count: number; amount: string };
-    partnerUnsettled: { count: number; amount: string };
-    receptionWaiting: number;
-    investigating: number;
-    reviewing: number;
-    completed: number;
-  }> {
-    const userClaims = await this.getClaimsForUser(user);
-
-    // Calculate statistics
-    const totalReception = userClaims.length;
-    const totalPending = userClaims.filter(c => c.status !== "완료").length;
-
-    // Insurance unsettled claims
-    const insuranceUnsettledClaims = userClaims.filter(c => c.insuranceType === "보험사 미정산");
-    const insuranceUnsettledAmount = insuranceUnsettledClaims.reduce((sum, claim) => {
-      const amount = parseInt(claim.settlementAmount || "0");
-      return sum + amount;
-    }, 0);
-
-    // Partner unsettled claims
-    const partnerUnsettledClaims = userClaims.filter(c => c.insuranceType === "협력사 미정산");
-    const partnerUnsettledAmount = partnerUnsettledClaims.reduce((sum, claim) => {
-      const amount = parseInt(claim.settlementAmount || "0");
-      return sum + amount;
-    }, 0);
-
-    // Status counts
-    const receptionWaiting = userClaims.filter(c => c.status === "접수 대기").length;
-    const investigating = userClaims.filter(c => c.status === "조사중").length;
-    const reviewing = userClaims.filter(c => c.status === "심사중").length;
-    const completed = userClaims.filter(c => c.status === "완료").length;
-
-    return {
-      totalReception,
-      totalPending,
-      insuranceUnsettled: { 
-        count: insuranceUnsettledClaims.length, 
-        amount: insuranceUnsettledAmount.toString() 
-      },
-      partnerUnsettled: { 
-        count: partnerUnsettledClaims.length, 
-        amount: partnerUnsettledAmount.toString() 
-      },
-      receptionWaiting,
-      investigating,
-      reviewing,
-      completed,
-    };
-  }
-
-  async createClaim(insertClaim: InsertClaim): Promise<Claim> {
-    const id = randomUUID();
-    const currentDate = getKSTDate();
-    
-    const newClaim: Claim = {
-      id,
-      ...insertClaim,
-      createdAt: currentDate,
-      updatedAt: currentDate,
-    };
-
-    this.claims.set(id, newClaim);
-    return newClaim;
-  }
 }
 
 export class DbStorage implements IStorage {
@@ -399,14 +292,6 @@ export class DbStorage implements IStorage {
       // Only seed if database is empty
       if (existingUsers.length === 0) {
         await this.seedTestUsers();
-      }
-
-      // Check if we have any claims
-      const existingClaims = await db.select().from(claims);
-      
-      // Only seed if claims table is empty
-      if (existingClaims.length === 0) {
-        await this.seedTestClaims();
       }
     } catch (error) {
       console.error("Database initialization error:", error);
@@ -528,76 +413,6 @@ export class DbStorage implements IStorage {
     await db.insert(users).values(testUsers);
   }
 
-  private async seedTestClaims() {
-    const currentDate = getKSTDate();
-    
-    const testClaims = [
-      // Claims assigned to xblock01 (관리자 - sees all)
-      {
-        claimNumber: "CLM-2024-001",
-        assignedTo: "xblock01",
-        company: "플록슨",
-        status: "조사중",
-        accidentDate: "2024-01-15",
-        claimAmount: "5000000",
-        settlementAmount: "4500000",
-        insuranceType: "보험사 미정산",
-        createdAt: currentDate,
-        updatedAt: currentDate,
-      },
-      {
-        claimNumber: "CLM-2024-002",
-        assignedTo: "chulsu01",
-        company: "플록슨",
-        status: "접수 대기",
-        accidentDate: "2024-01-20",
-        claimAmount: "3000000",
-        settlementAmount: "2800000",
-        insuranceType: "협력사 미정산",
-        createdAt: currentDate,
-        updatedAt: currentDate,
-      },
-      {
-        claimNumber: "CLM-2024-003",
-        assignedTo: "kang01",
-        company: "플록슨",
-        status: "심사중",
-        accidentDate: "2024-02-01",
-        claimAmount: "7500000",
-        settlementAmount: "7000000",
-        insuranceType: "보험사 미정산",
-        createdAt: currentDate,
-        updatedAt: currentDate,
-      },
-      {
-        claimNumber: "CLM-2024-004",
-        assignedTo: "jung01",
-        company: "플록슨",
-        status: "조사중",
-        accidentDate: "2024-02-10",
-        claimAmount: "2000000",
-        settlementAmount: "1900000",
-        insuranceType: "협력사 미정산",
-        createdAt: currentDate,
-        updatedAt: currentDate,
-      },
-      {
-        claimNumber: "CLM-2024-005",
-        assignedTo: "xblock01",
-        company: "플록슨",
-        status: "완료",
-        accidentDate: "2024-02-15",
-        claimAmount: "10000000",
-        settlementAmount: "9500000",
-        insuranceType: "보험사 미정산",
-        createdAt: currentDate,
-        updatedAt: currentDate,
-      },
-    ];
-
-    await db.insert(claims).values(testClaims);
-  }
-
   async getUser(id: string): Promise<User | undefined> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0];
@@ -684,114 +499,6 @@ export class DbStorage implements IStorage {
       .returning();
     
     return result[0] || null;
-  }
-
-  // Helper function to check if user position is 과장 or above
-  private isManagerOrAbove(position: string | null): boolean {
-    const managerPositions = ["과장", "차장", "부장", "이사", "상무", "전무", "부사장", "사장", "대표이사"];
-    return position ? managerPositions.includes(position) : false;
-  }
-
-  async getClaimsForUser(user: User): Promise<Claim[]> {
-    try {
-      // 관리자는 모든 데이터를 볼 수 있음
-      if (user.role === "관리자") {
-        return await db.select().from(claims);
-      }
-
-      // 과장 이상: 해당 회사의 모든 데이터
-      if (this.isManagerOrAbove(user.position)) {
-        return await db.select().from(claims).where(eq(claims.company, user.company));
-      }
-
-      // 과장 미만: 자기가 담당한 건만
-      return await db.select().from(claims).where(eq(claims.assignedTo, user.username));
-    } catch (error) {
-      console.error("Error getting claims for user:", error);
-      return [];
-    }
-  }
-
-  async getDashboardStats(user: User): Promise<{
-    totalReception: number;
-    totalPending: number;
-    insuranceUnsettled: { count: number; amount: string };
-    partnerUnsettled: { count: number; amount: string };
-    receptionWaiting: number;
-    investigating: number;
-    reviewing: number;
-    completed: number;
-  }> {
-    try {
-      // Get all claims the user can see
-      const userClaims = await this.getClaimsForUser(user);
-
-      // Calculate statistics
-      const totalReception = userClaims.length;
-      const totalPending = userClaims.filter(c => c.status !== "완료").length;
-
-      // Insurance unsettled claims
-      const insuranceUnsettledClaims = userClaims.filter(c => c.insuranceType === "보험사 미정산");
-      const insuranceUnsettledAmount = insuranceUnsettledClaims.reduce((sum, claim) => {
-        const amount = parseInt(claim.settlementAmount || "0");
-        return sum + amount;
-      }, 0);
-
-      // Partner unsettled claims
-      const partnerUnsettledClaims = userClaims.filter(c => c.insuranceType === "협력사 미정산");
-      const partnerUnsettledAmount = partnerUnsettledClaims.reduce((sum, claim) => {
-        const amount = parseInt(claim.settlementAmount || "0");
-        return sum + amount;
-      }, 0);
-
-      // Status counts
-      const receptionWaiting = userClaims.filter(c => c.status === "접수 대기").length;
-      const investigating = userClaims.filter(c => c.status === "조사중").length;
-      const reviewing = userClaims.filter(c => c.status === "심사중").length;
-      const completed = userClaims.filter(c => c.status === "완료").length;
-
-      return {
-        totalReception,
-        totalPending,
-        insuranceUnsettled: { 
-          count: insuranceUnsettledClaims.length, 
-          amount: insuranceUnsettledAmount.toString() 
-        },
-        partnerUnsettled: { 
-          count: partnerUnsettledClaims.length, 
-          amount: partnerUnsettledAmount.toString() 
-        },
-        receptionWaiting,
-        investigating,
-        reviewing,
-        completed,
-      };
-    } catch (error) {
-      console.error("Error getting dashboard stats:", error);
-      return {
-        totalReception: 0,
-        totalPending: 0,
-        insuranceUnsettled: { count: 0, amount: "0" },
-        partnerUnsettled: { count: 0, amount: "0" },
-        receptionWaiting: 0,
-        investigating: 0,
-        reviewing: 0,
-        completed: 0,
-      };
-    }
-  }
-
-  async createClaim(insertClaim: InsertClaim): Promise<Claim> {
-    const currentDate = getKSTDate();
-    
-    const newClaim = {
-      ...insertClaim,
-      createdAt: currentDate,
-      updatedAt: currentDate,
-    };
-
-    const result = await db.insert(claims).values(newClaim).returning();
-    return result[0];
   }
 }
 
