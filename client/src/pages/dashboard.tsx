@@ -5,7 +5,7 @@ import { User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown } from "lucide-react";
+import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown, ChevronRight } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 
 export default function Dashboard() {
@@ -648,68 +648,70 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Progress Summary Section */}
-          <div className="flex flex-col gap-6">
-            {/* Section Header */}
-            <div 
-              className="flex items-center justify-between"
-              style={{ padding: '24px 0' }}
-            >
-              <h2
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
-                }}
-              >
-                진행건 요약
-              </h2>
-              <button 
+          {/* Progress Summary and Case List Section */}
+          <div className="flex items-start gap-6">
+            {/* Progress Summary */}
+            <div className="flex flex-col gap-6">
+              {/* Section Header */}
+              <div 
                 className="flex items-center justify-between"
-                style={{
-                  width: '128px',
-                  height: '44px',
-                  padding: '10px 8px',
-                  gap: '8px',
-                  background: '#FFFFFF',
-                  border: '1px solid rgba(12, 12, 12, 0.3)',
-                  borderRadius: '8px',
-                }}
-                data-testid="button-progress-period-selector"
+                style={{ padding: '24px 0' }}
               >
-                <div className="flex items-center gap-2">
-                  <Calendar 
+                <h2
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '20px',
+                    fontWeight: 600,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.02em',
+                    color: '#0C0C0C',
+                  }}
+                >
+                  진행건 요약
+                </h2>
+                <button 
+                  className="flex items-center justify-between"
+                  style={{
+                    width: '128px',
+                    height: '44px',
+                    padding: '10px 8px',
+                    gap: '8px',
+                    background: '#FFFFFF',
+                    border: '1px solid rgba(12, 12, 12, 0.3)',
+                    borderRadius: '8px',
+                  }}
+                  data-testid="button-progress-period-selector"
+                >
+                  <div className="flex items-center gap-2">
+                    <Calendar 
+                      style={{ 
+                        width: '22px', 
+                        height: '22px', 
+                        color: '#008FED' 
+                      }} 
+                    />
+                    <span 
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}
+                    >
+                      이번 달
+                    </span>
+                  </div>
+                  <ChevronDown 
                     style={{ 
-                      width: '22px', 
-                      height: '22px', 
-                      color: '#008FED' 
+                      width: '24px', 
+                      height: '24px', 
+                      color: 'rgba(12, 12, 12, 0.6)' 
                     }} 
                   />
-                  <span 
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 500,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.9)',
-                    }}
-                  >
-                    이번 달
-                  </span>
-                </div>
-                <ChevronDown 
-                  style={{ 
-                    width: '24px', 
-                    height: '24px', 
-                    color: 'rgba(12, 12, 12, 0.6)' 
-                  }} 
-                />
-              </button>
-            </div>
+                </button>
+              </div>
 
             {/* Summary Card */}
             <div
@@ -1006,6 +1008,158 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+            </div>
+
+            {/* Case List Card */}
+            <div className="flex flex-col gap-6">
+              {/* Title */}
+              <div style={{ padding: '24px 0' }}>
+                <h2
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '20px',
+                    fontWeight: 600,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.02em',
+                    color: '#0C0C0C',
+                  }}
+                >
+                  내 작업
+                </h2>
+              </div>
+
+              {/* Case List */}
+              <div
+                className="flex flex-col"
+                style={{
+                  width: '418px',
+                  height: '535px',
+                  background: '#FFFFFF',
+                  boxShadow: '0px 0px 20px #DBE9F5',
+                  borderRadius: '12px',
+                  padding: '20px',
+                  gap: '24px',
+                }}
+                data-testid="card-case-list"
+              >
+                {[
+                  { status: '작성중', statusColor: '#0C95F6', title: 'CASE #CLM-1023 · 세대 누수 (욕실)', accidentNo: '000000000', updated: '업데이트 2시간 전' },
+                  { status: '제출', statusColor: '#4CCBA0', title: 'CASE #CLM-1042 · 상가 천장 누수', accidentNo: '000000000', updated: '업데이트 2시간 전' },
+                  { status: '작성중', statusColor: '#0C95F6', title: 'CASE #CLM-1055 · 주택 화재', accidentNo: '000000000', updated: '업데이트 3시간 전' },
+                  { status: '제출', statusColor: '#4CCBA0', title: 'CASE #CLM-1067 · 사무실 누수', accidentNo: '000000000', updated: '업데이트 5시간 전' },
+                ].map((caseItem, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col gap-3"
+                    data-testid={`case-item-${index}`}
+                  >
+                    {/* Status and Time */}
+                    <div className="flex items-center justify-between">
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '8px 10px',
+                          background: '#FDFDFD',
+                          boxShadow: '0px 0px 20px #DBE9F5',
+                          borderRadius: '8px',
+                        }}
+                        data-testid={`status-badge-${index}`}
+                      >
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '15px',
+                            fontWeight: 600,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: caseItem.statusColor,
+                          }}
+                        >
+                          {caseItem.status}
+                        </span>
+                      </div>
+                      <span
+                        style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '13px',
+                          fontWeight: 400,
+                          lineHeight: '128%',
+                          letterSpacing: '-0.01em',
+                          color: 'rgba(12, 12, 12, 0.4)',
+                        }}
+                      >
+                        {caseItem.updated}
+                      </span>
+                    </div>
+
+                    {/* Title and Arrow */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1.5" style={{ padding: '0 4px' }}>
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
+                            fontWeight: 600,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: '#0C0C0C',
+                          }}
+                        >
+                          {caseItem.title}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: 'rgba(12, 12, 12, 0.6)',
+                            }}
+                          >
+                            사고번호
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '14px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: 'rgba(12, 12, 12, 0.6)',
+                            }}
+                          >
+                            ·
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '14px',
+                              fontWeight: 400,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: 'rgba(12, 12, 12, 0.6)',
+                            }}
+                          >
+                            {caseItem.accidentNo}
+                          </span>
+                        </div>
+                      </div>
+                      <ChevronRight
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          color: 'rgba(12, 12, 12, 0.4)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
