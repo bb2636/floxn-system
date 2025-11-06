@@ -207,7 +207,13 @@ export default function AdminSettings() {
             <button
               key={item}
               onClick={() => {
-                if (item === "홈") setLocation("/dashboard");
+                if (item === "홈") {
+                  setLocation("/dashboard");
+                } else if (item === "접수하기") {
+                  setLocation("/intake");
+                } else if (item === "관리자 설정") {
+                  setLocation("/admin-settings");
+                }
               }}
               className="px-6 py-3 rounded-lg transition-colors"
               style={{
