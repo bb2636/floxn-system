@@ -128,51 +128,115 @@ export default function Intake() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="bg-white border-b border-border backdrop-blur-sm">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2">
-              <img src={logoIcon} alt="FLOXN" className="h-8" />
-              <span className="text-xl font-semibold text-foreground" style={{ fontFamily: "Pretendard" }}>
-                FLOXN
-              </span>
-            </div>
-            
-            <nav className="flex items-center gap-2">
-              {menuItems.map((item) => (
-                <Button
-                  key={item.name}
-                  variant={activeMenu === item.name ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => {
-                    setActiveMenu(item.name);
-                    setLocation(item.path);
-                  }}
-                  className="text-sm"
-                  data-testid={`button-nav-${item.name}`}
-                >
-                  {item.name}
-                </Button>
-              ))}
-            </nav>
-          </div>
+    <div className="relative" style={{ minHeight: '100vh', background: '#E7EDFE' }}>
+      {/* Blur Background Orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div 
+          className="absolute"
+          style={{
+            width: '1095px',
+            height: '777px',
+            left: '97px',
+            bottom: '-200px',
+            background: 'rgba(254, 240, 230, 0.4)',
+            borderRadius: '9999px',
+            filter: 'blur(212px)',
+            transform: 'rotate(-35.25deg)',
+          }}
+        />
+        <div 
+          className="absolute"
+          style={{
+            width: '1335px',
+            height: '1323px',
+            left: '811px',
+            bottom: '0px',
+            background: 'rgba(234, 230, 254, 0.5)',
+            borderRadius: '9999px',
+            filter: 'blur(212px)',
+          }}
+        />
+        <div 
+          className="absolute"
+          style={{
+            width: '348px',
+            height: '1323px',
+            left: '0px',
+            bottom: '189px',
+            background: 'rgba(234, 230, 254, 0.5)',
+            borderRadius: '9999px',
+            filter: 'blur(212px)',
+          }}
+        />
+      </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
-                {getInitials(user.name)}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-foreground" data-testid="text-username">{user.name}</span>
-                <span className="text-xs text-muted-foreground" data-testid="text-role">{user.role}</span>
-              </div>
-            </div>
+      {/* Header */}
+      <header 
+        className="relative w-full h-[89px] px-8 flex items-center justify-between"
+        style={{
+          background: 'rgba(255, 255, 255, 0.06)',
+          borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
+          backdropFilter: 'blur(22px)',
+        }}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-2 w-[260px]">
+          <img 
+            src={logoIcon} 
+            alt="FLOXN Logo" 
+            className="w-6 h-6"
+          />
+          <div className="text-2xl font-bold text-gray-900">FLOXN</div>
+        </div>
+
+        {/* Navigation Menu */}
+        <div className="flex items-center gap-6 flex-1 px-6">
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => {
+                setActiveMenu(item.name);
+                setLocation(item.path);
+              }}
+              className="px-6 py-3 rounded-lg transition-colors"
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '18px',
+                fontWeight: activeMenu === item.name ? 600 : 500,
+                letterSpacing: '-0.02em',
+                color: activeMenu === item.name ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+              }}
+              data-testid={`menu-${item.name}`}
+            >
+              {item.name}
+            </button>
+          ))}
+        </div>
+
+        {/* User Profile */}
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0, 143, 237, 0.3)' }}
+          />
+          <div className="flex items-center gap-2">
+            <span 
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '15px',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                color: 'rgba(12, 12, 12, 0.7)',
+              }}
+              data-testid="user-info"
+            >
+              {user.username}
+            </span>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 p-8">
+      <main className="relative flex-1 p-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-2 mb-6">
             <h1 className="text-2xl font-semibold" style={{ fontFamily: "Pretendard" }}>
