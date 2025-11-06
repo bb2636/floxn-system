@@ -48,9 +48,19 @@ export default function Intake() {
     investigatorContact: "",
   });
 
+  const cleanFormData = (data: typeof formData) => {
+    const cleaned: any = {};
+    Object.entries(data).forEach(([key, value]) => {
+      if (value !== "" && value !== null && value !== undefined) {
+        cleaned[key] = value;
+      }
+    });
+    return cleaned;
+  };
+
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest("POST", "/api/cases", data);
+      return await apiRequest("POST", "/api/cases", cleanFormData(data));
     },
     onSuccess: () => {
       toast({ description: "접수가 저장되었습니다." });
@@ -63,7 +73,7 @@ export default function Intake() {
 
   const submitMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest("POST", "/api/cases", { ...data, status: "제출" });
+      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), status: "제출" });
     },
     onSuccess: () => {
       toast({ description: "접수가 완료되었습니다." });
