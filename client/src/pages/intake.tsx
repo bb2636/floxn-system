@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Star, Minus, ChevronDown, Calendar, HelpCircle } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 
@@ -18,16 +19,12 @@ export default function Intake() {
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("접수하기");
   const [basicInfoOpen, setBasicInfoOpen] = useState(true);
+  const [insuredInfoOpen, setInsuredInfoOpen] = useState(true);
+  const [sameAsPolicyHolder, setSameAsPolicyHolder] = useState(false);
   
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
   });
-
-  useEffect(() => {
-    if (!userLoading && !user) {
-      setLocation("/");
-    }
-  }, [user, userLoading, setLocation]);
 
   const [formData, setFormData] = useState({
     accidentDate: "",
@@ -46,7 +43,32 @@ export default function Intake() {
     investigatorDepartment: "",
     investigatorTeamName: "",
     investigatorContact: "",
+    policyHolderName: "",
+    policyHolderIdNumber: "",
+    policyHolderAddress: "",
+    insuredName: "",
+    insuredIdNumber: "",
+    insuredAddress: "",
+    victimName: "",
+    victimContact: "",
   });
+
+  useEffect(() => {
+    if (!userLoading && !user) {
+      setLocation("/");
+    }
+  }, [user, userLoading, setLocation]);
+
+  useEffect(() => {
+    if (sameAsPolicyHolder) {
+      setFormData((prev) => ({
+        ...prev,
+        insuredName: prev.policyHolderName,
+        insuredIdNumber: prev.policyHolderIdNumber,
+        insuredAddress: prev.policyHolderAddress,
+      }));
+    }
+  }, [sameAsPolicyHolder, formData.policyHolderName, formData.policyHolderIdNumber, formData.policyHolderAddress]);
 
   const cleanFormData = (data: typeof formData) => {
     const cleaned: any = {};
@@ -290,6 +312,140 @@ export default function Intake() {
                 </div>
               </CollapsibleContent>
             </Collapsible>
+
+            <div className="mt-6 pt-6 border-t">
+              <Collapsible open={insuredInfoOpen} onOpenChange={setInsuredInfoOpen}>
+                <div className="flex items-center justify-between pb-4 border-b">
+                  <h2 className="text-2xl font-semibold" style={{ fontFamily: "Pretendard" }}>피보험자 및 피해자 정보</h2>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" data-testid="button-toggle-insured-info">
+                      {insuredInfoOpen ? <Minus className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
+
+                <CollapsibleContent>
+                  <div className="pt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.8)" }}>
+                          보험계약자 및 피보험자 정보
+                        </h3>
+                        <p className="text-sm" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
+                          보험 계약자, 피보험자 중 한 가지는 반드시 기입해야 합니다.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="same-as-policy-holder"
+                          checked={sameAsPolicyHolder}
+                          onCheckedChange={(checked) => setSameAsPolicyHolder(checked as boolean)}
+                          data-testid="checkbox-same-as-policy-holder"
+                        />
+                        <Label
+                          htmlFor="same-as-policy-holder"
+                          className="text-sm cursor-pointer"
+                          style={{ fontFamily: "Pretendard", color: "#686A6E" }}
+                        >
+                          보험계약자 = 피보험자
+                        </Label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-3 gap-6">
+                        <div>
+                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>보험계약자 성함</Label>
+                          <Input
+                            placeholder="성함을 입력해주세요."
+                            value={formData.policyHolderName}
+                            onChange={(e) => handleInputChange("policyHolderName", e.target.value)}
+                            data-testid="input-policy-holder-name"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>보험계약자 주민등록번호</Label>
+                          <Input
+                            placeholder="주민등록번호를 입력해주세요."
+                            value={formData.policyHolderIdNumber}
+                            onChange={(e) => handleInputChange("policyHolderIdNumber", e.target.value)}
+                            data-testid="input-policy-holder-id-number"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피보험자 성함</Label>
+                          <Input
+                            placeholder="성함을 입력해주세요."
+                            value={formData.insuredName}
+                            onChange={(e) => handleInputChange("insuredName", e.target.value)}
+                            disabled={sameAsPolicyHolder}
+                            data-testid="input-insured-name"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-6">
+                        <div>
+                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>보험계약자 주소</Label>
+                          <Input
+                            placeholder="주소를 입력해주세요."
+                            value={formData.policyHolderAddress}
+                            onChange={(e) => handleInputChange("policyHolderAddress", e.target.value)}
+                            data-testid="input-policy-holder-address"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피보험자 주민등록번호</Label>
+                          <Input
+                            placeholder="주민등록번호를 입력해주세요."
+                            value={formData.insuredIdNumber}
+                            onChange={(e) => handleInputChange("insuredIdNumber", e.target.value)}
+                            disabled={sameAsPolicyHolder}
+                            data-testid="input-insured-id-number"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피보험자 주소</Label>
+                          <Input
+                            placeholder="주소를 입력해주세요."
+                            value={formData.insuredAddress}
+                            onChange={(e) => handleInputChange("insuredAddress", e.target.value)}
+                            disabled={sameAsPolicyHolder}
+                            data-testid="input-insured-address"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 pt-6 border-t">
+                      <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.8)" }}>
+                        피해자 정보
+                      </h3>
+                      <div className="grid grid-cols-2 gap-6">
+                        <div>
+                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피해자 성함</Label>
+                          <Input
+                            placeholder="성함을 입력해주세요."
+                            value={formData.victimName}
+                            onChange={(e) => handleInputChange("victimName", e.target.value)}
+                            data-testid="input-victim-name"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피해자 연락처</Label>
+                          <Input
+                            placeholder="연락처를 입력해주세요."
+                            value={formData.victimContact}
+                            onChange={(e) => handleInputChange("victimContact", e.target.value)}
+                            data-testid="input-victim-contact"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
 
             <div className="mt-6 pt-6 border-t">
               <div className="flex items-center gap-2 mb-4">

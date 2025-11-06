@@ -109,6 +109,21 @@ export const cases = pgTable("cases", {
   investigatorTeamName: text("investigator_team_name"),
   investigatorContact: text("investigator_contact"),
   
+  // 피보험자 및 피해자 정보
+  // 보험계약자 정보
+  policyHolderName: text("policy_holder_name"),
+  policyHolderIdNumber: text("policy_holder_id_number"),
+  policyHolderAddress: text("policy_holder_address"),
+  
+  // 피보험자 정보
+  insuredName: text("insured_name"),
+  insuredIdNumber: text("insured_id_number"),
+  insuredAddress: text("insured_address"),
+  
+  // 피해자 정보
+  victimName: text("victim_name"),
+  victimContact: text("victim_contact"),
+  
   // 기타 (기존 필드)
   clientPhone: text("client_phone"),
   clientAddress: text("client_address"),
