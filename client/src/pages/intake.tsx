@@ -75,9 +75,11 @@ export default function Intake() {
       setFormData((prev) => ({
         ...prev,
         insuredName: prev.policyHolderName,
+        insuredIdNumber: prev.policyHolderIdNumber,
+        insuredAddress: prev.policyHolderAddress,
       }));
     }
-  }, [sameAsPolicyHolder, formData.policyHolderName]);
+  }, [sameAsPolicyHolder, formData.policyHolderName, formData.policyHolderIdNumber, formData.policyHolderAddress]);
 
   const cleanFormData = (data: typeof formData) => {
     const cleaned: any = {};
@@ -130,6 +132,16 @@ export default function Intake() {
   };
 
   const handleSubmit = () => {
+    // Validation: 접수일자 필수
+    if (!formData.accidentDate) {
+      toast({
+        description: "접수일자를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validation: 보험사 증권번호 또는 사고번호 중 하나 필수
     if (!formData.insuranceAccidentNo && !formData.insurancePolicyNo) {
       toast({
         description: "보험사 증권번호 또는 보험사 사고번호 중 하나는 반드시 입력해야 합니다.",
@@ -137,6 +149,16 @@ export default function Intake() {
       });
       return;
     }
+    
+    // Validation: 보험계약자 또는 피보험자 중 하나의 성명 필수
+    if (!formData.policyHolderName && !formData.insuredName) {
+      toast({
+        description: "보험계약자 성명 또는 피보험자 성명 중 하나는 반드시 입력해야 합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     submitMutation.mutate(formData);
   };
 
@@ -526,11 +548,11 @@ export default function Intake() {
                             <SelectValue placeholder="선택해주세요" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="삼성화재">삼성화재</SelectItem>
-                            <SelectItem value="현대해상">현대해상</SelectItem>
-                            <SelectItem value="DB손해보험">DB손해보험</SelectItem>
-                            <SelectItem value="KB손해보험">KB손해보험</SelectItem>
-                            <SelectItem value="메리츠화재">메리츠화재</SelectItem>
+                            <SelectItem value="삼성화재" data-testid="select-option-samsung">삼성화재</SelectItem>
+                            <SelectItem value="현대해상" data-testid="select-option-hyundai">현대해상</SelectItem>
+                            <SelectItem value="DB손해보험" data-testid="select-option-db">DB손해보험</SelectItem>
+                            <SelectItem value="KB손해보험" data-testid="select-option-kb">KB손해보험</SelectItem>
+                            <SelectItem value="메리츠화재" data-testid="select-option-meritz">메리츠화재</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -705,11 +727,11 @@ export default function Intake() {
                             <SelectValue placeholder="선택해주세요" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="서울">서울</SelectItem>
-                            <SelectItem value="경기">경기</SelectItem>
-                            <SelectItem value="인천">인천</SelectItem>
-                            <SelectItem value="부산">부산</SelectItem>
-                            <SelectItem value="대구">대구</SelectItem>
+                            <SelectItem value="서울" data-testid="select-option-seoul">서울</SelectItem>
+                            <SelectItem value="경기" data-testid="select-option-gyeonggi">경기</SelectItem>
+                            <SelectItem value="인천" data-testid="select-option-incheon">인천</SelectItem>
+                            <SelectItem value="부산" data-testid="select-option-busan">부산</SelectItem>
+                            <SelectItem value="대구" data-testid="select-option-daegu">대구</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -920,7 +942,11 @@ export default function Intake() {
                           </SelectTrigger>
                           <SelectContent>
                             {assessors?.map((assessor) => (
-                              <SelectItem key={assessor.id} value={assessor.id}>
+                              <SelectItem 
+                                key={assessor.id} 
+                                value={assessor.id}
+                                data-testid={`select-option-assessor-${assessor.id}`}
+                              >
                                 {assessor.name}
                               </SelectItem>
                             ))}
