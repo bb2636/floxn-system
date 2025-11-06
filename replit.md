@@ -45,6 +45,19 @@ The system is a full-stack web application with a React-based frontend and an Ex
 - **Password Reset**: Administrators can reset user passwords.
 - **Account Deletion**: Soft delete functionality ensures that account history is preserved while the account is marked inactive.
 - **KST Date Handling**: All date creations are in Korean Standard Time (KST).
+- **Case Intake System**: 
+  - **Intake Page** (/intake): Multi-section form for creating new insurance claim cases
+    - Accessible via "접수하기" button in dashboard header
+    - Form sections: Basic Information (placeholder), Insurance Information (보험사 사고번호, 보험사 증권번호, 보험사명), Client Information (의뢰자명, 의뢰자 연락처, 의뢰자 주소)
+    - Two submission modes:
+      - "저장" button: Saves case with status "작성중" (In Progress)
+      - "접수 완료" button: Submits case with status "제출" (Submitted) and redirects to dashboard
+    - Success feedback via toast notifications
+  - **Case Number Generation**: Automatic case number assignment in format "CLM-{timestamp}"
+  - **Validation**: Uses insertCaseRequestSchema (excludes createdBy field which is added server-side from session)
+  - **API Endpoints**:
+    - POST /api/cases: Create new case (requires authentication)
+    - GET /api/cases: Retrieve all cases (requires authentication)
 
 ### System Design Choices
 - **Frontend**: React with TypeScript, Wouter for routing, TanStack Query for data fetching, React Hook Form with Zod for form validation, Shadcn UI and Tailwind CSS for component styling, and Lucide React for icons.
@@ -72,5 +85,8 @@ The system is a full-stack web application with a React-based frontend and an Ex
 - **Database**:
     - PostgreSQL (Neon-backed) with Drizzle ORM for persistent data storage
     - Automatic table schema management via `npm run db:push`
+    - Tables:
+      - `users`: User accounts with role-based access control
+      - `cases`: Insurance claim cases with complete lifecycle tracking
 - **Development Tools**:
     - Vite (development server)
