@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type InsertCase, cases } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -23,13 +23,17 @@ export interface IStorage {
   verifyPassword(username: string, password: string): Promise<User | null>;
   updatePassword(username: string, newPassword: string): Promise<User | null>;
   deleteAccount(username: string): Promise<User | null>;
+  createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
+  getAllCases(): Promise<Case[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
+  private cases: Map<string, Case>;
 
   constructor() {
     this.users = new Map();
+    this.cases = new Map();
     this.seedTestUser();
   }
 
@@ -277,6 +281,37 @@ export class MemStorage implements IStorage {
     this.users.set(user.id, deletedUser);
     return deletedUser;
   }
+
+  async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
+    const id = randomUUID();
+    const currentDate = getKSTDate();
+    
+    const newCase: Case = {
+      id,
+      caseNumber: caseData.caseNumber,
+      status: caseData.status || "작성중",
+      insuranceAccidentNo: caseData.insuranceAccidentNo || null,
+      insurancePolicyNo: caseData.insurancePolicyNo || null,
+      insuranceCompany: caseData.insuranceCompany || null,
+      clientName: caseData.clientName || null,
+      clientPhone: caseData.clientPhone || null,
+      clientAddress: caseData.clientAddress || null,
+      accidentDate: caseData.accidentDate || null,
+      accidentLocation: caseData.accidentLocation || null,
+      accidentDescription: caseData.accidentDescription || null,
+      assignedTo: caseData.assignedTo || null,
+      createdBy: caseData.createdBy,
+      createdAt: currentDate,
+      updatedAt: currentDate,
+    };
+    
+    this.cases.set(id, newCase);
+    return newCase;
+  }
+
+  async getAllCases(): Promise<Case[]> {
+    return Array.from(this.cases.values());
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -499,6 +534,36 @@ export class DbStorage implements IStorage {
       .returning();
     
     return result[0] || null;
+  }
+
+  async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
+    const currentDate = getKSTDate();
+    
+    const newCase = {
+      caseNumber: caseData.caseNumber,
+      status: caseData.status || "작성중",
+      insuranceAccidentNo: caseData.insuranceAccidentNo || null,
+      insurancePolicyNo: caseData.insurancePolicyNo || null,
+      insuranceCompany: caseData.insuranceCompany || null,
+      clientName: caseData.clientName || null,
+      clientPhone: caseData.clientPhone || null,
+      clientAddress: caseData.clientAddress || null,
+      accidentDate: caseData.accidentDate || null,
+      accidentLocation: caseData.accidentLocation || null,
+      accidentDescription: caseData.accidentDescription || null,
+      assignedTo: caseData.assignedTo || null,
+      createdBy: caseData.createdBy,
+      createdAt: currentDate,
+      updatedAt: currentDate,
+    };
+
+    const result = await db.insert(cases).values(newCase).returning();
+    return result[0];
+  }
+
+  async getAllCases(): Promise<Case[]> {
+    const result = await db.select().from(cases);
+    return result;
   }
 }
 

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -236,6 +236,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Create account error:", error);
       res.status(500).json({ error: "계정 생성 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Create case endpoint
+  app.post("/api/cases", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      // Validate request body with Zod (without createdBy)
+      const validatedData = insertCaseRequestSchema.parse(req.body);
+      
+      // Generate case number
+      const timestamp = Date.now();
+      const caseNumber = `CLM-${timestamp}`;
+
+      // Create new case with createdBy from session
+      const newCase = await storage.createCase({
+        ...validatedData,
+        caseNumber,
+        createdBy: req.session.userId,
+      });
+
+      res.status(201).json({ success: true, case: newCase });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Create case error:", error);
+      res.status(500).json({ error: "접수 생성 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get all cases endpoint
+  app.get("/api/cases", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const cases = await storage.getAllCases();
+      res.json(cases);
+    } catch (error) {
+      console.error("Get cases error:", error);
+      res.status(500).json({ error: "케이스 목록을 불러오는 중 오류가 발생했습니다" });
     }
   });
 

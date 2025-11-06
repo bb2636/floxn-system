@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -77,3 +77,46 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;
 export type DeleteAccountInput = z.infer<typeof deleteAccountSchema>;
 export type CreateAccountInput = z.infer<typeof createAccountSchema>;
+
+export const cases = pgTable("cases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseNumber: text("case_number").notNull().unique(),
+  status: text("status").notNull().default("작성중"),
+  
+  insuranceAccidentNo: text("insurance_accident_no"),
+  insurancePolicyNo: text("insurance_policy_no"),
+  insuranceCompany: text("insurance_company"),
+  
+  clientName: text("client_name"),
+  clientPhone: text("client_phone"),
+  clientAddress: text("client_address"),
+  
+  accidentDate: text("accident_date"),
+  accidentLocation: text("accident_location"),
+  accidentDescription: text("accident_description"),
+  
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const CASE_STATUSES = ["작성중", "제출", "검토중", "완료"] as const;
+export type CaseStatus = typeof CASE_STATUSES[number];
+
+export const insertCaseSchema = createInsertSchema(cases).omit({
+  id: true,
+  caseNumber: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  status: z.enum(CASE_STATUSES).default("작성중"),
+});
+
+export const insertCaseRequestSchema = insertCaseSchema.omit({
+  createdBy: true,
+});
+
+export type InsertCase = z.infer<typeof insertCaseSchema>;
+export type InsertCaseRequest = z.infer<typeof insertCaseRequestSchema>;
+export type Case = typeof cases.$inferSelect;

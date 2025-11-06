@@ -160,6 +160,8 @@ export default function Dashboard() {
                 setActiveMenu(item.name);
                 if (item.name === "관리자 설정") {
                   setLocation("/admin-settings");
+                } else if (item.name === "접수하기") {
+                  setLocation("/intake");
                 }
               }}
               className="px-6 py-3 rounded-lg transition-colors"
