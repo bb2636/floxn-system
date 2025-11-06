@@ -83,15 +83,35 @@ export const cases = pgTable("cases", {
   caseNumber: text("case_number").notNull().unique(),
   status: text("status").notNull().default("작성중"),
   
-  insuranceAccidentNo: text("insurance_accident_no"),
-  insurancePolicyNo: text("insurance_policy_no"),
-  insuranceCompany: text("insurance_company"),
+  // 기본 정보
+  accidentDate: text("accident_date"),
   
+  // 보험 정보
+  insuranceCompany: text("insurance_company"),
+  insurancePolicyNo: text("insurance_policy_no"),
+  insuranceAccidentNo: text("insurance_accident_no"),
+  
+  // 의뢰자 정보
+  clientResidence: text("client_residence"),
+  clientDepartment: text("client_department"),
   clientName: text("client_name"),
+  clientContact: text("client_contact"),
+  
+  // 심사자 정보
+  assessorId: varchar("assessor_id").references(() => users.id),
+  assessorDepartment: text("assessor_department"),
+  assessorTeam: text("assessor_team"),
+  assessorContact: text("assessor_contact"),
+  
+  // 조사자 정보
+  investigatorTeam: text("investigator_team"),
+  investigatorDepartment: text("investigator_department"),
+  investigatorTeamName: text("investigator_team_name"),
+  investigatorContact: text("investigator_contact"),
+  
+  // 기타 (기존 필드)
   clientPhone: text("client_phone"),
   clientAddress: text("client_address"),
-  
-  accidentDate: text("accident_date"),
   accidentLocation: text("accident_location"),
   accidentDescription: text("accident_description"),
   
