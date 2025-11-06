@@ -1310,53 +1310,77 @@ export default function Intake() {
                 </div>
                 
                 <CollapsibleContent>
-                  <div style={{ padding: '16px 0 32px 0' }}>
-                    {/* Subsection 1: 보험계약자 및 피보험자 정보 */}
-                    <div style={{ padding: '24px 20px' }}>
-                      <h3 
+                  <div style={{ padding: '0px 0 32px 0' }}>
+                    {/* First Row: Title + Checkbox (space-between) */}
+                    <div 
+                      style={{ 
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '24px 20px',
+                        gap: '10px',
+                      }}
+                    >
+                      {/* Left: Title + Note */}
+                      <div 
                         style={{
-                          fontFamily: 'Pretendard',
-                          fontWeight: 600,
-                          fontSize: '20px',
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.8)',
-                          marginBottom: '8px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
                         }}
                       >
-                        보험계약자 및 피보험자 정보
-                      </h3>
-                      <p 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontWeight: 500,
-                          fontSize: '14px',
-                          lineHeight: '128%',
-                          letterSpacing: '-0.01em',
-                          color: 'rgba(12, 12, 12, 0.5)',
-                        }}
-                      >
-                        보험 계약자, 피보험자 중 한 가지는 반드시 기입해야 합니다.
-                      </p>
-                    </div>
+                        <h3 
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontWeight: 600,
+                            fontSize: '20px',
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.8)',
+                          }}
+                        >
+                          보험계약자 및 피보험자 정보
+                        </h3>
+                        <p 
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontWeight: 500,
+                            fontSize: '14px',
+                            lineHeight: '128%',
+                            letterSpacing: '-0.01em',
+                            color: 'rgba(12, 12, 12, 0.5)',
+                          }}
+                        >
+                          보험 계약자, 피보험자 중 한 가지는 반드시 기입해야 합니다.
+                        </p>
+                      </div>
 
-                    {/* Checkbox: 보험계약자 = 피보험자 */}
-                    <div style={{ padding: '0 20px', marginBottom: '20px' }}>
-                      <div className="flex items-center gap-2">
+                      {/* Right: Checkbox */}
+                      <div 
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
                         <Checkbox 
                           id="same-as-policy-holder"
                           checked={sameAsPolicyHolder}
                           onCheckedChange={(checked) => setSameAsPolicyHolder(checked as boolean)}
                           data-testid="checkbox-same-as-policy-holder"
+                          style={{ width: '24px', height: '24px' }}
                         />
                         <label 
                           htmlFor="same-as-policy-holder"
                           style={{
                             fontFamily: 'Pretendard',
                             fontWeight: 500,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
+                            fontSize: '14px',
+                            lineHeight: '128%',
+                            letterSpacing: '-0.01em',
+                            color: '#686A6E',
                             cursor: 'pointer',
                           }}
                         >
@@ -1365,8 +1389,24 @@ export default function Intake() {
                       </div>
                     </div>
 
-                    {/* 3-column grid for policy holder & insured */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '20px' }}>
+                    {/* Policy Holder Row (3-column) */}
+                    <div 
+                      style={{ 
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                      }}
+                    >
+                      {/* 보험계약자 필드들 */}
+                      <div 
+                        style={{ 
+                          display: 'flex',
+                          flexDirection: 'column',
+                          padding: '0px 20px',
+                          gap: '20px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', gap: '20px' }}>
                       {/* Policy Holder Name */}
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label 
@@ -1471,10 +1511,10 @@ export default function Intake() {
                           data-testid="input-policy-holder-address"
                         />
                       </div>
-                    </div>
+                        </div>
 
-                    {/* Insured Info */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '20px' }}>
+                        {/* 피보험자 필드들 */}
+                        <div style={{ display: 'flex', gap: '20px' }}>
                       {/* Insured Name */}
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label 
@@ -1579,10 +1619,12 @@ export default function Intake() {
                           data-testid="input-insured-address"
                         />
                       </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Subsection 2: 피해자 정보 */}
-                    <div style={{ padding: '24px 20px 12px 20px' }}>
+                    <div style={{ padding: '24px 20px 0px 20px' }}>
                       <h3 
                         style={{
                           fontFamily: 'Pretendard',
