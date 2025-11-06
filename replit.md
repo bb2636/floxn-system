@@ -46,19 +46,37 @@ The system is a full-stack web application with a React-based frontend and an Ex
 - **Account Deletion**: Soft delete functionality ensures that account history is preserved while the account is marked inactive.
 - **KST Date Handling**: All date creations are in Korean Standard Time (KST).
 - **Case Intake System**: 
-  - **Intake Page** (/intake): Multi-section form for creating new insurance claim cases
+  - **Intake Page** (/intake): Redesigned multi-section collapsible form for creating new insurance claim cases
     - **Unified Header**: Consistent navigation across all pages with FLOXN branding, menu items, and user profile
-    - Accessible via "접수하기" button in dashboard header
-    - Page title: "새로운 접수" (26px, Pretendard, 600 font-weight)
-    - Form sections: 
-      - Basic Information: 접수일 (date), 사고지역 (location)
-      - Insurance Information: 보험사 사고번호, 보험사 증권번호, 보험사명 (with validation note)
-      - Client Information: 성함, 연락처, 주소, 사고내용 (accident description)
-    - Two submission modes:
-      - "저장" button: Saves case with status "작성중" (In Progress)
-      - "접수 완료" button: Submits case with status "제출" (Submitted) and redirects to dashboard
-    - Success feedback via toast notifications
+    - **Visual Design**: Single centered card with gradient backdrop (linear-gradient(135deg, #FFF5EB 0%, #E8E0FF 100%))
+    - **Page Title**: "새로운 접수" with star icon (26px, Pretendard, 600 font-weight)
+    - **Form Sections** (Collapsible with Shadcn Collapsible component):
+      1. **기본 정보** (Basic Information) - Collapsible with toggle button
+         - 접수번호 (auto-generated, disabled)
+         - 접수일자 (date input with calendar icon)
+      2. **보험 정보** (Insurance Information)
+         - Validation note: "보험사 증권번호, 생명사 사고번호 중 한 가지는 반드시 기입해야 합니다."
+         - 보험사 (dropdown: 삼성화재, 현대해상, DB손해보험, KB손해보험, 메리츠화재)
+         - 보험사 증권번호, 보험사 사고번호
+      3. **의뢰자 정보** (Client Information) - with help icon
+         - 거주지 (dropdown: 서울, 경기, 인천, 부산, 대구)
+         - 소속/시절, 의뢰자 (dropdown), 의뢰자 담당자 연락처
+      4. **심사자 정보** (Assessor Information)
+         - 심사자 (dropdown, optional), 소속/시절, 심사팀 (dropdown), 심사자 연락처
+      5. **조사자 정보** (Investigator Information)
+         - 순서팀, 소속/부서, 조사팀 (dropdown), 조사자 연락처
+    - **Submission Modes**:
+      - "저장" button: Saves case with status "작성중" (In Progress), stays on page
+      - "접수 완료" button: Submits case with status "제출" (Submitted), shows toast for 2s, then redirects to dashboard after 1s delay
+    - **Data Handling**:
+      - cleanFormData function removes empty string fields before submission
+      - Foreign key fields (assessorId) are optional
+      - Success feedback via toast notifications (2s duration)
   - **Case Number Generation**: Automatic case number assignment in format "CLM-{timestamp}"
+  - **Database Schema**: Extended cases table with new fields:
+    - Client fields: clientResidence, clientDepartment, clientContact
+    - Assessor fields: assessorId (FK to users), assessorDepartment, assessorTeam, assessorContact
+    - Investigator fields: investigatorTeam, investigatorDepartment, investigatorTeamName, investigatorContact
   - **Validation**: Uses insertCaseRequestSchema (excludes createdBy field which is added server-side from session)
   - **API Endpoints**:
     - POST /api/cases: Create new case (requires authentication)
