@@ -64,11 +64,9 @@ export default function Intake() {
       setFormData((prev) => ({
         ...prev,
         insuredName: prev.policyHolderName,
-        insuredIdNumber: prev.policyHolderIdNumber,
-        insuredAddress: prev.policyHolderAddress,
       }));
     }
-  }, [sameAsPolicyHolder, formData.policyHolderName, formData.policyHolderIdNumber, formData.policyHolderAddress]);
+  }, [sameAsPolicyHolder, formData.policyHolderName]);
 
   const cleanFormData = (data: typeof formData) => {
     const cleaned: any = {};
@@ -326,91 +324,71 @@ export default function Intake() {
 
                 <CollapsibleContent>
                   <div className="pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.8)" }}>
-                          보험계약자 및 피보험자 정보
-                        </h3>
-                        <p className="text-sm" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
-                          보험 계약자, 피보험자 중 한 가지는 반드시 기입해야 합니다.
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id="same-as-policy-holder"
-                          checked={sameAsPolicyHolder}
-                          onCheckedChange={(checked) => setSameAsPolicyHolder(checked as boolean)}
-                          data-testid="checkbox-same-as-policy-holder"
-                        />
-                        <Label
-                          htmlFor="same-as-policy-holder"
-                          className="text-sm cursor-pointer"
-                          style={{ fontFamily: "Pretendard", color: "#686A6E" }}
-                        >
-                          보험계약자 = 피보험자
-                        </Label>
-                      </div>
-                    </div>
-
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-3 gap-6">
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-4">
                         <div>
-                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>보험계약자 성함</Label>
-                          <Input
-                            placeholder="성함을 입력해주세요."
-                            value={formData.policyHolderName}
-                            onChange={(e) => handleInputChange("policyHolderName", e.target.value)}
-                            data-testid="input-policy-holder-name"
-                          />
+                          <h3 className="text-base font-semibold mb-1" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.8)" }}>
+                            보험계약자 및 피보험자 정보
+                          </h3>
+                          <p className="text-sm" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
+                            보험 계약자, 피보험자 중 한 가지는 반드시 기입해야 합니다.
+                          </p>
                         </div>
-                        <div>
-                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>보험계약자 주민등록번호</Label>
-                          <Input
-                            placeholder="주민등록번호를 입력해주세요."
-                            value={formData.policyHolderIdNumber}
-                            onChange={(e) => handleInputChange("policyHolderIdNumber", e.target.value)}
-                            data-testid="input-policy-holder-id-number"
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="same-as-policy-holder"
+                            checked={sameAsPolicyHolder}
+                            onCheckedChange={(checked) => setSameAsPolicyHolder(checked as boolean)}
+                            data-testid="checkbox-same-as-policy-holder"
                           />
-                        </div>
-                        <div>
-                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피보험자 성함</Label>
-                          <Input
-                            placeholder="성함을 입력해주세요."
-                            value={formData.insuredName}
-                            onChange={(e) => handleInputChange("insuredName", e.target.value)}
-                            disabled={sameAsPolicyHolder}
-                            data-testid="input-insured-name"
-                          />
+                          <Label
+                            htmlFor="same-as-policy-holder"
+                            className="text-sm cursor-pointer"
+                            style={{ fontFamily: "Pretendard", color: "#686A6E" }}
+                          >
+                            보험계약자 = 피보험자
+                          </Label>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-6">
-                        <div>
-                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>보험계약자 주소</Label>
-                          <Input
-                            placeholder="주소를 입력해주세요."
-                            value={formData.policyHolderAddress}
-                            onChange={(e) => handleInputChange("policyHolderAddress", e.target.value)}
-                            data-testid="input-policy-holder-address"
-                          />
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-3 gap-6">
+                          <div>
+                            <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>보험계약자</Label>
+                            <Input
+                              placeholder="보험사 선택"
+                              value={formData.policyHolderName}
+                              onChange={(e) => handleInputChange("policyHolderName", e.target.value)}
+                              data-testid="input-policy-holder-name"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피보험자</Label>
+                            <Input
+                              placeholder="피보험사 성명"
+                              value={formData.insuredIdNumber}
+                              onChange={(e) => handleInputChange("insuredIdNumber", e.target.value)}
+                              data-testid="input-insured-id-number"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피보험자 성명*</Label>
+                            <Input
+                              placeholder="피보험자 성명*"
+                              value={formData.insuredName}
+                              onChange={(e) => handleInputChange("insuredName", e.target.value)}
+                              disabled={sameAsPolicyHolder}
+                              data-testid="input-insured-name"
+                            />
+                          </div>
                         </div>
+
                         <div>
-                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피보험자 주민등록번호</Label>
+                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피보험자 주소*</Label>
                           <Input
-                            placeholder="주민등록번호를 입력해주세요."
-                            value={formData.insuredIdNumber}
-                            onChange={(e) => handleInputChange("insuredIdNumber", e.target.value)}
-                            disabled={sameAsPolicyHolder}
-                            data-testid="input-insured-id-number"
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피보험자 주소</Label>
-                          <Input
-                            placeholder="주소를 입력해주세요."
+                            placeholder="도로명 주소, 동/호 포함"
                             value={formData.insuredAddress}
                             onChange={(e) => handleInputChange("insuredAddress", e.target.value)}
-                            disabled={sameAsPolicyHolder}
                             data-testid="input-insured-address"
                           />
                         </div>
@@ -418,14 +396,14 @@ export default function Intake() {
                     </div>
 
                     <div className="mt-6 pt-6 border-t">
-                      <h3 className="text-lg font-semibold mb-4" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.8)" }}>
+                      <h3 className="text-base font-semibold mb-4" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.8)" }}>
                         피해자 정보
                       </h3>
                       <div className="grid grid-cols-2 gap-6">
                         <div>
-                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피해자 성함</Label>
+                          <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피해자</Label>
                           <Input
-                            placeholder="성함을 입력해주세요."
+                            placeholder="피해자 성명"
                             value={formData.victimName}
                             onChange={(e) => handleInputChange("victimName", e.target.value)}
                             data-testid="input-victim-name"
@@ -434,7 +412,7 @@ export default function Intake() {
                         <div>
                           <Label className="text-sm mb-2" style={{ color: "#686A6E" }}>피해자 연락처</Label>
                           <Input
-                            placeholder="연락처를 입력해주세요."
+                            placeholder="피해자 연락처"
                             value={formData.victimContact}
                             onChange={(e) => handleInputChange("victimContact", e.target.value)}
                             data-testid="input-victim-contact"
