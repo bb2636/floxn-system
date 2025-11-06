@@ -110,13 +110,13 @@ export default function Intake() {
   };
 
   const menuItems = [
-    { name: "홈", path: "/dashboard" },
-    { name: "접수하기", path: "/intake" },
-    { name: "진행상황", path: "/progress" },
-    { name: "현장조사", path: "/inspection" },
-    { name: "종합진행관리", path: "/management" },
-    { name: "통계 및 정산", path: "/statistics" },
-    { name: "관리자 설정", path: "/admin" },
+    { name: "홈", active: false },
+    { name: "접수하기", active: true },
+    { name: "진행상황", active: false },
+    { name: "현장조사", active: false },
+    { name: "종합진행관리", active: false },
+    { name: "통계 및 정산", active: false },
+    { name: "관리자 설정", active: false },
   ];
 
   const getInitials = (name: string) => {
@@ -196,7 +196,13 @@ export default function Intake() {
               key={item.name}
               onClick={() => {
                 setActiveMenu(item.name);
-                setLocation(item.path);
+                if (item.name === "홈") {
+                  setLocation("/dashboard");
+                } else if (item.name === "관리자 설정") {
+                  setLocation("/admin-settings");
+                } else if (item.name === "접수하기") {
+                  setLocation("/intake");
+                }
               }}
               className="px-6 py-3 rounded-lg transition-colors"
               style={{
