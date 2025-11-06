@@ -47,8 +47,13 @@ The system is a full-stack web application with a React-based frontend and an Ex
 - **KST Date Handling**: All date creations are in Korean Standard Time (KST).
 - **Case Intake System**: 
   - **Intake Page** (/intake): Multi-section form for creating new insurance claim cases
+    - **Unified Header**: Consistent navigation across all pages with FLOXN branding, menu items, and user profile
     - Accessible via "접수하기" button in dashboard header
-    - Form sections: Basic Information (placeholder), Insurance Information (보험사 사고번호, 보험사 증권번호, 보험사명), Client Information (의뢰자명, 의뢰자 연락처, 의뢰자 주소)
+    - Page title: "새로운 접수" (26px, Pretendard, 600 font-weight)
+    - Form sections: 
+      - Basic Information: 접수일 (date), 사고지역 (location)
+      - Insurance Information: 보험사 사고번호, 보험사 증권번호, 보험사명 (with validation note)
+      - Client Information: 성함, 연락처, 주소, 사고내용 (accident description)
     - Two submission modes:
       - "저장" button: Saves case with status "작성중" (In Progress)
       - "접수 완료" button: Submits case with status "제출" (Submitted) and redirects to dashboard

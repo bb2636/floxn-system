@@ -6,10 +6,12 @@ import { useToast } from "@/hooks/use-toast";
 import { User } from "@shared/schema";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import logoIcon from "@assets/Frame 2_1762217940686.png";
 
 export default function Intake() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [activeMenu, setActiveMenu] = useState("접수하기");
   
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -111,15 +113,144 @@ export default function Intake() {
     return null;
   }
 
+  const menuItems = [
+    { name: "홈" },
+    { name: "접수하기" },
+    { name: "진행상황" },
+    { name: "현장조사" },
+    { name: "종합진행관리" },
+    { name: "통계 및 정산" },
+    { name: "관리자 설정" },
+  ];
+
   return (
-    <div
-      className="flex flex-col items-center"
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(0deg, #E7EDFE, #E7EDFE), #FFFFFF",
-        padding: "89px 0",
-      }}
-    >
+    <div className="relative" style={{ minHeight: '100vh', background: '#E7EDFE' }}>
+      {/* Blur Background Orbs */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div 
+          className="absolute"
+          style={{
+            width: '1095px',
+            height: '777px',
+            left: '97px',
+            bottom: '-200px',
+            background: 'rgba(254, 240, 230, 0.4)',
+            borderRadius: '9999px',
+            filter: 'blur(212px)',
+            transform: 'rotate(-35.25deg)',
+          }}
+        />
+        <div 
+          className="absolute"
+          style={{
+            width: '1335px',
+            height: '1323px',
+            left: '811px',
+            bottom: '0px',
+            background: 'rgba(234, 230, 254, 0.5)',
+            borderRadius: '9999px',
+            filter: 'blur(212px)',
+          }}
+        />
+        <div 
+          className="absolute"
+          style={{
+            width: '348px',
+            height: '1323px',
+            right: '0px',
+            top: '0px',
+            background: 'linear-gradient(119.98deg, rgba(217, 217, 217, 0) 0%, rgba(12, 95, 246, 0.064) 100%)',
+            filter: 'blur(212px)',
+          }}
+        />
+      </div>
+
+      {/* Header */}
+      <header 
+        className="relative w-full h-[89px] px-8 flex items-center justify-between"
+        style={{
+          background: 'rgba(255, 255, 255, 0.06)',
+          borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
+          backdropFilter: 'blur(22px)',
+        }}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-2 w-[260px]">
+          <img 
+            src={logoIcon} 
+            alt="FLOXN Logo" 
+            className="w-6 h-6"
+          />
+          <div className="text-2xl font-bold text-gray-900">FLOXN</div>
+        </div>
+
+        {/* Navigation Menu */}
+        <div className="flex items-center gap-6 flex-1 px-6">
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => {
+                setActiveMenu(item.name);
+                if (item.name === "홈") {
+                  setLocation("/dashboard");
+                } else if (item.name === "관리자 설정") {
+                  setLocation("/admin-settings");
+                } else if (item.name === "접수하기") {
+                  setLocation("/intake");
+                }
+              }}
+              className="px-6 py-3 rounded-lg transition-colors"
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '18px',
+                fontWeight: activeMenu === item.name ? 600 : 500,
+                letterSpacing: '-0.02em',
+                color: activeMenu === item.name ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+                background: activeMenu === item.name ? 'rgba(12, 12, 12, 0.04)' : 'transparent',
+              }}
+              data-testid={`nav-${item.name}`}
+            >
+              {item.name}
+            </button>
+          ))}
+        </div>
+
+        {/* User Profile */}
+        <div 
+          className="flex items-center gap-3 px-4 py-2 rounded-lg"
+          style={{
+            background: 'rgba(0, 143, 237, 0.08)',
+            border: '1px solid rgba(0, 143, 237, 0.3)',
+          }}
+        >
+          <div 
+            className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ background: '#008FED' }}
+          >
+            <span className="text-white font-semibold">{user?.username?.[0] || 'U'}</span>
+          </div>
+          <div className="flex flex-col">
+            <div 
+              className="font-semibold"
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '16px',
+                color: '#0C0C0C',
+              }}
+            >
+              {user?.username || '사용자'} {user?.role || '관리자'}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Content */}
+      <div
+        className="relative flex flex-col items-center"
+        style={{
+          padding: "40px 0",
+        }}
+      >
       <div
         className="flex flex-col"
         style={{
@@ -693,6 +824,7 @@ export default function Intake() {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 }
