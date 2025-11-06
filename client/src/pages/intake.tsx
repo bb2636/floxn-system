@@ -128,9 +128,7 @@ export default function Intake() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{
-      background: "linear-gradient(135deg, #FFF5EB 0%, #E8E0FF 100%)",
-    }}>
+    <div className="min-h-screen flex flex-col bg-background">
       <header className="bg-white border-b border-border backdrop-blur-sm">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-8">
@@ -177,10 +175,10 @@ export default function Intake() {
       <main className="flex-1 p-8">
         <div className="max-w-5xl mx-auto">
           <div className="flex items-center gap-2 mb-6">
-            <Star className="h-6 w-6 text-muted-foreground" />
             <h1 className="text-2xl font-semibold" style={{ fontFamily: "Pretendard" }}>
               새로운 접수
             </h1>
+            <Star className="h-6 w-6 text-muted-foreground cursor-pointer hover-elevate" data-testid="button-favorite" />
           </div>
 
           <Card className="p-6" style={{ boxShadow: "0px 0px 20px #DBE9F5" }}>
