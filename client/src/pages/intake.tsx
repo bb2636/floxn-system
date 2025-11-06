@@ -76,9 +76,14 @@ export default function Intake() {
       return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), status: "제출" });
     },
     onSuccess: () => {
-      toast({ description: "접수가 완료되었습니다." });
+      toast({ 
+        description: "접수가 완료되었습니다.",
+        duration: 2000,
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-      setLocation("/dashboard");
+      setTimeout(() => {
+        setLocation("/dashboard");
+      }, 1000);
     },
     onError: (error: Error) => {
       toast({ description: error.message, variant: "destructive" });
