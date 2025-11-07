@@ -27,6 +27,14 @@ export default function Intake() {
   const [damagePreventionCost, setDamagePreventionCost] = useState(false);
   const [victimIncidentAssistance, setVictimIncidentAssistance] = useState(false);
   
+  // 피해사항 등록 항목들
+  const [damageItems, setDamageItems] = useState<Array<{
+    item: string;
+    type: string;
+    quantity: string;
+    details: string;
+  }>>([]);
+  
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
   });
@@ -173,6 +181,29 @@ export default function Intake() {
     }
     
     submitMutation.mutate(formData);
+  };
+
+  const handleAddDamageItem = () => {
+    if (formData.damageItem && formData.damageType) {
+      setDamageItems([...damageItems, {
+        item: formData.damageItem,
+        type: formData.damageType,
+        quantity: formData.damageQuantity || '0',
+        details: formData.damageDetails,
+      }]);
+      // Clear fields after adding
+      setFormData(prev => ({
+        ...prev,
+        damageItem: '',
+        damageType: '',
+        damageQuantity: '',
+        damageDetails: '',
+      }));
+    }
+  };
+
+  const handleRemoveDamageItem = (index: number) => {
+    setDamageItems(damageItems.filter((_, i) => i !== index));
   };
 
   const menuItems = [
@@ -1576,6 +1607,7 @@ export default function Intake() {
 
                         {/* 등록 Button */}
                         <Button
+                          onClick={handleAddDamageItem}
                           style={{
                             height: '68px',
                             padding: '0 32px',
@@ -1594,6 +1626,85 @@ export default function Intake() {
                           등록
                         </Button>
                       </div>
+
+                      {/* 등록된 피해사항 표시 (태그) */}
+                      {damageItems.length > 0 && (
+                        <div 
+                          style={{
+                            padding: '12px 20px 0 20px',
+                            width: '1596px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                          }}
+                        >
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            등 건의 피해
+                          </label>
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {damageItems.map((item, index) => (
+                              <div
+                                key={index}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  padding: '8px 12px',
+                                  background: '#F5F5F5',
+                                  borderRadius: '6px',
+                                  fontFamily: 'Pretendard',
+                                  fontSize: '14px',
+                                  color: '#0C0C0C',
+                                }}
+                              >
+                                <span style={{ color: '#008FED', fontWeight: 600 }}>•</span>
+                                <span style={{ fontWeight: 500 }}>
+                                  {item.item}
+                                </span>
+                                <span style={{ color: '#686A6E' }}>
+                                  {item.type}
+                                </span>
+                                <span style={{ fontWeight: 600 }}>
+                                  {item.quantity}
+                                </span>
+                                <span style={{ color: '#686A6E' }}>
+                                  {item.details}
+                                </span>
+                                <button
+                                  onClick={() => handleRemoveDamageItem(index)}
+                                  style={{
+                                    marginLeft: '4px',
+                                    width: '16px',
+                                    height: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: 'rgba(12, 12, 12, 0.2)',
+                                    borderRadius: '50%',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: '#FFFFFF',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                  }}
+                                  data-testid={`button-remove-damage-${index}`}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Section 3: 배당사항(협력사 배당) */}
