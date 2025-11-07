@@ -16,23 +16,237 @@ import {
 
 // 한국 행정구역 데이터
 const KOREA_REGIONS: Record<string, string[]> = {
-  "서울": ["강남구", "강동구", "강북구", "강서구", "관악구", "광진구", "구로구", "금천구", "노원구", "도봉구", "동대문구", "동작구", "마포구", "서대문구", "서초구", "성동구", "성북구", "송파구", "양천구", "영등포구", "용산구", "은평구", "종로구", "중구", "중랑구"],
-  "경기": ["고양시", "과천시", "광명시", "광주시", "구리시", "군포시", "김포시", "남양주시", "동두천시", "부천시", "성남시", "수원시", "시흥시", "안산시", "안성시", "안양시", "양주시", "오산시", "용인시", "의왕시", "의정부시", "이천시", "파주시", "평택시", "포천시", "하남시", "화성시", "가평군", "양평군", "여주군", "연천군"],
-  "인천": ["계양구", "남동구", "동구", "미추홀구", "부평구", "서구", "연수구", "중구", "강화군", "옹진군"],
-  "대전": ["대덕구", "동구", "서구", "유성구", "중구"],
-  "세종": ["세종시"],
-  "충남": ["계룡시", "공주시", "논산시", "당진시", "보령시", "서산시", "아산시", "천안시", "금산군", "부여군", "서천군", "예산군", "청양군", "태안군", "홍성군"],
-  "충북": ["제천시", "청주시", "충주시", "괴산군", "단양군", "보은군", "영동군", "옥천군", "음성군", "증평군", "진천군"],
-  "광주": ["광산구", "남구", "동구", "북구", "서구"],
-  "전남": ["광양시", "나주시", "목포시", "순천시", "여수시", "강진군", "고흥군", "곡성군", "구례군", "담양군", "무안군", "보성군", "신안군", "영광군", "영암군", "완도군", "장성군", "장흥군", "진도군", "함평군", "해남군", "화순군"],
-  "전북": ["군산시", "김제시", "남원시", "익산시", "전주시", "정읍시", "고창군", "무주군", "부안군", "순창군", "완주군", "임실군", "장수군", "진안군"],
-  "대구": ["남구", "달서구", "동구", "북구", "서구", "수성구", "중구", "달성군"],
-  "경북": ["경산시", "경주시", "구미시", "김천시", "문경시", "상주시", "안동시", "영주시", "영천시", "포항시", "고령군", "군위군", "봉화군", "성주군", "영덕군", "영양군", "예천군", "울릉군", "울진군", "의성군", "청도군", "청송군", "칠곡군"],
-  "부산": ["강서구", "금정구", "남구", "동구", "동래구", "부산진구", "북구", "사상구", "사하구", "서구", "수영구", "연제구", "영도구", "중구", "해운대구", "기장군"],
-  "울산": ["남구", "동구", "북구", "중구", "울주군"],
-  "경남": ["거제시", "김해시", "밀양시", "사천시", "양산시", "진주시", "창원시", "통영시", "거창군", "고성군", "남해군", "산청군", "의령군", "창녕군", "하동군", "함안군", "함양군", "합천군"],
-  "강원": ["강릉시", "동해시", "삼척시", "속초시", "원주시", "춘천시", "태백시", "고성군", "양구군", "양양군", "영월군", "인제군", "정선군", "철원군", "평창군", "홍천군", "화천군", "횡성군"],
-  "제주": ["서귀포시", "제주시"]
+  서울: [
+    "강남구",
+    "강동구",
+    "강북구",
+    "강서구",
+    "관악구",
+    "광진구",
+    "구로구",
+    "금천구",
+    "노원구",
+    "도봉구",
+    "동대문구",
+    "동작구",
+    "마포구",
+    "서대문구",
+    "서초구",
+    "성동구",
+    "성북구",
+    "송파구",
+    "양천구",
+    "영등포구",
+    "용산구",
+    "은평구",
+    "종로구",
+    "중구",
+    "중랑구",
+  ],
+  경기: [
+    "고양시",
+    "과천시",
+    "광명시",
+    "광주시",
+    "구리시",
+    "군포시",
+    "김포시",
+    "남양주시",
+    "동두천시",
+    "부천시",
+    "성남시",
+    "수원시",
+    "시흥시",
+    "안산시",
+    "안성시",
+    "안양시",
+    "양주시",
+    "오산시",
+    "용인시",
+    "의왕시",
+    "의정부시",
+    "이천시",
+    "파주시",
+    "평택시",
+    "포천시",
+    "하남시",
+    "화성시",
+    "가평군",
+    "양평군",
+    "여주군",
+    "연천군",
+  ],
+  인천: [
+    "계양구",
+    "남동구",
+    "동구",
+    "미추홀구",
+    "부평구",
+    "서구",
+    "연수구",
+    "중구",
+    "강화군",
+    "옹진군",
+  ],
+  대전: ["대덕구", "동구", "서구", "유성구", "중구"],
+  세종: ["세종시"],
+  충남: [
+    "계룡시",
+    "공주시",
+    "논산시",
+    "당진시",
+    "보령시",
+    "서산시",
+    "아산시",
+    "천안시",
+    "금산군",
+    "부여군",
+    "서천군",
+    "예산군",
+    "청양군",
+    "태안군",
+    "홍성군",
+  ],
+  충북: [
+    "제천시",
+    "청주시",
+    "충주시",
+    "괴산군",
+    "단양군",
+    "보은군",
+    "영동군",
+    "옥천군",
+    "음성군",
+    "증평군",
+    "진천군",
+  ],
+  광주: ["광산구", "남구", "동구", "북구", "서구"],
+  전남: [
+    "광양시",
+    "나주시",
+    "목포시",
+    "순천시",
+    "여수시",
+    "강진군",
+    "고흥군",
+    "곡성군",
+    "구례군",
+    "담양군",
+    "무안군",
+    "보성군",
+    "신안군",
+    "영광군",
+    "영암군",
+    "완도군",
+    "장성군",
+    "장흥군",
+    "진도군",
+    "함평군",
+    "해남군",
+    "화순군",
+  ],
+  전북: [
+    "군산시",
+    "김제시",
+    "남원시",
+    "익산시",
+    "전주시",
+    "정읍시",
+    "고창군",
+    "무주군",
+    "부안군",
+    "순창군",
+    "완주군",
+    "임실군",
+    "장수군",
+    "진안군",
+  ],
+  대구: ["남구", "달서구", "동구", "북구", "서구", "수성구", "중구", "달성군"],
+  경북: [
+    "경산시",
+    "경주시",
+    "구미시",
+    "김천시",
+    "문경시",
+    "상주시",
+    "안동시",
+    "영주시",
+    "영천시",
+    "포항시",
+    "고령군",
+    "군위군",
+    "봉화군",
+    "성주군",
+    "영덕군",
+    "영양군",
+    "예천군",
+    "울릉군",
+    "울진군",
+    "의성군",
+    "청도군",
+    "청송군",
+    "칠곡군",
+  ],
+  부산: [
+    "강서구",
+    "금정구",
+    "남구",
+    "동구",
+    "동래구",
+    "부산진구",
+    "북구",
+    "사상구",
+    "사하구",
+    "서구",
+    "수영구",
+    "연제구",
+    "영도구",
+    "중구",
+    "해운대구",
+    "기장군",
+  ],
+  울산: ["남구", "동구", "북구", "중구", "울주군"],
+  경남: [
+    "거제시",
+    "김해시",
+    "밀양시",
+    "사천시",
+    "양산시",
+    "진주시",
+    "창원시",
+    "통영시",
+    "거창군",
+    "고성군",
+    "남해군",
+    "산청군",
+    "의령군",
+    "창녕군",
+    "하동군",
+    "함안군",
+    "함양군",
+    "합천군",
+  ],
+  강원: [
+    "강릉시",
+    "동해시",
+    "삼척시",
+    "속초시",
+    "원주시",
+    "춘천시",
+    "태백시",
+    "고성군",
+    "양구군",
+    "양양군",
+    "영월군",
+    "인제군",
+    "정선군",
+    "철원군",
+    "평창군",
+    "홍천군",
+    "화천군",
+    "횡성군",
+  ],
+  제주: ["서귀포시", "제주시"],
 };
 
 export default function AdminSettings() {
@@ -42,7 +256,10 @@ export default function AdminSettings() {
   const [roleFilter, setRoleFilter] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [selectedUser, setSelectedUser] = useState<Omit<User, 'password'> | null>(null);
+  const [selectedUser, setSelectedUser] = useState<Omit<
+    User,
+    "password"
+  > | null>(null);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetPasswordValue, setResetPasswordValue] = useState("0000");
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
@@ -81,7 +298,9 @@ export default function AdminSettings() {
   });
 
   // Fetch all users from server
-  const { data: allUsers = [], isLoading: usersLoading } = useQuery<Omit<User, 'password'>[]>({
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery<
+    Omit<User, "password">[]
+  >({
     queryKey: ["/api/users"],
     enabled: !!user,
   });
@@ -108,12 +327,13 @@ export default function AdminSettings() {
   const filteredUsers = allUsers.filter((u) => {
     // Role filter
     const matchesRole = roleFilter === "전체" || u.role === roleFilter;
-    
+
     // Search filter - improved with trim and lowercase
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const normalizedName = u.name.toLowerCase();
-    const matchesSearch = normalizedQuery === "" || normalizedName.includes(normalizedQuery);
-    
+    const matchesSearch =
+      normalizedQuery === "" || normalizedName.includes(normalizedQuery);
+
     return matchesRole && matchesSearch;
   });
 
@@ -140,70 +360,77 @@ export default function AdminSettings() {
   }
 
   return (
-    <div className="relative" style={{ height: '1223px', background: '#E7EDFE' }}>
+    <div
+      className="relative"
+      style={{ height: "1223px", background: "#E7EDFE" }}
+    >
       {/* Blur Background Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div 
+        <div
           className="absolute"
           style={{
-            width: '1095px',
-            height: '777px',
-            left: '97px',
-            bottom: '-200px',
-            background: 'rgba(254, 240, 230, 0.4)',
-            borderRadius: '9999px',
-            filter: 'blur(212px)',
-            transform: 'rotate(-35.25deg)',
+            width: "1095px",
+            height: "777px",
+            left: "97px",
+            bottom: "-200px",
+            background: "rgba(254, 240, 230, 0.4)",
+            borderRadius: "9999px",
+            filter: "blur(212px)",
+            transform: "rotate(-35.25deg)",
           }}
         />
-        <div 
+        <div
           className="absolute"
           style={{
-            width: '1335px',
-            height: '1323px',
-            left: '811px',
-            bottom: '0px',
-            background: 'rgba(234, 230, 254, 0.5)',
-            borderRadius: '9999px',
-            filter: 'blur(212px)',
+            width: "1335px",
+            height: "1323px",
+            left: "811px",
+            bottom: "0px",
+            background: "rgba(234, 230, 254, 0.5)",
+            borderRadius: "9999px",
+            filter: "blur(212px)",
           }}
         />
-        <div 
+        <div
           className="absolute"
           style={{
-            width: '348px',
-            height: '1323px',
-            left: '0px',
-            bottom: '189px',
-            background: 'rgba(234, 230, 254, 0.5)',
-            borderRadius: '9999px',
-            filter: 'blur(212px)',
+            width: "348px",
+            height: "1323px",
+            left: "0px",
+            bottom: "189px",
+            background: "rgba(234, 230, 254, 0.5)",
+            borderRadius: "9999px",
+            filter: "blur(212px)",
           }}
         />
       </div>
 
       {/* Header */}
-      <header 
+      <header
         className="relative w-full h-[89px] px-8 flex items-center justify-between"
         style={{
-          background: 'rgba(255, 255, 255, 0.06)',
-          borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
-          backdropFilter: 'blur(22px)',
+          background: "rgba(255, 255, 255, 0.06)",
+          borderBottom: "1px solid rgba(0, 143, 237, 0.2)",
+          backdropFilter: "blur(22px)",
         }}
       >
         {/* Logo */}
         <div className="flex items-center gap-2 w-[260px]">
-          <img 
-            src={logoIcon} 
-            alt="FLOXN Logo" 
-            className="w-6 h-6"
-          />
+          <img src={logoIcon} alt="FLOXN Logo" className="w-6 h-6" />
           <div className="text-2xl font-bold text-gray-900">FLOXN</div>
         </div>
 
         {/* Navigation Menu */}
         <div className="flex items-center gap-6 flex-1 px-6">
-          {["홈", "접수하기", "진행상황", "현장조사", "종합진행관리", "통계 및 정산", "관리자 설정"].map((item) => (
+          {[
+            "홈",
+            "접수하기",
+            "진행상황",
+            "현장조사",
+            "종합진행관리",
+            "통계 및 정산",
+            "관리자 설정",
+          ].map((item) => (
             <button
               key={item}
               onClick={() => {
@@ -217,11 +444,12 @@ export default function AdminSettings() {
               }}
               className="px-6 py-3 rounded-lg transition-colors"
               style={{
-                fontFamily: 'Pretendard',
-                fontSize: '18px',
+                fontFamily: "Pretendard",
+                fontSize: "18px",
                 fontWeight: item === "관리자 설정" ? 600 : 500,
-                letterSpacing: '-0.02em',
-                color: item === "관리자 설정" ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+                letterSpacing: "-0.02em",
+                color:
+                  item === "관리자 설정" ? "#0C0C0C" : "rgba(12, 12, 12, 0.5)",
               }}
               data-testid={`menu-${item}`}
             >
@@ -232,29 +460,29 @@ export default function AdminSettings() {
 
         {/* User Profile */}
         <div className="flex items-center gap-3">
-          <div 
+          <div
             className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(0, 143, 237, 0.3)' }}
+            style={{ background: "rgba(0, 143, 237, 0.3)" }}
           />
           <div className="flex items-center gap-2">
-            <span 
+            <span
               style={{
-                fontFamily: 'Pretendard',
-                fontSize: '15px',
+                fontFamily: "Pretendard",
+                fontSize: "15px",
                 fontWeight: 600,
-                letterSpacing: '-0.02em',
-                color: 'rgba(12, 12, 12, 0.7)',
+                letterSpacing: "-0.02em",
+                color: "rgba(12, 12, 12, 0.7)",
               }}
             >
               xblock01
             </span>
-            <span 
+            <span
               style={{
-                fontFamily: 'Pretendard',
-                fontSize: '15px',
+                fontFamily: "Pretendard",
+                fontSize: "15px",
                 fontWeight: 500,
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.4)',
+                letterSpacing: "-0.01em",
+                color: "rgba(12, 12, 12, 0.4)",
               }}
             >
               관리자
@@ -264,25 +492,25 @@ export default function AdminSettings() {
       </header>
 
       {/* Main Content */}
-      <div className="relative flex" style={{ height: 'calc(1223px - 89px)' }}>
+      <div className="relative flex" style={{ height: "calc(1223px - 89px)" }}>
         {/* Left Sidebar */}
-        <div 
+        <div
           className="flex flex-col"
           style={{
-            width: '260px',
-            background: 'rgba(255, 255, 255, 0.06)',
-            borderRight: '1px solid rgba(0, 143, 237, 0.2)',
+            width: "260px",
+            background: "rgba(255, 255, 255, 0.06)",
+            borderRight: "1px solid rgba(0, 143, 237, 0.2)",
           }}
         >
           {/* Section Header */}
           <div className="px-8 py-4">
-            <span 
+            <span
               style={{
-                fontFamily: 'Pretendard',
-                fontSize: '15px',
+                fontFamily: "Pretendard",
+                fontSize: "15px",
                 fontWeight: 500,
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.5)',
+                letterSpacing: "-0.01em",
+                color: "rgba(12, 12, 12, 0.5)",
               }}
             >
               통계 및 정산
@@ -297,12 +525,18 @@ export default function AdminSettings() {
                 onClick={() => setActiveMenu(menu.name)}
                 className="flex items-center px-5 py-3 rounded-lg transition-colors"
                 style={{
-                  background: activeMenu === menu.name ? 'rgba(12, 12, 12, 0.08)' : 'transparent',
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
+                  background:
+                    activeMenu === menu.name
+                      ? "rgba(12, 12, 12, 0.08)"
+                      : "transparent",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
                   fontWeight: activeMenu === menu.name ? 700 : 500,
-                  letterSpacing: '-0.02em',
-                  color: activeMenu === menu.name ? '#008FED' : 'rgba(12, 12, 12, 0.8)',
+                  letterSpacing: "-0.02em",
+                  color:
+                    activeMenu === menu.name
+                      ? "#008FED"
+                      : "rgba(12, 12, 12, 0.8)",
                 }}
                 data-testid={`sidebar-${menu.name}`}
               >
@@ -316,13 +550,13 @@ export default function AdminSettings() {
         <div className="flex-1 px-8 py-6">
           {/* Title */}
           <div className="flex items-center mb-6">
-            <h1 
+            <h1
               style={{
-                fontFamily: 'Pretendard',
-                fontSize: '26px',
+                fontFamily: "Pretendard",
+                fontSize: "26px",
                 fontWeight: 600,
-                letterSpacing: '-0.02em',
-                color: '#0C0C0C',
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
               }}
             >
               사용자 계정 관리
@@ -330,27 +564,27 @@ export default function AdminSettings() {
           </div>
 
           {/* Search Card */}
-          <div 
+          <div
             className="mb-6 rounded-xl"
             style={{
-              background: '#FFFFFF',
-              boxShadow: '0px 0px 20px #DBE9F5',
+              background: "#FFFFFF",
+              boxShadow: "0px 0px 20px #DBE9F5",
             }}
           >
             {/* Card Header */}
-            <div 
+            <div
               className="px-6 py-6"
               style={{
-                borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
+                borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
               }}
             >
-              <span 
+              <span
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '20px',
+                  fontFamily: "Pretendard",
+                  fontSize: "20px",
                   fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
                 }}
               >
                 조회하기
@@ -361,25 +595,25 @@ export default function AdminSettings() {
             <div className="px-5 py-6 flex flex-col gap-6">
               {/* Search Input */}
               <div>
-                <label 
+                <label
                   className="mb-2 block"
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
                     fontWeight: 500,
-                    letterSpacing: '-0.01em',
-                    color: '#686A6E',
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
                   }}
                 >
                   검색
                 </label>
                 <div className="flex items-center">
-                  <div 
+                  <div
                     className="flex items-center flex-1 px-5 py-4 gap-3"
                     style={{
-                      background: '#FDFDFD',
-                      border: '2px solid rgba(12, 12, 12, 0.08)',
-                      borderRadius: '8px 0px 0px 8px',
+                      background: "#FDFDFD",
+                      border: "2px solid rgba(12, 12, 12, 0.08)",
+                      borderRadius: "8px 0px 0px 8px",
                     }}
                   >
                     <Search className="w-[30px] h-[30px] text-[#008FED]" />
@@ -391,11 +625,13 @@ export default function AdminSettings() {
                       onKeyDown={handleSearchKeyDown}
                       className="flex-1 outline-none bg-transparent"
                       style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
                         fontWeight: 600,
-                        letterSpacing: '-0.02em',
-                        color: searchInput ? 'rgba(12, 12, 12, 0.9)' : 'rgba(12, 12, 12, 0.4)',
+                        letterSpacing: "-0.02em",
+                        color: searchInput
+                          ? "rgba(12, 12, 12, 0.9)"
+                          : "rgba(12, 12, 12, 0.4)",
                       }}
                       data-testid="input-search"
                     />
@@ -404,16 +640,16 @@ export default function AdminSettings() {
                     onClick={handleSearch}
                     className="px-5 py-4"
                     style={{
-                      width: '155px',
-                      height: '68px',
-                      background: '#008FED',
-                      border: '2px solid rgba(12, 12, 12, 0.08)',
-                      borderRadius: '0px 8px 8px 0px',
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
+                      width: "155px",
+                      height: "68px",
+                      background: "#008FED",
+                      border: "2px solid rgba(12, 12, 12, 0.08)",
+                      borderRadius: "0px 8px 8px 0px",
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
                       fontWeight: 600,
-                      letterSpacing: '-0.02em',
-                      color: '#FDFDFD',
+                      letterSpacing: "-0.02em",
+                      color: "#FDFDFD",
                     }}
                     data-testid="button-search"
                   >
@@ -424,14 +660,14 @@ export default function AdminSettings() {
 
               {/* Role Filter */}
               <div>
-                <label 
+                <label
                   className="mb-2 block"
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
                     fontWeight: 500,
-                    letterSpacing: '-0.01em',
-                    color: '#686A6E',
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
                   }}
                 >
                   역할
@@ -443,14 +679,26 @@ export default function AdminSettings() {
                       onClick={() => setRoleFilter(filter)}
                       className="px-4 py-3 rounded-md"
                       style={{
-                        background: roleFilter === filter ? 'rgba(0, 143, 237, 0.1)' : 'transparent',
-                        border: roleFilter === filter ? '2px solid rgba(255, 255, 255, 0.04)' : '1px solid rgba(12, 12, 12, 0.3)',
-                        boxShadow: roleFilter === filter ? 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)' : 'none',
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
+                        background:
+                          roleFilter === filter
+                            ? "rgba(0, 143, 237, 0.1)"
+                            : "transparent",
+                        border:
+                          roleFilter === filter
+                            ? "2px solid rgba(255, 255, 255, 0.04)"
+                            : "1px solid rgba(12, 12, 12, 0.3)",
+                        boxShadow:
+                          roleFilter === filter
+                            ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)"
+                            : "none",
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
                         fontWeight: roleFilter === filter ? 600 : 400,
-                        letterSpacing: '-0.02em',
-                        color: roleFilter === filter ? '#008FED' : 'rgba(12, 12, 12, 0.9)',
+                        letterSpacing: "-0.02em",
+                        color:
+                          roleFilter === filter
+                            ? "#008FED"
+                            : "rgba(12, 12, 12, 0.9)",
                       }}
                       data-testid={`filter-${filter}`}
                     >
@@ -467,24 +715,24 @@ export default function AdminSettings() {
             {/* Header with Count */}
             <div className="flex items-center justify-between px-5 py-6">
               <div className="flex items-center gap-4">
-                <span 
+                <span
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '20px',
+                    fontFamily: "Pretendard",
+                    fontSize: "20px",
                     fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: '#0C0C0C',
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
                   }}
                 >
                   계정
                 </span>
-                <span 
+                <span
                   style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '20px',
+                    fontFamily: "Pretendard",
+                    fontSize: "20px",
                     fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: '#008FED',
+                    letterSpacing: "-0.02em",
+                    color: "#008FED",
                   }}
                   data-testid="text-user-count"
                 >
@@ -494,20 +742,22 @@ export default function AdminSettings() {
               <button
                 className="flex items-center justify-center px-6 hover-elevate active-elevate-2"
                 style={{
-                  height: '48px',
-                  background: '#008FED',
-                  borderRadius: '6px',
+                  height: "48px",
+                  background: "#008FED",
+                  borderRadius: "6px",
                 }}
                 onClick={() => setShowCreateAccountModal(true)}
                 data-testid="button-create-account"
               >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#FDFDFD',
-                }}>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#FDFDFD",
+                  }}
+                >
                   계정 생성
                 </span>
               </button>
@@ -516,213 +766,335 @@ export default function AdminSettings() {
             {/* User Table */}
             <div className="flex flex-col gap-4">
               {/* Table Header */}
-              <div 
+              <div
                 className="flex items-center px-3 rounded-lg"
                 style={{
-                  height: '54px',
-                  background: 'rgba(12, 12, 12, 0.04)',
+                  height: "54px",
+                  background: "rgba(12, 12, 12, 0.04)",
                 }}
               >
-                <div className="px-2" style={{ width: '122px' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>역할</span>
+                <div className="px-2" style={{ width: "122px" }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    역할
+                  </span>
                 </div>
-                <div className="px-2" style={{ width: '155px' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>회사명</span>
-                </div>
-                <div className="px-2 flex-1">
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>성함</span>
-                </div>
-                <div className="px-2" style={{ width: '134px' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>소속부서</span>
+                <div className="px-2" style={{ width: "155px" }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    회사명
+                  </span>
                 </div>
                 <div className="px-2 flex-1">
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>직급</span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    성함
+                  </span>
                 </div>
-                <div className="px-2" style={{ width: '190px' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>이메일 주소</span>
-                </div>
-                <div className="px-2" style={{ width: '162px' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>ID</span>
-                </div>
-                <div className="px-2" style={{ width: '163px' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>연락처</span>
-                </div>
-                <div className="px-2" style={{ width: '163px' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>사무실 전화</span>
-                </div>
-                <div className="px-2" style={{ width: '163px' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>계정 생성일</span>
+                <div className="px-2" style={{ width: "134px" }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    소속부서
+                  </span>
                 </div>
                 <div className="px-2 flex-1">
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.6)',
-                  }}>요청</span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    직급
+                  </span>
+                </div>
+                <div className="px-2" style={{ width: "190px" }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    이메일 주소
+                  </span>
+                </div>
+                <div className="px-2" style={{ width: "162px" }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    ID
+                  </span>
+                </div>
+                <div className="px-2" style={{ width: "163px" }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    연락처
+                  </span>
+                </div>
+                <div className="px-2" style={{ width: "163px" }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    사무실 전화
+                  </span>
+                </div>
+                <div className="px-2" style={{ width: "163px" }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    계정 생성일
+                  </span>
+                </div>
+                <div className="px-2 flex-1">
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    요청
+                  </span>
                 </div>
               </div>
 
               {/* Table Rows */}
               {filteredUsers.map((user) => (
-                <div 
+                <div
                   key={user.id}
                   className="flex items-center px-3 hover:bg-black/5 transition-colors"
                   style={{
-                    height: '44px',
+                    height: "44px",
                   }}
                   data-testid={`user-row-${user.id}`}
                 >
-                  <div className="px-2 cursor-pointer" style={{ width: '122px' }} onClick={() => setSelectedUser(user)}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.role}</span>
+                  <div
+                    className="px-2 cursor-pointer"
+                    style={{ width: "122px" }}
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      {user.role}
+                    </span>
                   </div>
-                  <div className="px-2 cursor-pointer" style={{ width: '155px' }} onClick={() => setSelectedUser(user)}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.company}</span>
+                  <div
+                    className="px-2 cursor-pointer"
+                    style={{ width: "155px" }}
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      {user.company}
+                    </span>
                   </div>
-                  <div className="px-2 flex-1 cursor-pointer" onClick={() => setSelectedUser(user)}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.name}</span>
+                  <div
+                    className="px-2 flex-1 cursor-pointer"
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      {user.name}
+                    </span>
                   </div>
-                  <div className="px-2 cursor-pointer" style={{ width: '134px' }} onClick={() => setSelectedUser(user)}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.department}</span>
+                  <div
+                    className="px-2 cursor-pointer"
+                    style={{ width: "134px" }}
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      {user.department}
+                    </span>
                   </div>
-                  <div className="px-2 flex-1 cursor-pointer" onClick={() => setSelectedUser(user)}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.position}</span>
+                  <div
+                    className="px-2 flex-1 cursor-pointer"
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      {user.position}
+                    </span>
                   </div>
-                  <div className="px-2 cursor-pointer" style={{ width: '190px' }} onClick={() => setSelectedUser(user)}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.email}</span>
+                  <div
+                    className="px-2 cursor-pointer"
+                    style={{ width: "190px" }}
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      {user.email}
+                    </span>
                   </div>
-                  <div className="px-2 cursor-pointer" style={{ width: '162px' }} onClick={() => setSelectedUser(user)}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.username}</span>
+                  <div
+                    className="px-2 cursor-pointer"
+                    style={{ width: "162px" }}
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      {user.username}
+                    </span>
                   </div>
-                  <div className="px-2 cursor-pointer" style={{ width: '163px' }} onClick={() => setSelectedUser(user)}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.phone}</span>
+                  <div
+                    className="px-2 cursor-pointer"
+                    style={{ width: "163px" }}
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      {user.phone}
+                    </span>
                   </div>
-                  <div className="px-2 cursor-pointer" style={{ width: '163px' }} onClick={() => setSelectedUser(user)}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.office}</span>
+                  <div
+                    className="px-2 cursor-pointer"
+                    style={{ width: "163px" }}
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      {user.office}
+                    </span>
                   </div>
-                  <div className="px-2 cursor-pointer" style={{ width: '163px' }} onClick={() => setSelectedUser(user)}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.8)',
-                    }}>{user.createdAt}</span>
+                  <div
+                    className="px-2 cursor-pointer"
+                    style={{ width: "163px" }}
+                    onClick={() => setSelectedUser(user)}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      {user.createdAt}
+                    </span>
                   </div>
                   <div className="px-2 flex-1">
                     <button
@@ -732,21 +1104,23 @@ export default function AdminSettings() {
                       }}
                       className="flex items-center justify-center"
                       style={{
-                        width: '92px',
-                        height: '28px',
-                        background: '#FFFFFF',
-                        border: '1px solid rgba(12, 12, 12, 0.2)',
-                        borderRadius: '6px',
+                        width: "92px",
+                        height: "28px",
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(12, 12, 12, 0.2)",
+                        borderRadius: "6px",
                       }}
                       data-testid={`button-view-detail-${user.id}`}
                     >
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.8)',
-                      }}>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}
+                      >
                         자세히 보기
                       </span>
                     </button>
@@ -762,10 +1136,10 @@ export default function AdminSettings() {
       {selectedUser && (
         <>
           {/* Overlay */}
-          <div 
+          <div
             className="fixed inset-0 z-40"
             style={{
-              background: 'rgba(0, 0, 0, 0.7)',
+              background: "rgba(0, 0, 0, 0.7)",
               opacity: 0.4,
             }}
             onClick={() => setSelectedUser(null)}
@@ -773,37 +1147,39 @@ export default function AdminSettings() {
           />
 
           {/* Modal Panel */}
-          <div 
+          <div
             className="fixed right-0 top-0 z-50 bg-white flex flex-col"
             style={{
-              width: '609px',
-              height: '100vh',
+              width: "609px",
+              height: "100vh",
             }}
             data-testid="modal-account-detail"
           >
             {/* Header */}
-            <div 
+            <div
               className="flex items-center justify-center relative"
               style={{
-                height: '128px',
-                padding: '24px 20px',
+                height: "128px",
+                padding: "24px 20px",
               }}
             >
-              <h2 style={{
-                fontFamily: 'Pretendard',
-                fontSize: '22px',
-                fontWeight: 600,
-                letterSpacing: '-0.02em',
-                color: '#0C0C0C',
-              }}>
+              <h2
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "22px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
                 계정 상세보기
               </h2>
               <button
                 onClick={() => setSelectedUser(null)}
                 className="absolute right-5"
                 style={{
-                  width: '24px',
-                  height: '24px',
+                  width: "24px",
+                  height: "24px",
                 }}
                 data-testid="button-close-modal"
               >
@@ -812,72 +1188,82 @@ export default function AdminSettings() {
             </div>
 
             {/* Profile Card */}
-            <div 
+            <div
               className="mx-5 flex flex-col gap-2.5 p-4"
               style={{
-                background: 'rgba(12, 12, 12, 0.04)',
-                backdropFilter: 'blur(7px)',
-                borderRadius: '12px',
+                background: "rgba(12, 12, 12, 0.04)",
+                backdropFilter: "blur(7px)",
+                borderRadius: "12px",
               }}
             >
               <div className="flex items-center gap-2">
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.9)',
-                }}>
-                  {selectedUser.name}
-                </span>
-                <div 
-                  className="w-1 h-1 rounded-full"
-                  style={{ background: 'rgba(0, 143, 237, 0.9)' }}
-                />
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.9)',
-                }}>
-                  {selectedUser.company}
-                </span>
-                <div 
-                  className="flex items-center justify-center px-2.5 py-1 rounded-full"
+                <span
                   style={{
-                    background: 'rgba(12, 12, 12, 0.1)',
-                    backdropFilter: 'blur(7px)',
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.9)",
                   }}
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: 400,
-                    letterSpacing: '-0.01em',
-                    color: 'rgba(12, 12, 12, 0.7)',
-                  }}>
+                  {selectedUser.name}
+                </span>
+                <div
+                  className="w-1 h-1 rounded-full"
+                  style={{ background: "rgba(0, 143, 237, 0.9)" }}
+                />
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.9)",
+                  }}
+                >
+                  {selectedUser.company}
+                </span>
+                <div
+                  className="flex items-center justify-center px-2.5 py-1 rounded-full"
+                  style={{
+                    background: "rgba(12, 12, 12, 0.1)",
+                    backdropFilter: "blur(7px)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 400,
+                      letterSpacing: "-0.01em",
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
                     {selectedUser.role}
                   </span>
                 </div>
               </div>
               <div className="flex items-center gap-6">
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 400,
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.7)',
-                }}>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 400,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
                   {selectedUser.username}
                 </span>
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 400,
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.7)',
-                }}>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 400,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
                   {selectedUser.phone}
                 </span>
               </div>
@@ -886,122 +1272,177 @@ export default function AdminSettings() {
             {/* Content Sections - Scrollable */}
             <div className="flex flex-col px-5 mt-8 flex-1 overflow-y-auto">
               {/* Basic Info Section */}
-              <div className="flex flex-col pb-7" style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.1)' }}>
+              <div
+                className="flex flex-col pb-7"
+                style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}
+              >
                 <div className="px-4 py-2.5">
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.9)',
-                  }}>
-                    {selectedUser.role === '보험사' ? '기본 정보' : '사용자 정보'}
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.9)",
+                    }}
+                  >
+                    {selectedUser.role === "보험사"
+                      ? "기본 정보"
+                      : "사용자 정보"}
                   </span>
                 </div>
                 <div className="flex flex-col gap-4">
                   {/* Row 1 */}
                   <div className="flex gap-5">
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>성함</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.name}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        성함
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.name}
+                      </span>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>ID</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.username}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        ID
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.username}
+                      </span>
                     </div>
                   </div>
                   {/* Row 2 */}
                   <div className="flex gap-5">
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>연락처</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.phone}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        연락처
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.phone}
+                      </span>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>이메일 주소</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.email}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        이메일 주소
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.email}
+                      </span>
                     </div>
                   </div>
                   {/* Row 3 */}
                   <div className="flex gap-5">
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>계정 생성일</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.createdAt}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        계정 생성일
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.createdAt}
+                      </span>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>역할</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.role}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        역할
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.role}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1010,238 +1451,323 @@ export default function AdminSettings() {
               {/* Company Info Section */}
               <div className="flex flex-col py-7">
                 <div className="px-4 py-2.5">
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.9)',
-                  }}>
-                    {selectedUser.role === '보험사' ? '보험사 정보' : 
-                     selectedUser.role === '관리자' ? '관리자 정보' : 
-                     selectedUser.role === '심사사' ? '심사사 정보' :
-                     selectedUser.role === '조사사' ? '조사사 정보' :
-                     selectedUser.role === '협력사' ? '협력사 정보' :
-                     '회사 정보'}
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.9)",
+                    }}
+                  >
+                    {selectedUser.role === "보험사"
+                      ? "보험사 정보"
+                      : selectedUser.role === "관리자"
+                        ? "관리자 정보"
+                        : selectedUser.role === "심사사"
+                          ? "심사사 정보"
+                          : selectedUser.role === "조사사"
+                            ? "조사사 정보"
+                            : selectedUser.role === "협력사"
+                              ? "협력사 정보"
+                              : "회사 정보"}
                   </span>
                 </div>
                 <div className="flex flex-col gap-4">
                   {/* Row 1 */}
                   <div className="flex gap-5">
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>회사명</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.company}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        회사명
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.company}
+                      </span>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>소속부서</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.department}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        소속부서
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.department}
+                      </span>
                     </div>
                   </div>
                   {/* Row 2 */}
                   <div className="flex gap-5">
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>직급</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.position}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        직급
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.position}
+                      </span>
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>사무실 전화</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.office}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        사무실 전화
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.office}
+                      </span>
                     </div>
                   </div>
                   {/* Row 3 */}
                   <div className="flex gap-5">
                     <div className="flex-1 flex flex-col gap-2">
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.5)',
-                      }}>주소</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>{selectedUser.address}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.5)",
+                        }}
+                      >
+                        주소
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {selectedUser.address}
+                      </span>
                     </div>
                   </div>
 
                   {/* Partner-specific fields */}
-                  {selectedUser.role === '협력사' && (
+                  {selectedUser.role === "협력사" && (
                     <>
                       {/* Row 4: Bank Info */}
                       <div className="flex gap-5">
                         <div className="flex-1 flex flex-col gap-2">
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            letterSpacing: '-0.01em',
-                            color: 'rgba(12, 12, 12, 0.5)',
-                          }}>은행명</span>
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}>{selectedUser.bankName || '-'}</span>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 400,
+                              letterSpacing: "-0.01em",
+                              color: "rgba(12, 12, 12, 0.5)",
+                            }}
+                          >
+                            은행명
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: 400,
+                              letterSpacing: "-0.02em",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}
+                          >
+                            {selectedUser.bankName || "-"}
+                          </span>
                         </div>
                         <div className="flex-1 flex flex-col gap-2">
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            letterSpacing: '-0.01em',
-                            color: 'rgba(12, 12, 12, 0.5)',
-                          }}>계좌번호</span>
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}>{selectedUser.accountNumber || '-'}</span>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 400,
+                              letterSpacing: "-0.01em",
+                              color: "rgba(12, 12, 12, 0.5)",
+                            }}
+                          >
+                            계좌번호
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: 400,
+                              letterSpacing: "-0.02em",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}
+                          >
+                            {selectedUser.accountNumber || "-"}
+                          </span>
                         </div>
                       </div>
 
                       {/* Row 5: Account Holder */}
                       <div className="flex gap-5">
                         <div className="flex-1 flex flex-col gap-2">
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            letterSpacing: '-0.01em',
-                            color: 'rgba(12, 12, 12, 0.5)',
-                          }}>예금주</span>
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}>{selectedUser.accountHolder || '-'}</span>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 400,
+                              letterSpacing: "-0.01em",
+                              color: "rgba(12, 12, 12, 0.5)",
+                            }}
+                          >
+                            예금주
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: 400,
+                              letterSpacing: "-0.02em",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}
+                          >
+                            {selectedUser.accountHolder || "-"}
+                          </span>
                         </div>
                       </div>
 
                       {/* Row 6: Service Regions */}
-                      {selectedUser.serviceRegions && selectedUser.serviceRegions.length > 0 && (
-                        <div className="flex gap-5">
-                          <div className="flex-1 flex flex-col gap-2">
-                            <span style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '14px',
-                              fontWeight: 400,
-                              letterSpacing: '-0.01em',
-                              color: 'rgba(12, 12, 12, 0.5)',
-                            }}>출동가능지역</span>
-                            <div className="flex flex-wrap gap-2">
-                              {selectedUser.serviceRegions.map((region, index) => (
-                                <div
-                                  key={index}
-                                  className="px-3 py-1.5"
-                                  style={{
-                                    background: '#E3F2FD',
-                                    borderRadius: '6px',
-                                  }}
-                                  data-testid={`detail-region-${index}`}
-                                >
-                                  <span style={{
-                                    fontFamily: 'Pretendard',
-                                    fontSize: '13px',
-                                    fontWeight: 400,
-                                    color: '#008FED',
-                                  }}>
-                                    {region}
-                                  </span>
-                                </div>
-                              ))}
+                      {selectedUser.serviceRegions &&
+                        selectedUser.serviceRegions.length > 0 && (
+                          <div className="flex gap-5">
+                            <div className="flex-1 flex flex-col gap-2">
+                              <span
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  fontWeight: 400,
+                                  letterSpacing: "-0.01em",
+                                  color: "rgba(12, 12, 12, 0.5)",
+                                }}
+                              >
+                                출동가능지역
+                              </span>
+                              <div className="flex flex-wrap gap-2">
+                                {selectedUser.serviceRegions.map(
+                                  (region, index) => (
+                                    <div
+                                      key={index}
+                                      className="px-3 py-1.5"
+                                      style={{
+                                        background: "#E3F2FD",
+                                        borderRadius: "6px",
+                                      }}
+                                      data-testid={`detail-region-${index}`}
+                                    >
+                                      <span
+                                        style={{
+                                          fontFamily: "Pretendard",
+                                          fontSize: "13px",
+                                          fontWeight: 400,
+                                          color: "#008FED",
+                                        }}
+                                      >
+                                        {region}
+                                      </span>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        )}
 
                       {/* Row 7: Attachments */}
-                      {selectedUser.attachments && selectedUser.attachments.length > 0 && (
-                        <div className="flex gap-5">
-                          <div className="flex-1 flex flex-col gap-2">
-                            <span style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '14px',
-                              fontWeight: 400,
-                              letterSpacing: '-0.01em',
-                              color: 'rgba(12, 12, 12, 0.5)',
-                            }}>첨부파일</span>
-                            <div className="flex flex-col gap-1">
-                              {selectedUser.attachments.map((file, index) => (
-                                <span
-                                  key={index}
-                                  style={{
-                                    fontFamily: 'Pretendard',
-                                    fontSize: '14px',
-                                    fontWeight: 400,
-                                    color: '#008FED',
-                                  }}
-                                  data-testid={`detail-attachment-${index}`}
-                                >
-                                  {file}
-                                </span>
-                              ))}
+                      {selectedUser.attachments &&
+                        selectedUser.attachments.length > 0 && (
+                          <div className="flex gap-5">
+                            <div className="flex-1 flex flex-col gap-2">
+                              <span
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  fontWeight: 400,
+                                  letterSpacing: "-0.01em",
+                                  color: "rgba(12, 12, 12, 0.5)",
+                                }}
+                              >
+                                첨부파일
+                              </span>
+                              <div className="flex flex-col gap-1">
+                                {selectedUser.attachments.map((file, index) => (
+                                  <span
+                                    key={index}
+                                    style={{
+                                      fontFamily: "Pretendard",
+                                      fontSize: "14px",
+                                      fontWeight: 400,
+                                      color: "#008FED",
+                                    }}
+                                    data-testid={`detail-attachment-${index}`}
+                                  >
+                                    {file}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
+                        )}
                     </>
                   )}
                 </div>
@@ -1249,56 +1775,60 @@ export default function AdminSettings() {
             </div>
 
             {/* Bottom Buttons - Fixed at bottom */}
-            <div 
+            <div
               className="flex gap-5 px-8 bg-white"
               style={{
-                height: '84px',
-                alignItems: 'center',
-                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
+                height: "84px",
+                alignItems: "center",
+                borderTop: "1px solid rgba(12, 12, 12, 0.08)",
                 flexShrink: 0,
               }}
             >
               <button
                 className="flex-1 flex items-center justify-center rounded-xl"
                 style={{
-                  height: '64px',
-                  background: '#D02B20',
-                  boxShadow: '2px 4px 30px #BDD1F0',
+                  height: "64px",
+                  background: "#D02B20",
+                  boxShadow: "2px 4px 30px #BDD1F0",
                 }}
                 onClick={() => {
                   setShowDeleteAccountModal(true);
                 }}
                 data-testid="button-delete-account"
               >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#FDFDFD',
-                }}>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "20px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#FDFDFD",
+                  }}
+                >
                   계정 삭제
                 </span>
               </button>
               <button
                 className="flex-1 flex items-center justify-center rounded-xl"
                 style={{
-                  height: '64px',
-                  background: 'transparent',
-                  boxShadow: '2px 4px 30px #BDD1F0',
+                  height: "64px",
+                  background: "transparent",
+                  boxShadow: "2px 4px 30px #BDD1F0",
                 }}
                 onClick={() => {
                   setShowResetPasswordModal(true);
                 }}
                 data-testid="button-reset-password"
               >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#D02B20',
-                }}>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "20px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#D02B20",
+                  }}
+                >
                   비밀번호 초기화
                 </span>
               </button>
@@ -1311,10 +1841,10 @@ export default function AdminSettings() {
       {showResetPasswordModal && selectedUser && (
         <>
           {/* Overlay */}
-          <div 
+          <div
             className="fixed inset-0 z-50"
             style={{
-              background: 'rgba(0, 0, 0, 0.7)',
+              background: "rgba(0, 0, 0, 0.7)",
               opacity: 0.4,
             }}
             onClick={() => setShowResetPasswordModal(false)}
@@ -1322,159 +1852,188 @@ export default function AdminSettings() {
           />
 
           {/* Modal */}
-          <div 
+          <div
             className="fixed z-50 bg-white flex flex-col"
             style={{
-              width: '747px',
-              height: '516px',
-              left: 'calc(50% - 747px/2 + 0.5px)',
-              top: 'calc(50% - 516px/2 + 0.5px)',
-              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
-              borderRadius: '12px',
-              gap: '32px',
+              width: "747px",
+              height: "516px",
+              left: "calc(50% - 747px/2 + 0.5px)",
+              top: "calc(50% - 516px/2 + 0.5px)",
+              boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
+              borderRadius: "12px",
+              gap: "32px",
             }}
             data-testid="modal-reset-password"
           >
             {/* Header */}
-            <div 
+            <div
               className="flex flex-col items-center"
               style={{
-                width: '747px',
-                height: '396px',
-                gap: '16px',
+                width: "747px",
+                height: "396px",
+                gap: "16px",
               }}
             >
-              <div 
+              <div
                 className="flex flex-row justify-center items-center"
                 style={{
-                  width: '747px',
-                  height: '60px',
-                  gap: '321px',
+                  width: "747px",
+                  height: "60px",
+                  gap: "321px",
                 }}
               >
-                <h2 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
-                }}>
+                <h2
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                  }}
+                >
                   비밀번호 초기화
                 </h2>
               </div>
 
               {/* Content */}
-              <div 
+              <div
                 className="flex flex-col"
                 style={{
-                  width: '707px',
-                  height: '320px',
-                  gap: '24px',
+                  width: "707px",
+                  height: "320px",
+                  gap: "24px",
                 }}
               >
                 {/* Selected Account Section */}
-                <div 
+                <div
                   className="flex flex-col"
                   style={{
-                    width: '707px',
-                    height: '244px',
-                    gap: '20px',
+                    width: "707px",
+                    height: "244px",
+                    gap: "20px",
                   }}
                 >
                   {/* Section Title */}
-                  <div className="flex flex-col" style={{ width: '707px', height: '114px', gap: '8px' }}>
-                    <div className="flex flex-row" style={{ width: '707px', height: '18px', gap: '2px' }}>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        letterSpacing: '-0.01em',
-                        color: '#686A6E',
-                      }}>
+                  <div
+                    className="flex flex-col"
+                    style={{ width: "707px", height: "114px", gap: "8px" }}
+                  >
+                    <div
+                      className="flex flex-row"
+                      style={{ width: "707px", height: "18px", gap: "2px" }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
                         선택 계정
                       </span>
                     </div>
 
                     {/* Profile Card */}
-                    <div 
+                    <div
                       className="flex flex-col justify-center p-5"
                       style={{
-                        width: '707px',
-                        height: '88px',
-                        background: 'rgba(12, 12, 12, 0.04)',
-                        backdropFilter: 'blur(7px)',
-                        borderRadius: '12px',
-                        gap: '8px',
+                        width: "707px",
+                        height: "88px",
+                        background: "rgba(12, 12, 12, 0.04)",
+                        backdropFilter: "blur(7px)",
+                        borderRadius: "12px",
+                        gap: "8px",
                       }}
                     >
-                      <div className="flex flex-row items-center" style={{ width: '667px', height: '26px', gap: '16px' }}>
-                        <div className="flex flex-row items-center" style={{ width: '180px', height: '26px', gap: '9px' }}>
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '18px',
-                            fontWeight: 600,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}>
-                            {selectedUser.name}
-                          </span>
-                          <div 
+                      <div
+                        className="flex flex-row items-center"
+                        style={{ width: "667px", height: "26px", gap: "16px" }}
+                      >
+                        <div
+                          className="flex flex-row items-center"
+                          style={{ width: "180px", height: "26px", gap: "9px" }}
+                        >
+                          <span
                             style={{
-                              width: '4px',
-                              height: '4px',
-                              background: 'rgba(0, 143, 237, 0.9)',
-                              borderRadius: '50%',
-                            }}
-                          />
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '18px',
-                            fontWeight: 600,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}>
-                            {selectedUser.company}
-                          </span>
-                          <div 
-                            className="flex items-center justify-center"
-                            style={{
-                              width: '57px',
-                              height: '26px',
-                              padding: '4px 10px',
-                              background: 'rgba(12, 12, 12, 0.1)',
-                              backdropFilter: 'blur(7px)',
-                              borderRadius: '20px',
+                              fontFamily: "Pretendard",
+                              fontSize: "18px",
+                              fontWeight: 600,
+                              letterSpacing: "-0.02em",
+                              color: "rgba(12, 12, 12, 0.9)",
                             }}
                           >
-                            <span style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '14px',
-                              fontWeight: 400,
-                              letterSpacing: '-0.01em',
-                              color: 'rgba(12, 12, 12, 0.7)',
-                            }}>
+                            {selectedUser.name}
+                          </span>
+                          <div
+                            style={{
+                              width: "4px",
+                              height: "4px",
+                              background: "rgba(0, 143, 237, 0.9)",
+                              borderRadius: "50%",
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "18px",
+                              fontWeight: 600,
+                              letterSpacing: "-0.02em",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}
+                          >
+                            {selectedUser.company}
+                          </span>
+                          <div
+                            className="flex items-center justify-center"
+                            style={{
+                              width: "57px",
+                              height: "26px",
+                              padding: "4px 10px",
+                              background: "rgba(12, 12, 12, 0.1)",
+                              backdropFilter: "blur(7px)",
+                              borderRadius: "20px",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.01em",
+                                color: "rgba(12, 12, 12, 0.7)",
+                              }}
+                            >
                               {selectedUser.role}
                             </span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-row" style={{ width: '400px', height: '20px', gap: '24px' }}>
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '16px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.7)',
-                        }}>
+                      <div
+                        className="flex flex-row"
+                        style={{ width: "400px", height: "20px", gap: "24px" }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                          }}
+                        >
                           {selectedUser.username}
                         </span>
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '16px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.7)',
-                        }}>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                          }}
+                        >
                           {selectedUser.phone}
                         </span>
                       </div>
@@ -1482,48 +2041,61 @@ export default function AdminSettings() {
                   </div>
 
                   {/* New Password Section */}
-                  <div 
+                  <div
                     className="flex flex-col"
                     style={{
-                      width: '707px',
-                      height: '110px',
-                      gap: '10px',
+                      width: "707px",
+                      height: "110px",
+                      gap: "10px",
                     }}
                   >
-                    <div className="flex flex-col" style={{ width: '432px', height: '76px', gap: '8px' }}>
-                      <div className="flex flex-row" style={{ width: '432px', height: '18px', gap: '2px' }}>
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 500,
-                          letterSpacing: '-0.01em',
-                          color: '#686A6E',
-                        }}>
+                    <div
+                      className="flex flex-col"
+                      style={{ width: "432px", height: "76px", gap: "8px" }}
+                    >
+                      <div
+                        className="flex flex-row"
+                        style={{ width: "432px", height: "18px", gap: "2px" }}
+                      >
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            letterSpacing: "-0.01em",
+                            color: "#686A6E",
+                          }}
+                        >
                           새 비밀번호(자동)
                         </span>
                       </div>
 
                       {/* Input Field + Reset Button */}
-                      <div className="flex flex-row items-center" style={{ width: '432px', height: '50px', gap: '8px' }}>
-                        <div 
+                      <div
+                        className="flex flex-row items-center"
+                        style={{ width: "432px", height: "50px", gap: "8px" }}
+                      >
+                        <div
                           className="flex flex-row items-center"
                           style={{
-                            width: '343px',
-                            height: '50px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            gap: '10px',
+                            width: "343px",
+                            height: "50px",
+                            padding: "10px 20px",
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12, 12, 12, 0.08)",
+                            borderRadius: "8px",
+                            gap: "10px",
                           }}
                         >
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 600,
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: 600,
+                              letterSpacing: "-0.02em",
+                              color: "#0C0C0C",
+                            }}
+                          >
                             {resetPasswordValue}
                           </span>
                         </div>
@@ -1531,24 +2103,26 @@ export default function AdminSettings() {
                         <button
                           className="flex flex-row items-center justify-center"
                           style={{
-                            width: '81px',
-                            height: '50px',
-                            padding: '10px 20px',
-                            background: 'rgba(208, 43, 32, 0.1)',
-                            border: '1px solid #D02B20',
-                            borderRadius: '8px',
-                            gap: '10px',
+                            width: "81px",
+                            height: "50px",
+                            padding: "10px 20px",
+                            background: "rgba(208, 43, 32, 0.1)",
+                            border: "1px solid #D02B20",
+                            borderRadius: "8px",
+                            gap: "10px",
                           }}
                           onClick={() => setResetPasswordValue("0000")}
                           data-testid="button-trigger-reset"
                         >
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 600,
-                            letterSpacing: '-0.02em',
-                            color: '#D02B20',
-                          }}>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: 600,
+                              letterSpacing: "-0.02em",
+                              color: "#D02B20",
+                            }}
+                          >
                             초기화
                           </span>
                         </button>
@@ -1556,25 +2130,27 @@ export default function AdminSettings() {
                     </div>
 
                     {/* Warning Message */}
-                    <div 
+                    <div
                       className="flex flex-row justify-center items-center"
                       style={{
-                        width: '707px',
-                        height: '52px',
-                        padding: '16px 12px',
-                        background: 'rgba(255, 226, 85, 0.2)',
-                        backdropFilter: 'blur(7px)',
-                        borderRadius: '20px',
-                        gap: '10px',
+                        width: "707px",
+                        height: "52px",
+                        padding: "16px 12px",
+                        background: "rgba(255, 226, 85, 0.2)",
+                        backdropFilter: "blur(7px)",
+                        borderRadius: "20px",
+                        gap: "10px",
                       }}
                     >
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 500,
-                        letterSpacing: '-0.02em',
-                        color: '#A16000',
-                      }}>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 500,
+                          letterSpacing: "-0.02em",
+                          color: "#A16000",
+                        }}
+                      >
                         초기화 후 기존 세션은 로그아웃됩니다.
                       </span>
                     </div>
@@ -1584,43 +2160,45 @@ export default function AdminSettings() {
             </div>
 
             {/* Bottom Buttons */}
-            <div 
+            <div
               className="flex flex-col"
               style={{
-                width: '747px',
-                height: '88px',
-                padding: '20px',
-                background: '#FDFDFD',
-                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
-                gap: '10px',
+                width: "747px",
+                height: "88px",
+                padding: "20px",
+                background: "#FDFDFD",
+                borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+                gap: "10px",
               }}
             >
-              <div 
+              <div
                 className="flex flex-row justify-between items-center"
                 style={{
-                  width: '707px',
-                  height: '48px',
+                  width: "707px",
+                  height: "48px",
                 }}
               >
                 <button
                   className="flex flex-row justify-center items-center"
                   style={{
-                    width: '353.5px',
-                    height: '48px',
-                    padding: '10px',
-                    borderRadius: '6px',
-                    gap: '10px',
+                    width: "353.5px",
+                    height: "48px",
+                    padding: "10px",
+                    borderRadius: "6px",
+                    gap: "10px",
                   }}
                   onClick={() => setShowResetPasswordModal(false)}
                   data-testid="button-cancel-reset"
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 500,
-                    letterSpacing: '-0.02em',
-                    color: '#D02B20',
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      letterSpacing: "-0.02em",
+                      color: "#D02B20",
+                    }}
+                  >
                     취소
                   </span>
                 </button>
@@ -1628,51 +2206,56 @@ export default function AdminSettings() {
                 <button
                   className="flex flex-row justify-center items-center"
                   style={{
-                    width: '353.5px',
-                    height: '48px',
-                    padding: '10px',
-                    background: '#008FED',
-                    borderRadius: '6px',
-                    gap: '10px',
+                    width: "353.5px",
+                    height: "48px",
+                    padding: "10px",
+                    background: "#008FED",
+                    borderRadius: "6px",
+                    gap: "10px",
                   }}
                   onClick={async () => {
                     if (!selectedUser) return;
-                    
+
                     try {
                       await apiRequest("POST", "/api/update-password", {
                         username: selectedUser.username,
                         newPassword: resetPasswordValue,
                       });
-                      
+
                       // Show success message
                       toast({
                         title: "비밀번호 초기화 완료",
                         description: `${selectedUser.name}님의 비밀번호가 ${resetPasswordValue}로 변경되었습니다.`,
                       });
-                      
+
                       // Close modals
                       setShowResetPasswordModal(false);
                       setSelectedUser(null);
                     } catch (error) {
                       console.error("Failed to reset password:", error);
-                      
+
                       // Show error message
                       toast({
                         variant: "destructive",
                         title: "비밀번호 초기화 실패",
-                        description: error instanceof Error ? error.message : "비밀번호 변경 중 오류가 발생했습니다.",
+                        description:
+                          error instanceof Error
+                            ? error.message
+                            : "비밀번호 변경 중 오류가 발생했습니다.",
                       });
                     }
                   }}
                   data-testid="button-confirm-reset"
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    letterSpacing: '-0.02em',
-                    color: '#FDFDFD',
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      color: "#FDFDFD",
+                    }}
+                  >
                     확인
                   </span>
                 </button>
@@ -1686,10 +2269,10 @@ export default function AdminSettings() {
       {showDeleteAccountModal && selectedUser && (
         <>
           {/* Overlay */}
-          <div 
+          <div
             className="fixed inset-0 z-50"
             style={{
-              background: 'rgba(0, 0, 0, 0.7)',
+              background: "rgba(0, 0, 0, 0.7)",
               opacity: 0.4,
             }}
             onClick={() => setShowDeleteAccountModal(false)}
@@ -1697,224 +2280,263 @@ export default function AdminSettings() {
           />
 
           {/* Modal */}
-          <div 
+          <div
             className="fixed z-50 bg-white flex flex-col"
             style={{
-              width: '747px',
-              height: '386px',
-              left: 'calc(50% - 747px/2 + 0.5px)',
-              top: 'calc(50% - 386px/2 + 0.5px)',
-              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
-              borderRadius: '12px',
-              gap: '32px',
+              width: "747px",
+              height: "386px",
+              left: "calc(50% - 747px/2 + 0.5px)",
+              top: "calc(50% - 386px/2 + 0.5px)",
+              boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
+              borderRadius: "12px",
+              gap: "32px",
             }}
             data-testid="modal-delete-account"
           >
             {/* Content */}
-            <div 
+            <div
               className="flex flex-col items-center"
               style={{
-                width: '747px',
-                height: '266px',
-                gap: '16px',
+                width: "747px",
+                height: "266px",
+                gap: "16px",
               }}
             >
               {/* Header */}
-              <div 
+              <div
                 className="flex flex-row justify-center items-center"
                 style={{
-                  width: '747px',
-                  height: '60px',
-                  gap: '321px',
+                  width: "747px",
+                  height: "60px",
+                  gap: "321px",
                 }}
               >
-                <h2 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
-                }}>
+                <h2
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                  }}
+                >
                   계정 삭제
                 </h2>
               </div>
 
               {/* Body */}
-              <div 
+              <div
                 className="flex flex-col"
                 style={{
-                  width: '707px',
-                  height: '190px',
-                  gap: '24px',
+                  width: "707px",
+                  height: "190px",
+                  gap: "24px",
                 }}
               >
                 {/* Selected Account Section */}
-                <div 
+                <div
                   className="flex flex-col"
                   style={{
-                    width: '707px',
-                    height: '114px',
-                    gap: '20px',
+                    width: "707px",
+                    height: "114px",
+                    gap: "20px",
                   }}
                 >
                   {/* Section Title */}
-                  <div className="flex flex-row" style={{ width: '707px', height: '18px', gap: '2px' }}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      letterSpacing: '-0.01em',
-                      color: '#686A6E',
-                    }}>
+                  <div
+                    className="flex flex-row"
+                    style={{ width: "707px", height: "18px", gap: "2px" }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        letterSpacing: "-0.01em",
+                        color: "#686A6E",
+                      }}
+                    >
                       선택 계정
                     </span>
                   </div>
 
                   {/* Profile Card */}
-                  <div 
+                  <div
                     className="flex flex-col justify-center p-5"
                     style={{
-                      width: '707px',
-                      height: '88px',
-                      background: 'rgba(12, 12, 12, 0.04)',
-                      backdropFilter: 'blur(7px)',
-                      borderRadius: '12px',
-                      gap: '8px',
+                      width: "707px",
+                      height: "88px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      backdropFilter: "blur(7px)",
+                      borderRadius: "12px",
+                      gap: "8px",
                     }}
                   >
                     {/* Top row: Name, Company, Role */}
-                    <div 
+                    <div
                       className="flex flex-row items-center"
                       style={{
-                        width: '667px',
-                        height: '26px',
-                        gap: '16px',
+                        width: "667px",
+                        height: "26px",
+                        gap: "16px",
                       }}
                     >
                       <div className="flex flex-row items-center gap-2.5">
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '18px',
-                          fontWeight: 600,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}>{selectedUser.name}</span>
-                        <div style={{ width: '4px', height: '4px', background: 'rgba(0, 143, 237, 0.9)', borderRadius: '50%' }} />
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '18px',
-                          fontWeight: 600,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}>{selectedUser.company}</span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "18px",
+                            fontWeight: 600,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.name}
+                        </span>
+                        <div
+                          style={{
+                            width: "4px",
+                            height: "4px",
+                            background: "rgba(0, 143, 237, 0.9)",
+                            borderRadius: "50%",
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "18px",
+                            fontWeight: 600,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.company}
+                        </span>
                       </div>
-                      <div 
+                      <div
                         className="flex items-center justify-center px-2.5"
                         style={{
-                          height: '26px',
-                          background: 'rgba(12, 12, 12, 0.1)',
-                          backdropFilter: 'blur(7px)',
-                          borderRadius: '20px',
+                          height: "26px",
+                          background: "rgba(12, 12, 12, 0.1)",
+                          backdropFilter: "blur(7px)",
+                          borderRadius: "20px",
                         }}
                       >
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: 'rgba(12, 12, 12, 0.7)',
-                        }}>{selectedUser.role}</span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                          }}
+                        >
+                          {selectedUser.role}
+                        </span>
                       </div>
                     </div>
 
                     {/* Bottom row: Username, Phone */}
-                    <div 
+                    <div
                       className="flex flex-row"
                       style={{
-                        width: '400px',
-                        height: '20px',
-                        gap: '24px',
+                        width: "400px",
+                        height: "20px",
+                        gap: "24px",
                       }}
                     >
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.7)',
-                      }}>{selectedUser.username}</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.7)',
-                      }}>{selectedUser.phone}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.7)",
+                        }}
+                      >
+                        {selectedUser.username}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.7)",
+                        }}
+                      >
+                        {selectedUser.phone}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Warning Message */}
-                <div 
+                <div
                   className="flex flex-row justify-center items-center"
                   style={{
-                    width: '707px',
-                    height: '52px',
-                    padding: '16px 12px',
-                    gap: '10px',
-                    background: 'rgba(208, 43, 32, 0.2)',
-                    backdropFilter: 'blur(7px)',
-                    borderRadius: '20px',
+                    width: "707px",
+                    height: "52px",
+                    padding: "16px 12px",
+                    gap: "10px",
+                    background: "rgba(208, 43, 32, 0.2)",
+                    backdropFilter: "blur(7px)",
+                    borderRadius: "20px",
                   }}
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 500,
-                    letterSpacing: '-0.02em',
-                    color: '#D02B20',
-                  }}>
-                    계정 삭제 시 즉시 로그아웃됩니다. 활동 로그/정산 기록 등 이력 데이터는 보존됩니다.
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      letterSpacing: "-0.02em",
+                      color: "#D02B20",
+                    }}
+                  >
+                    계정 삭제 시 즉시 로그아웃됩니다. 활동 로그/정산 기록 등
+                    이력 데이터는 보존됩니다.
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Footer with Buttons */}
-            <div 
+            <div
               className="flex flex-col items-start p-5"
               style={{
-                width: '747px',
-                height: '88px',
-                background: '#FDFDFD',
-                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
-                gap: '10px',
+                width: "747px",
+                height: "88px",
+                background: "#FDFDFD",
+                borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+                gap: "10px",
               }}
             >
-              <div 
+              <div
                 className="flex flex-row justify-between items-center"
                 style={{
-                  width: '707px',
-                  height: '48px',
+                  width: "707px",
+                  height: "48px",
                 }}
               >
                 {/* Cancel Button */}
                 <button
                   className="flex-1 flex items-center justify-center"
                   style={{
-                    height: '48px',
-                    borderRadius: '6px',
+                    height: "48px",
+                    borderRadius: "6px",
                   }}
                   onClick={() => setShowDeleteAccountModal(false)}
                   data-testid="button-cancel-delete"
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 500,
-                    letterSpacing: '-0.02em',
-                    color: '#D02B20',
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      letterSpacing: "-0.02em",
+                      color: "#D02B20",
+                    }}
+                  >
                     취소
                   </span>
                 </button>
@@ -1923,9 +2545,9 @@ export default function AdminSettings() {
                 <button
                   className="flex-1 flex items-center justify-center"
                   style={{
-                    height: '48px',
-                    background: '#D02B20',
-                    borderRadius: '6px',
+                    height: "48px",
+                    background: "#D02B20",
+                    borderRadius: "6px",
                   }}
                   onClick={async () => {
                     try {
@@ -1933,39 +2555,46 @@ export default function AdminSettings() {
                       await apiRequest("POST", "/api/delete-account", {
                         username: selectedUser.username,
                       });
-                      
+
                       // Invalidate users query to refetch from server
-                      await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                      
+                      await queryClient.invalidateQueries({
+                        queryKey: ["/api/users"],
+                      });
+
                       // Show success message
                       toast({
                         title: "계정 삭제 완료",
                         description: `${selectedUser.name}님의 계정이 삭제되었습니다. 활동 로그 및 정산 기록은 보존됩니다.`,
                       });
-                      
+
                       // Close modals
                       setShowDeleteAccountModal(false);
                       setSelectedUser(null);
                     } catch (error) {
                       console.error("Failed to delete account:", error);
-                      
+
                       // Show error message
                       toast({
                         variant: "destructive",
                         title: "계정 삭제 실패",
-                        description: error instanceof Error ? error.message : "계정 삭제 중 오류가 발생했습니다.",
+                        description:
+                          error instanceof Error
+                            ? error.message
+                            : "계정 삭제 중 오류가 발생했습니다.",
                       });
                     }
                   }}
                   data-testid="button-confirm-delete"
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    letterSpacing: '-0.02em',
-                    color: '#FDFDFD',
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      color: "#FDFDFD",
+                    }}
+                  >
                     영구 삭제
                   </span>
                 </button>
@@ -1979,350 +2608,427 @@ export default function AdminSettings() {
       {showCreateAccountModal && (
         <>
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 flex items-center justify-center"
             style={{
-              background: 'rgba(0, 0, 0, 0.28)',
+              background: "rgba(0, 0, 0, 0.28)",
               zIndex: 9999,
             }}
             onClick={() => setShowCancelConfirmModal(true)}
           />
 
           {/* Modal */}
-          <div 
+          <div
             className="fixed flex flex-col"
             style={{
-              width: '1016px',
-              maxWidth: '90vw',
-              maxHeight: '90vh',
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: '#FFFFFF',
-              boxShadow: '0px 0px 20px #DBE9F5',
-              borderRadius: '12px',
+              width: "1016px",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "#FFFFFF",
+              boxShadow: "0px 0px 20px #DBE9F5",
+              borderRadius: "12px",
               zIndex: 10000,
             }}
             onClick={(e) => e.stopPropagation()}
             data-testid="modal-create-account"
           >
             {/* Header */}
-            <div 
+            <div
               className="flex flex-row justify-between items-center px-6 py-6"
               style={{
-                borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
+                borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
               }}
             >
-              <div style={{ width: '28px' }} />
-              <h2 style={{
-                fontFamily: 'Pretendard',
-                fontSize: '22px',
-                fontWeight: 600,
-                letterSpacing: '-0.02em',
-                color: '#0C0C0C',
-              }}>
+              <div style={{ width: "28px" }} />
+              <h2
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "22px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
                 새로운 계정 생성
               </h2>
               <button
                 className="flex items-center justify-center hover-elevate active-elevate-2"
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: "28px",
+                  height: "28px",
                 }}
                 onClick={() => setShowCancelConfirmModal(true)}
                 data-testid="button-close-create-modal"
               >
-                <X size={20} style={{ color: 'rgba(12, 12, 12, 0.8)' }} />
+                <X size={20} style={{ color: "rgba(12, 12, 12, 0.8)" }} />
               </button>
             </div>
 
             {/* Form Content */}
-            <div 
+            <div
               className="flex-1 flex flex-col px-6 py-6 gap-6 overflow-y-auto"
               style={{
-                maxHeight: 'calc(90vh - 170px)',
+                maxHeight: "calc(90vh - 170px)",
               }}
             >
               {/* Role Selection */}
               <div className="flex flex-col gap-2">
-                <label style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  letterSpacing: '-0.01em',
-                  color: '#686A6E',
-                }}>
+                <label
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
                   역할
                 </label>
-                <div className="relative" style={{ width: '97px' }}>
+                <div className="relative" style={{ width: "97px" }}>
                   <select
                     value={createAccountForm.role}
-                    onChange={(e) => setCreateAccountForm({ ...createAccountForm, role: e.target.value })}
+                    onChange={(e) =>
+                      setCreateAccountForm({
+                        ...createAccountForm,
+                        role: e.target.value,
+                      })
+                    }
                     className="flex items-center justify-center px-4 pr-8 appearance-none cursor-pointer"
                     style={{
-                      width: '100%',
-                      height: '46px',
-                      background: 'rgba(255, 255, 255, 0.04)',
-                      border: '1px solid rgba(12, 12, 12, 0.3)',
-                      boxShadow: 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
-                      backdropFilter: 'blur(7px)',
-                      borderRadius: '6px',
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
+                      width: "100%",
+                      height: "46px",
+                      background: "rgba(255, 255, 255, 0.04)",
+                      border: "1px solid rgba(12, 12, 12, 0.3)",
+                      boxShadow:
+                        "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
+                      backdropFilter: "blur(7px)",
+                      borderRadius: "6px",
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
                       fontWeight: 500,
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.9)',
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.9)",
                     }}
                     data-testid="select-role"
                   >
                     {VALID_ROLES.map((role) => (
-                      <option key={role} value={role}>{role}</option>
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
                     ))}
                   </select>
-                  <ChevronDown 
-                    size={22} 
+                  <ChevronDown
+                    size={22}
                     className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ color: 'rgba(12, 12, 12, 0.6)' }}
+                    style={{ color: "rgba(12, 12, 12, 0.6)" }}
                   />
                 </div>
               </div>
 
               {/* Form Inputs */}
               <div className="flex flex-col gap-4">
-                <h3 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
-                }}>
+                <h3
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                  }}
+                >
                   기본 정보
                 </h3>
 
                 {/* 기본 정보: 성함, ID, 연락처, 이메일 주소 */}
-                <div className="flex gap-3" style={{ width: '100%' }}>
+                <div className="flex gap-3" style={{ width: "100%" }}>
                   <div className="flex-1">
-                    <label className="block mb-2" style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.01em',
-                      color: '#686A6E',
-                    }}>
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.01em",
+                        color: "#686A6E",
+                      }}
+                    >
                       성함
                     </label>
                     <input
                       type="text"
                       placeholder="성함"
                       value={createAccountForm.name}
-                      onChange={(e) => setCreateAccountForm({ ...createAccountForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setCreateAccountForm({
+                          ...createAccountForm,
+                          name: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 outline-none"
                       style={{
-                        background: '#FDFDFD',
-                        border: '2px solid rgba(12, 12, 12, 0.08)',
-                        borderRadius: '8px',
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
+                        background: "#FDFDFD",
+                        border: "2px solid rgba(12, 12, 12, 0.08)",
+                        borderRadius: "8px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
                         fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.9)",
                       }}
                       data-testid="input-name"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block mb-2" style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.01em',
-                      color: '#686A6E',
-                    }}>
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.01em",
+                        color: "#686A6E",
+                      }}
+                    >
                       ID
                     </label>
                     <input
                       type="text"
                       placeholder="사용자 ID"
                       value={createAccountForm.username}
-                      onChange={(e) => setCreateAccountForm({ ...createAccountForm, username: e.target.value })}
+                      onChange={(e) =>
+                        setCreateAccountForm({
+                          ...createAccountForm,
+                          username: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 outline-none"
                       style={{
-                        background: '#FDFDFD',
-                        border: '2px solid rgba(12, 12, 12, 0.08)',
-                        borderRadius: '8px',
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
+                        background: "#FDFDFD",
+                        border: "2px solid rgba(12, 12, 12, 0.08)",
+                        borderRadius: "8px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
                         fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.9)",
                       }}
                       data-testid="input-username"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block mb-2" style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.01em',
-                      color: '#686A6E',
-                    }}>
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.01em",
+                        color: "#686A6E",
+                      }}
+                    >
                       연락처
                     </label>
                     <input
                       type="tel"
                       placeholder="- 빼고 입력"
                       value={createAccountForm.phone}
-                      onChange={(e) => setCreateAccountForm({ ...createAccountForm, phone: e.target.value })}
+                      onChange={(e) =>
+                        setCreateAccountForm({
+                          ...createAccountForm,
+                          phone: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 outline-none"
                       style={{
-                        background: '#FDFDFD',
-                        border: '2px solid rgba(12, 12, 12, 0.08)',
-                        borderRadius: '8px',
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
+                        background: "#FDFDFD",
+                        border: "2px solid rgba(12, 12, 12, 0.08)",
+                        borderRadius: "8px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
                         fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.9)",
                       }}
                       data-testid="input-phone"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block mb-2" style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 400,
-                      letterSpacing: '-0.01em',
-                      color: '#686A6E',
-                    }}>
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.01em",
+                        color: "#686A6E",
+                      }}
+                    >
                       이메일 주소
                     </label>
                     <input
                       type="email"
                       placeholder="이메일 주소"
                       value={createAccountForm.email}
-                      onChange={(e) => setCreateAccountForm({ ...createAccountForm, email: e.target.value })}
+                      onChange={(e) =>
+                        setCreateAccountForm({
+                          ...createAccountForm,
+                          email: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 outline-none"
                       style={{
-                        background: '#FDFDFD',
-                        border: '2px solid rgba(12, 12, 12, 0.08)',
-                        borderRadius: '8px',
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
+                        background: "#FDFDFD",
+                        border: "2px solid rgba(12, 12, 12, 0.08)",
+                        borderRadius: "8px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
                         fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.9)",
                       }}
                       data-testid="input-email"
                     />
                   </div>
                 </div>
 
-                <h3 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
-                  marginTop: '12px',
-                }}>
-                  {createAccountForm.role === '보험사' ? '보험사 정보' : 
-                   createAccountForm.role === '관리자' ? '관리자 정보' : 
-                   createAccountForm.role === '심사사' ? '심사사 정보' :
-                   createAccountForm.role === '조사사' ? '조사사 정보' :
-                   createAccountForm.role === '협력사' ? '협력사 정보' :
-                   '회사 정보'}
+                <h3
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                    marginTop: "12px",
+                  }}
+                >
+                  {createAccountForm.role === "보험사"
+                    ? "보험사 정보"
+                    : createAccountForm.role === "관리자"
+                      ? "관리자 정보"
+                      : createAccountForm.role === "심사사"
+                        ? "심사사 정보"
+                        : createAccountForm.role === "조사사"
+                          ? "조사사 정보"
+                          : createAccountForm.role === "협력사"
+                            ? "협력사 정보"
+                            : "회사 정보"}
                 </h3>
 
-{createAccountForm.role === '협력사' ? (
+                {createAccountForm.role === "협력사" ? (
                   <>
                     {/* 협력사 정보: Row 1 - 회사명, 소속부서, 직급, 사무실 전화 */}
-                    <div className="flex gap-3" style={{ width: '100%' }}>
+                    <div className="flex gap-3" style={{ width: "100%" }}>
                       <div className="flex-1">
-                        <label className="block mb-2" style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: '#686A6E',
-                        }}>
+                        <label
+                          className="block mb-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "#686A6E",
+                          }}
+                        >
                           회사명
                         </label>
                         <input
                           type="text"
                           placeholder="회사명"
                           value={createAccountForm.company}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, company: e.target.value })}
+                          onChange={(e) =>
+                            setCreateAccountForm({
+                              ...createAccountForm,
+                              company: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-3 outline-none"
                           style={{
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12, 12, 12, 0.08)",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
                             fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
                           }}
                           data-testid="input-company"
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="block mb-2" style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: '#686A6E',
-                        }}>
+                        <label
+                          className="block mb-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "#686A6E",
+                          }}
+                        >
                           소속부서
                         </label>
                         <input
                           type="text"
                           placeholder="소속부서"
                           value={createAccountForm.department}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, department: e.target.value })}
+                          onChange={(e) =>
+                            setCreateAccountForm({
+                              ...createAccountForm,
+                              department: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-3 outline-none"
                           style={{
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12, 12, 12, 0.08)",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
                             fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
                           }}
                           data-testid="input-department"
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="block mb-2" style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: '#686A6E',
-                        }}>
+                        <label
+                          className="block mb-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "#686A6E",
+                          }}
+                        >
                           직급
                         </label>
                         <Select
                           value={createAccountForm.position}
-                          onValueChange={(value) => setCreateAccountForm({ ...createAccountForm, position: value })}
+                          onValueChange={(value) =>
+                            setCreateAccountForm({
+                              ...createAccountForm,
+                              position: value,
+                            })
+                          }
                         >
                           <SelectTrigger
                             className="w-full px-4 py-3 outline-none"
                             style={{
-                              background: '#FDFDFD',
-                              border: '2px solid rgba(12, 12, 12, 0.08)',
-                              borderRadius: '8px',
-                              fontFamily: 'Pretendard',
-                              fontSize: '14px',
+                              background: "#FDFDFD",
+                              border: "2px solid rgba(12, 12, 12, 0.08)",
+                              borderRadius: "8px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
                               fontWeight: 400,
-                              letterSpacing: '-0.02em',
-                              color: 'rgba(12, 12, 12, 0.9)',
-                              height: '48px',
+                              letterSpacing: "-0.02em",
+                              color: "rgba(12, 12, 12, 0.9)",
+                              height: "48px",
                             }}
                             data-testid="select-position"
                           >
@@ -2345,30 +3051,38 @@ export default function AdminSettings() {
                         </Select>
                       </div>
                       <div className="flex-1">
-                        <label className="block mb-2" style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: '#686A6E',
-                        }}>
+                        <label
+                          className="block mb-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "#686A6E",
+                          }}
+                        >
                           사무실 전화
                         </label>
                         <input
                           type="tel"
                           placeholder="-빼고 입력"
                           value={createAccountForm.office}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, office: e.target.value })}
+                          onChange={(e) =>
+                            setCreateAccountForm({
+                              ...createAccountForm,
+                              office: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-3 outline-none"
                           style={{
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12, 12, 12, 0.08)",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
                             fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
                           }}
                           data-testid="input-office"
                         />
@@ -2376,32 +3090,40 @@ export default function AdminSettings() {
                     </div>
 
                     {/* 협력사 정보: Row 2 - 은행 선택, 계좌번호, 예금주 */}
-                    <div className="flex gap-3" style={{ width: '100%' }}>
+                    <div className="flex gap-3" style={{ width: "100%" }}>
                       <div className="flex-1">
-                        <label className="block mb-2" style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: '#686A6E',
-                        }}>
+                        <label
+                          className="block mb-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "#686A6E",
+                          }}
+                        >
                           은행 선택
                         </label>
                         <div className="relative">
                           <select
                             value={createAccountForm.bankName}
-                            onChange={(e) => setCreateAccountForm({ ...createAccountForm, bankName: e.target.value })}
+                            onChange={(e) =>
+                              setCreateAccountForm({
+                                ...createAccountForm,
+                                bankName: e.target.value,
+                              })
+                            }
                             className="w-full px-4 pr-8 appearance-none cursor-pointer outline-none"
                             style={{
-                              height: '46px',
-                              background: '#FDFDFD',
-                              border: '2px solid rgba(12, 12, 12, 0.08)',
-                              borderRadius: '8px',
-                              fontFamily: 'Pretendard',
-                              fontSize: '14px',
+                              height: "46px",
+                              background: "#FDFDFD",
+                              border: "2px solid rgba(12, 12, 12, 0.08)",
+                              borderRadius: "8px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
                               fontWeight: 400,
-                              letterSpacing: '-0.02em',
-                              color: 'rgba(12, 12, 12, 0.9)',
+                              letterSpacing: "-0.02em",
+                              color: "rgba(12, 12, 12, 0.9)",
                             }}
                             data-testid="select-bank"
                           >
@@ -2416,67 +3138,83 @@ export default function AdminSettings() {
                             <option value="카카오뱅크">카카오뱅크</option>
                             <option value="토스뱅크">토스뱅크</option>
                           </select>
-                          <ChevronDown 
-                            size={22} 
+                          <ChevronDown
+                            size={22}
                             className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"
-                            style={{ color: 'rgba(12, 12, 12, 0.6)' }}
+                            style={{ color: "rgba(12, 12, 12, 0.6)" }}
                           />
                         </div>
                       </div>
                       <div className="flex-1">
-                        <label className="block mb-2" style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: '#686A6E',
-                        }}>
+                        <label
+                          className="block mb-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "#686A6E",
+                          }}
+                        >
                           계좌번호
                         </label>
                         <input
                           type="text"
-                          placeholder="** 빼고 입력"
+                          placeholder="'-' 빼고 입력"
                           value={createAccountForm.accountNumber}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, accountNumber: e.target.value })}
+                          onChange={(e) =>
+                            setCreateAccountForm({
+                              ...createAccountForm,
+                              accountNumber: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-3 outline-none"
                           style={{
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12, 12, 12, 0.08)",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
                             fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
                           }}
                           data-testid="input-account-number"
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="block mb-2" style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: '#686A6E',
-                        }}>
+                        <label
+                          className="block mb-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "#686A6E",
+                          }}
+                        >
                           예금주
                         </label>
                         <input
                           type="text"
                           placeholder="예금주"
                           value={createAccountForm.accountHolder}
-                          onChange={(e) => setCreateAccountForm({ ...createAccountForm, accountHolder: e.target.value })}
+                          onChange={(e) =>
+                            setCreateAccountForm({
+                              ...createAccountForm,
+                              accountHolder: e.target.value,
+                            })
+                          }
                           className="w-full px-4 py-3 outline-none"
                           style={{
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12, 12, 12, 0.08)",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
                             fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
                           }}
                           data-testid="input-account-holder"
                         />
@@ -2484,163 +3222,195 @@ export default function AdminSettings() {
                     </div>
 
                     {/* 협력사 정보: Row 3 - 주소 (full width) */}
-                    <div style={{ width: '100%' }}>
-                      <label className="block mb-2" style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: '#686A6E',
-                      }}>
+                    <div style={{ width: "100%" }}>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
                         주소
                       </label>
                       <input
                         type="text"
                         placeholder="주소"
                         value={createAccountForm.address}
-                        onChange={(e) => setCreateAccountForm({ ...createAccountForm, address: e.target.value })}
+                        onChange={(e) =>
+                          setCreateAccountForm({
+                            ...createAccountForm,
+                            address: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 outline-none"
                         style={{
-                          background: '#FDFDFD',
-                          border: '2px solid rgba(12, 12, 12, 0.08)',
-                          borderRadius: '8px',
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
+                          background: "#FDFDFD",
+                          border: "2px solid rgba(12, 12, 12, 0.08)",
+                          borderRadius: "8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
                           fontWeight: 400,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
                         }}
                         data-testid="input-address"
                       />
                     </div>
 
                     {/* 협력사 정보: Row 4 - 출동가능지역선택 */}
-                    <div style={{ width: '100%' }}>
-                      <label className="block mb-2" style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: '#686A6E',
-                      }}>
+                    <div style={{ width: "100%" }}>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
                         출동가능지역선택
                       </label>
-                      <div 
+                      <div
                         className="px-4 py-3 cursor-pointer flex flex-wrap gap-2 min-h-[46px]"
                         style={{
-                          background: '#FDFDFD',
-                          border: '2px solid rgba(12, 12, 12, 0.08)',
-                          borderRadius: '8px',
+                          background: "#FDFDFD",
+                          border: "2px solid rgba(12, 12, 12, 0.08)",
+                          borderRadius: "8px",
                         }}
                         onClick={() => {
-                          setTempSelectedRegions([...createAccountForm.serviceRegions]);
+                          setTempSelectedRegions([
+                            ...createAccountForm.serviceRegions,
+                          ]);
                           setShowRegionModal(true);
                         }}
                         data-testid="button-region-selector"
                       >
                         {createAccountForm.serviceRegions.length === 0 ? (
-                          <span style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
-                            fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.4)',
-                          }}>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 400,
+                              letterSpacing: "-0.02em",
+                              color: "rgba(12, 12, 12, 0.4)",
+                            }}
+                          >
                             지역 선택
                           </span>
                         ) : (
-                          createAccountForm.serviceRegions.map((region, idx) => (
-                            <div
-                              key={idx}
-                              className="px-3 py-1"
-                              style={{
-                                background: '#E3F2FD',
-                                borderRadius: '6px',
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setCreateAccountForm({
-                                  ...createAccountForm,
-                                  serviceRegions: createAccountForm.serviceRegions.filter((_, i) => i !== idx)
-                                });
-                              }}
-                            >
-                              <span style={{
-                                fontFamily: 'Pretendard',
-                                fontSize: '13px',
-                                fontWeight: 400,
-                                color: '#008FED',
-                              }}>
-                                {region} ×
-                              </span>
-                            </div>
-                          ))
+                          createAccountForm.serviceRegions.map(
+                            (region, idx) => (
+                              <div
+                                key={idx}
+                                className="px-3 py-1"
+                                style={{
+                                  background: "#E3F2FD",
+                                  borderRadius: "6px",
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCreateAccountForm({
+                                    ...createAccountForm,
+                                    serviceRegions:
+                                      createAccountForm.serviceRegions.filter(
+                                        (_, i) => i !== idx,
+                                      ),
+                                  });
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    fontFamily: "Pretendard",
+                                    fontSize: "13px",
+                                    fontWeight: 400,
+                                    color: "#008FED",
+                                  }}
+                                >
+                                  {region} ×
+                                </span>
+                              </div>
+                            ),
+                          )
                         )}
                       </div>
                     </div>
 
                     {/* 협력사 정보: Row 5 - 첨부파일 */}
-                    <div style={{ width: '100%' }}>
-                      <label className="block mb-2" style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: '#686A6E',
-                      }}>
+                    <div style={{ width: "100%" }}>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
                         첨부파일
                       </label>
                       <input
                         type="file"
                         id="file-upload-input"
                         multiple
-                        style={{ display: 'none' }}
+                        style={{ display: "none" }}
                         onChange={(e) => {
                           const files = Array.from(e.target.files || []);
                           if (files.length > 0) {
-                            const newFileNames = files.map(f => f.name);
+                            const newFileNames = files.map((f) => f.name);
                             setCreateAccountForm({
                               ...createAccountForm,
-                              attachments: [...createAccountForm.attachments, ...newFileNames]
+                              attachments: [
+                                ...createAccountForm.attachments,
+                                ...newFileNames,
+                              ],
                             });
                           }
-                          e.target.value = '';
+                          e.target.value = "";
                         }}
                         data-testid="input-file-upload"
                       />
                       <div
                         className="flex flex-col items-center justify-center cursor-pointer"
                         style={{
-                          width: '100%',
-                          minHeight: '120px',
-                          background: '#F8FCFF',
-                          border: '2px dashed rgba(0, 143, 237, 0.3)',
-                          borderRadius: '8px',
+                          width: "100%",
+                          minHeight: "120px",
+                          background: "#F8FCFF",
+                          border: "2px dashed rgba(0, 143, 237, 0.3)",
+                          borderRadius: "8px",
                         }}
                         onClick={() => {
-                          document.getElementById('file-upload-input')?.click();
+                          document.getElementById("file-upload-input")?.click();
                         }}
                         onDragOver={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          e.currentTarget.style.background = 'rgba(0, 143, 237, 0.05)';
+                          e.currentTarget.style.background =
+                            "rgba(0, 143, 237, 0.05)";
                         }}
                         onDragLeave={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          e.currentTarget.style.background = '#F8FCFF';
+                          e.currentTarget.style.background = "#F8FCFF";
                         }}
                         onDrop={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          e.currentTarget.style.background = '#F8FCFF';
-                          
+                          e.currentTarget.style.background = "#F8FCFF";
+
                           const files = Array.from(e.dataTransfer.files || []);
                           if (files.length > 0) {
-                            const newFileNames = files.map(f => f.name);
+                            const newFileNames = files.map((f) => f.name);
                             setCreateAccountForm({
                               ...createAccountForm,
-                              attachments: [...createAccountForm.attachments, ...newFileNames]
+                              attachments: [
+                                ...createAccountForm.attachments,
+                                ...newFileNames,
+                              ],
                             });
                           }
                         }}
@@ -2651,60 +3421,69 @@ export default function AdminSettings() {
                             <div
                               className="flex items-center justify-center"
                               style={{
-                                width: '48px',
-                                height: '48px',
-                                background: 'rgba(0, 143, 237, 0.1)',
-                                borderRadius: '50%',
+                                width: "48px",
+                                height: "48px",
+                                background: "rgba(0, 143, 237, 0.1)",
+                                borderRadius: "50%",
                               }}
                             >
-                              <Upload size={24} style={{ color: '#008FED' }} />
+                              <Upload size={24} style={{ color: "#008FED" }} />
                             </div>
-                            <span style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '14px',
-                              fontWeight: 400,
-                              color: '#686A6E',
-                            }}>
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "#686A6E",
+                              }}
+                            >
                               파일 또는 이미지를 이곳에 올려주세요
                             </span>
                           </div>
                         ) : (
                           <div className="flex flex-col gap-2 w-full p-4">
-                            {createAccountForm.attachments.map((fileName, idx) => (
-                              <div
-                                key={idx}
-                                className="flex items-center justify-between px-3 py-2"
-                                style={{
-                                  background: '#FFFFFF',
-                                  border: '1px solid rgba(0, 143, 237, 0.2)',
-                                  borderRadius: '6px',
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                                data-testid={`file-item-${idx}`}
-                              >
-                                <span style={{
-                                  fontFamily: 'Pretendard',
-                                  fontSize: '13px',
-                                  fontWeight: 400,
-                                  color: '#0C0C0C',
-                                }}>
-                                  {fileName}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setCreateAccountForm({
-                                      ...createAccountForm,
-                                      attachments: createAccountForm.attachments.filter((_, i) => i !== idx)
-                                    });
+                            {createAccountForm.attachments.map(
+                              (fileName, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center justify-between px-3 py-2"
+                                  style={{
+                                    background: "#FFFFFF",
+                                    border: "1px solid rgba(0, 143, 237, 0.2)",
+                                    borderRadius: "6px",
                                   }}
-                                  data-testid={`button-remove-file-${idx}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  data-testid={`file-item-${idx}`}
                                 >
-                                  <X size={16} style={{ color: '#686A6E' }} />
-                                </button>
-                              </div>
-                            ))}
+                                  <span
+                                    style={{
+                                      fontFamily: "Pretendard",
+                                      fontSize: "13px",
+                                      fontWeight: 400,
+                                      color: "#0C0C0C",
+                                    }}
+                                  >
+                                    {fileName}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setCreateAccountForm({
+                                        ...createAccountForm,
+                                        attachments:
+                                          createAccountForm.attachments.filter(
+                                            (_, i) => i !== idx,
+                                          ),
+                                      });
+                                    }}
+                                    data-testid={`button-remove-file-${idx}`}
+                                  >
+                                    <X size={16} style={{ color: "#686A6E" }} />
+                                  </button>
+                                </div>
+                              ),
+                            )}
                           </div>
                         )}
                       </div>
@@ -2712,91 +3491,115 @@ export default function AdminSettings() {
                   </>
                 ) : (
                   /* 다른 역할: 회사명, 소속부서, 직급, 사무실 전화 */
-                  <div className="flex gap-3" style={{ width: '100%' }}>
+                  <div className="flex gap-3" style={{ width: "100%" }}>
                     <div className="flex-1">
-                      <label className="block mb-2" style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: '#686A6E',
-                      }}>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
                         회사명
                       </label>
                       <input
                         type="text"
                         placeholder="회사명"
                         value={createAccountForm.company}
-                        onChange={(e) => setCreateAccountForm({ ...createAccountForm, company: e.target.value })}
+                        onChange={(e) =>
+                          setCreateAccountForm({
+                            ...createAccountForm,
+                            company: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 outline-none"
                         style={{
-                          background: '#FDFDFD',
-                          border: '2px solid rgba(12, 12, 12, 0.08)',
-                          borderRadius: '8px',
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
+                          background: "#FDFDFD",
+                          border: "2px solid rgba(12, 12, 12, 0.08)",
+                          borderRadius: "8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
                           fontWeight: 400,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
                         }}
                         data-testid="input-company"
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="block mb-2" style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: '#686A6E',
-                      }}>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
                         소속부서
                       </label>
                       <input
                         type="text"
                         placeholder="소속부서"
                         value={createAccountForm.department}
-                        onChange={(e) => setCreateAccountForm({ ...createAccountForm, department: e.target.value })}
+                        onChange={(e) =>
+                          setCreateAccountForm({
+                            ...createAccountForm,
+                            department: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 outline-none"
                         style={{
-                          background: '#FDFDFD',
-                          border: '2px solid rgba(12, 12, 12, 0.08)',
-                          borderRadius: '8px',
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
+                          background: "#FDFDFD",
+                          border: "2px solid rgba(12, 12, 12, 0.08)",
+                          borderRadius: "8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
                           fontWeight: 400,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
                         }}
                         data-testid="input-department"
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="block mb-2" style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: '#686A6E',
-                      }}>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
                         직급
                       </label>
                       <Select
                         value={createAccountForm.position}
-                        onValueChange={(value) => setCreateAccountForm({ ...createAccountForm, position: value })}
+                        onValueChange={(value) =>
+                          setCreateAccountForm({
+                            ...createAccountForm,
+                            position: value,
+                          })
+                        }
                       >
                         <SelectTrigger
                           className="w-full px-4 py-3 outline-none"
                           style={{
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontSize: '14px',
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12, 12, 12, 0.08)",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
                             fontWeight: 400,
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                            height: '48px',
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                            height: "48px",
                           }}
                           data-testid="select-position"
                         >
@@ -2819,30 +3622,38 @@ export default function AdminSettings() {
                       </Select>
                     </div>
                     <div className="flex-1">
-                      <label className="block mb-2" style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.01em',
-                        color: '#686A6E',
-                      }}>
+                      <label
+                        className="block mb-2"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
                         사무실 전화
                       </label>
                       <input
                         type="tel"
                         placeholder="-빼고 입력"
                         value={createAccountForm.office}
-                        onChange={(e) => setCreateAccountForm({ ...createAccountForm, office: e.target.value })}
+                        onChange={(e) =>
+                          setCreateAccountForm({
+                            ...createAccountForm,
+                            office: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 outline-none"
                         style={{
-                          background: '#FDFDFD',
-                          border: '2px solid rgba(12, 12, 12, 0.08)',
-                          borderRadius: '8px',
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
+                          background: "#FDFDFD",
+                          border: "2px solid rgba(12, 12, 12, 0.08)",
+                          borderRadius: "8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
                           fontWeight: 400,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
                         }}
                         data-testid="input-office"
                       />
@@ -2853,20 +3664,20 @@ export default function AdminSettings() {
             </div>
 
             {/* Footer with Buttons */}
-            <div 
+            <div
               className="flex flex-row justify-between items-center px-6 py-4"
               style={{
-                background: '#FDFDFD',
-                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
+                background: "#FDFDFD",
+                borderTop: "1px solid rgba(12, 12, 12, 0.08)",
               }}
             >
               <button
                 className="flex items-center justify-center hover-elevate active-elevate-2"
                 style={{
-                  height: '48px',
-                  padding: '0 24px',
-                  background: 'transparent',
-                  borderRadius: '6px',
+                  height: "48px",
+                  padding: "0 24px",
+                  background: "transparent",
+                  borderRadius: "6px",
                 }}
                 onClick={() => {
                   setCreateAccountForm({
@@ -2891,13 +3702,15 @@ export default function AdminSettings() {
                 }}
                 data-testid="button-reset-form"
               >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 500,
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C4D',
-                }}>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C4D",
+                  }}
+                >
                   초기화
                 </span>
               </button>
@@ -2906,14 +3719,18 @@ export default function AdminSettings() {
                 type="button"
                 className="flex items-center justify-center hover-elevate active-elevate-2"
                 style={{
-                  height: '48px',
-                  padding: '0 32px',
-                  background: '#008FED',
-                  borderRadius: '6px',
+                  height: "48px",
+                  padding: "0 32px",
+                  background: "#008FED",
+                  borderRadius: "6px",
                 }}
                 onClick={() => {
                   // Validate required fields
-                  if (!createAccountForm.name || !createAccountForm.company || !createAccountForm.username) {
+                  if (
+                    !createAccountForm.name ||
+                    !createAccountForm.company ||
+                    !createAccountForm.username
+                  ) {
                     toast({
                       variant: "destructive",
                       title: "입력 오류",
@@ -2924,20 +3741,22 @@ export default function AdminSettings() {
 
                   // Set default password
                   setGeneratedPassword("0000");
-                  
+
                   // Close account creation modal and show password generation modal
                   setShowCreateAccountModal(false);
                   setShowAccountCreatedModal(true);
                 }}
                 data-testid="button-generate-password"
               >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                  color: '#FDFDFD',
-                }}>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                    color: "#FDFDFD",
+                  }}
+                >
                   비밀번호 생성
                 </span>
               </button>
@@ -2950,10 +3769,10 @@ export default function AdminSettings() {
       {showAccountCreatedModal && (
         <>
           {/* Overlay */}
-          <div 
+          <div
             className="fixed inset-0 z-50"
             style={{
-              background: 'rgba(0, 0, 0, 0.7)',
+              background: "rgba(0, 0, 0, 0.7)",
               opacity: 0.4,
             }}
             onClick={() => setShowCancelConfirmModal(true)}
@@ -2961,205 +3780,250 @@ export default function AdminSettings() {
           />
 
           {/* Modal */}
-          <div 
+          <div
             className="fixed z-50 bg-white flex flex-col"
             style={{
-              width: '747px',
-              height: '440px',
-              left: 'calc(50% - 747px/2 + 0.5px)',
-              top: 'calc(50% - 440px/2 + 0.5px)',
-              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
-              borderRadius: '12px',
-              gap: '32px',
+              width: "747px",
+              height: "440px",
+              left: "calc(50% - 747px/2 + 0.5px)",
+              top: "calc(50% - 440px/2 + 0.5px)",
+              boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
+              borderRadius: "12px",
+              gap: "32px",
             }}
             data-testid="modal-account-created"
           >
             {/* Content */}
-            <div 
+            <div
               className="flex flex-col items-center"
               style={{
-                width: '747px',
-                height: '320px',
-                gap: '16px',
+                width: "747px",
+                height: "320px",
+                gap: "16px",
               }}
             >
               {/* Header */}
-              <div 
+              <div
                 className="flex flex-row justify-center items-center"
                 style={{
-                  width: '747px',
-                  height: '60px',
-                  gap: '321px',
+                  width: "747px",
+                  height: "60px",
+                  gap: "321px",
                 }}
               >
-                <h2 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '18px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: '#0C0C0C',
-                }}>
+                <h2
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                  }}
+                >
                   비밀번호 생성
                 </h2>
               </div>
 
               {/* Body */}
-              <div 
+              <div
                 className="flex flex-col"
                 style={{
-                  width: '707px',
-                  height: '244px',
-                  gap: '20px',
+                  width: "707px",
+                  height: "244px",
+                  gap: "20px",
                 }}
               >
                 {/* Profile Card Section */}
-                <div 
+                <div
                   className="flex flex-col"
                   style={{
-                    width: '707px',
-                    height: '114px',
-                    gap: '20px',
+                    width: "707px",
+                    height: "114px",
+                    gap: "20px",
                   }}
                 >
                   {/* Section Title */}
-                  <div className="flex flex-row" style={{ width: '707px', height: '18px', gap: '2px' }}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      letterSpacing: '-0.01em',
-                      color: '#686A6E',
-                    }}>
+                  <div
+                    className="flex flex-row"
+                    style={{ width: "707px", height: "18px", gap: "2px" }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        letterSpacing: "-0.01em",
+                        color: "#686A6E",
+                      }}
+                    >
                       생성 계정
                     </span>
                   </div>
 
                   {/* Profile Card */}
-                  <div 
+                  <div
                     className="flex flex-col justify-center p-5"
                     style={{
-                      width: '707px',
-                      height: '88px',
-                      background: 'rgba(12, 12, 12, 0.04)',
-                      backdropFilter: 'blur(7px)',
-                      borderRadius: '12px',
-                      gap: '8px',
+                      width: "707px",
+                      height: "88px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      backdropFilter: "blur(7px)",
+                      borderRadius: "12px",
+                      gap: "8px",
                     }}
                   >
                     {/* Top row: Name, Company, Role */}
-                    <div 
+                    <div
                       className="flex flex-row items-center"
                       style={{
-                        width: '667px',
-                        height: '26px',
-                        gap: '16px',
+                        width: "667px",
+                        height: "26px",
+                        gap: "16px",
                       }}
                     >
                       <div className="flex flex-row items-center gap-2.5">
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '18px',
-                          fontWeight: 600,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}>{createAccountForm.name}</span>
-                        <div style={{ width: '4px', height: '4px', background: 'rgba(0, 143, 237, 0.9)', borderRadius: '50%' }} />
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '18px',
-                          fontWeight: 600,
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}>{createAccountForm.company}</span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "18px",
+                            fontWeight: 600,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {createAccountForm.name}
+                        </span>
+                        <div
+                          style={{
+                            width: "4px",
+                            height: "4px",
+                            background: "rgba(0, 143, 237, 0.9)",
+                            borderRadius: "50%",
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "18px",
+                            fontWeight: 600,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {createAccountForm.company}
+                        </span>
                       </div>
-                      <div 
+                      <div
                         className="flex items-center justify-center px-2.5"
                         style={{
-                          height: '26px',
-                          background: 'rgba(12, 12, 12, 0.1)',
-                          backdropFilter: 'blur(7px)',
-                          borderRadius: '20px',
+                          height: "26px",
+                          background: "rgba(12, 12, 12, 0.1)",
+                          backdropFilter: "blur(7px)",
+                          borderRadius: "20px",
                         }}
                       >
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '14px',
-                          fontWeight: 400,
-                          letterSpacing: '-0.01em',
-                          color: 'rgba(12, 12, 12, 0.7)',
-                        }}>{createAccountForm.role}</span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                          }}
+                        >
+                          {createAccountForm.role}
+                        </span>
                       </div>
                     </div>
 
                     {/* Bottom row: Username, Phone */}
-                    <div 
+                    <div
                       className="flex flex-row"
                       style={{
-                        width: '400px',
-                        height: '20px',
-                        gap: '24px',
+                        width: "400px",
+                        height: "20px",
+                        gap: "24px",
                       }}
                     >
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.7)',
-                      }}>{createAccountForm.username}</span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.7)',
-                      }}>{createAccountForm.phone || '010-0000-0000'}</span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.7)",
+                        }}
+                      >
+                        {createAccountForm.username}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.7)",
+                        }}
+                      >
+                        {createAccountForm.phone || "010-0000-0000"}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Password Section */}
-                <div 
+                <div
                   className="flex flex-col"
                   style={{
-                    width: '707px',
-                    height: '110px',
-                    gap: '10px',
+                    width: "707px",
+                    height: "110px",
+                    gap: "10px",
                   }}
                 >
-                  <div className="flex flex-col" style={{ width: '419px', height: '76px', gap: '8px' }}>
-                    <div className="flex flex-row" style={{ width: '419px', height: '18px', gap: '2px' }}>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        letterSpacing: '-0.01em',
-                        color: '#686A6E',
-                      }}>
+                  <div
+                    className="flex flex-col"
+                    style={{ width: "419px", height: "76px", gap: "8px" }}
+                  >
+                    <div
+                      className="flex flex-row"
+                      style={{ width: "419px", height: "18px", gap: "2px" }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
                         비밀번호 생성(자동)
                       </span>
                     </div>
 
                     {/* Input Field + Copy Button */}
-                    <div className="flex flex-row items-center" style={{ width: '419px', height: '50px', gap: '8px' }}>
+                    <div
+                      className="flex flex-row items-center"
+                      style={{ width: "419px", height: "50px", gap: "8px" }}
+                    >
                       <input
                         type="text"
                         value={generatedPassword}
                         onChange={(e) => setGeneratedPassword(e.target.value)}
                         className="flex flex-row items-center"
                         style={{
-                          width: '343px',
-                          height: '50px',
-                          padding: '10px 20px',
-                          background: '#FDFDFD',
-                          border: '2px solid rgba(12, 12, 12, 0.08)',
-                          borderRadius: '8px',
-                          fontFamily: 'Pretendard',
-                          fontSize: '16px',
+                          width: "343px",
+                          height: "50px",
+                          padding: "10px 20px",
+                          background: "#FDFDFD",
+                          border: "2px solid rgba(12, 12, 12, 0.08)",
+                          borderRadius: "8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
                           fontWeight: 600,
-                          letterSpacing: '-0.02em',
-                          color: '#0C0C0C',
-                          outline: 'none',
+                          letterSpacing: "-0.02em",
+                          color: "#0C0C0C",
+                          outline: "none",
                         }}
                         data-testid="input-password"
                       />
@@ -3167,30 +4031,33 @@ export default function AdminSettings() {
                       <button
                         className="flex flex-row items-center justify-center"
                         style={{
-                          width: '68px',
-                          height: '50px',
-                          padding: '10px 20px',
-                          background: 'rgba(0, 143, 237, 0.1)',
-                          border: '1px solid rgba(0, 143, 237, 0.3)',
-                          borderRadius: '8px',
-                          gap: '10px',
+                          width: "68px",
+                          height: "50px",
+                          padding: "10px 20px",
+                          background: "rgba(0, 143, 237, 0.1)",
+                          border: "1px solid rgba(0, 143, 237, 0.3)",
+                          borderRadius: "8px",
+                          gap: "10px",
                         }}
                         onClick={() => {
                           navigator.clipboard.writeText(generatedPassword);
                           toast({
                             title: "복사 완료",
-                            description: "비밀번호가 클립보드에 복사되었습니다.",
+                            description:
+                              "비밀번호가 클립보드에 복사되었습니다.",
                           });
                         }}
                         data-testid="button-copy-password"
                       >
-                        <span style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '16px',
-                          fontWeight: 600,
-                          letterSpacing: '-0.02em',
-                          color: '#008FED',
-                        }}>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 600,
+                            letterSpacing: "-0.02em",
+                            color: "#008FED",
+                          }}
+                        >
                           복사
                         </span>
                       </button>
@@ -3198,74 +4065,90 @@ export default function AdminSettings() {
                   </div>
 
                   {/* Notification Options */}
-                  <div 
+                  <div
                     className="flex flex-row items-center"
                     style={{
-                      gap: '32px',
+                      gap: "32px",
                     }}
                   >
                     {/* Email notification checkbox */}
-                    <div 
+                    <div
                       className="flex flex-row items-center cursor-pointer"
-                      style={{ gap: '6px' }}
-                      onClick={() => setSendEmailNotification(!sendEmailNotification)}
+                      style={{ gap: "6px" }}
+                      onClick={() =>
+                        setSendEmailNotification(!sendEmailNotification)
+                      }
                     >
-                      <div 
+                      <div
                         style={{
-                          width: '24px',
-                          height: '24px',
-                          border: '2px solid rgba(12, 12, 12, 0.24)',
-                          borderRadius: '4px',
-                          background: sendEmailNotification ? '#008FED' : 'transparent',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          width: "24px",
+                          height: "24px",
+                          border: "2px solid rgba(12, 12, 12, 0.24)",
+                          borderRadius: "4px",
+                          background: sendEmailNotification
+                            ? "#008FED"
+                            : "transparent",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
                         {sendEmailNotification && (
-                          <span style={{ color: 'white', fontSize: '16px' }}>✓</span>
+                          <span style={{ color: "white", fontSize: "16px" }}>
+                            ✓
+                          </span>
                         )}
                       </div>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.8)',
-                      }}>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}
+                      >
                         이메일로 안내 발송
                       </span>
                     </div>
 
                     {/* SMS notification checkbox */}
-                    <div 
+                    <div
                       className="flex flex-row items-center cursor-pointer"
-                      style={{ gap: '6px' }}
-                      onClick={() => setSendSmsNotification(!sendSmsNotification)}
+                      style={{ gap: "6px" }}
+                      onClick={() =>
+                        setSendSmsNotification(!sendSmsNotification)
+                      }
                     >
-                      <div 
+                      <div
                         style={{
-                          width: '24px',
-                          height: '24px',
-                          border: '2px solid rgba(12, 12, 12, 0.24)',
-                          borderRadius: '4px',
-                          background: sendSmsNotification ? '#008FED' : 'transparent',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          width: "24px",
+                          height: "24px",
+                          border: "2px solid rgba(12, 12, 12, 0.24)",
+                          borderRadius: "4px",
+                          background: sendSmsNotification
+                            ? "#008FED"
+                            : "transparent",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
                         }}
                       >
                         {sendSmsNotification && (
-                          <span style={{ color: 'white', fontSize: '16px' }}>✓</span>
+                          <span style={{ color: "white", fontSize: "16px" }}>
+                            ✓
+                          </span>
                         )}
                       </div>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.8)',
-                      }}>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}
+                      >
                         문자로 안내 발송
                       </span>
                     </div>
@@ -3275,29 +4158,29 @@ export default function AdminSettings() {
             </div>
 
             {/* Footer with Buttons */}
-            <div 
+            <div
               className="flex flex-col items-start p-5"
               style={{
-                width: '747px',
-                height: '88px',
-                background: '#FDFDFD',
-                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
-                gap: '10px',
+                width: "747px",
+                height: "88px",
+                background: "#FDFDFD",
+                borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+                gap: "10px",
               }}
             >
-              <div 
+              <div
                 className="flex flex-row justify-between items-center"
                 style={{
-                  width: '707px',
-                  height: '48px',
+                  width: "707px",
+                  height: "48px",
                 }}
               >
                 {/* Cancel Button */}
                 <button
                   className="flex-1 flex items-center justify-center"
                   style={{
-                    height: '48px',
-                    borderRadius: '6px',
+                    height: "48px",
+                    borderRadius: "6px",
                   }}
                   onClick={() => {
                     setShowAccountCreatedModal(false);
@@ -3307,13 +4190,15 @@ export default function AdminSettings() {
                   }}
                   data-testid="button-cancel-account-created"
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 500,
-                    letterSpacing: '-0.02em',
-                    color: '#D02B20',
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      letterSpacing: "-0.02em",
+                      color: "#D02B20",
+                    }}
+                  >
                     취소
                   </span>
                 </button>
@@ -3322,9 +4207,9 @@ export default function AdminSettings() {
                 <button
                   className="flex-1 flex items-center justify-center"
                   style={{
-                    height: '48px',
-                    background: '#008FED',
-                    borderRadius: '6px',
+                    height: "48px",
+                    background: "#008FED",
+                    borderRadius: "6px",
                   }}
                   onClick={async () => {
                     try {
@@ -3333,10 +4218,12 @@ export default function AdminSettings() {
                         ...createAccountForm,
                         password: generatedPassword,
                       });
-                      
+
                       // Invalidate users query to refetch from server
-                      await queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                      
+                      await queryClient.invalidateQueries({
+                        queryKey: ["/api/users"],
+                      });
+
                       // Show success message
                       let description = `${createAccountForm.name}님의 계정이 생성되었습니다. 초기 비밀번호: ${generatedPassword}`;
                       if (sendEmailNotification && sendSmsNotification) {
@@ -3346,12 +4233,12 @@ export default function AdminSettings() {
                       } else if (sendSmsNotification) {
                         description += "\n문자로 안내가 발송됩니다.";
                       }
-                      
+
                       toast({
                         title: "계정 생성 완료",
                         description,
                       });
-                      
+
                       // Close modals and reset form
                       setShowAccountCreatedModal(false);
                       setShowCreateAccountModal(false);
@@ -3379,9 +4266,12 @@ export default function AdminSettings() {
                       setRegionSearchTerm("");
                     } catch (error: any) {
                       console.error("Failed to create account:", error);
-                      
+
                       // Show error message
-                      const errorMessage = error?.error || error?.message || "계정 생성 중 오류가 발생했습니다.";
+                      const errorMessage =
+                        error?.error ||
+                        error?.message ||
+                        "계정 생성 중 오류가 발생했습니다.";
                       toast({
                         variant: "destructive",
                         title: "계정 생성 실패",
@@ -3391,13 +4281,15 @@ export default function AdminSettings() {
                   }}
                   data-testid="button-confirm-account-created"
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    letterSpacing: '-0.02em',
-                    color: '#FDFDFD',
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      color: "#FDFDFD",
+                    }}
+                  >
                     완료
                   </span>
                 </button>
@@ -3411,10 +4303,10 @@ export default function AdminSettings() {
       {showCancelConfirmModal && (
         <>
           {/* Overlay */}
-          <div 
+          <div
             className="fixed inset-0"
             style={{
-              background: 'rgba(0, 0, 0, 0.7)',
+              background: "rgba(0, 0, 0, 0.7)",
               opacity: 0.4,
               zIndex: 10001,
             }}
@@ -3423,92 +4315,98 @@ export default function AdminSettings() {
           />
 
           {/* Modal */}
-          <div 
+          <div
             className="fixed flex flex-col items-center"
             style={{
-              width: '400px',
-              height: '199px',
-              left: 'calc(50% - 400px/2)',
-              top: 'calc(50% - 199px/2)',
-              background: '#FFFFFF',
-              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
-              borderRadius: '12px',
-              padding: '32px 0px 0px',
-              gap: '24px',
+              width: "400px",
+              height: "199px",
+              left: "calc(50% - 400px/2)",
+              top: "calc(50% - 199px/2)",
+              background: "#FFFFFF",
+              boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
+              borderRadius: "12px",
+              padding: "32px 0px 0px",
+              gap: "24px",
               zIndex: 10002,
-              boxSizing: 'border-box',
+              boxSizing: "border-box",
             }}
             onClick={(e) => e.stopPropagation()}
             data-testid="modal-cancel-confirm"
           >
             {/* Content */}
-            <div 
+            <div
               className="flex flex-col items-center"
               style={{
-                width: '222px',
-                height: '55px',
-                gap: '8px',
+                width: "222px",
+                height: "55px",
+                gap: "8px",
               }}
             >
-              <h2 style={{
-                fontFamily: 'Pretendard',
-                fontSize: '18px',
-                fontWeight: 600,
-                lineHeight: '148%',
-                textAlign: 'center',
-                letterSpacing: '-0.02em',
-                color: '#0C0C0C',
-              }}>
+              <h2
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "18px",
+                  fontWeight: 600,
+                  lineHeight: "148%",
+                  textAlign: "center",
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
                 계정 생성을 그만두시겠습니까?
               </h2>
-              <p style={{
-                fontFamily: 'Pretendard',
-                fontSize: '16px',
-                fontWeight: 500,
-                lineHeight: '128%',
-                textAlign: 'center',
-                letterSpacing: '-0.02em',
-                color: 'rgba(12, 12, 12, 0.8)',
-              }}>
+              <p
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 500,
+                  lineHeight: "128%",
+                  textAlign: "center",
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.8)",
+                }}
+              >
                 지금 나가면 모든 입력이 사라집니다.
               </p>
             </div>
 
             {/* Footer with Buttons */}
-            <div 
+            <div
               className="flex flex-col items-start p-5"
               style={{
-                width: '400px',
-                height: '88px',
-                background: '#FDFDFD',
-                borderTop: '1px solid rgba(12, 12, 12, 0.08)',
-                gap: '10px',
+                width: "400px",
+                height: "88px",
+                background: "#FDFDFD",
+                borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+                gap: "10px",
               }}
             >
-              <div 
+              <div
                 className="flex flex-row justify-between items-center"
                 style={{
-                  width: '360px',
-                  height: '48px',
+                  width: "360px",
+                  height: "48px",
                 }}
               >
                 {/* Cancel Button */}
                 <button
                   className="flex-1 flex items-center justify-center"
                   style={{
-                    height: '48px',
-                    borderRadius: '6px',
+                    height: "48px",
+                    borderRadius: "6px",
                   }}
                   onClick={() => setShowCancelConfirmModal(false)}
                   data-testid="button-cancel-confirm-cancel"
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 500,
-                    letterSpacing: '-0.02em',
-                    color: '#D02B20',
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      letterSpacing: "-0.02em",
+                      color: "#D02B20",
+                    }}
+                  >
                     취소
                   </span>
                 </button>
@@ -3517,9 +4415,9 @@ export default function AdminSettings() {
                 <button
                   className="flex-1 flex items-center justify-center"
                   style={{
-                    height: '48px',
-                    background: '#008FED',
-                    borderRadius: '6px',
+                    height: "48px",
+                    background: "#008FED",
+                    borderRadius: "6px",
                   }}
                   onClick={() => {
                     // Close all modals and reset form
@@ -3551,13 +4449,15 @@ export default function AdminSettings() {
                   }}
                   data-testid="button-cancel-confirm-exit"
                 >
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 700,
-                    letterSpacing: '-0.02em',
-                    color: '#FDFDFD',
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      color: "#FDFDFD",
+                    }}
+                  >
                     나가기
                   </span>
                 </button>
@@ -3571,115 +4471,119 @@ export default function AdminSettings() {
       {showRegionModal && (
         <>
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 flex items-center justify-center"
             style={{
-              background: 'rgba(0, 0, 0, 0.28)',
+              background: "rgba(0, 0, 0, 0.28)",
               zIndex: 10001,
             }}
             onClick={() => setShowRegionModal(false)}
           />
 
           {/* Modal */}
-          <div 
+          <div
             className="fixed flex flex-col"
             style={{
-              width: '467px',
-              height: '690px',
-              left: '50%',
-              top: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: '#FFFFFF',
-              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
-              borderRadius: '12px',
+              width: "467px",
+              height: "690px",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              background: "#FFFFFF",
+              boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
+              borderRadius: "12px",
               zIndex: 10002,
             }}
             onClick={(e) => e.stopPropagation()}
             data-testid="modal-region-selector"
           >
             {/* Header */}
-            <div 
+            <div
               className="flex flex-row justify-between items-center px-5 py-4"
               style={{
-                height: '60px',
+                height: "60px",
               }}
             >
-              <h2 style={{
-                fontFamily: 'Pretendard',
-                fontSize: '18px',
-                fontWeight: 600,
-                letterSpacing: '-0.02em',
-                color: '#0C0C0C',
-              }}>
+              <h2
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "18px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
                 출동가능지역 검색
               </h2>
               <button
                 className="flex items-center justify-center hover-elevate active-elevate-2"
                 style={{
-                  width: '24px',
-                  height: '24px',
+                  width: "24px",
+                  height: "24px",
                 }}
                 onClick={() => setShowRegionModal(false)}
                 data-testid="button-close-region-modal"
               >
-                <X size={20} style={{ color: '#1C1B1F' }} />
+                <X size={20} style={{ color: "#1C1B1F" }} />
               </button>
             </div>
 
             {/* Tab Headers */}
-            <div 
+            <div
               className="flex flex-row mx-5 mt-4"
               style={{
-                height: '39px',
-                background: '#F5F5F5',
+                height: "39px",
+                background: "#F5F5F5",
               }}
             >
-              <div 
+              <div
                 className="flex items-center px-3"
                 style={{
-                  width: '114px',
+                  width: "114px",
                 }}
               >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  letterSpacing: '-0.01em',
-                  color: '#686A6E',
-                }}>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
                   시/도
                 </span>
               </div>
-              <div 
-                className="flex-1 flex items-center px-3"
-              >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '15px',
-                  fontWeight: 500,
-                  letterSpacing: '-0.01em',
-                  color: '#686A6E',
-                }}>
+              <div className="flex-1 flex items-center px-3">
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
                   군/구
                 </span>
               </div>
             </div>
 
             {/* Selection Area */}
-            <div 
+            <div
               className="flex flex-row mx-5 mt-0"
               style={{
-                height: '342px',
-                paddingTop: '6px',
+                height: "342px",
+                paddingTop: "6px",
               }}
             >
               {/* Province List */}
-              <div 
+              <div
                 className="flex flex-col overflow-y-auto"
                 style={{
-                  width: '114px',
-                  borderRight: '1px solid rgba(12, 12, 12, 0.1)',
-                  paddingRight: '12px',
+                  width: "114px",
+                  borderRight: "1px solid rgba(12, 12, 12, 0.1)",
+                  paddingRight: "12px",
                 }}
               >
                 {Object.keys(KOREA_REGIONS).map((province) => (
@@ -3687,60 +4591,74 @@ export default function AdminSettings() {
                     key={province}
                     className="flex flex-row justify-between items-center px-3 py-2.5"
                     style={{
-                      height: '44px',
-                      background: selectedProvince === province ? 'rgba(0, 143, 237, 0.1)' : 'transparent',
+                      height: "44px",
+                      background:
+                        selectedProvince === province
+                          ? "rgba(0, 143, 237, 0.1)"
+                          : "transparent",
                     }}
                     onClick={() => setSelectedProvince(province)}
                     data-testid={`province-${province}`}
                   >
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '15px',
-                      fontWeight: selectedProvince === province ? 600 : 500,
-                      letterSpacing: selectedProvince === province ? '-0.02em' : '-0.01em',
-                      color: selectedProvince === province ? '#008FED' : '#686A6E',
-                    }}>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "15px",
+                        fontWeight: selectedProvince === province ? 600 : 500,
+                        letterSpacing:
+                          selectedProvince === province ? "-0.02em" : "-0.01em",
+                        color:
+                          selectedProvince === province ? "#008FED" : "#686A6E",
+                      }}
+                    >
                       {province}
                     </span>
                     {selectedProvince === province && (
-                      <ChevronRight size={20} style={{ color: '#008FED' }} />
+                      <ChevronRight size={20} style={{ color: "#008FED" }} />
                     )}
                   </button>
                 ))}
               </div>
 
               {/* District List */}
-              <div 
-                className="flex-1 flex flex-col overflow-y-auto px-3"
-              >
+              <div className="flex-1 flex flex-col overflow-y-auto px-3">
                 {KOREA_REGIONS[selectedProvince]?.map((district) => {
                   const regionKey = `${selectedProvince} ${district}`;
                   const isSelected = tempSelectedRegions.includes(regionKey);
-                  
+
                   return (
                     <button
                       key={district}
                       className="flex items-center px-3 py-2.5"
                       style={{
-                        height: '44px',
-                        background: isSelected ? 'rgba(0, 143, 237, 0.1)' : 'transparent',
+                        height: "44px",
+                        background: isSelected
+                          ? "rgba(0, 143, 237, 0.1)"
+                          : "transparent",
                       }}
                       onClick={() => {
                         if (isSelected) {
-                          setTempSelectedRegions(tempSelectedRegions.filter(r => r !== regionKey));
+                          setTempSelectedRegions(
+                            tempSelectedRegions.filter((r) => r !== regionKey),
+                          );
                         } else {
-                          setTempSelectedRegions([...tempSelectedRegions, regionKey]);
+                          setTempSelectedRegions([
+                            ...tempSelectedRegions,
+                            regionKey,
+                          ]);
                         }
                       }}
                       data-testid={`district-${district}`}
                     >
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '15px',
-                        fontWeight: isSelected ? 600 : 500,
-                        letterSpacing: isSelected ? '-0.02em' : '-0.01em',
-                        color: isSelected ? '#008FED' : '#686A6E',
-                      }}>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "15px",
+                          fontWeight: isSelected ? 600 : 500,
+                          letterSpacing: isSelected ? "-0.02em" : "-0.01em",
+                          color: isSelected ? "#008FED" : "#686A6E",
+                        }}
+                      >
                         {district}
                       </span>
                     </button>
@@ -3750,11 +4668,11 @@ export default function AdminSettings() {
             </div>
 
             {/* Selected Tags Area */}
-            <div 
+            <div
               className="flex flex-col mx-5 mt-4"
               style={{
-                minHeight: '100px',
-                maxHeight: '180px',
+                minHeight: "100px",
+                maxHeight: "180px",
               }}
             >
               <div className="flex flex-wrap gap-2 overflow-y-auto">
@@ -3763,26 +4681,30 @@ export default function AdminSettings() {
                     key={idx}
                     className="flex items-center px-3 py-1.5 gap-1"
                     style={{
-                      background: '#E3F2FD',
-                      borderRadius: '6px',
+                      background: "#E3F2FD",
+                      borderRadius: "6px",
                     }}
                   >
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '13px',
-                      fontWeight: 400,
-                      color: '#008FED',
-                    }}>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "13px",
+                        fontWeight: 400,
+                        color: "#008FED",
+                      }}
+                    >
                       {region}
                     </span>
                     <button
                       onClick={() => {
-                        setTempSelectedRegions(tempSelectedRegions.filter((_, i) => i !== idx));
+                        setTempSelectedRegions(
+                          tempSelectedRegions.filter((_, i) => i !== idx),
+                        );
                       }}
                       className="ml-1"
                       style={{
-                        color: '#008FED',
-                        cursor: 'pointer',
+                        color: "#008FED",
+                        cursor: "pointer",
                       }}
                     >
                       ×
@@ -3793,35 +4715,37 @@ export default function AdminSettings() {
             </div>
 
             {/* Footer Button */}
-            <div 
+            <div
               className="flex justify-center items-center mx-5 mt-auto mb-5"
               style={{
-                height: '48px',
+                height: "48px",
               }}
             >
               <button
                 className="w-full flex items-center justify-center"
                 style={{
-                  height: '48px',
-                  background: '#008FED',
-                  borderRadius: '6px',
+                  height: "48px",
+                  background: "#008FED",
+                  borderRadius: "6px",
                 }}
                 onClick={() => {
                   setCreateAccountForm({
                     ...createAccountForm,
-                    serviceRegions: tempSelectedRegions
+                    serviceRegions: tempSelectedRegions,
                   });
                   setShowRegionModal(false);
                 }}
                 data-testid="button-region-confirm"
               >
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                  color: '#FDFDFD',
-                }}>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                    color: "#FDFDFD",
+                  }}
+                >
                   완료
                 </span>
               </button>
