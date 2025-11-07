@@ -990,54 +990,49 @@ export default function Intake() {
                   </div>
                 </CollapsibleContent>
               </Collapsible>
+            </div>
 
-              {/* 3. 사고 및 피해사항 (Accident & Damage Information) */}
-              <Collapsible
-                open={accidentDamageInfoOpen}
-                onOpenChange={setAccidentDamageInfoOpen}
+            {/* 3. 사고 및 피해사항 (Accident & Damage Information) */}
+              <div 
                 style={{
-                  width: '1596px',
-                  height: 'auto',
                   background: '#FFFFFF',
                   boxShadow: '0px 0px 20px #DBE9F5',
                   borderRadius: '12px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  padding: '0px 0px 32px',
+                  overflow: 'hidden',
                 }}
               >
-                <div 
-                  className="flex items-center justify-between"
-                  style={{
-                    padding: '24px',
-                    height: '82px',
-                    borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
-                  }}
-                >
-                  <h2 
+                <Collapsible open={accidentDamageInfoOpen} onOpenChange={setAccidentDamageInfoOpen}>
+                  <div 
+                    className="flex items-center justify-between"
                     style={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 600,
-                      fontSize: '24px',
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: '#0C0C0C',
+                      padding: '24px',
+                      height: '82px',
+                      borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
                     }}
                   >
-                    사고 및 피해사항
-                  </h2>
-                  <CollapsibleTrigger asChild>
-                    <button 
-                      className="w-[34px] h-[34px] flex items-center justify-center"
-                      data-testid="button-toggle-accident-damage-info"
+                    <h2 
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontWeight: 600,
+                        fontSize: '24px',
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: '#0C0C0C',
+                      }}
                     >
-                      <Minus className="w-4 h-4" style={{ color: '#008FED' }} />
-                    </button>
-                  </CollapsibleTrigger>
-                </div>
-
-                <CollapsibleContent style={{ width: '100%' }}>
+                      사고 및 피해사항
+                    </h2>
+                    <CollapsibleTrigger asChild>
+                      <button 
+                        className="w-[34px] h-[34px] flex items-center justify-center"
+                        data-testid="button-toggle-accident-damage-info"
+                      >
+                        <Minus className="w-4 h-4" style={{ color: '#008FED' }} />
+                      </button>
+                    </CollapsibleTrigger>
+                  </div>
+                  
+                  <CollapsibleContent>
                   <div 
                     style={{
                       display: 'flex',
