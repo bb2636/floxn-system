@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Star, Minus, Calendar, HelpCircle, ChevronDown } from "lucide-react";
+import { Star, Minus, Calendar, HelpCircle, ChevronDown, ChevronUp, X } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 
 export default function Intake() {
@@ -26,14 +26,6 @@ export default function Intake() {
   const [sameAsPolicyHolder, setSameAsPolicyHolder] = useState(false);
   const [damagePreventionCost, setDamagePreventionCost] = useState(false);
   const [victimIncidentAssistance, setVictimIncidentAssistance] = useState(false);
-  
-  // 피해사항 등록 항목들
-  const [damageItems, setDamageItems] = useState<Array<{
-    item: string;
-    type: string;
-    quantity: string;
-    details: string;
-  }>>([]);
   
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -80,6 +72,12 @@ export default function Intake() {
     damageType: "",
     damageQuantity: "",
     damageDetails: "",
+    damageItems: [] as Array<{
+      item: string;
+      type: string;
+      quantity: string;
+      details: string;
+    }>,
     assignedPartner: "",
     assignedPartnerManager: "",
     assignedPartnerContact: "",
@@ -185,15 +183,14 @@ export default function Intake() {
 
   const handleAddDamageItem = () => {
     if (formData.damageItem && formData.damageType) {
-      setDamageItems([...damageItems, {
-        item: formData.damageItem,
-        type: formData.damageType,
-        quantity: formData.damageQuantity || '0',
-        details: formData.damageDetails,
-      }]);
-      // Clear fields after adding
       setFormData(prev => ({
         ...prev,
+        damageItems: [...prev.damageItems, {
+          item: prev.damageItem,
+          type: prev.damageType,
+          quantity: prev.damageQuantity || '0',
+          details: prev.damageDetails,
+        }],
         damageItem: '',
         damageType: '',
         damageQuantity: '',
@@ -203,7 +200,10 @@ export default function Intake() {
   };
 
   const handleRemoveDamageItem = (index: number) => {
-    setDamageItems(damageItems.filter((_, i) => i !== index));
+    setFormData(prev => ({
+      ...prev,
+      damageItems: prev.damageItems.filter((_, i) => i !== index),
+    }));
   };
 
   const menuItems = [
@@ -1416,7 +1416,17 @@ export default function Intake() {
                       }}
                     >
                       {/* Subsection Header */}
-                      <div style={{ padding: '24px 20px 12px 20px' }}>
+                      <div 
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          padding: '24px 20px',
+                          gap: '10px',
+                          width: '1596px',
+                          height: '74px',
+                        }}
+                      >
                         <h3 
                           style={{
                             fontFamily: 'Pretendard',
@@ -1431,194 +1441,233 @@ export default function Intake() {
                         </h3>
                       </div>
 
-                      {/* Input Fields and Add Button */}
+                      {/* Input Row */}
                       <div 
                         style={{
-                          padding: '0 20px',
-                          width: '1596px',
                           display: 'flex',
                           flexDirection: 'row',
-                          alignItems: 'flex-end',
+                          alignItems: 'center',
+                          padding: '0px 20px',
                           gap: '20px',
+                          width: '1596px',
+                          height: '94px',
                         }}
                       >
-                        {/* 피해 품목 */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <label 
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontWeight: 500,
-                              fontSize: '14px',
-                              lineHeight: '128%',
-                              letterSpacing: '-0.01em',
-                              color: '#686A6E',
-                            }}
-                          >
-                            피해 품목
-                          </label>
-                          <Select 
-                            value={formData.damageItem} 
-                            onValueChange={(value) => handleInputChange("damageItem", value)}
-                          >
-                            <SelectTrigger 
-                              style={{
-                                height: '68px',
-                                padding: '10px 20px',
-                                background: '#FDFDFD',
-                                border: '2px solid rgba(12, 12, 12, 0.08)',
-                                borderRadius: '8px',
-                                fontFamily: 'Pretendard',
-                                fontWeight: 600,
-                                fontSize: '16px',
-                                letterSpacing: '-0.02em',
-                              }}
-                              data-testid="select-damage-item"
-                            >
-                              <SelectValue placeholder="피해 품목 선택" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="장판">장판</SelectItem>
-                              <SelectItem value="벽지">벽지</SelectItem>
-                              <SelectItem value="가구">가구</SelectItem>
-                              <SelectItem value="전자제품">전자제품</SelectItem>
-                              <SelectItem value="기타">기타</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* 피해 유형 */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <label 
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontWeight: 500,
-                              fontSize: '14px',
-                              lineHeight: '128%',
-                              letterSpacing: '-0.01em',
-                              color: '#686A6E',
-                            }}
-                          >
-                            피해 유형
-                          </label>
-                          <Select 
-                            value={formData.damageType} 
-                            onValueChange={(value) => handleInputChange("damageType", value)}
-                          >
-                            <SelectTrigger 
-                              style={{
-                                height: '68px',
-                                padding: '10px 20px',
-                                background: '#FDFDFD',
-                                border: '2px solid rgba(12, 12, 12, 0.08)',
-                                borderRadius: '8px',
-                                fontFamily: 'Pretendard',
-                                fontWeight: 600,
-                                fontSize: '16px',
-                                letterSpacing: '-0.02em',
-                              }}
-                              data-testid="select-damage-type"
-                            >
-                              <SelectValue placeholder="피해 유형 선택" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="교체">교체</SelectItem>
-                              <SelectItem value="수리">수리</SelectItem>
-                              <SelectItem value="청소">청소</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* 수량 */}
-                        <div style={{ flex: 0.5, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <label 
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontWeight: 500,
-                              fontSize: '14px',
-                              lineHeight: '128%',
-                              letterSpacing: '-0.01em',
-                              color: '#686A6E',
-                            }}
-                          >
-                            수량
-                          </label>
-                          <input
-                            type="number"
-                            placeholder="0"
-                            value={formData.damageQuantity}
-                            onChange={(e) => handleInputChange("damageQuantity", e.target.value)}
-                            style={{
-                              height: '68px',
-                              padding: '10px 20px',
-                              background: '#FDFDFD',
-                              border: '2px solid rgba(12, 12, 12, 0.08)',
-                              borderRadius: '8px',
-                              fontFamily: 'Pretendard',
-                              fontWeight: 600,
-                              fontSize: '16px',
-                              letterSpacing: '-0.02em',
-                              color: '#0C0C0C',
-                              textAlign: 'center',
-                            }}
-                            data-testid="input-damage-quantity"
-                          />
-                        </div>
-
-                        {/* 피해 내용 */}
-                        <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <label 
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontWeight: 500,
-                              fontSize: '14px',
-                              lineHeight: '128%',
-                              letterSpacing: '-0.01em',
-                              color: '#686A6E',
-                            }}
-                          >
-                            피해 내용
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="피해 내용 입력"
-                            value={formData.damageDetails}
-                            onChange={(e) => handleInputChange("damageDetails", e.target.value)}
-                            style={{
-                              height: '68px',
-                              padding: '10px 20px',
-                              background: '#FDFDFD',
-                              border: '2px solid rgba(12, 12, 12, 0.08)',
-                              borderRadius: '8px',
-                              fontFamily: 'Pretendard',
-                              fontWeight: 600,
-                              fontSize: '16px',
-                              letterSpacing: '-0.02em',
-                              color: '#0C0C0C',
-                            }}
-                            data-testid="input-damage-details"
-                          />
-                        </div>
-
-                        {/* 등록 Button */}
-                        <Button
-                          onClick={handleAddDamageItem}
+                        {/* Input Fields Container */}
+                        <div 
                           style={{
-                            height: '68px',
-                            padding: '0 32px',
-                            background: '#008FED',
-                            color: '#FFFFFF',
-                            borderRadius: '8px',
-                            border: 'none',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            flexShrink: 0,
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: '12px',
+                            flex: 1,
                           }}
-                          data-testid="button-add-damage"
                         >
-                          등록
-                        </Button>
+                          {/* 피해 품목 */}
+                          <div style={{ width: '413.33px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              피해 품목
+                            </label>
+                            <Select value={formData.damageItem} onValueChange={(value) => handleInputChange("damageItem", value)}>
+                              <SelectTrigger 
+                                style={{ height: '68px', padding: '10px 20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em' }}
+                                data-testid="select-damage-item"
+                              >
+                                <SelectValue placeholder="선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="장판">장판</SelectItem>
+                                <SelectItem value="벽지">벽지</SelectItem>
+                                <SelectItem value="가구">가구</SelectItem>
+                                <SelectItem value="전자제품">전자제품</SelectItem>
+                                <SelectItem value="기타">기타</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* 피해 유형 */}
+                          <div style={{ width: '413.33px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              피해 유형
+                            </label>
+                            <Select value={formData.damageType} onValueChange={(value) => handleInputChange("damageType", value)}>
+                              <SelectTrigger 
+                                style={{ height: '68px', padding: '10px 20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em' }}
+                                data-testid="select-damage-type"
+                              >
+                                <SelectValue placeholder="선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="교체">교체</SelectItem>
+                                <SelectItem value="수리">수리</SelectItem>
+                                <SelectItem value="청소">청소</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* 수량 with increment/decrement buttons */}
+                          <div style={{ width: '187px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              수량
+                            </label>
+                            <div style={{ position: 'relative', height: '68px', display: 'flex', alignItems: 'center', padding: '10px 14px 10px 20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px' }}>
+                              <input
+                                type="number"
+                                value={formData.damageQuantity}
+                                onChange={(e) => handleInputChange("damageQuantity", e.target.value)}
+                                style={{
+                                  width: '100%',
+                                  border: 'none',
+                                  background: 'transparent',
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: 600,
+                                  fontSize: '16px',
+                                  letterSpacing: '-0.02em',
+                                  color: '#0C0C0C',
+                                  outline: 'none',
+                                }}
+                                data-testid="input-damage-quantity"
+                              />
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <button
+                                  onClick={() => handleInputChange("damageQuantity", String(Math.max(0, Number(formData.damageQuantity || 0) + 1)))}
+                                  style={{
+                                    width: '48px',
+                                    height: '18px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: 'rgba(12, 12, 12, 0.06)',
+                                    borderRadius: '4px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                  }}
+                                  data-testid="button-quantity-increment"
+                                >
+                                  <ChevronUp style={{ width: '12px', height: '12px', color: '#008FED' }} />
+                                </button>
+                                <button
+                                  onClick={() => handleInputChange("damageQuantity", String(Math.max(0, Number(formData.damageQuantity || 0) - 1)))}
+                                  style={{
+                                    width: '48px',
+                                    height: '18px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: 'rgba(12, 12, 12, 0.06)',
+                                    borderRadius: '4px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                  }}
+                                  data-testid="button-quantity-decrement"
+                                >
+                                  <ChevronDown style={{ width: '12px', height: '12px', color: 'rgba(12, 12, 12, 0.4)' }} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* 피해 내용 */}
+                          <div style={{ width: '413.33px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              피해 내용
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="선택"
+                              value={formData.damageDetails}
+                              onChange={(e) => handleInputChange("damageDetails", e.target.value)}
+                              style={{ height: '68px', padding: '10px 20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em', color: '#0C0C0C' }}
+                              data-testid="input-damage-details"
+                            />
+                          </div>
+                        </div>
+
+                        {/* 입력 Button */}
+                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '26px 0px 0px', gap: '10px', width: '73px', height: '94px' }}>
+                          <button
+                            onClick={handleAddDamageItem}
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'row',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              padding: '0px 24px',
+                              width: '73px',
+                              height: '68px',
+                              background: '#008FED',
+                              borderRadius: '6px',
+                              border: 'none',
+                              cursor: 'pointer',
+                            }}
+                            data-testid="button-add-damage"
+                          >
+                            <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                              입력
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 등록된 피해사항 리스트 */}
+                      <div 
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          padding: '16px 20px',
+                          gap: '10px',
+                          width: '1596px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '2px', width: '1556px' }}>
+                          <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                            총 {formData.damageItems.length}건의 피해
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '12px', width: '1556px', flexWrap: 'wrap' }}>
+                          {formData.damageItems.map((item, index) => (
+                            <div 
+                              key={index}
+                              style={{
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                padding: '20px',
+                                gap: '16px',
+                                width: '316px',
+                                height: '64px',
+                                background: 'rgba(12, 12, 12, 0.08)',
+                                borderRadius: '12px',
+                              }}
+                            >
+                              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', flex: 1 }}>
+                                <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }} />
+                                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '20px' }}>
+                                  <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#008FED' }}>
+                                    {item.item}
+                                  </span>
+                                  <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(0, 143, 237, 0.7)' }}>
+                                    {item.type}
+                                  </span>
+                                  <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(0, 143, 237, 0.7)' }}>
+                                    {item.quantity}
+                                  </span>
+                                  <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(0, 143, 237, 0.7)' }}>
+                                    {item.details}
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleRemoveDamageItem(index)}
+                                style={{ width: '24px', height: '24px', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                                data-testid={`button-remove-damage-${index}`}
+                              >
+                                <X style={{ width: '24px', height: '24px', color: 'rgba(12, 12, 12, 0.3)' }} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
                       {/* 등록된 피해사항 표시 (태그) */}
