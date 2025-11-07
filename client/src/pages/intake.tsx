@@ -53,6 +53,20 @@ export default function Intake() {
     select: (users) => users.filter(u => u.role === "심사사"),
   });
 
+  // 접수번호 자동 생성 함수
+  const generateCaseNumber = () => {
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+    return `CLM-${year}${month}${day}${hours}${minutes}${seconds}${milliseconds}`;
+  };
+
+  const [caseNumber] = useState(() => generateCaseNumber());
   const [formData, setFormData] = useState({
     accidentDate: "",
     insuranceCompany: "",
@@ -129,7 +143,7 @@ export default function Intake() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest("POST", "/api/cases", cleanFormData(data));
+      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), caseNumber });
     },
     onSuccess: () => {
       toast({ description: "접수가 저장되었습니다.", duration: 2000 });
@@ -142,7 +156,7 @@ export default function Intake() {
 
   const submitMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), status: "제출" });
+      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), caseNumber, status: "제출" });
     },
     onSuccess: () => {
       toast({ 
@@ -448,10 +462,11 @@ export default function Intake() {
                               fontSize: '16px',
                               lineHeight: '128%',
                               letterSpacing: '-0.02em',
-                              color: 'rgba(12, 12, 12, 0.4)',
+                              color: '#0C0C0C',
                             }}
+                            data-testid="text-case-number"
                           >
-                            자동 생성
+                            {caseNumber}
                           </span>
                         </div>
                       </div>
