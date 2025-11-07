@@ -22,6 +22,7 @@ This comprehensive Insurance Accident Management System digitalizes and automate
 - I prefer detailed explanations.
 - Do not make changes to the `design_guidelines.md` file.
 - **CRITICAL**: Features may be added but NEVER removed - maintain all functionality from documentation
+- **CRITICAL x3**: 헤더 디자인과 네비게이션 기능은 절대 변경 금지 (Top header design and navigation ABSOLUTELY NEVER change) - User emphasized three times with "절대 바꾸지마"
 
 ## Complete Project Specification
 
