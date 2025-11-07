@@ -131,6 +131,11 @@ export const cases = pgTable("cases", {
   accidentLocation: text("accident_location"),
   accidentDescription: text("accident_description"),
   
+  // 진행상황 관련 필드
+  repairType: text("repair_type"), // 복구유형
+  progressStatus: text("progress_status"), // 주요진행사항
+  requestNote: text("request_note"), // 요청사항
+  
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),
