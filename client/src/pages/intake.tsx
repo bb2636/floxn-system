@@ -18,12 +18,8 @@ export default function Intake() {
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("접수하기");
   
-  // Collapsible states
+  // Collapsible states - Only 2 main sections
   const [basicInfoOpen, setBasicInfoOpen] = useState(true);
-  const [insuranceInfoOpen, setInsuranceInfoOpen] = useState(true);
-  const [clientInfoOpen, setClientInfoOpen] = useState(true);
-  const [assessorInfoOpen, setAssessorInfoOpen] = useState(true);
-  const [investigatorInfoOpen, setInvestigatorInfoOpen] = useState(true);
   const [insuredVictimInfoOpen, setInsuredVictimInfoOpen] = useState(true);
   
   const [sameAsPolicyHolder, setSameAsPolicyHolder] = useState(false);
@@ -352,9 +348,9 @@ export default function Intake() {
                 
                 <CollapsibleContent>
                   <div style={{ padding: '16px 0 32px 0' }}>
-                    {/* 2-column grid (768px each) */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px' }}>
-                      {/* Column 1 */}
+                    {/* Row 1: 접수번호, 접수일자 (2-column) */}
+                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '32px' }}>
+                      {/* Column 1 - 접수번호 */}
                       <div style={{ width: '768px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label 
                           style={{
@@ -393,7 +389,7 @@ export default function Intake() {
                         </div>
                       </div>
 
-                      {/* Column 2 */}
+                      {/* Column 2 - 접수일자 */}
                       <div style={{ width: '768px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label 
                           style={{
@@ -434,54 +430,8 @@ export default function Intake() {
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
 
-            {/* 2. 보험 정보 */}
-            <div 
-              style={{
-                background: '#FFFFFF',
-                boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
-                overflow: 'hidden',
-              }}
-            >
-              <Collapsible open={insuranceInfoOpen} onOpenChange={setInsuranceInfoOpen}>
-                <div 
-                  className="flex items-center justify-between"
-                  style={{
-                    padding: '24px',
-                    height: '82px',
-                    borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
-                  }}
-                >
-                  <h2 
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 600,
-                      fontSize: '24px',
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: '#0C0C0C',
-                    }}
-                  >
-                    보험 정보
-                  </h2>
-                  <CollapsibleTrigger asChild>
-                    <button 
-                      className="w-[34px] h-[34px] flex items-center justify-center"
-                      data-testid="button-toggle-insurance-info"
-                    >
-                      <Minus className="w-4 h-4" style={{ color: '#008FED' }} />
-                    </button>
-                  </CollapsibleTrigger>
-                </div>
-                
-                <CollapsibleContent>
-                  <div style={{ padding: '16px 0 32px 0' }}>
-                    {/* Subsection Header */}
+                    {/* Subsection: 보험 정보 */}
                     <div style={{ padding: '24px 20px' }}>
                       <h3 
                         style={{
@@ -510,757 +460,121 @@ export default function Intake() {
                       </p>
                     </div>
 
-                    {/* 3-column grid (505.33px each) */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '12px' }}>
-                      {/* Column 1 - 보험사 */}
+                    {/* 보험 정보 3-column */}
+                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '32px' }}>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          보험사
-                        </label>
-                        <Select 
-                          value={formData.insuranceCompany} 
-                          onValueChange={(value) => handleInputChange("insuranceCompany", value)}
-                        >
-                          <SelectTrigger 
-                            style={{
-                              height: '68px',
-                              padding: '10px 20px',
-                              background: '#FDFDFD',
-                              border: '2px solid rgba(12, 12, 12, 0.08)',
-                              borderRadius: '8px',
-                              fontFamily: 'Pretendard',
-                              fontWeight: 600,
-                              fontSize: '16px',
-                              letterSpacing: '-0.02em',
-                            }}
-                            data-testid="select-insurance-company"
-                          >
-                            <SelectValue placeholder="선택해주세요" />
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사</label>
+                        <Select value={formData.insuranceCompany} onValueChange={(value) => handleInputChange("insuranceCompany", value)}>
+                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-insurance-company">
+                            <SelectValue placeholder="보험사 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="삼성화재" data-testid="select-option-samsung">삼성화재</SelectItem>
-                            <SelectItem value="현대해상" data-testid="select-option-hyundai">현대해상</SelectItem>
-                            <SelectItem value="DB손해보험" data-testid="select-option-db">DB손해보험</SelectItem>
-                            <SelectItem value="KB손해보험" data-testid="select-option-kb">KB손해보험</SelectItem>
-                            <SelectItem value="메리츠화재" data-testid="select-option-meritz">메리츠화재</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Column 2 - 보험사 증권번호 */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          보험사 증권번호
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="증권번호를 입력해주세요"
-                          value={formData.insurancePolicyNo}
-                          onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-policy-number"
-                        />
-                      </div>
-
-                      {/* Column 3 - 보험사 사고번호 */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          보험사 사고번호
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="사고번호를 입력해주세요"
-                          value={formData.insuranceAccidentNo}
-                          onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-accident-number"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-
-            {/* 3. 의뢰자 정보 */}
-            <div 
-              style={{
-                background: '#FFFFFF',
-                boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
-                overflow: 'hidden',
-              }}
-            >
-              <Collapsible open={clientInfoOpen} onOpenChange={setClientInfoOpen}>
-                <div 
-                  className="flex items-center justify-between"
-                  style={{
-                    padding: '24px',
-                    height: '82px',
-                    borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
-                  }}
-                >
-                  <h2 
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 600,
-                      fontSize: '24px',
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: '#0C0C0C',
-                    }}
-                  >
-                    의뢰자 정보
-                  </h2>
-                  <CollapsibleTrigger asChild>
-                    <button 
-                      className="w-[34px] h-[34px] flex items-center justify-center"
-                      data-testid="button-toggle-client-info"
-                    >
-                      <Minus className="w-4 h-4" style={{ color: '#008FED' }} />
-                    </button>
-                  </CollapsibleTrigger>
-                </div>
-                
-                <CollapsibleContent>
-                  <div style={{ padding: '16px 0 32px 0' }}>
-                    {/* Subsection Header */}
-                    <div style={{ padding: '24px 20px' }}>
-                      <h3 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontWeight: 600,
-                          fontSize: '20px',
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.8)',
-                        }}
-                      >
-                        의뢰자 정보
-                      </h3>
-                    </div>
-
-                    {/* 4-column grid (374px each) */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '12px' }}>
-                      {/* Column 1 - 거주지 */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          거주지
-                        </label>
-                        <Select 
-                          value={formData.clientResidence} 
-                          onValueChange={(value) => handleInputChange("clientResidence", value)}
-                        >
-                          <SelectTrigger 
-                            style={{
-                              height: '68px',
-                              padding: '10px 20px',
-                              background: '#FDFDFD',
-                              border: '2px solid rgba(12, 12, 12, 0.08)',
-                              borderRadius: '8px',
-                              fontFamily: 'Pretendard',
-                              fontWeight: 600,
-                              fontSize: '16px',
-                              letterSpacing: '-0.02em',
-                            }}
-                            data-testid="select-client-residence"
-                          >
-                            <SelectValue placeholder="선택해주세요" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="서울" data-testid="select-option-seoul">서울</SelectItem>
-                            <SelectItem value="경기" data-testid="select-option-gyeonggi">경기</SelectItem>
-                            <SelectItem value="인천" data-testid="select-option-incheon">인천</SelectItem>
-                            <SelectItem value="부산" data-testid="select-option-busan">부산</SelectItem>
-                            <SelectItem value="대구" data-testid="select-option-daegu">대구</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Column 2 - 소속/시설 */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          소속/시설
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="입력해주세요"
-                          value={formData.clientDepartment}
-                          onChange={(e) => handleInputChange("clientDepartment", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-client-department"
-                        />
-                      </div>
-
-                      {/* Column 3 - 의뢰자 */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          의뢰자
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="성함을 입력해주세요"
-                          value={formData.clientName}
-                          onChange={(e) => handleInputChange("clientName", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-client-name"
-                        />
-                      </div>
-
-                      {/* Column 4 - 의뢰자 담당자 연락처 */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          의뢰자 담당자 연락처
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="연락처를 입력해주세요"
-                          value={formData.clientContact}
-                          onChange={(e) => handleInputChange("clientContact", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: 'rgba(12, 12, 12, 0.04)',
-                            borderRadius: '8px',
-                            border: 'none',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-client-contact"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
-
-            {/* 4. 심사자 정보 */}
-            <div 
-              style={{
-                background: '#FFFFFF',
-                boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
-                overflow: 'hidden',
-              }}
-            >
-              <Collapsible open={assessorInfoOpen} onOpenChange={setAssessorInfoOpen}>
-                <div 
-                  className="flex items-center justify-between"
-                  style={{
-                    padding: '24px',
-                    height: '82px',
-                    borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
-                  }}
-                >
-                  <h2 
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 600,
-                      fontSize: '24px',
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: '#0C0C0C',
-                    }}
-                  >
-                    심사자 정보
-                  </h2>
-                  <CollapsibleTrigger asChild>
-                    <button 
-                      className="w-[34px] h-[34px] flex items-center justify-center"
-                      data-testid="button-toggle-assessor-info"
-                    >
-                      <Minus className="w-4 h-4" style={{ color: '#008FED' }} />
-                    </button>
-                  </CollapsibleTrigger>
-                </div>
-                
-                <CollapsibleContent>
-                  <div style={{ padding: '16px 0 32px 0' }}>
-                    {/* Subsection Header */}
-                    <div style={{ padding: '24px 20px' }}>
-                      <h3 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontWeight: 600,
-                          fontSize: '20px',
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.8)',
-                        }}
-                      >
-                        심사자 정보
-                      </h3>
-                    </div>
-
-                    {/* 4-column grid */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px' }}>
-                      {/* Column 1 - 심사자 */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          심사자
-                        </label>
-                        <Select 
-                          value={formData.assessorId} 
-                          onValueChange={(value) => handleInputChange("assessorId", value)}
-                        >
-                          <SelectTrigger 
-                            style={{
-                              height: '68px',
-                              padding: '10px 20px',
-                              background: '#FDFDFD',
-                              border: '2px solid rgba(12, 12, 12, 0.08)',
-                              borderRadius: '8px',
-                              fontFamily: 'Pretendard',
-                              fontWeight: 600,
-                              fontSize: '16px',
-                              letterSpacing: '-0.02em',
-                            }}
-                            data-testid="select-assessor"
-                          >
-                            <SelectValue placeholder="선택해주세요" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {assessors?.map((assessor) => (
-                              <SelectItem 
-                                key={assessor.id} 
-                                value={assessor.id}
-                                data-testid={`select-option-assessor-${assessor.id}`}
-                              >
-                                {assessor.name}
-                              </SelectItem>
+                            {["삼성화재", "현대해상", "DB손해보험", "KB손해보험", "메리츠화재"].map((company) => (
+                              <SelectItem key={company} value={company} data-testid={`select-option-insurance-company-${company}`}>{company}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
-
-                      {/* Column 2 - 소속/시설 */}
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          소속/시설
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="입력해주세요"
-                          value={formData.assessorDepartment}
-                          onChange={(e) => handleInputChange("assessorDepartment", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-assessor-department"
-                        />
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 증권번호</label>
+                        <input type="text" placeholder="증권번호 입력" value={formData.insurancePolicyNo} onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-policy-no" />
                       </div>
-
-                      {/* Column 3 - 심사팀 */}
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          심사팀
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="입력해주세요"
-                          value={formData.assessorTeam}
-                          onChange={(e) => handleInputChange("assessorTeam", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-assessor-team"
-                        />
-                      </div>
-
-                      {/* Column 4 - 심사자 연락처 */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          심사자 연락처
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="연락처를 입력해주세요"
-                          value={formData.assessorContact}
-                          onChange={(e) => handleInputChange("assessorContact", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: 'rgba(12, 12, 12, 0.04)',
-                            borderRadius: '8px',
-                            border: 'none',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-assessor-contact"
-                        />
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 사고번호</label>
+                        <input type="text" placeholder="사고번호 입력" value={formData.insuranceAccidentNo} onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-accident-no" />
                       </div>
                     </div>
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </div>
 
-            {/* 5. 조사자 정보 */}
-            <div 
-              style={{
-                background: '#FFFFFF',
-                boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
-                overflow: 'hidden',
-              }}
-            >
-              <Collapsible open={investigatorInfoOpen} onOpenChange={setInvestigatorInfoOpen}>
-                <div 
-                  className="flex items-center justify-between"
-                  style={{
-                    padding: '24px',
-                    height: '82px',
-                    borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
-                  }}
-                >
-                  <h2 
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 600,
-                      fontSize: '24px',
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: '#0C0C0C',
-                    }}
-                  >
-                    조사자 정보
-                  </h2>
-                  <CollapsibleTrigger asChild>
-                    <button 
-                      className="w-[34px] h-[34px] flex items-center justify-center"
-                      data-testid="button-toggle-investigator-info"
-                    >
-                      <Minus className="w-4 h-4" style={{ color: '#008FED' }} />
-                    </button>
-                  </CollapsibleTrigger>
-                </div>
-                
-                <CollapsibleContent>
-                  <div style={{ padding: '16px 0 32px 0' }}>
-                    {/* Subsection Header */}
-                    <div style={{ padding: '24px 20px' }}>
-                      <h3 
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontWeight: 600,
-                          fontSize: '20px',
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.8)',
-                        }}
-                      >
-                        조사자 정보
-                      </h3>
+                    {/* Subsection: 의뢰자 정보 */}
+                    <div style={{ padding: '24px 20px 12px 20px' }}>
+                      <h3 style={{fontFamily: 'Pretendard',fontWeight: 600,fontSize: '20px',lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>의뢰자 정보</h3>
                     </div>
 
-                    {/* 4-column grid */}
+                    {/* 의뢰자 정보 4-column */}
+                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '32px' }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자</label>
+                        <Select value={formData.clientResidence} onValueChange={(value) => handleInputChange("clientResidence", value)}>
+                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-client-residence">
+                            <SelectValue placeholder="의뢰자 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {["서울", "경기", "인천", "부산", "대구"].map((region) => (
+                              <SelectItem key={region} value={region} data-testid={`select-option-client-residence-${region}`}>{region}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/시설</label>
+                        <input type="text" placeholder="소속/시설" value={formData.clientDepartment} onChange={(e) => handleInputChange("clientDepartment", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-department" />
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자</label>
+                        <input type="text" placeholder="성함을 입력해주세요" value={formData.clientName} onChange={(e) => handleInputChange("clientName", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-name" />
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자 담당자 연락처</label>
+                        <input type="text" placeholder="연락처를 입력해주세요" value={formData.clientContact} onChange={(e) => handleInputChange("clientContact", e.target.value)} style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-contact" />
+                      </div>
+                    </div>
+
+                    {/* Subsection: 심사자 정보 */}
+                    <div style={{ padding: '24px 20px 12px 20px' }}>
+                      <h3 style={{fontFamily: 'Pretendard',fontWeight: 600,fontSize: '20px',lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>심사자 정보</h3>
+                    </div>
+
+                    {/* 심사자 정보 4-column */}
+                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '32px' }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자</label>
+                        <Select value={formData.assessorId} onValueChange={(value) => handleInputChange("assessorId", value)}>
+                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-assessor">
+                            <SelectValue placeholder="선택해주세요" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {assessors?.map((assessor) => (
+                              <SelectItem key={assessor.id} value={assessor.id} data-testid={`select-option-assessor-${assessor.id}`}>{assessor.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/시설</label>
+                        <input type="text" placeholder="입력해주세요" value={formData.assessorDepartment} onChange={(e) => handleInputChange("assessorDepartment", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-department" />
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사팀</label>
+                        <input type="text" placeholder="입력해주세요" value={formData.assessorTeam} onChange={(e) => handleInputChange("assessorTeam", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-team" />
+                      </div>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자 연락처</label>
+                        <input type="text" placeholder="연락처를 입력해주세요" value={formData.assessorContact} onChange={(e) => handleInputChange("assessorContact", e.target.value)} style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-contact" />
+                      </div>
+                    </div>
+
+                    {/* Subsection: 조사자 정보 */}
+                    <div style={{ padding: '24px 20px 12px 20px' }}>
+                      <h3 style={{fontFamily: 'Pretendard',fontWeight: 600,fontSize: '20px',lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>조사자 정보</h3>
+                    </div>
+
+                    {/* 조사자 정보 4-column */}
                     <div style={{ display: 'flex', gap: '20px', padding: '0 20px' }}>
-                      {/* Column 1 - 순서팀 */}
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          순서팀
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="입력해주세요"
-                          value={formData.investigatorTeam}
-                          onChange={(e) => handleInputChange("investigatorTeam", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-investigator-team"
-                        />
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>순서팀</label>
+                        <input type="text" placeholder="입력해주세요" value={formData.investigatorTeam} onChange={(e) => handleInputChange("investigatorTeam", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-team" />
                       </div>
-
-                      {/* Column 2 - 소속/부서 */}
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          소속/부서
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="입력해주세요"
-                          value={formData.investigatorDepartment}
-                          onChange={(e) => handleInputChange("investigatorDepartment", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-investigator-department"
-                        />
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/부서</label>
+                        <input type="text" placeholder="입력해주세요" value={formData.investigatorDepartment} onChange={(e) => handleInputChange("investigatorDepartment", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-department" />
                       </div>
-
-                      {/* Column 3 - 조사팀 */}
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          조사팀
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="입력해주세요"
-                          value={formData.investigatorTeamName}
-                          onChange={(e) => handleInputChange("investigatorTeamName", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-investigator-team-name"
-                        />
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사팀</label>
+                        <input type="text" placeholder="입력해주세요" value={formData.investigatorTeamName} onChange={(e) => handleInputChange("investigatorTeamName", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-team-name" />
                       </div>
-
-                      {/* Column 4 - 조사자 연락처 */}
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          조사자 연락처
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="연락처를 입력해주세요"
-                          value={formData.investigatorContact}
-                          onChange={(e) => handleInputChange("investigatorContact", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: 'rgba(12, 12, 12, 0.04)',
-                            borderRadius: '8px',
-                            border: 'none',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-investigator-contact"
-                        />
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자 연락처</label>
+                        <input type="text" placeholder="연락처를 입력해주세요" value={formData.investigatorContact} onChange={(e) => handleInputChange("investigatorContact", e.target.value)} style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-contact" />
                       </div>
                     </div>
                   </div>
@@ -1268,7 +582,7 @@ export default function Intake() {
               </Collapsible>
             </div>
 
-            {/* 6. 피보험자 및 피해자 정보 - To be continued in next section */}
+            {/* 2. 피보험자 및 피해자 정보 */}
             <div 
               style={{
                 background: '#FFFFFF',
@@ -1515,7 +829,7 @@ export default function Intake() {
                         </label>
                         <input
                           type="text"
-                          placeholder="도로명 주소, 동/호수 포함"
+                          placeholder="피보험자 주소 입력"
                           value={formData.insuredAddress}
                           onChange={(e) => handleInputChange("insuredAddress", e.target.value)}
                           style={{
@@ -1535,7 +849,7 @@ export default function Intake() {
                       </div>
                     </div>
 
-                    {/* Subsection: 피해자 정보 */}
+                    {/* Fourth Section: 피해자 정보 */}
                     <div style={{ padding: '24px 20px 12px 20px' }}>
                       <h3 
                         style={{
@@ -1551,28 +865,28 @@ export default function Intake() {
                       </h3>
                     </div>
 
-                    {/* 2-column grid for victim */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px' }}>
-                      {/* Victim Name */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          피해자
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="피해자 성명"
-                          value={formData.victimName}
-                          onChange={(e) => handleInputChange("victimName", e.target.value)}
-                          style={{
+                    {/* Fifth Row: 2-column - 피해자, 피해자 연락처 */}
+                    <div style={{ padding: '0 20px' }}>
+                      <div style={{ display: 'flex', gap: '20px' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            피해자
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="피해자 성명"
+                            value={formData.victimName}
+                            onChange={(e) => handleInputChange("victimName", e.target.value)}
+                            style={{
                             height: '68px',
                             padding: '10px 20px',
                             background: '#FDFDFD',
@@ -1586,41 +900,42 @@ export default function Intake() {
                           }}
                           data-testid="input-victim-name"
                         />
-                      </div>
+                        </div>
 
-                      {/* Victim Contact */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          피해자 연락처
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="피해자 연락처"
-                          value={formData.victimContact}
-                          onChange={(e) => handleInputChange("victimContact", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-victim-contact"
-                        />
+                        {/* Column 2: 피해자 연락처 */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            피해자 연락처
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="피해자 연락처"
+                            value={formData.victimContact}
+                            onChange={(e) => handleInputChange("victimContact", e.target.value)}
+                            style={{
+                              height: '68px',
+                              padding: '10px 20px',
+                              background: 'rgba(12, 12, 12, 0.04)',
+                              borderRadius: '8px',
+                              border: 'none',
+                              fontFamily: 'Pretendard',
+                              fontWeight: 600,
+                              fontSize: '16px',
+                              letterSpacing: '-0.02em',
+                              color: '#0C0C0C',
+                            }}
+                            data-testid="input-victim-contact"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
