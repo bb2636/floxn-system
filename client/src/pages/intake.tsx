@@ -59,6 +59,7 @@ export default function Intake() {
     policyHolderAddress: "",
     insuredName: "",
     insuredIdNumber: "",
+    insuredContact: "",
     insuredAddress: "",
     victimName: "",
     victimContact: "",
@@ -75,11 +76,9 @@ export default function Intake() {
       setFormData((prev) => ({
         ...prev,
         insuredName: prev.policyHolderName,
-        insuredIdNumber: prev.policyHolderIdNumber,
-        insuredAddress: prev.policyHolderAddress,
       }));
     }
-  }, [sameAsPolicyHolder, formData.policyHolderName, formData.policyHolderIdNumber, formData.policyHolderAddress]);
+  }, [sameAsPolicyHolder, formData.policyHolderName]);
 
   const cleanFormData = (data: typeof formData) => {
     const cleaned: any = {};
@@ -1311,7 +1310,7 @@ export default function Intake() {
                 
                 <CollapsibleContent>
                   <div style={{ padding: '0px 0 32px 0' }}>
-                    {/* First Row: Title + Checkbox (space-between) */}
+                    {/* First Row: Title + Note + Checkbox (space-between) */}
                     <div 
                       style={{ 
                         display: 'flex',
@@ -1389,204 +1388,119 @@ export default function Intake() {
                       </div>
                     </div>
 
-                    {/* Policy Holder Row (3-column) */}
-                    <div 
-                      style={{ 
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '12px',
-                      }}
-                    >
-                      {/* 보험계약자 필드들 */}
-                      <div 
-                        style={{ 
-                          display: 'flex',
-                          flexDirection: 'column',
-                          padding: '0px 20px',
-                          gap: '20px',
-                        }}
-                      >
-                        <div style={{ display: 'flex', gap: '20px' }}>
-                      {/* Policy Holder Name */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          보험계약자 성명
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="성함을 입력해주세요"
-                          value={formData.policyHolderName}
-                          onChange={(e) => handleInputChange("policyHolderName", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-policy-holder-name"
-                        />
-                      </div>
-
-                      {/* Policy Holder ID */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          보험계약자 주민등록번호
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="주민등록번호를 입력해주세요"
-                          value={formData.policyHolderIdNumber}
-                          onChange={(e) => handleInputChange("policyHolderIdNumber", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-policy-holder-id"
-                        />
-                      </div>
-
-                      {/* Policy Holder Address */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          보험계약자 주소
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="주소를 입력해주세요"
-                          value={formData.policyHolderAddress}
-                          onChange={(e) => handleInputChange("policyHolderAddress", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-policy-holder-address"
-                        />
-                      </div>
+                    {/* Second Row: 3-column - 보험계약자, 피보험자, 피보험자 연락처 */}
+                    <div style={{ padding: '0 20px', marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', gap: '20px' }}>
+                        {/* Column 1: 보험계약자 */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            보험계약자
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="보험자 성명"
+                            value={formData.policyHolderName}
+                            onChange={(e) => handleInputChange("policyHolderName", e.target.value)}
+                            style={{
+                              height: '68px',
+                              padding: '10px 20px',
+                              background: '#FDFDFD',
+                              border: '2px solid rgba(12, 12, 12, 0.08)',
+                              borderRadius: '8px',
+                              fontFamily: 'Pretendard',
+                              fontWeight: 600,
+                              fontSize: '16px',
+                              letterSpacing: '-0.02em',
+                              color: '#0C0C0C',
+                            }}
+                            data-testid="input-policy-holder-name"
+                          />
                         </div>
 
-                        {/* 피보험자 필드들 */}
-                        <div style={{ display: 'flex', gap: '20px' }}>
-                      {/* Insured Name */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          피보험자 성명
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="성함을 입력해주세요"
-                          value={formData.insuredName}
-                          onChange={(e) => handleInputChange("insuredName", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-insured-name"
-                        />
-                      </div>
+                        {/* Column 2: 피보험자 */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            피보험자
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="피보험자 성명"
+                            value={formData.insuredName}
+                            onChange={(e) => handleInputChange("insuredName", e.target.value)}
+                            style={{
+                              height: '68px',
+                              padding: '10px 20px',
+                              background: '#FDFDFD',
+                              border: '2px solid rgba(12, 12, 12, 0.08)',
+                              borderRadius: '8px',
+                              fontFamily: 'Pretendard',
+                              fontWeight: 600,
+                              fontSize: '16px',
+                              letterSpacing: '-0.02em',
+                              color: '#0C0C0C',
+                            }}
+                            data-testid="input-insured-name"
+                          />
+                        </div>
 
-                      {/* Insured ID */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label 
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontWeight: 500,
-                            fontSize: '14px',
-                            lineHeight: '128%',
-                            letterSpacing: '-0.01em',
-                            color: '#686A6E',
-                          }}
-                        >
-                          피보험자 주민등록번호
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="주민등록번호를 입력해주세요"
-                          value={formData.insuredIdNumber}
-                          onChange={(e) => handleInputChange("insuredIdNumber", e.target.value)}
-                          style={{
-                            height: '68px',
-                            padding: '10px 20px',
-                            background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
-                            borderRadius: '8px',
-                            fontFamily: 'Pretendard',
-                            fontWeight: 600,
-                            fontSize: '16px',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                          data-testid="input-insured-id"
-                        />
+                        {/* Column 3: 피보험자 연락처 (필수) */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            피보험자 연락처 <span style={{ color: '#FF0000' }}>*</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="피보험자 연락처"
+                            value={formData.insuredContact}
+                            onChange={(e) => handleInputChange("insuredContact", e.target.value)}
+                            style={{
+                              height: '68px',
+                              padding: '10px 20px',
+                              background: '#FDFDFD',
+                              border: '2px solid rgba(12, 12, 12, 0.08)',
+                              borderRadius: '8px',
+                              fontFamily: 'Pretendard',
+                              fontWeight: 600,
+                              fontSize: '16px',
+                              letterSpacing: '-0.02em',
+                              color: '#0C0C0C',
+                            }}
+                            data-testid="input-insured-contact"
+                          />
+                        </div>
                       </div>
+                    </div>
 
-                      {/* Insured Address */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* Third Row: Full width - 피보험자 주소 (필수) */}
+                    <div style={{ padding: '0 20px', marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label 
                           style={{
                             fontFamily: 'Pretendard',
@@ -1597,11 +1511,11 @@ export default function Intake() {
                             color: '#686A6E',
                           }}
                         >
-                          피보험자 주소
+                          피보험자 주소 <span style={{ color: '#FF0000' }}>*</span>
                         </label>
                         <input
                           type="text"
-                          placeholder="주소를 입력해주세요"
+                          placeholder="도로명 주소, 동/호수 포함"
                           value={formData.insuredAddress}
                           onChange={(e) => handleInputChange("insuredAddress", e.target.value)}
                           style={{
@@ -1619,12 +1533,10 @@ export default function Intake() {
                           data-testid="input-insured-address"
                         />
                       </div>
-                        </div>
-                      </div>
                     </div>
 
-                    {/* Subsection 2: 피해자 정보 */}
-                    <div style={{ padding: '24px 20px 0px 20px' }}>
+                    {/* Subsection: 피해자 정보 */}
+                    <div style={{ padding: '24px 20px 12px 20px' }}>
                       <h3 
                         style={{
                           fontFamily: 'Pretendard',
@@ -1642,7 +1554,7 @@ export default function Intake() {
                     {/* 2-column grid for victim */}
                     <div style={{ display: 'flex', gap: '20px', padding: '0 20px' }}>
                       {/* Victim Name */}
-                      <div style={{ width: '768px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label 
                           style={{
                             fontFamily: 'Pretendard',
@@ -1653,11 +1565,11 @@ export default function Intake() {
                             color: '#686A6E',
                           }}
                         >
-                          피해자 성명
+                          피해자
                         </label>
                         <input
                           type="text"
-                          placeholder="성함을 입력해주세요"
+                          placeholder="피해자 성명"
                           value={formData.victimName}
                           onChange={(e) => handleInputChange("victimName", e.target.value)}
                           style={{
@@ -1677,7 +1589,7 @@ export default function Intake() {
                       </div>
 
                       {/* Victim Contact */}
-                      <div style={{ width: '768px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label 
                           style={{
                             fontFamily: 'Pretendard',
@@ -1692,7 +1604,7 @@ export default function Intake() {
                         </label>
                         <input
                           type="text"
-                          placeholder="연락처를 입력해주세요"
+                          placeholder="피해자 연락처"
                           value={formData.victimContact}
                           onChange={(e) => handleInputChange("victimContact", e.target.value)}
                           style={{

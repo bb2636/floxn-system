@@ -118,6 +118,7 @@ export const cases = pgTable("cases", {
   // 피보험자 정보
   insuredName: text("insured_name"),
   insuredIdNumber: text("insured_id_number"),
+  insuredContact: text("insured_contact"),
   insuredAddress: text("insured_address"),
   
   // 피해자 정보

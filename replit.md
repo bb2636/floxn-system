@@ -65,6 +65,14 @@ The system is a full-stack web application with a React-based frontend and an Ex
          - 심사자 (dropdown, optional), 소속/시절, 심사팀 (dropdown), 심사자 연락처
       5. **조사자 정보** (Investigator Information)
          - 순서팀, 소속/부서, 조사팀 (dropdown), 조사자 연락처
+      6. **피보험자 및 피해자 정보** (Insured and Victim Information)
+         - **보험계약자 및 피보험자 정보** subsection:
+           - Validation note: "보험 계약자, 피보험자 중 한 가지는 반드시 기입해야 합니다."
+           - Checkbox: "보험계약자 = 피보험자" (copies policyholder name to insured name)
+           - Row 1 (3-column): 보험계약자, 피보험자, 피보험자 연락처* (required)
+           - Row 2 (full width): 피보험자 주소* (required)
+         - **피해자 정보** subsection:
+           - 2-column: 피해자, 피해자 연락처
     - **Submission Modes**:
       - "저장" button: Saves case with status "작성중" (In Progress), stays on page
       - "접수 완료" button: Submits case with status "제출" (Submitted), shows toast for 2s, then redirects to dashboard after 1s delay
@@ -77,6 +85,7 @@ The system is a full-stack web application with a React-based frontend and an Ex
     - Client fields: clientResidence, clientDepartment, clientContact
     - Assessor fields: assessorId (FK to users), assessorDepartment, assessorTeam, assessorContact
     - Investigator fields: investigatorTeam, investigatorDepartment, investigatorTeamName, investigatorContact
+    - Insured/Victim fields: policyHolderName, insuredName, insuredContact, insuredAddress, victimName, victimContact
   - **Validation**: Uses insertCaseRequestSchema (excludes createdBy field which is added server-side from session)
   - **API Endpoints**:
     - POST /api/cases: Create new case (requires authentication)
