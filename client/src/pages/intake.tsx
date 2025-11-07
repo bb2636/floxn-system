@@ -190,7 +190,19 @@ export default function Intake() {
   });
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: value };
+      
+      // 의뢰자를 선택하면 해당 직원의 연락처를 자동으로 설정
+      if (field === "clientName" && value) {
+        const selectedEmployee = filteredClientEmployees.find(emp => emp.name === value);
+        if (selectedEmployee) {
+          updated.clientContact = selectedEmployee.phone || "";
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const handleSave = () => {
@@ -641,7 +653,7 @@ export default function Intake() {
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자 담당자 연락처</label>
-                        <input type="text" placeholder="연락처를 입력해주세요" value={formData.clientContact} onChange={(e) => handleInputChange("clientContact", e.target.value)} style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-contact" />
+                        <input type="text" placeholder="의뢰자를 선택하면 자동으로 입력됩니다" value={formData.clientContact} readOnly style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-contact" />
                       </div>
                     </div>
 
