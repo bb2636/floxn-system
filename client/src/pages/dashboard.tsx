@@ -162,6 +162,8 @@ export default function Dashboard() {
                   setLocation("/admin-settings");
                 } else if (item.name === "접수하기") {
                   setLocation("/intake");
+                } else if (item.name === "진행상황") {
+                  setLocation("/progress");
                 }
               }}
               className="px-6 py-3 rounded-lg transition-colors"

@@ -872,10 +872,141 @@ export class DbStorage implements IStorage {
       // Only seed if database is empty
       if (existingUsers.length === 0) {
         await this.seedTestUsers();
+        await this.seedTestCases();
       }
     } catch (error) {
       console.error("Database initialization error:", error);
     }
+  }
+
+  private async seedTestCases() {
+    const currentDate = getKSTDate();
+    
+    // Get users for case assignment
+    const allUsers = await db.select().from(users);
+    const admin01 = allUsers.find(u => u.username === "admin01");
+    const assessor01 = allUsers.find(u => u.username === "assessor01");
+    const assessor02 = allUsers.find(u => u.username === "assessor02");
+    const partner01 = allUsers.find(u => u.username === "partner01");
+    const partner02 = allUsers.find(u => u.username === "partner02");
+    
+    if (!admin01) return;
+    
+    const testCases = [
+      {
+        caseNumber: "CLM-25145136",
+        status: "제출",
+        accidentDate: "2025-01-15",
+        insuranceCompany: "MG손해보험",
+        insurancePolicyNo: "MG2024-12345",
+        insuranceAccidentNo: "25219943",
+        clientResidence: "서울 강남구",
+        clientDepartment: "보상팀",
+        clientName: "김블락",
+        clientContact: "010-1234-5678",
+        assessorId: assessor01?.id || null,
+        assessorDepartment: "심사팀",
+        assessorTeam: "1팀",
+        assessorContact: "010-4001-4001",
+        investigatorTeam: "조사1팀",
+        investigatorDepartment: "현장조사",
+        investigatorTeamName: "플록슨 조사팀",
+        investigatorContact: "02-5001-5001",
+        policyHolderName: "김블락",
+        policyHolderIdNumber: "800101-1******",
+        policyHolderAddress: "서울 강남구 테헤란로 123",
+        insuredName: "김블락",
+        insuredIdNumber: "800101-1******",
+        insuredContact: "010-1234-5678",
+        insuredAddress: "서울 강남구 테헤란로 123",
+        victimName: "이웃집",
+        victimContact: "010-9999-8888",
+        clientPhone: "010-1234-5678",
+        clientAddress: "서울 강남구 테헤란로 123",
+        accidentLocation: "서울 강남구 테헤란로 123 아파트 1001호",
+        accidentDescription: "화장실 배관 누수로 인한 천장 침수 피해",
+        assignedTo: partner01?.id || null,
+        createdBy: admin01.id,
+        createdAt: "2025-01-15",
+        updatedAt: "2025-01-15",
+      },
+      {
+        caseNumber: "CLM-25145135",
+        status: "검토중",
+        accidentDate: "2025-01-14",
+        insuranceCompany: "삼성화재",
+        insurancePolicyNo: "SS2024-67890",
+        insuranceAccidentNo: "25219942",
+        clientResidence: "서울 서초구",
+        clientDepartment: "보상팀",
+        clientName: "박철수",
+        clientContact: "010-2345-6789",
+        assessorId: assessor02?.id || null,
+        assessorDepartment: "심사팀",
+        assessorTeam: "2팀",
+        assessorContact: "010-4002-4002",
+        investigatorTeam: "조사2팀",
+        investigatorDepartment: "현장조사",
+        investigatorTeamName: "플록슨 조사팀",
+        investigatorContact: "02-5002-5002",
+        policyHolderName: "박철수",
+        policyHolderIdNumber: "750505-1******",
+        policyHolderAddress: "서울 서초구 강남대로 456",
+        insuredName: "박철수",
+        insuredIdNumber: "750505-1******",
+        insuredContact: "010-2345-6789",
+        insuredAddress: "서울 서초구 강남대로 456",
+        victimName: "아래층 주민",
+        victimContact: "010-7777-6666",
+        clientPhone: "010-2345-6789",
+        clientAddress: "서울 서초구 강남대로 456",
+        accidentLocation: "서울 서초구 강남대로 456 빌라 202호",
+        accidentDescription: "싱크대 하수 배관 파손으로 인한 누수",
+        assignedTo: partner02?.id || null,
+        createdBy: admin01.id,
+        createdAt: "2025-01-14",
+        updatedAt: "2025-01-14",
+      },
+      {
+        caseNumber: "CLM-25145134",
+        status: "작성중",
+        accidentDate: "2025-01-13",
+        insuranceCompany: "현대해상",
+        insurancePolicyNo: "HD2024-11111",
+        insuranceAccidentNo: "25219941",
+        clientResidence: "경기 성남시",
+        clientDepartment: "보상팀",
+        clientName: "이미라",
+        clientContact: "010-3456-7890",
+        assessorId: assessor01?.id || null,
+        assessorDepartment: "심사팀",
+        assessorTeam: "1팀",
+        assessorContact: "010-4001-4001",
+        investigatorTeam: "조사1팀",
+        investigatorDepartment: "현장조사",
+        investigatorTeamName: "플록슨 조사팀",
+        investigatorContact: "02-5001-5001",
+        policyHolderName: "이미라",
+        policyHolderIdNumber: "900303-2******",
+        policyHolderAddress: "경기 성남시 분당구 789",
+        insuredName: "이미라",
+        insuredIdNumber: "900303-2******",
+        insuredContact: "010-3456-7890",
+        insuredAddress: "경기 성남시 분당구 789",
+        victimName: "옆집",
+        victimContact: "010-5555-4444",
+        clientPhone: "010-3456-7890",
+        clientAddress: "경기 성남시 분당구 789",
+        accidentLocation: "경기 성남시 분당구 789 아파트 506호",
+        accidentDescription: "보일러 배관 동파로 인한 누수 사고",
+        assignedTo: partner01?.id || null,
+        createdBy: admin01.id,
+        createdAt: "2025-01-13",
+        updatedAt: "2025-01-13",
+      },
+    ];
+
+    await db.insert(cases).values(testCases);
   }
 
   private async seedTestUsers() {
