@@ -1007,49 +1007,35 @@ export default function Intake() {
                   padding: '0px 0px 32px',
                 }}
               >
-                <CollapsibleTrigger asChild>
-                  <div 
+                <div 
+                  className="flex items-center justify-between"
+                  style={{
+                    padding: '24px',
+                    height: '82px',
+                    borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
+                  }}
+                >
+                  <h2 
                     style={{
-                      boxSizing: 'border-box',
-                      display: 'flex',
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '24px',
-                      width: '1596px',
-                      height: '82px',
-                      borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
-                      cursor: 'pointer',
+                      fontFamily: 'Pretendard',
+                      fontWeight: 600,
+                      fontSize: '24px',
+                      lineHeight: '128%',
+                      letterSpacing: '-0.02em',
+                      color: '#0C0C0C',
                     }}
                   >
-                    <h2 
-                      style={{
-                        margin: '0 auto',
-                        width: '153px',
-                        height: '31px',
-                        fontFamily: 'Pretendard',
-                        fontStyle: 'normal',
-                        fontWeight: 600,
-                        fontSize: '24px',
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: '#0C0C0C',
-                      }}
+                    사고 및 피해사항
+                  </h2>
+                  <CollapsibleTrigger asChild>
+                    <button 
+                      className="w-[34px] h-[34px] flex items-center justify-center"
+                      data-testid="button-toggle-accident-damage-info"
                     >
-                      사고 및 피해사항
-                    </h2>
-                    <Minus 
-                      style={{
-                        margin: '0 auto',
-                        width: '34px',
-                        height: '34px',
-                        color: '#008FED',
-                        transform: accidentDamageInfoOpen ? 'rotate(0deg)' : 'rotate(90deg)',
-                        transition: 'transform 0.2s',
-                      }}
-                    />
-                  </div>
-                </CollapsibleTrigger>
+                      <Minus className="w-4 h-4" style={{ color: '#008FED' }} />
+                    </button>
+                  </CollapsibleTrigger>
+                </div>
 
                 <CollapsibleContent style={{ width: '100%' }}>
                   <div 
