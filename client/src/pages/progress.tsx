@@ -1,26 +1,24 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User } from "@shared/schema";
+import { User, Case } from "@shared/schema";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 
 export default function Progress() {
   const [activeMenu, setActiveMenu] = useState("진행상황");
-  const [selectedRow, setSelectedRow] = useState<number | null>(null);
+  const [selectedRow, setSelectedRow] = useState<string | null>(null);
   const [, setLocation] = useLocation();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
-  // Mock data for progress list
-  const mockProgressData = [
-    { id: 1, date: "2025-01-15", insurer: "MG손해보험", insurerAccidentNo: "25219943", receptionNo: "25145136", contractor: "김블락", assessor: "이블락", assessorManager: "박블락", manager: "최블락", restorationType: "선견적요청", mainProgress: "서류 보완 요청" },
-    { id: 2, date: "2025-01-14", insurer: "삼성화재", insurerAccidentNo: "25219942", receptionNo: "25145135", contractor: "박철수", assessor: "김영희", assessorManager: "이민수", manager: "정지훈", restorationType: "플랫폼 복구", mainProgress: "현장 조사 중" },
-    { id: 3, date: "2025-01-13", insurer: "현대해상", insurerAccidentNo: "25219941", receptionNo: "25145134", contractor: "이미라", assessor: "최수진", assessorManager: "강동원", manager: "송혜교", restorationType: "없음", mainProgress: "접수 완료" },
-  ];
+  const { data: cases, isLoading } = useQuery<Case[]>({
+    queryKey: ["/api/cases"],
+  });
 
-  const totalCount = mockProgressData.length;
+  const progressData = cases || [];
+  const totalCount = progressData.length;
 
   return (
     <div 
@@ -256,85 +254,95 @@ export default function Progress() {
 
           {/* Table Data Rows */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px', gap: '17px', width: '1596px' }}>
-            {mockProgressData.map((row, index) => (
-              <div 
-                key={row.id}
-                onClick={() => setSelectedRow(row.id)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  padding: '0px 12px',
-                  width: '1596px',
-                  height: '44px',
-                  background: index === 0 ? 'rgba(0, 143, 237, 0.04)' : 'transparent',
-                  border: index === 0 ? '1px solid #008FED' : 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                }}
-                data-testid={`progress-row-${row.id}`}
-              >
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.date}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.insurer}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.insurerAccidentNo}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.receptionNo}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.contractor}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.assessor}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.assessorManager}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.manager}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.restorationType}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
-                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.mainProgress}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px 8px', gap: '10px', width: '70px' }}>
-                  <div style={{ position: 'relative', width: '18px', height: '18px' }}>
-                    <div 
-                      style={{
-                        position: 'absolute',
-                        left: '0%',
-                        right: '0%',
-                        top: '0%',
-                        bottom: '0%',
-                        background: selectedRow === row.id ? '#008FED' : 'rgba(12, 12, 12, 0.1)',
-                        border: selectedRow === row.id ? 'none' : '1px solid rgba(12, 12, 12, 0.1)',
-                        borderRadius: '50%',
-                      }}
-                    />
-                    {selectedRow === row.id && (
+            {isLoading ? (
+              <div style={{ width: '100%', textAlign: 'center', padding: '40px', fontFamily: 'Pretendard', fontSize: '16px', color: 'rgba(12, 12, 12, 0.6)' }}>
+                로딩중...
+              </div>
+            ) : progressData.length === 0 ? (
+              <div style={{ width: '100%', textAlign: 'center', padding: '40px', fontFamily: 'Pretendard', fontSize: '16px', color: 'rgba(12, 12, 12, 0.6)' }}>
+                접수 건이 없습니다
+              </div>
+            ) : (
+              progressData.map((row, index) => (
+                <div 
+                  key={row.id}
+                  onClick={() => setSelectedRow(row.id)}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    padding: '0px 12px',
+                    width: '1596px',
+                    height: '44px',
+                    background: index === 0 ? 'rgba(0, 143, 237, 0.04)' : 'transparent',
+                    border: index === 0 ? '1px solid #008FED' : 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                  }}
+                  data-testid={`progress-row-${row.id}`}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.accidentDate || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.insuranceCompany || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.insuranceAccidentNo || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.caseNumber || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.policyHolderName || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.assessorTeam || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.assessorDepartment || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.investigatorTeamName || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.status || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '12px 8px', gap: '10px', width: '150.2px', flexGrow: 1 }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.8)' }}>{row.accidentDescription || '-'}</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px 8px', gap: '10px', width: '70px' }}>
+                    <div style={{ position: 'relative', width: '18px', height: '18px' }}>
                       <div 
                         style={{
                           position: 'absolute',
-                          left: '27.78%',
-                          right: '27.78%',
-                          top: '27.78%',
-                          bottom: '27.78%',
-                          background: '#FDFDFD',
+                          left: '0%',
+                          right: '0%',
+                          top: '0%',
+                          bottom: '0%',
+                          background: selectedRow === row.id ? '#008FED' : 'rgba(12, 12, 12, 0.1)',
+                          border: selectedRow === row.id ? 'none' : '1px solid rgba(12, 12, 12, 0.1)',
                           borderRadius: '50%',
                         }}
                       />
-                    )}
+                      {selectedRow === row.id && (
+                        <div 
+                          style={{
+                            position: 'absolute',
+                            left: '27.78%',
+                            right: '27.78%',
+                            top: '27.78%',
+                            bottom: '27.78%',
+                            background: '#FDFDFD',
+                            borderRadius: '50%',
+                          }}
+                        />
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </main>
