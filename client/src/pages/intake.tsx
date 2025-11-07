@@ -1218,7 +1218,7 @@ export default function Intake() {
                                 color: '#686A6E',
                               }}
                             >
-                              피해사건조주
+                              피해세대복구
                             </span>
                           </div>
                         </div>
