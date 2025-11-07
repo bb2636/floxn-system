@@ -177,11 +177,18 @@ The system is a full-stack web application utilizing a React-based frontend and 
    - Role-based data visibility
 
 4. **Case Intake System (접수 관리 - In Progress)**
-   - Multi-section collapsible form (2 main sections)
+   - Multi-section collapsible form (3 main sections)
    - Automatic case number generation (CLM-{timestamp})
    - Form validation with Zod
    - Save/Submit functionality
    - Figma design implementation with proper styling
+   - Section 1: 기본 정보 (Basic Information)
+   - Section 2: 피보험자 및 피해자 정보 (Insured & Victim Information)
+   - Section 3: 사고 및 피해사항 (Accident & Damage Information) - ✅ NEW
+     - 사고 원인 · 규모: 체크박스(손방, 피해사건조주), 4개 드롭다운, 사고내용 textarea
+     - 피해사항(선택): 피해 품목/유형/수량/내용 입력 및 등록 기능
+     - 배당사항(협력사 배당): 협력사/담당자/연락처 입력, 점검 기능
+     - 일정 · 우선순위: 지도 선택, 특이사항 및 요청사항 textarea
 
 ### 🚧 Pending Implementation
 1. **Home Dashboard Enhancements**

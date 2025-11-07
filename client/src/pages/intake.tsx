@@ -18,11 +18,14 @@ export default function Intake() {
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("접수하기");
   
-  // Collapsible states - Only 2 main sections
+  // Collapsible states - 3 main sections
   const [basicInfoOpen, setBasicInfoOpen] = useState(true);
   const [insuredVictimInfoOpen, setInsuredVictimInfoOpen] = useState(true);
+  const [accidentDamageInfoOpen, setAccidentDamageInfoOpen] = useState(true);
   
   const [sameAsPolicyHolder, setSameAsPolicyHolder] = useState(false);
+  const [damagePreventionCost, setDamagePreventionCost] = useState(false);
+  const [victimIncidentAssistance, setVictimIncidentAssistance] = useState(false);
   
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -59,6 +62,21 @@ export default function Intake() {
     insuredAddress: "",
     victimName: "",
     victimContact: "",
+    // 사고 및 피해사항
+    accidentType: "",
+    accidentCause: "",
+    restorationMethod: "",
+    otherVendorEstimate: "",
+    accidentDescription: "",
+    damageItem: "",
+    damageType: "",
+    damageQuantity: "",
+    damageDetails: "",
+    assignedPartner: "",
+    assignedPartnerManager: "",
+    assignedPartnerContact: "",
+    location: "",
+    specialRequests: "",
   });
 
   useEffect(() => {
@@ -935,6 +953,970 @@ export default function Intake() {
                             }}
                             data-testid="input-victim-contact"
                           />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              {/* 3. 사고 및 피해사항 (Accident & Damage Information) */}
+              <Collapsible
+                open={accidentDamageInfoOpen}
+                onOpenChange={setAccidentDamageInfoOpen}
+                style={{
+                  width: '1596px',
+                  height: 'auto',
+                  background: '#FFFFFF',
+                  boxShadow: '0px 0px 20px #DBE9F5',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  padding: '0px 0px 32px',
+                }}
+              >
+                <CollapsibleTrigger asChild>
+                  <div 
+                    style={{
+                      boxSizing: 'border-box',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '24px',
+                      width: '1596px',
+                      height: '82px',
+                      borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <h2 
+                      style={{
+                        margin: '0 auto',
+                        width: '153px',
+                        height: '31px',
+                        fontFamily: 'Pretendard',
+                        fontStyle: 'normal',
+                        fontWeight: 600,
+                        fontSize: '24px',
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: '#0C0C0C',
+                      }}
+                    >
+                      사고 및 피해사항
+                    </h2>
+                    <Minus 
+                      style={{
+                        margin: '0 auto',
+                        width: '34px',
+                        height: '34px',
+                        color: '#008FED',
+                        transform: accidentDamageInfoOpen ? 'rotate(0deg)' : 'rotate(90deg)',
+                        transition: 'transform 0.2s',
+                      }}
+                    />
+                  </div>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent style={{ width: '100%' }}>
+                  <div 
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      padding: '0px',
+                      gap: '32px',
+                      width: '1596px',
+                      height: 'auto',
+                    }}
+                  >
+                    {/* Section 1: 사고 원인 · 규모 */}
+                    <div 
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        padding: '0px',
+                        width: '1596px',
+                        height: 'auto',
+                      }}
+                    >
+                      {/* Subsection Header with Checkbox */}
+                      <div 
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '24px 20px',
+                          gap: '10px',
+                          width: '1596px',
+                          height: '74px',
+                        }}
+                      >
+                        <h3 
+                          style={{
+                            margin: '0 auto',
+                            width: '120px',
+                            height: '26px',
+                            fontFamily: 'Pretendard',
+                            fontStyle: 'normal',
+                            fontWeight: 600,
+                            fontSize: '20px',
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.8)',
+                          }}
+                        >
+                          사고 원인 · 규모
+                        </h3>
+                        <div 
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            padding: '0px',
+                            gap: '4px',
+                            margin: '0 auto',
+                            width: 'auto',
+                            height: '24px',
+                          }}
+                        >
+                          <span 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontStyle: 'normal',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            손방 및 대물 선택(중복 가능)
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Checkboxes and Dropdowns */}
+                      <div 
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start',
+                          padding: '0px 20px',
+                          gap: '12px',
+                          width: '1596px',
+                          height: 'auto',
+                        }}
+                      >
+                        {/* Row 1: Checkboxes */}
+                        <div 
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            padding: '0px',
+                            gap: '12px',
+                            width: '1556px',
+                            height: '24px',
+                          }}
+                        >
+                          <div 
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              padding: '0px',
+                              gap: '4px',
+                            }}
+                          >
+                            <Checkbox
+                              checked={damagePreventionCost}
+                              onCheckedChange={(checked) => setDamagePreventionCost(checked as boolean)}
+                              style={{
+                                width: '24px',
+                                height: '24px',
+                              }}
+                              data-testid="checkbox-damage-prevention"
+                            />
+                            <span 
+                              style={{
+                                fontFamily: 'Pretendard',
+                                fontStyle: 'normal',
+                                fontWeight: 500,
+                                fontSize: '14px',
+                                lineHeight: '128%',
+                                letterSpacing: '-0.01em',
+                                color: '#686A6E',
+                              }}
+                            >
+                              손방(손해방지비)
+                            </span>
+                          </div>
+
+                          <div 
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                              padding: '0px',
+                              gap: '4px',
+                            }}
+                          >
+                            <Checkbox
+                              checked={victimIncidentAssistance}
+                              onCheckedChange={(checked) => setVictimIncidentAssistance(checked as boolean)}
+                              style={{
+                                width: '24px',
+                                height: '24px',
+                              }}
+                              data-testid="checkbox-victim-incident"
+                            />
+                            <span 
+                              style={{
+                                fontFamily: 'Pretendard',
+                                fontStyle: 'normal',
+                                fontWeight: 500,
+                                fontSize: '14px',
+                                lineHeight: '128%',
+                                letterSpacing: '-0.01em',
+                                color: '#686A6E',
+                              }}
+                            >
+                              피해사건조주
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Row 2: 4-column Dropdowns */}
+                        <div 
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            padding: '0px',
+                            gap: '20px',
+                            width: '1556px',
+                            height: '68px',
+                          }}
+                        >
+                          {/* Column 1: 사고 유형 */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <Select 
+                              value={formData.accidentType} 
+                              onValueChange={(value) => handleInputChange("accidentType", value)}
+                            >
+                              <SelectTrigger 
+                                style={{
+                                  height: '68px',
+                                  padding: '10px 20px',
+                                  background: '#FDFDFD',
+                                  border: '2px solid rgba(12, 12, 12, 0.08)',
+                                  borderRadius: '8px',
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: 600,
+                                  fontSize: '16px',
+                                  letterSpacing: '-0.02em',
+                                }}
+                                data-testid="select-accident-type"
+                              >
+                                <SelectValue placeholder="사고 유형 선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="누수">누수</SelectItem>
+                                <SelectItem value="화재">화재</SelectItem>
+                                <SelectItem value="파손">파손</SelectItem>
+                                <SelectItem value="기타">기타</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Column 2: 사고 원인 */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <Select 
+                              value={formData.accidentCause} 
+                              onValueChange={(value) => handleInputChange("accidentCause", value)}
+                            >
+                              <SelectTrigger 
+                                style={{
+                                  height: '68px',
+                                  padding: '10px 20px',
+                                  background: '#FDFDFD',
+                                  border: '2px solid rgba(12, 12, 12, 0.08)',
+                                  borderRadius: '8px',
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: 600,
+                                  fontSize: '16px',
+                                  letterSpacing: '-0.02em',
+                                }}
+                                data-testid="select-accident-cause"
+                              >
+                                <SelectValue placeholder="사고 원인 선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="배관 노후">배관 노후</SelectItem>
+                                <SelectItem value="시공 불량">시공 불량</SelectItem>
+                                <SelectItem value="동파">동파</SelectItem>
+                                <SelectItem value="기타">기타</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Column 3: 복구 유형 */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <Select 
+                              value={formData.restorationMethod} 
+                              onValueChange={(value) => handleInputChange("restorationMethod", value)}
+                            >
+                              <SelectTrigger 
+                                style={{
+                                  height: '68px',
+                                  padding: '10px 20px',
+                                  background: '#FDFDFD',
+                                  border: '2px solid rgba(12, 12, 12, 0.08)',
+                                  borderRadius: '8px',
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: 600,
+                                  fontSize: '16px',
+                                  letterSpacing: '-0.02em',
+                                }}
+                                data-testid="select-restoration-method"
+                              >
+                                <SelectValue placeholder="복구 유형 선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="부분 복구">부분 복구</SelectItem>
+                                <SelectItem value="전체 복구">전체 복구</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Column 4: 타업체 견적 여부 */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <Select 
+                              value={formData.otherVendorEstimate} 
+                              onValueChange={(value) => handleInputChange("otherVendorEstimate", value)}
+                            >
+                              <SelectTrigger 
+                                style={{
+                                  height: '68px',
+                                  padding: '10px 20px',
+                                  background: '#FDFDFD',
+                                  border: '2px solid rgba(12, 12, 12, 0.08)',
+                                  borderRadius: '8px',
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: 600,
+                                  fontSize: '16px',
+                                  letterSpacing: '-0.02em',
+                                }}
+                                data-testid="select-other-vendor-estimate"
+                              >
+                                <SelectValue placeholder="타업체 견적 여부 선택" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="있음">있음</SelectItem>
+                                <SelectItem value="없음">없음</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        {/* Row 3: 사고내용 Textarea */}
+                        <div style={{ width: '1556px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            사고내용
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <textarea
+                              placeholder="사고내용을 입력해 주세요"
+                              value={formData.accidentDescription}
+                              onChange={(e) => handleInputChange("accidentDescription", e.target.value)}
+                              maxLength={800}
+                              style={{
+                                width: '100%',
+                                height: '120px',
+                                padding: '16px 20px',
+                                background: '#FDFDFD',
+                                border: '2px solid rgba(12, 12, 12, 0.08)',
+                                borderRadius: '8px',
+                                fontFamily: 'Pretendard',
+                                fontWeight: 400,
+                                fontSize: '14px',
+                                lineHeight: '150%',
+                                letterSpacing: '-0.01em',
+                                color: '#0C0C0C',
+                                resize: 'none',
+                              }}
+                              data-testid="textarea-accident-description"
+                            />
+                            <span 
+                              style={{
+                                position: 'absolute',
+                                bottom: '12px',
+                                right: '20px',
+                                fontFamily: 'Pretendard',
+                                fontSize: '12px',
+                                color: '#686A6E',
+                              }}
+                            >
+                              {formData.accidentDescription.length}/800
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 2: 피해사항(선택) */}
+                    <div 
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        padding: '0px',
+                        width: '1596px',
+                        height: 'auto',
+                      }}
+                    >
+                      {/* Subsection Header */}
+                      <div style={{ padding: '24px 20px 12px 20px' }}>
+                        <h3 
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontWeight: 600,
+                            fontSize: '20px',
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.8)',
+                          }}
+                        >
+                          피해사항(선택)
+                        </h3>
+                      </div>
+
+                      {/* Input Fields and Add Button */}
+                      <div 
+                        style={{
+                          padding: '0 20px',
+                          width: '1596px',
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'flex-end',
+                          gap: '20px',
+                        }}
+                      >
+                        {/* 피해 품목 */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            피해 품목
+                          </label>
+                          <Select 
+                            value={formData.damageItem} 
+                            onValueChange={(value) => handleInputChange("damageItem", value)}
+                          >
+                            <SelectTrigger 
+                              style={{
+                                height: '68px',
+                                padding: '10px 20px',
+                                background: '#FDFDFD',
+                                border: '2px solid rgba(12, 12, 12, 0.08)',
+                                borderRadius: '8px',
+                                fontFamily: 'Pretendard',
+                                fontWeight: 600,
+                                fontSize: '16px',
+                                letterSpacing: '-0.02em',
+                              }}
+                              data-testid="select-damage-item"
+                            >
+                              <SelectValue placeholder="피해 품목 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="장판">장판</SelectItem>
+                              <SelectItem value="벽지">벽지</SelectItem>
+                              <SelectItem value="가구">가구</SelectItem>
+                              <SelectItem value="전자제품">전자제품</SelectItem>
+                              <SelectItem value="기타">기타</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* 피해 유형 */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            피해 유형
+                          </label>
+                          <Select 
+                            value={formData.damageType} 
+                            onValueChange={(value) => handleInputChange("damageType", value)}
+                          >
+                            <SelectTrigger 
+                              style={{
+                                height: '68px',
+                                padding: '10px 20px',
+                                background: '#FDFDFD',
+                                border: '2px solid rgba(12, 12, 12, 0.08)',
+                                borderRadius: '8px',
+                                fontFamily: 'Pretendard',
+                                fontWeight: 600,
+                                fontSize: '16px',
+                                letterSpacing: '-0.02em',
+                              }}
+                              data-testid="select-damage-type"
+                            >
+                              <SelectValue placeholder="피해 유형 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="교체">교체</SelectItem>
+                              <SelectItem value="수리">수리</SelectItem>
+                              <SelectItem value="청소">청소</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* 수량 */}
+                        <div style={{ flex: 0.5, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            수량
+                          </label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            value={formData.damageQuantity}
+                            onChange={(e) => handleInputChange("damageQuantity", e.target.value)}
+                            style={{
+                              height: '68px',
+                              padding: '10px 20px',
+                              background: '#FDFDFD',
+                              border: '2px solid rgba(12, 12, 12, 0.08)',
+                              borderRadius: '8px',
+                              fontFamily: 'Pretendard',
+                              fontWeight: 600,
+                              fontSize: '16px',
+                              letterSpacing: '-0.02em',
+                              color: '#0C0C0C',
+                              textAlign: 'center',
+                            }}
+                            data-testid="input-damage-quantity"
+                          />
+                        </div>
+
+                        {/* 피해 내용 */}
+                        <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            피해 내용
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="피해 내용 입력"
+                            value={formData.damageDetails}
+                            onChange={(e) => handleInputChange("damageDetails", e.target.value)}
+                            style={{
+                              height: '68px',
+                              padding: '10px 20px',
+                              background: '#FDFDFD',
+                              border: '2px solid rgba(12, 12, 12, 0.08)',
+                              borderRadius: '8px',
+                              fontFamily: 'Pretendard',
+                              fontWeight: 600,
+                              fontSize: '16px',
+                              letterSpacing: '-0.02em',
+                              color: '#0C0C0C',
+                            }}
+                            data-testid="input-damage-details"
+                          />
+                        </div>
+
+                        {/* 등록 Button */}
+                        <Button
+                          style={{
+                            height: '68px',
+                            padding: '0 32px',
+                            background: '#008FED',
+                            color: '#FFFFFF',
+                            borderRadius: '8px',
+                            border: 'none',
+                            fontFamily: 'Pretendard',
+                            fontWeight: 600,
+                            fontSize: '16px',
+                            letterSpacing: '-0.02em',
+                            flexShrink: 0,
+                          }}
+                          data-testid="button-add-damage"
+                        >
+                          등록
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Section 3: 배당사항(협력사 배당) */}
+                    <div 
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        padding: '0px',
+                        width: '1596px',
+                        height: 'auto',
+                      }}
+                    >
+                      {/* Subsection Header */}
+                      <div style={{ padding: '24px 20px 0px 20px' }}>
+                        <h3 
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontWeight: 600,
+                            fontSize: '20px',
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.8)',
+                          }}
+                        >
+                          배당사항(협력사 배당)
+                        </h3>
+                        <p 
+                          style={{
+                            marginTop: '8px',
+                            fontFamily: 'Pretendard',
+                            fontWeight: 400,
+                            fontSize: '13px',
+                            lineHeight: '150%',
+                            letterSpacing: '-0.01em',
+                            color: '#686A6E',
+                          }}
+                        >
+                          공지사항: 담배책 다량 설치필요 XX 건조공사
+                        </p>
+                      </div>
+
+                      {/* Partner Assignment Fields */}
+                      <div 
+                        style={{
+                          padding: '16px 20px',
+                          width: '1596px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px',
+                        }}
+                      >
+                        <h4 
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontWeight: 600,
+                            fontSize: '16px',
+                            lineHeight: '128%',
+                            letterSpacing: '-0.01em',
+                            color: '#0C0C0C',
+                          }}
+                        >
+                          배당 협력사 정보
+                        </h4>
+
+                        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end' }}>
+                          {/* 협력사 */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label 
+                              style={{
+                                fontFamily: 'Pretendard',
+                                fontWeight: 500,
+                                fontSize: '14px',
+                                lineHeight: '128%',
+                                letterSpacing: '-0.01em',
+                                color: '#686A6E',
+                              }}
+                            >
+                              협력사
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="협력사 선택"
+                              value={formData.assignedPartner}
+                              onChange={(e) => handleInputChange("assignedPartner", e.target.value)}
+                              style={{
+                                height: '68px',
+                                padding: '10px 20px',
+                                background: '#FDFDFD',
+                                border: '2px solid rgba(12, 12, 12, 0.08)',
+                                borderRadius: '8px',
+                                fontFamily: 'Pretendard',
+                                fontWeight: 600,
+                                fontSize: '16px',
+                                letterSpacing: '-0.02em',
+                                color: '#0C0C0C',
+                              }}
+                              data-testid="input-assigned-partner"
+                            />
+                          </div>
+
+                          {/* 담당자명 */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label 
+                              style={{
+                                fontFamily: 'Pretendard',
+                                fontWeight: 500,
+                                fontSize: '14px',
+                                lineHeight: '128%',
+                                letterSpacing: '-0.01em',
+                                color: '#686A6E',
+                              }}
+                            >
+                              담당자명
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="담당자명"
+                              value={formData.assignedPartnerManager}
+                              onChange={(e) => handleInputChange("assignedPartnerManager", e.target.value)}
+                              style={{
+                                height: '68px',
+                                padding: '10px 20px',
+                                background: '#FDFDFD',
+                                border: '2px solid rgba(12, 12, 12, 0.08)',
+                                borderRadius: '8px',
+                                fontFamily: 'Pretendard',
+                                fontWeight: 600,
+                                fontSize: '16px',
+                                letterSpacing: '-0.02em',
+                                color: '#0C0C0C',
+                              }}
+                              data-testid="input-partner-manager"
+                            />
+                          </div>
+
+                          {/* 담당자 연락처 */}
+                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label 
+                              style={{
+                                fontFamily: 'Pretendard',
+                                fontWeight: 500,
+                                fontSize: '14px',
+                                lineHeight: '128%',
+                                letterSpacing: '-0.01em',
+                                color: '#686A6E',
+                              }}
+                            >
+                              담당자 연락처
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="담당자 연락처"
+                              value={formData.assignedPartnerContact}
+                              onChange={(e) => handleInputChange("assignedPartnerContact", e.target.value)}
+                              style={{
+                                height: '68px',
+                                padding: '10px 20px',
+                                background: 'rgba(12, 12, 12, 0.04)',
+                                borderRadius: '8px',
+                                border: 'none',
+                                fontFamily: 'Pretendard',
+                                fontWeight: 600,
+                                fontSize: '16px',
+                                letterSpacing: '-0.02em',
+                                color: '#0C0C0C',
+                              }}
+                              data-testid="input-partner-contact"
+                            />
+                          </div>
+
+                          {/* 점검 Button */}
+                          <Button
+                            style={{
+                              height: '68px',
+                              padding: '0 32px',
+                              background: '#008FED',
+                              color: '#FFFFFF',
+                              borderRadius: '8px',
+                              border: 'none',
+                              fontFamily: 'Pretendard',
+                              fontWeight: 600,
+                              fontSize: '16px',
+                              letterSpacing: '-0.02em',
+                              flexShrink: 0,
+                            }}
+                            data-testid="button-check-partner"
+                          >
+                            점검
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 4: 일정 · 우선순위 */}
+                    <div 
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        padding: '0px',
+                        width: '1596px',
+                        height: 'auto',
+                      }}
+                    >
+                      {/* Subsection Header */}
+                      <div style={{ padding: '24px 20px 12px 20px' }}>
+                        <h3 
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontWeight: 600,
+                            fontSize: '20px',
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.8)',
+                          }}
+                        >
+                          일정 · 우선순위
+                        </h3>
+                      </div>
+
+                      {/* Location and Special Requests */}
+                      <div 
+                        style={{
+                          padding: '0 20px',
+                          width: '1596px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px',
+                        }}
+                      >
+                        {/* 지도(선택) */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            지도(선택)
+                          </label>
+                          <Select 
+                            value={formData.location} 
+                            onValueChange={(value) => handleInputChange("location", value)}
+                          >
+                            <SelectTrigger 
+                              style={{
+                                height: '68px',
+                                padding: '10px 20px',
+                                background: '#FDFDFD',
+                                border: '2px solid rgba(12, 12, 12, 0.08)',
+                                borderRadius: '8px',
+                                fontFamily: 'Pretendard',
+                                fontWeight: 600,
+                                fontSize: '16px',
+                                letterSpacing: '-0.02em',
+                              }}
+                              data-testid="select-location"
+                            >
+                              <SelectValue placeholder="지도(선택)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="서울">서울</SelectItem>
+                              <SelectItem value="경기">경기</SelectItem>
+                              <SelectItem value="인천">인천</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {/* 특이사항 및 요청사항 Textarea */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            특이사항 및 요청사항
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <textarea
+                              placeholder="접장 특이사항, 요청사항 등"
+                              value={formData.specialRequests}
+                              onChange={(e) => handleInputChange("specialRequests", e.target.value)}
+                              maxLength={800}
+                              style={{
+                                width: '100%',
+                                height: '120px',
+                                padding: '16px 20px',
+                                background: '#FDFDFD',
+                                border: '2px solid rgba(12, 12, 12, 0.08)',
+                                borderRadius: '8px',
+                                fontFamily: 'Pretendard',
+                                fontWeight: 400,
+                                fontSize: '14px',
+                                lineHeight: '150%',
+                                letterSpacing: '-0.01em',
+                                color: '#0C0C0C',
+                                resize: 'none',
+                              }}
+                              data-testid="textarea-special-requests"
+                            />
+                            <span 
+                              style={{
+                                position: 'absolute',
+                                bottom: '12px',
+                                right: '20px',
+                                fontFamily: 'Pretendard',
+                                fontSize: '12px',
+                                color: '#686A6E',
+                              }}
+                            >
+                              {formData.specialRequests.length}/800
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
