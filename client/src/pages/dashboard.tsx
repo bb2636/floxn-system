@@ -158,12 +158,14 @@ export default function Dashboard() {
               key={item.name}
               onClick={() => {
                 setActiveMenu(item.name);
-                if (item.name === "관리자 설정") {
-                  setLocation("/admin-settings");
+                if (item.name === "홈") {
+                  setLocation("/dashboard");
                 } else if (item.name === "접수하기") {
                   setLocation("/intake");
                 } else if (item.name === "진행상황") {
                   setLocation("/progress");
+                } else if (item.name === "관리자 설정") {
+                  setLocation("/admin-settings");
                 }
               }}
               className="px-6 py-3 rounded-lg transition-colors"
