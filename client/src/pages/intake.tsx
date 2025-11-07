@@ -1056,7 +1056,7 @@ export default function Intake() {
                         height: 'auto',
                       }}
                     >
-                      {/* Subsection Header with Checkbox */}
+                      {/* Subsection Header */}
                       <div 
                         style={{
                           display: 'flex',
@@ -1071,11 +1071,7 @@ export default function Intake() {
                       >
                         <h3 
                           style={{
-                            margin: '0 auto',
-                            width: '120px',
-                            height: '26px',
                             fontFamily: 'Pretendard',
-                            fontStyle: 'normal',
                             fontWeight: 600,
                             fontSize: '20px',
                             lineHeight: '128%',
@@ -1090,17 +1086,16 @@ export default function Intake() {
                             display: 'flex',
                             flexDirection: 'row',
                             alignItems: 'center',
-                            padding: '0px',
                             gap: '4px',
-                            margin: '0 auto',
-                            width: 'auto',
-                            height: '24px',
                           }}
                         >
+                          <Checkbox
+                            style={{ width: '24px', height: '24px' }}
+                            data-testid="checkbox-insurer-equals-insured"
+                          />
                           <span 
                             style={{
                               fontFamily: 'Pretendard',
-                              fontStyle: 'normal',
                               fontWeight: 500,
                               fontSize: '14px',
                               lineHeight: '128%',
@@ -1108,12 +1103,12 @@ export default function Intake() {
                               color: '#686A6E',
                             }}
                           >
-                            손방 및 대물 선택(중복 가능)
+                            보험계약자 = 피보험자
                           </span>
                         </div>
                       </div>
 
-                      {/* Checkboxes and Dropdowns */}
+                      {/* Content */}
                       <div 
                         style={{
                           display: 'flex',
@@ -1125,82 +1120,90 @@ export default function Intake() {
                           height: 'auto',
                         }}
                       >
-                        {/* Row 1: Checkboxes */}
+                        {/* Row 1: Checkboxes with Label */}
                         <div 
                           style={{
                             display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            padding: '0px',
-                            gap: '12px',
+                            flexDirection: 'column',
+                            alignItems: 'flex-start',
+                            gap: '8px',
                             width: '1556px',
-                            height: '24px',
                           }}
                         >
+                          <label 
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontWeight: 500,
+                              fontSize: '14px',
+                              lineHeight: '128%',
+                              letterSpacing: '-0.01em',
+                              color: '#686A6E',
+                            }}
+                          >
+                            손방 및 대물 선택(중복 가능)
+                          </label>
                           <div 
                             style={{
                               display: 'flex',
                               flexDirection: 'row',
                               alignItems: 'center',
-                              padding: '0px',
-                              gap: '4px',
+                              gap: '12px',
                             }}
                           >
-                            <Checkbox
-                              checked={damagePreventionCost}
-                              onCheckedChange={(checked) => setDamagePreventionCost(checked as boolean)}
+                            <div 
                               style={{
-                                width: '24px',
-                                height: '24px',
-                              }}
-                              data-testid="checkbox-damage-prevention"
-                            />
-                            <span 
-                              style={{
-                                fontFamily: 'Pretendard',
-                                fontStyle: 'normal',
-                                fontWeight: 500,
-                                fontSize: '14px',
-                                lineHeight: '128%',
-                                letterSpacing: '-0.01em',
-                                color: '#686A6E',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: '4px',
                               }}
                             >
-                              손방(손해방지비)
-                            </span>
-                          </div>
-
-                          <div 
-                            style={{
-                              display: 'flex',
-                              flexDirection: 'row',
-                              alignItems: 'center',
-                              padding: '0px',
-                              gap: '4px',
-                            }}
-                          >
-                            <Checkbox
-                              checked={victimIncidentAssistance}
-                              onCheckedChange={(checked) => setVictimIncidentAssistance(checked as boolean)}
+                              <Checkbox
+                                checked={damagePreventionCost}
+                                onCheckedChange={(checked) => setDamagePreventionCost(checked as boolean)}
+                                style={{ width: '24px', height: '24px' }}
+                                data-testid="checkbox-damage-prevention"
+                              />
+                              <span 
+                                style={{
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: 500,
+                                  fontSize: '14px',
+                                  lineHeight: '128%',
+                                  letterSpacing: '-0.01em',
+                                  color: damagePreventionCost ? '#008FED' : '#686A6E',
+                                }}
+                              >
+                                손해방지
+                              </span>
+                            </div>
+                            <div 
                               style={{
-                                width: '24px',
-                                height: '24px',
-                              }}
-                              data-testid="checkbox-victim-incident"
-                            />
-                            <span 
-                              style={{
-                                fontFamily: 'Pretendard',
-                                fontStyle: 'normal',
-                                fontWeight: 500,
-                                fontSize: '14px',
-                                lineHeight: '128%',
-                                letterSpacing: '-0.01em',
-                                color: '#686A6E',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: '4px',
                               }}
                             >
-                              피해세대복구
-                            </span>
+                              <Checkbox
+                                checked={victimIncidentAssistance}
+                                onCheckedChange={(checked) => setVictimIncidentAssistance(checked as boolean)}
+                                style={{ width: '24px', height: '24px' }}
+                                data-testid="checkbox-victim-incident"
+                              />
+                              <span 
+                                style={{
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: 500,
+                                  fontSize: '14px',
+                                  lineHeight: '128%',
+                                  letterSpacing: '-0.01em',
+                                  color: victimIncidentAssistance ? '#008FED' : '#686A6E',
+                                }}
+                              >
+                                피해세대복구
+                              </span>
+                            </div>
                           </div>
                         </div>
 
@@ -1210,14 +1213,15 @@ export default function Intake() {
                             display: 'flex',
                             flexDirection: 'row',
                             alignItems: 'center',
-                            padding: '0px',
                             gap: '20px',
                             width: '1556px',
-                            height: '68px',
                           }}
                         >
-                          {/* Column 1: 사고 유형 */}
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {/* Column 1 */}
+                          <div style={{ width: '374px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              사고 유형
+                            </label>
                             <Select 
                               value={formData.accidentType} 
                               onValueChange={(value) => handleInputChange("accidentType", value)}
@@ -1247,8 +1251,11 @@ export default function Intake() {
                             </Select>
                           </div>
 
-                          {/* Column 2: 사고 원인 */}
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {/* Column 2 */}
+                          <div style={{ width: '374px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              사고 원인
+                            </label>
                             <Select 
                               value={formData.accidentCause} 
                               onValueChange={(value) => handleInputChange("accidentCause", value)}
@@ -1278,8 +1285,11 @@ export default function Intake() {
                             </Select>
                           </div>
 
-                          {/* Column 3: 복구 유형 */}
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {/* Column 3 */}
+                          <div style={{ width: '374px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              복구 방식
+                            </label>
                             <Select 
                               value={formData.restorationMethod} 
                               onValueChange={(value) => handleInputChange("restorationMethod", value)}
@@ -1307,8 +1317,11 @@ export default function Intake() {
                             </Select>
                           </div>
 
-                          {/* Column 4: 타업체 견적 여부 */}
-                          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {/* Column 4 */}
+                          <div style={{ width: '374px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              타업체 견적 여부
+                            </label>
                             <Select 
                               value={formData.otherVendorEstimate} 
                               onValueChange={(value) => handleInputChange("otherVendorEstimate", value)}
