@@ -65,6 +65,12 @@ export default function Intake() {
     select: (users) => users.filter(u => u.role === "보험사"),
   });
 
+  // 의뢰사 직원 목록 가져오기
+  const { data: clientEmployees } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    select: (users) => users.filter(u => u.role === "의뢰사"),
+  });
+
   // 접수번호 자동 생성 함수
   const generateCaseNumber = () => {
     const now = new Date();
@@ -128,15 +134,15 @@ export default function Intake() {
     specialRequests: "",
   });
 
-  // 선택된 의뢰사(보험사)에 해당하는 직원 필터링
+  // 선택된 의뢰사에 해당하는 직원 필터링
   const filteredClientEmployees = useMemo(() => {
-    if (!formData.clientResidence || !insuranceEmployees) {
+    if (!formData.clientResidence || !clientEmployees) {
       return [];
     }
-    return insuranceEmployees.filter(
+    return clientEmployees.filter(
       emp => emp.company === formData.clientResidence
     );
-  }, [formData.clientResidence, insuranceEmployees]);
+  }, [formData.clientResidence, clientEmployees]);
 
   // 선택된 심사사에 해당하는 심사자(직원) 필터링
   const filteredAssessorEmployees = useMemo(() => {
@@ -641,16 +647,11 @@ export default function Intake() {
                             <SelectValue placeholder="의뢰사 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="MG손해보험" data-testid="select-option-client-mg">MG손해보험</SelectItem>
-                            <SelectItem value="삼성화재" data-testid="select-option-client-samsung">삼성화재</SelectItem>
-                            <SelectItem value="현대해상" data-testid="select-option-client-hyundai">현대해상</SelectItem>
-                            <SelectItem value="KB손해보험" data-testid="select-option-client-kb">KB손해보험</SelectItem>
-                            <SelectItem value="DB손해보험" data-testid="select-option-client-db">DB손해보험</SelectItem>
-                            <SelectItem value="메리츠화재" data-testid="select-option-client-meritz">메리츠화재</SelectItem>
-                            <SelectItem value="롯데손해보험" data-testid="select-option-client-lotte">롯데손해보험</SelectItem>
-                            <SelectItem value="한화손해보험" data-testid="select-option-client-hanwha">한화손해보험</SelectItem>
-                            <SelectItem value="AXA손해보험" data-testid="select-option-client-axa">AXA손해보험</SelectItem>
-                            <SelectItem value="흥국화재" data-testid="select-option-client-heungkuk">흥국화재</SelectItem>
+                            <SelectItem value="대한건설" data-testid="select-option-client-daehan">대한건설</SelectItem>
+                            <SelectItem value="한국종합건설" data-testid="select-option-client-korea">한국종합건설</SelectItem>
+                            <SelectItem value="서울건설" data-testid="select-option-client-seoul">서울건설</SelectItem>
+                            <SelectItem value="코리아부동산관리" data-testid="select-option-client-realestate">코리아부동산관리</SelectItem>
+                            <SelectItem value="글로벌시설관리" data-testid="select-option-client-global">글로벌시설관리</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
