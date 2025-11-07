@@ -322,7 +322,7 @@ export default function Intake() {
           </div>
 
           {/* Form Sections Container */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '1596px', margin: '0 32px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', width: '1596px', margin: '0 32px' }}>
             
             {/* 1. 기본 정보 */}
             <div 
