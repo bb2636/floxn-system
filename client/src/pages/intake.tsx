@@ -1691,7 +1691,7 @@ export default function Intake() {
                       </div>
 
                       {/* 등록된 피해사항 표시 (태그) */}
-                      {damageItems.length > 0 && (
+                      {formData.damageItems.length > 0 && (
                         <div 
                           style={{
                             padding: '12px 20px 0 20px',
@@ -1714,7 +1714,7 @@ export default function Intake() {
                             등 건의 피해
                           </label>
                           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {damageItems.map((item, index) => (
+                            {formData.damageItems.map((item, index) => (
                               <div
                                 key={index}
                                 style={{
