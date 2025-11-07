@@ -138,6 +138,16 @@ export default function Intake() {
     );
   }, [formData.clientResidence, insuranceEmployees]);
 
+  // 선택된 심사사에 해당하는 심사자(직원) 필터링
+  const filteredAssessorEmployees = useMemo(() => {
+    if (!formData.assessorId || !assessors) {
+      return [];
+    }
+    return assessors.filter(
+      emp => emp.company === formData.assessorId
+    );
+  }, [formData.assessorId, assessors]);
+
   useEffect(() => {
     if (!userLoading && !user) {
       setLocation("/");
@@ -208,8 +218,8 @@ export default function Intake() {
       }
       
       // 심사자를 선택하면 해당 심사자의 연락처를 자동으로 설정
-      if (field === "assessorId" && value) {
-        const selectedAssessor = assessors?.find(assessor => assessor.id === value);
+      if (field === "assessorTeam" && value) {
+        const selectedAssessor = filteredAssessorEmployees.find(assessor => assessor.name === value);
         if (selectedAssessor) {
           updated.assessorContact = selectedAssessor.phone || "";
         }
@@ -687,15 +697,20 @@ export default function Intake() {
                     {/* 심사자 정보 4-column */}
                     <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '32px' }}>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자</label>
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사사</label>
                         <Select value={formData.assessorId} onValueChange={(value) => handleInputChange("assessorId", value)}>
-                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-assessor">
-                            <SelectValue placeholder="선택해주세요" />
+                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-assessor-company">
+                            <SelectValue placeholder="심사사 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            {assessors?.map((assessor) => (
-                              <SelectItem key={assessor.id} value={assessor.id} data-testid={`select-option-assessor-${assessor.id}`}>{assessor.name}</SelectItem>
-                            ))}
+                            <SelectItem value="한국손해사정" data-testid="select-option-assessor-korea">한국손해사정</SelectItem>
+                            <SelectItem value="코리아손해사정" data-testid="select-option-assessor-corea">코리아손해사정</SelectItem>
+                            <SelectItem value="대한손해사정" data-testid="select-option-assessor-daehan">대한손해사정</SelectItem>
+                            <SelectItem value="글로벌손해사정" data-testid="select-option-assessor-global">글로벌손해사정</SelectItem>
+                            <SelectItem value="한빛손해사정" data-testid="select-option-assessor-hanbit">한빛손해사정</SelectItem>
+                            <SelectItem value="우리손해사정" data-testid="select-option-assessor-woori">우리손해사정</SelectItem>
+                            <SelectItem value="서울손해사정" data-testid="select-option-assessor-seoul">서울손해사정</SelectItem>
+                            <SelectItem value="현대손해사정" data-testid="select-option-assessor-hyundai">현대손해사정</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -704,8 +719,29 @@ export default function Intake() {
                         <input type="text" placeholder="입력해주세요" value={formData.assessorDepartment} onChange={(e) => handleInputChange("assessorDepartment", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-department" />
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사팀</label>
-                        <input type="text" placeholder="입력해주세요" value={formData.assessorTeam} onChange={(e) => handleInputChange("assessorTeam", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-team" />
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자</label>
+                        <Select 
+                          value={formData.assessorTeam} 
+                          onValueChange={(value) => handleInputChange("assessorTeam", value)}
+                          disabled={!formData.assessorId}
+                        >
+                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-assessor-name">
+                            <SelectValue placeholder={formData.assessorId ? "심사자 선택" : "심사사를 먼저 선택해주세요"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filteredAssessorEmployees.length > 0 ? (
+                              filteredAssessorEmployees.map((employee) => (
+                                <SelectItem key={employee.id} value={employee.name} data-testid={`select-option-assessor-${employee.id}`}>
+                                  {employee.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-employees" disabled data-testid="select-option-no-assessors">
+                                해당 심사사에 등록된 직원이 없습니다
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자 연락처</label>
