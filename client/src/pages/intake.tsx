@@ -306,6 +306,7 @@ export default function Intake() {
                 if (item.name === "홈") setLocation("/dashboard");
                 else if (item.name === "관리자 설정") setLocation("/admin-settings");
                 else if (item.name === "접수하기") setLocation("/intake");
+                else if (item.name === "진행상황") setLocation("/progress");
               }}
               className="px-6 py-3 rounded-lg transition-colors"
               style={{
