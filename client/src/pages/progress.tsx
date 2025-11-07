@@ -298,9 +298,9 @@ export default function Progress() {
                 <div style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '14px', color: 'rgba(12, 12, 12, 0.6)' }}>실사사</div>
                 <div style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '14px', color: 'rgba(12, 12, 12, 0.6)' }}>심사담당자</div>
                 <div style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '14px', color: 'rgba(12, 12, 12, 0.6)' }}>담당자</div>
-                <div style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '14px', color: 'rgba(12, 12, 12, 0.6)' }}>협조업체</div>
-                <div style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '14px', color: 'rgba(12, 12, 12, 0.6)' }}>주요 연락처</div>
-                <div style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '14px', color: 'rgba(12, 12, 12, 0.6)' }}>진행</div>
+                <div style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '14px', color: 'rgba(12, 12, 12, 0.6)' }}>복구유형</div>
+                <div style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '14px', color: 'rgba(12, 12, 12, 0.6)' }}>주요진행사항</div>
+                <div style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '14px', color: 'rgba(12, 12, 12, 0.6)' }}>요청</div>
               </div>
 
               {/* Table Body */}
