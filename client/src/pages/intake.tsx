@@ -575,15 +575,22 @@ export default function Intake() {
                     {/* 의뢰자 정보 4-column */}
                     <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '32px' }}>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자</label>
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰사</label>
                         <Select value={formData.clientResidence} onValueChange={(value) => handleInputChange("clientResidence", value)}>
-                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-client-residence">
-                            <SelectValue placeholder="의뢰자 선택" />
+                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-client-company">
+                            <SelectValue placeholder="의뢰사 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            {["서울", "경기", "인천", "부산", "대구"].map((region) => (
-                              <SelectItem key={region} value={region} data-testid={`select-option-client-residence-${region}`}>{region}</SelectItem>
-                            ))}
+                            <SelectItem value="MG손해보험" data-testid="select-option-client-mg">MG손해보험</SelectItem>
+                            <SelectItem value="삼성화재" data-testid="select-option-client-samsung">삼성화재</SelectItem>
+                            <SelectItem value="현대해상" data-testid="select-option-client-hyundai">현대해상</SelectItem>
+                            <SelectItem value="KB손해보험" data-testid="select-option-client-kb">KB손해보험</SelectItem>
+                            <SelectItem value="DB손해보험" data-testid="select-option-client-db">DB손해보험</SelectItem>
+                            <SelectItem value="메리츠화재" data-testid="select-option-client-meritz">메리츠화재</SelectItem>
+                            <SelectItem value="롯데손해보험" data-testid="select-option-client-lotte">롯데손해보험</SelectItem>
+                            <SelectItem value="한화손해보험" data-testid="select-option-client-hanwha">한화손해보험</SelectItem>
+                            <SelectItem value="AXA손해보험" data-testid="select-option-client-axa">AXA손해보험</SelectItem>
+                            <SelectItem value="흥국화재" data-testid="select-option-client-heungkuk">흥국화재</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
