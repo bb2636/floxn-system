@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -51,6 +51,12 @@ export default function Intake() {
   const { data: assessors } = useQuery<User[]>({
     queryKey: ["/api/users"],
     select: (users) => users.filter(u => u.role === "심사사"),
+  });
+
+  // 보험사 직원 목록 가져오기
+  const { data: insuranceEmployees } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    select: (users) => users.filter(u => u.role === "보험사"),
   });
 
   // 접수번호 자동 생성 함수
@@ -115,6 +121,16 @@ export default function Intake() {
     location: "",
     specialRequests: "",
   });
+
+  // 선택된 의뢰사(보험사)에 해당하는 직원 필터링
+  const filteredClientEmployees = useMemo(() => {
+    if (!formData.clientResidence || !insuranceEmployees) {
+      return [];
+    }
+    return insuranceEmployees.filter(
+      emp => emp.company === formData.clientResidence
+    );
+  }, [formData.clientResidence, insuranceEmployees]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -600,7 +616,28 @@ export default function Intake() {
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자</label>
-                        <input type="text" placeholder="성함을 입력해주세요" value={formData.clientName} onChange={(e) => handleInputChange("clientName", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-name" />
+                        <Select 
+                          value={formData.clientName} 
+                          onValueChange={(value) => handleInputChange("clientName", value)}
+                          disabled={!formData.clientResidence}
+                        >
+                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-client-name">
+                            <SelectValue placeholder={formData.clientResidence ? "담당자 선택" : "의뢰사를 먼저 선택해주세요"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {filteredClientEmployees.length > 0 ? (
+                              filteredClientEmployees.map((employee) => (
+                                <SelectItem key={employee.id} value={employee.name} data-testid={`select-option-client-${employee.id}`}>
+                                  {employee.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-employees" disabled data-testid="select-option-no-employees">
+                                해당 보험사에 등록된 직원이 없습니다
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자 담당자 연락처</label>
