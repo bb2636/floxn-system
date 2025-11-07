@@ -1261,8 +1261,8 @@ export default function Intake() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="누수">누수</SelectItem>
+                                <SelectItem value="급배수">급배수</SelectItem>
                                 <SelectItem value="화재">화재</SelectItem>
-                                <SelectItem value="파손">파손</SelectItem>
                                 <SelectItem value="기타">기타</SelectItem>
                               </SelectContent>
                             </Select>
@@ -1294,10 +1294,11 @@ export default function Intake() {
                                 <SelectValue placeholder="사고 원인 선택" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="배관 노후">배관 노후</SelectItem>
-                                <SelectItem value="시공 불량">시공 불량</SelectItem>
-                                <SelectItem value="동파">동파</SelectItem>
-                                <SelectItem value="기타">기타</SelectItem>
+                                <SelectItem value="배관">배관</SelectItem>
+                                <SelectItem value="방수">방수</SelectItem>
+                                <SelectItem value="코킹">코킹</SelectItem>
+                                <SelectItem value="공용부">공용부</SelectItem>
+                                <SelectItem value="복합">복합</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -1328,8 +1329,9 @@ export default function Intake() {
                                 <SelectValue placeholder="복구 유형 선택" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="부분 복구">부분 복구</SelectItem>
-                                <SelectItem value="전체 복구">전체 복구</SelectItem>
+                                <SelectItem value="없음">없음</SelectItem>
+                                <SelectItem value="플랫폼 복구">플랫폼 복구</SelectItem>
+                                <SelectItem value="선견적요청">선견적요청</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -1360,8 +1362,8 @@ export default function Intake() {
                                 <SelectValue placeholder="타업체 견적 여부 선택" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="있음">있음</SelectItem>
-                                <SelectItem value="없음">없음</SelectItem>
+                                <SelectItem value="유">유</SelectItem>
+                                <SelectItem value="무">무</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
