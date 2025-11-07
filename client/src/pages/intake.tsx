@@ -27,6 +27,23 @@ export default function Intake() {
   const [damagePreventionCost, setDamagePreventionCost] = useState(false);
   const [victimIncidentAssistance, setVictimIncidentAssistance] = useState(false);
   
+  // 협력사 검색 팝업 상태
+  const [isPartnerSearchOpen, setIsPartnerSearchOpen] = useState(false);
+  const [partnerSearchQuery, setPartnerSearchQuery] = useState("");
+  const [selectedPartner, setSelectedPartner] = useState<any>(null);
+  const [tempSelectedPartner, setTempSelectedPartner] = useState<any>(null);
+  
+  // Mock 협력사 데이터
+  const mockPartners = [
+    { id: 1, name: "AERO 파트너스", dailyCount: 0, monthlyCount: 0, inProgressCount: 0, pendingCount: 0, region: "서울시/강남구, 서초구, 송파구, 성동구, 광진구" },
+    { id: 2, name: "누수닥터", dailyCount: 0, monthlyCount: 0, inProgressCount: 0, pendingCount: 0, region: "서울시/종로구, 중구, 용산구" },
+    { id: 3, name: "플록슨 파트너", dailyCount: 5, monthlyCount: 20, inProgressCount: 3, pendingCount: 2, region: "경기도/성남시, 분당구" },
+  ];
+  
+  const filteredPartners = partnerSearchQuery 
+    ? mockPartners.filter(p => p.name.toLowerCase().includes(partnerSearchQuery.toLowerCase()))
+    : [];
+  
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
   });
@@ -1798,6 +1815,11 @@ export default function Intake() {
                                 data-testid="input-assigned-partner"
                               />
                               <button
+                                onClick={() => {
+                                  setTempSelectedPartner(selectedPartner);
+                                  setPartnerSearchQuery("");
+                                  setIsPartnerSearchOpen(true);
+                                }}
                                 style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: '113px', height: '68px', background: '#008FED', borderRadius: '0px 8px 8px 0px', border: 'none', cursor: 'pointer' }}
                                 data-testid="button-search-partner"
                               >
@@ -1954,6 +1976,245 @@ export default function Intake() {
           </div>
         </div>
       </main>
+
+      {/* 협력사 검색 팝업 */}
+      {isPartnerSearchOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setIsPartnerSearchOpen(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              padding: '0px 0px 20px',
+              gap: '10px',
+              isolation: 'isolate',
+              width: '864px',
+              height: '696px',
+              background: '#FFFFFF',
+              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
+              borderRadius: '12px',
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: '0px 0px 0px 20px', gap: '321px', width: '864px', height: '60px' }}>
+              <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#0C0C0C' }}>
+                협력사 검색
+              </h2>
+              <button
+                onClick={() => setIsPartnerSearchOpen(false)}
+                style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: '24px 20px', width: '60px', height: '60px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                data-testid="button-close-partner-search"
+              >
+                <X size={24} color="#1C1B1F" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '16px', width: '864px', height: '676px' }}>
+              {/* Search Input */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px', gap: '8px', width: '824px', height: '84px' }}>
+                <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                  협력사 검색
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', width: '824px', height: '58px' }}>
+                  <input
+                    type="text"
+                    placeholder="성함을 입력해주세요."
+                    value={partnerSearchQuery}
+                    onChange={(e) => setPartnerSearchQuery(e.target.value)}
+                    style={{ boxSizing: 'border-box', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '723.25px', height: '58px', background: '#FDFDFD', border: '1px solid rgba(12, 12, 12, 0.08)', borderRadius: '6px 0px 0px 6px', fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#0C0C0C' }}
+                    data-testid="input-partner-search"
+                  />
+                  <button
+                    onClick={() => {}}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: '0px', gap: '10px', width: '100.75px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer' }}
+                    data-testid="button-partner-search"
+                  >
+                    <span style={{ margin: '0 auto', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                      검색
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Results */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px', gap: '24px', width: '824px', height: '500px' }}>
+                {filteredPartners.length === 0 ? (
+                  /* Empty State */
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px 0px 58px', gap: '128px', width: '824px', height: '367px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', width: '824px', height: '39px', background: '#F5F5F5' }}>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '155px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>업체명</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>일배당건수</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>월배당건수</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>진행건수</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>미결건수</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '248px', height: '39px', flexGrow: 1 }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>지역</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '49px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '824px', marginTop: '60px' }}>
+                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', textAlign: 'center', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                        협력사를 검색해주세요
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  /* Table with Data */
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px', width: '824px', height: '373px' }}>
+                    {/* Header */}
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', width: '824px', height: '39px', background: '#F5F5F5' }}>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '155px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>업체명</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>일배당건수</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>월배당건수</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>진행건수</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>미결건수</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '248px', height: '39px', flexGrow: 1 }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>지역</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '49px', height: '39px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
+                      </div>
+                    </div>
+                    
+                    {/* Data Rows */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px', width: '824px', height: '334px' }}>
+                      {filteredPartners.map((partner) => (
+                        <div key={partner.id} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', width: '824px', height: '61px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '155px', height: '39px' }}>
+                            <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              {partner.name}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                            <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              {partner.dailyCount}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                            <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              {partner.monthlyCount}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                            <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              {partner.inProgressCount}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '93px', height: '39px' }}>
+                            <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              {partner.pendingCount}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '248px', height: '61px', flexGrow: 1 }}>
+                            <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              {partner.region}
+                            </span>
+                          </div>
+                          <div 
+                            onClick={() => setTempSelectedPartner(partner)}
+                            style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '49px', height: '38px', cursor: 'pointer' }}
+                            data-testid={`radio-partner-${partner.id}`}
+                          >
+                            <div style={{ position: 'relative', width: '18px', height: '18px' }}>
+                              <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedPartner?.id === partner.id ? '#008FED' : '#FDFDFD', border: tempSelectedPartner?.id === partner.id ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
+                              {tempSelectedPartner?.id === partner.id && (
+                                <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Selected Partner Card */}
+                {tempSelectedPartner && (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px', width: '824px', height: '103px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '824px', height: '55px', background: '#F8F8F8', borderRadius: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px', width: '424px', height: '23px' }}>
+                        <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '9px', width: '400px', height: '23px' }}>
+                          <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
+                            {tempSelectedPartner.name}
+                          </span>
+                          <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.6)' }}>
+                            {tempSelectedPartner.region}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px', gap: '8px', width: '824px', height: '40px' }}>
+                      <button
+                        onClick={() => setTempSelectedPartner(null)}
+                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', margin: '0 auto', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                        data-testid="button-reset-partner"
+                      >
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.3)' }}>
+                          초기화
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedPartner(tempSelectedPartner);
+                          handleInputChange("assignedPartner", tempSelectedPartner.name);
+                          setIsPartnerSearchOpen(false);
+                        }}
+                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', margin: '0 auto', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+                        data-testid="button-apply-partner"
+                      >
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                          적용
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
