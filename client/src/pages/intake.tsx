@@ -53,6 +53,12 @@ export default function Intake() {
     select: (users) => users.filter(u => u.role === "심사사"),
   });
 
+  // 조사사 목록 가져오기
+  const { data: investigators } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    select: (users) => users.filter(u => u.role === "조사사"),
+  });
+
   // 보험사 직원 목록 가져오기
   const { data: insuranceEmployees } = useQuery<User[]>({
     queryKey: ["/api/users"],
@@ -198,6 +204,22 @@ export default function Intake() {
         const selectedEmployee = filteredClientEmployees.find(emp => emp.name === value);
         if (selectedEmployee) {
           updated.clientContact = selectedEmployee.phone || "";
+        }
+      }
+      
+      // 심사자를 선택하면 해당 심사자의 연락처를 자동으로 설정
+      if (field === "assessorId" && value) {
+        const selectedAssessor = assessors?.find(assessor => assessor.id === value);
+        if (selectedAssessor) {
+          updated.assessorContact = selectedAssessor.phone || "";
+        }
+      }
+      
+      // 조사자를 선택하면 해당 조사자의 연락처를 자동으로 설정
+      if (field === "investigatorTeamName" && value) {
+        const selectedInvestigator = investigators?.find(inv => inv.name === value);
+        if (selectedInvestigator) {
+          updated.investigatorContact = selectedInvestigator.phone || "";
         }
       }
       
@@ -687,7 +709,7 @@ export default function Intake() {
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자 연락처</label>
-                        <input type="text" placeholder="연락처를 입력해주세요" value={formData.assessorContact} onChange={(e) => handleInputChange("assessorContact", e.target.value)} style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-contact" />
+                        <input type="text" placeholder="심사자를 선택하면 자동으로 입력됩니다" value={formData.assessorContact} readOnly style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-contact" />
                       </div>
                     </div>
 
@@ -707,12 +729,21 @@ export default function Intake() {
                         <input type="text" placeholder="입력해주세요" value={formData.investigatorDepartment} onChange={(e) => handleInputChange("investigatorDepartment", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-department" />
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사팀</label>
-                        <input type="text" placeholder="입력해주세요" value={formData.investigatorTeamName} onChange={(e) => handleInputChange("investigatorTeamName", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-team-name" />
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자</label>
+                        <Select value={formData.investigatorTeamName} onValueChange={(value) => handleInputChange("investigatorTeamName", value)}>
+                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-investigator">
+                            <SelectValue placeholder="선택해주세요" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {investigators?.map((investigator) => (
+                              <SelectItem key={investigator.id} value={investigator.name} data-testid={`select-option-investigator-${investigator.id}`}>{investigator.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자 연락처</label>
-                        <input type="text" placeholder="연락처를 입력해주세요" value={formData.investigatorContact} onChange={(e) => handleInputChange("investigatorContact", e.target.value)} style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-contact" />
+                        <input type="text" placeholder="조사자를 선택하면 자동으로 입력됩니다" value={formData.investigatorContact} readOnly style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-contact" />
                       </div>
                     </div>
                   </div>
