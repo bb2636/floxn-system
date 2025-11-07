@@ -131,10 +131,11 @@ export const cases = pgTable("cases", {
   accidentLocation: text("accident_location"),
   accidentDescription: text("accident_description"),
   
+  // 사고 및 복구 정보
+  restorationMethod: text("restoration_method"), // 복구 방식 (없음, 플랫폼 복구, 선견적요청)
+  
   // 진행상황 관련 필드
-  repairType: text("repair_type"), // 복구유형
-  progressStatus: text("progress_status"), // 주요진행사항
-  requestNote: text("request_note"), // 요청사항
+  progressStatus: text("progress_status"), // 주요진행사항 (서류보완요청 등)
   
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),

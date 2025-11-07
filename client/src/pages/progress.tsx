@@ -367,35 +367,33 @@ export default function Progress() {
                       {row.assessorDepartment || '-'}
                     </div>
                     <div style={{ fontFamily: 'Pretendard', fontSize: '14px', color: 'rgba(12, 12, 12, 0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      서울 보상 요청
+                      {row.restorationMethod || '-'}
                     </div>
                     <div style={{ fontFamily: 'Pretendard', fontSize: '14px', color: 'rgba(12, 12, 12, 0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {row.clientContact || '-'}
+                      {row.progressStatus || '-'}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <div 
                         style={{
                           width: '18px',
                           height: '18px',
-                          borderRadius: '50%',
+                          borderRadius: '4px',
                           background: selectedRow === row.id ? '#008FED' : 'rgba(12, 12, 12, 0.1)',
                           border: selectedRow === row.id ? 'none' : '1px solid rgba(12, 12, 12, 0.2)',
-                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedRow(selectedRow === row.id ? null : row.id);
                         }}
                       >
                         {selectedRow === row.id && (
-                          <div 
-                            style={{
-                              position: 'absolute',
-                              width: '8px',
-                              height: '8px',
-                              borderRadius: '50%',
-                              background: '#FFFFFF',
-                              top: '50%',
-                              left: '50%',
-                              transform: 'translate(-50%, -50%)',
-                            }}
-                          />
+                          <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+                            <path d="M1 5L4.5 8.5L11 1.5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
                         )}
                       </div>
                     </div>
