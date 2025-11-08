@@ -410,24 +410,25 @@ export default function Progress() {
                 borderRadius: '12px',
                 padding: '20px 24px',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
+                flexDirection: 'column',
+                gap: '16px',
               }}
             >
-              <div>
-                <span 
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontWeight: 600,
-                    fontSize: '16px',
-                    lineHeight: '128%',
-                    letterSpacing: '-0.02em',
-                    color: '#0C0C0C',
-                  }}
-                >
-                  진행상황 입력
-                </span>
-                {selectedRow && (
+              {/* Header */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
+                  <span 
+                    style={{
+                      fontFamily: 'Pretendard',
+                      fontWeight: 600,
+                      fontSize: '16px',
+                      lineHeight: '128%',
+                      letterSpacing: '-0.02em',
+                      color: '#0C0C0C',
+                    }}
+                  >
+                    진행상황 입력
+                  </span>
                   <span 
                     style={{
                       fontFamily: 'Pretendard',
@@ -436,29 +437,88 @@ export default function Progress() {
                       lineHeight: '128%',
                       letterSpacing: '-0.02em',
                       color: 'rgba(12, 12, 12, 0.6)',
-                      marginLeft: '12px',
                     }}
                   >
-                    {progressData.find(c => c.id === selectedRow)?.insuranceCompany} {progressData.find(c => c.id === selectedRow)?.insuranceAccidentNo} 진행상
+                    상세 기재
                   </span>
-                )}
+                </div>
+                <button
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    background: '#008FED',
+                    borderRadius: '8px',
+                    border: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                  }}
+                  data-testid="button-add-progress"
+                >
+                  <Plus style={{ width: '20px', height: '20px', color: '#FFFFFF' }} />
+                </button>
               </div>
-              <button
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  background: '#008FED',
-                  borderRadius: '8px',
-                  border: 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-                data-testid="button-add-progress"
-              >
-                <Plus style={{ width: '20px', height: '20px', color: '#FFFFFF' }} />
-              </button>
+
+              {/* Progress Table */}
+              {selectedRow && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0px', width: '100%' }}>
+                  {/* Table Header */}
+                  <div 
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '120px 120px 120px 120px 100px 100px 100px 140px 1fr',
+                      background: '#F5F5F5',
+                      borderRadius: '6px 6px 0 0',
+                      padding: '12px 16px',
+                      gap: '8px',
+                    }}
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#686A6E' }}>접수일자</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#686A6E' }}>M/S 배당일</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#686A6E' }}>견적 제출</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#686A6E' }}>견적 승인</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#686A6E' }}>긴급도</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#686A6E' }}>비고사항</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#686A6E' }}>청구건</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#686A6E' }}>시공이전 QC일</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', color: '#686A6E' }}>시공 담당 QC일</span>
+                  </div>
+
+                  {/* Sample Data Row */}
+                  <div 
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '120px 120px 120px 120px 100px 100px 100px 140px 1fr',
+                      borderBottom: '1px solid #E5E5E5',
+                      padding: '12px 16px',
+                      gap: '8px',
+                    }}
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', color: '#0C0C0C' }}>
+                      {progressData.find(c => c.id === selectedRow)?.accidentDate || '-'}
+                    </span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', color: '#0C0C0C' }}>-</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', color: '#0C0C0C' }}>-</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', color: '#0C0C0C' }}>-</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', color: '#0C0C0C' }}>
+                      {progressData.find(c => c.id === selectedRow)?.urgency || '-'}
+                    </span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', color: '#0C0C0C' }}>-</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', color: '#0C0C0C' }}>-</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', color: '#0C0C0C' }}>-</span>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', color: '#0C0C0C' }}>-</span>
+                  </div>
+                </div>
+              )}
+
+              {!selectedRow && (
+                <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                  <span style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', color: '#686A6E' }}>
+                    케이스를 선택하여 진행상황을 입력하세요
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
