@@ -165,8 +165,20 @@ export default function Intake() {
     try {
       const savedDraft = localStorage.getItem('intakeFormDraft');
       if (savedDraft) {
-        const { formData: savedFormData } = JSON.parse(savedDraft);
+        const { 
+          formData: savedFormData,
+          sameAsPolicyHolder: savedSameAsPolicyHolder,
+          damagePreventionCost: savedDamagePreventionCost,
+          victimIncidentAssistance: savedVictimIncidentAssistance,
+          selectedPartner: savedSelectedPartner,
+        } = JSON.parse(savedDraft);
+        
         setFormData(savedFormData);
+        if (savedSameAsPolicyHolder !== undefined) setSameAsPolicyHolder(savedSameAsPolicyHolder);
+        if (savedDamagePreventionCost !== undefined) setDamagePreventionCost(savedDamagePreventionCost);
+        if (savedVictimIncidentAssistance !== undefined) setVictimIncidentAssistance(savedVictimIncidentAssistance);
+        if (savedSelectedPartner) setSelectedPartner(savedSelectedPartner);
+        
         toast({
           description: "이전에 저장한 내용을 불러왔습니다.",
           duration: 2000,
@@ -266,6 +278,10 @@ export default function Intake() {
       localStorage.setItem('intakeFormDraft', JSON.stringify({
         formData,
         caseNumber,
+        sameAsPolicyHolder,
+        damagePreventionCost,
+        victimIncidentAssistance,
+        selectedPartner,
         timestamp: new Date().toISOString(),
       }));
       toast({
