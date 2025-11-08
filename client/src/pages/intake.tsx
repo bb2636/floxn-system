@@ -130,7 +130,7 @@ export default function Intake() {
     assignedPartner: "",
     assignedPartnerManager: "",
     assignedPartnerContact: "",
-    location: "",
+    urgency: "",
     specialRequests: "",
   });
 
@@ -339,6 +339,10 @@ export default function Intake() {
         quantity: string;
         details: string;
       }>,
+      assignedPartner: "",
+      assignedPartnerManager: "",
+      assignedPartnerContact: "",
+      urgency: "",
       specialRequests: "",
     };
     
@@ -2044,146 +2048,223 @@ export default function Intake() {
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'flex-start',
-                        padding: '0px 0px 32px',
+                        padding: '32px 20px',
+                        gap: '32px',
                         width: '1556px',
-                        background: 'rgba(12, 12, 12, 0.03)',
+                        background: '#FFFFFF',
                         borderRadius: '12px',
                       }}
                     >
                       {/* Header */}
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '24px', width: '1556px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <h3 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '22px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
-                            배당사항(협력사 배당)
-                          </h3>
-                          <p style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: 'rgba(12, 12, 12, 0.5)' }}>
-                            필수값은 상태에 따라 달라질 수 있습니다.
-                          </p>
-                        </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                        <h3 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.01em', color: 'rgba(12, 12, 12, 0.9)' }}>
+                          배당사항(협력사 배당)
+                        </h3>
+                        <p style={{ fontFamily: 'Pretendard', fontWeight: 400, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: 'rgba(12, 12, 12, 0.5)' }}>
+                          협조처는 입력하신 정보로 담당자를 찾을 수 없습니다.
+                        </p>
                       </div>
 
                       {/* 배당 협력사 정보 */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '1556px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '24px 20px', gap: '10px', width: '1556px' }}>
-                          <h4 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '20px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.7)' }}>
-                            배당 협력사 정보
-                          </h4>
-                        </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+                        <h4 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.01em', color: 'rgba(12, 12, 12, 0.9)' }}>
+                          배당 협력사 정보
+                        </h4>
                         
-                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px 20px', gap: '20px', width: '1556px' }}>
-                          {/* 협력사 with 검색 button */}
-                          <div style={{ width: '492px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                              협력사
-                            </label>
-                            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', height: '68px' }}>
-                              <input
-                                type="text"
-                                placeholder="선택"
-                                value={formData.assignedPartner}
-                                onChange={(e) => handleInputChange("assignedPartner", e.target.value)}
-                                style={{ width: '379px', height: '68px', padding: '10px 20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px 0px 0px 8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.4)' }}
-                                data-testid="input-assigned-partner"
-                              />
-                              <button
-                                onClick={() => {
-                                  setTempSelectedPartner(selectedPartner);
-                                  setPartnerSearchQuery("");
-                                  setIsPartnerSearchOpen(true);
-                                }}
-                                style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: '113px', height: '68px', background: '#008FED', borderRadius: '0px 8px 8px 0px', border: 'none', cursor: 'pointer' }}
-                                data-testid="button-search-partner"
-                              >
-                                <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
-                                  검색
-                                </span>
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* 담당자 */}
-                          <div style={{ width: '492px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                              담당자
-                            </label>
+                        {/* Row 1: 협력사 with 검색 button */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                          <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                            협력사
+                          </label>
+                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
                             <input
                               type="text"
-                              placeholder="담당자"
-                              value={formData.assignedPartnerManager}
-                              onChange={(e) => handleInputChange("assignedPartnerManager", e.target.value)}
+                              placeholder="협력사 선택"
+                              value={selectedPartner?.name || ''}
                               readOnly
-                              style={{ height: '68px', padding: '10px 20px', background: 'rgba(12, 12, 12, 0.04)', border: 'none', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.4)' }}
-                              data-testid="input-partner-manager"
+                              style={{ 
+                                flex: 1,
+                                height: '56px', 
+                                padding: '16px 20px', 
+                                background: '#FDFDFD', 
+                                border: '1px solid rgba(12, 12, 12, 0.1)', 
+                                borderRadius: '8px', 
+                                fontFamily: 'Pretendard', 
+                                fontWeight: 500, 
+                                fontSize: '14px', 
+                                letterSpacing: '-0.01em', 
+                                color: selectedPartner ? 'rgba(12, 12, 12, 0.9)' : 'rgba(12, 12, 12, 0.4)',
+                                cursor: 'default',
+                              }}
+                              data-testid="input-assigned-partner"
                             />
+                            <button
+                              onClick={() => {
+                                setTempSelectedPartner(selectedPartner);
+                                setPartnerSearchQuery("");
+                                setIsPartnerSearchOpen(true);
+                              }}
+                              style={{ 
+                                display: 'flex', 
+                                flexDirection: 'row', 
+                                justifyContent: 'center', 
+                                alignItems: 'center', 
+                                padding: '16px 24px',
+                                height: '56px', 
+                                background: '#008FED', 
+                                borderRadius: '8px', 
+                                border: 'none', 
+                                cursor: 'pointer',
+                                fontFamily: 'Pretendard',
+                                fontWeight: 600,
+                                fontSize: '14px',
+                                letterSpacing: '-0.01em',
+                                color: '#FFFFFF',
+                              }}
+                              data-testid="button-search-partner"
+                            >
+                              검색
+                            </button>
                           </div>
+                        </div>
 
-                          {/* 연락처 */}
-                          <div style={{ width: '492px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                              연락처
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="연락처"
-                              value={formData.assignedPartnerContact}
-                              onChange={(e) => handleInputChange("assignedPartnerContact", e.target.value)}
-                              readOnly
-                              style={{ height: '68px', padding: '10px 20px', background: 'rgba(12, 12, 12, 0.04)', border: 'none', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.4)' }}
-                              data-testid="input-partner-contact"
-                            />
-                          </div>
+                        {/* Row 2: 담당자명 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                          <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                            담당자명
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="담당자명"
+                            value={formData.assignedPartnerManager}
+                            onChange={(e) => handleInputChange("assignedPartnerManager", e.target.value)}
+                            style={{ 
+                              height: '56px', 
+                              padding: '16px 20px', 
+                              background: '#FDFDFD', 
+                              border: '1px solid rgba(12, 12, 12, 0.1)', 
+                              borderRadius: '8px', 
+                              fontFamily: 'Pretendard', 
+                              fontWeight: 500, 
+                              fontSize: '14px', 
+                              letterSpacing: '-0.01em', 
+                              color: 'rgba(12, 12, 12, 0.9)',
+                            }}
+                            data-testid="input-partner-manager"
+                          />
+                        </div>
+
+                        {/* Row 3: 담당자 연락처 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                          <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                            담당자 연락처
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="담당자 연락처"
+                            value={formData.assignedPartnerContact}
+                            onChange={(e) => handleInputChange("assignedPartnerContact", e.target.value)}
+                            style={{ 
+                              height: '56px', 
+                              padding: '16px 20px', 
+                              background: '#FDFDFD', 
+                              border: '1px solid rgba(12, 12, 12, 0.1)', 
+                              borderRadius: '8px', 
+                              fontFamily: 'Pretendard', 
+                              fontWeight: 500, 
+                              fontSize: '14px', 
+                              letterSpacing: '-0.01em', 
+                              color: 'rgba(12, 12, 12, 0.9)',
+                            }}
+                            data-testid="input-partner-contact"
+                          />
                         </div>
                       </div>
 
                       {/* 일정 · 우선순위 */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '1556px', marginTop: '20px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '24px 20px', gap: '10px', width: '1556px' }}>
-                          <h4 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '20px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.7)' }}>
-                            일정 · 우선순위
-                          </h4>
-                        </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+                        <h4 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.01em', color: 'rgba(12, 12, 12, 0.9)' }}>
+                          일정 · 우선순위
+                        </h4>
 
-                        {/* 지도 선택 */}
-                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px 20px', gap: '20px', width: '536px' }}>
-                          <div style={{ width: '496px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                              지도
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="선택"
-                              value={formData.location}
-                              onChange={(e) => handleInputChange("location", e.target.value)}
-                              style={{ height: '68px', padding: '10px 20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.4)' }}
-                              data-testid="input-location"
-                            />
-                          </div>
+                        {/* 긴급도 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', maxWidth: '340px' }}>
+                          <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                            긴급도
+                          </label>
+                          <Select
+                            value={formData.urgency || ''}
+                            onValueChange={(value) => handleInputChange("urgency", value)}
+                          >
+                            <SelectTrigger 
+                              style={{ 
+                                height: '56px', 
+                                padding: '16px 20px', 
+                                background: '#FDFDFD', 
+                                border: '1px solid rgba(12, 12, 12, 0.1)', 
+                                borderRadius: '8px', 
+                                fontFamily: 'Pretendard', 
+                                fontWeight: 500, 
+                                fontSize: '14px', 
+                                letterSpacing: '-0.01em', 
+                                color: formData.urgency ? 'rgba(12, 12, 12, 0.9)' : 'rgba(12, 12, 12, 0.4)',
+                              }}
+                              data-testid="select-urgency"
+                            >
+                              <SelectValue placeholder="긴급도 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="긴급">긴급</SelectItem>
+                              <SelectItem value="보통">보통</SelectItem>
+                              <SelectItem value="낮음">낮음</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         {/* 특이사항 및 요청사항 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px 20px', gap: '20px', width: '1556px', marginTop: '12px' }}>
-                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', width: '1516px' }}>
-                            <div style={{ width: '1516px', display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative' }}>
-                              <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                                특이사항 및 요청사항
-                              </label>
-                              <textarea
-                                placeholder="입력해주세요"
-                                value={formData.specialRequests}
-                                onChange={(e) => {
-                                  if (e.target.value.length <= 800) {
-                                    handleInputChange("specialRequests", e.target.value);
-                                  }
-                                }}
-                                maxLength={800}
-                                style={{ width: '100%', height: '120px', padding: '20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.4)', resize: 'none' }}
-                                data-testid="textarea-special-requests"
-                              />
-                              <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-end', width: '1516px' }}>
-                                <span style={{ fontFamily: 'Pretendard', fontWeight: 700, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                                  {formData.specialRequests.length}/800
-                                </span>
-                              </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', marginTop: '12px' }}>
+                          <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                            특이사항 및 요청사항
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <textarea
+                              placeholder="협력 협이사명, 요청사항 등"
+                              value={formData.specialRequests}
+                              onChange={(e) => {
+                                if (e.target.value.length <= 800) {
+                                  handleInputChange("specialRequests", e.target.value);
+                                }
+                              }}
+                              maxLength={800}
+                              style={{ 
+                                width: '100%', 
+                                height: '120px', 
+                                padding: '16px 20px', 
+                                background: '#FDFDFD', 
+                                border: '1px solid rgba(12, 12, 12, 0.1)', 
+                                borderRadius: '8px', 
+                                fontFamily: 'Pretendard', 
+                                fontWeight: 500, 
+                                fontSize: '14px', 
+                                lineHeight: '150%', 
+                                letterSpacing: '-0.01em', 
+                                color: 'rgba(12, 12, 12, 0.9)', 
+                                resize: 'none',
+                              }}
+                              data-testid="textarea-special-requests"
+                            />
+                            <div style={{ 
+                              position: 'absolute', 
+                              bottom: '12px', 
+                              right: '20px',
+                              fontFamily: 'Pretendard', 
+                              fontWeight: 500, 
+                              fontSize: '12px', 
+                              lineHeight: '128%', 
+                              letterSpacing: '-0.01em', 
+                              color: '#686A6E',
+                            }}>
+                              {formData.specialRequests.length}/800
                             </div>
                           </div>
                         </div>
