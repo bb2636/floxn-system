@@ -280,7 +280,7 @@ export default function Dashboard() {
                     fontWeight: 600,
                     color: '#008FED',
                   }}>
-                    {user.username?.charAt(0) || 'U'}
+                    {user.name?.charAt(0) || user.username?.charAt(0) || 'U'}
                   </span>
                 </div>
                 
@@ -295,7 +295,7 @@ export default function Dashboard() {
                       letterSpacing: '-0.02em',
                       color: '#0C0C0C',
                     }}>
-                      {user.username}
+                      {user.name || user.username}
                     </span>
                     <span style={{
                       fontFamily: 'Pretendard',
@@ -305,7 +305,7 @@ export default function Dashboard() {
                       letterSpacing: '-0.01em',
                       color: 'rgba(12, 12, 12, 0.9)',
                     }}>
-                      사원
+                      {user.position || '사원'}
                     </span>
                   </div>
                   <span style={{
@@ -316,7 +316,7 @@ export default function Dashboard() {
                     letterSpacing: '-0.01em',
                     color: 'rgba(12, 12, 12, 0.7)',
                   }}>
-                    xblock@gmail.com
+                    {user.email || 'xblock@gmail.com'}
                   </span>
                 </div>
               </div>
@@ -1174,8 +1174,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Progress Summary and Case List Section */}
-          <div className="flex flex-col lg:flex-row items-start gap-6 mt-6">
+          {/* Progress Summary and Case List Section - Desktop only */}
+          <div className="hidden lg:flex flex-col lg:flex-row items-start gap-6 mt-6">
             {/* Progress Summary */}
             <div className="flex flex-col gap-6 w-full lg:flex-1">
               {/* Section Header */}
@@ -1692,9 +1692,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Right Sidebar */}
+        {/* Right Sidebar - Hidden on mobile */}
         <div 
-          className="flex flex-col gap-3 py-6 px-4 md:px-8 lg:px-0 lg:pr-8 w-full lg:w-[415px]"
+          className="hidden lg:flex flex-col gap-3 py-6 px-4 md:px-8 lg:px-0 lg:pr-8 w-full lg:w-[415px]"
         >
           {/* My Profile Card */}
           <div
@@ -1737,7 +1737,16 @@ export default function Dashboard() {
               <div 
                 className="w-[72px] h-[72px] rounded-full flex items-center justify-center mb-3"
                 style={{ background: 'rgba(0, 143, 237, 0.2)' }}
-              />
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '24px',
+                  fontWeight: 600,
+                  color: '#008FED',
+                }}>
+                  {user.name?.charAt(0) || user.username?.charAt(0) || 'U'}
+                </span>
+              </div>
               <div className="flex items-center gap-1 mb-1">
                 <span 
                   style={{
@@ -1748,7 +1757,7 @@ export default function Dashboard() {
                     color: '#0C0C0C',
                   }}
                 >
-                  {user.username}
+                  {user.name || user.username}
                 </span>
                 <span 
                   style={{
@@ -1759,7 +1768,7 @@ export default function Dashboard() {
                     color: 'rgba(12, 12, 12, 0.9)',
                   }}
                 >
-                  사원
+                  {user.position || '사원'}
                 </span>
               </div>
               <span 
@@ -1771,7 +1780,7 @@ export default function Dashboard() {
                   color: 'rgba(12, 12, 12, 0.7)',
                 }}
               >
-                {user.username}@example.com
+                {user.email || `${user.username}@example.com`}
               </span>
             </div>
           </div>
