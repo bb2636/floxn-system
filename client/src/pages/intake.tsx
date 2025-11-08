@@ -2105,124 +2105,127 @@ export default function Intake() {
                           배당 협력사 정보
                         </h4>
                         
-                        {/* Row 1: 협력사 with 검색 button */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                          <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                            협력사
-                          </label>
-                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+                        {/* 협력사, 담당자명, 담당자 연락처를 한 줄에 배치 */}
+                        <div style={{ display: 'flex', flexDirection: 'row', gap: '12px', width: '100%' }}>
+                          {/* Column 1: 협력사 with 검색 button */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              협력사
+                            </label>
+                            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+                              <input
+                                type="text"
+                                placeholder="협력사 선택"
+                                value={selectedPartner?.name || ''}
+                                readOnly
+                                style={{ 
+                                  flex: 1,
+                                  height: '56px', 
+                                  padding: '16px 20px', 
+                                  background: '#FDFDFD', 
+                                  border: '1px solid rgba(12, 12, 12, 0.1)', 
+                                  borderRadius: '8px', 
+                                  fontFamily: 'Pretendard', 
+                                  fontWeight: 500, 
+                                  fontSize: '14px', 
+                                  letterSpacing: '-0.01em', 
+                                  color: selectedPartner ? 'rgba(12, 12, 12, 0.9)' : 'rgba(12, 12, 12, 0.4)',
+                                  cursor: 'default',
+                                }}
+                                data-testid="input-assigned-partner"
+                              />
+                              <button
+                                onClick={() => {
+                                  setTempSelectedPartner(selectedPartner);
+                                  setPartnerSearchQuery("");
+                                  setIsPartnerSearchOpen(true);
+                                }}
+                                style={{ 
+                                  display: 'flex', 
+                                  flexDirection: 'row', 
+                                  justifyContent: 'center', 
+                                  alignItems: 'center', 
+                                  padding: '16px 24px',
+                                  height: '56px', 
+                                  background: '#008FED', 
+                                  borderRadius: '8px', 
+                                  border: 'none', 
+                                  cursor: 'pointer',
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: 600,
+                                  fontSize: '14px',
+                                  letterSpacing: '-0.01em',
+                                  color: '#FFFFFF',
+                                }}
+                                data-testid="button-search-partner"
+                              >
+                                검색
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Column 2: 담당자명 */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              담당자명
+                            </label>
+                            <Select
+                              value={formData.assignedPartnerManager}
+                              onValueChange={(value) => handleInputChange("assignedPartnerManager", value)}
+                              disabled={!selectedPartner || partnerManagers.length === 0}
+                            >
+                              <SelectTrigger 
+                                style={{ 
+                                  height: '56px', 
+                                  padding: '16px 20px', 
+                                  background: !selectedPartner || partnerManagers.length === 0 ? 'rgba(12, 12, 12, 0.04)' : '#FDFDFD', 
+                                  border: '1px solid rgba(12, 12, 12, 0.1)', 
+                                  borderRadius: '8px', 
+                                  fontFamily: 'Pretendard', 
+                                  fontWeight: 500, 
+                                  fontSize: '14px', 
+                                  letterSpacing: '-0.01em', 
+                                  color: formData.assignedPartnerManager ? 'rgba(12, 12, 12, 0.9)' : 'rgba(12, 12, 12, 0.4)',
+                                }}
+                                data-testid="select-partner-manager"
+                              >
+                                <SelectValue placeholder={!selectedPartner ? "협력사를 먼저 선택하세요" : partnerManagers.length === 0 ? "담당자가 없습니다" : "담당자 선택"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {partnerManagers.map((manager) => (
+                                  <SelectItem key={manager.id} value={manager.name}>
+                                    {manager.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          {/* Column 3: 담당자 연락처 */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              담당자 연락처
+                            </label>
                             <input
                               type="text"
-                              placeholder="협력사 선택"
-                              value={selectedPartner?.name || ''}
+                              placeholder="담당자를 선택하면 자동으로 입력됩니다"
+                              value={formData.assignedPartnerContact}
                               readOnly
                               style={{ 
-                                flex: 1,
                                 height: '56px', 
                                 padding: '16px 20px', 
-                                background: '#FDFDFD', 
-                                border: '1px solid rgba(12, 12, 12, 0.1)', 
-                                borderRadius: '8px', 
-                                fontFamily: 'Pretendard', 
-                                fontWeight: 500, 
-                                fontSize: '14px', 
-                                letterSpacing: '-0.01em', 
-                                color: selectedPartner ? 'rgba(12, 12, 12, 0.9)' : 'rgba(12, 12, 12, 0.4)',
-                                cursor: 'default',
-                              }}
-                              data-testid="input-assigned-partner"
-                            />
-                            <button
-                              onClick={() => {
-                                setTempSelectedPartner(selectedPartner);
-                                setPartnerSearchQuery("");
-                                setIsPartnerSearchOpen(true);
-                              }}
-                              style={{ 
-                                display: 'flex', 
-                                flexDirection: 'row', 
-                                justifyContent: 'center', 
-                                alignItems: 'center', 
-                                padding: '16px 24px',
-                                height: '56px', 
-                                background: '#008FED', 
-                                borderRadius: '8px', 
+                                background: 'rgba(12, 12, 12, 0.04)', 
                                 border: 'none', 
-                                cursor: 'pointer',
-                                fontFamily: 'Pretendard',
-                                fontWeight: 600,
-                                fontSize: '14px',
-                                letterSpacing: '-0.01em',
-                                color: '#FFFFFF',
-                              }}
-                              data-testid="button-search-partner"
-                            >
-                              검색
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Row 2: 담당자명 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                          <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                            담당자명
-                          </label>
-                          <Select
-                            value={formData.assignedPartnerManager}
-                            onValueChange={(value) => handleInputChange("assignedPartnerManager", value)}
-                            disabled={!selectedPartner || partnerManagers.length === 0}
-                          >
-                            <SelectTrigger 
-                              style={{ 
-                                height: '56px', 
-                                padding: '16px 20px', 
-                                background: !selectedPartner || partnerManagers.length === 0 ? 'rgba(12, 12, 12, 0.04)' : '#FDFDFD', 
-                                border: '1px solid rgba(12, 12, 12, 0.1)', 
                                 borderRadius: '8px', 
                                 fontFamily: 'Pretendard', 
                                 fontWeight: 500, 
                                 fontSize: '14px', 
                                 letterSpacing: '-0.01em', 
-                                color: formData.assignedPartnerManager ? 'rgba(12, 12, 12, 0.9)' : 'rgba(12, 12, 12, 0.4)',
+                                color: 'rgba(12, 12, 12, 0.9)',
                               }}
-                              data-testid="select-partner-manager"
-                            >
-                              <SelectValue placeholder={!selectedPartner ? "협력사를 먼저 선택하세요" : partnerManagers.length === 0 ? "담당자가 없습니다" : "담당자 선택"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {partnerManagers.map((manager) => (
-                                <SelectItem key={manager.id} value={manager.name}>
-                                  {manager.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Row 3: 담당자 연락처 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                          <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                            담당자 연락처
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="담당자를 선택하면 자동으로 입력됩니다"
-                            value={formData.assignedPartnerContact}
-                            readOnly
-                            style={{ 
-                              height: '56px', 
-                              padding: '16px 20px', 
-                              background: 'rgba(12, 12, 12, 0.04)', 
-                              border: 'none', 
-                              borderRadius: '8px', 
-                              fontFamily: 'Pretendard', 
-                              fontWeight: 500, 
-                              fontSize: '14px', 
-                              letterSpacing: '-0.01em', 
-                              color: 'rgba(12, 12, 12, 0.9)',
-                            }}
-                            data-testid="input-partner-contact"
-                          />
+                              data-testid="input-partner-contact"
+                            />
+                          </div>
                         </div>
                       </div>
 
