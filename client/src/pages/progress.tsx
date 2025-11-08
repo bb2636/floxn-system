@@ -1,16 +1,21 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, Case } from "@shared/schema";
-import { Star, Search, Plus } from "lucide-react";
+import { Star, Search, Plus, Minus } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Progress() {
   const [activeMenu, setActiveMenu] = useState("진행상황");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRow, setSelectedRow] = useState<string | null>(null);
   const [selectedCases, setSelectedCases] = useState<string[]>([]);
+  const [isProgressModalOpen, setIsProgressModalOpen] = useState(false);
+  const [progressContent, setProgressContent] = useState("");
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -32,6 +37,40 @@ export default function Progress() {
     { name: "통계 및 정산" },
     { name: "관리자 설정" },
   ];
+
+  const submitProgressMutation = useMutation({
+    mutationFn: async (data: { caseId: string; content: string }[]) => {
+      // 각 케이스에 대해 진행상황 업데이트 생성
+      const promises = data.map(item => 
+        apiRequest("POST", "/api/progress-updates", item)
+      );
+      return await Promise.all(promises);
+    },
+    onSuccess: () => {
+      toast({ description: "진행상황이 저장되었습니다." });
+      setIsProgressModalOpen(false);
+      setProgressContent("");
+      setSelectedCases([]);
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+    },
+    onError: (error: Error) => {
+      toast({ description: error.message || "진행상황 저장에 실패했습니다.", variant: "destructive" });
+    },
+  });
+
+  const handleSubmitProgress = () => {
+    if (!progressContent.trim()) {
+      toast({ description: "주요 진행사항을 입력해주세요.", variant: "destructive" });
+      return;
+    }
+
+    const updates = selectedCases.map(caseId => ({
+      caseId,
+      content: progressContent,
+    }));
+
+    submitProgressMutation.mutate(updates);
+  };
 
   if (userLoading || !user) {
     return null;
@@ -631,10 +670,177 @@ export default function Progress() {
                 cursor: 'pointer',
                 flexShrink: 0,
               }}
+              onClick={() => setIsProgressModalOpen(true)}
               data-testid="button-add-progress-bottom"
             >
               <Plus style={{ width: '16px', height: '16px', color: '#FFFFFF' }} />
             </button>
+          </div>
+        )}
+
+        {/* Progress Input Modal */}
+        {isProgressModalOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 50,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(0, 0, 0, 0.5)',
+            }}
+            onClick={() => setIsProgressModalOpen(false)}
+          >
+            <div
+              style={{
+                background: '#FFFFFF',
+                borderRadius: '16px',
+                padding: '32px',
+                width: '90%',
+                maxWidth: '600px',
+                maxHeight: '80vh',
+                overflow: 'auto',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2
+                style={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 700,
+                  fontSize: '24px',
+                  lineHeight: '128%',
+                  letterSpacing: '-0.02em',
+                  color: '#0C0C0C',
+                  marginBottom: '24px',
+                }}
+              >
+                진행상황 입력
+              </h2>
+
+              <div style={{ marginBottom: '24px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontFamily: 'Pretendard',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    lineHeight: '128%',
+                    letterSpacing: '-0.01em',
+                    color: '#0C0C0C',
+                    marginBottom: '12px',
+                  }}
+                >
+                  선택된 케이스 ({selectedCases.length}건)
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {selectedCases.map((caseId) => {
+                    const selectedCase = progressData.find(c => c.id === caseId);
+                    if (!selectedCase) return null;
+                    
+                    return (
+                      <div 
+                        key={caseId}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px',
+                          padding: '8px 12px',
+                          background: 'rgba(0, 143, 237, 0.05)',
+                          borderRadius: '8px',
+                        }}
+                      >
+                        <div style={{ width: '6px', height: '6px', background: '#008FED', borderRadius: '50%' }} />
+                        <span 
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontWeight: 500,
+                            fontSize: '14px',
+                            color: 'rgba(12, 12, 12, 0.8)',
+                          }}
+                        >
+                          {selectedCase.insuranceCompany || '-'} / {selectedCase.insuranceAccidentNo || '-'} / {selectedCase.victimName || '-'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    fontFamily: 'Pretendard',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    lineHeight: '128%',
+                    letterSpacing: '-0.01em',
+                    color: '#0C0C0C',
+                    marginBottom: '12px',
+                  }}
+                >
+                  주요 진행사항
+                </label>
+                <textarea
+                  value={progressContent}
+                  onChange={(e) => setProgressContent(e.target.value)}
+                  placeholder="진행사항을 입력해주세요"
+                  rows={6}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '1px solid rgba(12, 12, 12, 0.1)',
+                    borderRadius: '8px',
+                    fontFamily: 'Pretendard',
+                    fontSize: '15px',
+                    resize: 'vertical',
+                  }}
+                  data-testid="input-progress-content"
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => {
+                    setIsProgressModalOpen(false);
+                    setProgressContent("");
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    background: 'rgba(12, 12, 12, 0.05)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontFamily: 'Pretendard',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: '#0C0C0C',
+                    cursor: 'pointer',
+                  }}
+                  data-testid="button-cancel-progress"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSubmitProgress}
+                  disabled={submitProgressMutation.isPending}
+                  style={{
+                    padding: '12px 24px',
+                    background: submitProgressMutation.isPending ? 'rgba(0, 143, 237, 0.5)' : '#008FED',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontFamily: 'Pretendard',
+                    fontWeight: 600,
+                    fontSize: '15px',
+                    color: '#FFFFFF',
+                    cursor: submitProgressMutation.isPending ? 'not-allowed' : 'pointer',
+                  }}
+                  data-testid="button-submit-progress"
+                >
+                  {submitProgressMutation.isPending ? '저장 중...' : '저장'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>

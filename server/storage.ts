@@ -1,8 +1,8 @@
-import { type User, type InsertUser, users, type Case, type InsertCase, cases } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
 
@@ -13,6 +13,20 @@ function getKSTDate(): string {
   const month = String(kstDate.getMonth() + 1).padStart(2, '0');
   const day = String(kstDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function getKSTTimestamp(): string {
+  const now = new Date();
+  const kstDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  
+  const year = kstDate.getFullYear();
+  const month = String(kstDate.getMonth() + 1).padStart(2, '0');
+  const day = String(kstDate.getDate()).padStart(2, '0');
+  const hours = String(kstDate.getHours()).padStart(2, '0');
+  const minutes = String(kstDate.getMinutes()).padStart(2, '0');
+  const seconds = String(kstDate.getSeconds()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+09:00`;
 }
 
 export interface PartnerStats {
@@ -34,15 +48,19 @@ export interface IStorage {
   createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
   getAllCases(): Promise<Case[]>;
   getPartnerStats(): Promise<PartnerStats[]>;
+  createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate>;
+  getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private cases: Map<string, Case>;
+  private progressUpdates: Map<string, ProgressUpdate>;
 
   constructor() {
     this.users = new Map();
     this.cases = new Map();
+    this.progressUpdates = new Map();
     this.seedTestUser();
     this.seedTestCases();
   }
@@ -936,6 +954,27 @@ export class MemStorage implements IStorage {
       };
     });
   }
+
+  async createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate> {
+    const id = randomUUID();
+    const currentTimestamp = getKSTTimestamp();
+    
+    const newUpdate: ProgressUpdate = {
+      id,
+      caseId: data.caseId,
+      content: data.content,
+      createdBy: data.createdBy,
+      createdAt: currentTimestamp,
+    };
+    
+    this.progressUpdates.set(id, newUpdate);
+    return newUpdate;
+  }
+
+  async getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]> {
+    const updates = Array.from(this.progressUpdates.values()).filter(u => u.caseId === caseId);
+    return updates.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -1304,6 +1343,28 @@ export class DbStorage implements IStorage {
         pendingCount,
       };
     });
+  }
+
+  async createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate> {
+    const currentTimestamp = getKSTTimestamp();
+    
+    const newUpdate = {
+      caseId: data.caseId,
+      content: data.content,
+      createdBy: data.createdBy,
+      createdAt: currentTimestamp,
+    };
+
+    const result = await db.insert(progressUpdates).values(newUpdate).returning();
+    return result[0];
+  }
+
+  async getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]> {
+    const result = await db.select()
+      .from(progressUpdates)
+      .where(eq(progressUpdates.caseId, caseId))
+      .orderBy(asc(progressUpdates.createdAt));
+    return result;
   }
 }
 

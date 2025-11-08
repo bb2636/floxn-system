@@ -175,3 +175,20 @@ export const insertCaseRequestSchema = insertCaseSchema.omit({
 export type InsertCase = z.infer<typeof insertCaseSchema>;
 export type InsertCaseRequest = z.infer<typeof insertCaseRequestSchema>;
 export type Case = typeof cases.$inferSelect;
+
+// 진행상황 업데이트 테이블
+export const progressUpdates = pgTable("progress_updates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseId: varchar("case_id").notNull().references(() => cases.id),
+  content: text("content").notNull(), // 주요 진행사항 내용
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertProgressUpdateSchema = createInsertSchema(progressUpdates).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertProgressUpdate = z.infer<typeof insertProgressUpdateSchema>;
+export type ProgressUpdate = typeof progressUpdates.$inferSelect;

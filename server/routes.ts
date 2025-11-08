@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -300,6 +300,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get partner stats error:", error);
       res.status(500).json({ error: "협력사 통계를 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Create progress update endpoint
+  app.post("/api/progress-updates", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const validatedData = insertProgressUpdateSchema.parse({
+        ...req.body,
+        createdBy: req.session.userId,
+      });
+
+      const newUpdate = await storage.createProgressUpdate(validatedData);
+      res.status(201).json({ success: true, update: newUpdate });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Create progress update error:", error);
+      res.status(500).json({ error: "진행상황 업데이트 생성 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get progress updates by case ID endpoint
+  app.get("/api/progress-updates/:caseId", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const updates = await storage.getProgressUpdatesByCaseId(req.params.caseId);
+      res.json(updates);
+    } catch (error) {
+      console.error("Get progress updates error:", error);
+      res.status(500).json({ error: "진행상황 업데이트를 불러오는 중 오류가 발생했습니다" });
     }
   });
 
