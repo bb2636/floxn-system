@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -46,7 +46,7 @@ export interface IStorage {
   updatePassword(username: string, newPassword: string): Promise<User | null>;
   deleteAccount(username: string): Promise<User | null>;
   createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
-  getAllCases(): Promise<Case[]>;
+  getAllCases(): Promise<CaseWithLatestProgress[]>;
   getPartnerStats(): Promise<PartnerStats[]>;
   createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate>;
   getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]>;
@@ -925,8 +925,29 @@ export class MemStorage implements IStorage {
     return newCase;
   }
 
-  async getAllCases(): Promise<Case[]> {
-    return Array.from(this.cases.values());
+  async getAllCases(): Promise<CaseWithLatestProgress[]> {
+    const allCases = Array.from(this.cases.values());
+    
+    // 각 케이스의 최신 진행상황 찾기
+    const casesWithProgress: CaseWithLatestProgress[] = allCases.map(caseItem => {
+      // 해당 케이스의 모든 진행상황 찾기
+      const caseUpdates = Array.from(this.progressUpdates.values())
+        .filter(update => update.caseId === caseItem.id)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)); // 최신순 정렬
+      
+      // 최신 진행상황
+      const latestUpdate = caseUpdates[0];
+      
+      return {
+        ...caseItem,
+        latestProgress: latestUpdate ? {
+          content: latestUpdate.content,
+          createdAt: latestUpdate.createdAt,
+        } : null,
+      };
+    });
+    
+    return casesWithProgress;
   }
 
   async getPartnerStats(): Promise<PartnerStats[]> {
@@ -1315,9 +1336,30 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async getAllCases(): Promise<Case[]> {
-    const result = await db.select().from(cases);
-    return result;
+  async getAllCases(): Promise<CaseWithLatestProgress[]> {
+    const allCases = await db.select().from(cases);
+    const allProgressUpdates = await db.select().from(progressUpdates);
+    
+    // 각 케이스의 최신 진행상황 찾기
+    const casesWithProgress: CaseWithLatestProgress[] = allCases.map(caseItem => {
+      // 해당 케이스의 모든 진행상황 찾기
+      const caseUpdates = allProgressUpdates
+        .filter(update => update.caseId === caseItem.id)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)); // 최신순 정렬
+      
+      // 최신 진행상황
+      const latestUpdate = caseUpdates[0];
+      
+      return {
+        ...caseItem,
+        latestProgress: latestUpdate ? {
+          content: latestUpdate.content,
+          createdAt: latestUpdate.createdAt,
+        } : null,
+      };
+    });
+    
+    return casesWithProgress;
   }
 
   async getPartnerStats(): Promise<PartnerStats[]> {

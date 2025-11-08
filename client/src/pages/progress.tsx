@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User, Case } from "@shared/schema";
+import { User, CaseWithLatestProgress } from "@shared/schema";
 import { Star, Search, Plus, Minus } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -21,7 +21,7 @@ export default function Progress() {
     queryKey: ["/api/user"],
   });
 
-  const { data: cases, isLoading } = useQuery<Case[]>({
+  const { data: cases, isLoading } = useQuery<CaseWithLatestProgress[]>({
     queryKey: ["/api/cases"],
   });
 
@@ -410,7 +410,7 @@ export default function Progress() {
                       {row.restorationMethod || '-'}
                     </div>
                     <div style={{ fontFamily: 'Pretendard', fontSize: '14px', color: 'rgba(12, 12, 12, 0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {row.progressStatus || '-'}
+                      {row.latestProgress?.content || '-'}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <div 

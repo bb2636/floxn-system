@@ -176,6 +176,13 @@ export type InsertCase = z.infer<typeof insertCaseSchema>;
 export type InsertCaseRequest = z.infer<typeof insertCaseRequestSchema>;
 export type Case = typeof cases.$inferSelect;
 
+export type CaseWithLatestProgress = Case & {
+  latestProgress?: {
+    content: string;
+    createdAt: string;
+  } | null;
+};
+
 // 진행상황 업데이트 테이블
 export const progressUpdates = pgTable("progress_updates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
