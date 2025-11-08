@@ -924,7 +924,7 @@ export class MemStorage implements IStorage {
       
       const dailyCount = partnerCases.filter(c => c.createdAt === today).length;
       const monthlyCount = partnerCases.filter(c => c.createdAt?.startsWith(currentMonth)).length;
-      const inProgressCount = partnerCases.filter(c => c.status !== "작성중").length;
+      const inProgressCount = partnerCases.filter(c => c.status !== "작성중" && c.status !== "완료").length;
       const pendingCount = partnerCases.filter(c => c.status !== "완료").length;
       
       return {
@@ -1293,7 +1293,7 @@ export class DbStorage implements IStorage {
       
       const dailyCount = partnerCases.filter(c => c.createdAt === today).length;
       const monthlyCount = partnerCases.filter(c => c.createdAt?.startsWith(currentMonth)).length;
-      const inProgressCount = partnerCases.filter(c => c.status !== "작성중").length;
+      const inProgressCount = partnerCases.filter(c => c.status !== "작성중" && c.status !== "완료").length;
       const pendingCount = partnerCases.filter(c => c.status !== "완료").length;
       
       return {

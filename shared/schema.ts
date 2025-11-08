@@ -98,7 +98,7 @@ export const cases = pgTable("cases", {
   clientContact: text("client_contact"),
   
   // 심사자 정보
-  assessorId: varchar("assessor_id").references(() => users.id),
+  assessorId: text("assessor_id"), // 심사사 회사명
   assessorDepartment: text("assessor_department"),
   assessorTeam: text("assessor_team"),
   assessorContact: text("assessor_contact"),
