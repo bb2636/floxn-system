@@ -9,6 +9,7 @@ export default function Progress() {
   const [activeMenu, setActiveMenu] = useState("진행상황");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRow, setSelectedRow] = useState<string | null>(null);
+  const [selectedCases, setSelectedCases] = useState<string[]>([]);
   const [, setLocation] = useLocation();
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
@@ -378,8 +379,8 @@ export default function Progress() {
                           width: '18px',
                           height: '18px',
                           borderRadius: '4px',
-                          background: selectedRow === row.id ? '#008FED' : 'rgba(12, 12, 12, 0.1)',
-                          border: selectedRow === row.id ? 'none' : '1px solid rgba(12, 12, 12, 0.2)',
+                          background: selectedCases.includes(row.id) ? '#008FED' : 'rgba(12, 12, 12, 0.1)',
+                          border: selectedCases.includes(row.id) ? 'none' : '1px solid rgba(12, 12, 12, 0.2)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -387,10 +388,15 @@ export default function Progress() {
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedRow(selectedRow === row.id ? null : row.id);
+                          setSelectedCases(prev => 
+                            prev.includes(row.id) 
+                              ? prev.filter(id => id !== row.id)
+                              : [...prev, row.id]
+                          );
                         }}
+                        data-testid={`checkbox-case-${index}`}
                       >
-                        {selectedRow === row.id && (
+                        {selectedCases.includes(row.id) && (
                           <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
                             <path d="M1 5L4.5 8.5L11 1.5" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
@@ -522,6 +528,115 @@ export default function Progress() {
             </div>
           </div>
         </div>
+
+        {/* Fixed Bottom Bar for Selected Cases */}
+        {selectedCases.length > 0 && (
+          <div 
+            style={{
+              position: 'fixed',
+              bottom: '32px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              maxWidth: '1596px',
+              width: 'calc(100% - 160px)',
+              background: '#FFFFFF',
+              boxShadow: '0px 0px 60px #AAB1C2, 0px 0px 20px #DBE9F5',
+              borderRadius: '12px',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              zIndex: 1000,
+            }}
+            data-testid="selected-cases-bar"
+          >
+            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px', margin: '0 auto' }}>
+              <span 
+                style={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 600,
+                  fontSize: '24px',
+                  lineHeight: '128%',
+                  letterSpacing: '-0.02em',
+                  color: '#0C0C0C',
+                }}
+              >
+                진행상황 입력
+              </span>
+
+              {selectedCases.map((caseId) => {
+                const selectedCase = progressData.find(c => c.id === caseId);
+                if (!selectedCase) return null;
+                
+                return (
+                  <div 
+                    key={caseId}
+                    style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}
+                  >
+                    <div style={{ width: '6px', height: '6px', background: '#008FED', borderRadius: '50%' }} />
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px' }}>
+                      <span 
+                        style={{
+                          fontFamily: 'Pretendard',
+                          fontWeight: 500,
+                          fontSize: '15px',
+                          lineHeight: '128%',
+                          letterSpacing: '-0.01em',
+                          color: 'rgba(12, 12, 12, 0.7)',
+                        }}
+                      >
+                        {selectedCase.insuranceCompany || '-'}
+                      </span>
+                      <span 
+                        style={{
+                          fontFamily: 'Pretendard',
+                          fontWeight: 400,
+                          fontSize: '15px',
+                          lineHeight: '128%',
+                          letterSpacing: '-0.01em',
+                          color: 'rgba(12, 12, 12, 0.7)',
+                        }}
+                      >
+                        {selectedCase.insuranceAccidentNo || '-'}
+                      </span>
+                      <span 
+                        style={{
+                          fontFamily: 'Pretendard',
+                          fontWeight: 400,
+                          fontSize: '15px',
+                          lineHeight: '128%',
+                          letterSpacing: '-0.01em',
+                          color: 'rgba(12, 12, 12, 0.7)',
+                        }}
+                      >
+                        {selectedCase.victimName || '-'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              style={{
+                width: '28px',
+                height: '28px',
+                background: '#008FED',
+                borderRadius: '50%',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+              data-testid="button-add-progress-bottom"
+            >
+              <Plus style={{ width: '16px', height: '16px', color: '#FFFFFF' }} />
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );
