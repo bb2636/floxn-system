@@ -25,7 +25,34 @@ export default function Progress() {
     queryKey: ["/api/cases"],
   });
 
-  const progressData = cases || [];
+  // 검색 필터링 로직
+  const filteredProgressData = (cases || []).filter((caseItem) => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    
+    if (normalizedQuery === "") {
+      return true; // 검색어가 없으면 모든 케이스 표시
+    }
+
+    // 검색 가능한 필드들
+    const insuranceCompany = (caseItem.insuranceCompany || "").toLowerCase();
+    const insuranceAccidentNo = (caseItem.insuranceAccidentNo || "").toLowerCase();
+    const caseNumber = (caseItem.caseNumber || "").toLowerCase();
+    const clientName = (caseItem.clientName || "").toLowerCase();
+    const assignedPartner = (caseItem.assignedPartner || "").toLowerCase();
+    const assignedPartnerManager = (caseItem.assignedPartnerManager || "").toLowerCase();
+    
+    // 하나라도 매치되면 표시
+    return (
+      insuranceCompany.includes(normalizedQuery) ||
+      insuranceAccidentNo.includes(normalizedQuery) ||
+      caseNumber.includes(normalizedQuery) ||
+      clientName.includes(normalizedQuery) ||
+      assignedPartner.includes(normalizedQuery) ||
+      assignedPartnerManager.includes(normalizedQuery)
+    );
+  });
+
+  const progressData = filteredProgressData;
   const totalCount = progressData.length;
 
   const menuItems = [
@@ -243,7 +270,7 @@ export default function Progress() {
                   />
                   <input
                     type="text"
-                    placeholder="보험사, 사고번호, 접수번호, 계약자, 담당 담당자를 검색 검색해주세요."
+                    placeholder="보험사, 사고번호, 접수번호, 계약자, 담당자를 검색해주세요."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{
