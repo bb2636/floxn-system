@@ -160,6 +160,23 @@ export default function Intake() {
     }
   }, [user, userLoading, setLocation]);
 
+  // 페이지 로드 시 localStorage에서 저장된 데이터 불러오기
+  useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem('intakeFormDraft');
+      if (savedDraft) {
+        const { formData: savedFormData } = JSON.parse(savedDraft);
+        setFormData(savedFormData);
+        toast({
+          description: "이전에 저장한 내용을 불러왔습니다.",
+          duration: 2000,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load saved draft:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (sameAsPolicyHolder) {
       setFormData((prev) => ({
@@ -243,15 +260,100 @@ export default function Intake() {
     });
   };
 
+  // 저장 - localStorage에 임시 저장
   const handleSave = () => {
-    saveMutation.mutate(formData);
+    try {
+      localStorage.setItem('intakeFormDraft', JSON.stringify({
+        formData,
+        caseNumber,
+        timestamp: new Date().toISOString(),
+      }));
+      toast({
+        description: "입력한 내용이 저장되었습니다.",
+        duration: 2000,
+      });
+    } catch (error) {
+      toast({
+        description: "저장 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
   };
 
+  // 초기화
+  const handleReset = () => {
+    const initialFormData = {
+      accidentDate: "",
+      insuranceCompany: "",
+      insurancePolicyNo: "",
+      insuranceAccidentNo: "",
+      clientResidence: "",
+      clientDepartment: "",
+      clientName: "",
+      clientContact: "",
+      assessorId: "",
+      assessorDepartment: "",
+      assessorTeam: "",
+      assessorContact: "",
+      investigatorTeam: "",
+      investigatorDepartment: "",
+      investigatorTeamName: "",
+      investigatorContact: "",
+      policyHolderName: "",
+      policyHolderIdNumber: "",
+      policyHolderAddress: "",
+      insuredName: "",
+      insuredIdNumber: "",
+      insuredContact: "",
+      insuredAddress: "",
+      victimName: "",
+      victimContact: "",
+      accidentType: "",
+      accidentCause: "",
+      restorationMethod: "",
+      otherVendorEstimate: "",
+      accidentDescription: "",
+      damageItem: "",
+      damageType: "",
+      damageQuantity: "",
+      damageDetails: "",
+      damageItems: [] as Array<{
+        item: string;
+        type: string;
+        quantity: string;
+        details: string;
+      }>,
+      specialRequests: "",
+    };
+    
+    setFormData(initialFormData);
+    setSelectedPartner(null);
+    setSameAsPolicyHolder(false);
+    setDamagePreventionCost(false);
+    setVictimIncidentAssistance(false);
+    localStorage.removeItem('intakeFormDraft');
+    
+    toast({
+      description: "입력 내용이 초기화되었습니다.",
+      duration: 2000,
+    });
+  };
+
+  // 접수완료 - 필수 항목 검증 후 제출
   const handleSubmit = () => {
     // Validation: 접수일자 필수
     if (!formData.accidentDate) {
       toast({
         description: "접수일자를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validation: 보험사명 필수
+    if (!formData.insuranceCompany) {
+      toast({
+        description: "보험사명을 입력해주세요.",
         variant: "destructive",
       });
       return;
@@ -275,7 +377,18 @@ export default function Intake() {
       return;
     }
     
+    // Validation: 피해자 성명 필수
+    if (!formData.victimName) {
+      toast({
+        description: "피해자 성명을 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // 접수 성공 시 localStorage에서 임시 저장 데이터 삭제
     submitMutation.mutate(formData);
+    localStorage.removeItem('intakeFormDraft');
   };
 
   const handleAddDamageItem = () => {
@@ -2068,53 +2181,78 @@ export default function Intake() {
 
           {/* Bottom Action Buttons */}
           <div 
-            className="flex items-center justify-between"
+            className="flex items-center justify-end"
             style={{ 
               width: '1596px', 
               margin: '32px 32px 0 32px',
               padding: '0 20px',
+              gap: '12px',
             }}
           >
-            <Button
-              variant="outline"
-              onClick={handleSave}
-              disabled={saveMutation.isPending}
+            <button
+              onClick={handleReset}
               style={{
                 height: '56px',
                 padding: '0 32px',
                 fontFamily: 'Pretendard',
                 fontWeight: 600,
-                fontSize: '18px',
-                letterSpacing: '-0.02em',
-                background: '#FFFFFF',
-                border: '2px solid rgba(12, 12, 12, 0.1)',
+                fontSize: '16px',
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                background: 'transparent',
+                border: 'none',
                 borderRadius: '8px',
-                color: '#0C0C0C',
+                color: '#EF4444',
+                cursor: 'pointer',
+              }}
+              data-testid="button-reset"
+            >
+              초기화
+            </button>
+            
+            <button
+              onClick={handleSave}
+              style={{
+                height: '56px',
+                padding: '0 32px',
+                fontFamily: 'Pretendard',
+                fontWeight: 600,
+                fontSize: '16px',
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                background: 'rgba(12, 12, 12, 0.1)',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'rgba(12, 12, 12, 0.7)',
+                cursor: 'pointer',
               }}
               data-testid="button-save"
             >
-              조회
-            </Button>
+              저장
+            </button>
             
-            <Button
+            <button
               onClick={handleSubmit}
               disabled={submitMutation.isPending}
               style={{
                 height: '56px',
-                padding: '0 48px',
+                padding: '0 32px',
                 fontFamily: 'Pretendard',
                 fontWeight: 600,
-                fontSize: '18px',
-                letterSpacing: '-0.02em',
-                background: '#008FED',
-                color: '#FFFFFF',
-                borderRadius: '8px',
+                fontSize: '16px',
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                background: 'rgba(12, 12, 12, 0.6)',
                 border: 'none',
+                borderRadius: '8px',
+                color: '#FFFFFF',
+                cursor: submitMutation.isPending ? 'not-allowed' : 'pointer',
+                opacity: submitMutation.isPending ? 0.5 : 1,
               }}
               data-testid="button-submit"
             >
-              새로운 접수
-            </Button>
+              접수완료
+            </button>
           </div>
         </div>
       </main>
