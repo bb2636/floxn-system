@@ -71,6 +71,25 @@ export default function Intake() {
     select: (users) => users.filter(u => u.role === "의뢰사"),
   });
 
+  // 협력사 목록 가져오기 (회사별로 그룹화)
+  const { data: partners } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    select: (users) => users.filter(u => u.role === "협력사"),
+  });
+
+  // 협력사 회사 목록 (중복 제거)
+  const partnerCompanies = useMemo(() => {
+    if (!partners) return [];
+    const companies = new Set(partners.map(p => p.company));
+    return Array.from(companies);
+  }, [partners]);
+
+  // 선택된 협력사의 담당자 목록
+  const partnerManagers = useMemo(() => {
+    if (!selectedPartner || !partners) return [];
+    return partners.filter(p => p.company === selectedPartner.name);
+  }, [selectedPartner, partners]);
+
   // 접수번호 자동 생성 함수
   const generateCaseNumber = () => {
     const now = new Date();
@@ -265,6 +284,14 @@ export default function Intake() {
         const selectedInvestigator = investigators?.find(inv => inv.name === value);
         if (selectedInvestigator) {
           updated.investigatorContact = selectedInvestigator.phone || "";
+        }
+      }
+      
+      // 협력사 담당자를 선택하면 해당 담당자의 연락처를 자동으로 설정
+      if (field === "assignedPartnerManager" && value) {
+        const selectedManager = partnerManagers.find(manager => manager.name === value);
+        if (selectedManager) {
+          updated.assignedPartnerContact = selectedManager.phone || "";
         }
       }
       
@@ -2133,25 +2160,36 @@ export default function Intake() {
                           <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                             담당자명
                           </label>
-                          <input
-                            type="text"
-                            placeholder="담당자명"
+                          <Select
                             value={formData.assignedPartnerManager}
-                            onChange={(e) => handleInputChange("assignedPartnerManager", e.target.value)}
-                            style={{ 
-                              height: '56px', 
-                              padding: '16px 20px', 
-                              background: '#FDFDFD', 
-                              border: '1px solid rgba(12, 12, 12, 0.1)', 
-                              borderRadius: '8px', 
-                              fontFamily: 'Pretendard', 
-                              fontWeight: 500, 
-                              fontSize: '14px', 
-                              letterSpacing: '-0.01em', 
-                              color: 'rgba(12, 12, 12, 0.9)',
-                            }}
-                            data-testid="input-partner-manager"
-                          />
+                            onValueChange={(value) => handleInputChange("assignedPartnerManager", value)}
+                            disabled={!selectedPartner || partnerManagers.length === 0}
+                          >
+                            <SelectTrigger 
+                              style={{ 
+                                height: '56px', 
+                                padding: '16px 20px', 
+                                background: !selectedPartner || partnerManagers.length === 0 ? 'rgba(12, 12, 12, 0.04)' : '#FDFDFD', 
+                                border: '1px solid rgba(12, 12, 12, 0.1)', 
+                                borderRadius: '8px', 
+                                fontFamily: 'Pretendard', 
+                                fontWeight: 500, 
+                                fontSize: '14px', 
+                                letterSpacing: '-0.01em', 
+                                color: formData.assignedPartnerManager ? 'rgba(12, 12, 12, 0.9)' : 'rgba(12, 12, 12, 0.4)',
+                              }}
+                              data-testid="select-partner-manager"
+                            >
+                              <SelectValue placeholder={!selectedPartner ? "협력사를 먼저 선택하세요" : partnerManagers.length === 0 ? "담당자가 없습니다" : "담당자 선택"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {partnerManagers.map((manager) => (
+                                <SelectItem key={manager.id} value={manager.name}>
+                                  {manager.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
 
                         {/* Row 3: 담당자 연락처 */}
@@ -2161,14 +2199,14 @@ export default function Intake() {
                           </label>
                           <input
                             type="text"
-                            placeholder="담당자 연락처"
+                            placeholder="담당자를 선택하면 자동으로 입력됩니다"
                             value={formData.assignedPartnerContact}
-                            onChange={(e) => handleInputChange("assignedPartnerContact", e.target.value)}
+                            readOnly
                             style={{ 
                               height: '56px', 
                               padding: '16px 20px', 
-                              background: '#FDFDFD', 
-                              border: '1px solid rgba(12, 12, 12, 0.1)', 
+                              background: 'rgba(12, 12, 12, 0.04)', 
+                              border: 'none', 
                               borderRadius: '8px', 
                               fontFamily: 'Pretendard', 
                               fontWeight: 500, 
@@ -2575,6 +2613,13 @@ export default function Intake() {
                         onClick={() => {
                           setSelectedPartner(tempSelectedPartner);
                           handleInputChange("assignedPartner", tempSelectedPartner.name);
+                          // 협력사가 변경되면 담당자명과 연락처 초기화
+                          setFormData(prev => ({
+                            ...prev,
+                            assignedPartner: tempSelectedPartner.name,
+                            assignedPartnerManager: "",
+                            assignedPartnerContact: "",
+                          }));
                           setIsPartnerSearchOpen(false);
                         }}
                         style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', margin: '0 auto', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
