@@ -132,9 +132,72 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Header */}
+      {/* Mobile Header */}
       <header 
-        className="relative w-full h-[89px] px-8 flex items-center justify-between"
+        className="lg:hidden relative w-full flex items-center justify-between"
+        style={{
+          height: '58px',
+          padding: '0px 20px',
+          gap: '230px',
+        }}
+      >
+        {/* Logo */}
+        <div 
+          className="flex flex-col items-start"
+          style={{
+            padding: '0px 12px',
+            gap: '10px',
+            width: '52px',
+            height: '26px',
+            filter: 'drop-shadow(0px 0px 20px #DBE9F5)',
+          }}
+        >
+          <img 
+            src={logoIcon} 
+            alt="FLOXN Logo" 
+            style={{
+              width: '28px',
+              height: '26px',
+            }}
+          />
+        </div>
+
+        {/* Logout Button */}
+        <button
+          onClick={() => logoutMutation.mutate()}
+          className="flex items-center justify-center"
+          style={{
+            padding: '6px 12px',
+            gap: '10px',
+            width: '76px',
+            height: '31px',
+            background: 'rgba(253, 253, 253, 0.1)',
+            borderRadius: '6px',
+          }}
+          data-testid="button-mobile-logout"
+        >
+          <span
+            style={{
+              width: '52px',
+              height: '19px',
+              fontFamily: 'Pretendard',
+              fontStyle: 'normal',
+              fontWeight: 500,
+              fontSize: '15px',
+              lineHeight: '128%',
+              letterSpacing: '-0.01em',
+              textDecoration: 'underline',
+              color: 'rgba(12, 12, 12, 0.7)',
+            }}
+          >
+            로그아웃
+          </span>
+        </button>
+      </header>
+
+      {/* Desktop Header */}
+      <header 
+        className="hidden lg:flex relative w-full h-[89px] px-8 items-center justify-between"
         style={{
           background: 'rgba(255, 255, 255, 0.06)',
           borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
@@ -218,7 +281,7 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <div className="relative flex flex-col lg:flex-row min-h-[calc(100vh-89px)] overflow-y-auto">
+      <div className="relative flex flex-col lg:flex-row min-h-[calc(100vh-58px)] lg:min-h-[calc(100vh-89px)] overflow-y-auto">
         {/* Main Section */}
         <div className="flex-1 px-4 md:px-8 lg:px-12 xl:px-[92px] py-6">
           

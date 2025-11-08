@@ -32,6 +32,10 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Language**: Korean-first interface using Pretendard and Noto Sans KR fonts.
 - **Branding**: FLOXN branding with a distinctive cream/orange and purple/blue gradient background.
 - **Responsiveness**: Designed for optimal viewing across mobile, tablet, and desktop devices.
+  - **Mobile Header (< 1024px)**: Simplified 58px header with logo and logout button only
+  - **Desktop Header (>= 1024px)**: Full 89px header with logo, navigation menu, and user profile
+  - **Mobile Dashboard**: Profile card, simplified stats, separator, and staff summary section
+  - **Desktop Dashboard**: Traditional stats cards, progress summary, right sidebar
 - **Theming**: Supports dark mode.
 - **Feedback**: Implements beautiful loading and error states for improved user experience.
 - **Design Guidelines**: Adherence to a strict design guide emphasizing consistent spacing (Tailwind 2, 4, 6, 8 units), blur effects for depth, and Noto Sans KR font, prioritizing accessibility.
