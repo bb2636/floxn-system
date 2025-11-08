@@ -218,10 +218,10 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <div className="relative flex" style={{ height: 'calc(1147px - 89px)' }}>
+      <div className="relative flex flex-col lg:flex-row min-h-[calc(100vh-89px)] overflow-y-auto">
         {/* Main Section */}
-        <div className="flex-1 px-[92px] py-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="flex-1 px-4 md:px-8 lg:px-12 xl:px-[92px] py-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
             <h1 
               style={{
                 fontFamily: 'Pretendard',
@@ -278,12 +278,11 @@ export default function Dashboard() {
           </div>
 
           {/* Stats Cards */}
-          <div className="flex gap-[18px]">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-[18px]">
             {/* 접수건 */}
             <div
               className="flex flex-col"
               style={{
-                flex: 1,
                 padding: '20px',
                 background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
@@ -372,7 +371,6 @@ export default function Dashboard() {
             <div
               className="flex flex-col"
               style={{
-                flex: 1,
                 padding: '20px',
                 background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
@@ -461,7 +459,6 @@ export default function Dashboard() {
             <div
               className="flex flex-col"
               style={{
-                flex: 1,
                 padding: '20px',
                 background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
@@ -559,7 +556,6 @@ export default function Dashboard() {
             <div
               className="flex flex-col"
               style={{
-                flex: 1,
                 padding: '20px',
                 background: '#FFFFFF',
                 boxShadow: '0px 0px 20px #DBE9F5',
@@ -655,12 +651,12 @@ export default function Dashboard() {
           </div>
 
           {/* Progress Summary and Case List Section */}
-          <div className="flex items-start gap-6">
+          <div className="flex flex-col lg:flex-row items-start gap-6 mt-6">
             {/* Progress Summary */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 w-full lg:flex-1">
               {/* Section Header */}
               <div 
-                className="flex items-center justify-between"
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
                 style={{ padding: '24px 0' }}
               >
                 <h2
@@ -721,8 +717,8 @@ export default function Dashboard() {
 
             {/* Summary Card */}
             <div
+              className="w-full"
               style={{
-                width: '861px',
                 background: '#FDFDFD',
                 boxShadow: '0px 0px 20px #DBE9F5',
                 borderRadius: '12px',
@@ -737,7 +733,8 @@ export default function Dashboard() {
                   gap: '10px',
                 }}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 overflow-x-auto pb-2">
+                  <div className="flex items-center gap-2 min-w-max">
                   <button
                     onClick={() => setActiveTab('reception')}
                     className="flex items-center justify-center"
@@ -838,6 +835,7 @@ export default function Dashboard() {
                       협력사 미정산
                     </span>
                   </button>
+                  </div>
                 </div>
               </div>
 
@@ -1019,7 +1017,7 @@ export default function Dashboard() {
             </div>
 
             {/* Case List Card */}
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6 w-full lg:w-[418px]">
               {/* Title */}
               <div style={{ padding: '24px 0' }}>
                 <h2
@@ -1038,9 +1036,8 @@ export default function Dashboard() {
 
               {/* Case List */}
               <div
-                className="flex flex-col"
+                className="flex flex-col w-full"
                 style={{
-                  width: '418px',
                   height: '535px',
                   background: '#FFFFFF',
                   boxShadow: '0px 0px 20px #DBE9F5',
@@ -1173,8 +1170,7 @@ export default function Dashboard() {
 
         {/* Right Sidebar */}
         <div 
-          className="flex flex-col gap-3 py-6 pr-8"
-          style={{ width: '415px' }}
+          className="flex flex-col gap-3 py-6 px-4 md:px-8 lg:px-0 lg:pr-8 w-full lg:w-[415px]"
         >
           {/* My Profile Card */}
           <div
