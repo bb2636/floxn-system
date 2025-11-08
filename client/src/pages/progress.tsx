@@ -173,6 +173,7 @@ export default function Progress() {
                 else if (item.name === "관리자 설정") setLocation("/admin-settings");
                 else if (item.name === "접수하기") setLocation("/intake");
                 else if (item.name === "진행상황") setLocation("/progress");
+                else if (item.name === "종합진행관리") setLocation("/comprehensive-progress");
               }}
               className="px-6 py-3 rounded-lg transition-colors"
               style={{

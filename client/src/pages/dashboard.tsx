@@ -343,6 +343,8 @@ export default function Dashboard() {
                   setLocation("/intake");
                 } else if (item.name === "진행상황") {
                   setLocation("/progress");
+                } else if (item.name === "종합진행관리") {
+                  setLocation("/comprehensive-progress");
                 } else if (item.name === "관리자 설정") {
                   setLocation("/admin-settings");
                 }

@@ -440,6 +440,8 @@ export default function AdminSettings() {
                   setLocation("/intake");
                 } else if (item === "진행상황") {
                   setLocation("/progress");
+                } else if (item === "종합진행관리") {
+                  setLocation("/comprehensive-progress");
                 } else if (item === "관리자 설정") {
                   setLocation("/admin-settings");
                 }
