@@ -221,7 +221,110 @@ export default function Dashboard() {
       <div className="relative flex flex-col lg:flex-row min-h-[calc(100vh-89px)] overflow-y-auto">
         {/* Main Section */}
         <div className="flex-1 px-4 md:px-8 lg:px-12 xl:px-[92px] py-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+          
+          {/* Mobile Profile Card - Only visible on mobile */}
+          <div 
+            className="lg:hidden flex flex-col items-start mb-5"
+            style={{
+              width: '100%',
+              maxWidth: '335px',
+              margin: '0 auto 20px',
+              padding: '0px 0px 24px',
+              background: '#FDFDFD',
+              boxShadow: '12px 12px 24px rgba(0, 0, 0, 0.06)',
+              backdropFilter: 'blur(7px)',
+              borderRadius: '14px',
+            }}
+            data-testid="mobile-profile-card"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center w-full" style={{ padding: '24px 20px' }}>
+              <span style={{
+                fontFamily: 'Pretendard',
+                fontSize: '14px',
+                fontWeight: 600,
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                color: 'rgba(12, 12, 12, 0.8)',
+              }}>
+                내 프로필
+              </span>
+              <span style={{
+                fontFamily: 'Pretendard',
+                fontSize: '14px',
+                fontWeight: 600,
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                color: 'rgba(0, 143, 237, 0.8)',
+              }}>
+                관리자
+              </span>
+            </div>
+            
+            {/* Profile Info */}
+            <div className="flex flex-col justify-center items-center w-full" style={{ gap: '8px' }}>
+              <div className="flex items-center" style={{ gap: '10px' }}>
+                {/* Avatar */}
+                <div 
+                  className="flex items-center justify-center"
+                  style={{
+                    width: '58px',
+                    height: '58px',
+                    background: 'rgba(0, 143, 237, 0.1)',
+                    borderRadius: '50px',
+                  }}
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '20px',
+                    fontWeight: 600,
+                    color: '#008FED',
+                  }}>
+                    {user.username?.charAt(0) || 'U'}
+                  </span>
+                </div>
+                
+                {/* Name and Email */}
+                <div className="flex flex-col items-center" style={{ gap: '2px' }}>
+                  <div className="flex items-center" style={{ gap: '2px' }}>
+                    <span style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.02em',
+                      color: '#0C0C0C',
+                    }}>
+                      {user.username}
+                    </span>
+                    <span style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '13px',
+                      fontWeight: 400,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.01em',
+                      color: 'rgba(12, 12, 12, 0.9)',
+                    }}>
+                      사원
+                    </span>
+                  </div>
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.01em',
+                    color: 'rgba(12, 12, 12, 0.7)',
+                  }}>
+                    xblock@gmail.com
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Desktop Header - Only visible on desktop */}
+          <div className="hidden lg:flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
             <h1 
               style={{
                 fontFamily: 'Pretendard',
@@ -276,9 +379,430 @@ export default function Dashboard() {
               />
             </button>
           </div>
+          
+          {/* Mobile Header - Only visible on mobile */}
+          <div className="lg:hidden flex flex-col items-start mb-3" style={{ maxWidth: '375px', margin: '0 auto' }}>
+            <div className="flex items-center w-full" style={{ padding: '16px 0px' }}>
+              <span style={{
+                fontFamily: 'Pretendard',
+                fontSize: '18px',
+                fontWeight: 600,
+                lineHeight: '128%',
+                letterSpacing: '-0.02em',
+                color: 'rgba(12, 12, 12, 0.9)',
+              }}>
+                현황 요약
+              </span>
+            </div>
+            <div className="flex items-center w-full" style={{ padding: '10px 0px' }}>
+              <button className="flex items-center" style={{ gap: '8px' }}>
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.02em',
+                  color: 'rgba(12, 12, 12, 0.8)',
+                }}>
+                  이번 달
+                </span>
+                <ChevronDown 
+                  style={{ 
+                    width: '18px', 
+                    height: '18px', 
+                    color: 'rgba(12, 12, 12, 0.6)' 
+                  }} 
+                />
+              </button>
+            </div>
+          </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-[18px]">
+          {/* Mobile Stats Cards - Simplified version */}
+          <div className="lg:hidden flex flex-col items-center" style={{ gap: '12px', maxWidth: '335px', margin: '0 auto' }}>
+            {/* 접수건 */}
+            <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
+              <span style={{
+                fontFamily: 'Pretendard',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                color: 'rgba(12, 12, 12, 0.5)',
+              }}>
+                접수건
+              </span>
+              <div className="flex justify-between items-center w-full">
+                <div className="flex items-center" style={{ gap: '8px' }}>
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '26px',
+                    fontWeight: 600,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.02em',
+                    color: 'rgba(12, 12, 12, 0.9)',
+                  }}>
+                    167건
+                  </span>
+                  <div className="flex items-center justify-center" style={{
+                    padding: '6px 10px',
+                    background: 'rgba(0, 143, 237, 0.2)',
+                    borderRadius: '4px',
+                  }}>
+                    <span style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.01em',
+                      color: '#008FED',
+                    }}>
+                      상승
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-center w-full" style={{
+                padding: '12px 10px',
+                background: 'rgba(12, 12, 12, 0.05)',
+                borderRadius: '8px',
+              }}>
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.01em',
+                  color: 'rgba(12, 12, 12, 0.7)',
+                }}>
+                  접수건이 지난 달보다 12.4% 늘었어요
+                </span>
+              </div>
+            </div>
+
+            {/* 미결건 */}
+            <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
+              <span style={{
+                fontFamily: 'Pretendard',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                color: 'rgba(12, 12, 12, 0.5)',
+              }}>
+                미결건
+              </span>
+              <div className="flex justify-between items-center w-full">
+                <div className="flex items-center" style={{ gap: '8px' }}>
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '26px',
+                    fontWeight: 600,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.02em',
+                    color: 'rgba(12, 12, 12, 0.9)',
+                  }}>
+                    167건
+                  </span>
+                  <div className="flex items-center justify-center" style={{
+                    padding: '6px 10px',
+                    background: 'rgba(208, 43, 32, 0.08)',
+                    borderRadius: '4px',
+                  }}>
+                    <span style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.01em',
+                      color: '#D02B20',
+                    }}>
+                      감소
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 보험사 미정산 */}
+            <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
+              <span style={{
+                fontFamily: 'Pretendard',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                color: 'rgba(12, 12, 12, 0.5)',
+              }}>
+                보험사 미정산
+              </span>
+              <div className="flex items-center" style={{ gap: '8px' }}>
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '26px',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.02em',
+                  color: 'rgba(12, 12, 12, 0.9)',
+                }}>
+                  167건
+                </span>
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '16px',
+                  fontWeight: 400,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.02em',
+                  color: 'rgba(12, 12, 12, 0.7)',
+                }}>
+                  1,296,000원
+                </span>
+              </div>
+            </div>
+
+            {/* 협력사 미정산 */}
+            <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
+              <span style={{
+                fontFamily: 'Pretendard',
+                fontSize: '14px',
+                fontWeight: 500,
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                color: 'rgba(12, 12, 12, 0.5)',
+              }}>
+                협력사 미정산
+              </span>
+              <div className="flex items-center" style={{ gap: '8px' }}>
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '26px',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.02em',
+                  color: 'rgba(12, 12, 12, 0.9)',
+                }}>
+                  167건
+                </span>
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '16px',
+                  fontWeight: 400,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.02em',
+                  color: 'rgba(12, 12, 12, 0.7)',
+                }}>
+                  1,296,000원
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Separator for mobile */}
+          <div className="lg:hidden w-full" style={{ height: '14px', background: 'rgba(12, 12, 12, 0.06)', margin: '20px 0' }} />
+
+          {/* Mobile: 담당자 요약 Section */}
+          <div className="lg:hidden flex flex-col items-center" style={{ gap: '16px', paddingBottom: '32px' }}>
+            {/* Header */}
+            <div className="flex flex-col items-start w-full" style={{ maxWidth: '375px', margin: '0 auto' }}>
+              <div className="flex items-center w-full" style={{ padding: '16px 0px' }}>
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '18px',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.02em',
+                  color: 'rgba(12, 12, 12, 0.9)',
+                }}>
+                  담당자 요약
+                </span>
+              </div>
+              <div className="flex items-center w-full" style={{ padding: '10px 0px' }}>
+                <button className="flex items-center" style={{ gap: '8px' }}>
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.02em',
+                    color: 'rgba(12, 12, 12, 0.8)',
+                  }}>
+                    이번 달
+                  </span>
+                  <ChevronDown 
+                    style={{ 
+                      width: '18px', 
+                      height: '18px', 
+                      color: 'rgba(12, 12, 12, 0.6)' 
+                    }} 
+                  />
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex items-center w-full" style={{ maxWidth: '375px', margin: '0 auto', height: '40px', filter: 'drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.02))' }}>
+              <button 
+                className="flex items-center justify-center"
+                style={{
+                  width: '70px',
+                  height: '40px',
+                  padding: '10px',
+                  borderBottom: '2px solid #008FED',
+                }}
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.01em',
+                  color: '#0C0C0C',
+                }}>
+                  접수
+                </span>
+              </button>
+              <button 
+                className="flex items-center justify-center"
+                style={{
+                  width: '69px',
+                  height: '40px',
+                  padding: '10px',
+                }}
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.01em',
+                  color: 'rgba(12, 12, 12, 0.5)',
+                }}>
+                  미결
+                </span>
+              </button>
+              <button 
+                className="flex items-center justify-center"
+                style={{
+                  width: '118px',
+                  height: '40px',
+                  padding: '10px',
+                  flexGrow: 1,
+                }}
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.01em',
+                  color: 'rgba(12, 12, 12, 0.5)',
+                }}>
+                  보험사 미정산
+                </span>
+              </button>
+              <button 
+                className="flex items-center justify-center"
+                style={{
+                  width: '118px',
+                  height: '40px',
+                  padding: '10px',
+                  flexGrow: 1,
+                }}
+              >
+                <span style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '14px',
+                  fontWeight: 400,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.01em',
+                  color: 'rgba(12, 12, 12, 0.5)',
+                }}>
+                  협력사 미정산
+                </span>
+              </button>
+            </div>
+
+            {/* Table */}
+            <div 
+              className="flex flex-col items-start"
+              style={{
+                width: '100%',
+                maxWidth: '351px',
+                margin: '0 auto',
+                padding: '8px 0px',
+                background: '#FDFDFD',
+                border: '1px solid #F9F9FB',
+                boxShadow: '0px 6px 22px rgba(0, 0, 0, 0.12)',
+                borderRadius: '12px',
+              }}
+            >
+              {[...Array(6)].map((_, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center justify-between w-full"
+                  style={{
+                    padding: '0px 12px',
+                    height: '52px',
+                  }}
+                >
+                  <div className="flex items-center" style={{ gap: '8px' }}>
+                    <div 
+                      className="flex items-center justify-center"
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        background: 'rgba(0, 143, 237, 0.2)',
+                        borderRadius: '50px',
+                      }}
+                    >
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: '#008FED',
+                      }}>
+                        김
+                      </span>
+                    </div>
+                    <div className="flex items-center" style={{ gap: '3px' }}>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: '#0C0C0C',
+                      }}>
+                        김블락
+                      </span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '13px',
+                        fontWeight: 400,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>
+                        사원
+                      </span>
+                    </div>
+                  </div>
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.01em',
+                    color: '#0C0C0C',
+                  }}>
+                    30건
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Desktop Stats Cards - Original version */}
+          <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-[18px]">
             {/* 접수건 */}
             <div
               className="flex flex-col"
