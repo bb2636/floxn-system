@@ -132,7 +132,20 @@ export const cases = pgTable("cases", {
   accidentDescription: text("accident_description"),
   
   // 사고 및 복구 정보
+  accidentType: text("accident_type"), // 사고 유형
+  accidentCause: text("accident_cause"), // 사고 원인
   restorationMethod: text("restoration_method"), // 복구 방식 (없음, 플랫폼 복구, 선견적요청)
+  otherVendorEstimate: text("other_vendor_estimate"), // 타 업체 견적
+  
+  // 피해 사항 (JSON으로 저장)
+  damageItems: text("damage_items"), // JSON string of damage items array
+  
+  // 배당사항
+  assignedPartner: text("assigned_partner"), // 협력사명
+  assignedPartnerManager: text("assigned_partner_manager"), // 담당자명
+  assignedPartnerContact: text("assigned_partner_contact"), // 담당자 연락처
+  urgency: text("urgency"), // 긴급도
+  specialRequests: text("special_requests"), // 특이사항 및 요청사항
   
   // 진행상황 관련 필드
   progressStatus: text("progress_status"), // 주요진행사항 (서류보완요청 등)

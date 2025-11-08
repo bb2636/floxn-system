@@ -221,7 +221,14 @@ export default function Intake() {
     const cleaned: any = {};
     Object.entries(data).forEach(([key, value]) => {
       if (value !== "" && value !== null && value !== undefined) {
-        cleaned[key] = value;
+        // damageItems 배열을 JSON 문자열로 변환
+        if (key === "damageItems") {
+          if (Array.isArray(value) && value.length > 0) {
+            cleaned[key] = JSON.stringify(value);
+          }
+        } else {
+          cleaned[key] = value;
+        }
       }
     });
     return cleaned;
