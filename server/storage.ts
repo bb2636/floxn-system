@@ -15,6 +15,14 @@ function getKSTDate(): string {
   return `${year}-${month}-${day}`;
 }
 
+export interface PartnerStats {
+  partnerName: string;
+  dailyCount: number; // 일배당건수
+  monthlyCount: number; // 월배당건수
+  inProgressCount: number; // 진행건수
+  pendingCount: number; // 미결건수
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -25,6 +33,7 @@ export interface IStorage {
   deleteAccount(username: string): Promise<User | null>;
   createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
   getAllCases(): Promise<Case[]>;
+  getPartnerStats(): Promise<PartnerStats[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -633,7 +642,16 @@ export class MemStorage implements IStorage {
         clientAddress: "서울 강남구 테헤란로 123",
         accidentLocation: "서울 강남구 테헤란로 123 아파트 1001호",
         accidentDescription: "화장실 배관 누수로 인한 천장 침수 피해",
+        accidentType: "급배수 누수",
+        accidentCause: "배관 노후",
         restorationMethod: "선견적요청",
+        otherVendorEstimate: null,
+        damageItems: JSON.stringify(["천장", "벽면", "바닥"]),
+        assignedPartner: partner1?.company || null,
+        assignedPartnerManager: partner1?.name || null,
+        assignedPartnerContact: partner1?.phone || null,
+        urgency: "보통",
+        specialRequests: null,
         progressStatus: "서류보완요청",
         assignedTo: partner1?.id || null,
         createdBy: adminUser.id,
@@ -673,7 +691,16 @@ export class MemStorage implements IStorage {
         clientAddress: "서울 서초구 강남대로 456",
         accidentLocation: "서울 서초구 강남대로 456 빌라 202호",
         accidentDescription: "싱크대 하수 배관 파손으로 인한 누수",
+        accidentType: "급배수 누수",
+        accidentCause: "부주의",
         restorationMethod: "플랫폼 복구",
+        otherVendorEstimate: null,
+        damageItems: JSON.stringify(["부엌", "벽면"]),
+        assignedPartner: partner2?.company || null,
+        assignedPartnerManager: partner2?.name || null,
+        assignedPartnerContact: partner2?.phone || null,
+        urgency: "긴급",
+        specialRequests: null,
         progressStatus: "서류보완요청",
         assignedTo: partner2?.id || null,
         createdBy: adminUser.id,
@@ -713,7 +740,16 @@ export class MemStorage implements IStorage {
         clientAddress: "경기 성남시 분당구 789",
         accidentLocation: "경기 성남시 분당구 789 아파트 506호",
         accidentDescription: "보일러 배관 동파로 인한 누수 사고",
+        accidentType: "난방 누수",
+        accidentCause: "동파",
         restorationMethod: "없음",
+        otherVendorEstimate: null,
+        damageItems: JSON.stringify(["보일러실", "복도", "바닥"]),
+        assignedPartner: partner1?.company || null,
+        assignedPartnerManager: partner1?.name || null,
+        assignedPartnerContact: partner1?.phone || null,
+        urgency: "낮음",
+        specialRequests: "겨울철 동파 예방 조치 필요",
         progressStatus: "선견적요청",
         assignedTo: partner1?.id || null,
         createdBy: adminUser.id,
@@ -850,7 +886,16 @@ export class MemStorage implements IStorage {
       clientAddress: caseData.clientAddress || null,
       accidentLocation: caseData.accidentLocation || null,
       accidentDescription: caseData.accidentDescription || null,
+      accidentType: caseData.accidentType || null,
+      accidentCause: caseData.accidentCause || null,
       restorationMethod: caseData.restorationMethod || null,
+      otherVendorEstimate: caseData.otherVendorEstimate || null,
+      damageItems: caseData.damageItems || null,
+      assignedPartner: caseData.assignedPartner || null,
+      assignedPartnerManager: caseData.assignedPartnerManager || null,
+      assignedPartnerContact: caseData.assignedPartnerContact || null,
+      urgency: caseData.urgency || null,
+      specialRequests: caseData.specialRequests || null,
       progressStatus: caseData.progressStatus || null,
       assignedTo: caseData.assignedTo || null,
       createdBy: caseData.createdBy,
@@ -864,6 +909,32 @@ export class MemStorage implements IStorage {
 
   async getAllCases(): Promise<Case[]> {
     return Array.from(this.cases.values());
+  }
+
+  async getPartnerStats(): Promise<PartnerStats[]> {
+    const allCases = Array.from(this.cases.values());
+    const allUsers = Array.from(this.users.values());
+    const partners = allUsers.filter(u => u.role === "협력사");
+    
+    const today = getKSTDate();
+    const currentMonth = today.substring(0, 7); // YYYY-MM
+    
+    return partners.map(partner => {
+      const partnerCases = allCases.filter(c => c.assignedPartner === partner.company);
+      
+      const dailyCount = partnerCases.filter(c => c.createdAt === today).length;
+      const monthlyCount = partnerCases.filter(c => c.createdAt?.startsWith(currentMonth)).length;
+      const inProgressCount = partnerCases.filter(c => c.status !== "작성중").length;
+      const pendingCount = partnerCases.filter(c => c.status !== "완료").length;
+      
+      return {
+        partnerName: partner.company,
+        dailyCount,
+        monthlyCount,
+        inProgressCount,
+        pendingCount,
+      };
+    });
   }
 }
 
@@ -1155,16 +1226,45 @@ export class DbStorage implements IStorage {
     const newCase = {
       caseNumber: caseData.caseNumber,
       status: caseData.status || "작성중",
-      insuranceAccidentNo: caseData.insuranceAccidentNo || null,
-      insurancePolicyNo: caseData.insurancePolicyNo || null,
+      accidentDate: caseData.accidentDate || null,
       insuranceCompany: caseData.insuranceCompany || null,
+      insurancePolicyNo: caseData.insurancePolicyNo || null,
+      insuranceAccidentNo: caseData.insuranceAccidentNo || null,
+      clientResidence: caseData.clientResidence || null,
+      clientDepartment: caseData.clientDepartment || null,
       clientName: caseData.clientName || null,
+      clientContact: caseData.clientContact || null,
+      assessorId: caseData.assessorId || null,
+      assessorDepartment: caseData.assessorDepartment || null,
+      assessorTeam: caseData.assessorTeam || null,
+      assessorContact: caseData.assessorContact || null,
+      investigatorTeam: caseData.investigatorTeam || null,
+      investigatorDepartment: caseData.investigatorDepartment || null,
+      investigatorTeamName: caseData.investigatorTeamName || null,
+      investigatorContact: caseData.investigatorContact || null,
+      policyHolderName: caseData.policyHolderName || null,
+      policyHolderIdNumber: caseData.policyHolderIdNumber || null,
+      policyHolderAddress: caseData.policyHolderAddress || null,
+      insuredName: caseData.insuredName || null,
+      insuredIdNumber: caseData.insuredIdNumber || null,
+      insuredContact: caseData.insuredContact || null,
+      insuredAddress: caseData.insuredAddress || null,
+      victimName: caseData.victimName || null,
+      victimContact: caseData.victimContact || null,
       clientPhone: caseData.clientPhone || null,
       clientAddress: caseData.clientAddress || null,
-      accidentDate: caseData.accidentDate || null,
       accidentLocation: caseData.accidentLocation || null,
       accidentDescription: caseData.accidentDescription || null,
+      accidentType: caseData.accidentType || null,
+      accidentCause: caseData.accidentCause || null,
       restorationMethod: caseData.restorationMethod || null,
+      otherVendorEstimate: caseData.otherVendorEstimate || null,
+      damageItems: caseData.damageItems || null,
+      assignedPartner: caseData.assignedPartner || null,
+      assignedPartnerManager: caseData.assignedPartnerManager || null,
+      assignedPartnerContact: caseData.assignedPartnerContact || null,
+      urgency: caseData.urgency || null,
+      specialRequests: caseData.specialRequests || null,
       progressStatus: caseData.progressStatus || null,
       assignedTo: caseData.assignedTo || null,
       createdBy: caseData.createdBy,
@@ -1179,6 +1279,31 @@ export class DbStorage implements IStorage {
   async getAllCases(): Promise<Case[]> {
     const result = await db.select().from(cases);
     return result;
+  }
+
+  async getPartnerStats(): Promise<PartnerStats[]> {
+    const allCases = await db.select().from(cases);
+    const allUsers = await db.select().from(users).where(eq(users.role, "협력사"));
+    
+    const today = getKSTDate();
+    const currentMonth = today.substring(0, 7); // YYYY-MM
+    
+    return allUsers.map(partner => {
+      const partnerCases = allCases.filter(c => c.assignedPartner === partner.company);
+      
+      const dailyCount = partnerCases.filter(c => c.createdAt === today).length;
+      const monthlyCount = partnerCases.filter(c => c.createdAt?.startsWith(currentMonth)).length;
+      const inProgressCount = partnerCases.filter(c => c.status !== "작성중").length;
+      const pendingCount = partnerCases.filter(c => c.status !== "완료").length;
+      
+      return {
+        partnerName: partner.company,
+        dailyCount,
+        monthlyCount,
+        inProgressCount,
+        pendingCount,
+      };
+    });
   }
 }
 

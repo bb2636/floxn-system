@@ -33,16 +33,16 @@ export default function Intake() {
   const [selectedPartner, setSelectedPartner] = useState<any>(null);
   const [tempSelectedPartner, setTempSelectedPartner] = useState<any>(null);
   
-  // Mock 협력사 데이터
-  const mockPartners = [
-    { id: 1, name: "AERO 파트너스", dailyCount: 0, monthlyCount: 0, inProgressCount: 0, pendingCount: 0, region: "서울시/강남구, 서초구, 송파구, 성동구, 광진구" },
-    { id: 2, name: "누수닥터", dailyCount: 0, monthlyCount: 0, inProgressCount: 0, pendingCount: 0, region: "서울시/종로구, 중구, 용산구" },
-    { id: 3, name: "플록슨 파트너", dailyCount: 5, monthlyCount: 20, inProgressCount: 3, pendingCount: 2, region: "경기도/성남시, 분당구" },
-  ];
-  
-  const filteredPartners = partnerSearchQuery 
-    ? mockPartners.filter(p => p.name.toLowerCase().includes(partnerSearchQuery.toLowerCase()))
-    : [];
+  // 협력사 통계 가져오기
+  const { data: partnerStats } = useQuery<Array<{
+    partnerName: string;
+    dailyCount: number;
+    monthlyCount: number;
+    inProgressCount: number;
+    pendingCount: number;
+  }>>({
+    queryKey: ["/api/partner-stats"],
+  });
   
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -83,6 +83,35 @@ export default function Intake() {
     const companies = new Set(partners.map(p => p.company));
     return Array.from(companies);
   }, [partners]);
+
+  // 협력사와 통계 결합
+  const partnersWithStats = useMemo(() => {
+    if (!partners || !partnerStats) return [];
+    
+    const uniqueCompanies = Array.from(new Set(partners.map(p => p.company)));
+    
+    return uniqueCompanies.map(companyName => {
+      const stats = partnerStats.find(s => s.partnerName === companyName);
+      const partnerUser = partners.find(p => p.company === companyName);
+      
+      return {
+        name: companyName,
+        dailyCount: stats?.dailyCount || 0,
+        monthlyCount: stats?.monthlyCount || 0,
+        inProgressCount: stats?.inProgressCount || 0,
+        pendingCount: stats?.pendingCount || 0,
+        region: partnerUser?.serviceRegions?.join(", ") || "",
+      };
+    });
+  }, [partners, partnerStats]);
+
+  // 검색어로 필터링된 협력사 목록
+  const filteredPartners = useMemo(() => {
+    if (!partnerSearchQuery) return [];
+    return partnersWithStats.filter(p => 
+      p.name.toLowerCase().includes(partnerSearchQuery.toLowerCase())
+    );
+  }, [partnerSearchQuery, partnersWithStats]);
 
   // 선택된 협력사의 담당자 목록
   const partnerManagers = useMemo(() => {
@@ -2542,7 +2571,7 @@ export default function Intake() {
                     {/* Data Rows */}
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px', width: '824px', height: '334px' }}>
                       {filteredPartners.map((partner) => (
-                        <div key={partner.id} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', width: '824px', height: '61px' }}>
+                        <div key={partner.name} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', width: '824px', height: '61px' }}>
                           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '155px', height: '39px' }}>
                             <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               {partner.name}
@@ -2576,11 +2605,11 @@ export default function Intake() {
                           <div 
                             onClick={() => setTempSelectedPartner(partner)}
                             style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '49px', height: '38px', cursor: 'pointer' }}
-                            data-testid={`radio-partner-${partner.id}`}
+                            data-testid={`radio-partner-${partner.name}`}
                           >
                             <div style={{ position: 'relative', width: '18px', height: '18px' }}>
-                              <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedPartner?.id === partner.id ? '#008FED' : '#FDFDFD', border: tempSelectedPartner?.id === partner.id ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
-                              {tempSelectedPartner?.id === partner.id && (
+                              <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedPartner?.name === partner.name ? '#008FED' : '#FDFDFD', border: tempSelectedPartner?.name === partner.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
+                              {tempSelectedPartner?.name === partner.name && (
                                 <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
                               )}
                             </div>

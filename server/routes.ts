@@ -287,6 +287,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get partner statistics endpoint
+  app.get("/api/partner-stats", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const stats = await storage.getPartnerStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Get partner stats error:", error);
+      res.status(500).json({ error: "협력사 통계를 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
