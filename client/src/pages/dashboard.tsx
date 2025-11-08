@@ -14,6 +14,7 @@ import { ko } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 
 type PeriodType = 'all' | 'today' | 'thisMonth' | 'lastMonth' | 'custom';
+type StaffTabType = 'reception' | 'pending' | 'insurance' | 'partner';
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -33,6 +34,8 @@ export default function Dashboard() {
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
+  
+  const [staffTab, setStaffTab] = useState<StaffTabType>('reception');
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -103,6 +106,43 @@ export default function Dashboard() {
       description: `"${favoriteName}"이(가) 즐겨찾기에서 제거되었습니다.`,
     });
   };
+
+  const staffData = {
+    reception: [
+      { name: '김블락', position: '사원', count: 30 },
+      { name: '이철수', position: '대리', count: 25 },
+      { name: '박영희', position: '과장', count: 20 },
+      { name: '정민수', position: '차장', count: 18 },
+      { name: '최수진', position: '부장', count: 15 },
+      { name: '강동원', position: '사원', count: 12 },
+    ],
+    pending: [
+      { name: '김블락', position: '사원', count: 15 },
+      { name: '이철수', position: '대리', count: 12 },
+      { name: '박영희', position: '과장', count: 10 },
+      { name: '정민수', position: '차장', count: 8 },
+      { name: '최수진', position: '부장', count: 7 },
+      { name: '강동원', position: '사원', count: 5 },
+    ],
+    insurance: [
+      { name: '김블락', position: '사원', count: 30, amount: 7325000 },
+      { name: '이철수', position: '대리', count: 28, amount: 6850000 },
+      { name: '박영희', position: '과장', count: 25, amount: 6125000 },
+      { name: '정민수', position: '차장', count: 22, amount: 5400000 },
+      { name: '최수진', position: '부장', count: 20, amount: 4900000 },
+      { name: '강동원', position: '사원', count: 18, amount: 4400000 },
+    ],
+    partner: [
+      { name: '김블락', position: '사원', count: 30, amount: 7325000 },
+      { name: '이철수', position: '대리', count: 27, amount: 6625000 },
+      { name: '박영희', position: '과장', count: 24, amount: 5875000 },
+      { name: '정민수', position: '차장', count: 21, amount: 5145000 },
+      { name: '최수진', position: '부장', count: 19, amount: 4650000 },
+      { name: '강동원', position: '사원', count: 17, amount: 4165000 },
+    ],
+  };
+
+  const currentStaffData = staffData[staffTab];
 
   const getPeriodLabel = () => {
     switch (periodType) {
@@ -786,80 +826,91 @@ export default function Dashboard() {
             {/* Tabs */}
             <div className="flex items-center w-full" style={{ maxWidth: '375px', margin: '0 auto', height: '40px', filter: 'drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.02))' }}>
               <button 
+                onClick={() => setStaffTab('reception')}
                 className="flex items-center justify-center"
                 style={{
                   width: '70px',
                   height: '40px',
                   padding: '10px',
-                  borderBottom: '2px solid #008FED',
+                  borderBottom: staffTab === 'reception' ? '2px solid #008FED' : 'none',
                 }}
+                data-testid="tab-staff-reception"
               >
                 <span style={{
                   fontFamily: 'Pretendard',
                   fontSize: '14px',
-                  fontWeight: 600,
+                  fontWeight: staffTab === 'reception' ? 600 : 400,
                   lineHeight: '128%',
                   letterSpacing: '-0.01em',
-                  color: '#0C0C0C',
+                  color: staffTab === 'reception' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
                 }}>
                   접수
                 </span>
               </button>
               <button 
+                onClick={() => setStaffTab('pending')}
                 className="flex items-center justify-center"
                 style={{
                   width: '69px',
                   height: '40px',
                   padding: '10px',
+                  borderBottom: staffTab === 'pending' ? '2px solid #008FED' : 'none',
                 }}
+                data-testid="tab-staff-pending"
               >
                 <span style={{
                   fontFamily: 'Pretendard',
                   fontSize: '14px',
-                  fontWeight: 400,
+                  fontWeight: staffTab === 'pending' ? 600 : 400,
                   lineHeight: '128%',
                   letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.5)',
+                  color: staffTab === 'pending' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
                 }}>
                   미결
                 </span>
               </button>
               <button 
+                onClick={() => setStaffTab('insurance')}
                 className="flex items-center justify-center"
                 style={{
                   width: '118px',
                   height: '40px',
                   padding: '10px',
                   flexGrow: 1,
+                  borderBottom: staffTab === 'insurance' ? '2px solid #008FED' : 'none',
                 }}
+                data-testid="tab-staff-insurance"
               >
                 <span style={{
                   fontFamily: 'Pretendard',
                   fontSize: '14px',
-                  fontWeight: 400,
+                  fontWeight: staffTab === 'insurance' ? 600 : 400,
                   lineHeight: '128%',
                   letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.5)',
+                  color: staffTab === 'insurance' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
                 }}>
                   보험사 미정산
                 </span>
               </button>
               <button 
+                onClick={() => setStaffTab('partner')}
                 className="flex items-center justify-center"
                 style={{
                   width: '118px',
                   height: '40px',
                   padding: '10px',
                   flexGrow: 1,
+                  borderBottom: staffTab === 'partner' ? '2px solid #008FED' : 'none',
                 }}
+                data-testid="tab-staff-partner"
               >
                 <span style={{
                   fontFamily: 'Pretendard',
                   fontSize: '14px',
-                  fontWeight: 400,
+                  fontWeight: staffTab === 'partner' ? 600 : 400,
                   lineHeight: '128%',
                   letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.5)',
+                  color: staffTab === 'partner' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
                 }}>
                   협력사 미정산
                 </span>
@@ -880,7 +931,7 @@ export default function Dashboard() {
                 borderRadius: '12px',
               }}
             >
-              {[...Array(6)].map((_, index) => (
+              {currentStaffData.map((staff, index) => (
                 <div 
                   key={index}
                   className="flex items-center justify-between w-full"
@@ -888,6 +939,7 @@ export default function Dashboard() {
                     padding: '0px 12px',
                     height: '52px',
                   }}
+                  data-testid={`staff-row-${index}`}
                 >
                   <div className="flex items-center" style={{ gap: '8px' }}>
                     <div 
@@ -905,7 +957,7 @@ export default function Dashboard() {
                         fontWeight: 600,
                         color: '#008FED',
                       }}>
-                        김
+                        {staff.name.charAt(0)}
                       </span>
                     </div>
                     <div className="flex items-center" style={{ gap: '3px' }}>
@@ -917,7 +969,7 @@ export default function Dashboard() {
                         letterSpacing: '-0.01em',
                         color: '#0C0C0C',
                       }}>
-                        김블락
+                        {staff.name}
                       </span>
                       <span style={{
                         fontFamily: 'Pretendard',
@@ -927,20 +979,34 @@ export default function Dashboard() {
                         letterSpacing: '-0.01em',
                         color: 'rgba(12, 12, 12, 0.9)',
                       }}>
-                        사원
+                        {staff.position}
                       </span>
                     </div>
                   </div>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.01em',
-                    color: '#0C0C0C',
-                  }}>
-                    30건
-                  </span>
+                  <div className="flex items-center" style={{ gap: '8px' }}>
+                    <span style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.01em',
+                      color: '#0C0C0C',
+                    }}>
+                      {staff.count}건
+                    </span>
+                    {(staffTab === 'insurance' || staffTab === 'partner') && 'amount' in staff && (
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '13px',
+                        fontWeight: 400,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: 'rgba(12, 12, 12, 0.7)',
+                      }}>
+                        {staff.amount.toLocaleString('ko-KR')} 원
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
