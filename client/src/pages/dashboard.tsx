@@ -5,8 +5,15 @@ import { User } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown, ChevronRight } from "lucide-react";
+import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown, ChevronRight, X } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { format, startOfMonth, endOfMonth, startOfToday, subMonths, endOfToday } from "date-fns";
+import { ko } from "date-fns/locale";
+import type { DateRange } from "react-day-picker";
+
+type PeriodType = 'all' | 'today' | 'thisMonth' | 'lastMonth' | 'custom';
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -18,6 +25,14 @@ export default function Dashboard() {
     { name: "종합진행관리", icon: <Star className="w-4 h-4" /> },
     { name: "관리자 설정", icon: <Star className="w-4 h-4" /> },
   ]);
+  
+  const [periodType, setPeriodType] = useState<PeriodType>('thisMonth');
+  const [isPeriodSheetOpen, setIsPeriodSheetOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: startOfMonth(new Date()),
+    to: endOfMonth(new Date()),
+  });
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -87,6 +102,67 @@ export default function Dashboard() {
       title: "즐겨찾기 해제",
       description: `"${favoriteName}"이(가) 즐겨찾기에서 제거되었습니다.`,
     });
+  };
+
+  const getPeriodLabel = () => {
+    switch (periodType) {
+      case 'all':
+        return '전체';
+      case 'today':
+        return '오늘';
+      case 'thisMonth':
+        return '이번 달';
+      case 'lastMonth':
+        return '지난 달';
+      case 'custom':
+        if (dateRange?.from && dateRange?.to) {
+          return `${format(dateRange.from, 'M/d', { locale: ko })} - ${format(dateRange.to, 'M/d', { locale: ko })}`;
+        }
+        return '날짜 선택';
+      default:
+        return '이번 달';
+    }
+  };
+
+  const handlePeriodSelect = (type: PeriodType) => {
+    setPeriodType(type);
+    
+    const today = startOfToday();
+    const lastMonth = subMonths(today, 1);
+    
+    switch (type) {
+      case 'all':
+        setDateRange(undefined);
+        setIsPeriodSheetOpen(false);
+        break;
+      case 'today':
+        setDateRange({ from: today, to: endOfToday() });
+        setIsPeriodSheetOpen(false);
+        break;
+      case 'thisMonth':
+        setDateRange({ from: startOfMonth(today), to: endOfMonth(today) });
+        setIsPeriodSheetOpen(false);
+        break;
+      case 'lastMonth':
+        setDateRange({ from: startOfMonth(lastMonth), to: endOfMonth(lastMonth) });
+        setIsPeriodSheetOpen(false);
+        break;
+      case 'custom':
+        setIsPeriodSheetOpen(false);
+        setIsCalendarOpen(true);
+        break;
+    }
+  };
+
+  const handleCalendarApply = () => {
+    if (dateRange?.from && dateRange?.to) {
+      setPeriodType('custom');
+      setIsCalendarOpen(false);
+      toast({
+        title: "기간 설정 완료",
+        description: `${format(dateRange.from, 'yyyy-MM-dd')} ~ ${format(dateRange.to, 'yyyy-MM-dd')}`,
+      });
+    }
   };
 
   return (
@@ -400,6 +476,7 @@ export default function Dashboard() {
               현황 요약
             </h1>
             <button 
+              onClick={() => setIsPeriodSheetOpen(true)}
               className="flex items-center justify-between"
               style={{
                 width: '128px',
@@ -430,7 +507,7 @@ export default function Dashboard() {
                     color: 'rgba(12, 12, 12, 0.9)',
                   }}
                 >
-                  이번 달
+                  {getPeriodLabel()}
                 </span>
               </div>
               <ChevronDown 
@@ -458,7 +535,12 @@ export default function Dashboard() {
               </span>
             </div>
             <div className="flex items-center w-full" style={{ padding: '10px 0px' }}>
-              <button className="flex items-center" style={{ gap: '8px' }}>
+              <button 
+                onClick={() => setIsPeriodSheetOpen(true)}
+                className="flex items-center" 
+                style={{ gap: '8px' }}
+                data-testid="button-mobile-period-selector"
+              >
                 <span style={{
                   fontFamily: 'Pretendard',
                   fontSize: '15px',
@@ -467,7 +549,7 @@ export default function Dashboard() {
                   letterSpacing: '-0.02em',
                   color: 'rgba(12, 12, 12, 0.8)',
                 }}>
-                  이번 달
+                  {getPeriodLabel()}
                 </span>
                 <ChevronDown 
                   style={{ 
@@ -2041,6 +2123,183 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Period Selection Sheet - Mobile Bottom Sheet */}
+      <Sheet open={isPeriodSheetOpen} onOpenChange={setIsPeriodSheetOpen}>
+        <SheetContent 
+          side="bottom" 
+          className="h-auto rounded-t-2xl"
+          style={{
+            background: '#FFFFFF',
+            padding: '0px',
+          }}
+        >
+          <div className="flex flex-col" style={{ padding: '24px 20px' }}>
+            <div className="flex items-center justify-between mb-6">
+              <span style={{
+                fontFamily: 'Pretendard',
+                fontSize: '16px',
+                fontWeight: 600,
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                color: 'rgba(12, 12, 12, 0.9)',
+              }}>
+                기간 선택
+              </span>
+              <button 
+                onClick={() => setIsPeriodSheetOpen(false)}
+                data-testid="button-close-period-sheet"
+              >
+                <X style={{ width: '20px', height: '20px', color: 'rgba(12, 12, 12, 0.6)' }} />
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              {[
+                { label: '전체', value: 'all' as PeriodType },
+                { label: '오늘', value: 'today' as PeriodType },
+                { label: '이번 달', value: 'thisMonth' as PeriodType },
+                { label: '지난 달', value: 'lastMonth' as PeriodType },
+                { label: '날짜 선택', value: 'custom' as PeriodType },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => handlePeriodSelect(option.value)}
+                  className="flex items-center justify-between w-full"
+                  style={{
+                    padding: '14px 16px',
+                    background: periodType === option.value ? 'rgba(0, 143, 237, 0.08)' : 'transparent',
+                    borderRadius: '8px',
+                  }}
+                  data-testid={`option-period-${option.value}`}
+                >
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '15px',
+                    fontWeight: periodType === option.value ? 600 : 400,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.01em',
+                    color: periodType === option.value ? '#008FED' : 'rgba(12, 12, 12, 0.9)',
+                  }}>
+                    {option.label}
+                  </span>
+                  {periodType === option.value && (
+                    <div style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      background: '#008FED',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <div style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        background: '#FFFFFF',
+                      }} />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Calendar Sheet - Date Range Picker */}
+      <Sheet open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+        <SheetContent 
+          side="bottom" 
+          className="h-auto rounded-t-2xl"
+          style={{
+            background: '#FFFFFF',
+            padding: '0px',
+          }}
+        >
+          <div className="flex flex-col" style={{ padding: '24px 20px' }}>
+            <div className="flex items-center justify-between mb-6">
+              <span style={{
+                fontFamily: 'Pretendard',
+                fontSize: '16px',
+                fontWeight: 600,
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                color: 'rgba(12, 12, 12, 0.9)',
+              }}>
+                날짜 선택
+              </span>
+              <button 
+                onClick={() => setIsCalendarOpen(false)}
+                data-testid="button-close-calendar-sheet"
+              >
+                <X style={{ width: '20px', height: '20px', color: 'rgba(12, 12, 12, 0.6)' }} />
+              </button>
+            </div>
+            
+            <div className="flex flex-col items-center gap-4">
+              <CalendarComponent
+                mode="range"
+                selected={dateRange}
+                onSelect={setDateRange}
+                locale={ko}
+                className="rounded-md border"
+                data-testid="calendar-range-picker"
+              />
+              
+              {dateRange?.from && dateRange?.to && (
+                <div className="flex items-center gap-2 w-full" style={{
+                  padding: '12px 16px',
+                  background: 'rgba(0, 143, 237, 0.05)',
+                  borderRadius: '8px',
+                }}>
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.01em',
+                    color: 'rgba(12, 12, 12, 0.7)',
+                  }}>
+                    {format(dateRange.from, 'yyyy-MM-dd')} ~ {format(dateRange.to, 'yyyy-MM-dd')}
+                  </span>
+                </div>
+              )}
+              
+              <div className="flex gap-3 w-full">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsCalendarOpen(false)}
+                  className="flex-1"
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '15px',
+                    fontWeight: 500,
+                  }}
+                  data-testid="button-calendar-cancel"
+                >
+                  취소
+                </Button>
+                <Button
+                  onClick={handleCalendarApply}
+                  disabled={!dateRange?.from || !dateRange?.to}
+                  className="flex-1"
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    background: '#008FED',
+                  }}
+                  data-testid="button-calendar-apply"
+                >
+                  적용
+                </Button>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
