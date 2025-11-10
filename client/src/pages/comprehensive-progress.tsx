@@ -446,15 +446,15 @@ export default function ComprehensiveProgress() {
         </div>
 
         {/* Count */}
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "0 4px", marginBottom: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "4px", padding: "0 4px", marginBottom: "16px" }}>
           <span
             style={{
               fontFamily: "Pretendard",
-              fontWeight: 600,
-              fontSize: "18px",
+              fontWeight: 700,
+              fontSize: "20px",
               lineHeight: "128%",
               letterSpacing: "-0.02em",
-              color: "rgba(12, 12, 12, 0.8)",
+              color: "rgba(12, 12, 12, 0.7)",
             }}
           >
             전체건
@@ -462,8 +462,8 @@ export default function ComprehensiveProgress() {
           <span
             style={{
               fontFamily: "Pretendard",
-              fontWeight: 600,
-              fontSize: "18px",
+              fontWeight: 700,
+              fontSize: "20px",
               lineHeight: "128%",
               letterSpacing: "-0.02em",
               color: "#008FED",
@@ -486,45 +486,49 @@ export default function ComprehensiveProgress() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "100px 120px 140px 140px 100px 100px 120px 80px 100px 200px 80px",
-              padding: "16px 20px",
+              gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 60px 120px 100px",
+              padding: "14px 20px",
               background: "rgba(12, 12, 12, 0.04)",
               borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
               overflowX: "auto",
+              gap: "8px",
             }}
           >
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
-              날짜
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              사고번호
             </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
-              보험사
-            </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
-              보험사 사고번호
-            </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               접수번호
             </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              보험사
+            </div>
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               계약자
             </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
-              심사사
-            </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               당사 담당자
             </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
-              당일차
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              협력사
             </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
-              메모등록
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              견적금액
             </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
-              주요 진행사항
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              승인 금액
             </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
-              담당
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              경과일수
+            </div>
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              특이사항
+            </div>
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              진행상태
+            </div>
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              요청
             </div>
           </div>
 
@@ -617,91 +621,116 @@ export default function ComprehensiveProgress() {
               </div>
             </div>
           ) : (
-            filteredData.map((caseItem) => (
-              <div
-                key={caseItem.id}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "100px 120px 140px 140px 100px 100px 120px 80px 100px 200px 80px",
-                  padding: "16px 20px",
-                  borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                  overflowX: "auto",
-                }}
-                data-testid={`case-row-${caseItem.id}`}
-              >
-                <div style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {formatDate(caseItem.createdAt)}
-                </div>
-                <div style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {caseItem.insuranceCompany || "-"}
-                </div>
-                <div style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {caseItem.insuranceAccidentNo || "-"}
-                </div>
-                <div style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {caseItem.caseNumber || "-"}
-                </div>
-                <div style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {caseItem.clientName || "-"}
-                </div>
-                <div style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {caseItem.assessorId || "-"}
-                </div>
-                <div style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {caseItem.assignedPartnerManager || "-"}
-                </div>
-                <div style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {calculateDays(caseItem.createdAt)}일차
-                </div>
-                <div>
-                  <button
-                    style={{
-                      padding: "4px 12px",
-                      background: "rgba(12, 12, 12, 0.04)",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                      borderRadius: "4px",
-                      fontFamily: "Pretendard",
-                      fontSize: "12px",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      cursor: "pointer",
-                    }}
-                    data-testid={`button-memo-${caseItem.id}`}
-                  >
-                    메모
-                  </button>
-                </div>
+            filteredData.map((caseItem, index) => {
+              const getStatusColor = (status: string | null) => {
+                switch (status) {
+                  case "심사대기":
+                    return { bg: "rgba(0, 143, 237, 0.15)", text: "#008FED" };
+                  case "협력사 미배정":
+                    return { bg: "rgba(255, 152, 0, 0.15)", text: "#FF9800" };
+                  case "2차 심사대기":
+                    return { bg: "rgba(233, 30, 99, 0.15)", text: "#E91E63" };
+                  case "승인":
+                    return { bg: "rgba(0, 200, 83, 0.15)", text: "#00C853" };
+                  case "반려":
+                    return { bg: "rgba(244, 67, 54, 0.15)", text: "#F44336" };
+                  default:
+                    return { bg: "rgba(12, 12, 12, 0.05)", text: "rgba(12, 12, 12, 0.6)" };
+                }
+              };
+
+              const statusColors = getStatusColor(caseItem.status);
+              
+              return (
                 <div
+                  key={caseItem.id}
                   style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    color: "rgba(12, 12, 12, 0.8)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
+                    display: "grid",
+                    gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 60px 120px 100px",
+                    padding: "14px 20px",
+                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                    overflowX: "auto",
+                    gap: "8px",
+                    alignItems: "center",
                   }}
+                  data-testid={`case-row-${caseItem.id}`}
                 >
-                  {caseItem.latestProgress?.content || "-"}
+                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                    {caseItem.insuranceAccidentNo || "-"}
+                  </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                    {caseItem.caseNumber || "-"}
+                  </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                    {caseItem.insuranceCompany || "-"}
+                  </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                    {caseItem.clientName || "-"}
+                  </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                    {caseItem.assignedPartnerManager || "-"}
+                  </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                    {caseItem.assignedPartner || "-"}
+                  </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                    7,312,000원
+                  </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                    6,320,000원
+                  </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                    {calculateDays(caseItem.createdAt)}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        background: "#008FED",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        padding: "6px 12px",
+                        background: statusColors.bg,
+                        borderRadius: "6px",
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: statusColors.text,
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {caseItem.status || "대기중"}
+                    </div>
+                  </div>
+                  <div>
+                    <button
+                      style={{
+                        padding: "6px 12px",
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(12, 12, 12, 0.1)",
+                        borderRadius: "6px",
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.7)",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                      data-testid={`button-detail-${caseItem.id}`}
+                    >
+                      지세히 보기
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <button
-                    style={{
-                      padding: "4px 12px",
-                      background: "#008FED",
-                      border: "none",
-                      borderRadius: "4px",
-                      fontFamily: "Pretendard",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      color: "#FFFFFF",
-                      cursor: "pointer",
-                    }}
-                    data-testid={`button-assign-${caseItem.id}`}
-                  >
-                    담당
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
