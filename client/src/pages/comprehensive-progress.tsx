@@ -155,166 +155,127 @@ export default function ComprehensiveProgress() {
         }}
       />
 
-      {/* Header (Desktop >= 1024px) */}
-      <div className="hidden lg:block">
-        <header
-          style={{
-            height: "89px",
-            background: "#FFFFFF",
-            boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.05)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 40px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "60px" }}>
-            <img
-              src={logoIcon}
-              alt="FLOXN"
-              style={{ height: "32px", cursor: "pointer" }}
-              onClick={() => setLocation("/dashboard")}
-              data-testid="logo"
-            />
-            
-            <div className="flex items-center gap-6">
-              {menuItems.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    setActiveMenu(item.name);
-                    if (item.name === "홈") setLocation("/dashboard");
-                    else if (item.name === "관리자 설정") setLocation("/admin-settings");
-                    else if (item.name === "접수하기") setLocation("/intake");
-                    else if (item.name === "진행상황") setLocation("/progress");
-                    else if (item.name === "종합진행관리") setLocation("/comprehensive-progress");
-                  }}
-                  className="px-6 py-3 rounded-lg transition-colors"
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: activeMenu === item.name ? 600 : 500,
-                    letterSpacing: '-0.02em',
-                    color: activeMenu === item.name ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
-                  }}
-                  data-testid={`menu-${item.name}`}
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* Desktop Header */}
+      <header 
+        className="hidden lg:flex relative w-full h-[89px] px-8 items-center justify-between"
+        style={{
+          background: 'rgba(255, 255, 255, 0.06)',
+          borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
+          backdropFilter: 'blur(22px)',
+        }}
+      >
+        <div className="flex items-center gap-2 w-[260px]">
+          <img src={logoIcon} alt="FLOXN Logo" className="w-6 h-6" />
+          <div className="text-2xl font-bold text-gray-900">FLOXN</div>
+        </div>
 
-          <div className="flex items-center gap-4">
-            <div
-              className="flex items-center gap-3"
-              style={{
-                padding: "12px 20px",
-                background: "#FDFDFD",
-                border: "1px solid rgba(12, 12, 12, 0.08)",
-                borderRadius: "8px",
-              }}
-            >
-              <div
-                style={{
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  background: "linear-gradient(135deg, #FEF0E6 0%, #EAE6FE 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontFamily: "Pretendard",
-                  fontWeight: 600,
-                  fontSize: "16px",
-                  color: "#0C0C0C",
-                }}
-              >
-                {user.name?.charAt(0) || "U"}
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontWeight: 600,
-                    fontSize: "14px",
-                    color: "#0C0C0C",
-                  }}
-                >
-                  {user.name}
-                </div>
-                <div
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontWeight: 400,
-                    fontSize: "12px",
-                    color: "rgba(12, 12, 12, 0.6)",
-                  }}
-                >
-                  {user.role}
-                </div>
-              </div>
-            </div>
+        <div className="flex items-center gap-6 flex-1 px-6">
+          {menuItems.map((item) => (
             <button
-              onClick={() => setLocation("/")}
-              style={{
-                padding: "12px 24px",
-                background: "#008FED",
-                borderRadius: "8px",
-                border: "none",
-                fontFamily: "Pretendard",
-                fontWeight: 600,
-                fontSize: "14px",
-                color: "#FFFFFF",
-                cursor: "pointer",
+              key={item.name}
+              onClick={() => {
+                setActiveMenu(item.name);
+                if (item.name === "홈") setLocation("/dashboard");
+                else if (item.name === "접수하기") setLocation("/intake");
+                else if (item.name === "진행상황") setLocation("/progress");
+                else if (item.name === "종합진행관리") setLocation("/comprehensive-progress");
+                else if (item.name === "관리자 설정") setLocation("/admin-settings");
               }}
-              data-testid="button-logout"
+              className="px-6 py-3 rounded-lg transition-colors"
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '18px',
+                fontWeight: activeMenu === item.name ? 600 : 500,
+                letterSpacing: '-0.02em',
+                color: activeMenu === item.name ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+              }}
+              data-testid={`menu-${item.name}`}
             >
-              로그아웃
+              {item.name}
             </button>
-          </div>
-        </header>
-      </div>
+          ))}
+        </div>
 
-      {/* Mobile Header (< 1024px) */}
-      <div className="block lg:hidden">
-        <header
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0, 143, 237, 0.3)' }}
+          />
+          <span 
+            style={{
+              fontFamily: 'Pretendard',
+              fontSize: '15px',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+              color: 'rgba(12, 12, 12, 0.7)',
+            }}
+            data-testid="user-info"
+          >
+            {user.username}
+          </span>
+        </div>
+      </header>
+
+      {/* Mobile Header */}
+      <header 
+        className="lg:hidden relative w-full flex items-center justify-between"
+        style={{
+          height: '58px',
+          padding: '0px 20px',
+          gap: '230px',
+        }}
+      >
+        <div 
+          className="flex flex-col items-start"
           style={{
-            height: "58px",
-            background: "#FFFFFF",
-            boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.05)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 20px",
+            padding: '0px 12px',
+            gap: '10px',
+            width: '52px',
+            height: '26px',
+            filter: 'drop-shadow(0px 0px 20px #DBE9F5)',
           }}
         >
-          <img
-            src={logoIcon}
-            alt="FLOXN"
-            style={{ height: "24px", cursor: "pointer" }}
-            onClick={() => setLocation("/dashboard")}
-            data-testid="logo-mobile"
-          />
-          <button
-            onClick={() => setLocation("/")}
+          <img 
+            src={logoIcon} 
+            alt="FLOXN Logo" 
             style={{
-              padding: "8px 16px",
-              background: "#008FED",
-              borderRadius: "6px",
-              border: "none",
-              fontFamily: "Pretendard",
-              fontWeight: 600,
-              fontSize: "12px",
-              color: "#FFFFFF",
-              cursor: "pointer",
+              width: '28px',
+              height: '26px',
             }}
-            data-testid="button-logout-mobile"
+          />
+        </div>
+
+        <button
+          onClick={() => setLocation("/")}
+          className="flex items-center justify-center"
+          style={{
+            padding: '6px 12px',
+            gap: '10px',
+            width: '76px',
+            height: '31px',
+            background: 'rgba(253, 253, 253, 0.1)',
+            borderRadius: '6px',
+          }}
+          data-testid="button-mobile-logout"
+        >
+          <span
+            style={{
+              width: '52px',
+              height: '19px',
+              fontFamily: 'Pretendard',
+              fontStyle: 'normal',
+              fontWeight: 500,
+              fontSize: '15px',
+              lineHeight: '128%',
+              letterSpacing: '-0.01em',
+              textDecoration: 'underline',
+              color: 'rgba(12, 12, 12, 0.7)',
+            }}
           >
             로그아웃
-          </button>
-        </header>
-      </div>
+          </span>
+        </button>
+      </header>
 
       {/* Main Content */}
       <div
