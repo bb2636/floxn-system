@@ -2,17 +2,21 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, CaseWithLatestProgress } from "@shared/schema";
-import { Search, Cloud, X } from "lucide-react";
+import { Search, Cloud } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function ComprehensiveProgress() {
   const [activeMenu, setActiveMenu] = useState("종합진행관리");
   const [activeTab, setActiveTab] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -34,8 +38,6 @@ export default function ComprehensiveProgress() {
         title: "상태 변경 완료",
         description: "진행상태가 성공적으로 변경되었습니다.",
       });
-      setStatusModalOpen(false);
-      setSelectedCaseId(null);
     },
     onError: () => {
       toast({
@@ -110,21 +112,8 @@ export default function ComprehensiveProgress() {
     { value: "반려", label: "반려", bg: "rgba(208, 43, 32, 0.2)", color: "#B20D02" },
   ];
 
-  // 진행상태 클릭 핸들러
-  const handleStatusClick = (caseId: string) => {
-    setSelectedCaseId(caseId);
-    setStatusModalOpen(true);
-  };
-
-  // 모달 닫기 핸들러
-  const handleCloseModal = () => {
-    setStatusModalOpen(false);
-    setSelectedCaseId(null);
-  };
-
   // 상태 변경 핸들러
-  const handleStatusChange = (status: string) => {
-    if (!selectedCaseId) return;
+  const handleStatusChange = (caseId: string, status: string) => {
     if (user?.role !== "관리자") {
       toast({
         title: "권한 없음",
@@ -133,7 +122,7 @@ export default function ComprehensiveProgress() {
       });
       return;
     }
-    updateStatusMutation.mutate({ caseId: selectedCaseId, status });
+    updateStatusMutation.mutate({ caseId, status });
   };
 
   // 당일차 계산 (접수일부터 오늘까지)
@@ -755,24 +744,73 @@ export default function ComprehensiveProgress() {
                     />
                   </div>
                   <div>
-                    <div
-                      onClick={() => handleStatusClick(caseItem.id)}
-                      style={{
-                        padding: "6px 12px",
-                        background: statusColors.bg,
-                        borderRadius: "6px",
-                        fontFamily: "Pretendard",
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: statusColors.text,
-                        textAlign: "center",
-                        whiteSpace: "nowrap",
-                        cursor: "pointer",
-                      }}
-                      data-testid={`button-status-${caseItem.id}`}
-                    >
-                      {caseItem.status || "대기중"}
-                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <div
+                          style={{
+                            padding: "6px 12px",
+                            background: statusColors.bg,
+                            borderRadius: "6px",
+                            fontFamily: "Pretendard",
+                            fontSize: "12px",
+                            fontWeight: 600,
+                            color: statusColors.text,
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                            cursor: "pointer",
+                          }}
+                          data-testid={`button-status-${caseItem.id}`}
+                        >
+                          {caseItem.status || "대기중"}
+                        </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="start"
+                        style={{
+                          width: "212px",
+                          background: "rgba(253, 253, 253, 0.9)",
+                          backdropFilter: "blur(17px)",
+                          border: "none",
+                          boxShadow: "0px 0px 60px rgba(170, 177, 194, 0.3), 6px 0px 40px rgba(219, 233, 245, 0.3)",
+                          borderRadius: "12px",
+                          padding: "0",
+                        }}
+                      >
+                        {statusOptions.map((option) => (
+                          <DropdownMenuItem
+                            key={option.value}
+                            onClick={() => handleStatusChange(caseItem.id, option.value)}
+                            style={{
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              padding: "12px",
+                              margin: "0",
+                              cursor: user?.role === "관리자" ? "pointer" : "not-allowed",
+                            }}
+                            data-testid={`button-status-option-${option.value}`}
+                          >
+                            <div
+                              style={{
+                                padding: "8px 12px",
+                                background: option.bg,
+                                backdropFilter: "blur(7px)",
+                                borderRadius: "20px",
+                                fontFamily: "Pretendard",
+                                fontWeight: 500,
+                                fontSize: "16px",
+                                color: option.color,
+                                opacity: user?.role === "관리자" ? 1 : 0.6,
+                                minWidth: "120px",
+                                textAlign: "center",
+                              }}
+                            >
+                              {option.label}
+                            </div>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                   <div>
                     <button
@@ -800,124 +838,6 @@ export default function ComprehensiveProgress() {
         </div>
       </div>
 
-      {/* Status Change Modal */}
-      {statusModalOpen && (
-        <div
-          onClick={handleCloseModal}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-          data-testid="modal-status-overlay"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: "relative",
-              width: "212px",
-              background: "rgba(253, 253, 253, 0.4)",
-              boxShadow: "0px 0px 60px #AAB1C2, 6px 0px 40px #DBE9F5",
-              backdropFilter: "blur(17px)",
-              borderRadius: "12px",
-              padding: "0",
-              display: "flex",
-              flexDirection: "column",
-            }}
-            data-testid="modal-status-content"
-          >
-            {/* Close Button */}
-            <button
-              onClick={handleCloseModal}
-              style={{
-                position: "absolute",
-                top: "12px",
-                right: "12px",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                padding: "4px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 10,
-              }}
-              data-testid="button-close-modal"
-            >
-              <X style={{ width: "20px", height: "20px", color: "rgba(12, 12, 12, 0.6)" }} />
-            </button>
-
-            {/* Status Options */}
-            {statusOptions.map((option) => (
-              <div
-                key={option.value}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  padding: "0",
-                  width: "212px",
-                  height: "60px",
-                }}
-              >
-                <button
-                  onClick={() => handleStatusChange(option.value)}
-                  disabled={user?.role !== "관리자"}
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: "8px 12px",
-                    gap: "10px",
-                    background: option.bg,
-                    backdropFilter: "blur(7px)",
-                    borderRadius: "20px",
-                    border: "none",
-                    fontFamily: "Pretendard",
-                    fontStyle: "normal",
-                    fontWeight: 500,
-                    fontSize: "16px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: option.color,
-                    cursor: user?.role === "관리자" ? "pointer" : "not-allowed",
-                    opacity: user?.role === "관리자" ? 1 : 0.6,
-                    minHeight: "36px",
-                  }}
-                  data-testid={`button-status-option-${option.value}`}
-                >
-                  {option.label}
-                </button>
-              </div>
-            ))}
-
-            {/* Read-only message for non-admin users */}
-            {user?.role !== "관리자" && (
-              <div
-                style={{
-                  padding: "12px",
-                  fontFamily: "Pretendard",
-                  fontSize: "12px",
-                  color: "rgba(12, 12, 12, 0.6)",
-                  textAlign: "center",
-                  borderTop: "1px solid rgba(12, 12, 12, 0.1)",
-                }}
-              >
-                상태 변경은 관리자만 가능합니다
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
