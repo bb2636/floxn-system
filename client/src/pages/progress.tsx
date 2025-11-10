@@ -489,32 +489,18 @@ export default function Progress() {
             >
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px' }}>
-                  <span 
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 600,
-                      fontSize: '16px',
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: '#0C0C0C',
-                    }}
-                  >
-                    진행상황 입력
-                  </span>
-                  <span 
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 400,
-                      fontSize: '14px',
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.6)',
-                    }}
-                  >
-                    상세 기재
-                  </span>
-                </div>
+                <span 
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontWeight: 600,
+                    fontSize: '16px',
+                    lineHeight: '128%',
+                    letterSpacing: '-0.02em',
+                    color: '#0C0C0C',
+                  }}
+                >
+                  진행상황 입력
+                </span>
                 <button
                   style={{
                     width: '40px',
