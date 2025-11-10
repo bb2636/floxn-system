@@ -324,129 +324,124 @@ export default function ComprehensiveProgress() {
             background: "#FFFFFF",
             boxShadow: "0px 0px 20px #DBE9F5",
             borderRadius: "12px",
-            padding: "0 0 20px",
+            padding: "24px",
             marginBottom: "16px",
           }}
         >
           {/* Header */}
-          <div
+          <h2
             style={{
-              padding: "24px",
-              borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
+              fontFamily: "Pretendard",
+              fontWeight: 600,
+              fontSize: "16px",
+              lineHeight: "128%",
+              letterSpacing: "-0.02em",
+              color: "#0C0C0C",
+              marginBottom: "20px",
             }}
           >
-            <h2
-              style={{
-                fontFamily: "Pretendard",
-                fontWeight: 600,
-                fontSize: "20px",
-                lineHeight: "128%",
-                letterSpacing: "-0.02em",
-                color: "#0C0C0C",
-              }}
-            >
-              검색
-            </h2>
-          </div>
+            검색
+          </h2>
 
-          <div style={{ padding: "16px 20px 0" }}>
-            {/* Tabs */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginBottom: "8px",
-                flexWrap: "wrap",
-              }}
-            >
-              {tabs.map((tab) => (
-                <button
-                  key={tab.name}
-                  onClick={() => setActiveTab(tab.name)}
-                  style={{
-                    padding: "12px 16px",
-                    background:
-                      activeTab === tab.name
-                        ? "#008FED"
-                        : "rgba(255, 255, 255, 0.04)",
-                    boxShadow:
-                      activeTab === tab.name
-                        ? "2px 4px 30px #BDD1F0"
-                        : "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
-                    backdropFilter: activeTab !== tab.name ? "blur(7px)" : "none",
-                    borderRadius: "6px",
-                    border: "none",
-                    fontFamily: "Pretendard",
-                    fontWeight: activeTab === tab.name ? 600 : 500,
-                    fontSize: "16px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color:
-                      activeTab === tab.name ? "#FDFDFD" : "rgba(12, 12, 12, 0.4)",
-                    cursor: "pointer",
-                  }}
-                  data-testid={`tab-${tab.key}`}
-                >
-                  {tab.name}
-                </button>
-              ))}
-            </div>
-
-            {/* Search Input */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                padding: "0 20px",
-              }}
-            >
-              <div style={{ position: "relative", flex: 1 }}>
-                <Search
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2"
-                  style={{ width: "20px", height: "20px", color: "rgba(12, 12, 12, 0.4)" }}
-                />
-                <input
-                  type="text"
-                  placeholder="보험사 사고번호, 접수번호, 보험계약자, 당사 담당자 등으로 검색해주세요."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  style={{
-                    width: "100%",
-                    height: "68px",
-                    padding: "0 20px 0 52px",
-                    background: "#FDFDFD",
-                    border: "2px solid rgba(12, 12, 12, 0.08)",
-                    borderRadius: "8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    fontWeight: 400,
-                    letterSpacing: "-0.02em",
-                    color: "#0C0C0C",
-                  }}
-                  data-testid="input-search"
-                />
-              </div>
+          {/* Tabs */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              marginBottom: "16px",
+              flexWrap: "wrap",
+            }}
+          >
+            {tabs.map((tab) => (
               <button
+                key={tab.name}
+                onClick={() => setActiveTab(tab.name)}
                 style={{
-                  width: "120px",
-                  height: "68px",
-                  background: "#008FED",
-                  borderRadius: "8px",
+                  padding: "10px 20px",
+                  background:
+                    activeTab === tab.name
+                      ? "#008FED"
+                      : "rgba(12, 12, 12, 0.04)",
+                  borderRadius: "6px",
                   border: "none",
                   fontFamily: "Pretendard",
-                  fontSize: "16px",
-                  fontWeight: 600,
+                  fontWeight: activeTab === tab.name ? 600 : 500,
+                  fontSize: "14px",
+                  lineHeight: "128%",
                   letterSpacing: "-0.02em",
-                  color: "#FFFFFF",
+                  color:
+                    activeTab === tab.name ? "#FFFFFF" : "rgba(12, 12, 12, 0.5)",
                   cursor: "pointer",
+                  transition: "all 0.2s",
                 }}
-                data-testid="button-search"
+                data-testid={`tab-${tab.key}`}
               >
-                검색
+                {tab.name}
               </button>
+            ))}
+          </div>
+
+          {/* Search Input */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <div style={{ position: "relative", flex: 1 }}>
+              <Search
+                className="absolute left-4 top-1/2 transform -translate-y-1/2"
+                style={{ width: "20px", height: "20px", color: "rgba(12, 12, 12, 0.4)" }}
+              />
+              <input
+                type="text"
+                placeholder="보험사 사고번호, 접수번호, 보험계약자, 당사 담당자 등으로 검색해주세요."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  height: "52px",
+                  padding: "0 20px 0 52px",
+                  background: "#FDFDFD",
+                  border: "1px solid rgba(12, 12, 12, 0.1)",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 400,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+                data-testid="input-search"
+              />
             </div>
+            <button
+              onClick={() => {
+                // 검색 기능은 실시간으로 이미 작동 중
+              }}
+              style={{
+                width: "100px",
+                height: "52px",
+                background: "#008FED",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#FFFFFF",
+                cursor: "pointer",
+              }}
+              data-testid="button-search"
+            >
+              검색
+            </button>
           </div>
         </div>
 
