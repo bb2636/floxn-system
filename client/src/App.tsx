@@ -9,6 +9,7 @@ import AdminSettings from "@/pages/admin-settings";
 import Intake from "@/pages/intake";
 import Progress from "@/pages/progress";
 import ComprehensiveProgress from "@/pages/comprehensive-progress";
+import Statistics from "@/pages/statistics";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/intake" component={Intake} />
       <Route path="/progress" component={Progress} />
       <Route path="/comprehensive-progress" component={ComprehensiveProgress} />
+      <Route path="/statistics" component={Statistics} />
       <Route component={NotFound} />
     </Switch>
   );
