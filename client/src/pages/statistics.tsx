@@ -397,7 +397,10 @@ export default function Statistics() {
               통계
             </button>
             <button
-              onClick={() => setActiveSubMenu("settlement-inquiry")}
+              onClick={() => {
+                setActiveSubMenu("settlement-inquiry");
+                setLocation("/settlements");
+              }}
               className={`flex items-center gap-2 px-5 py-[10px] h-12 rounded-[10px] text-base font-medium leading-[128%] tracking-[-0.02em] transition-all ${
                 activeSubMenu === "settlement-inquiry"
                   ? "bg-[rgba(12,12,12,0.08)] text-[#008FED]"

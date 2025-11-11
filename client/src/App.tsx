@@ -10,6 +10,7 @@ import Intake from "@/pages/intake";
 import Progress from "@/pages/progress";
 import ComprehensiveProgress from "@/pages/comprehensive-progress";
 import Statistics from "@/pages/statistics";
+import Settlements from "@/pages/settlements";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/progress" component={Progress} />
       <Route path="/comprehensive-progress" component={ComprehensiveProgress} />
       <Route path="/statistics" component={Statistics} />
+      <Route path="/settlements" component={Settlements} />
       <Route component={NotFound} />
     </Switch>
   );
