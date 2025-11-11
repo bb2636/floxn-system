@@ -148,86 +148,189 @@ export default function StatisticsOverview() {
           </div>
 
           {/* Filters Row 1 */}
-          <div className="grid grid-cols-4 gap-6">
-            {/* 등록일자 */}
+          <div className="flex items-center gap-8 py-2">
+            {/* 종결여부 */}
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[rgba(12,12,12,0.7)]">
-                등록일자
+              <label 
+                className="text-sm font-medium"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
+                종결여부
               </label>
               <div className="flex gap-3">
-                {["전체", "6개월", "올해"].map((option) => (
-                  <label key={option} className="flex items-center gap-2 cursor-pointer">
+                {["전체", "미결", "종결"].map((option) => (
+                  <label key={option} className="flex items-center gap-1 cursor-pointer">
                     <Checkbox
                       checked={registrationDate.includes(option)}
                       onCheckedChange={() =>
-                        handleCheckboxChange("등록일자", option, registrationDate, setRegistrationDate)
+                        handleCheckboxChange("종결여부", option, registrationDate, setRegistrationDate)
                       }
+                      className="w-6 h-6"
                       data-testid={`checkbox-registration-${option}`}
                     />
-                    <span className="text-sm text-[rgba(12,12,12,0.8)]">{option}</span>
+                    <span 
+                      className="text-sm"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: registrationDate.includes(option) ? "#008FED" : "#686A6E",
+                      }}
+                    >
+                      {option}
+                    </span>
                   </label>
                 ))}
               </div>
             </div>
 
-            {/* 배정여부 */}
+            {/* Divider */}
+            <div 
+              style={{
+                width: "1px",
+                height: "20px",
+                background: "rgba(12, 12, 12, 0.12)",
+              }}
+            />
+
+            {/* 배당여부 */}
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[rgba(12,12,12,0.7)]">
-                배정여부
+              <label 
+                className="text-sm font-medium"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
+                배당여부
               </label>
               <div className="flex gap-3">
                 {["전체", "배정", "미배정"].map((option) => (
-                  <label key={option} className="flex items-center gap-2 cursor-pointer">
+                  <label key={option} className="flex items-center gap-1 cursor-pointer">
                     <Checkbox
                       checked={assignmentStatus.includes(option)}
                       onCheckedChange={() =>
-                        handleCheckboxChange("배정여부", option, assignmentStatus, setAssignmentStatus)
+                        handleCheckboxChange("배당여부", option, assignmentStatus, setAssignmentStatus)
                       }
+                      className="w-6 h-6"
                       data-testid={`checkbox-assignment-${option}`}
                     />
-                    <span className="text-sm text-[rgba(12,12,12,0.8)]">{option}</span>
+                    <span 
+                      className="text-sm"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: assignmentStatus.includes(option) ? "#008FED" : "#686A6E",
+                      }}
+                    >
+                      {option}
+                    </span>
                   </label>
                 ))}
               </div>
             </div>
 
+            {/* Divider */}
+            <div 
+              style={{
+                width: "1px",
+                height: "20px",
+                background: "rgba(12, 12, 12, 0.12)",
+              }}
+            />
+
             {/* 공사유무 */}
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[rgba(12,12,12,0.7)]">
+              <label 
+                className="text-sm font-medium"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
                 공사유무
               </label>
               <div className="flex gap-3">
-                {["전체", "수리", "보수금지", "공사", "무공사"].map((option) => (
-                  <label key={option} className="flex items-center gap-2 cursor-pointer">
+                {["전체", "수리", "비교건적", "공사", "무공사"].map((option) => (
+                  <label key={option} className="flex items-center gap-1 cursor-pointer">
                     <Checkbox
                       checked={constructionStatus.includes(option)}
                       onCheckedChange={() =>
                         handleCheckboxChange("공사유무", option, constructionStatus, setConstructionStatus)
                       }
+                      className="w-6 h-6"
                       data-testid={`checkbox-construction-${option}`}
                     />
-                    <span className="text-sm text-[rgba(12,12,12,0.8)]">{option}</span>
+                    <span 
+                      className="text-sm"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: constructionStatus.includes(option) ? "#008FED" : "#686A6E",
+                      }}
+                    >
+                      {option}
+                    </span>
                   </label>
                 ))}
               </div>
             </div>
 
+            {/* Divider */}
+            <div 
+              style={{
+                width: "1px",
+                height: "20px",
+                background: "rgba(12, 12, 12, 0.12)",
+              }}
+            />
+
             {/* 중복여부 */}
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[rgba(12,12,12,0.7)]">
+              <label 
+                className="text-sm font-medium"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
                 중복여부
               </label>
               <div className="flex gap-3">
                 {["전체", "중복", "이주택"].map((option) => (
-                  <label key={option} className="flex items-center gap-2 cursor-pointer">
+                  <label key={option} className="flex items-center gap-1 cursor-pointer">
                     <Checkbox
                       checked={duplicateStatus.includes(option)}
                       onCheckedChange={() =>
                         handleCheckboxChange("중복여부", option, duplicateStatus, setDuplicateStatus)
                       }
+                      className="w-6 h-6"
                       data-testid={`checkbox-duplicate-${option}`}
                     />
-                    <span className="text-sm text-[rgba(12,12,12,0.8)]">{option}</span>
+                    <span 
+                      className="text-sm"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: duplicateStatus.includes(option) ? "#008FED" : "#686A6E",
+                      }}
+                    >
+                      {option}
+                    </span>
                   </label>
                 ))}
               </div>
