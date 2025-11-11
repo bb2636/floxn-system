@@ -1579,7 +1579,7 @@ export default function ComprehensiveProgress() {
           </DialogHeader>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {/* 선택 계정 (케이스 정보) */}
+            {/* 선택한 건 (케이스 정보) */}
             <div>
               <div style={{
                 fontFamily: "Pretendard",
@@ -1589,7 +1589,7 @@ export default function ComprehensiveProgress() {
                 color: "#686A6E",
                 marginBottom: "8px",
               }}>
-                선택 계정
+                선택한 건
               </div>
               
               <div style={{
@@ -1598,69 +1598,84 @@ export default function ComprehensiveProgress() {
                 backdropFilter: "blur(7px)",
                 borderRadius: "12px",
               }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                  {/* 이름, 회사, 역할 */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
-                    <span style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 600,
-                      fontSize: "18px",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.9)",
-                    }}>
-                      {user?.name}
-                    </span>
-                    <div style={{
-                      width: "4px",
-                      height: "4px",
-                      background: "rgba(0, 143, 237, 0.9)",
-                      borderRadius: "50%",
-                    }}></div>
-                    <span style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 600,
-                      fontSize: "18px",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.9)",
-                    }}>
-                      {user?.company}
-                    </span>
-                    <div style={{
-                      padding: "4px 10px",
-                      background: "rgba(12, 12, 12, 0.1)",
-                      backdropFilter: "blur(7px)",
-                      borderRadius: "20px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      letterSpacing: "-0.01em",
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}>
-                      {user?.role}
-                    </div>
-                  </div>
+                {/* 보험사 + 보험사 사고번호 */}
+                <div style={{ display: "flex", alignItems: "center", gap: "9px", marginBottom: "12px" }}>
+                  <span style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 600,
+                    fontSize: "18px",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.9)",
+                  }}>
+                    {selectedCase?.insuranceCompany || "-"}
+                  </span>
+                  <div style={{
+                    width: "4px",
+                    height: "4px",
+                    background: "rgba(0, 143, 237, 0.9)",
+                    borderRadius: "50%",
+                  }}></div>
+                  <span style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 600,
+                    fontSize: "18px",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.9)",
+                  }}>
+                    {selectedCase?.insuranceAccidentNo || "-"}
+                  </span>
                 </div>
                 
-                {/* 이메일, 전화번호 */}
+                {/* 핵심 정보 그리드 */}
                 <div style={{ 
-                  display: "flex", 
-                  gap: "24px", 
-                  marginTop: "8px",
+                  display: "grid",
+                  gridTemplateColumns: "100px 1fr",
+                  gap: "8px",
+                  fontSize: "14px",
                 }}>
                   <span style={{
                     fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.7)",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.6)",
                   }}>
-                    {user?.email || "-"}
+                    접수번호
                   </span>
                   <span style={{
                     fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.7)",
+                    fontWeight: 400,
+                    color: "rgba(12, 12, 12, 0.8)",
                   }}>
-                    {user?.phone || "-"}
+                    {selectedCase?.caseNumber || "-"}
+                  </span>
+
+                  <span style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.6)",
+                  }}>
+                    사고일시
+                  </span>
+                  <span style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 400,
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}>
+                    {formatDate(selectedCase?.accidentDate ?? null)}
+                  </span>
+
+                  <span style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.6)",
+                  }}>
+                    보험계약자
+                  </span>
+                  <span style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 400,
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}>
+                    {selectedCase?.policyHolderName || "-"}
                   </span>
                 </div>
               </div>
