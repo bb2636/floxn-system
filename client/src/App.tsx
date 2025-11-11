@@ -9,9 +9,11 @@ import AdminSettings from "@/pages/admin-settings";
 import Intake from "@/pages/intake";
 import Progress from "@/pages/progress";
 import ComprehensiveProgress from "@/pages/comprehensive-progress";
-import Statistics from "@/pages/statistics";
-import Settlements from "@/pages/settlements";
+import StatisticsOverview from "@/pages/statistics-overview";
+import SettlementsInquiry from "@/pages/settlements-inquiry";
+import SettlementAction from "@/pages/settlement-action";
 import NotFound from "@/pages/not-found";
+import { StatisticsLayout } from "@/components/statistics-layout";
 
 function Router() {
   return (
@@ -22,8 +24,27 @@ function Router() {
       <Route path="/intake" component={Intake} />
       <Route path="/progress" component={Progress} />
       <Route path="/comprehensive-progress" component={ComprehensiveProgress} />
-      <Route path="/statistics" component={Statistics} />
-      <Route path="/settlements" component={Settlements} />
+      <Route path="/statistics">
+        {() => (
+          <StatisticsLayout>
+            <StatisticsOverview />
+          </StatisticsLayout>
+        )}
+      </Route>
+      <Route path="/settlements">
+        {() => (
+          <StatisticsLayout>
+            <SettlementsInquiry />
+          </StatisticsLayout>
+        )}
+      </Route>
+      <Route path="/statistics/settlement-action">
+        {() => (
+          <StatisticsLayout>
+            <SettlementAction />
+          </StatisticsLayout>
+        )}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );
