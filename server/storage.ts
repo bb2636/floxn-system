@@ -929,6 +929,9 @@ export class MemStorage implements IStorage {
   async getAllCases(): Promise<CaseWithLatestProgress[]> {
     const allCases = Array.from(this.cases.values());
     
+    // createdAt 기준 오름차순 정렬 (가장 오래된 것부터)
+    allCases.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    
     // 각 케이스의 최신 진행상황 찾기
     const casesWithProgress: CaseWithLatestProgress[] = allCases.map(caseItem => {
       // 해당 케이스의 모든 진행상황 찾기
@@ -1353,7 +1356,7 @@ export class DbStorage implements IStorage {
   }
 
   async getAllCases(): Promise<CaseWithLatestProgress[]> {
-    const allCases = await db.select().from(cases);
+    const allCases = await db.select().from(cases).orderBy(asc(cases.createdAt));
     const allProgressUpdates = await db.select().from(progressUpdates);
     
     // 각 케이스의 최신 진행상황 찾기
