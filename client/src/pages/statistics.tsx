@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, CaseWithLatestProgress } from "@shared/schema";
-import { Search, Download, Settings2, AlertCircle } from "lucide-react";
+import { Search, Download, Settings2, AlertCircle, X } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 type SubMenuType = "statistics" | "settlement-inquiry" | "settlement";
 
@@ -51,6 +57,7 @@ export default function Statistics() {
   const [workType, setWorkType] = useState("보험사");
   const [period, setPeriod] = useState("전체");
   const [searchResults, setSearchResults] = useState<any[] | null>(null);
+  const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null);
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -150,6 +157,7 @@ export default function Statistics() {
 
     // 결과 매핑
     const results = filteredCases.slice(0, 10).map((caseItem) => ({
+      id: caseItem.id,
       timeReception: caseItem.caseNumber,
       receptionNumber: caseItem.insuranceAccidentNo,
       insuranceCompany: caseItem.insuranceCompany,
@@ -168,6 +176,15 @@ export default function Statistics() {
 
   // 검색 결과가 있으면 표시, 없으면 빈 상태
   const displayData = searchResults || [];
+
+  // 선택된 케이스 찾기
+  const selectedCase = cases?.find(c => c.id === selectedCaseId);
+
+  // 날짜 포맷 헬퍼 함수
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return "-";
+    return dateString;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E7EDFE] to-white relative overflow-hidden">
@@ -524,7 +541,12 @@ export default function Statistics() {
                       </TableRow>
                     ) : (
                       displayData.map((row, index) => (
-                        <TableRow key={index} data-testid={`table-row-${index}`}>
+                        <TableRow 
+                          key={index} 
+                          data-testid={`table-row-${index}`}
+                          onClick={() => setSelectedCaseId(row.id)}
+                          className="cursor-pointer hover:bg-[rgba(0,143,237,0.05)]"
+                        >
                           <TableCell className="text-center">{row.timeReception}</TableCell>
                           <TableCell className="text-center">{row.receptionNumber}</TableCell>
                           <TableCell className="text-center">{row.insuranceCompany}</TableCell>
@@ -546,6 +568,220 @@ export default function Statistics() {
           </div>
         </main>
       </div>
+
+      {/* 통계 상세보기 Sheet */}
+      <Sheet open={selectedCaseId !== null} onOpenChange={(open) => !open && setSelectedCaseId(null)}>
+        <SheetContent 
+          className="w-full sm:max-w-[609px] p-0 overflow-y-auto"
+          data-testid="sheet-case-detail"
+        >
+          {selectedCase && (
+            <>
+              {/* Header */}
+              <SheetHeader className="px-5 py-6 border-b border-[rgba(12,12,12,0.1)]">
+                <div className="flex items-center justify-between">
+                  <SheetTitle className="text-[22px] font-semibold">
+                    통계 상세보기
+                  </SheetTitle>
+                  <button
+                    onClick={() => setSelectedCaseId(null)}
+                    className="w-6 h-6"
+                    data-testid="button-close-sheet"
+                  >
+                    <X className="w-6 h-6 text-[#1C1B1F]" />
+                  </button>
+                </div>
+              </SheetHeader>
+
+              {/* 케이스 정보 카드 */}
+              <div className="px-5 py-4 border-b border-[rgba(12,12,12,0.1)]">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-semibold text-[rgba(12,12,12,0.9)]">
+                    {selectedCase.insuranceCompany}
+                  </span>
+                  <span className="text-lg font-semibold text-[rgba(12,12,12,0.9)]">
+                    {selectedCase.caseNumber}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-sm text-[rgba(12,12,12,0.5)]">
+                    사건번호
+                  </span>
+                  <span className="text-sm text-[rgba(12,12,12,0.8)]">
+                    {selectedCase.insuranceAccidentNo || "-"}
+                  </span>
+                  <span className="text-sm text-[rgba(12,12,12,0.5)]">접수일</span>
+                  <span className="text-sm text-[rgba(12,12,12,0.8)]">
+                    {formatDate(selectedCase.damageReportedAt)}
+                  </span>
+                  <span className="text-sm text-[rgba(12,12,12,0.5)]">보험사</span>
+                  <span className="text-sm text-[rgba(12,12,12,0.8)]">
+                    MG 손해보험
+                  </span>
+                  <span className="text-sm text-[rgba(12,12,12,0.5)]">개인기업</span>
+                  <span className="text-sm text-[rgba(12,12,12,0.8)]">김팀장</span>
+                </div>
+              </div>
+
+              {/* 핵심 정보 섹션 */}
+              <div className="px-5 py-4">
+                <h3 className="text-sm font-semibold text-[rgba(12,12,12,0.7)] mb-4">
+                  핵심 정보
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">공사번호</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {selectedCase.caseNumber}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">국사</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {selectedCase.clientName || "-"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">업종자</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">누수대비</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">심사사</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {selectedCase.assignedPartner || "MG 손해보험"}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">손해보험사</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">POI-12345</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">담당자연락</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {selectedCase.clientPhone || "010 1234 5678"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 금액 섹션 */}
+              <div className="px-5 py-4 border-t border-[rgba(12,12,12,0.1)]">
+                <h3 className="text-sm font-semibold text-[rgba(12,12,12,0.7)] mb-4">
+                  금액
+                </h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">승인금액</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">6,320,000원</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">전달금액</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">7,312,000원</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">기지급액</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">30,000,000원</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1" />
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">Dsd</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1" />
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">200,000원</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 일시 섹션 */}
+              <div className="px-5 py-4 border-t border-[rgba(12,12,12,0.1)]">
+                <h3 className="text-sm font-semibold text-[rgba(12,12,12,0.7)] mb-4">
+                  일시
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">접수일</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {formatDate(selectedCase.damageReportedAt)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">배정일</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {formatDate(selectedCase.partnerAssignedAt)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">전달일자/시각</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {formatDate(selectedCase.onSiteInspectionAt)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">승인일자</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {formatDate(selectedCase.estimateSubmittedAt)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">승인일</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {formatDate(selectedCase.reportApprovedAt)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">공사일</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {formatDate(selectedCase.restorationCompletedAt)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">보험사 지급일</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {formatDate(selectedCase.clientPaymentCompletedAt)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">완료사 지급일</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">
+                      {formatDate(selectedCase.partnerPaymentCompletedAt)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 상태/결과 섹션 */}
+              <div className="px-5 py-4 border-t border-[rgba(12,12,12,0.1)]">
+                <h3 className="text-sm font-semibold text-[rgba(12,12,12,0.7)] mb-4">
+                  상태/결과
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">배당진행일</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">2</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">승인결과일</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">1</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">비고일관일</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">8</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">종결일자</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">ok,±2</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-[rgba(12,12,12,0.5)] mb-1">총결일자</div>
+                    <div className="text-base text-[rgba(12,12,12,0.9)]">중요</div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
