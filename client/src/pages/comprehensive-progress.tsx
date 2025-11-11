@@ -1398,21 +1398,29 @@ export default function ComprehensiveProgress() {
                   </div>
 
                   {/* 하단 버튼 */}
-                  <Button
+                  <button
                     style={{
                       width: "100%",
-                      background: "#008FED",
-                      color: "#FFFFFF",
+                      height: "52px",
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(0, 143, 237, 0.3)",
+                      boxShadow: "2px 4px 30px #BDD1F0",
+                      borderRadius: "10px",
+                      padding: "10px",
                       fontFamily: "Pretendard",
                       fontWeight: 600,
-                      fontSize: "16px",
-                      padding: "16px",
-                      borderRadius: "8px",
+                      fontSize: "18px",
+                      letterSpacing: "-0.02em",
+                      color: "#0C95F6",
+                      cursor: "pointer",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
                     }}
                     data-testid="button-special-note-input"
                   >
                     특이사항 입력
-                  </Button>
+                  </button>
                 </div>
               </ScrollArea>
             );
