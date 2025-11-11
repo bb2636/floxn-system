@@ -320,6 +320,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update case special notes endpoint
+  app.patch("/api/cases/:caseId/special-notes", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const { specialNotes } = req.body;
+
+      // specialNotes can be null or string
+      const updatedCase = await storage.updateCaseSpecialNotes(caseId, specialNotes ?? null);
+      
+      if (!updatedCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      res.json({ success: true, case: updatedCase });
+    } catch (error) {
+      console.error("Update case special notes error:", error);
+      res.status(500).json({ error: "특이사항 저장 중 오류가 발생했습니다" });
+    }
+  });
+
   // Get partner statistics endpoint
   app.get("/api/partner-stats", async (req, res) => {
     // Check authentication
