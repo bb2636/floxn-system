@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebarStatistics } from "@/components/app-sidebar-statistics";
 import { GlobalHeader } from "@/components/global-header";
 
@@ -8,11 +7,6 @@ interface StatisticsLayoutProps {
 }
 
 export function StatisticsLayout({ children }: StatisticsLayoutProps) {
-  const style = {
-    "--sidebar-width": "16rem",
-    "--sidebar-width-icon": "3rem",
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E7EDFE] to-white relative overflow-hidden">
       {/* Background blur effects */}
@@ -22,14 +16,13 @@ export function StatisticsLayout({ children }: StatisticsLayoutProps) {
 
       <GlobalHeader />
 
-      <SidebarProvider style={style as React.CSSProperties}>
-        <div className="flex w-full relative z-10">
-          <AppSidebarStatistics />
-          <main className="flex-1">
-            {children}
-          </main>
-        </div>
-      </SidebarProvider>
+      {/* Main Content */}
+      <div className="relative flex" style={{ height: "calc(100vh - 89px)" }}>
+        <AppSidebarStatistics />
+        <main className="flex-1">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
