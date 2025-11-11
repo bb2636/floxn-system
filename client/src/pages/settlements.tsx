@@ -157,7 +157,7 @@ export default function Settlements() {
   // 검색 결과 상태 (초기값: 전체 데이터)
   const [searchResults, setSearchResults] = useState<Settlement[]>(allMockData);
 
-  const { data: user, isLoading: userLoading } = useQuery<User>({
+  const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
@@ -319,7 +319,7 @@ export default function Settlements() {
     return sum + amount;
   }, 0);
 
-  if (userLoading || !user) {
+  if (!user) {
     return null;
   }
 
