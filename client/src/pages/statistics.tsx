@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, CaseWithLatestProgress } from "@shared/schema";
-import { Search, Download, Settings2 } from "lucide-react";
+import { Search, Download, Settings2, AlertCircle } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +50,7 @@ export default function Statistics() {
 
   const [workType, setWorkType] = useState("보험사");
   const [period, setPeriod] = useState("전체");
+  const [showResults, setShowResults] = useState(false);
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -114,6 +115,21 @@ export default function Statistics() {
     toast({
       title: "엑셀 다운로드",
       description: "통계 데이터를 엑셀로 다운로드합니다.",
+    });
+  };
+
+  const handleConditionSearch = () => {
+    const hasCondition = Object.values(filters).some((value) => value === true);
+    if (!hasCondition) {
+      toast({
+        title: "조건을 선택해주세요",
+        variant: "dark",
+      });
+      return;
+    }
+    setShowResults(true);
+    toast({
+      title: "선택된 조건으로 검색합니다.",
     });
   };
 
@@ -287,7 +303,7 @@ export default function Statistics() {
                 <label className="text-sm font-medium text-[rgba(12,12,12,0.7)]">
                   검색
                 </label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-end">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgba(12,12,12,0.4)]" />
                     <Input
@@ -300,6 +316,13 @@ export default function Statistics() {
                   </div>
                   <Button className="bg-[#008FED] hover:bg-[#0077D8] min-w-[80px]" data-testid="button-search">
                     검색
+                  </Button>
+                  <Button
+                    onClick={handleConditionSearch}
+                    className="bg-[#008FED] hover:bg-[#0077D8] whitespace-nowrap"
+                    data-testid="button-condition-search"
+                  >
+                    선택된 조건 검색하기
                   </Button>
                 </div>
               </div>
@@ -420,7 +443,7 @@ export default function Statistics() {
               <div className="flex items-center gap-2">
                 <span className="text-base font-semibold text-[#0C0C0C]">조회 결과</span>
                 <span className="text-base font-semibold text-[#008FED]" data-testid="text-total-count">
-                  {mockStatisticsData.length}
+                  {showResults ? mockStatisticsData.length : 0}
                 </span>
               </div>
               <Button
@@ -435,51 +458,70 @@ export default function Statistics() {
               </Button>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-center whitespace-nowrap">시간접수</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">접수번호</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">보험사</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">계약자</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">결재담당</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">배당업무</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">협력사</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">심사사</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">승인액</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">전수일</TableHead>
-                    <TableHead className="text-center whitespace-nowrap">공사</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mockStatisticsData.length === 0 ? (
+            {/* Table or Empty State */}
+            {!showResults ? (
+              <div className="flex flex-col items-center justify-center py-20 px-8" data-testid="empty-state">
+                <div className="w-16 h-16 rounded-full bg-[rgba(12,12,12,0.1)] flex items-center justify-center mb-6">
+                  <AlertCircle className="w-8 h-8 text-[rgba(12,12,12,0.3)]" />
+                </div>
+                <h3 className="text-xl font-semibold text-[rgba(12,12,12,0.8)] mb-3">
+                  아직게 검색해보세요
+                </h3>
+                <div className="text-center space-y-1">
+                  <p className="text-sm text-[rgba(12,12,12,0.5)]">
+                    검색어를 활용하여 데이터를 빠르게찾아보세요
+                  </p>
+                  <p className="text-sm text-[rgba(12,12,12,0.5)]">
+                    필수 조건을 선택하여 장소나 조건를 통해요
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8 text-[rgba(12,12,12,0.5)]">
-                        조회된 데이터가 없습니다.
-                      </TableCell>
+                      <TableHead className="text-center whitespace-nowrap">시간접수</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">접수번호</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">보험사</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">계약자</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">결재담당</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">배당업무</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">협력사</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">심사사</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">승인액</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">전수일</TableHead>
+                      <TableHead className="text-center whitespace-nowrap">공사</TableHead>
                     </TableRow>
-                  ) : (
-                    mockStatisticsData.map((row, index) => (
-                      <TableRow key={index} data-testid={`table-row-${index}`}>
-                        <TableCell className="text-center">{row.timeReception}</TableCell>
-                        <TableCell className="text-center">{row.receptionNumber}</TableCell>
-                        <TableCell className="text-center">{row.insuranceCompany}</TableCell>
-                        <TableCell className="text-center">{row.contractor}</TableCell>
-                        <TableCell className="text-center">{row.approvalManager}</TableCell>
-                        <TableCell className="text-center">{row.assignmentWork}</TableCell>
-                        <TableCell className="text-center">{row.partner}</TableCell>
-                        <TableCell className="text-center">{row.assessor}</TableCell>
-                        <TableCell className="text-center">{row.approvalAmount}</TableCell>
-                        <TableCell className="text-center">{row.completionDate}</TableCell>
-                        <TableCell className="text-center">{row.construction}</TableCell>
+                  </TableHeader>
+                  <TableBody>
+                    {mockStatisticsData.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={11} className="text-center py-8 text-[rgba(12,12,12,0.5)]">
+                          조회된 데이터가 없습니다.
+                        </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    ) : (
+                      mockStatisticsData.map((row, index) => (
+                        <TableRow key={index} data-testid={`table-row-${index}`}>
+                          <TableCell className="text-center">{row.timeReception}</TableCell>
+                          <TableCell className="text-center">{row.receptionNumber}</TableCell>
+                          <TableCell className="text-center">{row.insuranceCompany}</TableCell>
+                          <TableCell className="text-center">{row.contractor}</TableCell>
+                          <TableCell className="text-center">{row.approvalManager}</TableCell>
+                          <TableCell className="text-center">{row.assignmentWork}</TableCell>
+                          <TableCell className="text-center">{row.partner}</TableCell>
+                          <TableCell className="text-center">{row.assessor}</TableCell>
+                          <TableCell className="text-center">{row.approvalAmount}</TableCell>
+                          <TableCell className="text-center">{row.completionDate}</TableCell>
+                          <TableCell className="text-center">{row.construction}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </div>
         </main>
       </div>
