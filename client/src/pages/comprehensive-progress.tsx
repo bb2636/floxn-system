@@ -12,11 +12,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function ComprehensiveProgress() {
   const [activeMenu, setActiveMenu] = useState("종합진행관리");
   const [activeTab, setActiveTab] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -695,6 +704,7 @@ export default function ComprehensiveProgress() {
               return (
                 <div
                   key={caseItem.id}
+                  onClick={() => setSelectedCaseId(caseItem.id)}
                   style={{
                     display: "grid",
                     gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 60px 120px 100px",
@@ -703,6 +713,7 @@ export default function ComprehensiveProgress() {
                     overflowX: "auto",
                     gap: "8px",
                     alignItems: "center",
+                    cursor: "pointer",
                   }}
                   data-testid={`case-row-${caseItem.id}`}
                 >
@@ -743,7 +754,7 @@ export default function ComprehensiveProgress() {
                       }}
                     />
                   </div>
-                  <div>
+                  <div onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <div
@@ -814,6 +825,10 @@ export default function ComprehensiveProgress() {
                   </div>
                   <div>
                     <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedCaseId(caseItem.id);
+                      }}
                       style={{
                         padding: "6px 12px",
                         background: "#FFFFFF",
@@ -828,7 +843,7 @@ export default function ComprehensiveProgress() {
                       }}
                       data-testid={`button-detail-${caseItem.id}`}
                     >
-                      지세히 보기
+                      자세히 보기
                     </button>
                   </div>
                 </div>
@@ -837,6 +852,388 @@ export default function ComprehensiveProgress() {
           )}
         </div>
       </div>
+
+      {/* 상세보기 Sheet */}
+      <Sheet open={selectedCaseId !== null} onOpenChange={(open) => !open && setSelectedCaseId(null)}>
+        <SheetContent 
+          side="right" 
+          className="w-full sm:max-w-[400px] overflow-y-auto"
+          style={{
+            background: "rgba(253, 253, 253, 0.95)",
+            backdropFilter: "blur(17px)",
+            padding: "24px",
+          }}
+          data-testid="sheet-case-detail"
+        >
+          <SheetHeader className="mb-6">
+            <SheetTitle 
+              style={{
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "20px",
+                color: "#0C0C0C",
+              }}
+            >
+              진행건 상세보기
+            </SheetTitle>
+          </SheetHeader>
+
+          {selectedCaseId && (() => {
+            const selectedCase = cases?.find(c => c.id === selectedCaseId);
+            if (!selectedCase) return null;
+
+            return (
+              <ScrollArea className="h-[calc(100vh-120px)]">
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {/* 기본 정보 */}
+                  <div>
+                    <div 
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "16px",
+                        color: "#0C0C0C",
+                        marginBottom: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <span>{selectedCase.insuranceCompany || "-"}</span>
+                      <span style={{ color: "#008FED" }}>{selectedCase.insuranceAccidentNo || "-"}</span>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          사고일시
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.insuranceAccidentNo || "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          보험사
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.insuranceCompany || "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          계약자
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.clientName || "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 핵심 정보 */}
+                  <div>
+                    <div 
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        color: "#0C0C0C",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      핵심 정보
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          업종분류
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.status || "대기중"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          담당 담당자
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.assignedPartnerManager || "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          접수사
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.assignedPartner || "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          경과일수
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {calculateDays(selectedCase.createdAt)}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          견적금액
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          7,312,000원
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          승인금액
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          6,320,000원
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 실사 정보 */}
+                  <div>
+                    <div 
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        color: "#0C0C0C",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      실사 정보
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          실사사
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.insuranceCompany || "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          담당 담당자
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.assignedPartnerManager || "-"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 일시 */}
+                  <div>
+                    <div 
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        color: "#0C0C0C",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      일시
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          배당일
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.createdAt || "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          배당접수
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.createdAt || "-"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          반영일정
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          -
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "12px", 
+                          color: "rgba(12, 12, 12, 0.5)",
+                          marginBottom: "4px",
+                        }}>
+                          완공일
+                        </div>
+                        <div style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          color: "#0C0C0C",
+                        }}>
+                          -
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 하단 버튼 */}
+                  <Button
+                    style={{
+                      width: "100%",
+                      background: "#008FED",
+                      color: "#FFFFFF",
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      padding: "16px",
+                      borderRadius: "8px",
+                    }}
+                    data-testid="button-progress-input"
+                  >
+                    동아상담 입력
+                  </Button>
+                </div>
+              </ScrollArea>
+            );
+          })()}
+        </SheetContent>
+      </Sheet>
 
     </div>
   );
