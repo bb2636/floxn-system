@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, CaseWithLatestProgress } from "@shared/schema";
-import { Search, X, ChevronDown } from "lucide-react";
+import { Search, X, ChevronDown, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 
 type FilterTag = {
   id: string;
@@ -38,6 +41,11 @@ export default function StatisticsOverview() {
   
   // 자료처리(반려) 기준
   const [rejectionCriteria, setRejectionCriteria] = useState<string>("전체");
+  
+  // 직접입력 날짜 범위
+  const [dateRangeOpen, setDateRangeOpen] = useState(false);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   
   // 적용된 필터 태그
   const [filterTags, setFilterTags] = useState<FilterTag[]>([]);
@@ -98,13 +106,51 @@ export default function StatisticsOverview() {
   };
 
   const handleRejectionChange = (value: string) => {
+    if (value === "직접입력") {
+      setDateRangeOpen(true);
+      return;
+    }
+    
     setRejectionCriteria(value);
-    const category = "자료처리(반려사) 기준";
+    setDateRangeOpen(false);
+    setStartDate(undefined);
+    setEndDate(undefined);
+    
+    const category = "자료처리(협력사) 기간";
     // Remove existing tag for this category and add new one if not "전체"
     setFilterTags(prev => {
       const newTags = prev.filter(tag => tag.category !== category);
       return value !== "전체" ? [...newTags, createFilterTag(category, value)] : newTags;
     });
+  };
+
+  const handleDateRangeApply = () => {
+    if (startDate && endDate) {
+      // 1년 제한 검증
+      const oneYearAgo = new Date(endDate);
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      
+      if (startDate < oneYearAgo) {
+        alert("최대 1년까지 조회할 수 있어요");
+        return;
+      }
+      
+      setRejectionCriteria("직접입력");
+      const dateRangeLabel = `${format(startDate, "yyyy.MM.dd")} ~ ${format(endDate, "yyyy.MM.dd")}`;
+      
+      const category = "자료처리(협력사) 기간";
+      setFilterTags(prev => {
+        const newTags = prev.filter(tag => tag.category !== category);
+        return [...newTags, createFilterTag(category, dateRangeLabel)];
+      });
+      
+      setDateRangeOpen(false);
+    }
+  };
+
+  const handleDateRangeReset = () => {
+    setStartDate(undefined);
+    setEndDate(undefined);
   };
 
   const removeFilterTag = (tagId: string) => {
@@ -154,8 +200,10 @@ export default function StatisticsOverview() {
         const newSettlementManagers = settlementManagers.filter(v => v !== value);
         setSettlementManagers(newSettlementManagers.length === 0 ? ["전체"] : newSettlementManagers);
         break;
-      case "자료처리(반려사) 기준":
+      case "자료처리(협력사) 기간":
         setRejectionCriteria("전체");
+        setStartDate(undefined);
+        setEndDate(undefined);
         break;
     }
   };
@@ -172,6 +220,9 @@ export default function StatisticsOverview() {
     setPartners(["전체"]);
     setSettlementManagers(["전체"]);
     setRejectionCriteria("전체");
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setDateRangeOpen(false);
     setFilterTags([]);
   };
 
@@ -736,13 +787,13 @@ export default function StatisticsOverview() {
               </div>
             </div>
 
-            {/* 자료처리(반려사) 기준 */}
+            {/* 자료처리(협력사) 기간 */}
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-[rgba(12,12,12,0.7)]">
-                자료처리(반려사) 기준
+                자료처리(협력사) 기간
               </label>
-              <div className="flex gap-2">
-                {["전체", "당월", "직접입력"].map((option) => (
+              <div className="flex gap-2 items-center">
+                {["전체", "당월"].map((option) => (
                   <button
                     key={option}
                     onClick={() => handleRejectionChange(option)}
@@ -750,18 +801,102 @@ export default function StatisticsOverview() {
                     style={{
                       background: rejectionCriteria === option ? "#E3F2FD" : "white",
                       border: rejectionCriteria === option 
-                        ? "1px solid #008FED" 
-                        : "1px solid rgba(12, 12, 12, 0.2)",
-                      color: rejectionCriteria === option ? "#008FED" : "rgba(12, 12, 12, 0.7)",
+                        ? "1px solid #0C0C0C" 
+                        : "1px solid #0C0C0C",
+                      color: rejectionCriteria === option ? "#0C0C0C" : "#0C0C0C",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      fontWeight: rejectionCriteria === option ? 600 : 400,
+                      fontWeight: 500,
                     }}
-                    data-testid={`button-rejection-${option}`}
+                    data-testid={`button-period-${option}`}
                   >
                     {option}
                   </button>
                 ))}
+                
+                {/* 직접입력 버튼 with Popover */}
+                <Popover open={dateRangeOpen} onOpenChange={setDateRangeOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="h-10 px-6 rounded-lg transition-colors"
+                      style={{
+                        background: rejectionCriteria === "직접입력" ? "#E3F2FD" : "white",
+                        border: "1px solid #0C0C0C",
+                        color: "#0C0C0C",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                      }}
+                      data-testid="button-period-직접입력"
+                    >
+                      직접입력
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-4" align="start">
+                    <div className="space-y-4">
+                      {/* 날짜 범위 입력 */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white">
+                          <CalendarIcon className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm">
+                            {startDate ? format(startDate, "yyyy.MM.dd") : "2025.10.21"}
+                          </span>
+                        </div>
+                        <span className="text-sm text-gray-500">-</span>
+                        <div className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg bg-white">
+                          <CalendarIcon className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm">
+                            {endDate ? format(endDate, "yyyy.MM.dd") : "2025.10.21"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* 안내 문구 */}
+                      <p className="text-xs text-gray-500">최대 1년까지 조회할 수 있어요</p>
+                      
+                      {/* 캘린더 */}
+                      <div className="border-t pt-4">
+                        <Calendar
+                          mode="single"
+                          selected={startDate}
+                          onSelect={setStartDate}
+                          locale={ko}
+                          className="rounded-md border"
+                        />
+                      </div>
+                      
+                      <div className="border-t pt-4">
+                        <Calendar
+                          mode="single"
+                          selected={endDate}
+                          onSelect={setEndDate}
+                          locale={ko}
+                          className="rounded-md border"
+                          disabled={(date) => startDate ? date < startDate : false}
+                        />
+                      </div>
+                      
+                      {/* 버튼 */}
+                      <div className="flex gap-2 pt-4">
+                        <button
+                          onClick={handleDateRangeReset}
+                          className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                          data-testid="button-date-reset"
+                        >
+                          초기화
+                        </button>
+                        <button
+                          onClick={handleDateRangeApply}
+                          className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-white"
+                          style={{ background: "#00A3FF" }}
+                          data-testid="button-date-apply"
+                        >
+                          적용
+                        </button>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
