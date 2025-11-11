@@ -197,8 +197,68 @@ export default function Statistics() {
       );
     }
 
-    // 필터 적용 (추가 구현 가능 - 현재는 검색어만)
-    // TODO: selectedFilters와 dateRange 기반 필터링 로직
+    // 보험사 필터 적용
+    if (selectedFilters.insuranceCompanies.length > 0) {
+      filteredCases = filteredCases.filter((caseItem) =>
+        selectedFilters.insuranceCompanies.some(company => 
+          caseItem.insuranceCompany?.toLowerCase() === company.toLowerCase()
+        )
+      );
+    }
+
+    // 심사사 필터 적용
+    if (selectedFilters.assessors.length > 0) {
+      filteredCases = filteredCases.filter((caseItem) =>
+        selectedFilters.assessors.some(assessor => 
+          caseItem.assessorId?.toLowerCase() === assessor.toLowerCase()
+        )
+      );
+    }
+
+    // 조사사 필터 적용
+    if (selectedFilters.investigators.length > 0) {
+      filteredCases = filteredCases.filter((caseItem) =>
+        selectedFilters.investigators.some(investigator => 
+          caseItem.investigatorTeam?.toLowerCase() === investigator.toLowerCase()
+        )
+      );
+    }
+
+    // 협력사 필터 적용
+    if (selectedFilters.partners.length > 0) {
+      filteredCases = filteredCases.filter((caseItem) =>
+        selectedFilters.partners.some(partner => 
+          caseItem.assignedPartner?.toLowerCase() === partner.toLowerCase()
+        )
+      );
+    }
+
+    // 담당 담당자 필터 적용
+    if (selectedFilters.managers.length > 0) {
+      filteredCases = filteredCases.filter((caseItem) =>
+        selectedFilters.managers.some(manager => 
+          caseItem.assignedPartnerManager?.toLowerCase() === manager.toLowerCase()
+        )
+      );
+    }
+
+    // 날짜 범위 필터 적용
+    if (dateRange.from || dateRange.to) {
+      filteredCases = filteredCases.filter((caseItem) => {
+        if (!caseItem.damageReportedAt) return false;
+        const caseDate = new Date(caseItem.damageReportedAt);
+        
+        if (dateRange.from && caseDate < dateRange.from) return false;
+        if (dateRange.to) {
+          // 종료일은 해당 날짜의 끝(23:59:59)까지 포함
+          const endOfDay = new Date(dateRange.to);
+          endOfDay.setHours(23, 59, 59, 999);
+          if (caseDate > endOfDay) return false;
+        }
+        
+        return true;
+      });
+    }
 
     // 결과 매핑
     const results = filteredCases.slice(0, 10).map((caseItem) => ({
