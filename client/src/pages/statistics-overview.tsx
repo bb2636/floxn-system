@@ -234,84 +234,101 @@ export default function StatisticsOverview() {
             </div>
           </div>
 
-          {/* Filters Row 2 - 필터추가 */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[rgba(12,12,12,0.7)]">
-              필터추가
-            </label>
-            <div className="grid grid-cols-5 gap-3">
-              <Select value={insuranceCompany} onValueChange={setInsuranceCompany}>
-                <SelectTrigger className="h-10" data-testid="select-insurance-company">
-                  <SelectValue placeholder="보험사" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="삼성화재">삼성화재</SelectItem>
-                  <SelectItem value="현대해상">현대해상</SelectItem>
-                  <SelectItem value="DB손해보험">DB손해보험</SelectItem>
-                </SelectContent>
-              </Select>
+          {/* Filters Row 2 - 필터추가 & 자료처리 기준 */}
+          <div className="flex gap-8">
+            {/* 필터추가 */}
+            <div className="flex flex-col gap-2 flex-1">
+              <label className="text-sm font-medium text-[rgba(12,12,12,0.7)]">
+                필터추가
+              </label>
+              <div className="flex gap-3">
+                <Select value={insuranceCompany} onValueChange={setInsuranceCompany}>
+                  <SelectTrigger 
+                    className="h-10" 
+                    style={{
+                      border: "2px solid #008FED",
+                      borderRadius: "8px",
+                    }}
+                    data-testid="select-insurance-company"
+                  >
+                    <SelectValue placeholder="보험사" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="삼성화재">삼성화재</SelectItem>
+                    <SelectItem value="현대해상">현대해상</SelectItem>
+                    <SelectItem value="DB손해보험">DB손해보험</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select value={assessor} onValueChange={setAssessor}>
-                <SelectTrigger className="h-10" data-testid="select-assessor">
-                  <SelectValue placeholder="심사사" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="심사사1">심사사1</SelectItem>
-                  <SelectItem value="심사사2">심사사2</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select value={assessor} onValueChange={setAssessor}>
+                  <SelectTrigger className="h-10" data-testid="select-assessor">
+                    <SelectValue placeholder="심사사" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="심사사1">심사사1</SelectItem>
+                    <SelectItem value="심사사2">심사사2</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select value={investigator} onValueChange={setInvestigator}>
-                <SelectTrigger className="h-10" data-testid="select-investigator">
-                  <SelectValue placeholder="조사사" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="조사사1">조사사1</SelectItem>
-                  <SelectItem value="조사사2">조사사2</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select value={investigator} onValueChange={setInvestigator}>
+                  <SelectTrigger className="h-10" data-testid="select-investigator">
+                    <SelectValue placeholder="조사사" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="조사사1">조사사1</SelectItem>
+                    <SelectItem value="조사사2">조사사2</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select value={partner} onValueChange={setPartner}>
-                <SelectTrigger className="h-10" data-testid="select-partner">
-                  <SelectValue placeholder="업체사" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="업체사1">업체사1</SelectItem>
-                  <SelectItem value="업체사2">업체사2</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select value={partner} onValueChange={setPartner}>
+                  <SelectTrigger className="h-10" data-testid="select-partner">
+                    <SelectValue placeholder="협력사" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="협력사1">협력사1</SelectItem>
+                    <SelectItem value="협력사2">협력사2</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select value={settlementManager} onValueChange={setSettlementManager}>
-                <SelectTrigger className="h-10" data-testid="select-settlement-manager">
-                  <SelectValue placeholder="영사 담당자" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="담당자1">담당자1</SelectItem>
-                  <SelectItem value="담당자2">담당자2</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select value={settlementManager} onValueChange={setSettlementManager}>
+                  <SelectTrigger className="h-10" data-testid="select-settlement-manager">
+                    <SelectValue placeholder="당사 담당자" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="담당자1">담당자1</SelectItem>
+                    <SelectItem value="담당자2">담당자2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
 
-          {/* 자료처리(반려) 기준 */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[rgba(12,12,12,0.7)]">
-              자료처리(반려) 기준
-            </label>
-            <div className="flex gap-4">
-              {["전체", "당월", "직접입력"].map((option) => (
-                <label key={option} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="rejectionCriteria"
-                    checked={rejectionCriteria === option}
-                    onChange={() => setRejectionCriteria(option)}
-                    className="w-4 h-4"
-                    data-testid={`radio-rejection-${option}`}
-                  />
-                  <span className="text-sm text-[rgba(12,12,12,0.8)]">{option}</span>
-                </label>
-              ))}
+            {/* 자료처리(반려사) 기준 */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-[rgba(12,12,12,0.7)]">
+                자료처리(반려사) 기준
+              </label>
+              <div className="flex gap-2">
+                {["전체", "당월", "직접입력"].map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => setRejectionCriteria(option)}
+                    className="h-10 px-6 rounded-lg transition-colors"
+                    style={{
+                      background: rejectionCriteria === option ? "#E3F2FD" : "white",
+                      border: rejectionCriteria === option 
+                        ? "1px solid #008FED" 
+                        : "1px solid rgba(12, 12, 12, 0.2)",
+                      color: rejectionCriteria === option ? "#008FED" : "rgba(12, 12, 12, 0.7)",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: rejectionCriteria === option ? 600 : 400,
+                    }}
+                    data-testid={`button-rejection-${option}`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
