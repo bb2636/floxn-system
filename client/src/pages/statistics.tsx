@@ -42,7 +42,7 @@ export default function Statistics() {
 
   // 필터 상태
   const [filters, setFilters] = useState({
-    inquiryPeriod: true,
+    inquiryPeriod: false,
     assignmentWork: false,
     approvalManager: false,
     completionCompany: false,
@@ -50,7 +50,7 @@ export default function Statistics() {
 
   const [workType, setWorkType] = useState("보험사");
   const [period, setPeriod] = useState("전체");
-  const [showResults, setShowResults] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[] | null>(null);
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -119,34 +119,41 @@ export default function Statistics() {
   };
 
   const handleConditionSearch = () => {
-    const hasCondition = Object.values(filters).some((value) => value === true);
+    const hasCondition = 
+      Object.values(filters).some((value) => value === true) ||
+      searchQuery.trim() !== "" ||
+      period !== "전체";
+    
     if (!hasCondition) {
+      // 조건이 없으면 빈 상태로 리셋하고 토스트 표시
+      setSearchResults(null);
       toast({
         title: "조건을 선택해주세요",
         variant: "dark",
       });
       return;
     }
-    setShowResults(true);
-    toast({
-      title: "선택된 조건으로 검색합니다.",
-    });
+
+    // 검색 실행 (현재는 모든 데이터를 반환, 추후 필터링 로직 추가 가능)
+    const results = cases?.slice(0, 10).map((caseItem) => ({
+      timeReception: caseItem.caseNumber,
+      receptionNumber: caseItem.insuranceAccidentNo,
+      insuranceCompany: caseItem.insuranceCompany,
+      contractor: caseItem.clientName,
+      approvalManager: user?.name || "",
+      assignmentWork: caseItem.assignedPartner || "미배정",
+      partner: caseItem.assignedPartnerManager || "-",
+      assessor: "-",
+      approvalAmount: "6,320,000원",
+      completionDate: "2025-00-00",
+      construction: "진행중",
+    })) || [];
+
+    setSearchResults(results);
   };
 
-  // Mock data for table
-  const mockStatisticsData = cases?.slice(0, 10).map((caseItem, index) => ({
-    timeReception: caseItem.caseNumber,
-    receptionNumber: caseItem.insuranceAccidentNo,
-    insuranceCompany: caseItem.insuranceCompany,
-    contractor: caseItem.clientName,
-    approvalManager: user.name,
-    assignmentWork: caseItem.assignedPartner || "미배정",
-    partner: caseItem.assignedPartnerManager || "-",
-    assessor: "-",
-    approvalAmount: "6,320,000원",
-    completionDate: "2025-00-00",
-    construction: "진행중",
-  })) || [];
+  // 검색 결과가 있으면 표시, 없으면 빈 상태
+  const displayData = searchResults || [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E7EDFE] to-white relative overflow-hidden">
@@ -443,7 +450,7 @@ export default function Statistics() {
               <div className="flex items-center gap-2">
                 <span className="text-base font-semibold text-[#0C0C0C]">조회 결과</span>
                 <span className="text-base font-semibold text-[#008FED]" data-testid="text-total-count">
-                  {showResults ? mockStatisticsData.length : 0}
+                  {displayData.length}
                 </span>
               </div>
               <Button
@@ -459,7 +466,7 @@ export default function Statistics() {
             </div>
 
             {/* Table or Empty State */}
-            {!showResults ? (
+            {searchResults === null ? (
               <div className="flex flex-col items-center justify-center py-20 px-8" data-testid="empty-state">
                 <div className="w-16 h-16 rounded-full bg-[rgba(12,12,12,0.1)] flex items-center justify-center mb-6">
                   <AlertCircle className="w-8 h-8 text-[rgba(12,12,12,0.3)]" />
@@ -495,14 +502,14 @@ export default function Statistics() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockStatisticsData.length === 0 ? (
+                    {displayData.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={11} className="text-center py-8 text-[rgba(12,12,12,0.5)]">
                           조회된 데이터가 없습니다.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      mockStatisticsData.map((row, index) => (
+                      displayData.map((row, index) => (
                         <TableRow key={index} data-testid={`table-row-${index}`}>
                           <TableCell className="text-center">{row.timeReception}</TableCell>
                           <TableCell className="text-center">{row.receptionNumber}</TableCell>
