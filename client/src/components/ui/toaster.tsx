@@ -7,7 +7,7 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
-import { CheckCircle } from "lucide-react"
+import { CheckCircle, AlertCircle } from "lucide-react"
 
 export function Toaster() {
   const { toasts, dismiss } = useToast()
@@ -80,6 +80,55 @@ export function Toaster() {
                 >
                   확인하기
                 </button>
+              </div>
+            </Toast>
+          )
+        }
+
+        // 다크 토스트 variant를 위한 특별한 렌더링
+        if (variant === "dark") {
+          return (
+            <Toast key={id} variant="dark" {...props} duration={3000} data-testid="toast-dark">
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  padding: "10px 20px",
+                  gap: "6px",
+                  width: "100%",
+                  height: "100%",
+                  background: "rgba(12, 12, 12, 0.7)",
+                  boxShadow: "-6px 0px 40px rgba(89, 103, 115, 0.6)",
+                  backdropFilter: "blur(7px)",
+                  borderRadius: "6px",
+                }}
+                data-testid="toast-dark-content"
+              >
+                {/* 에러 아이콘 */}
+                <AlertCircle
+                  style={{
+                    width: "20px",
+                    height: "20px",
+                    color: "#FDFDFD",
+                    flexShrink: 0,
+                  }}
+                />
+                
+                {/* 메시지 */}
+                <div
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 600,
+                    fontSize: "16px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#FDFDFD",
+                    flex: 1,
+                  }}
+                >
+                  {title || description}
+                </div>
               </div>
             </Toast>
           )

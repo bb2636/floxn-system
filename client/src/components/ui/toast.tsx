@@ -32,6 +32,8 @@ const toastVariants = cva(
           "destructive group border space-x-4 p-6 pr-8 border-destructive bg-destructive text-destructive-foreground",
         snackbar:
           "border-0 p-0 w-[366px] h-[58px] space-x-0",
+        dark:
+          "border-0 w-[366px] h-[58px] space-x-0",
       },
     },
     defaultVariants: {
