@@ -1,17 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User } from "@shared/schema";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export function GlobalHeader() {
   const [, setLocation] = useLocation();
@@ -22,34 +15,29 @@ export function GlobalHeader() {
     queryKey: ["/api/user"],
   });
 
-  const menuItems = [
-    { name: "홈", path: "/dashboard" },
-    { name: "접수하기", path: "/intake" },
-    { name: "진행상황", path: "/progress" },
-    { name: "현장조사", path: "#" },
-    { name: "종합진행관리", path: "/comprehensive-progress" },
-    { name: "통계 및 정산", path: "/statistics" },
-    { name: "관리자 설정", path: "/admin-settings" },
-  ];
-
-  const handleMenuClick = (menuName: string, path: string) => {
-    if (path !== "#") {
-      setLocation(path);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await apiRequest("POST", "/api/logout", {});
+  const logoutMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/logout", {}),
+    onSuccess: () => {
       setLocation("/");
-    } catch (error) {
+    },
+    onError: () => {
       toast({
         title: "로그아웃 실패",
-        description: "로그아웃 중 오류가 발생했습니다.",
+        description: "다시 시도해주세요.",
         variant: "destructive",
       });
-    }
-  };
+    },
+  });
+
+  const menuItems = [
+    { name: "홈" },
+    { name: "접수하기" },
+    { name: "진행상황" },
+    { name: "현장조사" },
+    { name: "종합진행관리" },
+    { name: "통계 및 정산" },
+    { name: "관리자 설정" },
+  ];
 
   const getActiveMenu = () => {
     if (location === "/dashboard") return "홈";
@@ -69,78 +57,158 @@ export function GlobalHeader() {
 
   return (
     <>
-      {/* 데스크톱 헤더 (>= 1024px) */}
-      <header className="hidden lg:flex items-center justify-between px-8 h-[89px] bg-white/60 backdrop-blur-[7px] border-b border-[rgba(0,143,237,0.2)] relative z-10">
-        <div className="flex items-center gap-8">
-          <img
-            src={logoIcon}
-            alt="FLOXN 로고"
-            className="h-8 cursor-pointer"
-            onClick={() => setLocation("/dashboard")}
-            data-testid="logo-header"
+      {/* Mobile Header */}
+      <header 
+        className="lg:hidden flex items-center justify-between relative w-full"
+        style={{
+          background: 'rgba(255, 255, 255, 0.06)',
+          backdropFilter: 'blur(22px)',
+          borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
+          height: '58px',
+          padding: '0px 20px',
+          gap: '230px',
+        }}
+      >
+        {/* Logo */}
+        <div 
+          className="flex flex-col items-start"
+          style={{
+            padding: '0px 12px',
+            gap: '10px',
+            width: '52px',
+            height: '26px',
+            filter: 'drop-shadow(0px 0px 20px #DBE9F5)',
+          }}
+        >
+          <img 
+            src={logoIcon} 
+            alt="FLOXN Logo" 
+            style={{
+              width: '28px',
+              height: '26px',
+            }}
           />
-          <nav className="flex items-center gap-2">
-            {menuItems.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => handleMenuClick(item.name, item.path)}
-                className={`px-4 py-2 text-[15px] font-medium leading-[128%] tracking-[-0.01em] rounded-[10px] transition-all ${
-                  activeMenu === item.name
-                    ? "text-[#008FED] bg-[rgba(12,12,12,0.08)]"
-                    : "text-[rgba(12,12,12,0.5)] hover:text-[rgba(12,12,12,0.8)] hover:bg-[rgba(12,12,12,0.04)]"
-                }`}
-                data-testid={`nav-${item.name}`}
-              >
-                {item.name}
-              </button>
-            ))}
-          </nav>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-[rgba(12,12,12,0.04)] transition-colors"
-              data-testid="user-menu-trigger"
-            >
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#008FED] to-[#A855F7] flex items-center justify-center text-white font-semibold text-sm">
-                {user.name.charAt(0)}
-              </div>
-              <div className="flex flex-col items-start">
-                <div className="text-sm font-semibold text-[#0C0C0C]">
-                  {user.name}
-                </div>
-                <div className="text-xs text-[rgba(12,12,12,0.5)]">
-                  {user.role}
-                </div>
-              </div>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={handleLogout} data-testid="button-logout">
-              로그아웃
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Logout Button */}
+        <button
+          onClick={() => logoutMutation.mutate()}
+          className="flex items-center justify-center"
+          style={{
+            padding: '6px 12px',
+            gap: '10px',
+            width: '76px',
+            height: '31px',
+            background: 'rgba(253, 253, 253, 0.1)',
+            borderRadius: '6px',
+          }}
+          data-testid="button-mobile-logout"
+        >
+          <span
+            style={{
+              width: '52px',
+              height: '19px',
+              fontFamily: 'Pretendard',
+              fontStyle: 'normal',
+              fontWeight: 500,
+              fontSize: '15px',
+              lineHeight: '128%',
+              letterSpacing: '-0.01em',
+              textDecoration: 'underline',
+              color: 'rgba(12, 12, 12, 0.7)',
+            }}
+          >
+            로그아웃
+          </span>
+        </button>
       </header>
 
-      {/* 모바일 헤더 (< 1024px) */}
-      <header className="lg:hidden flex items-center justify-between px-4 h-[58px] bg-white/60 backdrop-blur-[7px] border-b border-[rgba(0,143,237,0.2)] relative z-10">
-        <img
-          src={logoIcon}
-          alt="FLOXN 로고"
-          className="h-6 cursor-pointer"
-          onClick={() => setLocation("/dashboard")}
-          data-testid="logo-header-mobile"
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleLogout}
-          data-testid="button-logout-mobile"
-        >
-          로그아웃
-        </Button>
+      {/* Desktop Header */}
+      <header 
+        className="hidden lg:flex relative w-full h-[89px] px-8 items-center justify-between"
+        style={{
+          background: 'rgba(255, 255, 255, 0.06)',
+          borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
+          backdropFilter: 'blur(22px)',
+        }}
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-2 w-[260px]">
+          <img 
+            src={logoIcon} 
+            alt="FLOXN Logo" 
+            className="w-6 h-6"
+          />
+          <div className="text-2xl font-bold text-gray-900">FLOXN</div>
+        </div>
+
+        {/* Navigation Menu */}
+        <div className="flex items-center gap-6 flex-1 px-6">
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => {
+                if (item.name === "홈") {
+                  setLocation("/dashboard");
+                } else if (item.name === "접수하기") {
+                  setLocation("/intake");
+                } else if (item.name === "진행상황") {
+                  setLocation("/progress");
+                } else if (item.name === "종합진행관리") {
+                  setLocation("/comprehensive-progress");
+                } else if (item.name === "관리자 설정") {
+                  setLocation("/admin-settings");
+                } else if (item.name === "통계 및 정산") {
+                  setLocation("/statistics");
+                }
+              }}
+              className="px-6 py-3 rounded-lg transition-colors"
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '18px',
+                fontWeight: activeMenu === item.name ? 600 : 500,
+                letterSpacing: '-0.02em',
+                color: activeMenu === item.name ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+              }}
+              data-testid={`menu-${item.name}`}
+            >
+              {item.name}
+            </button>
+          ))}
+        </div>
+
+        {/* User Profile */}
+        <div className="flex items-center gap-3">
+          <div 
+            className="w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(0, 143, 237, 0.3)' }}
+          />
+          <div className="flex items-center gap-2">
+            <span 
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '15px',
+                fontWeight: 600,
+                letterSpacing: '-0.02em',
+                color: 'rgba(12, 12, 12, 0.7)',
+              }}
+              data-testid="user-info"
+            >
+              {user.username}
+            </span>
+            <span 
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '15px',
+                fontWeight: 500,
+                letterSpacing: '-0.01em',
+                color: 'rgba(12, 12, 12, 0.4)',
+              }}
+            >
+              관리자
+            </span>
+          </div>
+        </div>
       </header>
     </>
   );
