@@ -48,6 +48,7 @@ export interface IStorage {
   createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
   getAllCases(): Promise<CaseWithLatestProgress[]>;
   updateCaseStatus(caseId: string, status: string): Promise<Case | null>;
+  updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null>;
   getPartnerStats(): Promise<PartnerStats[]>;
   createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate>;
   getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]>;
@@ -672,6 +673,7 @@ export class MemStorage implements IStorage {
         urgency: "보통",
         specialRequests: null,
         progressStatus: "서류보완요청",
+        specialNotes: null,
         assignedTo: partner1?.id || null,
         createdBy: adminUser.id,
         createdAt: "2025-01-15",
@@ -721,6 +723,7 @@ export class MemStorage implements IStorage {
         urgency: "긴급",
         specialRequests: null,
         progressStatus: "서류보완요청",
+        specialNotes: null,
         assignedTo: partner2?.id || null,
         createdBy: adminUser.id,
         createdAt: "2025-01-14",
@@ -770,6 +773,7 @@ export class MemStorage implements IStorage {
         urgency: "낮음",
         specialRequests: "겨울철 동파 예방 조치 필요",
         progressStatus: "선견적요청",
+        specialNotes: null,
         assignedTo: partner1?.id || null,
         createdBy: adminUser.id,
         createdAt: "2025-01-13",
@@ -916,6 +920,7 @@ export class MemStorage implements IStorage {
       urgency: caseData.urgency || null,
       specialRequests: caseData.specialRequests || null,
       progressStatus: caseData.progressStatus || null,
+      specialNotes: caseData.specialNotes || null,
       assignedTo: caseData.assignedTo || null,
       createdBy: caseData.createdBy,
       createdAt: currentDate,
@@ -963,6 +968,22 @@ export class MemStorage implements IStorage {
     const updatedCase: Case = {
       ...caseItem,
       status,
+    };
+    
+    this.cases.set(caseId, updatedCase);
+    return updatedCase;
+  }
+
+  async updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null> {
+    const caseItem = this.cases.get(caseId);
+    if (!caseItem) {
+      return null;
+    }
+    
+    const updatedCase: Case = {
+      ...caseItem,
+      specialNotes,
+      updatedAt: getKSTDate(),
     };
     
     this.cases.set(caseId, updatedCase);
@@ -1345,6 +1366,7 @@ export class DbStorage implements IStorage {
       urgency: caseData.urgency || null,
       specialRequests: caseData.specialRequests || null,
       progressStatus: caseData.progressStatus || null,
+      specialNotes: caseData.specialNotes || null,
       assignedTo: caseData.assignedTo || null,
       createdBy: caseData.createdBy,
       createdAt: currentDate,
@@ -1386,6 +1408,21 @@ export class DbStorage implements IStorage {
     
     const result = await db.update(cases)
       .set({ status, updatedAt: currentDate })
+      .where(eq(cases.id, caseId))
+      .returning();
+    
+    if (result.length === 0) {
+      return null;
+    }
+    
+    return result[0];
+  }
+
+  async updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null> {
+    const currentDate = getKSTDate();
+    
+    const result = await db.update(cases)
+      .set({ specialNotes, updatedAt: currentDate })
       .where(eq(cases.id, caseId))
       .returning();
     
