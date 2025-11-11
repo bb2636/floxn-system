@@ -134,8 +134,22 @@ export default function Statistics() {
       return;
     }
 
-    // 검색 실행 (현재는 모든 데이터를 반환, 추후 필터링 로직 추가 가능)
-    const results = cases?.slice(0, 10).map((caseItem) => ({
+    // 검색 실행: 필터 적용
+    let filteredCases = cases || [];
+
+    // 검색어 필터링
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.trim().toLowerCase();
+      filteredCases = filteredCases.filter((caseItem) =>
+        caseItem.caseNumber.toLowerCase().includes(query) ||
+        (caseItem.insuranceAccidentNo && caseItem.insuranceAccidentNo.toLowerCase().includes(query)) ||
+        caseItem.insuranceCompany.toLowerCase().includes(query) ||
+        (caseItem.clientName && caseItem.clientName.toLowerCase().includes(query))
+      );
+    }
+
+    // 결과 매핑
+    const results = filteredCases.slice(0, 10).map((caseItem) => ({
       timeReception: caseItem.caseNumber,
       receptionNumber: caseItem.insuranceAccidentNo,
       insuranceCompany: caseItem.insuranceCompany,
@@ -147,7 +161,7 @@ export default function Statistics() {
       approvalAmount: "6,320,000원",
       completionDate: "2025-00-00",
       construction: "진행중",
-    })) || [];
+    }));
 
     setSearchResults(results);
   };
