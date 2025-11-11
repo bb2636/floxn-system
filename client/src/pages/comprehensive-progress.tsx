@@ -841,14 +841,17 @@ export default function ComprehensiveProgress() {
                     {calculateDays(caseItem.createdAt)}
                   </div>
                   <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <div
-                      style={{
-                        width: "8px",
-                        height: "8px",
-                        borderRadius: "50%",
-                        background: "#008FED",
-                      }}
-                    />
+                    {caseItem.specialNotes && (
+                      <div
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          background: "#008FED",
+                        }}
+                        data-testid={`special-notes-indicator-${caseItem.id}`}
+                      />
+                    )}
                   </div>
                   <div onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
