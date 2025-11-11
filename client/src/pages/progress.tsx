@@ -6,6 +6,7 @@ import { Star, Search, Plus, Minus } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { GlobalHeader } from "@/components/global-header";
 
 export default function Progress() {
   const [activeMenu, setActiveMenu] = useState("진행상황");
@@ -149,66 +150,7 @@ export default function Progress() {
         />
       </div>
 
-      {/* Header - Same as intake.tsx */}
-      <header 
-        className="relative w-full h-[89px] px-8 flex items-center justify-between"
-        style={{
-          background: 'rgba(255, 255, 255, 0.06)',
-          borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
-          backdropFilter: 'blur(22px)',
-        }}
-      >
-        <div className="flex items-center gap-2 w-[260px]">
-          <img src={logoIcon} alt="FLOXN Logo" className="w-6 h-6" />
-          <div className="text-2xl font-bold text-gray-900">FLOXN</div>
-        </div>
-
-        <div className="flex items-center gap-6 flex-1 px-6">
-          {menuItems.map((item) => (
-            <button
-              key={item.name}
-              onClick={() => {
-                setActiveMenu(item.name);
-                if (item.name === "홈") setLocation("/dashboard");
-                else if (item.name === "관리자 설정") setLocation("/admin-settings");
-                else if (item.name === "접수하기") setLocation("/intake");
-                else if (item.name === "진행상황") setLocation("/progress");
-                else if (item.name === "종합진행관리") setLocation("/comprehensive-progress");
-              }}
-              className="px-6 py-3 rounded-lg transition-colors"
-              style={{
-                fontFamily: 'Pretendard',
-                fontSize: '18px',
-                fontWeight: activeMenu === item.name ? 600 : 500,
-                letterSpacing: '-0.02em',
-                color: activeMenu === item.name ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
-              }}
-              data-testid={`menu-${item.name}`}
-            >
-              {item.name}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div 
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(0, 143, 237, 0.3)' }}
-          />
-          <span 
-            style={{
-              fontFamily: 'Pretendard',
-              fontSize: '15px',
-              fontWeight: 600,
-              letterSpacing: '-0.02em',
-              color: 'rgba(12, 12, 12, 0.7)',
-            }}
-            data-testid="user-info"
-          >
-            {user.username}
-          </span>
-        </div>
-      </header>
+      <GlobalHeader />
 
       {/* Main Content */}
       <main className="relative flex items-center justify-center" style={{ padding: '0 0 40px 0' }}>
