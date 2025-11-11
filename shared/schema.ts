@@ -151,6 +151,17 @@ export const cases = pgTable("cases", {
   progressStatus: text("progress_status"), // 주요진행사항 (서류보완요청 등)
   specialNotes: text("special_notes"), // 관리자 특이사항 메모
   
+  // 일정 관련 필드
+  assignmentDate: text("assignment_date"), // 배당일
+  siteVisitDate: text("site_visit_date"), // 현장방문당일 배당
+  fieldSurveyDate: text("field_survey_date"), // 현장조사당일 배당
+  firstInspectionDate: text("first_inspection_date"), // 1차 실사일 (심사)
+  approvalCompletionDate: text("approval_completion_date"), // 승인완성일정
+  totalWorkDate: text("total_work_date"), // 총공일
+  contractorReportDate: text("contractor_report_date"), // 공사업체보고 배당
+  contractorRepairDate: text("contractor_repair_date"), // 공사업체보수 배당
+  completionDate: text("completion_date"), // 완공일
+  
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),

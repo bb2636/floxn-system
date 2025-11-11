@@ -1343,7 +1343,7 @@ export default function ComprehensiveProgress() {
                             fontSize: "16px",
                             letterSpacing: "-0.02em",
                             color: "rgba(12, 12, 12, 0.9)",
-                          }}>2025-00-00</span>
+                          }}>{formatDate(selectedCase.createdAt)}</span>
                         </div>
                         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "6px" }}>
                           <span style={{
@@ -1358,7 +1358,7 @@ export default function ComprehensiveProgress() {
                             fontSize: "16px",
                             letterSpacing: "-0.02em",
                             color: "rgba(12, 12, 12, 0.9)",
-                          }}>2025-00-00</span>
+                          }}>{formatDate(selectedCase.assignmentDate ?? null)}</span>
                         </div>
                       </div>
                       {/* Row 2 */}
@@ -1376,7 +1376,7 @@ export default function ComprehensiveProgress() {
                             fontSize: "16px",
                             letterSpacing: "-0.02em",
                             color: "rgba(12, 12, 12, 0.9)",
-                          }}>2025-00-00</span>
+                          }}>{formatDate(selectedCase.siteVisitDate ?? null)}</span>
                         </div>
                         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "6px" }}>
                           <span style={{
@@ -1391,7 +1391,7 @@ export default function ComprehensiveProgress() {
                             fontSize: "16px",
                             letterSpacing: "-0.02em",
                             color: "rgba(12, 12, 12, 0.9)",
-                          }}>2025-00-00</span>
+                          }}>{formatDate(selectedCase.fieldSurveyDate ?? null)}</span>
                         </div>
                       </div>
                       {/* Row 3 */}
@@ -1409,7 +1409,7 @@ export default function ComprehensiveProgress() {
                             fontSize: "16px",
                             letterSpacing: "-0.02em",
                             color: "rgba(12, 12, 12, 0.9)",
-                          }}>2025-00-00</span>
+                          }}>{formatDate(selectedCase.firstInspectionDate ?? null)}</span>
                         </div>
                         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "6px" }}>
                           <span style={{
@@ -1424,7 +1424,7 @@ export default function ComprehensiveProgress() {
                             fontSize: "16px",
                             letterSpacing: "-0.02em",
                             color: "rgba(12, 12, 12, 0.9)",
-                          }}>2025-00-00</span>
+                          }}>{formatDate(selectedCase.approvalCompletionDate ?? null)}</span>
                         </div>
                       </div>
                       {/* Row 4 */}
@@ -1442,7 +1442,7 @@ export default function ComprehensiveProgress() {
                             fontSize: "16px",
                             letterSpacing: "-0.02em",
                             color: "rgba(12, 12, 12, 0.9)",
-                          }}>2025-00-00</span>
+                          }}>{formatDate(selectedCase.totalWorkDate ?? null)}</span>
                         </div>
                         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "6px" }}>
                           <span style={{
@@ -1457,7 +1457,7 @@ export default function ComprehensiveProgress() {
                             fontSize: "16px",
                             letterSpacing: "-0.02em",
                             color: "rgba(12, 12, 12, 0.9)",
-                          }}>2025-00-00</span>
+                          }}>{formatDate(selectedCase.contractorReportDate ?? null)}</span>
                         </div>
                       </div>
                       {/* Row 5 */}
@@ -1475,7 +1475,7 @@ export default function ComprehensiveProgress() {
                             fontSize: "16px",
                             letterSpacing: "-0.02em",
                             color: "rgba(12, 12, 12, 0.9)",
-                          }}>2025-00-00</span>
+                          }}>{formatDate(selectedCase.contractorRepairDate ?? null)}</span>
                         </div>
                         <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "6px" }}>
                           <span style={{
@@ -1490,7 +1490,7 @@ export default function ComprehensiveProgress() {
                             fontSize: "16px",
                             letterSpacing: "-0.02em",
                             color: "rgba(12, 12, 12, 0.9)",
-                          }}>2025-00-00</span>
+                          }}>{formatDate(selectedCase.completionDate ?? null)}</span>
                         </div>
                       </div>
                     </div>
