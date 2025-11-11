@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { GlobalHeader } from "@/components/global-header";
 
 // 한국 행정구역 데이터
 const KOREA_REGIONS: Record<string, string[]> = {
@@ -405,95 +406,7 @@ export default function AdminSettings() {
         />
       </div>
 
-      {/* Header */}
-      <header
-        className="relative w-full h-[89px] px-8 flex items-center justify-between"
-        style={{
-          background: "rgba(255, 255, 255, 0.06)",
-          borderBottom: "1px solid rgba(0, 143, 237, 0.2)",
-          backdropFilter: "blur(22px)",
-        }}
-      >
-        {/* Logo */}
-        <div className="flex items-center gap-2 w-[260px]">
-          <img src={logoIcon} alt="FLOXN Logo" className="w-6 h-6" />
-          <div className="text-2xl font-bold text-gray-900">FLOXN</div>
-        </div>
-
-        {/* Navigation Menu */}
-        <div className="flex items-center gap-6 flex-1 px-6">
-          {[
-            "홈",
-            "접수하기",
-            "진행상황",
-            "현장조사",
-            "종합진행관리",
-            "통계 및 정산",
-            "관리자 설정",
-          ].map((item) => (
-            <button
-              key={item}
-              onClick={() => {
-                if (item === "홈") {
-                  setLocation("/dashboard");
-                } else if (item === "접수하기") {
-                  setLocation("/intake");
-                } else if (item === "진행상황") {
-                  setLocation("/progress");
-                } else if (item === "종합진행관리") {
-                  setLocation("/comprehensive-progress");
-                } else if (item === "관리자 설정") {
-                  setLocation("/admin-settings");
-                }
-              }}
-              className="px-6 py-3 rounded-lg transition-colors"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "18px",
-                fontWeight: item === "관리자 설정" ? 600 : 500,
-                letterSpacing: "-0.02em",
-                color:
-                  item === "관리자 설정" ? "#0C0C0C" : "rgba(12, 12, 12, 0.5)",
-              }}
-              data-testid={`menu-${item}`}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-
-        {/* User Profile */}
-        <div className="flex items-center gap-3">
-          <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(0, 143, 237, 0.3)" }}
-          />
-          <div className="flex items-center gap-2">
-            <span
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "15px",
-                fontWeight: 600,
-                letterSpacing: "-0.02em",
-                color: "rgba(12, 12, 12, 0.7)",
-              }}
-            >
-              xblock01
-            </span>
-            <span
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "15px",
-                fontWeight: 500,
-                letterSpacing: "-0.01em",
-                color: "rgba(12, 12, 12, 0.4)",
-              }}
-            >
-              관리자
-            </span>
-          </div>
-        </div>
-      </header>
+      <GlobalHeader />
 
       {/* Main Content */}
       <div className="relative flex" style={{ height: "calc(1223px - 89px)" }}>
