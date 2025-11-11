@@ -86,8 +86,8 @@ export default function ComprehensiveProgress() {
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       setShowSpecialNotesDialog(false);
       toast({
-        title: "저장 완료",
-        description: "특이사항이 성공적으로 저장되었습니다.",
+        variant: "snackbar",
+        title: "진행상황이 저장되었습니다",
       });
     },
     onError: () => {
