@@ -960,7 +960,7 @@ export default function ComprehensiveProgress() {
           style={{
             background: "rgba(253, 253, 253, 0.95)",
             backdropFilter: "blur(17px)",
-            padding: "24px",
+            padding: "50px 20px 32px 20px",
           }}
           data-testid="sheet-case-detail"
         >
@@ -982,7 +982,7 @@ export default function ComprehensiveProgress() {
             if (!selectedCase) return null;
 
             return (
-              <ScrollArea className="h-[calc(100vh-120px)] px-5">
+              <ScrollArea className="h-[calc(100vh-120px)]">
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "20px" }}>
                   {/* 상단 카드 */}
                   <div 
