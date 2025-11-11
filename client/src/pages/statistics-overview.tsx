@@ -53,6 +53,13 @@ export default function StatisticsOverview() {
     return null;
   }
 
+  // Helper function to create filter tag
+  const createFilterTag = (category: string, value: string): FilterTag => ({
+    id: `${category}-${value}`,
+    label: `${category} > ${value}`,
+    category: category,
+  });
+
   const handleCheckboxChange = (
     category: string,
     value: string,
@@ -61,19 +68,93 @@ export default function StatisticsOverview() {
   ) => {
     if (value === "전체") {
       setState(["전체"]);
+      // Remove all tags for this category
+      setFilterTags(prev => prev.filter(tag => tag.category !== category));
     } else {
       const newState = currentState.filter(v => v !== "전체");
       if (newState.includes(value)) {
         const filtered = newState.filter(v => v !== value);
         setState(filtered.length === 0 ? ["전체"] : filtered);
+        // Remove this specific tag
+        setFilterTags(prev => prev.filter(tag => tag.id !== `${category}-${value}`));
       } else {
         setState([...newState, value]);
+        // Add new tag
+        setFilterTags(prev => [...prev, createFilterTag(category, value)]);
       }
     }
   };
 
+  const handleSelectChange = (
+    category: string,
+    placeholder: string,
+    value: string,
+    setValue: (value: string) => void
+  ) => {
+    setValue(value);
+    // Remove existing tag for this category and add new one if value exists
+    setFilterTags(prev => {
+      const newTags = prev.filter(tag => tag.category !== category);
+      return value ? [...newTags, createFilterTag(category, value)] : newTags;
+    });
+  };
+
+  const handleRejectionChange = (value: string) => {
+    setRejectionCriteria(value);
+    const category = "자료처리(반려사) 기준";
+    // Remove existing tag for this category and add new one if not "전체"
+    setFilterTags(prev => {
+      const newTags = prev.filter(tag => tag.category !== category);
+      return value !== "전체" ? [...newTags, createFilterTag(category, value)] : newTags;
+    });
+  };
+
   const removeFilterTag = (tagId: string) => {
-    setFilterTags(filterTags.filter(tag => tag.id !== tagId));
+    const tag = filterTags.find(t => t.id === tagId);
+    if (!tag) return;
+
+    // Remove the tag
+    setFilterTags(filterTags.filter(t => t.id !== tagId));
+
+    // Update the corresponding filter state
+    const [category, value] = tagId.split('-').slice(0, 2);
+    
+    switch (tag.category) {
+      case "종결여부":
+        const newRegistrationDate = registrationDate.filter(v => v !== value);
+        setRegistrationDate(newRegistrationDate.length === 0 ? ["전체"] : newRegistrationDate);
+        break;
+      case "배당여부":
+        const newAssignmentStatus = assignmentStatus.filter(v => v !== value);
+        setAssignmentStatus(newAssignmentStatus.length === 0 ? ["전체"] : newAssignmentStatus);
+        break;
+      case "공사유무":
+        const newConstructionStatus = constructionStatus.filter(v => v !== value);
+        setConstructionStatus(newConstructionStatus.length === 0 ? ["전체"] : newConstructionStatus);
+        break;
+      case "중복여부":
+        const newDuplicateStatus = duplicateStatus.filter(v => v !== value);
+        setDuplicateStatus(newDuplicateStatus.length === 0 ? ["전체"] : newDuplicateStatus);
+        break;
+      case "보험사":
+        setInsuranceCompany("");
+        break;
+      case "심사사":
+        setAssessor("");
+        break;
+      case "조사사":
+        setInvestigator("");
+        break;
+      case "협력사":
+        setPartner("");
+        break;
+      case "당사 담당자":
+        setSettlementManager("");
+        break;
+      case "자료처리(반려사) 기준":
+        setRejectionCriteria("전체");
+        break;
+    }
   };
 
   const resetFilters = () => {
@@ -345,7 +426,10 @@ export default function StatisticsOverview() {
                 필터추가
               </label>
               <div className="flex gap-3">
-                <Select value={insuranceCompany} onValueChange={setInsuranceCompany}>
+                <Select 
+                  value={insuranceCompany} 
+                  onValueChange={(value) => handleSelectChange("보험사", "보험사", value, setInsuranceCompany)}
+                >
                   <SelectTrigger 
                     className="h-10" 
                     style={{
@@ -363,7 +447,10 @@ export default function StatisticsOverview() {
                   </SelectContent>
                 </Select>
 
-                <Select value={assessor} onValueChange={setAssessor}>
+                <Select 
+                  value={assessor} 
+                  onValueChange={(value) => handleSelectChange("심사사", "심사사", value, setAssessor)}
+                >
                   <SelectTrigger className="h-10" data-testid="select-assessor">
                     <SelectValue placeholder="심사사" />
                   </SelectTrigger>
@@ -373,7 +460,10 @@ export default function StatisticsOverview() {
                   </SelectContent>
                 </Select>
 
-                <Select value={investigator} onValueChange={setInvestigator}>
+                <Select 
+                  value={investigator} 
+                  onValueChange={(value) => handleSelectChange("조사사", "조사사", value, setInvestigator)}
+                >
                   <SelectTrigger className="h-10" data-testid="select-investigator">
                     <SelectValue placeholder="조사사" />
                   </SelectTrigger>
@@ -383,7 +473,10 @@ export default function StatisticsOverview() {
                   </SelectContent>
                 </Select>
 
-                <Select value={partner} onValueChange={setPartner}>
+                <Select 
+                  value={partner} 
+                  onValueChange={(value) => handleSelectChange("협력사", "협력사", value, setPartner)}
+                >
                   <SelectTrigger className="h-10" data-testid="select-partner">
                     <SelectValue placeholder="협력사" />
                   </SelectTrigger>
@@ -393,7 +486,10 @@ export default function StatisticsOverview() {
                   </SelectContent>
                 </Select>
 
-                <Select value={settlementManager} onValueChange={setSettlementManager}>
+                <Select 
+                  value={settlementManager} 
+                  onValueChange={(value) => handleSelectChange("당사 담당자", "당사 담당자", value, setSettlementManager)}
+                >
                   <SelectTrigger className="h-10" data-testid="select-settlement-manager">
                     <SelectValue placeholder="당사 담당자" />
                   </SelectTrigger>
@@ -414,7 +510,7 @@ export default function StatisticsOverview() {
                 {["전체", "당월", "직접입력"].map((option) => (
                   <button
                     key={option}
-                    onClick={() => setRejectionCriteria(option)}
+                    onClick={() => handleRejectionChange(option)}
                     className="h-10 px-6 rounded-lg transition-colors"
                     style={{
                       background: rejectionCriteria === option ? "#E3F2FD" : "white",
