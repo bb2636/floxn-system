@@ -37,6 +37,14 @@ export interface PartnerStats {
   pendingCount: number; // 미결건수
 }
 
+export interface StatisticsFilters {
+  insuranceCompanies: string[];
+  assessors: string[];
+  investigators: string[];
+  partners: string[];
+  settlementManagers: string[];
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -52,6 +60,7 @@ export interface IStorage {
   getPartnerStats(): Promise<PartnerStats[]>;
   createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate>;
   getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]>;
+  getStatisticsFilters(): Promise<StatisticsFilters>;
 }
 
 export class MemStorage implements IStorage {
@@ -1036,6 +1045,48 @@ export class MemStorage implements IStorage {
     const updates = Array.from(this.progressUpdates.values()).filter(u => u.caseId === caseId);
     return updates.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
+
+  async getStatisticsFilters(): Promise<StatisticsFilters> {
+    // Get unique insurance companies from cases
+    const insuranceCompaniesSet = new Set<string>();
+    Array.from(this.cases.values()).forEach(caseItem => {
+      if (caseItem.insuranceCompany) {
+        insuranceCompaniesSet.add(caseItem.insuranceCompany);
+      }
+    });
+
+    // Get unique company names by role from users
+    const assessorsSet = new Set<string>();
+    const investigatorsSet = new Set<string>();
+    const partnersSet = new Set<string>();
+    const settlementManagersSet = new Set<string>();
+
+    Array.from(this.users.values()).forEach(user => {
+      if (user.status !== "active") return; // Only include active users
+
+      if (user.role === "심사사" && user.company) {
+        assessorsSet.add(user.company);
+      } else if (user.role === "조사사" && user.company) {
+        investigatorsSet.add(user.company);
+      } else if (user.role === "협력사" && user.company) {
+        partnersSet.add(user.company);
+      }
+      
+      // Add all active users as potential settlement managers
+      if (user.name) {
+        settlementManagersSet.add(user.name);
+      }
+    });
+
+    // Convert to sorted arrays
+    return {
+      insuranceCompanies: Array.from(insuranceCompaniesSet).sort(),
+      assessors: Array.from(assessorsSet).sort(),
+      investigators: Array.from(investigatorsSet).sort(),
+      partners: Array.from(partnersSet).sort(),
+      settlementManagers: Array.from(settlementManagersSet).sort(),
+    };
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -1478,6 +1529,50 @@ export class DbStorage implements IStorage {
       .where(eq(progressUpdates.caseId, caseId))
       .orderBy(asc(progressUpdates.createdAt));
     return result;
+  }
+
+  async getStatisticsFilters(): Promise<StatisticsFilters> {
+    // Get all cases and users
+    const allCases = await db.select().from(cases);
+    const allUsers = await db.select().from(users).where(eq(users.status, "active"));
+
+    // Get unique insurance companies from cases
+    const insuranceCompaniesSet = new Set<string>();
+    allCases.forEach(caseItem => {
+      if (caseItem.insuranceCompany) {
+        insuranceCompaniesSet.add(caseItem.insuranceCompany);
+      }
+    });
+
+    // Get unique company names by role from users
+    const assessorsSet = new Set<string>();
+    const investigatorsSet = new Set<string>();
+    const partnersSet = new Set<string>();
+    const settlementManagersSet = new Set<string>();
+
+    allUsers.forEach(user => {
+      if (user.role === "심사사" && user.company) {
+        assessorsSet.add(user.company);
+      } else if (user.role === "조사사" && user.company) {
+        investigatorsSet.add(user.company);
+      } else if (user.role === "협력사" && user.company) {
+        partnersSet.add(user.company);
+      }
+      
+      // Add all active users as potential settlement managers
+      if (user.name) {
+        settlementManagersSet.add(user.name);
+      }
+    });
+
+    // Convert to sorted arrays
+    return {
+      insuranceCompanies: Array.from(insuranceCompaniesSet).sort(),
+      assessors: Array.from(assessorsSet).sort(),
+      investigators: Array.from(investigatorsSet).sort(),
+      partners: Array.from(partnersSet).sort(),
+      settlementManagers: Array.from(settlementManagersSet).sort(),
+    };
   }
 }
 

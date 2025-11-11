@@ -414,6 +414,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get statistics filters endpoint
+  app.get("/api/statistics/filters", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const filters = await storage.getStatisticsFilters();
+      res.json(filters);
+    } catch (error) {
+      console.error("Get statistics filters error:", error);
+      res.status(500).json({ error: "필터 데이터를 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

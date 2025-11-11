@@ -49,6 +49,17 @@ export default function StatisticsOverview() {
     queryKey: ["/api/cases"],
   });
 
+  // Fetch filter data
+  const { data: filterData, isLoading: isLoadingFilters } = useQuery<{
+    insuranceCompanies: string[];
+    assessors: string[];
+    investigators: string[];
+    partners: string[];
+    settlementManagers: string[];
+  }>({
+    queryKey: ["/api/statistics/filters"],
+  });
+
   if (!user) {
     return null;
   }
@@ -441,9 +452,15 @@ export default function StatisticsOverview() {
                     <SelectValue placeholder="보험사" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="삼성화재">삼성화재</SelectItem>
-                    <SelectItem value="현대해상">현대해상</SelectItem>
-                    <SelectItem value="DB손해보험">DB손해보험</SelectItem>
+                    {isLoadingFilters ? (
+                      <SelectItem value="loading">로딩 중...</SelectItem>
+                    ) : (
+                      filterData?.insuranceCompanies.map((company) => (
+                        <SelectItem key={company} value={company}>
+                          {company}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
 
@@ -455,8 +472,15 @@ export default function StatisticsOverview() {
                     <SelectValue placeholder="심사사" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="심사사1">심사사1</SelectItem>
-                    <SelectItem value="심사사2">심사사2</SelectItem>
+                    {isLoadingFilters ? (
+                      <SelectItem value="loading">로딩 중...</SelectItem>
+                    ) : (
+                      filterData?.assessors.map((assessorCompany) => (
+                        <SelectItem key={assessorCompany} value={assessorCompany}>
+                          {assessorCompany}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
 
@@ -468,8 +492,15 @@ export default function StatisticsOverview() {
                     <SelectValue placeholder="조사사" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="조사사1">조사사1</SelectItem>
-                    <SelectItem value="조사사2">조사사2</SelectItem>
+                    {isLoadingFilters ? (
+                      <SelectItem value="loading">로딩 중...</SelectItem>
+                    ) : (
+                      filterData?.investigators.map((investigatorCompany) => (
+                        <SelectItem key={investigatorCompany} value={investigatorCompany}>
+                          {investigatorCompany}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
 
@@ -481,8 +512,15 @@ export default function StatisticsOverview() {
                     <SelectValue placeholder="협력사" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="협력사1">협력사1</SelectItem>
-                    <SelectItem value="협력사2">협력사2</SelectItem>
+                    {isLoadingFilters ? (
+                      <SelectItem value="loading">로딩 중...</SelectItem>
+                    ) : (
+                      filterData?.partners.map((partnerCompany) => (
+                        <SelectItem key={partnerCompany} value={partnerCompany}>
+                          {partnerCompany}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
 
@@ -494,8 +532,15 @@ export default function StatisticsOverview() {
                     <SelectValue placeholder="당사 담당자" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="담당자1">담당자1</SelectItem>
-                    <SelectItem value="담당자2">담당자2</SelectItem>
+                    {isLoadingFilters ? (
+                      <SelectItem value="loading">로딩 중...</SelectItem>
+                    ) : (
+                      filterData?.settlementManagers.map((manager) => (
+                        <SelectItem key={manager} value={manager}>
+                          {manager}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
