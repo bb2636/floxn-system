@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type FilterTag = {
   id: string;
@@ -28,12 +29,12 @@ export default function StatisticsOverview() {
   // 중복여부
   const [duplicateStatus, setDuplicateStatus] = useState<string[]>(["전체"]);
   
-  // 필터추가
-  const [insuranceCompany, setInsuranceCompany] = useState<string>("");
-  const [assessor, setAssessor] = useState<string>("");
-  const [investigator, setInvestigator] = useState<string>("");
-  const [partner, setPartner] = useState<string>("");
-  const [settlementManager, setSettlementManager] = useState<string>("");
+  // 필터추가 (멀티셀렉트)
+  const [insuranceCompanies, setInsuranceCompanies] = useState<string[]>(["전체"]);
+  const [assessors, setAssessors] = useState<string[]>(["전체"]);
+  const [investigators, setInvestigators] = useState<string[]>(["전체"]);
+  const [partners, setPartners] = useState<string[]>(["전체"]);
+  const [settlementManagers, setSettlementManagers] = useState<string[]>(["전체"]);
   
   // 자료처리(반려) 기준
   const [rejectionCriteria, setRejectionCriteria] = useState<string>("전체");
@@ -96,20 +97,6 @@ export default function StatisticsOverview() {
     }
   };
 
-  const handleSelectChange = (
-    category: string,
-    placeholder: string,
-    value: string,
-    setValue: (value: string) => void
-  ) => {
-    setValue(value);
-    // Remove existing tag for this category and add new one if value exists
-    setFilterTags(prev => {
-      const newTags = prev.filter(tag => tag.category !== category);
-      return value ? [...newTags, createFilterTag(category, value)] : newTags;
-    });
-  };
-
   const handleRejectionChange = (value: string) => {
     setRejectionCriteria(value);
     const category = "자료처리(반려사) 기준";
@@ -148,19 +135,24 @@ export default function StatisticsOverview() {
         setDuplicateStatus(newDuplicateStatus.length === 0 ? ["전체"] : newDuplicateStatus);
         break;
       case "보험사":
-        setInsuranceCompany("");
+        const newInsuranceCompanies = insuranceCompanies.filter(v => v !== value);
+        setInsuranceCompanies(newInsuranceCompanies.length === 0 ? ["전체"] : newInsuranceCompanies);
         break;
       case "심사사":
-        setAssessor("");
+        const newAssessors = assessors.filter(v => v !== value);
+        setAssessors(newAssessors.length === 0 ? ["전체"] : newAssessors);
         break;
       case "조사사":
-        setInvestigator("");
+        const newInvestigators = investigators.filter(v => v !== value);
+        setInvestigators(newInvestigators.length === 0 ? ["전체"] : newInvestigators);
         break;
       case "협력사":
-        setPartner("");
+        const newPartners = partners.filter(v => v !== value);
+        setPartners(newPartners.length === 0 ? ["전체"] : newPartners);
         break;
       case "당사 담당자":
-        setSettlementManager("");
+        const newSettlementManagers = settlementManagers.filter(v => v !== value);
+        setSettlementManagers(newSettlementManagers.length === 0 ? ["전체"] : newSettlementManagers);
         break;
       case "자료처리(반려사) 기준":
         setRejectionCriteria("전체");
@@ -174,11 +166,11 @@ export default function StatisticsOverview() {
     setAssignmentStatus(["전체"]);
     setConstructionStatus(["전체"]);
     setDuplicateStatus(["전체"]);
-    setInsuranceCompany("");
-    setAssessor("");
-    setInvestigator("");
-    setPartner("");
-    setSettlementManager("");
+    setInsuranceCompanies(["전체"]);
+    setAssessors(["전체"]);
+    setInvestigators(["전체"]);
+    setPartners(["전체"]);
+    setSettlementManagers(["전체"]);
     setRejectionCriteria("전체");
     setFilterTags([]);
   };
@@ -437,112 +429,310 @@ export default function StatisticsOverview() {
                 필터추가
               </label>
               <div className="flex gap-3">
-                <Select 
-                  value={insuranceCompany} 
-                  onValueChange={(value) => handleSelectChange("보험사", "보험사", value, setInsuranceCompany)}
-                >
-                  <SelectTrigger 
-                    className="h-10" 
-                    style={{
-                      border: "2px solid #008FED",
-                      borderRadius: "8px",
-                    }}
-                    data-testid="select-insurance-company"
-                  >
-                    <SelectValue placeholder="보험사" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isLoadingFilters ? (
-                      <SelectItem value="loading">로딩 중...</SelectItem>
-                    ) : (
-                      filterData?.insuranceCompanies.map((company) => (
-                        <SelectItem key={company} value={company}>
-                          {company}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                {/* 보험사 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="h-10 px-4 rounded-lg flex items-center justify-between gap-2 min-w-[140px]"
+                      style={{
+                        background: "#F5F5F5",
+                        border: insuranceCompanies.length > 1 || !insuranceCompanies.includes("전체") 
+                          ? "2px solid #00A3FF" 
+                          : "2px solid #0C0C0C",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#0C0C0C",
+                      }}
+                      data-testid="button-insurance-company"
+                    >
+                      <span>보험사</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[500px] p-4" align="start">
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={insuranceCompanies.includes("전체")}
+                          onCheckedChange={() => handleCheckboxChange("보험사", "전체", insuranceCompanies, setInsuranceCompanies)}
+                          style={{
+                            backgroundColor: insuranceCompanies.includes("전체") ? "#00A3FF" : "#D9D9D9",
+                            borderColor: insuranceCompanies.includes("전체") ? "#00A3FF" : "#D9D9D9",
+                          }}
+                          data-testid="checkbox-insurance-all"
+                        />
+                        <span className="text-sm font-medium" style={{ color: insuranceCompanies.includes("전체") ? "#00A3FF" : "#686A6E" }}>
+                          전체
+                        </span>
+                      </label>
+                      {isLoadingFilters ? (
+                        <div className="col-span-2 text-sm text-gray-500">로딩 중...</div>
+                      ) : (
+                        filterData?.insuranceCompanies.map((company) => (
+                          <label key={company} className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={insuranceCompanies.includes(company)}
+                              onCheckedChange={() => handleCheckboxChange("보험사", company, insuranceCompanies, setInsuranceCompanies)}
+                              style={{
+                                backgroundColor: insuranceCompanies.includes(company) ? "#00A3FF" : "#D9D9D9",
+                                borderColor: insuranceCompanies.includes(company) ? "#00A3FF" : "#D9D9D9",
+                              }}
+                              data-testid={`checkbox-insurance-${company}`}
+                            />
+                            <span className="text-sm" style={{ color: insuranceCompanies.includes(company) ? "#00A3FF" : "#686A6E" }}>
+                              {company}
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
-                <Select 
-                  value={assessor} 
-                  onValueChange={(value) => handleSelectChange("심사사", "심사사", value, setAssessor)}
-                >
-                  <SelectTrigger className="h-10" data-testid="select-assessor">
-                    <SelectValue placeholder="심사사" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isLoadingFilters ? (
-                      <SelectItem value="loading">로딩 중...</SelectItem>
-                    ) : (
-                      filterData?.assessors.map((assessorCompany) => (
-                        <SelectItem key={assessorCompany} value={assessorCompany}>
-                          {assessorCompany}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                {/* 심사사 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="h-10 px-4 rounded-lg flex items-center justify-between gap-2 min-w-[140px]"
+                      style={{
+                        background: "#F5F5F5",
+                        border: assessors.length > 1 || !assessors.includes("전체") 
+                          ? "2px solid #00A3FF" 
+                          : "2px solid #0C0C0C",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#0C0C0C",
+                      }}
+                      data-testid="button-assessor"
+                    >
+                      <span>심사사</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[500px] p-4" align="start">
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={assessors.includes("전체")}
+                          onCheckedChange={() => handleCheckboxChange("심사사", "전체", assessors, setAssessors)}
+                          style={{
+                            backgroundColor: assessors.includes("전체") ? "#00A3FF" : "#D9D9D9",
+                            borderColor: assessors.includes("전체") ? "#00A3FF" : "#D9D9D9",
+                          }}
+                          data-testid="checkbox-assessor-all"
+                        />
+                        <span className="text-sm font-medium" style={{ color: assessors.includes("전체") ? "#00A3FF" : "#686A6E" }}>
+                          전체
+                        </span>
+                      </label>
+                      {isLoadingFilters ? (
+                        <div className="col-span-2 text-sm text-gray-500">로딩 중...</div>
+                      ) : (
+                        filterData?.assessors.map((assessorCompany) => (
+                          <label key={assessorCompany} className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={assessors.includes(assessorCompany)}
+                              onCheckedChange={() => handleCheckboxChange("심사사", assessorCompany, assessors, setAssessors)}
+                              style={{
+                                backgroundColor: assessors.includes(assessorCompany) ? "#00A3FF" : "#D9D9D9",
+                                borderColor: assessors.includes(assessorCompany) ? "#00A3FF" : "#D9D9D9",
+                              }}
+                              data-testid={`checkbox-assessor-${assessorCompany}`}
+                            />
+                            <span className="text-sm" style={{ color: assessors.includes(assessorCompany) ? "#00A3FF" : "#686A6E" }}>
+                              {assessorCompany}
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
-                <Select 
-                  value={investigator} 
-                  onValueChange={(value) => handleSelectChange("조사사", "조사사", value, setInvestigator)}
-                >
-                  <SelectTrigger className="h-10" data-testid="select-investigator">
-                    <SelectValue placeholder="조사사" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isLoadingFilters ? (
-                      <SelectItem value="loading">로딩 중...</SelectItem>
-                    ) : (
-                      filterData?.investigators.map((investigatorCompany) => (
-                        <SelectItem key={investigatorCompany} value={investigatorCompany}>
-                          {investigatorCompany}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                {/* 조사사 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="h-10 px-4 rounded-lg flex items-center justify-between gap-2 min-w-[140px]"
+                      style={{
+                        background: "#F5F5F5",
+                        border: investigators.length > 1 || !investigators.includes("전체") 
+                          ? "2px solid #00A3FF" 
+                          : "2px solid #0C0C0C",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#0C0C0C",
+                      }}
+                      data-testid="button-investigator"
+                    >
+                      <span>조사사</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[500px] p-4" align="start">
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={investigators.includes("전체")}
+                          onCheckedChange={() => handleCheckboxChange("조사사", "전체", investigators, setInvestigators)}
+                          style={{
+                            backgroundColor: investigators.includes("전체") ? "#00A3FF" : "#D9D9D9",
+                            borderColor: investigators.includes("전체") ? "#00A3FF" : "#D9D9D9",
+                          }}
+                          data-testid="checkbox-investigator-all"
+                        />
+                        <span className="text-sm font-medium" style={{ color: investigators.includes("전체") ? "#00A3FF" : "#686A6E" }}>
+                          전체
+                        </span>
+                      </label>
+                      {isLoadingFilters ? (
+                        <div className="col-span-2 text-sm text-gray-500">로딩 중...</div>
+                      ) : (
+                        filterData?.investigators.map((investigatorCompany) => (
+                          <label key={investigatorCompany} className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={investigators.includes(investigatorCompany)}
+                              onCheckedChange={() => handleCheckboxChange("조사사", investigatorCompany, investigators, setInvestigators)}
+                              style={{
+                                backgroundColor: investigators.includes(investigatorCompany) ? "#00A3FF" : "#D9D9D9",
+                                borderColor: investigators.includes(investigatorCompany) ? "#00A3FF" : "#D9D9D9",
+                              }}
+                              data-testid={`checkbox-investigator-${investigatorCompany}`}
+                            />
+                            <span className="text-sm" style={{ color: investigators.includes(investigatorCompany) ? "#00A3FF" : "#686A6E" }}>
+                              {investigatorCompany}
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
-                <Select 
-                  value={partner} 
-                  onValueChange={(value) => handleSelectChange("협력사", "협력사", value, setPartner)}
-                >
-                  <SelectTrigger className="h-10" data-testid="select-partner">
-                    <SelectValue placeholder="협력사" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isLoadingFilters ? (
-                      <SelectItem value="loading">로딩 중...</SelectItem>
-                    ) : (
-                      filterData?.partners.map((partnerCompany) => (
-                        <SelectItem key={partnerCompany} value={partnerCompany}>
-                          {partnerCompany}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                {/* 협력사 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="h-10 px-4 rounded-lg flex items-center justify-between gap-2 min-w-[140px]"
+                      style={{
+                        background: "#F5F5F5",
+                        border: partners.length > 1 || !partners.includes("전체") 
+                          ? "2px solid #00A3FF" 
+                          : "2px solid #0C0C0C",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#0C0C0C",
+                      }}
+                      data-testid="button-partner"
+                    >
+                      <span>협력사</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[500px] p-4" align="start">
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={partners.includes("전체")}
+                          onCheckedChange={() => handleCheckboxChange("협력사", "전체", partners, setPartners)}
+                          style={{
+                            backgroundColor: partners.includes("전체") ? "#00A3FF" : "#D9D9D9",
+                            borderColor: partners.includes("전체") ? "#00A3FF" : "#D9D9D9",
+                          }}
+                          data-testid="checkbox-partner-all"
+                        />
+                        <span className="text-sm font-medium" style={{ color: partners.includes("전체") ? "#00A3FF" : "#686A6E" }}>
+                          전체
+                        </span>
+                      </label>
+                      {isLoadingFilters ? (
+                        <div className="col-span-2 text-sm text-gray-500">로딩 중...</div>
+                      ) : (
+                        filterData?.partners.map((partnerCompany) => (
+                          <label key={partnerCompany} className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={partners.includes(partnerCompany)}
+                              onCheckedChange={() => handleCheckboxChange("협력사", partnerCompany, partners, setPartners)}
+                              style={{
+                                backgroundColor: partners.includes(partnerCompany) ? "#00A3FF" : "#D9D9D9",
+                                borderColor: partners.includes(partnerCompany) ? "#00A3FF" : "#D9D9D9",
+                              }}
+                              data-testid={`checkbox-partner-${partnerCompany}`}
+                            />
+                            <span className="text-sm" style={{ color: partners.includes(partnerCompany) ? "#00A3FF" : "#686A6E" }}>
+                              {partnerCompany}
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
-                <Select 
-                  value={settlementManager} 
-                  onValueChange={(value) => handleSelectChange("당사 담당자", "당사 담당자", value, setSettlementManager)}
-                >
-                  <SelectTrigger className="h-10" data-testid="select-settlement-manager">
-                    <SelectValue placeholder="당사 담당자" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {isLoadingFilters ? (
-                      <SelectItem value="loading">로딩 중...</SelectItem>
-                    ) : (
-                      filterData?.settlementManagers.map((manager) => (
-                        <SelectItem key={manager} value={manager}>
-                          {manager}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                {/* 당사 담당자 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="h-10 px-4 rounded-lg flex items-center justify-between gap-2 min-w-[140px]"
+                      style={{
+                        background: "#F5F5F5",
+                        border: settlementManagers.length > 1 || !settlementManagers.includes("전체") 
+                          ? "2px solid #00A3FF" 
+                          : "2px solid #0C0C0C",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#0C0C0C",
+                      }}
+                      data-testid="button-settlement-manager"
+                    >
+                      <span>당사 담당자</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[500px] p-4" align="start">
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={settlementManagers.includes("전체")}
+                          onCheckedChange={() => handleCheckboxChange("당사 담당자", "전체", settlementManagers, setSettlementManagers)}
+                          style={{
+                            backgroundColor: settlementManagers.includes("전체") ? "#00A3FF" : "#D9D9D9",
+                            borderColor: settlementManagers.includes("전체") ? "#00A3FF" : "#D9D9D9",
+                          }}
+                          data-testid="checkbox-settlement-all"
+                        />
+                        <span className="text-sm font-medium" style={{ color: settlementManagers.includes("전체") ? "#00A3FF" : "#686A6E" }}>
+                          전체
+                        </span>
+                      </label>
+                      {isLoadingFilters ? (
+                        <div className="col-span-2 text-sm text-gray-500">로딩 중...</div>
+                      ) : (
+                        filterData?.settlementManagers.map((manager) => (
+                          <label key={manager} className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={settlementManagers.includes(manager)}
+                              onCheckedChange={() => handleCheckboxChange("당사 담당자", manager, settlementManagers, setSettlementManagers)}
+                              style={{
+                                backgroundColor: settlementManagers.includes(manager) ? "#00A3FF" : "#D9D9D9",
+                                borderColor: settlementManagers.includes(manager) ? "#00A3FF" : "#D9D9D9",
+                              }}
+                              data-testid={`checkbox-settlement-${manager}`}
+                            />
+                            <span className="text-sm" style={{ color: settlementManagers.includes(manager) ? "#00A3FF" : "#686A6E" }}>
+                              {manager}
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
