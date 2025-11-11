@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, CaseWithLatestProgress } from "@shared/schema";
-import { Search, Download, Settings2, AlertCircle, X } from "lucide-react";
+import { Search, Download, Settings2, AlertCircle, X, ChevronDown, Calendar as CalendarIcon } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +36,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
 
 type SubMenuType = "statistics" | "settlement-inquiry" | "settlement";
 
@@ -46,12 +53,28 @@ export default function Statistics() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  // 필터 상태
-  const [filters, setFilters] = useState({
-    inquiryPeriod: false,
-    assignmentWork: false,
-    approvalManager: false,
-    completionCompany: false,
+  // 필터 상태 (다중 선택 지원)
+  const [selectedFilters, setSelectedFilters] = useState<{
+    insuranceCompanies: string[];
+    assessors: string[];
+    investigators: string[];
+    partners: string[];
+    managers: string[];
+  }>({
+    insuranceCompanies: [],
+    assessors: [],
+    investigators: [],
+    partners: [],
+    managers: [],
+  });
+
+  // 날짜 범위
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: undefined,
+    to: undefined,
   });
 
   const [workType, setWorkType] = useState("보험사");
@@ -95,6 +118,25 @@ export default function Statistics() {
     { name: "관리자 설정" },
   ];
 
+  // 필터 옵션 데이터 (하드코딩)
+  const filterOptions = {
+    insuranceCompanies: Array.from({ length: 11 }, (_, i) => `보험사${i + 1}`),
+    assessors: Array.from({ length: 11 }, (_, i) => `보험사${i + 1}`),
+    investigators: Array.from({ length: 11 }, (_, i) => `보험사${i + 1}`),
+    partners: Array.from({ length: 11 }, (_, i) => `보험사${i + 1}`),
+    managers: Array.from({ length: 11 }, (_, i) => `보험사${i + 1}`),
+  };
+
+  // 필터 토글 핸들러
+  const toggleFilter = (category: keyof typeof selectedFilters, value: string) => {
+    setSelectedFilters(prev => ({
+      ...prev,
+      [category]: prev[category].includes(value)
+        ? prev[category].filter(v => v !== value)
+        : [...prev[category], value]
+    }));
+  };
+
   const handleMenuClick = (menuName: string) => {
     setActiveMenu(menuName);
     if (menuName === "홈") setLocation("/dashboard");
@@ -126,10 +168,10 @@ export default function Statistics() {
   };
 
   const handleConditionSearch = () => {
-    const hasCondition = 
-      Object.values(filters).some((value) => value === true) ||
-      searchQuery.trim() !== "" ||
-      period !== "전체";
+    const hasFilter = Object.values(selectedFilters).some(arr => arr.length > 0);
+    const hasDateRange = dateRange.from !== undefined || dateRange.to !== undefined;
+    const hasSearchQuery = searchQuery.trim() !== "";
+    const hasCondition = hasFilter || hasDateRange || hasSearchQuery || period !== "전체";
     
     if (!hasCondition) {
       // 조건이 없으면 빈 상태로 리셋하고 토스트 표시
@@ -154,6 +196,9 @@ export default function Statistics() {
         (caseItem.clientName && caseItem.clientName.toLowerCase().includes(query))
       );
     }
+
+    // 필터 적용 (추가 구현 가능 - 현재는 검색어만)
+    // TODO: selectedFilters와 dateRange 기반 필터링 로직
 
     // 결과 매핑
     const results = filteredCases.slice(0, 10).map((caseItem) => ({
@@ -365,96 +410,236 @@ export default function Statistics() {
                 </div>
               </div>
 
-              {/* Filters checkboxes */}
-              <div className="grid grid-cols-4 gap-4">
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="filter-inquiry-period"
-                    checked={filters.inquiryPeriod}
-                    onCheckedChange={(checked) =>
-                      setFilters({ ...filters, inquiryPeriod: checked as boolean })
-                    }
-                    data-testid="checkbox-inquiry-period"
-                  />
-                  <label
-                    htmlFor="filter-inquiry-period"
-                    className="text-sm font-medium cursor-pointer"
-                  >
-                    조회기간
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="filter-assignment-work"
-                    checked={filters.assignmentWork}
-                    onCheckedChange={(checked) =>
-                      setFilters({ ...filters, assignmentWork: checked as boolean })
-                    }
-                    data-testid="checkbox-assignment-work"
-                  />
-                  <label
-                    htmlFor="filter-assignment-work"
-                    className="text-sm font-medium cursor-pointer"
-                  >
-                    배당업무
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="filter-approval-manager"
-                    checked={filters.approvalManager}
-                    onCheckedChange={(checked) =>
-                      setFilters({ ...filters, approvalManager: checked as boolean })
-                    }
-                    data-testid="checkbox-approval-manager"
-                  />
-                  <label
-                    htmlFor="filter-approval-manager"
-                    className="text-sm font-medium cursor-pointer"
-                  >
-                    결재담당
-                  </label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="filter-completion-company"
-                    checked={filters.completionCompany}
-                    onCheckedChange={(checked) =>
-                      setFilters({ ...filters, completionCompany: checked as boolean })
-                    }
-                    data-testid="checkbox-completion-company"
-                  />
-                  <label
-                    htmlFor="filter-completion-company"
-                    className="text-sm font-medium cursor-pointer"
-                  >
-                    전수업체
-                  </label>
-                </div>
-              </div>
+              {/* Filter dropdowns and date range */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* 보험사 필터 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      data-testid="filter-insurance-companies"
+                    >
+                      보험사
+                      {selectedFilters.insuranceCompanies.length > 0 && (
+                        <span className="ml-1 text-[#008FED]">
+                          ({selectedFilters.insuranceCompanies.length})
+                        </span>
+                      )}
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56">
+                    <div className="space-y-2">
+                      {filterOptions.insuranceCompanies.map((option) => (
+                        <div key={option} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`insurance-${option}`}
+                            checked={selectedFilters.insuranceCompanies.includes(option)}
+                            onCheckedChange={() => toggleFilter("insuranceCompanies", option)}
+                          />
+                          <label htmlFor={`insurance-${option}`} className="text-sm cursor-pointer">
+                            {option}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
 
-              {/* Work type and period selectors */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <label className="text-sm font-medium text-[rgba(12,12,12,0.7)] whitespace-nowrap">
-                    업무구분
-                  </label>
-                  <div className="flex gap-2">
-                    {["보험사", "심사사", "조사사", "협력사"].map((type) => (
+                {/* 심사사 필터 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      data-testid="filter-assessors"
+                    >
+                      심사사
+                      {selectedFilters.assessors.length > 0 && (
+                        <span className="ml-1 text-[#008FED]">
+                          ({selectedFilters.assessors.length})
+                        </span>
+                      )}
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56">
+                    <div className="space-y-2">
+                      {filterOptions.assessors.map((option) => (
+                        <div key={option} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`assessor-${option}`}
+                            checked={selectedFilters.assessors.includes(option)}
+                            onCheckedChange={() => toggleFilter("assessors", option)}
+                          />
+                          <label htmlFor={`assessor-${option}`} className="text-sm cursor-pointer">
+                            {option}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* 조사사 필터 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      data-testid="filter-investigators"
+                    >
+                      조사사
+                      {selectedFilters.investigators.length > 0 && (
+                        <span className="ml-1 text-[#008FED]">
+                          ({selectedFilters.investigators.length})
+                        </span>
+                      )}
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56">
+                    <div className="space-y-2">
+                      {filterOptions.investigators.map((option) => (
+                        <div key={option} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`investigator-${option}`}
+                            checked={selectedFilters.investigators.includes(option)}
+                            onCheckedChange={() => toggleFilter("investigators", option)}
+                          />
+                          <label htmlFor={`investigator-${option}`} className="text-sm cursor-pointer">
+                            {option}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* 협력사 필터 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      data-testid="filter-partners"
+                    >
+                      협력사
+                      {selectedFilters.partners.length > 0 && (
+                        <span className="ml-1 text-[#008FED]">
+                          ({selectedFilters.partners.length})
+                        </span>
+                      )}
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56">
+                    <div className="space-y-2">
+                      {filterOptions.partners.map((option) => (
+                        <div key={option} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`partner-${option}`}
+                            checked={selectedFilters.partners.includes(option)}
+                            onCheckedChange={() => toggleFilter("partners", option)}
+                          />
+                          <label htmlFor={`partner-${option}`} className="text-sm cursor-pointer">
+                            {option}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* 담당 담당자 필터 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      data-testid="filter-managers"
+                    >
+                      담당 담당자
+                      {selectedFilters.managers.length > 0 && (
+                        <span className="ml-1 text-[#008FED]">
+                          ({selectedFilters.managers.length})
+                        </span>
+                      )}
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56">
+                    <div className="space-y-2">
+                      {filterOptions.managers.map((option) => (
+                        <div key={option} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`manager-${option}`}
+                            checked={selectedFilters.managers.includes(option)}
+                            onCheckedChange={() => toggleFilter("managers", option)}
+                          />
+                          <label htmlFor={`manager-${option}`} className="text-sm cursor-pointer">
+                            {option}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
+                {/* 조회기간 (날짜 범위) */}
+                <div className="flex items-center gap-2 ml-4">
+                  <span className="text-sm font-medium text-[rgba(12,12,12,0.7)]">조회기간</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
                       <Button
-                        key={type}
-                        variant={workType === type ? "default" : "outline"}
+                        variant="outline"
                         size="sm"
-                        onClick={() => setWorkType(type)}
-                        data-testid={`button-work-type-${type}`}
+                        className="gap-2 min-w-[120px]"
+                        data-testid="date-range-start"
                       >
-                        {type}
+                        <CalendarIcon className="w-4 h-4" />
+                        {dateRange.from ? format(dateRange.from, "yyyy.MM.dd") : "2025.10.21"}
                       </Button>
-                    ))}
-                  </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateRange.from}
+                        onSelect={(date) => setDateRange({ ...dateRange, from: date })}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <span className="text-sm text-[rgba(12,12,12,0.5)]">~</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 min-w-[120px]"
+                        data-testid="date-range-end"
+                      >
+                        <CalendarIcon className="w-4 h-4" />
+                        {dateRange.to ? format(dateRange.to, "yyyy.MM.dd") : "2025.10.21"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateRange.to}
+                        onSelect={(date) => setDateRange({ ...dateRange, to: date })}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
-                <div className="flex items-center gap-2">
+                {/* 기간 선택 */}
+                <div className="flex items-center gap-2 ml-auto">
                   <Select value={period} onValueChange={setPeriod}>
                     <SelectTrigger className="w-[120px]" data-testid="select-period">
                       <SelectValue />
@@ -467,8 +652,22 @@ export default function Statistics() {
                   </Select>
                 </div>
 
-                <Button variant="outline" size="sm" data-testid="button-detailed-filter">
-                  직접입력하기
+                {/* 직접입력 및 상점검색 */}
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="bg-[#008FED] hover:bg-[#0077D8]"
+                  data-testid="button-apply-filters"
+                >
+                  직접
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="bg-[#008FED] hover:bg-[#0077D8]"
+                  data-testid="button-reset-filters"
+                >
+                  상점검색
                 </Button>
               </div>
             </div>
