@@ -1493,6 +1493,41 @@ export default function ComprehensiveProgress() {
                     </div>
                   </div>
 
+                  {/* 특이사항 섹션 */}
+                  <div style={{
+                    padding: "20px",
+                    background: "rgba(12, 12, 12, 0.04)",
+                    backdropFilter: "blur(7px)",
+                    borderRadius: "12px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                  }}>
+                    <div style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.9)",
+                    }}>
+                      특이사항
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        lineHeight: "1.6",
+                        letterSpacing: "-0.02em",
+                        color: selectedCase?.specialNotes ? "rgba(12, 12, 12, 0.9)" : "rgba(12, 12, 12, 0.5)",
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                      }}
+                      data-testid="text-special-notes"
+                    >
+                      {selectedCase?.specialNotes || "-"}
+                    </div>
+                  </div>
+
                   {/* 하단 버튼 */}
                   <button
                     onClick={handleOpenSpecialNotesDialog}
