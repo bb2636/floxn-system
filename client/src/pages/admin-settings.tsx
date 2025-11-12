@@ -363,8 +363,8 @@ export default function AdminSettings() {
 
   return (
     <div
-      className="relative"
-      style={{ height: "1223px", background: "#E7EDFE" }}
+      className="relative flex flex-col h-screen overflow-hidden"
+      style={{ background: "#E7EDFE" }}
     >
       {/* Blur Background Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -410,7 +410,7 @@ export default function AdminSettings() {
       <GlobalHeader />
 
       {/* Main Content */}
-      <div className="relative flex" style={{ height: "calc(1223px - 89px)" }}>
+      <div className="relative flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
         <div
           className="flex flex-col"
@@ -465,7 +465,7 @@ export default function AdminSettings() {
         </div>
 
         {/* Main Section */}
-        <div className="flex-1 px-8 py-6">
+        <div className="flex-1 px-8 py-6 h-full overflow-y-auto">
           {activeMenu === "접근 권한 관리" ? (
             <AccessControlPanel />
           ) : (
