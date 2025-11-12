@@ -468,6 +468,331 @@ export default function AdminSettings() {
         <div className="flex-1 px-8 py-6 h-full overflow-y-auto">
           {activeMenu === "접근 권한 관리" ? (
             <AccessControlPanel />
+          ) : activeMenu === "1:1 문의 관리" ? (
+            <>
+              {/* Title with notification icon */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <h1
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "26px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    1:1 문의 관리
+                  </h1>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      background: "rgba(0, 143, 237, 0.1)",
+                      borderRadius: "50%",
+                    }}
+                  >
+                    <span style={{ fontSize: "12px", color: "#008FED" }}>🔔</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Inquiry Count and Filter */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                    }}
+                  >
+                    문의 목록
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      color: "#008FED",
+                    }}
+                  >
+                    1000
+                  </span>
+                </div>
+                <Select defaultValue="전체">
+                  <SelectTrigger
+                    className="w-[120px]"
+                    style={{
+                      background: "#FDFDFD",
+                      border: "2px solid rgba(12, 12, 12, 0.08)",
+                      borderRadius: "8px",
+                      height: "40px",
+                    }}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="전체">전체</SelectItem>
+                    <SelectItem value="완료">완료</SelectItem>
+                    <SelectItem value="대기">대기</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Inquiry Table */}
+              <div
+                className="rounded-xl overflow-hidden"
+                style={{
+                  background: "#FFFFFF",
+                  boxShadow: "0px 0px 20px #DBE9F5",
+                }}
+              >
+                <table className="w-full">
+                  <thead>
+                    <tr
+                      style={{
+                        background: "#F8F9FA",
+                        borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
+                      }}
+                    >
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        날짜
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        제목
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        내용
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        작성자
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        역할
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        아이디
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        이메일 주소
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        답변여부
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        요청
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: 13 }).map((_, idx) => (
+                      <tr
+                        key={idx}
+                        style={{
+                          borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                      >
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          2025-00-00
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          신규 업소 건 배당 방법 문의
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#686A6E",
+                            maxWidth: "200px",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          건의 배당 방법 정립을 위한 의견 교환이 필요...
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          {idx % 3 === 0 ? "관리자" : idx % 3 === 1 ? "업체사" : "보험사"}
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#686A6E",
+                          }}
+                        >
+                          {idx % 3 === 0 ? "김철수" : idx % 3 === 1 ? "정민식" : "박철수"}
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          xblock01
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          xblock@gmail.com
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          완료
+                        </td>
+                        <td className="px-4 py-4">
+                          <button
+                            className="px-4 py-2"
+                            style={{
+                              background: "rgba(0, 143, 237, 0.1)",
+                              borderRadius: "6px",
+                              fontFamily: "Pretendard",
+                              fontSize: "13px",
+                              fontWeight: 500,
+                              letterSpacing: "-0.01em",
+                              color: "#008FED",
+                            }}
+                            data-testid={`button-inquiry-detail-${idx}`}
+                          >
+                            자세히보기
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : (
             <>
               {/* Title */}
