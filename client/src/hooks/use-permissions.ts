@@ -14,22 +14,17 @@ export function usePermissions() {
     queryKey: ["/api/user"],
   });
 
-  // Get all role permissions
-  const { data: allPermissions, isLoading: permissionsLoading } = useQuery<RolePermission[]>({
-    queryKey: ["/api/role-permissions"],
+  // Get current user's permissions (single permission for their role)
+  const { data: userPermission, isLoading: permissionsLoading } = useQuery<RolePermission | null>({
+    queryKey: ["/api/my-permissions"],
     enabled: !!user, // Only fetch if user is logged in
   });
 
-  // Find permissions for current user's role
-  const userPermissions = allPermissions?.find(
-    (perm) => perm.roleName === user?.role
-  );
-
   // Parse permissions JSON
   let permissions: PermissionState = {};
-  if (userPermissions) {
+  if (userPermission) {
     try {
-      permissions = JSON.parse(userPermissions.permissions);
+      permissions = JSON.parse(userPermission.permissions);
     } catch (e) {
       console.error("Failed to parse user permissions:", e);
     }

@@ -26,13 +26,7 @@ function Router() {
       <Route path="/" component={Login} />
       <Route path="/forbidden" component={Forbidden} />
       
-      <Route path="/dashboard">
-        {() => (
-          <ProtectedRoute category="홈">
-            <Dashboard />
-          </ProtectedRoute>
-        )}
-      </Route>
+      <Route path="/dashboard" component={Dashboard} />
       
       <Route path="/admin-settings">
         {() => (

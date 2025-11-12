@@ -505,6 +505,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current user's permissions endpoint (all authenticated users)
+  app.get("/api/my-permissions", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Get user's role from session
+    const userRole = req.session.userRole;
+    if (!userRole) {
+      return res.status(400).json({ error: "사용자 역할 정보를 찾을 수 없습니다" });
+    }
+
+    try {
+      const permission = await storage.getRolePermission(userRole);
+      if (!permission) {
+        // If no permissions set for this role, return empty permissions
+        return res.json(null);
+      }
+      res.json(permission);
+    } catch (error) {
+      console.error("Get my permissions error:", error);
+      res.status(500).json({ error: "권한 정보를 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Save role permission endpoint (admin only)
   app.post("/api/role-permissions", async (req, res) => {
     console.log("[POST /api/role-permissions] Request received, session:", {

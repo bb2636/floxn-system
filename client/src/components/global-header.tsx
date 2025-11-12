@@ -43,7 +43,8 @@ export function GlobalHeader() {
 
   // Filter menu items based on user permissions
   const menuItems = allMenuItems.filter((item) => {
-    if (permissionsLoading) return true; // Show all while loading
+    // Don't show any menu items while loading permissions
+    if (permissionsLoading) return false;
     return hasCategory(item.category);
   });
 
