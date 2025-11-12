@@ -211,3 +211,36 @@ export const insertProgressUpdateSchema = createInsertSchema(progressUpdates).om
 
 export type InsertProgressUpdate = z.infer<typeof insertProgressUpdateSchema>;
 export type ProgressUpdate = typeof progressUpdates.$inferSelect;
+
+// 역할 권한 관리 테이블
+export const rolePermissions = pgTable("role_permissions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  roleName: text("role_name").notNull().unique(), // 역할명 (예: "보험사", "협력사", "심사사")
+  permissions: text("permissions").notNull(), // JSON string: { [category]: string[] }
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateRolePermissionSchema = insertRolePermissionSchema.partial().extend({
+  roleName: z.string().min(1, "역할명을 입력해주세요"),
+});
+
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+export type UpdateRolePermission = z.infer<typeof updateRolePermissionSchema>;
+export type RolePermission = typeof rolePermissions.$inferSelect;
+
+// 권한 카테고리 및 항목 정의
+export const PERMISSION_CATEGORIES = {
+  "새로운 접수": ["접수 등록", "접수 조회"],
+  "전체상황": ["진행 상황 조회", "케이스 관리"],
+  "현장조사": ["현장조사 관리", "도면 작성", "견적서 작성", "현장종합보고서"],
+  "중기인정관리": ["중기 접수", "중기 검토"],
+  "복구 및 정산": ["복구 관리", "정산 조회", "정산하기", "입금 내역 관리"],
+  "관리자 설정": ["사용자 계정 관리", "접근 권한 관리", "1:1 문의 관리", "DB 관리", "기준정보 관리", "알림 메시지 전송"],
+} as const;
