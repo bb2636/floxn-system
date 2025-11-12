@@ -11,8 +11,10 @@ import ComprehensiveProgress from "@/pages/comprehensive-progress";
 import StatisticsOverview from "@/pages/statistics-overview";
 import SettlementsInquiry from "@/pages/settlements-inquiry";
 import SettlementAction from "@/pages/settlement-action";
+import FieldManagement from "@/pages/field-management";
 import NotFound from "@/pages/not-found";
 import { StatisticsLayout } from "@/components/statistics-layout";
+import { FieldSurveyLayout } from "@/components/field-survey-layout";
 
 function Router() {
   return (
@@ -41,6 +43,34 @@ function Router() {
           <StatisticsLayout>
             <SettlementAction />
           </StatisticsLayout>
+        )}
+      </Route>
+      <Route path="/field-survey/management">
+        {() => (
+          <FieldSurveyLayout>
+            <FieldManagement />
+          </FieldSurveyLayout>
+        )}
+      </Route>
+      <Route path="/field-survey/drawing">
+        {() => (
+          <FieldSurveyLayout>
+            <div className="p-8">도면 작성 페이지 (준비중)</div>
+          </FieldSurveyLayout>
+        )}
+      </Route>
+      <Route path="/field-survey/documents">
+        {() => (
+          <FieldSurveyLayout>
+            <div className="p-8">종합자료 등록 페이지 (준비중)</div>
+          </FieldSurveyLayout>
+        )}
+      </Route>
+      <Route path="/field-survey/estimate">
+        {() => (
+          <FieldSurveyLayout>
+            <div className="p-8">견적서작성조사 페이지 (준비중)</div>
+          </FieldSurveyLayout>
         )}
       </Route>
       <Route component={NotFound} />
