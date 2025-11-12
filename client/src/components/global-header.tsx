@@ -5,11 +5,13 @@ import { User } from "@shared/schema";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export function GlobalHeader() {
   const [, setLocation] = useLocation();
   const [location] = useLocation();
   const { toast } = useToast();
+  const { hasCategory, isLoading: permissionsLoading } = usePermissions();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -29,14 +31,21 @@ export function GlobalHeader() {
     },
   });
 
-  const menuItems = [
-    { name: "홈" },
-    { name: "접수하기" },
-    { name: "현장조사" },
-    { name: "종합진행관리" },
-    { name: "통계 및 정산" },
-    { name: "관리자 설정" },
+  // All possible menu items with their permission categories
+  const allMenuItems = [
+    { name: "홈", category: "홈" },
+    { name: "접수하기", category: "새로운접수" },
+    { name: "현장조사", category: "현장조사" },
+    { name: "종합진행관리", category: "종합진행관리" },
+    { name: "통계 및 정산", category: "통계 및 정산" },
+    { name: "관리자 설정", category: "관리자 설정" },
   ];
+
+  // Filter menu items based on user permissions
+  const menuItems = allMenuItems.filter((item) => {
+    if (permissionsLoading) return true; // Show all while loading
+    return hasCategory(item.category);
+  });
 
   const getActiveMenu = () => {
     if (location === "/dashboard") return "홈";
