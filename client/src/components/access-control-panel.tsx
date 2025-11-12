@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Minus, Save } from "lucide-react";
+import { Minus, RotateCcw } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -271,58 +271,73 @@ export function AccessControlPanel() {
         >
           {/* Header */}
           <div
-            className="px-6 py-6"
+            className="flex flex-col justify-center items-center py-6 gap-5"
             style={{
-              borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
+              borderBottom: "1px solid rgba(0, 143, 237, 0.3)",
             }}
           >
             {/* Selected Role Box */}
             <div
-              className="px-4 py-3 rounded-lg mb-4"
+              className="flex flex-col items-start gap-2.5 w-full"
               style={{
+                maxWidth: "1091px",
+                padding: "16px 20px",
                 background: "rgba(12, 12, 12, 0.04)",
+                backdropFilter: "blur(7px)",
+                borderRadius: "12px",
               }}
             >
-              <div className="flex flex-col gap-1">
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "12px",
-                    fontWeight: 500,
-                    letterSpacing: "-0.01em",
-                    color: "#686A6E",
-                  }}
-                  data-testid="text-selected-role-label"
-                >
-                  선택된 역할
-                </span>
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "18px",
-                    fontWeight: 700,
-                    letterSpacing: "-0.02em",
-                    color: "#0C0C0C",
-                  }}
-                  data-testid="text-selected-role-value"
-                >
-                  {selectedRole}
-                </span>
-              </div>
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 400,
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}
+                data-testid="text-selected-role-label"
+              >
+                선택된 역할
+              </span>
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "18px",
+                  fontWeight: 600,
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.9)",
+                }}
+                data-testid="text-selected-role-value"
+              >
+                {selectedRole}
+              </span>
             </div>
 
             {/* Buttons Row */}
-            <div className="flex items-center justify-between">
+            <div
+              className="flex justify-between items-center w-full"
+              style={{
+                maxWidth: "1091px",
+              }}
+            >
               <button
                 onClick={handleAllowAll}
-                className="px-6 py-3 rounded-lg"
+                className="flex justify-center items-center gap-2"
                 style={{
-                  background: "#63C5DA",
+                  padding: "12px 16px",
+                  background: "rgba(0, 143, 237, 0.1)",
+                  border: "2px solid rgba(255, 255, 255, 0.04)",
+                  boxShadow: "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
+                  backdropFilter: "blur(7px)",
+                  borderRadius: "6px",
                   fontFamily: "Pretendard",
-                  fontSize: "14px",
+                  fontSize: "16px",
                   fontWeight: 600,
+                  lineHeight: "128%",
                   letterSpacing: "-0.02em",
-                  color: "#FFFFFF",
+                  color: "#008FED",
                 }}
                 data-testid="button-allow-all"
               >
@@ -331,20 +346,21 @@ export function AccessControlPanel() {
               <button
                 onClick={handleSave}
                 disabled={savePermissionMutation.isPending || isLoading}
-                className="flex items-center gap-2"
+                className="flex items-center gap-1.5"
                 style={{
                   background: "transparent",
                   fontFamily: "Pretendard",
-                  fontSize: "14px",
+                  fontSize: "16px",
                   fontWeight: 500,
+                  lineHeight: "128%",
                   letterSpacing: "-0.02em",
-                  color: (savePermissionMutation.isPending || isLoading) ? "#CCCCCC" : "#686A6E",
+                  color: (savePermissionMutation.isPending || isLoading) ? "#CCCCCC" : "rgba(12, 12, 12, 0.7)",
                   cursor: (savePermissionMutation.isPending || isLoading) ? "not-allowed" : "pointer",
                 }}
                 data-testid="button-save"
               >
-                <Save className="w-4 h-4" />
-                {savePermissionMutation.isPending ? "저장 중..." : "저장"}
+                <RotateCcw className="w-5 h-5" style={{ color: (savePermissionMutation.isPending || isLoading) ? "#CCCCCC" : "rgba(12, 12, 12, 0.7)" }} />
+                {savePermissionMutation.isPending ? "저장 중..." : "초기화"}
               </button>
             </div>
           </div>
