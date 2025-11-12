@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X, ChevronDown, Upload, ChevronRight } from "lucide-react";
+import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { GlobalHeader } from "@/components/global-header";
 import { AccessControlPanel } from "@/components/access-control-panel";
+import * as XLSX from "xlsx";
 
 // 한국 행정구역 데이터
 const KOREA_REGIONS: Record<string, string[]> = {
@@ -265,6 +266,11 @@ export default function AdminSettings() {
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetPasswordValue, setResetPasswordValue] = useState("0000");
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  
+  // DB 관리 states
+  const [dbTab, setDbTab] = useState("노무비");
+  const [excelData, setExcelData] = useState<any[]>([]);
+  const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
   const [showAccountCreatedModal, setShowAccountCreatedModal] = useState(false);
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
@@ -1149,6 +1155,308 @@ export default function AdminSettings() {
                   </div>
                 </>
               )}
+            </>
+          ) : activeMenu === "DB 관리" ? (
+            <>
+              {/* Title */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <h1
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "26px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    DB 관리
+                  </h1>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      background: "#008FED",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: "#FFFFFF",
+                      }}
+                    >
+                      0
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.xlsx, .xls';
+                    input.onchange = (e: any) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const data = new Uint8Array(event.target?.result as ArrayBuffer);
+                          const workbook = XLSX.read(data, { type: 'array' });
+                          const sheetName = workbook.SheetNames[0];
+                          const worksheet = workbook.Sheets[sheetName];
+                          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                          
+                          if (jsonData.length > 0) {
+                            setExcelHeaders(jsonData[0] as string[]);
+                            setExcelData(jsonData.slice(1) as any[]);
+                            toast({
+                              title: "업로드 완료",
+                              description: "엑셀 파일이 성공적으로 업로드되었습니다.",
+                            });
+                          }
+                        };
+                        reader.readAsArrayBuffer(file);
+                      }
+                    };
+                    input.click();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2"
+                  style={{
+                    background: "#008FED",
+                    borderRadius: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "#FFFFFF",
+                  }}
+                  data-testid="button-upload-excel"
+                >
+                  <Upload size={16} />
+                  바탕 엑셀 업로드
+                </button>
+              </div>
+
+              {/* Tabs */}
+              <div className="flex gap-4 mb-6 border-b-2" style={{ borderColor: "rgba(12, 12, 12, 0.1)" }}>
+                <button
+                  onClick={() => setDbTab("노무비")}
+                  className="pb-3"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: dbTab === "노무비" ? "#008FED" : "#686A6E",
+                    borderBottom: dbTab === "노무비" ? "3px solid #008FED" : "none",
+                    marginBottom: dbTab === "노무비" ? "-2px" : "0",
+                  }}
+                  data-testid="tab-labor-cost"
+                >
+                  노무비
+                </button>
+                <button
+                  onClick={() => setDbTab("자재비")}
+                  className="pb-3"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: dbTab === "자재비" ? "#008FED" : "#686A6E",
+                    borderBottom: dbTab === "자재비" ? "3px solid #008FED" : "none",
+                    marginBottom: dbTab === "자재비" ? "-2px" : "0",
+                  }}
+                  data-testid="tab-material-cost"
+                >
+                  자재비
+                </button>
+              </div>
+
+              {/* Date Info */}
+              <h2
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
+                2025-09-01 전국 · 정부노임단가
+              </h2>
+
+              <div className="flex items-center gap-4 mb-6">
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 400,
+                    color: "#686A6E",
+                  }}
+                >
+                  기본값: 26025-00-00
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 400,
+                    color: "#686A6E",
+                  }}
+                >
+                  출처: 대한건설협회 시플노임단가
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 mb-6">
+                <button
+                  onClick={() => {
+                    if (excelData.length === 0) {
+                      toast({
+                        title: "데이터 없음",
+                        description: "다운로드할 데이터가 없습니다.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    const worksheet = XLSX.utils.aoa_to_sheet([excelHeaders, ...excelData]);
+                    const workbook = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(workbook, worksheet, dbTab);
+                    XLSX.writeFile(workbook, `${dbTab}_${new Date().toISOString().split('T')[0]}.xlsx`);
+                    
+                    toast({
+                      title: "다운로드 완료",
+                      description: "엑셀 파일이 다운로드되었습니다.",
+                    });
+                  }}
+                  className="flex items-center gap-2 px-4 py-2"
+                  style={{
+                    background: "#4CAF50",
+                    borderRadius: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#FFFFFF",
+                  }}
+                  data-testid="button-download-excel"
+                >
+                  <Download size={16} />
+                  엑셀 다운로드
+                </button>
+                <button
+                  onClick={() => {
+                    window.print();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2"
+                  style={{
+                    background: "rgba(12, 12, 12, 0.08)",
+                    borderRadius: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                  }}
+                  data-testid="button-print"
+                >
+                  <Printer size={16} />
+                  인쇄
+                </button>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead
+                    style={{
+                      background: "rgba(248, 248, 248, 1)",
+                    }}
+                  >
+                    <tr>
+                      {excelHeaders.length > 0 ? (
+                        excelHeaders.map((header, idx) => (
+                          <th
+                            key={idx}
+                            className="px-4 py-4 text-left"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              letterSpacing: "-0.01em",
+                              color: "#686A6E",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {header}
+                          </th>
+                        ))
+                      ) : (
+                        <>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>공종</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>공사명</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>규격</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>세부공사</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>유형</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>단위</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>직종명</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>할상임(분)</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>기준노임(원)</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>제품주수</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>산정단가(원)</th>
+                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>지역</th>
+                        </>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {excelData.length > 0 ? (
+                      excelData.map((row, rowIdx) => (
+                        <tr
+                          key={rowIdx}
+                          style={{
+                            borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                          }}
+                        >
+                          {Array.isArray(row) && row.map((cell, cellIdx) => (
+                            <td
+                              key={cellIdx}
+                              className="px-4 py-4"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "#0C0C0C",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={12}
+                          className="px-4 py-8 text-center"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#686A6E",
+                          }}
+                        >
+                          엑셀 파일을 업로드하면 데이터가 표시됩니다.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </>
           ) : (
             <>
