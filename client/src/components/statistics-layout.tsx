@@ -19,7 +19,7 @@ export function StatisticsLayout({ children }: StatisticsLayoutProps) {
       {/* Main Content */}
       <div className="relative flex" style={{ height: "calc(100vh - 89px)" }}>
         <AppSidebarStatistics />
-        <main className="flex-1">
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
