@@ -271,6 +271,18 @@ export default function AdminSettings() {
   const [sendEmailNotification, setSendEmailNotification] = useState(false);
   const [sendSmsNotification, setSendSmsNotification] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState("0000");
+  const [selectedInquiry, setSelectedInquiry] = useState<{
+    date: string;
+    title: string;
+    content: string;
+    author: string;
+    role: string;
+    userId: string;
+    email: string;
+    status: string;
+  } | null>(null);
+  const [replyTitle, setReplyTitle] = useState("");
+  const [replyContent, setReplyContent] = useState("");
   const [createAccountForm, setCreateAccountForm] = useState({
     role: "보험사",
     name: "",
@@ -671,13 +683,28 @@ export default function AdminSettings() {
                     </tr>
                   </thead>
                   <tbody>
-                    {Array.from({ length: 13 }).map((_, idx) => (
-                      <tr
-                        key={idx}
-                        style={{
-                          borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
+                    {Array.from({ length: 13 }).map((_, idx) => {
+                      const inquiry = {
+                        date: "2025-00-00",
+                        title: "신규 접수 건 배당 일정 문의",
+                        content: "안녕하세요. 이래 건의 배당 일정 확인 요청드립니다.\n\n접수번호: 00000000\n보험사: 사과보험\n접수일: 2025-00-00\n현장 주소/전달: 서울 관악구 남부순 55-11 511호\n\n확인 부탁드립니다. 감사합니다.",
+                        author: idx % 3 === 0 ? "김철수" : idx % 3 === 1 ? "정민식" : "박철수",
+                        role: idx % 3 === 0 ? "관리자" : idx % 3 === 1 ? "업체사" : "보험사",
+                        userId: "xblock01",
+                        email: "xblock@gmail.com",
+                        status: "완료",
+                      };
+                      
+                      return (
+                        <tr
+                          key={idx}
+                          onClick={() => setSelectedInquiry(inquiry)}
+                          className="cursor-pointer hover:bg-gray-50"
+                          style={{
+                            borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                          }}
+                          data-testid={`row-inquiry-${idx}`}
+                        >
                         <td
                           className="px-4 py-4"
                           style={{
@@ -687,7 +714,7 @@ export default function AdminSettings() {
                             color: "#0C0C0C",
                           }}
                         >
-                          2025-00-00
+                          {inquiry.date}
                         </td>
                         <td
                           className="px-4 py-4"
@@ -698,7 +725,7 @@ export default function AdminSettings() {
                             color: "#0C0C0C",
                           }}
                         >
-                          신규 업소 건 배당 방법 문의
+                          {inquiry.title}
                         </td>
                         <td
                           className="px-4 py-4"
@@ -713,7 +740,7 @@ export default function AdminSettings() {
                             textOverflow: "ellipsis",
                           }}
                         >
-                          건의 배당 방법 정립을 위한 의견 교환이 필요...
+                          {inquiry.content.substring(0, 30)}...
                         </td>
                         <td
                           className="px-4 py-4"
@@ -724,7 +751,7 @@ export default function AdminSettings() {
                             color: "#0C0C0C",
                           }}
                         >
-                          {idx % 3 === 0 ? "관리자" : idx % 3 === 1 ? "업체사" : "보험사"}
+                          {inquiry.role}
                         </td>
                         <td
                           className="px-4 py-4"
@@ -735,7 +762,7 @@ export default function AdminSettings() {
                             color: "#686A6E",
                           }}
                         >
-                          {idx % 3 === 0 ? "김철수" : idx % 3 === 1 ? "정민식" : "박철수"}
+                          {inquiry.author}
                         </td>
                         <td
                           className="px-4 py-4"
@@ -746,7 +773,7 @@ export default function AdminSettings() {
                             color: "#0C0C0C",
                           }}
                         >
-                          xblock01
+                          {inquiry.userId}
                         </td>
                         <td
                           className="px-4 py-4"
@@ -757,7 +784,7 @@ export default function AdminSettings() {
                             color: "#0C0C0C",
                           }}
                         >
-                          xblock@gmail.com
+                          {inquiry.email}
                         </td>
                         <td
                           className="px-4 py-4"
@@ -768,10 +795,14 @@ export default function AdminSettings() {
                             color: "#0C0C0C",
                           }}
                         >
-                          완료
+                          {inquiry.status}
                         </td>
                         <td className="px-4 py-4">
                           <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedInquiry(inquiry);
+                            }}
                             className="px-4 py-2"
                             style={{
                               background: "rgba(0, 143, 237, 0.1)",
@@ -788,10 +819,336 @@ export default function AdminSettings() {
                           </button>
                         </td>
                       </tr>
-                    ))}
+                    );
+                    })}
                   </tbody>
                 </table>
               </div>
+
+              {/* 1:1 문의 상세보기 Modal */}
+              {selectedInquiry && (
+                <>
+                  {/* Modal Overlay */}
+                  <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-40"
+                    onClick={() => {
+                      setSelectedInquiry(null);
+                      setReplyTitle("");
+                      setReplyContent("");
+                    }}
+                    data-testid="modal-overlay-inquiry"
+                  />
+
+                  {/* Modal Panel */}
+                  <div
+                    className="fixed right-0 top-0 h-screen w-[600px] bg-white z-50 shadow-2xl overflow-y-auto"
+                    style={{
+                      animation: "slideInRight 0.3s ease-out",
+                    }}
+                    data-testid="modal-inquiry-detail"
+                  >
+                    {/* Header */}
+                    <div
+                      className="sticky top-0 bg-white z-10 flex items-center justify-between px-8 py-6"
+                      style={{
+                        borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
+                      }}
+                    >
+                      <h2
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "24px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.02em",
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        1:1 문의 상세보기
+                      </h2>
+                      <button
+                        onClick={() => {
+                          setSelectedInquiry(null);
+                          setReplyTitle("");
+                          setReplyContent("");
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                        data-testid="button-close-inquiry-detail"
+                      >
+                        <X size={24} />
+                      </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="px-8 py-6">
+                      {/* Author Info */}
+                      <div
+                        className="flex items-center justify-between px-4 py-3 mb-6"
+                        style={{
+                          background: "rgba(12, 12, 12, 0.04)",
+                          borderRadius: "8px",
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: 600,
+                              color: "#0C0C0C",
+                            }}
+                          >
+                            {selectedInquiry.author}
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 400,
+                              color: "#686A6E",
+                            }}
+                          >
+                            · 메리츠화재
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 500,
+                              color: "#008FED",
+                            }}
+                          >
+                            {selectedInquiry.role}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mb-4">
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#686A6E",
+                          }}
+                        >
+                          {selectedInquiry.userId}
+                        </span>
+                        <span className="mx-2">·</span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#686A6E",
+                          }}
+                        >
+                          010 0000 0000
+                        </span>
+                      </div>
+
+                      {/* Date */}
+                      <div className="mb-4">
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#686A6E",
+                          }}
+                        >
+                          {selectedInquiry.date} 작성
+                        </span>
+                      </div>
+
+                      {/* Title */}
+                      <h3
+                        className="mb-6"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "20px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.02em",
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        {selectedInquiry.title}
+                      </h3>
+
+                      {/* Content */}
+                      <div
+                        className="p-4 mb-6"
+                        style={{
+                          background: "rgba(12, 12, 12, 0.04)",
+                          borderRadius: "8px",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            lineHeight: "1.6",
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          {selectedInquiry.content}
+                        </p>
+                      </div>
+
+                      {/* Reply Section */}
+                      <div
+                        className="border-t-2 pt-6"
+                        style={{
+                          borderColor: "rgba(12, 12, 12, 0.1)",
+                        }}
+                      >
+                        <h4
+                          className="mb-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "18px",
+                            fontWeight: 600,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          답변하기
+                        </h4>
+
+                        {/* Reply Title */}
+                        <div className="mb-4">
+                          <label
+                            className="block mb-2"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 500,
+                              color: "#686A6E",
+                            }}
+                          >
+                            제목
+                          </label>
+                          <input
+                            type="text"
+                            value={replyTitle}
+                            onChange={(e) => setReplyTitle(e.target.value)}
+                            placeholder="문의 제목을 입력하세요"
+                            className="w-full px-4 py-3 outline-none"
+                            style={{
+                              background: "#FDFDFD",
+                              border: "2px solid rgba(12, 12, 12, 0.08)",
+                              borderRadius: "8px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                            }}
+                            data-testid="input-reply-title"
+                          />
+                        </div>
+
+                        {/* Reply Content */}
+                        <div className="mb-2">
+                          <label
+                            className="block mb-2"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 500,
+                              color: "#686A6E",
+                            }}
+                          >
+                            내용
+                          </label>
+                          <textarea
+                            value={replyContent}
+                            onChange={(e) => setReplyContent(e.target.value)}
+                            placeholder="문의 내용을 입력하세요"
+                            className="w-full px-4 py-3 outline-none resize-none"
+                            rows={10}
+                            maxLength={800}
+                            style={{
+                              background: "#FDFDFD",
+                              border: "2px solid rgba(12, 12, 12, 0.08)",
+                              borderRadius: "8px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                            }}
+                            data-testid="textarea-reply-content"
+                          />
+                        </div>
+
+                        {/* Character Count */}
+                        <div className="flex justify-end mb-6">
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "12px",
+                              fontWeight: 400,
+                              color: "#686A6E",
+                            }}
+                          >
+                            {replyContent.length} /800
+                          </span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              setReplyTitle("");
+                              setReplyContent("");
+                            }}
+                            className="flex-1 py-3"
+                            style={{
+                              background: "rgba(12, 12, 12, 0.08)",
+                              borderRadius: "8px",
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: 600,
+                              color: "#686A6E",
+                            }}
+                            data-testid="button-reset-reply"
+                          >
+                            초기화
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (!replyTitle || !replyContent) {
+                                toast({
+                                  title: "입력 오류",
+                                  description: "제목과 내용을 모두 입력해주세요.",
+                                  variant: "destructive",
+                                });
+                                return;
+                              }
+                              
+                              toast({
+                                title: "답변 완료",
+                                description: "답변이 등록되었습니다.",
+                              });
+                              
+                              setSelectedInquiry(null);
+                              setReplyTitle("");
+                              setReplyContent("");
+                            }}
+                            className="flex-1 py-3"
+                            style={{
+                              background: "#008FED",
+                              borderRadius: "8px",
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: 600,
+                              color: "#FDFDFD",
+                            }}
+                            data-testid="button-submit-reply"
+                          >
+                            확인
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           ) : (
             <>
