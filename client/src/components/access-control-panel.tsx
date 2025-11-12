@@ -382,7 +382,7 @@ export function AccessControlPanel() {
                         {category}
                       </span>
                     </div>
-                    {hasItems && isExpanded && (
+                    {hasItems && (
                       <button
                         onClick={() => toggleCategory(category)}
                         className="p-1"
