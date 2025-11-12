@@ -271,6 +271,18 @@ export default function AdminSettings() {
   const [dbTab, setDbTab] = useState("노무비");
   const [excelData, setExcelData] = useState<any[]>([]);
   const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
+  
+  // 기준정보 관리 states
+  const [selectedCategory, setSelectedCategory] = useState("보험사");
+  const [categoryItems, setCategoryItems] = useState<Record<string, string[]>>({
+    "보험사": ["보험사 1", "보험사 2", "보험사 3"],
+    "협력사": ["협력사 1", "협력사 2"],
+    "손해사정사": [],
+    "차디유형": [],
+    "사고 유형": [],
+    "사고 원인": [],
+  });
+  const [newItemInput, setNewItemInput] = useState("");
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
   const [showAccountCreatedModal, setShowAccountCreatedModal] = useState(false);
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
@@ -1456,6 +1468,439 @@ export default function AdminSettings() {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </>
+          ) : activeMenu === "기준정보 관리" ? (
+            <>
+              {/* Title */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <h1
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "26px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    기준정보 관리
+                  </h1>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      borderRadius: "50%",
+                      background: "#008FED",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: "#FFFFFF",
+                      }}
+                    >
+                      0
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Main Content */}
+              <div className="flex gap-6">
+                {/* Left Sidebar - Category List */}
+                <div
+                  className="w-80 rounded-xl p-6"
+                  style={{
+                    background: "#FFFFFF",
+                    boxShadow: "0px 0px 20px #DBE9F5",
+                  }}
+                >
+                  <h3
+                    className="mb-4"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    기준정보 목록
+                  </h3>
+
+                  <div className="space-y-2">
+                    {Object.keys(categoryItems).map((category) => (
+                      <div key={category}>
+                        <button
+                          onClick={() => setSelectedCategory(category)}
+                          className="w-full text-left px-4 py-3 rounded-lg transition-colors"
+                          style={{
+                            background: selectedCategory === category ? "rgba(0, 143, 237, 0.1)" : "transparent",
+                            fontFamily: "Pretendard",
+                            fontSize: "15px",
+                            fontWeight: selectedCategory === category ? 600 : 400,
+                            color: selectedCategory === category ? "#008FED" : "#0C0C0C",
+                          }}
+                          data-testid={`category-${category}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{category}</span>
+                            <span
+                              style={{
+                                fontSize: "13px",
+                                color: "#686A6E",
+                              }}
+                            >
+                              {categoryItems[category].length}개
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              fontSize: "13px",
+                              fontWeight: 400,
+                              color: "#686A6E",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {category} 목록
+                          </div>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Right Content - Selected Category Management */}
+                <div
+                  className="flex-1 rounded-xl p-6"
+                  style={{
+                    background: "#FFFFFF",
+                    boxShadow: "0px 0px 20px #DBE9F5",
+                  }}
+                >
+                  <h3
+                    className="mb-6"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "20px",
+                      fontWeight: 600,
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    선택된 항목
+                  </h3>
+
+                  {/* Selected Category Info */}
+                  <div className="flex items-center gap-3 mb-6">
+                    <div
+                      className="px-4 py-2 rounded-lg flex items-center gap-2"
+                      style={{
+                        background: "rgba(0, 143, 237, 0.1)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "15px",
+                          fontWeight: 600,
+                          color: "#008FED",
+                        }}
+                      >
+                        {selectedCategory}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "13px",
+                          fontWeight: 400,
+                          color: "#686A6E",
+                        }}
+                      >
+                        목록
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        color: "#686A6E",
+                      }}
+                    >
+                      {selectedCategory} 목록
+                    </span>
+                  </div>
+
+                  {/* Add New Item Section */}
+                  <div
+                    className="mb-6 p-4 rounded-lg"
+                    style={{
+                      background: "rgba(248, 248, 248, 1)",
+                      border: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <div className="flex items-end gap-3">
+                      <div className="flex-1">
+                        <label
+                          className="block mb-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#686A6E",
+                          }}
+                        >
+                          항목 이름
+                        </label>
+                        <input
+                          type="text"
+                          value={newItemInput}
+                          onChange={(e) => setNewItemInput(e.target.value)}
+                          placeholder="항목이름을 입력하세요"
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: "#FFFFFF",
+                            border: "2px solid rgba(12, 12, 12, 0.08)",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                          }}
+                          data-testid="input-new-item"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (!newItemInput.trim()) {
+                            toast({
+                              title: "입력 오류",
+                              description: "항목 이름을 입력해주세요.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          
+                          setCategoryItems({
+                            ...categoryItems,
+                            [selectedCategory]: [...categoryItems[selectedCategory], newItemInput.trim()],
+                          });
+                          setNewItemInput("");
+                          toast({
+                            title: "항목 추가 완료",
+                            description: `${newItemInput.trim()}이(가) 추가되었습니다.`,
+                          });
+                        }}
+                        className="px-6 py-3"
+                        style={{
+                          background: "#008FED",
+                          borderRadius: "8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "15px",
+                          fontWeight: 600,
+                          color: "#FFFFFF",
+                        }}
+                        data-testid="button-add-item"
+                      >
+                        항목 추가
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Items Table */}
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        등록된 항목
+                      </h4>
+                      {categoryItems[selectedCategory].length > 0 && (
+                        <button
+                          onClick={() => {
+                            setCategoryItems({
+                              ...categoryItems,
+                              [selectedCategory]: [],
+                            });
+                            toast({
+                              title: "전체 삭제 완료",
+                              description: "모든 항목이 삭제되었습니다.",
+                            });
+                          }}
+                          className="px-4 py-2"
+                          style={{
+                            background: "rgba(239, 68, 68, 0.1)",
+                            borderRadius: "6px",
+                            fontFamily: "Pretendard",
+                            fontSize: "13px",
+                            fontWeight: 500,
+                            color: "#EF4444",
+                          }}
+                          data-testid="button-delete-all"
+                        >
+                          전체 삭제
+                        </button>
+                      )}
+                    </div>
+
+                    <table className="w-full">
+                      <thead
+                        style={{
+                          background: "rgba(248, 248, 248, 1)",
+                        }}
+                      >
+                        <tr>
+                          <th
+                            className="px-4 py-3 text-left"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              color: "#686A6E",
+                              width: "80px",
+                            }}
+                          >
+                            입력
+                          </th>
+                          <th
+                            className="px-4 py-3 text-left"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              color: "#686A6E",
+                            }}
+                          >
+                            내용
+                          </th>
+                          <th
+                            className="px-4 py-3 text-left"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              color: "#686A6E",
+                              width: "150px",
+                            }}
+                          >
+                            {selectedCategory} †
+                          </th>
+                          <th
+                            className="px-4 py-3 text-center"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              color: "#686A6E",
+                              width: "100px",
+                            }}
+                          >
+                            삭제
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {categoryItems[selectedCategory].length > 0 ? (
+                          categoryItems[selectedCategory].map((item, idx) => (
+                            <tr
+                              key={idx}
+                              style={{
+                                borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                              }}
+                            >
+                              <td
+                                className="px-4 py-4"
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  fontWeight: 400,
+                                  color: "#0C0C0C",
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4"
+                                  style={{
+                                    accentColor: "#008FED",
+                                  }}
+                                />
+                              </td>
+                              <td
+                                className="px-4 py-4"
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  fontWeight: 400,
+                                  color: "#686A6E",
+                                }}
+                              >
+                                내용
+                              </td>
+                              <td
+                                className="px-4 py-4"
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  fontWeight: 500,
+                                  color: "#0C0C0C",
+                                }}
+                              >
+                                {item}
+                              </td>
+                              <td className="px-4 py-4 text-center">
+                                <button
+                                  onClick={() => {
+                                    setCategoryItems({
+                                      ...categoryItems,
+                                      [selectedCategory]: categoryItems[selectedCategory].filter((_, i) => i !== idx),
+                                    });
+                                    toast({
+                                      title: "삭제 완료",
+                                      description: `${item}이(가) 삭제되었습니다.`,
+                                    });
+                                  }}
+                                  className="px-3 py-1"
+                                  style={{
+                                    background: "rgba(239, 68, 68, 0.1)",
+                                    borderRadius: "4px",
+                                    fontFamily: "Pretendard",
+                                    fontSize: "13px",
+                                    fontWeight: 500,
+                                    color: "#EF4444",
+                                  }}
+                                  data-testid={`button-delete-item-${idx}`}
+                                >
+                                  -
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td
+                              colSpan={4}
+                              className="px-4 py-8 text-center"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "#686A6E",
+                              }}
+                            >
+                              등록된 항목이 없습니다. 항목을 추가해주세요.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </>
           ) : (
