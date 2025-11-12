@@ -1378,6 +1378,40 @@ export default function AdminSettings() {
                   <Printer size={16} />
                   인쇄
                 </button>
+                <button
+                  onClick={() => {
+                    if (excelData.length === 0) {
+                      toast({
+                        title: "데이터 없음",
+                        description: "삭제할 데이터가 없습니다.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    
+                    if (confirm("정말로 모든 데이터를 삭제하시겠습니까?")) {
+                      setExcelData([]);
+                      setExcelHeaders([]);
+                      toast({
+                        title: "데이터 삭제 완료",
+                        description: "모든 데이터가 삭제되었습니다.",
+                      });
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2"
+                  style={{
+                    background: "#EF4444",
+                    borderRadius: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#FFFFFF",
+                  }}
+                  data-testid="button-delete-data"
+                >
+                  <X size={16} />
+                  데이터 삭제
+                </button>
               </div>
 
               {/* Table */}
