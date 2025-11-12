@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User } from "@shared/schema";
-import { ChevronDown, ChevronRight, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { ChevronDown, ChevronRight, Calendar as CalendarIcon, Clock, X, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -15,6 +16,7 @@ export default function FieldManagement() {
   const [expandedSections, setExpandedSections] = useState({
     schedule: true,
     basic: true,
+    fieldSurvey: true,
     reception: true,
     insurance: true,
     accident: true,
@@ -23,6 +25,21 @@ export default function FieldManagement() {
   const [accidentDate, setAccidentDate] = useState<Date | undefined>(undefined);
   const [accidentTime, setAccidentTime] = useState("");
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  
+  // 현장조사 정보 관련 상태
+  const [visitDate, setVisitDate] = useState<Date | undefined>(undefined);
+  const [visitTime, setVisitTime] = useState("");
+  const [visitDatePickerOpen, setVisitDatePickerOpen] = useState(false);
+  const [travelDistance, setTravelDistance] = useState("");
+  const [accompaniedPerson, setAccompaniedPerson] = useState("");
+  const [accidentCategory, setAccidentCategory] = useState("배관");
+  const [accidentCause, setAccidentCause] = useState("");
+  const [specialNotes, setSpecialNotes] = useState("");
+  const [victimName, setVictimName] = useState("");
+  const [victimContact, setVictimContact] = useState("");
+  const [victimAddress, setVictimAddress] = useState("");
+  const [additionalVictims, setAdditionalVictims] = useState<Array<{name: string, phone: string, address: string}>>([]);
+  const [voc, setVoc] = useState("");
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -221,6 +238,551 @@ export default function FieldManagement() {
                   background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
                 }}
               />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 현장조사 정보 섹션 */}
+      <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-[rgba(0,143,237,0.2)]">
+        <SectionHeader title="현장조사 정보" sectionKey="fieldSurvey" />
+        
+        {expandedSections.fieldSurvey && (
+          <div className="space-y-6">
+            {/* 현장정보 */}
+            <div>
+              <h4 
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
+                }}
+              >
+                현장정보
+              </h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    방문 일시
+                  </label>
+                  <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        disabled={isReadOnly}
+                        className="w-full justify-start text-left"
+                        data-testid="button-visit-date"
+                        style={{
+                          fontFamily: "Pretendard",
+                          background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                        }}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {visitDate ? format(visitDate, "PPP", { locale: ko }) : "날짜 선택"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={visitDate}
+                        onSelect={(date) => {
+                          setVisitDate(date);
+                          setVisitDatePickerOpen(false);
+                        }}
+                        locale={ko}
+                        disabled={isReadOnly}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    시간 선택
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="time"
+                      value={visitTime}
+                      onChange={(e) => setVisitTime(e.target.value)}
+                      disabled={isReadOnly}
+                      data-testid="input-visit-time"
+                      style={{
+                        fontFamily: "Pretendard",
+                        background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                      }}
+                    />
+                    <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    현장 이동 거리
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      value={travelDistance}
+                      onChange={(e) => setTravelDistance(e.target.value)}
+                      placeholder="0"
+                      disabled={isReadOnly}
+                      data-testid="input-travel-distance"
+                      style={{
+                        fontFamily: "Pretendard",
+                        background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                      }}
+                    />
+                    <span
+                      className="flex items-center px-3 py-2 bg-gray-100 rounded"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        color: "rgba(12, 12, 12, 0.7)",
+                        minWidth: "40px",
+                      }}
+                    >
+                      km
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <label
+                  className="block mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  동행 담당자
+                </label>
+                <Input
+                  value={accompaniedPerson}
+                  onChange={(e) => setAccompaniedPerson(e.target.value)}
+                  placeholder="동행 담당자 성명"
+                  disabled={isReadOnly}
+                  data-testid="input-accompanied-person"
+                  style={{
+                    fontFamily: "Pretendard",
+                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* 사고 원인(누수원천) */}
+            <div>
+              <h4 
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
+                }}
+              >
+                사고 원인(누수원천)
+              </h4>
+              <div className="mb-4">
+                <label
+                  className="block mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  카테고리
+                </label>
+                <div className="flex gap-2">
+                  {["배관", "표면", "방수", "기타"].map((category) => (
+                    <button
+                      key={category}
+                      onClick={() => setAccidentCategory(category)}
+                      disabled={isReadOnly}
+                      className="px-4 py-2 rounded transition-colors"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        background: accidentCategory === category ? "#008FED" : "white",
+                        color: accidentCategory === category ? "white" : "rgba(12, 12, 12, 0.7)",
+                        border: `1px solid ${accidentCategory === category ? "#008FED" : "rgba(0, 143, 237, 0.2)"}`,
+                        cursor: isReadOnly ? "not-allowed" : "pointer",
+                        opacity: isReadOnly ? 0.6 : 1,
+                      }}
+                      data-testid={`button-category-${category}`}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label
+                  className="block mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  사고원인
+                </label>
+                <Textarea
+                  value={accidentCause}
+                  onChange={(e) => setAccidentCause(e.target.value)}
+                  placeholder="누수원인, 누수지점 등 가능 등이 상세하게 입력해주세요"
+                  rows={4}
+                  maxLength={800}
+                  disabled={isReadOnly}
+                  data-testid="textarea-accident-cause"
+                  style={{
+                    fontFamily: "Pretendard",
+                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                  }}
+                />
+                <div 
+                  className="text-right mt-1"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "12px",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                >
+                  {accidentCause.length}/800
+                </div>
+              </div>
+            </div>
+
+            {/* 특이사항 */}
+            <div>
+              <h4 
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
+                }}
+              >
+                특이사항
+              </h4>
+              <Textarea
+                value={specialNotes}
+                onChange={(e) => setSpecialNotes(e.target.value)}
+                placeholder="내용을 작성해주세요"
+                rows={4}
+                maxLength={800}
+                disabled={isReadOnly}
+                data-testid="textarea-special-notes"
+                style={{
+                  fontFamily: "Pretendard",
+                  background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                }}
+              />
+              <div 
+                className="text-right mt-1"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "12px",
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+              >
+                {specialNotes.length}/800
+              </div>
+            </div>
+
+            {/* 피해자 정보 */}
+            <div>
+              <h4 
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
+                }}
+              >
+                피해자 정보
+              </h4>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    피해자
+                  </label>
+                  <Input
+                    value={victimName}
+                    onChange={(e) => setVictimName(e.target.value)}
+                    placeholder="피해자 성명"
+                    disabled={isReadOnly}
+                    data-testid="input-victim-name"
+                    style={{
+                      fontFamily: "Pretendard",
+                      background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    피해자 연락처
+                  </label>
+                  <Input
+                    value={victimContact}
+                    onChange={(e) => setVictimContact(e.target.value)}
+                    placeholder="피해자 연락처"
+                    disabled={isReadOnly}
+                    data-testid="input-victim-contact"
+                    style={{
+                      fontFamily: "Pretendard",
+                      background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                    }}
+                  />
+                </div>
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}
+                    >
+                      피해자 주소
+                    </label>
+                    <Input
+                      value={victimAddress}
+                      onChange={(e) => setVictimAddress(e.target.value)}
+                      placeholder="상세주소"
+                      disabled={isReadOnly}
+                      data-testid="input-victim-address"
+                      style={{
+                        fontFamily: "Pretendard",
+                        background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                      }}
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    disabled={isReadOnly}
+                    data-testid="button-search-address"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                    }}
+                  >
+                    검색
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mb-4">
+                <Checkbox
+                  id="mobile-victim"
+                  disabled={isReadOnly}
+                  data-testid="checkbox-mobile-victim"
+                />
+                <label
+                  htmlFor="mobile-victim"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: "rgba(12, 12, 12, 0.7)",
+                    cursor: isReadOnly ? "not-allowed" : "pointer",
+                  }}
+                >
+                  휴대전화 피해자
+                </label>
+              </div>
+
+              {/* 기타등록 피해자 */}
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <h5 
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    기타등록 피해자
+                  </h5>
+                  {!isReadOnly && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (victimName || victimContact || victimAddress) {
+                          setAdditionalVictims(prev => [...prev, {
+                            name: victimName,
+                            phone: victimContact,
+                            address: victimAddress,
+                          }]);
+                          setVictimName("");
+                          setVictimContact("");
+                          setVictimAddress("");
+                        }
+                      }}
+                      data-testid="button-add-victim"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                      }}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      추가
+                    </Button>
+                  )}
+                </div>
+                {additionalVictims.length > 0 && (
+                  <div className="space-y-2">
+                    {additionalVictims.map((victim, index) => (
+                      <div 
+                        key={index}
+                        className="flex items-center gap-3 p-3 rounded"
+                        style={{
+                          background: "rgba(0, 143, 237, 0.05)",
+                          border: "1px solid rgba(0, 143, 237, 0.15)",
+                        }}
+                        data-testid={`additional-victim-${index}`}
+                      >
+                        <span 
+                          className="w-2 h-2 rounded-full"
+                          style={{ background: "#008FED" }}
+                          data-testid={`victim-indicator-${index}`}
+                        />
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#008FED",
+                          }}
+                          data-testid={`victim-name-${index}`}
+                        >
+                          {victim.name}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            color: "rgba(12, 12, 12, 0.6)",
+                          }}
+                          data-testid={`victim-phone-${index}`}
+                        >
+                          {victim.phone}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            color: "rgba(12, 12, 12, 0.6)",
+                          }}
+                          data-testid={`victim-address-${index}`}
+                        >
+                          {victim.address}
+                        </span>
+                        {!isReadOnly && (
+                          <button
+                            onClick={() => {
+                              setAdditionalVictims(prev => prev.filter((_, i) => i !== index));
+                            }}
+                            className="ml-auto p-1 rounded-full hover-elevate active-elevate-2"
+                            data-testid={`button-remove-victim-${index}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* VOC(고객의 소리) */}
+            <div>
+              <h4 
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
+                }}
+              >
+                VOC(고객의 소리)
+              </h4>
+              <Textarea
+                value={voc}
+                onChange={(e) => setVoc(e.target.value)}
+                placeholder="내용을 작성해주세요"
+                rows={4}
+                maxLength={800}
+                disabled={isReadOnly}
+                data-testid="textarea-voc"
+                style={{
+                  fontFamily: "Pretendard",
+                  background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                }}
+              />
+              <div 
+                className="text-right mt-1"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "12px",
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+              >
+                {voc.length}/800
+              </div>
             </div>
           </div>
         )}
