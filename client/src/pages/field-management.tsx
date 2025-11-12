@@ -17,6 +17,7 @@ export default function FieldManagement() {
     schedule: true,
     basic: true,
     fieldSurvey: true,
+    recoveryMethod: true,
     reception: true,
     insurance: true,
     accident: true,
@@ -40,6 +41,11 @@ export default function FieldManagement() {
   const [victimAddress, setVictimAddress] = useState("");
   const [additionalVictims, setAdditionalVictims] = useState<Array<{name: string, phone: string, address: string}>>([]);
   const [voc, setVoc] = useState("");
+  
+  // 피해 복구 방식 및 차액 유형 관련 상태
+  const [processingTypes, setProcessingTypes] = useState<Set<string>>(new Set());
+  const [processingTypeOther, setProcessingTypeOther] = useState("");
+  const [recoveryMethodType, setRecoveryMethodType] = useState("부분수리");
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -782,6 +788,120 @@ export default function FieldManagement() {
                 }}
               >
                 {voc.length}/800
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 피해 복구 방식 및 차액 유형 섹션 */}
+      <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-[rgba(0,143,237,0.2)]">
+        <SectionHeader title="피해 복구 방식 및 차액 유형" sectionKey="recoveryMethod" />
+        
+        {expandedSections.recoveryMethod && (
+          <div className="space-y-6">
+            {/* 처리 유형(복수선택) */}
+            <div>
+              <label
+                className="block mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}
+              >
+                처리 유형(복수선택)
+              </label>
+              <div className="flex gap-2 mb-3">
+                {["수리", "비교견적", "기타"].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => {
+                      if (!isReadOnly) {
+                        setProcessingTypes(prev => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(type)) {
+                            newSet.delete(type);
+                          } else {
+                            newSet.add(type);
+                          }
+                          return newSet;
+                        });
+                      }
+                    }}
+                    disabled={isReadOnly}
+                    data-testid={`button-processing-type-${type}`}
+                    className="px-4 py-2 rounded hover-elevate active-elevate-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      background: processingTypes.has(type) ? "#008FED" : "white",
+                      color: processingTypes.has(type) ? "white" : "rgba(12, 12, 12, 0.7)",
+                      border: processingTypes.has(type) ? "1px solid #008FED" : "1px solid rgba(0, 143, 237, 0.3)",
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
+                      opacity: isReadOnly ? 0.6 : 1,
+                    }}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+              {processingTypes.has("기타") && (
+                <Input
+                  value={processingTypeOther}
+                  onChange={(e) => setProcessingTypeOther(e.target.value)}
+                  placeholder="기타선택시 설명해주세요"
+                  disabled={isReadOnly}
+                  data-testid="input-processing-type-other"
+                  style={{
+                    fontFamily: "Pretendard",
+                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                  }}
+                />
+              )}
+            </div>
+
+            {/* 복구 방식 */}
+            <div>
+              <label
+                className="block mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}
+              >
+                복구 방식
+              </label>
+              <div className="flex gap-2">
+                {["부분수리", "전체수리"].map((method) => (
+                  <button
+                    key={method}
+                    onClick={() => {
+                      if (!isReadOnly) {
+                        setRecoveryMethodType(method);
+                      }
+                    }}
+                    disabled={isReadOnly}
+                    data-testid={`button-recovery-method-${method}`}
+                    className="px-4 py-2 rounded hover-elevate active-elevate-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      background: recoveryMethodType === method ? "#008FED" : "white",
+                      color: recoveryMethodType === method ? "white" : "rgba(12, 12, 12, 0.7)",
+                      border: recoveryMethodType === method ? "1px solid #008FED" : "1px solid rgba(0, 143, 237, 0.3)",
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
+                      opacity: isReadOnly ? 0.6 : 1,
+                    }}
+                  >
+                    {method}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
