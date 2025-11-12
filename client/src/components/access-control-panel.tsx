@@ -44,13 +44,7 @@ export function AccessControlPanel() {
   // Save role permission mutation
   const savePermissionMutation = useMutation({
     mutationFn: async (data: { roleName: string; permissions: string }) => {
-      return await apiRequest("/api/role-permissions", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      return await apiRequest("POST", "/api/role-permissions", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/role-permissions"] });

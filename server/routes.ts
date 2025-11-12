@@ -26,6 +26,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.userRole = user.role;
         req.session.rememberMe = validatedData.rememberMe;
         
+        console.log("[LOGIN] Setting session:", {
+          userId: user.id,
+          userRole: user.role,
+          username: user.username,
+        });
+        
         if (validatedData.rememberMe) {
           req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
         } else {
@@ -448,18 +454,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get all role permissions endpoint (admin only)
   app.get("/api/role-permissions", async (req, res) => {
+    console.log("[GET /api/role-permissions] Request received, session:", {
+      userId: req.session?.userId,
+      userRole: req.session?.userRole,
+    });
+    
     // Check authentication
     if (!req.session?.userId) {
+      console.log("[GET /api/role-permissions] 401: Not authenticated");
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     // Check admin authorization
     if (req.session.userRole !== "관리자") {
+      console.log("[GET /api/role-permissions] 403: Not admin, role is:", req.session.userRole);
       return res.status(403).json({ error: "관리자 권한이 필요합니다" });
     }
 
     try {
       const permissions = await storage.getAllRolePermissions();
+      console.log("[GET /api/role-permissions] Success, returning", permissions.length, "permissions");
       res.json(permissions);
     } catch (error) {
       console.error("Get role permissions error:", error);
@@ -493,22 +507,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Save role permission endpoint (admin only)
   app.post("/api/role-permissions", async (req, res) => {
+    console.log("[POST /api/role-permissions] Request received, session:", {
+      userId: req.session?.userId,
+      userRole: req.session?.userRole,
+    }, "body:", req.body);
+    
     // Check authentication
     if (!req.session?.userId) {
+      console.log("[POST /api/role-permissions] 401: Not authenticated");
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     // Check admin authorization
     if (req.session.userRole !== "관리자") {
+      console.log("[POST /api/role-permissions] 403: Not admin, role is:", req.session.userRole);
       return res.status(403).json({ error: "관리자 권한이 필요합니다" });
     }
 
     try {
       const validatedData = insertRolePermissionSchema.parse(req.body);
       const permission = await storage.saveRolePermission(validatedData);
+      console.log("[POST /api/role-permissions] Success, saved permission for role:", validatedData.roleName);
       res.json(permission);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.log("[POST /api/role-permissions] 400: Validation error:", error.errors);
         return res.status(400).json({ error: error.errors });
       }
       console.error("Save role permission error:", error);
