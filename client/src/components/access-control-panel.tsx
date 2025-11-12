@@ -322,30 +322,77 @@ export function AccessControlPanel() {
                 maxWidth: "1091px",
               }}
             >
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleAllowAll}
+                  className="flex justify-center items-center gap-2"
+                  style={{
+                    padding: "12px 16px",
+                    background: "rgba(0, 143, 237, 0.1)",
+                    border: "2px solid rgba(255, 255, 255, 0.04)",
+                    boxShadow: "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
+                    backdropFilter: "blur(7px)",
+                    borderRadius: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#008FED",
+                  }}
+                  data-testid="button-allow-all"
+                >
+                  전체 허용
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={savePermissionMutation.isPending || isLoading}
+                  className="flex justify-center items-center gap-2"
+                  style={{
+                    padding: "12px 16px",
+                    background: (savePermissionMutation.isPending || isLoading) ? "#CCCCCC" : "#008FED",
+                    border: "2px solid rgba(255, 255, 255, 0.04)",
+                    boxShadow: "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
+                    backdropFilter: "blur(7px)",
+                    borderRadius: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#FFFFFF",
+                    cursor: (savePermissionMutation.isPending || isLoading) ? "not-allowed" : "pointer",
+                  }}
+                  data-testid="button-save"
+                >
+                  {savePermissionMutation.isPending ? "저장 중..." : "저장"}
+                </button>
+              </div>
               <button
-                onClick={handleAllowAll}
-                className="flex justify-center items-center gap-2"
-                style={{
-                  padding: "12px 16px",
-                  background: "rgba(0, 143, 237, 0.1)",
-                  border: "2px solid rgba(255, 255, 255, 0.04)",
-                  boxShadow: "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
-                  backdropFilter: "blur(7px)",
-                  borderRadius: "6px",
-                  fontFamily: "Pretendard",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  lineHeight: "128%",
-                  letterSpacing: "-0.02em",
-                  color: "#008FED",
+                onClick={() => {
+                  // Reset all permissions to false
+                  const emptyPermissions: PermissionState = {};
+                  categories.forEach((category) => {
+                    const items = PERMISSION_CATEGORIES[category];
+                    emptyPermissions[category] = {
+                      enabled: false,
+                      items: items.reduce((acc, item) => {
+                        acc[item] = false;
+                        return acc;
+                      }, {} as { [item: string]: boolean }),
+                    };
+                  });
+                  
+                  setRolePermissions((prev) => ({
+                    ...prev,
+                    [selectedRole]: emptyPermissions,
+                  }));
+                  
+                  toast({
+                    title: "권한 초기화",
+                    description: `${selectedRole} 역할의 모든 권한이 초기화되었습니다.`,
+                  });
                 }}
-                data-testid="button-allow-all"
-              >
-                전체 허용
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={savePermissionMutation.isPending || isLoading}
                 className="flex items-center gap-1.5"
                 style={{
                   background: "transparent",
@@ -354,13 +401,13 @@ export function AccessControlPanel() {
                   fontWeight: 500,
                   lineHeight: "128%",
                   letterSpacing: "-0.02em",
-                  color: (savePermissionMutation.isPending || isLoading) ? "#CCCCCC" : "rgba(12, 12, 12, 0.7)",
-                  cursor: (savePermissionMutation.isPending || isLoading) ? "not-allowed" : "pointer",
+                  color: "rgba(12, 12, 12, 0.7)",
+                  cursor: "pointer",
                 }}
-                data-testid="button-save"
+                data-testid="button-reset"
               >
-                <RotateCcw className="w-5 h-5" style={{ color: (savePermissionMutation.isPending || isLoading) ? "#CCCCCC" : "rgba(12, 12, 12, 0.7)" }} />
-                {savePermissionMutation.isPending ? "저장 중..." : "초기화"}
+                <RotateCcw className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.7)" }} />
+                초기화
               </button>
             </div>
           </div>
