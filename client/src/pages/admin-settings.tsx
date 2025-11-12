@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { GlobalHeader } from "@/components/global-header";
+import { AccessControlPanel } from "@/components/access-control-panel";
 
 // 한국 행정구역 데이터
 const KOREA_REGIONS: Record<string, string[]> = {
@@ -465,20 +466,24 @@ export default function AdminSettings() {
 
         {/* Main Section */}
         <div className="flex-1 px-8 py-6">
-          {/* Title */}
-          <div className="flex items-center mb-6">
-            <h1
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "26px",
-                fontWeight: 600,
-                letterSpacing: "-0.02em",
-                color: "#0C0C0C",
-              }}
-            >
-              사용자 계정 관리
-            </h1>
-          </div>
+          {activeMenu === "접근 권한 관리" ? (
+            <AccessControlPanel />
+          ) : (
+            <>
+              {/* Title */}
+              <div className="flex items-center mb-6">
+                <h1
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "26px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                  }}
+                >
+                  사용자 계정 관리
+                </h1>
+              </div>
 
           {/* Search Card */}
           <div
@@ -1046,9 +1051,13 @@ export default function AdminSettings() {
               ))}
             </div>
           </div>
+            </>
+          )}
         </div>
       </div>
 
+      {activeMenu === "사용자 계정 관리" && (
+        <>
       {/* Account Detail Modal */}
       {selectedUser && (
         <>
@@ -4668,6 +4677,8 @@ export default function AdminSettings() {
               </button>
             </div>
           </div>
+        </>
+      )}
         </>
       )}
     </div>
