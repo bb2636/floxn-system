@@ -12,9 +12,11 @@ import StatisticsOverview from "@/pages/statistics-overview";
 import SettlementsInquiry from "@/pages/settlements-inquiry";
 import SettlementAction from "@/pages/settlement-action";
 import FieldManagement from "@/pages/field-management";
+import FieldDrawing from "@/pages/field-drawing";
 import NotFound from "@/pages/not-found";
 import { StatisticsLayout } from "@/components/statistics-layout";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
+import { DrawingLayout } from "@/components/drawing-layout";
 
 function Router() {
   return (
@@ -54,9 +56,9 @@ function Router() {
       </Route>
       <Route path="/field-survey/drawing">
         {() => (
-          <FieldSurveyLayout>
-            <div className="p-8">도면 작성 페이지 (준비중)</div>
-          </FieldSurveyLayout>
+          <DrawingLayout>
+            <FieldDrawing />
+          </DrawingLayout>
         )}
       </Route>
       <Route path="/field-survey/documents">
