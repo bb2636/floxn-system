@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronDown, ChevronRight, Save } from "lucide-react";
+import { Minus, Save } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -351,14 +351,8 @@ export function AccessControlPanel() {
                   key={category}
                   className="rounded-lg"
                   style={{
-                    background: isChecked
-                      ? "rgba(0, 143, 237, 0.05)"
-                      : "rgba(12, 12, 12, 0.02)",
-                    border: `1px solid ${
-                      isChecked
-                        ? "rgba(0, 143, 237, 0.2)"
-                        : "rgba(12, 12, 12, 0.08)"
-                    }`,
+                    background: "#FFFFFF",
+                    border: "1px solid rgba(12, 12, 12, 0.08)",
                   }}
                 >
                   {/* Category Header */}
@@ -379,26 +373,22 @@ export function AccessControlPanel() {
                         style={{
                           fontFamily: "Pretendard",
                           fontSize: "16px",
-                          fontWeight: isChecked ? 700 : 500,
+                          fontWeight: 500,
                           letterSpacing: "-0.02em",
-                          color: isChecked ? "#008FED" : "#0C0C0C",
+                          color: "#0C0C0C",
                         }}
                         data-testid={`text-category-${category}`}
                       >
                         {category}
                       </span>
                     </div>
-                    {hasItems && (
+                    {hasItems && isExpanded && (
                       <button
                         onClick={() => toggleCategory(category)}
                         className="p-1"
                         data-testid={`button-toggle-${category}`}
                       >
-                        {isExpanded ? (
-                          <ChevronDown className="w-5 h-5 text-[#008FED]" />
-                        ) : (
-                          <ChevronRight className="w-5 h-5 text-gray-400" />
-                        )}
+                        <Minus className="w-5 h-5 text-[#0C0C0C]" />
                       </button>
                     )}
                   </div>
@@ -438,9 +428,7 @@ export function AccessControlPanel() {
                               fontSize: "14px",
                               fontWeight: 500,
                               letterSpacing: "-0.01em",
-                              color: isItemChecked(category, item)
-                                ? "#008FED"
-                                : "rgba(12, 12, 12, 0.7)",
+                              color: "#0C0C0C",
                             }}
                             data-testid={`text-item-${category}-${item}`}
                           >
