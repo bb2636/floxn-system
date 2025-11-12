@@ -13,68 +13,121 @@ import SettlementsInquiry from "@/pages/settlements-inquiry";
 import SettlementAction from "@/pages/settlement-action";
 import FieldManagement from "@/pages/field-management";
 import FieldDrawing from "@/pages/field-drawing";
+import Forbidden from "@/pages/forbidden";
 import NotFound from "@/pages/not-found";
 import { StatisticsLayout } from "@/components/statistics-layout";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { DrawingLayout } from "@/components/drawing-layout";
+import { ProtectedRoute } from "@/components/protected-route";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Login} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/admin-settings" component={AdminSettings} />
-      <Route path="/intake" component={Intake} />
-      <Route path="/comprehensive-progress" component={ComprehensiveProgress} />
+      <Route path="/forbidden" component={Forbidden} />
+      
+      <Route path="/dashboard">
+        {() => (
+          <ProtectedRoute category="홈">
+            <Dashboard />
+          </ProtectedRoute>
+        )}
+      </Route>
+      
+      <Route path="/admin-settings">
+        {() => (
+          <ProtectedRoute category="관리자 설정">
+            <AdminSettings />
+          </ProtectedRoute>
+        )}
+      </Route>
+      
+      <Route path="/intake">
+        {() => (
+          <ProtectedRoute category="새로운접수">
+            <Intake />
+          </ProtectedRoute>
+        )}
+      </Route>
+      
+      <Route path="/comprehensive-progress">
+        {() => (
+          <ProtectedRoute category="종합진행관리">
+            <ComprehensiveProgress />
+          </ProtectedRoute>
+        )}
+      </Route>
+      
       <Route path="/statistics">
         {() => (
-          <StatisticsLayout>
-            <StatisticsOverview />
-          </StatisticsLayout>
+          <ProtectedRoute category="통계 및 정산">
+            <StatisticsLayout>
+              <StatisticsOverview />
+            </StatisticsLayout>
+          </ProtectedRoute>
         )}
       </Route>
+      
       <Route path="/settlements">
         {() => (
-          <StatisticsLayout>
-            <SettlementsInquiry />
-          </StatisticsLayout>
+          <ProtectedRoute category="통계 및 정산">
+            <StatisticsLayout>
+              <SettlementsInquiry />
+            </StatisticsLayout>
+          </ProtectedRoute>
         )}
       </Route>
+      
       <Route path="/statistics/settlement-action">
         {() => (
-          <StatisticsLayout>
-            <SettlementAction />
-          </StatisticsLayout>
+          <ProtectedRoute category="통계 및 정산">
+            <StatisticsLayout>
+              <SettlementAction />
+            </StatisticsLayout>
+          </ProtectedRoute>
         )}
       </Route>
+      
       <Route path="/field-survey/management">
         {() => (
-          <FieldSurveyLayout>
-            <FieldManagement />
-          </FieldSurveyLayout>
+          <ProtectedRoute category="현장조사">
+            <FieldSurveyLayout>
+              <FieldManagement />
+            </FieldSurveyLayout>
+          </ProtectedRoute>
         )}
       </Route>
+      
       <Route path="/field-survey/drawing">
         {() => (
-          <DrawingLayout>
-            <FieldDrawing />
-          </DrawingLayout>
+          <ProtectedRoute category="현장조사">
+            <DrawingLayout>
+              <FieldDrawing />
+            </DrawingLayout>
+          </ProtectedRoute>
         )}
       </Route>
+      
       <Route path="/field-survey/documents">
         {() => (
-          <FieldSurveyLayout>
-            <div className="p-8">종합자료 등록 페이지 (준비중)</div>
-          </FieldSurveyLayout>
+          <ProtectedRoute category="현장조사">
+            <FieldSurveyLayout>
+              <div className="p-8">종합자료 등록 페이지 (준비중)</div>
+            </FieldSurveyLayout>
+          </ProtectedRoute>
         )}
       </Route>
+      
       <Route path="/field-survey/estimate">
         {() => (
-          <FieldSurveyLayout>
-            <div className="p-8">견적서작성조사 페이지 (준비중)</div>
-          </FieldSurveyLayout>
+          <ProtectedRoute category="현장조사">
+            <FieldSurveyLayout>
+              <div className="p-8">견적서작성조사 페이지 (준비중)</div>
+            </FieldSurveyLayout>
+          </ProtectedRoute>
         )}
       </Route>
+      
       <Route component={NotFound} />
     </Switch>
   );
