@@ -430,6 +430,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get filtered cases for statistics endpoint
+  app.get("/api/statistics/cases", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const allCases = await storage.getAllCases();
+      res.json(allCases);
+    } catch (error) {
+      console.error("Get statistics cases error:", error);
+      res.status(500).json({ error: "통계 데이터를 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

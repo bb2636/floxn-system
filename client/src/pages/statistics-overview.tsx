@@ -54,8 +54,8 @@ export default function StatisticsOverview() {
     queryKey: ["/api/user"],
   });
 
-  const { data: cases } = useQuery<CaseWithLatestProgress[]>({
-    queryKey: ["/api/cases"],
+  const { data: cases, isLoading: isLoadingCases } = useQuery<CaseWithLatestProgress[]>({
+    queryKey: ["/api/statistics/cases"],
   });
 
   // Fetch filter data
@@ -78,6 +78,126 @@ export default function StatisticsOverview() {
     id: `${category}-${value}`,
     label: `${category} > ${value}`,
     category: category,
+  });
+
+  // Filter cases based on current filters
+  const filteredCases = (cases || []).filter((caseItem) => {
+    // Apply registration date filter (종결여부)
+    // UI options: ["전체", "미결", "종결"]
+    if (!registrationDate.includes("전체") && registrationDate.length > 0) {
+      // Map case status to filter options
+      const isCompleted = caseItem.status === "완료" || caseItem.status === "종료";
+      const filterValue = isCompleted ? "종결" : "미결";
+      if (!registrationDate.includes(filterValue)) {
+        return false;
+      }
+    }
+
+    // Apply assignment status filter (배당여부)
+    // UI options: ["전체", "배정", "미배정"]
+    if (!assignmentStatus.includes("전체") && assignmentStatus.length > 0) {
+      const isAssigned = caseItem.assignedPartner ? "배정" : "미배정";
+      if (!assignmentStatus.includes(isAssigned)) {
+        return false;
+      }
+    }
+
+    // Apply construction status filter (공사유무)
+    // UI options: ["전체", "수리", "비교건적", "공사", "무공사"]
+    if (!constructionStatus.includes("전체") && constructionStatus.length > 0) {
+      // Map restorationMethod to UI options
+      const methodMap: Record<string, string> = {
+        "없음": "무공사",
+        "플랫폼 복구": "수리",
+        "선견적요청": "비교건적",
+        "공사": "공사",
+      };
+      const mappedMethod = methodMap[caseItem.restorationMethod || ""] || "무공사";
+      if (!constructionStatus.includes(mappedMethod)) {
+        return false;
+      }
+    }
+
+    // Apply duplicate status filter (중복여부)
+    // UI options: ["전체", "중복", "이주택"]
+    if (!duplicateStatus.includes("전체") && duplicateStatus.length > 0) {
+      // Assuming no duplicate field exists, default to "이주택"
+      const isDuplicate = "이주택";
+      if (!duplicateStatus.includes(isDuplicate)) {
+        return false;
+      }
+    }
+
+    // Apply insurance company filter
+    if (!insuranceCompanies.includes("전체") && insuranceCompanies.length > 0) {
+      if (!caseItem.insuranceCompany || !insuranceCompanies.includes(caseItem.insuranceCompany)) {
+        return false;
+      }
+    }
+
+    // Apply assessor filter
+    if (!assessors.includes("전체") && assessors.length > 0) {
+      if (!caseItem.assessorId || !assessors.includes(caseItem.assessorId)) {
+        return false;
+      }
+    }
+
+    // Apply investigator filter
+    if (!investigators.includes("전체") && investigators.length > 0) {
+      if (!caseItem.investigatorTeam || !investigators.includes(caseItem.investigatorTeam)) {
+        return false;
+      }
+    }
+
+    // Apply partner filter
+    if (!partners.includes("전체") && partners.length > 0) {
+      if (!caseItem.assignedPartner || !partners.includes(caseItem.assignedPartner)) {
+        return false;
+      }
+    }
+
+    // Apply settlement manager filter (당사 담당자)
+    if (!settlementManagers.includes("전체") && settlementManagers.length > 0) {
+      // Assuming settlement manager is stored in a field (needs to be added to schema)
+      // For now, skip this filter as the field doesn't exist
+    }
+
+    // Apply date range filter (자료처리(협력사) 기간)
+    if (rejectionCriteria === "직접입력" && startDate && endDate) {
+      const caseDate = new Date(caseItem.createdAt);
+      if (caseDate < startDate || caseDate > endDate) {
+        return false;
+      }
+    } else if (rejectionCriteria === "당월") {
+      const now = new Date();
+      const caseDate = new Date(caseItem.createdAt);
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      if (caseDate.getMonth() !== currentMonth || caseDate.getFullYear() !== currentYear) {
+        return false;
+      }
+    }
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const searchableFields = [
+        caseItem.caseNumber,
+        caseItem.insuranceAccidentNo,
+        caseItem.insuranceCompany,
+        caseItem.policyHolderName,
+        caseItem.assessorId,
+        caseItem.assignedPartner,
+      ];
+      const matches = searchableFields.some((field) => 
+        field?.toLowerCase().includes(query)
+      );
+      if (!matches) {
+        return false;
+      }
+    }
+
+    return true;
   });
 
   const handleCheckboxChange = (
@@ -946,11 +1066,127 @@ export default function StatisticsOverview() {
         </div>
       </div>
 
-      {/* Results placeholder */}
-      <div className="bg-white rounded-xl shadow-[0px_0px_20px_#DBE9F5] p-8">
-        <p className="text-center text-[rgba(12,12,12,0.5)]">
-          통계 데이터가 여기에 표시됩니다.
-        </p>
+      {/* Results section */}
+      <div className="bg-white rounded-xl shadow-[0px_0px_20px_#DBE9F5]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b-2 border-[rgba(12,12,12,0.1)]">
+          <h2 className="text-base font-medium text-[#0C0C0C]">
+            조회 결과 <span className="text-[#00A3FF] font-semibold">{filteredCases.length}</span>
+          </h2>
+          <Button
+            className="h-9 px-4 text-sm font-medium"
+            style={{
+              background: "#4CAF50",
+              color: "white",
+            }}
+            data-testid="button-excel-download"
+          >
+            📊 엑셀 다운로드
+          </Button>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-x-auto">
+          {isLoadingCases ? (
+            <div className="p-8 text-center text-gray-500">
+              로딩 중...
+            </div>
+          ) : filteredCases.length === 0 ? (
+            <div className="p-8 text-center text-[rgba(12,12,12,0.5)]">
+              조회 결과가 없습니다.
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr style={{ background: "#E8EDF2" }}>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    사고번호
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    접수번호
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    보험사
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    계약자
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    공사유무
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    배당여부
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    협력사
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    심사사
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    승인금액
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    접수일
+                  </th>
+                  <th className="px-4 py-3 text-sm font-medium text-[#0C0C0C] text-center whitespace-nowrap">
+                    모집
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCases.map((caseItem, index) => (
+                  <tr
+                    key={caseItem.id}
+                    className="border-b border-[rgba(12,12,12,0.1)] hover:bg-gray-50"
+                    data-testid={`case-row-${index}`}
+                  >
+                    <td className="px-4 py-3 text-sm text-[#0C0C0C] text-center">
+                      {caseItem.caseNumber || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#0C0C0C] text-center">
+                      {caseItem.insuranceAccidentNo || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#0C0C0C] text-center">
+                      {caseItem.insuranceCompany || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#0C0C0C] text-center">
+                      {caseItem.policyHolderName || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#0C0C0C] text-center">
+                      {caseItem.restorationMethod || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#0C0C0C] text-center">
+                      {caseItem.assignedPartner ? '배당' : '미배당'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#0C0C0C] text-center">
+                      {caseItem.assignedPartner || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#0C0C0C] text-center">
+                      {caseItem.assessorId || '-'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#0C0C0C] text-center">
+                      -
+                    </td>
+                    <td className="px-4 py-3 text-sm text-[#0C0C0C] text-center">
+                      {caseItem.createdAt ? caseItem.createdAt.split('T')[0] : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-3 text-xs"
+                        data-testid={`button-detail-${index}`}
+                      >
+                        자세히 보기
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   );
