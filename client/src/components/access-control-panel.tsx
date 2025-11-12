@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { ChevronDown, ChevronRight, Save } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -8,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { VALID_ROLES, PERMISSION_CATEGORIES } from "@shared/schema";
+import { VALID_ROLES, PERMISSION_CATEGORIES, type RolePermission } from "@shared/schema";
 
 type PermissionCategory = keyof typeof PERMISSION_CATEGORIES;
 
@@ -24,6 +27,7 @@ interface RolePermissions {
 }
 
 export function AccessControlPanel() {
+  const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<string>("협력사");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(["현장조사"])
@@ -31,6 +35,53 @@ export function AccessControlPanel() {
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>({});
 
   const categories = Object.keys(PERMISSION_CATEGORIES) as PermissionCategory[];
+
+  // Fetch all role permissions
+  const { data: allPermissions, isLoading } = useQuery<RolePermission[]>({
+    queryKey: ["/api/role-permissions"],
+  });
+
+  // Save role permission mutation
+  const savePermissionMutation = useMutation({
+    mutationFn: async (data: { roleName: string; permissions: string }) => {
+      return await apiRequest("/api/role-permissions", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/role-permissions"] });
+      toast({
+        title: "저장 완료",
+        description: "권한이 성공적으로 저장되었습니다.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "저장 실패",
+        description: "권한 저장 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Load permissions from API when data is fetched
+  useEffect(() => {
+    if (allPermissions) {
+      const loadedPermissions: RolePermissions = {};
+      allPermissions.forEach((perm) => {
+        try {
+          loadedPermissions[perm.roleName] = JSON.parse(perm.permissions);
+        } catch (e) {
+          console.error("Failed to parse permissions for role:", perm.roleName, e);
+        }
+      });
+      setRolePermissions(loadedPermissions);
+    }
+  }, [allPermissions]);
 
   const toggleCategory = (category: string) => {
     setExpandedCategories((prev) => {
@@ -112,6 +163,14 @@ export function AccessControlPanel() {
   const isItemChecked = (category: string, item: string) => {
     const currentPerms = getCurrentPermissions();
     return currentPerms[category]?.items[item] || false;
+  };
+
+  const handleSave = () => {
+    const currentPerms = getCurrentPermissions();
+    savePermissionMutation.mutate({
+      roleName: selectedRole,
+      permissions: JSON.stringify(currentPerms),
+    });
   };
 
   return (
@@ -249,21 +308,40 @@ export function AccessControlPanel() {
                 {selectedRole}
               </span>
             </div>
-            <button
-              onClick={handleAllowAll}
-              className="px-6 py-3 rounded-lg"
-              style={{
-                background: "#008FED",
-                fontFamily: "Pretendard",
-                fontSize: "16px",
-                fontWeight: 600,
-                letterSpacing: "-0.02em",
-                color: "#FFFFFF",
-              }}
-              data-testid="button-allow-all"
-            >
-              전체 허용
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleAllowAll}
+                className="px-6 py-3 rounded-lg"
+                style={{
+                  background: "linear-gradient(126.03deg, #FFD5A8 0%, #E0A4FF 100%)",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+                data-testid="button-allow-all"
+              >
+                전체 허용
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={savePermissionMutation.isPending || isLoading}
+                className="px-6 py-3 rounded-lg flex items-center gap-2"
+                style={{
+                  background: (savePermissionMutation.isPending || isLoading) ? "#CCCCCC" : "#008FED",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#FFFFFF",
+                }}
+                data-testid="button-save"
+              >
+                <Save className="w-4 h-4" />
+                {savePermissionMutation.isPending ? "저장 중..." : "저장"}
+              </button>
+            </div>
           </div>
 
           {/* Permissions List */}

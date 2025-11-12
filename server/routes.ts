@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -443,6 +443,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get statistics cases error:", error);
       res.status(500).json({ error: "통계 데이터를 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get all role permissions endpoint (admin only)
+  app.get("/api/role-permissions", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check admin authorization
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const permissions = await storage.getAllRolePermissions();
+      res.json(permissions);
+    } catch (error) {
+      console.error("Get role permissions error:", error);
+      res.status(500).json({ error: "권한 정보를 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get role permission by role name endpoint (admin only)
+  app.get("/api/role-permissions/:roleName", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check admin authorization
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const permission = await storage.getRolePermission(req.params.roleName);
+      if (!permission) {
+        return res.status(404).json({ error: "권한 정보를 찾을 수 없습니다" });
+      }
+      res.json(permission);
+    } catch (error) {
+      console.error("Get role permission error:", error);
+      res.status(500).json({ error: "권한 정보를 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Save role permission endpoint (admin only)
+  app.post("/api/role-permissions", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check admin authorization
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const validatedData = insertRolePermissionSchema.parse(req.body);
+      const permission = await storage.saveRolePermission(validatedData);
+      res.json(permission);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Save role permission error:", error);
+      res.status(500).json({ error: "권한 정보를 저장하는 중 오류가 발생했습니다" });
     }
   });
 

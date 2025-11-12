@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -61,17 +61,22 @@ export interface IStorage {
   createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate>;
   getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]>;
   getStatisticsFilters(): Promise<StatisticsFilters>;
+  getRolePermission(roleName: string): Promise<RolePermission | undefined>;
+  saveRolePermission(data: InsertRolePermission): Promise<RolePermission>;
+  getAllRolePermissions(): Promise<RolePermission[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private cases: Map<string, Case>;
   private progressUpdates: Map<string, ProgressUpdate>;
+  private rolePermissions: Map<string, RolePermission>;
 
   constructor() {
     this.users = new Map();
     this.cases = new Map();
     this.progressUpdates = new Map();
+    this.rolePermissions = new Map();
     this.seedTestUser();
     this.seedTestCases();
   }
@@ -1123,6 +1128,30 @@ export class MemStorage implements IStorage {
       settlementManagers: Array.from(settlementManagersSet).sort(),
     };
   }
+
+  async getRolePermission(roleName: string): Promise<RolePermission | undefined> {
+    return this.rolePermissions.get(roleName);
+  }
+
+  async saveRolePermission(data: InsertRolePermission): Promise<RolePermission> {
+    const currentDate = getKSTTimestamp();
+    const existing = this.rolePermissions.get(data.roleName);
+    
+    const rolePermission: RolePermission = {
+      id: existing?.id || randomUUID(),
+      roleName: data.roleName,
+      permissions: data.permissions,
+      createdAt: existing?.createdAt || currentDate,
+      updatedAt: currentDate,
+    };
+    
+    this.rolePermissions.set(data.roleName, rolePermission);
+    return rolePermission;
+  }
+
+  async getAllRolePermissions(): Promise<RolePermission[]> {
+    return Array.from(this.rolePermissions.values());
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -1609,6 +1638,43 @@ export class DbStorage implements IStorage {
       partners: Array.from(partnersSet).sort(),
       settlementManagers: Array.from(settlementManagersSet).sort(),
     };
+  }
+
+  async getRolePermission(roleName: string): Promise<RolePermission | undefined> {
+    const result = await db.select().from(rolePermissions).where(eq(rolePermissions.roleName, roleName));
+    return result[0];
+  }
+
+  async saveRolePermission(data: InsertRolePermission): Promise<RolePermission> {
+    const currentDate = getKSTTimestamp();
+    const existing = await this.getRolePermission(data.roleName);
+    
+    if (existing) {
+      // Update existing
+      const updated = await db.update(rolePermissions)
+        .set({
+          permissions: data.permissions,
+          updatedAt: currentDate,
+        })
+        .where(eq(rolePermissions.roleName, data.roleName))
+        .returning();
+      return updated[0];
+    } else {
+      // Create new
+      const created = await db.insert(rolePermissions)
+        .values({
+          roleName: data.roleName,
+          permissions: data.permissions,
+          createdAt: currentDate,
+          updatedAt: currentDate,
+        })
+        .returning();
+      return created[0];
+    }
+  }
+
+  async getAllRolePermissions(): Promise<RolePermission[]> {
+    return await db.select().from(rolePermissions);
   }
 }
 
