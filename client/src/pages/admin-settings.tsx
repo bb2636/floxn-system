@@ -349,7 +349,6 @@ export default function AdminSettings() {
     { name: "1:1 문의 관리", active: false },
     { name: "DB 관리", active: false },
     { name: "기준정보 관리", active: false },
-    { name: "알림 메시지 전송", active: false },
   ];
 
   // Use VALID_ROLES from schema for role filter options
