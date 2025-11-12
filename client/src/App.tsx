@@ -7,7 +7,6 @@ import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import AdminSettings from "@/pages/admin-settings";
 import Intake from "@/pages/intake";
-import Progress from "@/pages/progress";
 import ComprehensiveProgress from "@/pages/comprehensive-progress";
 import StatisticsOverview from "@/pages/statistics-overview";
 import SettlementsInquiry from "@/pages/settlements-inquiry";
@@ -22,7 +21,6 @@ function Router() {
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/admin-settings" component={AdminSettings} />
       <Route path="/intake" component={Intake} />
-      <Route path="/progress" component={Progress} />
       <Route path="/comprehensive-progress" component={ComprehensiveProgress} />
       <Route path="/statistics">
         {() => (

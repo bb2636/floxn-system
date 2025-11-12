@@ -82,7 +82,6 @@ export default function Dashboard() {
   const menuItems = [
     { name: "홈", active: true },
     { name: "접수하기", active: false },
-    { name: "진행상황", active: false },
     { name: "현장조사", active: false },
     { name: "종합진행관리", active: false },
     { name: "통계 및 정산", active: false },

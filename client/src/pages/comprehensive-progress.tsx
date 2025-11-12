@@ -88,7 +88,7 @@ export default function ComprehensiveProgress() {
       setShowSpecialNotesDialog(false);
       toast({
         variant: "snackbar",
-        title: "진행상황이 저장되었습니다",
+        title: "특이사항이 저장되었습니다",
       });
     },
     onError: () => {
@@ -114,7 +114,6 @@ export default function ComprehensiveProgress() {
   const menuItems = [
     { name: "홈" },
     { name: "접수하기" },
-    { name: "진행상황" },
     { name: "현장조사" },
     { name: "종합진행관리" },
     { name: "통계 및 정산" },

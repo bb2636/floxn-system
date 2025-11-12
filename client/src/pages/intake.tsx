@@ -503,7 +503,6 @@ export default function Intake() {
   const menuItems = [
     { name: "홈" },
     { name: "접수하기" },
-    { name: "진행상황" },
     { name: "현장조사" },
     { name: "종합진행관리" },
     { name: "통계 및 정산" },

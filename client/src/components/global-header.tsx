@@ -32,7 +32,6 @@ export function GlobalHeader() {
   const menuItems = [
     { name: "홈" },
     { name: "접수하기" },
-    { name: "진행상황" },
     { name: "현장조사" },
     { name: "종합진행관리" },
     { name: "통계 및 정산" },
@@ -42,7 +41,6 @@ export function GlobalHeader() {
   const getActiveMenu = () => {
     if (location === "/dashboard") return "홈";
     if (location === "/intake") return "접수하기";
-    if (location === "/progress") return "진행상황";
     if (location === "/comprehensive-progress") return "종합진행관리";
     if (location.startsWith("/statistics") || location === "/settlements") return "통계 및 정산";
     if (location === "/admin-settings") return "관리자 설정";
@@ -152,8 +150,6 @@ export function GlobalHeader() {
                   setLocation("/dashboard");
                 } else if (item.name === "접수하기") {
                   setLocation("/intake");
-                } else if (item.name === "진행상황") {
-                  setLocation("/progress");
                 } else if (item.name === "종합진행관리") {
                   setLocation("/comprehensive-progress");
                 } else if (item.name === "관리자 설정") {
