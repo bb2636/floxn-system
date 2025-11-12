@@ -271,48 +271,58 @@ export function AccessControlPanel() {
         >
           {/* Header */}
           <div
-            className="px-6 py-6 flex items-center justify-between"
+            className="px-6 py-6"
             style={{
               borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
             }}
           >
-            <div className="flex items-center gap-2">
-              <span
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  letterSpacing: "-0.01em",
-                  color: "#686A6E",
-                }}
-                data-testid="text-selected-role-label"
-              >
-                선택된 역할
-              </span>
-              <span
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  letterSpacing: "-0.02em",
-                  color: "#0C0C0C",
-                }}
-                data-testid="text-selected-role-value"
-              >
-                {selectedRole}
-              </span>
+            {/* Selected Role Box */}
+            <div
+              className="px-4 py-3 rounded-lg mb-4"
+              style={{
+                background: "rgba(12, 12, 12, 0.04)",
+              }}
+            >
+              <div className="flex flex-col gap-1">
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                  data-testid="text-selected-role-label"
+                >
+                  선택된 역할
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                  }}
+                  data-testid="text-selected-role-value"
+                >
+                  {selectedRole}
+                </span>
+              </div>
             </div>
-            <div className="flex gap-3">
+
+            {/* Buttons Row */}
+            <div className="flex items-center justify-between">
               <button
                 onClick={handleAllowAll}
                 className="px-6 py-3 rounded-lg"
                 style={{
-                  background: "linear-gradient(126.03deg, #FFD5A8 0%, #E0A4FF 100%)",
+                  background: "#63C5DA",
                   fontFamily: "Pretendard",
                   fontSize: "14px",
                   fontWeight: 600,
                   letterSpacing: "-0.02em",
-                  color: "#0C0C0C",
+                  color: "#FFFFFF",
                 }}
                 data-testid="button-allow-all"
               >
@@ -321,14 +331,15 @@ export function AccessControlPanel() {
               <button
                 onClick={handleSave}
                 disabled={savePermissionMutation.isPending || isLoading}
-                className="px-6 py-3 rounded-lg flex items-center gap-2"
+                className="flex items-center gap-2"
                 style={{
-                  background: (savePermissionMutation.isPending || isLoading) ? "#CCCCCC" : "#008FED",
+                  background: "transparent",
                   fontFamily: "Pretendard",
                   fontSize: "14px",
-                  fontWeight: 600,
+                  fontWeight: 500,
                   letterSpacing: "-0.02em",
-                  color: "#FFFFFF",
+                  color: (savePermissionMutation.isPending || isLoading) ? "#CCCCCC" : "#686A6E",
+                  cursor: (savePermissionMutation.isPending || isLoading) ? "not-allowed" : "pointer",
                 }}
                 data-testid="button-save"
               >
