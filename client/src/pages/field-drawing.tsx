@@ -80,6 +80,29 @@ export default function FieldDrawing() {
     queryKey: ["/api/user"],
   });
 
+  // 리사이즈 핸들 마우스 다운 핸들러
+  const handleResizeHandleMouseDown = (
+    e: React.MouseEvent,
+    handle: ResizeHandle,
+    entity: UploadedImage | DrawnRectangle | AccidentArea,
+    entityType: EntityType
+  ) => {
+    e.stopPropagation();
+    
+    setActiveTransform({
+      entityType,
+      entityId: entity.id,
+      mode: 'resize',
+      handle,
+      startX: e.clientX,
+      startY: e.clientY,
+      startWidth: entity.width,
+      startHeight: entity.height,
+      startEntityX: entity.x,
+      startEntityY: entity.y,
+    });
+  };
+
   const fieldSurveyMenuItems = [
     { title: "현장관리", url: "/field-survey/management" },
     { title: "도면 작성", url: "/field-survey/drawing" },
@@ -126,6 +149,7 @@ export default function FieldDrawing() {
         setUploadedImages(prev => [...prev, newImage]);
         setSelectedImageId(newImage.id);
         setSelectedRectangleId(null);
+        setSelectedAccidentAreaId(null);
         setSelectedLeakId(null);
         toast({
           title: "이미지 추가",
@@ -150,6 +174,7 @@ export default function FieldDrawing() {
       setSelectedTool(toolId);
       setSelectedImageId(null);
       setSelectedRectangleId(null);
+      setSelectedAccidentAreaId(null);
       setSelectedLeakId(null);
     }
   };
@@ -184,6 +209,7 @@ export default function FieldDrawing() {
     
     setSelectedImageId(image.id);
     setSelectedRectangleId(null);
+    setSelectedAccidentAreaId(null);
     setSelectedLeakId(null);
     
     const canvasRect = canvasRef.current?.getBoundingClientRect();
@@ -209,6 +235,7 @@ export default function FieldDrawing() {
     
     setSelectedRectangleId(rect.id);
     setSelectedImageId(null);
+    setSelectedAccidentAreaId(null);
     setSelectedLeakId(null);
     
     const canvasRect = canvasRef.current?.getBoundingClientRect();
@@ -227,6 +254,32 @@ export default function FieldDrawing() {
     });
   };
 
+  // 사고영역 마우스 다운 핸들러
+  const handleAccidentAreaMouseDown = (e: React.MouseEvent, area: AccidentArea) => {
+    e.stopPropagation();
+    if (selectedTool !== "pointer" || area.locked) return;
+    
+    setSelectedAccidentAreaId(area.id);
+    setSelectedImageId(null);
+    setSelectedRectangleId(null);
+    setSelectedLeakId(null);
+    
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (!canvasRect) return;
+    
+    setActiveTransform({
+      entityType: 'accident-area',
+      entityId: area.id,
+      mode: 'drag',
+      startX: e.clientX,
+      startY: e.clientY,
+      startWidth: area.width,
+      startHeight: area.height,
+      startEntityX: area.x,
+      startEntityY: area.y,
+    });
+  };
+
   // 누수 마커 클릭 핸들러
   const handleLeakMarkerClick = (e: React.MouseEvent, leakId: string) => {
     e.stopPropagation();
@@ -234,6 +287,7 @@ export default function FieldDrawing() {
       setSelectedLeakId(leakId);
       setSelectedImageId(null);
       setSelectedRectangleId(null);
+      setSelectedAccidentAreaId(null);
     }
   };
 
@@ -247,6 +301,10 @@ export default function FieldDrawing() {
       setRectangles(prev => prev.filter(rect => rect.id !== selectedRectangleId));
       setSelectedRectangleId(null);
       toast({ title: "삭제 완료", description: "사각형이 삭제되었습니다." });
+    } else if (selectedAccidentAreaId) {
+      setAccidentAreas(prev => prev.filter(area => area.id !== selectedAccidentAreaId));
+      setSelectedAccidentAreaId(null);
+      toast({ title: "삭제 완료", description: "사고 영역이 삭제되었습니다." });
     } else if (selectedLeakId) {
       setLeakMarkers(prev => prev.filter(leak => leak.id !== selectedLeakId));
       setSelectedLeakId(null);
@@ -266,6 +324,12 @@ export default function FieldDrawing() {
       setRectangles(prev =>
         prev.map(rect =>
           rect.id === selectedRectangleId ? { ...rect, locked: !rect.locked } : rect
+        )
+      );
+    } else if (selectedAccidentAreaId) {
+      setAccidentAreas(prev =>
+        prev.map(area =>
+          area.id === selectedAccidentAreaId ? { ...area, locked: !area.locked } : area
         )
       );
     }
@@ -306,7 +370,7 @@ export default function FieldDrawing() {
     }
   };
 
-  // 사각형 그리기 시작
+  // 사각형/사고영역 그리기 시작
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;
     
@@ -314,11 +378,11 @@ export default function FieldDrawing() {
     const x = e.clientX - canvasRect.left;
     const y = e.clientY - canvasRect.top;
 
-    if (selectedTool === "rectangle") {
+    if (selectedTool === "rectangle" || selectedTool === "accident-area") {
       setIsDrawing(true);
       setDrawStart({ x, y });
     } else if (selectedTool === "pointer") {
-      // 드래그 시작 로직 (향후 구현)
+      // 드래그 시작 로직
     }
   };
 
@@ -332,8 +396,8 @@ export default function FieldDrawing() {
       return;
     }
     
-    // 사각형 그리기 중
-    if (isDrawing && selectedTool === "rectangle") {
+    // 사각형/사고영역 그리기 중
+    if (isDrawing && (selectedTool === "rectangle" || selectedTool === "accident-area")) {
       return;
     }
     
@@ -369,16 +433,121 @@ export default function FieldDrawing() {
                 : rect
             )
           );
+        } else if (activeTransform.entityType === 'accident-area') {
+          setAccidentAreas(prev =>
+            prev.map(area =>
+              area.id === activeTransform.entityId
+                ? { ...area, x: clampedX, y: clampedY }
+                : area
+            )
+          );
         }
       } else if (activeTransform.mode === 'resize' && activeTransform.handle) {
-        // 리사이즈 모드 (향후 구현)
+        // 리사이즈 모드
+        const handle = activeTransform.handle;
+        let newX = activeTransform.startEntityX;
+        let newY = activeTransform.startEntityY;
+        let newWidth = activeTransform.startWidth;
+        let newHeight = activeTransform.startHeight;
+        
+        // 반대쪽 엣지의 고정 위치 계산
+        const rightEdge = activeTransform.startEntityX + activeTransform.startWidth;
+        const bottomEdge = activeTransform.startEntityY + activeTransform.startHeight;
+        
+        // 핸들에 따라 크기 조정
+        if (handle.includes('n')) {
+          newY = activeTransform.startEntityY + deltaY;
+          newHeight = activeTransform.startHeight - deltaY;
+        } else if (handle.includes('s')) {
+          newHeight = activeTransform.startHeight + deltaY;
+        }
+        
+        if (handle.includes('w')) {
+          newX = activeTransform.startEntityX + deltaX;
+          newWidth = activeTransform.startWidth - deltaX;
+        } else if (handle.includes('e')) {
+          newWidth = activeTransform.startWidth + deltaX;
+        }
+        
+        // 최소 크기 제한
+        const minSize = 20;
+        if (newWidth < minSize) {
+          if (handle.includes('w')) {
+            newX = rightEdge - minSize;
+          }
+          newWidth = minSize;
+        }
+        if (newHeight < minSize) {
+          if (handle.includes('n')) {
+            newY = bottomEdge - minSize;
+          }
+          newHeight = minSize;
+        }
+        
+        // 캔버스 경계 제한 (반대쪽 엣지 고정)
+        if (handle.includes('w')) {
+          if (newX < 0) {
+            newX = 0;
+            newWidth = rightEdge;
+          }
+          if (newX + newWidth > 600) {
+            newWidth = 600 - newX;
+          }
+        } else if (handle.includes('e')) {
+          if (newX + newWidth > 600) {
+            newWidth = 600 - newX;
+          }
+        }
+        
+        if (handle.includes('n')) {
+          if (newY < 0) {
+            newY = 0;
+            newHeight = bottomEdge;
+          }
+          if (newY + newHeight > 400) {
+            newHeight = 400 - newY;
+          }
+        } else if (handle.includes('s')) {
+          if (newY + newHeight > 400) {
+            newHeight = 400 - newY;
+          }
+        }
+        
+        // 상태 업데이트
+        if (activeTransform.entityType === 'image') {
+          setUploadedImages(prev =>
+            prev.map(img =>
+              img.id === activeTransform.entityId
+                ? { ...img, x: newX, y: newY, width: newWidth, height: newHeight }
+                : img
+            )
+          );
+        } else if (activeTransform.entityType === 'rectangle') {
+          setRectangles(prev =>
+            prev.map(rect =>
+              rect.id === activeTransform.entityId
+                ? { ...rect, x: newX, y: newY, width: newWidth, height: newHeight }
+                : rect
+            )
+          );
+        } else if (activeTransform.entityType === 'accident-area') {
+          setAccidentAreas(prev =>
+            prev.map(area =>
+              area.id === activeTransform.entityId
+                ? { ...area, x: newX, y: newY, width: newWidth, height: newHeight }
+                : area
+            )
+          );
+        }
       }
     }
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!canvasRef.current) return;
+    
     // 사각형 그리기 완료
-    if (isDrawing && selectedTool === "rectangle" && canvasRef.current) {
+    if (isDrawing && selectedTool === "rectangle") {
       const canvasRect = canvasRef.current.getBoundingClientRect();
       const endX = e.clientX - canvasRect.left;
       const endY = e.clientY - canvasRect.top;
@@ -399,6 +568,35 @@ export default function FieldDrawing() {
         setRectangles(prev => [...prev, newRectangle]);
         setSelectedRectangleId(newRectangle.id);
         setSelectedImageId(null);
+        setSelectedAccidentAreaId(null);
+        setSelectedLeakId(null);
+      }
+      
+      setIsDrawing(false);
+    }
+    
+    // 사고영역 그리기 완료
+    if (isDrawing && selectedTool === "accident-area") {
+      const canvasRect = canvasRef.current.getBoundingClientRect();
+      const endX = e.clientX - canvasRect.left;
+      const endY = e.clientY - canvasRect.top;
+      
+      const width = Math.abs(endX - drawStart.x);
+      const height = Math.abs(endY - drawStart.y);
+      
+      if (width > 10 && height > 10) {
+        const newArea: AccidentArea = {
+          id: `area-${Date.now()}`,
+          x: Math.min(drawStart.x, endX),
+          y: Math.min(drawStart.y, endY),
+          width,
+          height,
+          locked: false,
+        };
+        setAccidentAreas(prev => [...prev, newArea]);
+        setSelectedAccidentAreaId(newArea.id);
+        setSelectedImageId(null);
+        setSelectedRectangleId(null);
         setSelectedLeakId(null);
       }
       
@@ -417,6 +615,7 @@ export default function FieldDrawing() {
 
   const selectedImage = uploadedImages.find(img => img.id === selectedImageId);
   const selectedRectangle = rectangles.find(rect => rect.id === selectedRectangleId);
+  const selectedAccidentArea = accidentAreas.find(area => area.id === selectedAccidentAreaId);
 
   return (
     <>
@@ -658,7 +857,7 @@ export default function FieldDrawing() {
                   height: "400px",
                   border: "1px solid #DADADA",
                   position: "relative",
-                  cursor: selectedTool === "rectangle" ? "crosshair" : selectedTool === "leak" ? "crosshair" : "default",
+                  cursor: selectedTool === "rectangle" || selectedTool === "accident-area" || selectedTool === "leak" ? "crosshair" : "default",
                 }}
                 data-testid="canvas-area"
                 onMouseDown={handleCanvasMouseDown}
@@ -695,6 +894,22 @@ export default function FieldDrawing() {
                         pointerEvents: "none",
                       }}
                     />
+                    
+                    {/* 리사이즈 핸들 */}
+                    {selectedImageId === image.id && !image.locked && (
+                      <>
+                        {/* 모서리 핸들 */}
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'nw', image, 'image')} style={{ position: 'absolute', top: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'nw-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'ne', image, 'image')} style={{ position: 'absolute', top: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'ne-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'sw', image, 'image')} style={{ position: 'absolute', bottom: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'sw-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'se', image, 'image')} style={{ position: 'absolute', bottom: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'se-resize', zIndex: 10 }} />
+                        {/* 엣지 핸들 */}
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'n', image, 'image')} style={{ position: 'absolute', top: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'n-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 's', image, 'image')} style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 's-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'e', image, 'image')} style={{ position: 'absolute', top: '50%', right: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'e-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'w', image, 'image')} style={{ position: 'absolute', top: '50%', left: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'w-resize', zIndex: 10 }} />
+                      </>
+                    )}
                   </div>
                 ))}
 
@@ -781,6 +996,41 @@ export default function FieldDrawing() {
                     >
                       {rect.height} mm
                     </div>
+                  </div>
+                ))}
+
+                {/* 사고 영역들 */}
+                {accidentAreas.map((area) => (
+                  <div
+                    key={area.id}
+                    onMouseDown={(e) => handleAccidentAreaMouseDown(e, area)}
+                    style={{
+                      position: "absolute",
+                      left: `${area.x}px`,
+                      top: `${area.y}px`,
+                      width: `${area.width}px`,
+                      height: `${area.height}px`,
+                      border: selectedAccidentAreaId === area.id ? "2px dashed #008FED" : "2px dashed #9E9E9E",
+                      background: "rgba(189, 189, 189, 0.3)",
+                      cursor: selectedTool === "pointer" && !area.locked ? "move" : "pointer",
+                    }}
+                    data-testid={`accident-area-${area.id}`}
+                  >
+                    {/* 리사이즈 핸들 */}
+                    {selectedAccidentAreaId === area.id && !area.locked && (
+                      <>
+                        {/* 모서리 핸들 */}
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'nw', area, 'accident-area')} style={{ position: 'absolute', top: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'nw-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'ne', area, 'accident-area')} style={{ position: 'absolute', top: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'ne-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'sw', area, 'accident-area')} style={{ position: 'absolute', bottom: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'sw-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'se', area, 'accident-area')} style={{ position: 'absolute', bottom: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'se-resize', zIndex: 10 }} />
+                        {/* 엣지 핸들 */}
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'n', area, 'accident-area')} style={{ position: 'absolute', top: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'n-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 's', area, 'accident-area')} style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 's-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'e', area, 'accident-area')} style={{ position: 'absolute', top: '50%', right: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'e-resize', zIndex: 10 }} />
+                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'w', area, 'accident-area')} style={{ position: 'absolute', top: '50%', left: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'w-resize', zIndex: 10 }} />
+                      </>
+                    )}
                   </div>
                 ))}
 
