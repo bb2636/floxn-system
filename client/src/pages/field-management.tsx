@@ -126,49 +126,49 @@ export default function FieldManagement() {
                 color: "rgba(12, 12, 12, 0.7)",
               }}
             >
-              작성중인 건
+              접수건 선택
             </p>
-            <div 
-              className="flex items-center gap-4 p-4 rounded-lg"
-              style={{
-                background: "rgba(0, 143, 237, 0.05)",
-                border: "1px solid rgba(0, 143, 237, 0.15)",
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-[#008FED] rounded-full"></span>
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    color: "#008FED",
-                  }}
-                >
-                  MG수원역센터 252198943
-                </span>
-              </div>
-              <div className="flex items-center gap-6 text-sm">
-                <span style={{ color: "rgba(12, 12, 12, 0.6)" }}>
-                  접수번호: <span style={{ fontWeight: 600 }}>25145107</span>
-                </span>
-                <span style={{ color: "rgba(12, 12, 12, 0.6)" }}>
-                  개인자: <span style={{ fontWeight: 600 }}>김해리</span>
-                </span>
-                <span style={{ color: "rgba(12, 12, 12, 0.6)" }}>
-                  담당자: <span style={{ fontWeight: 600 }}>김해리</span>
-                </span>
-              </div>
-              <button
-                className="ml-auto p-2 rounded-full hover-elevate active-elevate-2"
+            {/* 드롭다운 선택 */}
+            <Select defaultValue="case1" disabled={isReadOnly}>
+              <SelectTrigger 
+                className="w-full"
+                data-testid="select-case"
                 style={{
-                  background: "rgba(255, 255, 255, 0.8)",
+                  fontFamily: "Pretendard",
+                  background: "white",
                 }}
-                data-testid="button-close-case"
               >
-                <span className="text-lg">&times;</span>
-              </button>
-            </div>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="case1">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 bg-[#008FED] rounded-full"></span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "15px",
+                          fontWeight: 600,
+                          color: "#008FED",
+                        }}
+                      >
+                        MG수원역센터 252198943
+                      </span>
+                    </div>
+                    <span style={{ color: "rgba(12, 12, 12, 0.6)", fontSize: "14px" }}>
+                      접수번호: <span style={{ fontWeight: 600 }}>25145107</span>
+                    </span>
+                    <span style={{ color: "rgba(12, 12, 12, 0.6)", fontSize: "14px" }}>
+                      개인자: <span style={{ fontWeight: 600 }}>김해리</span>
+                    </span>
+                    <span style={{ color: "rgba(12, 12, 12, 0.6)", fontSize: "14px" }}>
+                      담당자: <span style={{ fontWeight: 600 }}>김해리</span>
+                    </span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )}
       </div>
@@ -178,72 +178,366 @@ export default function FieldManagement() {
         <SectionHeader title="기본 정보" sectionKey="basic" />
         
         {expandedSections.basic && (
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label
-                className="block mb-2"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "rgba(12, 12, 12, 0.7)",
-                }}
-              >
-                업체사
-              </label>
-              <Input
-                placeholder="협력사명"
-                disabled={isReadOnly}
-                data-testid="input-partner-company"
-                style={{
-                  fontFamily: "Pretendard",
-                  background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                }}
-              />
+          <div className="space-y-6">
+            {/* 상단 3개 필드: 협력사, 담당자명, 담당자 연락처 - 모두 비활성화 */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label
+                  className="block mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  협력사
+                </label>
+                <Input
+                  value="협력사명"
+                  disabled
+                  data-testid="input-partner-company"
+                  style={{
+                    fontFamily: "Pretendard",
+                    background: "rgba(12, 12, 12, 0.05)",
+                    color: "rgba(12, 12, 12, 0.6)",
+                  }}
+                />
+              </div>
+              <div>
+                <label
+                  className="block mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  담당자명
+                </label>
+                <Input
+                  value="담당자명"
+                  disabled
+                  data-testid="input-manager-name"
+                  style={{
+                    fontFamily: "Pretendard",
+                    background: "rgba(12, 12, 12, 0.05)",
+                    color: "rgba(12, 12, 12, 0.6)",
+                  }}
+                />
+              </div>
+              <div>
+                <label
+                  className="block mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  담당자 연락처
+                </label>
+                <Input
+                  value="담당자 연락처"
+                  disabled
+                  data-testid="input-manager-contact"
+                  style={{
+                    fontFamily: "Pretendard",
+                    background: "rgba(12, 12, 12, 0.05)",
+                    color: "rgba(12, 12, 12, 0.6)",
+                  }}
+                />
+              </div>
             </div>
+
+            {/* 접수정보 하위 섹션 */}
             <div>
-              <label
-                className="block mb-2"
+              <h4 
+                className="mb-3"
                 style={{
                   fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "rgba(12, 12, 12, 0.7)",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
                 }}
               >
-                담당자명
-              </label>
-              <Input
-                placeholder="담당자명"
-                disabled={isReadOnly}
-                data-testid="input-manager-name"
-                style={{
-                  fontFamily: "Pretendard",
-                  background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                }}
-              />
+                접수 정보
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    접수번호
+                  </label>
+                  <Input
+                    value="접수번호"
+                    disabled
+                    data-testid="input-reception-number"
+                    style={{
+                      fontFamily: "Pretendard",
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    보험사
+                </label>
+                  <Select value="insurance1" disabled>
+                    <SelectTrigger 
+                      data-testid="select-insurance"
+                      style={{
+                        fontFamily: "Pretendard",
+                        background: "rgba(12, 12, 12, 0.05)",
+                        color: "rgba(12, 12, 12, 0.6)",
+                      }}
+                    >
+                      <SelectValue placeholder="보험사 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="insurance1">보험사 선택</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
+
+            {/* 보험계약자 및 피보험자 정보 하위 섹션 */}
             <div>
-              <label
-                className="block mb-2"
+              <div className="flex items-center justify-between mb-3">
+                <h4 
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  보험계약자 및 피보험자 정보
+                </h4>
+                <div 
+                  className="flex items-center gap-2 px-2 py-1 rounded"
+                  style={{
+                    background: "rgba(12, 12, 12, 0.05)",
+                  }}
+                >
+                  <Checkbox 
+                    id="same-as-contractor" 
+                    disabled 
+                    data-testid="checkbox-same-contractor"
+                  />
+                  <label
+                    htmlFor="same-as-contractor"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      cursor: "not-allowed",
+                    }}
+                  >
+                    보험계약자 = 피보험자
+                  </label>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}
+                    >
+                      보험계약자
+                    </label>
+                    <Input
+                      value="보험계약자 성명"
+                      disabled
+                      data-testid="input-contractor"
+                      style={{
+                        fontFamily: "Pretendard",
+                        background: "rgba(12, 12, 12, 0.05)",
+                        color: "rgba(12, 12, 12, 0.6)",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}
+                    >
+                      피보험자
+                    </label>
+                    <Input
+                      value="피보험자 성명"
+                      disabled
+                      data-testid="input-insured"
+                      style={{
+                        fontFamily: "Pretendard",
+                        background: "rgba(12, 12, 12, 0.05)",
+                        color: "rgba(12, 12, 12, 0.6)",
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}
+                    >
+                      피보험자 연락처<span style={{ color: "red" }}>*</span>
+                    </label>
+                    <Input
+                      value="피보험자 연락처"
+                      disabled
+                      data-testid="input-insured-contact"
+                      style={{
+                        fontFamily: "Pretendard",
+                        background: "rgba(12, 12, 12, 0.05)",
+                        color: "rgba(12, 12, 12, 0.6)",
+                      }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    피보험자 주소<span style={{ color: "red" }}>*</span>
+                  </label>
+                  <Input
+                    value="도로명 주소, 상세 주소"
+                    disabled
+                    data-testid="input-insured-address"
+                    style={{
+                      fontFamily: "Pretendard",
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 사고 발생일시 - 협력사만 입력 가능 */}
+            <div>
+              <h4 
+                className="mb-3"
                 style={{
                   fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "rgba(12, 12, 12, 0.7)",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
                 }}
               >
-                담당자 연락처
-              </label>
-              <Input
-                placeholder="담당자 연락처"
-                disabled={isReadOnly}
-                data-testid="input-manager-contact"
-                style={{
-                  fontFamily: "Pretendard",
-                  background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                }}
-              />
+                사고 발생일시
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    날짜 선택
+                  </label>
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        disabled={isReadOnly}
+                        className="w-full justify-start text-left"
+                        data-testid="button-accident-date"
+                        style={{
+                          fontFamily: "Pretendard",
+                          background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                        }}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {accidentDate ? format(accidentDate, "PPP", { locale: ko }) : "날짜 선택"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={accidentDate}
+                        onSelect={(date) => {
+                          setAccidentDate(date);
+                          setDatePickerOpen(false);
+                        }}
+                        locale={ko}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    시간 선택
+                  </label>
+                  <div className="relative">
+                    <Input
+                      type="time"
+                      value={accidentTime}
+                      onChange={(e) => setAccidentTime(e.target.value)}
+                      disabled={isReadOnly}
+                      data-testid="input-accident-time"
+                      style={{
+                        fontFamily: "Pretendard",
+                        background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                      }}
+                    />
+                    <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -306,7 +600,6 @@ export default function FieldManagement() {
                           setVisitDatePickerOpen(false);
                         }}
                         locale={ko}
-                        disabled={isReadOnly}
                       />
                     </PopoverContent>
                   </Popover>
@@ -1203,7 +1496,6 @@ export default function FieldManagement() {
                     setDatePickerOpen(false);
                   }}
                   locale={ko}
-                  disabled={isReadOnly}
                 />
               </PopoverContent>
             </Popover>
