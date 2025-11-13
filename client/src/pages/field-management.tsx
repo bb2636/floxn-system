@@ -1357,6 +1357,140 @@ export default function FieldManagement() {
           </div>
         </SectionCard>
 
+        {/* 피해 복구 방식 및 처리 유형 섹션 */}
+        <SectionCard
+          title="피해 복구 방식 및 처리 유형"
+          isOpen={true}
+          onToggle={() => {}}
+          disabled={!selectedCaseData}
+        >
+          <div className="space-y-6">
+            {/* 처리 유형(복수선택) */}
+            <div>
+              <Label 
+                className="mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
+                처리 유형(복수선택)
+              </Label>
+              <div className="flex gap-2">
+                {["수리", "비교견적", "기타"].map((type) => (
+                  <Button
+                    key={type}
+                    type="button"
+                    onClick={() => {
+                      const newTypes = new Set(processingTypes);
+                      if (newTypes.has(type)) {
+                        newTypes.delete(type);
+                      } else {
+                        newTypes.add(type);
+                      }
+                      setProcessingTypes(newTypes);
+                    }}
+                    disabled={isReadOnly}
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      height: "52px",
+                      padding: "12px 16px",
+                      borderRadius: "6px",
+                      border: processingTypes.has(type)
+                        ? "2px solid rgba(255, 255, 255, 0.04)" 
+                        : "1px solid rgba(12, 12, 12, 0.3)",
+                      background: processingTypes.has(type)
+                        ? "rgba(0, 143, 237, 0.1)" 
+                        : "#FDFDFD",
+                      color: processingTypes.has(type)
+                        ? "#008FED" 
+                        : "rgba(12, 12, 12, 0.9)",
+                      boxShadow: processingTypes.has(type)
+                        ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
+                        : "none",
+                      backdropFilter: processingTypes.has(type) ? "blur(7px)" : "none",
+                    }}
+                    data-testid={`button-processing-type-${type}`}
+                  >
+                    {type}
+                  </Button>
+                ))}
+                <Input
+                  value={processingTypeOther}
+                  onChange={(e) => setProcessingTypeOther(e.target.value)}
+                  placeholder="기타사항을 입력해주세요"
+                  className="h-[52px] flex-1"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    padding: "12px 16px",
+                    background: "#FDFDFD",
+                    border: "1px solid rgba(12, 12, 12, 0.3)",
+                    borderRadius: "6px",
+                    color: "rgba(12, 12, 12, 0.9)",
+                  }}
+                  disabled={isReadOnly}
+                  data-testid="input-processing-type-other"
+                />
+              </div>
+            </div>
+
+            {/* 복구 방식 */}
+            <div>
+              <Label 
+                className="mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
+                복구 방식
+              </Label>
+              <div className="flex gap-2">
+                {["부분수리", "전체수리"].map((method) => (
+                  <Button
+                    key={method}
+                    type="button"
+                    onClick={() => setRecoveryMethodType(method)}
+                    disabled={isReadOnly}
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      height: "52px",
+                      padding: "12px 16px",
+                      borderRadius: "6px",
+                      border: recoveryMethodType === method
+                        ? "2px solid rgba(255, 255, 255, 0.04)" 
+                        : "1px solid rgba(12, 12, 12, 0.3)",
+                      background: recoveryMethodType === method
+                        ? "rgba(0, 143, 237, 0.1)" 
+                        : "#FDFDFD",
+                      color: recoveryMethodType === method
+                        ? "#008FED" 
+                        : "rgba(12, 12, 12, 0.9)",
+                      boxShadow: recoveryMethodType === method
+                        ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
+                        : "none",
+                      backdropFilter: recoveryMethodType === method ? "blur(7px)" : "none",
+                    }}
+                    data-testid={`button-recovery-method-${method}`}
+                  >
+                    {method}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
         {/* 피해 및 복구 평가 섹션 */}
         <SectionCard
           title="피해 및 복구 평가"
