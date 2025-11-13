@@ -642,9 +642,13 @@ export default function FieldManagement() {
                       onChange={(e) => setAccidentTime(e.target.value)}
                       disabled={isReadOnly}
                       data-testid="input-accident-time"
+                      className={intakeFieldClass}
                       style={{
-                        fontFamily: "Pretendard",
-                        background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                        ...intakeFieldStyle,
+                        ...(isReadOnly && {
+                          background: "rgba(12, 12, 12, 0.05)",
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }),
                       }}
                     />
                     <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -736,9 +740,13 @@ export default function FieldManagement() {
                       onChange={(e) => setVisitTime(e.target.value)}
                       disabled={isReadOnly}
                       data-testid="input-visit-time"
+                      className={intakeFieldClass}
                       style={{
-                        fontFamily: "Pretendard",
-                        background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                        ...intakeFieldStyle,
+                        ...(isReadOnly && {
+                          background: "rgba(12, 12, 12, 0.05)",
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }),
                       }}
                     />
                     <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -805,8 +813,9 @@ export default function FieldManagement() {
                   placeholder="출동담당자 성명"
                   disabled
                   data-testid="input-accompanied-person"
+                  className={intakeFieldClass}
                   style={{
-                    fontFamily: "Pretendard",
+                    ...intakeFieldStyle,
                     background: "rgba(12, 12, 12, 0.05)",
                     color: "rgba(12, 12, 12, 0.6)",
                   }}
