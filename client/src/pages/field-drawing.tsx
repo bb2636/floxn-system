@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User } from "@shared/schema";
+import { User, Drawing } from "@shared/schema";
 import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface UploadedImage {
   id: string;
@@ -72,6 +73,11 @@ export default function FieldDrawing() {
   const [activeTransform, setActiveTransform] = useState<ActiveTransform | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
+  const [currentDrawingId, setCurrentDrawingId] = useState<string | null>(() => {
+    // Load drawing ID from localStorage on mount
+    // TODO: Replace with case-based loading in Task 6
+    return localStorage.getItem('currentDrawingId');
+  });
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Hybrid approach: activeTransformRef prevents stale closures in document-level listeners
@@ -81,6 +87,120 @@ export default function FieldDrawing() {
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
+  });
+
+  // 활성 케이스 ID 조회
+  const { data: activeCaseData, isLoading: isLoadingActiveCase } = useQuery<{ caseId: string }>({
+    queryKey: ["/api/drawings/active-case-id"],
+    enabled: !!user, // Only fetch when user is available
+    staleTime: Infinity, // Active case doesn't change during session
+  });
+
+  // 저장된 도면 로드 (Task 6)
+  const { data: savedDrawing, isLoading: isLoadingDrawing } = useQuery<Drawing>({
+    queryKey: ["/api/drawings", currentDrawingId],
+    enabled: !!currentDrawingId,
+    staleTime: 0, // Always fetch fresh data
+  });
+
+  // 로드된 도면으로 canvas state 초기화 + ownership verification
+  useEffect(() => {
+    if (savedDrawing && !isLoadingDrawing && user && activeCaseData) {
+      // Verify ownership before hydrating canvas state
+      if (savedDrawing.createdBy !== user.id) {
+        // Drawing belongs to another user - clear invalid ID
+        setCurrentDrawingId(null);
+        localStorage.removeItem('currentDrawingId');
+        toast({
+          title: "권한 없음",
+          description: "다른 사용자의 도면입니다. 새로운 도면을 시작합니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verify case match before hydrating canvas state
+      if (savedDrawing.caseId !== activeCaseData.caseId) {
+        // Drawing belongs to different case - clear invalid ID
+        setCurrentDrawingId(null);
+        localStorage.removeItem('currentDrawingId');
+        toast({
+          title: "다른 케이스",
+          description: "이전 케이스의 도면입니다. 새로운 도면을 시작합니다.",
+        });
+        return;
+      }
+      
+      // Valid drawing - hydrate canvas state
+      setUploadedImages(savedDrawing.uploadedImages || []);
+      setRectangles(savedDrawing.rectangles || []);
+      setAccidentAreas(savedDrawing.accidentAreas || []);
+      setLeakMarkers(savedDrawing.leakMarkers || []);
+    }
+  }, [savedDrawing, isLoadingDrawing, user, activeCaseData]);
+
+  // Check if save is ready (validation complete) - explicit boolean coercion
+  // Includes loading guards for both user, active case, and drawing queries
+  const isSaveReady = Boolean(user && activeCaseData && !isLoadingActiveCase && (!currentDrawingId || !isLoadingDrawing));
+
+  // 도면 저장 mutation
+  const saveDrawingMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/drawings", {
+        drawingId: currentDrawingId, // Include drawing ID for updates
+        // caseId resolved server-side via getOrCreateActiveCase
+        uploadedImages,
+        rectangles,
+        accidentAreas,
+        leakMarkers,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to save drawing: ${response.status}`);
+      }
+      
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      const isNewDrawing = !currentDrawingId;
+      
+      // Store the drawing ID for future updates
+      setCurrentDrawingId(data.id);
+      // Persist to localStorage to survive page reloads
+      // TODO: Replace with case-based storage in Task 6
+      localStorage.setItem('currentDrawingId', data.id);
+      
+      // Update query cache directly
+      queryClient.setQueryData(["/api/drawings", data.id], data);
+      if (data.caseId) {
+        queryClient.setQueryData(["/api/drawings", "case", data.caseId], data);
+      }
+      
+      const timestamp = new Date().toLocaleTimeString('ko-KR');
+      const action = isNewDrawing ? "생성" : "업데이트";
+      toast({
+        title: `도면 ${action} 완료`,
+        description: `도면이 저장되었습니다 (${timestamp})`,
+      });
+    },
+    onError: (error) => {
+      console.error("Save drawing error:", error);
+      
+      // Only clear ID on permission/ownership errors, not network errors
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isPermissionError = errorMessage.includes("권한") || errorMessage.includes("케이스") || errorMessage.includes("403");
+      
+      if (isPermissionError) {
+        setCurrentDrawingId(null);
+        localStorage.removeItem('currentDrawingId');
+      }
+      
+      toast({
+        title: "저장 실패",
+        description: errorMessage || "도면 저장 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Document level mouse event handlers for drag/resize
@@ -337,6 +457,13 @@ export default function FieldDrawing() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  // 도면 저장 핸들러
+  const handleSave = () => {
+    // Guard: prevent save before validation complete
+    if (!isSaveReady) return;
+    saveDrawingMutation.mutate();
   };
 
   // PNG 저장 핸들러
@@ -807,6 +934,8 @@ export default function FieldDrawing() {
           {/* 저장 버튼 (우측 상단) */}
           <div className="absolute top-4 right-4 z-10 flex gap-2" data-ui="save-buttons">
             <button
+              onClick={handleSave}
+              disabled={!isSaveReady || saveDrawingMutation.isPending}
               className="px-6 py-2.5 rounded-lg font-medium transition-all hover-elevate active-elevate-2"
               style={{
                 background: "white",
@@ -814,10 +943,12 @@ export default function FieldDrawing() {
                 border: "1px solid #008FED",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
+                opacity: (!isSaveReady || saveDrawingMutation.isPending) ? 0.6 : 1,
+                cursor: (!isSaveReady || saveDrawingMutation.isPending) ? "not-allowed" : "pointer",
               }}
               data-testid="button-save"
             >
-              저장
+              {!isSaveReady ? "준비 중..." : saveDrawingMutation.isPending ? "저장 중..." : "저장"}
             </button>
             <button
               onClick={handleSavePNG}

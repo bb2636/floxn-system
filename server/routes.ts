@@ -807,30 +807,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      // Get or create active case for this user
+      const activeCase = await storage.getOrCreateActiveCase(req.session.userId!);
+      
+      // Extract drawingId if provided (for updates)
+      const { drawingId, ...bodyData } = req.body;
+      
       const validatedData = insertDrawingSchema.parse({
-        ...req.body,
+        ...bodyData,
+        caseId: activeCase.id, // Use resolved case ID
         createdBy: req.session.userId,
       });
       
-      // Check if a drawing already exists for this case
-      let existing = null;
-      if (validatedData.caseId) {
-        existing = await storage.getDrawingByCaseId(validatedData.caseId);
-      }
-
       let drawing;
-      if (existing) {
-        // Update existing drawing (exclude immutable fields)
+      
+      // If drawingId is provided, update existing drawing
+      if (drawingId) {
+        // Verify ownership before update
+        const existing = await storage.getDrawing(drawingId);
+        if (!existing) {
+          return res.status(404).json({ error: "도면을 찾을 수 없습니다" });
+        }
+        if (existing.createdBy !== req.session.userId) {
+          return res.status(403).json({ error: "권한이 없습니다" });
+        }
+        // Verify case ownership
+        if (existing.caseId !== activeCase.id) {
+          return res.status(403).json({ error: "다른 케이스의 도면입니다" });
+        }
+        
         const updateData = {
           uploadedImages: validatedData.uploadedImages,
           rectangles: validatedData.rectangles,
           accidentAreas: validatedData.accidentAreas,
           leakMarkers: validatedData.leakMarkers,
+          // caseId is immutable - don't update it
         };
-        drawing = await storage.updateDrawing(existing.id, updateData);
+        drawing = await storage.updateDrawing(drawingId, updateData);
       } else {
-        // Create new drawing
-        drawing = await storage.saveDrawing(validatedData);
+        // Check if a drawing already exists for this case
+        const existing = await storage.getDrawingByCaseId(activeCase.id);
+
+        if (existing) {
+          // Verify ownership before updating
+          if (existing.createdBy !== req.session.userId) {
+            return res.status(403).json({ error: "권한이 없습니다" });
+          }
+          
+          // Update existing drawing (exclude immutable fields)
+          const updateData = {
+            uploadedImages: validatedData.uploadedImages,
+            rectangles: validatedData.rectangles,
+            accidentAreas: validatedData.accidentAreas,
+            leakMarkers: validatedData.leakMarkers,
+          };
+          drawing = await storage.updateDrawing(existing.id, updateData);
+        } else {
+          // Create new drawing
+          drawing = await storage.saveDrawing(validatedData);
+        }
       }
       
       res.json(drawing);
@@ -882,6 +917,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get drawing by case error:", error);
       res.status(500).json({ error: "도면을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get active case ID for current user
+  app.get("/api/drawings/active-case-id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const activeCase = await storage.getOrCreateActiveCase(req.session.userId!);
+      res.json({ caseId: activeCase.id });
+    } catch (error) {
+      console.error("Get active case ID error:", error);
+      res.status(500).json({ error: "활성 케이스 ID를 조회하는 중 오류가 발생했습니다" });
     }
   });
 

@@ -305,7 +305,7 @@ export type Inquiry = typeof inquiries.$inferSelect;
 // 도면 저장 테이블
 export const drawings = pgTable("drawings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  caseId: varchar("case_id"), // optional: can save drawing without case
+  caseId: varchar("case_id").notNull(), // required: drawing must be linked to case
   uploadedImages: json("uploaded_images").$type<{
     id: string;
     src: string;

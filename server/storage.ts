@@ -2,7 +2,7 @@ import { type User, type InsertUser, users, type Case, type CaseWithLatestProgre
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, asc, desc, and } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
 
@@ -80,6 +80,8 @@ export interface IStorage {
   getDrawing(id: string): Promise<Drawing | null>;
   getDrawingByCaseId(caseId: string): Promise<Drawing | null>;
   updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null>;
+  // Case helper for drawing persistence
+  getOrCreateActiveCase(userId: string): Promise<Case>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -1303,6 +1305,84 @@ export class MemStorage implements IStorage {
     this.drawings.set(id, updated);
     return updated;
   }
+
+  async getOrCreateActiveCase(userId: string): Promise<Case> {
+    // Find existing active case (작성중) for this user
+    for (const caseItem of this.cases.values()) {
+      if (caseItem.createdBy === userId && caseItem.status === "작성중") {
+        return caseItem;
+      }
+    }
+
+    // Create new active case for drawing purposes
+    const caseNumber = `CLM-DRAW-${Date.now()}`;
+    const newCase: Case = {
+      id: randomUUID(),
+      caseNumber,
+      status: "작성중",
+      createdBy: userId,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      accidentDate: null,
+      insuranceCompany: null,
+      insurancePolicyNo: null,
+      insuranceAccidentNo: null,
+      clientResidence: null,
+      clientDepartment: null,
+      clientName: null,
+      clientContact: null,
+      assessorId: null,
+      assessorDepartment: null,
+      assessorTeam: null,
+      assessorContact: null,
+      investigatorTeam: null,
+      investigatorDepartment: null,
+      investigatorTeamName: null,
+      investigatorContact: null,
+      policyHolderName: null,
+      policyHolderIdNumber: null,
+      policyHolderAddress: null,
+      insuredName: null,
+      insuredIdNumber: null,
+      insuredContact: null,
+      insuredAddress: null,
+      victimName: null,
+      victimContact: null,
+      clientPhone: null,
+      clientAddress: null,
+      accidentLocation: null,
+      accidentDescription: null,
+      accidentType: null,
+      accidentTime: null,
+      victimDamageItems: null,
+      specialNotes: null,
+      partnerCompany: null,
+      repairCompanyName: null,
+      assignedAt: null,
+      targetCompletionDate: null,
+      acceptedAt: null,
+      rejectionReason: null,
+      surveyScheduledAt: null,
+      surveyCompletedAt: null,
+      damageScope: null,
+      repairMethod: null,
+      surveyNotes: null,
+      estimateAmount: null,
+      estimateSubmittedAt: null,
+      estimateApprovedAt: null,
+      estimateRejectionReason: null,
+      workStartedAt: null,
+      workCompletedAt: null,
+      finalReportSubmittedAt: null,
+      settlementAmount: null,
+      settlementCompletedAt: null,
+      paymentRequestedAt: null,
+      paymentCompletedAt: null,
+    };
+
+    this.cases.set(newCase.id, newCase);
+    return newCase;
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -1952,6 +2032,35 @@ export class DbStorage implements IStorage {
       .where(eq(drawings.id, id))
       .returning();
     return updated[0] || null;
+  }
+
+  async getOrCreateActiveCase(userId: string): Promise<Case> {
+    // Find existing active case (작성중) for this user
+    const existing = await db.select()
+      .from(cases)
+      .where(and(
+        eq(cases.createdBy, userId),
+        eq(cases.status, "작성중")
+      ))
+      .limit(1);
+
+    if (existing.length > 0) {
+      return existing[0];
+    }
+
+    // Create new active case for drawing purposes
+    const caseNumber = `CLM-DRAW-${Date.now()}`;
+    const newCase = await db.insert(cases)
+      .values({
+        caseNumber,
+        status: "작성중",
+        createdBy: userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    return newCase[0];
   }
 }
 
