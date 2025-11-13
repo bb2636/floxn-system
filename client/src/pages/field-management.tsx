@@ -20,6 +20,8 @@ export default function FieldManagement() {
   const [scheduleOpen, setScheduleOpen] = useState(true);
   const [basicInfoOpen, setBasicInfoOpen] = useState(true);
   const [damageInfoOpen, setDamageInfoOpen] = useState(true);
+  const [insuranceInfoOpen, setInsuranceInfoOpen] = useState(true);
+  const [insuredInfoOpen, setInsuredInfoOpen] = useState(true);
   const [recoveryMethodOpen, setRecoveryMethodOpen] = useState(true);
   
   // 기존 섹션들을 위한 expandedSections (task 7에서 제거 예정)
