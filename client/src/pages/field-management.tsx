@@ -34,6 +34,7 @@ export default function FieldManagement() {
   const [visitTime, setVisitTime] = useState("");
   const [visitDatePickerOpen, setVisitDatePickerOpen] = useState(false);
   const [travelDistance, setTravelDistance] = useState("");
+  const [dispatchLocation, setDispatchLocation] = useState("");
   const [accompaniedPerson, setAccompaniedPerson] = useState("");
   const [accidentCategory, setAccidentCategory] = useState("배관");
   const [accidentCause, setAccidentCause] = useState("");
@@ -103,6 +104,7 @@ export default function FieldManagement() {
       setVisitDate(undefined);
       setVisitTime("");
       setTravelDistance("");
+      setDispatchLocation("");
       setAccompaniedPerson("");
       setAccidentCategory("배관");
       setAccidentCause("");
@@ -154,9 +156,10 @@ export default function FieldManagement() {
       setVisitTime("");
     }
 
-    // 출동담당자
+    // 출동담당자 및 현장 정보
     setAccompaniedPerson(selectedCaseData.accompaniedPerson || "");
-    setTravelDistance(selectedCaseData.accidentLocation || "");
+    setTravelDistance(selectedCaseData.travelDistance || "");
+    setDispatchLocation(selectedCaseData.dispatchLocation || "");
 
     // 사고 정보
     setAccidentCategory(selectedCaseData.accidentType || "배관");
@@ -488,6 +491,145 @@ export default function FieldManagement() {
                   color: "rgba(12, 12, 12, 0.5)",
                 }}
                 data-testid="input-insurance-company-display"
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* 현장정보 섹션 */}
+        <SectionCard
+          title="현장정보"
+          isOpen={true}
+          onToggle={() => {}}
+          disabled={!selectedCaseData}
+        >
+          <div className="grid grid-cols-3 gap-4">
+            {/* 방문 일시 */}
+            <div>
+              <Label 
+                htmlFor="visit-date"
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}
+              >
+                방문 일시
+              </Label>
+              <div className="flex gap-2">
+                <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={intakeButtonClass}
+                      style={{
+                        ...intakeButtonStyle,
+                        justifyContent: "flex-start",
+                        background: "#FDFDFD",
+                        border: "2px solid rgba(12,12,12,0.08)",
+                        flex: 1,
+                      }}
+                      disabled={isReadOnly}
+                      data-testid="button-visit-date"
+                    >
+                      <Calendar className="mr-2 h-4 w-4" />
+                      {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={visitDate}
+                      onSelect={(date) => {
+                        setVisitDate(date);
+                        setVisitDatePickerOpen(false);
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  type="time"
+                  value={visitTime}
+                  onChange={(e) => setVisitTime(e.target.value)}
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    flex: 1,
+                  }}
+                  disabled={isReadOnly}
+                  data-testid="input-visit-time"
+                />
+              </div>
+            </div>
+
+            {/* 현장 이동 거리 */}
+            <div>
+              <Label 
+                htmlFor="travel-distance"
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}
+              >
+                현장 이동 거리
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="travel-distance"
+                  type="number"
+                  value={travelDistance}
+                  onChange={(e) => setTravelDistance(e.target.value)}
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    flex: 1,
+                  }}
+                  disabled={isReadOnly}
+                  placeholder="0"
+                  data-testid="input-travel-distance"
+                />
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  km
+                </span>
+              </div>
+            </div>
+
+            {/* 출동 업장지 */}
+            <div>
+              <Label 
+                htmlFor="dispatch-location"
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}
+              >
+                출동 업장지
+              </Label>
+              <Input
+                id="dispatch-location"
+                value={dispatchLocation}
+                onChange={(e) => setDispatchLocation(e.target.value)}
+                className={intakeFieldClass}
+                style={intakeFieldStyle}
+                disabled={isReadOnly}
+                placeholder="출동 업장지 설명"
+                data-testid="input-dispatch-location"
               />
             </div>
           </div>

@@ -130,6 +130,8 @@ export const cases = pgTable("cases", {
   
   // 현장조사 정보
   accompaniedPerson: text("accompanied_person"), // 출동담당자
+  travelDistance: text("travel_distance"), // 현장 이동 거리
+  dispatchLocation: text("dispatch_location"), // 출동 업장지
   
   // 기타 (기존 필드)
   clientPhone: text("client_phone"),
