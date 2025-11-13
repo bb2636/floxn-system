@@ -263,3 +263,36 @@ export const insertExcelDataSchema = createInsertSchema(excelData).omit({
 
 export type InsertExcelData = z.infer<typeof insertExcelDataSchema>;
 export type ExcelData = typeof excelData.$inferSelect;
+
+// 1:1 문의 테이블
+export const inquiries = pgTable("inquiries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  status: text("status").notNull().default("대기"), // "대기" | "완료"
+  response: text("response"),
+  respondedBy: varchar("responded_by").references(() => users.id),
+  respondedAt: timestamp("responded_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertInquirySchema = createInsertSchema(inquiries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateInquirySchema = insertInquirySchema.partial().extend({
+  id: z.string(),
+});
+
+export const respondInquirySchema = z.object({
+  response: z.string().min(1, "답변 내용을 입력해주세요"),
+});
+
+export type InsertInquiry = z.infer<typeof insertInquirySchema>;
+export type UpdateInquiry = z.infer<typeof updateInquirySchema>;
+export type RespondInquiry = z.infer<typeof respondInquirySchema>;
+export type Inquiry = typeof inquiries.$inferSelect;

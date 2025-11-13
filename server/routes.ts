@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -631,6 +631,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete excel data error:", error);
       res.status(500).json({ error: "데이터를 삭제하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get all inquiries (admin) or user's inquiries (regular users)
+  app.get("/api/inquiries", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      let inquiries;
+      if (req.session.userRole === "관리자") {
+        // Admin can see all inquiries
+        inquiries = await storage.getAllInquiries();
+      } else {
+        // Regular users can only see their own inquiries
+        inquiries = await storage.getInquiriesByUserId(req.session.userId);
+      }
+      res.json(inquiries);
+    } catch (error) {
+      console.error("Get inquiries error:", error);
+      res.status(500).json({ error: "문의 목록을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Create new inquiry
+  app.post("/api/inquiries", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const validatedData = insertInquirySchema.parse({
+        ...req.body,
+        userId: req.session.userId, // Always use authenticated user's ID
+      });
+      const inquiry = await storage.createInquiry(validatedData);
+      res.json(inquiry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Create inquiry error:", error);
+      res.status(500).json({ error: "문의를 등록하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Update inquiry (admin only - for responding)
+  app.patch("/api/inquiries/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      
+      // Validate response content
+      const validatedData = respondInquirySchema.parse(req.body);
+
+      const updateData = {
+        response: validatedData.response,
+        respondedBy: req.session.userId,
+        respondedAt: new Date(),
+        status: "완료",
+      };
+
+      const updated = await storage.updateInquiry(id, updateData);
+      if (!updated) {
+        return res.status(404).json({ error: "문의를 찾을 수 없습니다" });
+      }
+      res.json(updated);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Update inquiry error:", error);
+      res.status(500).json({ error: "문의를 수정하는 중 오류가 발생했습니다" });
     }
   });
 

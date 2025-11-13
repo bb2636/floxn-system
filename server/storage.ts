@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -67,6 +67,10 @@ export interface IStorage {
   getExcelData(type: string): Promise<ExcelData | null>;
   saveExcelData(data: InsertExcelData): Promise<ExcelData>;
   deleteExcelData(type: string): Promise<void>;
+  createInquiry(data: InsertInquiry): Promise<Inquiry>;
+  getAllInquiries(): Promise<Inquiry[]>;
+  getInquiriesByUserId(userId: string): Promise<Inquiry[]>;
+  updateInquiry(id: string, data: Partial<UpdateInquiry>): Promise<Inquiry | null>;
 }
 
 export class MemStorage implements IStorage {
@@ -1735,6 +1739,42 @@ export class DbStorage implements IStorage {
 
   async deleteExcelData(type: string): Promise<void> {
     await db.delete(excelData).where(eq(excelData.type, type));
+  }
+
+  async createInquiry(data: InsertInquiry): Promise<Inquiry> {
+    const created = await db.insert(inquiries)
+      .values({
+        userId: data.userId,
+        title: data.title,
+        content: data.content,
+        status: data.status || "대기",
+        response: data.response || null,
+        respondedBy: data.respondedBy || null,
+        respondedAt: data.respondedAt || null,
+      })
+      .returning();
+    return created[0];
+  }
+
+  async getAllInquiries(): Promise<Inquiry[]> {
+    return await db.select().from(inquiries).orderBy(asc(inquiries.createdAt));
+  }
+
+  async getInquiriesByUserId(userId: string): Promise<Inquiry[]> {
+    return await db.select().from(inquiries)
+      .where(eq(inquiries.userId, userId))
+      .orderBy(asc(inquiries.createdAt));
+  }
+
+  async updateInquiry(id: string, data: Partial<UpdateInquiry>): Promise<Inquiry | null> {
+    const updated = await db.update(inquiries)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(inquiries.id, id))
+      .returning();
+    return updated[0] || null;
   }
 }
 
