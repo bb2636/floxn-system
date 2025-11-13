@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case } from "@shared/schema";
-import { ChevronDown, ChevronRight, Calendar as CalendarIcon, Clock, X, Plus, Check } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Calendar as CalendarIcon, Clock, X, Plus, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,20 +9,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
 export default function FieldManagement() {
   const [selectedCase, setSelectedCase] = useState<string>("");
-  const [expandedSections, setExpandedSections] = useState({
-    schedule: true,
-    basic: true,
-    fieldSurvey: true,
-    recoveryMethod: true,
-    reception: true,
-    insurance: true,
-    accident: true,
-  });
+  
+  // Collapsible states - intake.tsx 스타일
+  const [basicInfoOpen, setBasicInfoOpen] = useState(true);
+  const [damageInfoOpen, setDamageInfoOpen] = useState(true);
+  const [recoveryMethodOpen, setRecoveryMethodOpen] = useState(true);
 
   const [accidentDate, setAccidentDate] = useState<Date | undefined>(undefined);
   const [accidentTime, setAccidentTime] = useState("");
@@ -168,53 +165,82 @@ export default function FieldManagement() {
 
   }, [selectedCaseData]);
 
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
+  // intake.tsx 스타일 입력 필드 클래스
+  const intakeFieldClass = "h-[68px] px-5 py-2.5 bg-[#FDFDFD] border-2 border-[rgba(12,12,12,0.08)] rounded-lg";
+  const intakeFieldStyle = {
+    fontFamily: "Pretendard",
+    fontWeight: 600,
+    fontSize: "16px",
+    letterSpacing: "-0.02em",
+    color: "#0C0C0C",
   };
 
-  const SectionHeader = ({ 
-    title, 
-    sectionKey, 
-    hasCollapseButton = true 
-  }: { 
-    title: string; 
-    sectionKey: keyof typeof expandedSections; 
-    hasCollapseButton?: boolean 
+  // SectionCard: intake.tsx 스타일의 Collapsible 카드
+  const SectionCard = ({
+    title,
+    isOpen,
+    onToggle,
+    children,
+    disabled = false,
+  }: {
+    title: string;
+    isOpen: boolean;
+    onToggle: () => void;
+    children: React.ReactNode;
+    disabled?: boolean;
   }) => (
-    <div className="flex items-center justify-between mb-4">
-      <h3 
-        style={{
-          fontFamily: "Pretendard",
-          fontSize: "18px",
-          fontWeight: 600,
-          letterSpacing: "-0.02em",
-          color: "#0C0C0C",
-        }}
-      >
-        {title}
-      </h3>
-      {hasCollapseButton && (
-        <button
-          onClick={() => toggleSection(sectionKey)}
-          className="flex items-center gap-1 px-3 py-1 rounded hover-elevate active-elevate-2"
+    <div
+      style={{
+        background: '#FFFFFF',
+        boxShadow: '0px 0px 20px #DBE9F5',
+        borderRadius: '12px',
+        marginBottom: '20px',
+      }}
+    >
+      <Collapsible open={isOpen} onOpenChange={onToggle}>
+        {/* 헤더 */}
+        <div
           style={{
-            fontFamily: "Pretendard",
-            fontSize: "14px",
-            fontWeight: 500,
-            color: "rgba(12, 12, 12, 0.6)",
+            padding: '24px',
+            height: '82px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}
-          data-testid={`button-toggle-${sectionKey}`}
         >
-          {expandedSections[sectionKey] ? (
-            <ChevronDown className="w-4 h-4" />
-          ) : (
-            <ChevronRight className="w-4 h-4" />
-          )}
-        </button>
-      )}
+          <h3
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "20px",
+              fontWeight: 600,
+              letterSpacing: "-0.02em",
+              color: "#0C0C0C",
+            }}
+          >
+            {title}
+          </h3>
+          <CollapsibleTrigger asChild>
+            <button
+              className="flex items-center gap-1 px-3 py-2 rounded hover-elevate active-elevate-2"
+              disabled={disabled}
+              data-testid={`button-toggle-${title}`}
+            >
+              {isOpen ? (
+                <ChevronUp className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
+              ) : (
+                <ChevronDown className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
+              )}
+            </button>
+          </CollapsibleTrigger>
+        </div>
+
+        {/* 콘텐츠 */}
+        <CollapsibleContent>
+          <div style={{ padding: '0 24px 24px 24px' }}>
+            {children}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 
@@ -411,11 +437,12 @@ export default function FieldManagement() {
       </div>
 
       {/* 기본 정보 섹션 */}
-      <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-[rgba(0,143,237,0.2)]">
-        <SectionHeader title="기본 정보" sectionKey="basic" />
-        
-        {expandedSections.basic && (
-          <div className="space-y-6">
+      <SectionCard 
+        title="기본 정보" 
+        isOpen={basicInfoOpen} 
+        onToggle={() => setBasicInfoOpen(!basicInfoOpen)}
+      >
+        <div className="space-y-6">
             {/* 상단 3개 필드: 협력사, 담당자명, 담당자 연락처 - 협력사만 수정 가능 */}
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -771,9 +798,8 @@ export default function FieldManagement() {
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+        </div>
+      </SectionCard>
 
       {/* 현장조사 정보 섹션 */}
       <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-[rgba(0,143,237,0.2)]">
