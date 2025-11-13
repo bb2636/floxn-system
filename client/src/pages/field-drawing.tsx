@@ -313,6 +313,13 @@ export default function FieldDrawing() {
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;
     
+    // 버튼이 눌려있지 않으면 드래그/그리기 상태 클리어
+    if (e.buttons === 0) {
+      if (activeTransform) setActiveTransform(null);
+      if (isDrawing) setIsDrawing(false);
+      return;
+    }
+    
     // 사각형 그리기 중
     if (isDrawing && selectedTool === "rectangle") {
       return;
@@ -645,7 +652,10 @@ export default function FieldDrawing() {
                 onMouseDown={handleCanvasMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={() => setIsDrawing(false)}
+                onMouseLeave={() => {
+                  setIsDrawing(false);
+                  setActiveTransform(null);
+                }}
               >
                 {/* 업로드된 이미지들 */}
                 {uploadedImages.map((image) => (
