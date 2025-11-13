@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { User } from "@shared/schema";
 import { MousePointer2, Square, ZoomIn, ZoomOut, Move, Lock, LockOpen, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,8 +28,8 @@ interface DrawnRectangle {
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w';
 
 export default function FieldDrawing() {
+  const [location, setLocation] = useLocation();
   const [selectedTool, setSelectedTool] = useState("pointer");
-  const [selectedMenuItem, setSelectedMenuItem] = useState("도면 목록");
   const [pastedImages, setPastedImages] = useState<PastedImage[]>([]);
   const [rectangles, setRectangles] = useState<DrawnRectangle[]>([]);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
@@ -441,11 +442,11 @@ export default function FieldDrawing() {
     return null;
   }
 
-  const menuItems = [
-    "도면 목록",
-    "층별자료 등록",
-    "견적서 작성",
-    "현장종합보고서"
+  const fieldSurveyMenuItems = [
+    { title: "현장관리", url: "/field-survey/management" },
+    { title: "도면 작성", url: "/field-survey/drawing" },
+    { title: "종합자료 등록", url: "/field-survey/documents" },
+    { title: "견적서작성조사", url: "/field-survey/estimate" },
   ];
 
   const tools = [
@@ -521,21 +522,21 @@ export default function FieldDrawing() {
 
         {/* 메뉴 아이템들 */}
         <div className="p-2 flex-1 overflow-y-auto">
-          {menuItems.map((item) => (
+          {fieldSurveyMenuItems.map((item) => (
             <button
-              key={item}
-              onClick={() => setSelectedMenuItem(item)}
-              data-testid={`menu-${item}`}
+              key={item.title}
+              onClick={() => setLocation(item.url)}
+              data-testid={`menu-${item.title}`}
               className="w-full text-left px-3 py-2.5 rounded mb-1 hover-elevate active-elevate-2"
               style={{
                 fontFamily: "Pretendard",
                 fontSize: "14px",
-                fontWeight: selectedMenuItem === item ? 600 : 500,
-                color: selectedMenuItem === item ? "#008FED" : "rgba(12, 12, 12, 0.7)",
-                background: selectedMenuItem === item ? "rgba(0, 143, 237, 0.08)" : "transparent",
+                fontWeight: location === item.url ? 600 : 500,
+                color: location === item.url ? "#008FED" : "rgba(12, 12, 12, 0.7)",
+                background: location === item.url ? "rgba(0, 143, 237, 0.08)" : "transparent",
               }}
             >
-              {item}
+              {item.title}
             </button>
           ))}
         </div>

@@ -1288,12 +1288,9 @@ export default function AdminSettings() {
                                   }
                                   
                                   try {
-                                    await apiRequest(`/api/inquiries/${selectedInquiry.id}`, {
-                                      method: "PATCH",
-                                      body: { 
-                                        responseTitle: replyTitle,
-                                        response: replyContent 
-                                      },
+                                    await apiRequest("PATCH", `/api/inquiries/${selectedInquiry.id}`, { 
+                                      responseTitle: replyTitle,
+                                      response: replyContent 
                                     });
                                     
                                     await queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
