@@ -1117,6 +1117,7 @@ export default function FieldDrawing() {
                       height: `${image.height}px`,
                       border: selectedImageId === image.id ? "2px solid #008FED" : "none",
                       cursor: selectedTool === "pointer" && !image.locked ? "move" : "pointer",
+                      zIndex: selectedImageId === image.id ? 10 : 1,
                     }}
                     data-testid={`image-${image.id}`}
                   >
@@ -1163,6 +1164,7 @@ export default function FieldDrawing() {
                       border: selectedRectangleId === rect.id ? "2px solid #008FED" : "1px solid #0C0C0C",
                       background: "rgba(255, 255, 255, 0.8)",
                       cursor: selectedTool === "pointer" && !rect.locked ? "move" : "pointer",
+                      zIndex: selectedRectangleId === rect.id ? 10 : 2,
                     }}
                     data-testid={`rectangle-${rect.id}`}
                   >
@@ -1249,6 +1251,7 @@ export default function FieldDrawing() {
                       border: selectedAccidentAreaId === area.id ? "2px dashed #008FED" : "2px dashed #9E9E9E",
                       background: "rgba(189, 189, 189, 0.3)",
                       cursor: selectedTool === "pointer" && !area.locked ? "move" : "pointer",
+                      zIndex: selectedAccidentAreaId === area.id ? 10 : 3,
                     }}
                     data-testid={`accident-area-${area.id}`}
                   >
@@ -1282,6 +1285,7 @@ export default function FieldDrawing() {
                       width: "30px",
                       height: "30px",
                       cursor: "pointer",
+                      zIndex: selectedLeakId === marker.id ? 10 : 4,
                     }}
                     data-testid={`leak-marker-${marker.id}`}
                   >
