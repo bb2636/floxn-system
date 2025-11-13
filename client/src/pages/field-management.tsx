@@ -497,10 +497,13 @@ export default function FieldManagement() {
                   value={selectedCaseData?.assignedPartner || ""}
                   disabled={isReadOnly}
                   data-testid="input-partner-company"
+                  className={intakeFieldClass}
                   style={{
-                    fontFamily: "Pretendard",
-                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                    color: isReadOnly ? "rgba(12, 12, 12, 0.6)" : "#0C0C0C",
+                    ...intakeFieldStyle,
+                    ...(isReadOnly && {
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }),
                   }}
                 />
               </div>
@@ -520,10 +523,13 @@ export default function FieldManagement() {
                   value={selectedCaseData?.assignedPartnerManager || ""}
                   disabled={isReadOnly}
                   data-testid="input-manager-name"
+                  className={intakeFieldClass}
                   style={{
-                    fontFamily: "Pretendard",
-                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                    color: isReadOnly ? "rgba(12, 12, 12, 0.6)" : "#0C0C0C",
+                    ...intakeFieldStyle,
+                    ...(isReadOnly && {
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }),
                   }}
                 />
               </div>
@@ -543,10 +549,13 @@ export default function FieldManagement() {
                   value={selectedCaseData?.assignedPartnerContact || ""}
                   disabled={isReadOnly}
                   data-testid="input-manager-contact"
+                  className={intakeFieldClass}
                   style={{
-                    fontFamily: "Pretendard",
-                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                    color: isReadOnly ? "rgba(12, 12, 12, 0.6)" : "#0C0C0C",
+                    ...intakeFieldStyle,
+                    ...(isReadOnly && {
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }),
                   }}
                 />
               </div>
@@ -582,8 +591,9 @@ export default function FieldManagement() {
                     value={selectedCaseData?.caseNumber || ""}
                     disabled
                     data-testid="input-reception-number"
+                    className={intakeFieldClass}
                     style={{
-                      fontFamily: "Pretendard",
+                      ...intakeFieldStyle,
                       background: "rgba(12, 12, 12, 0.05)",
                       color: "rgba(12, 12, 12, 0.6)",
                     }}
@@ -605,8 +615,9 @@ export default function FieldManagement() {
                     value={selectedCaseData?.insuranceCompany || ""}
                     disabled
                     data-testid="input-insurance"
+                    className={intakeFieldClass}
                     style={{
-                      fontFamily: "Pretendard",
+                      ...intakeFieldStyle,
                       background: "rgba(12, 12, 12, 0.05)",
                       color: "rgba(12, 12, 12, 0.6)",
                     }}
@@ -670,8 +681,9 @@ export default function FieldManagement() {
                       value={selectedCaseData?.policyHolderName || ""}
                       disabled
                       data-testid="input-contractor"
+                      className={intakeFieldClass}
                       style={{
-                        fontFamily: "Pretendard",
+                        ...intakeFieldStyle,
                         background: "rgba(12, 12, 12, 0.05)",
                         color: "rgba(12, 12, 12, 0.6)",
                       }}
@@ -693,8 +705,9 @@ export default function FieldManagement() {
                       value={selectedCaseData?.insuredName || ""}
                       disabled
                       data-testid="input-insured"
+                      className={intakeFieldClass}
                       style={{
-                        fontFamily: "Pretendard",
+                        ...intakeFieldStyle,
                         background: "rgba(12, 12, 12, 0.05)",
                         color: "rgba(12, 12, 12, 0.6)",
                       }}
@@ -716,8 +729,9 @@ export default function FieldManagement() {
                       value={selectedCaseData?.insuredContact || ""}
                       disabled
                       data-testid="input-insured-contact"
+                      className={intakeFieldClass}
                       style={{
-                        fontFamily: "Pretendard",
+                        ...intakeFieldStyle,
                         background: "rgba(12, 12, 12, 0.05)",
                         color: "rgba(12, 12, 12, 0.6)",
                       }}
@@ -740,8 +754,9 @@ export default function FieldManagement() {
                     value={selectedCaseData?.insuredAddress || ""}
                     disabled
                     data-testid="input-insured-address"
+                    className={intakeFieldClass}
                     style={{
-                      fontFamily: "Pretendard",
+                      ...intakeFieldStyle,
                       background: "rgba(12, 12, 12, 0.05)",
                       color: "rgba(12, 12, 12, 0.6)",
                     }}
@@ -946,9 +961,13 @@ export default function FieldManagement() {
                       placeholder="0"
                       disabled={isReadOnly}
                       data-testid="input-travel-distance"
+                      className={intakeFieldClass}
                       style={{
-                        fontFamily: "Pretendard",
-                        background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                        ...intakeFieldStyle,
+                        ...(isReadOnly && {
+                          background: "rgba(12, 12, 12, 0.05)",
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }),
                       }}
                     />
                     <span
@@ -1149,9 +1168,13 @@ export default function FieldManagement() {
                     placeholder="피해자 성명"
                     disabled={isReadOnly}
                     data-testid="input-victim-name"
+                    className={intakeFieldClass}
                     style={{
-                      fontFamily: "Pretendard",
-                      background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                      ...intakeFieldStyle,
+                      ...(isReadOnly && {
+                        background: "rgba(12, 12, 12, 0.05)",
+                        color: "rgba(12, 12, 12, 0.6)",
+                      }),
                     }}
                   />
                 </div>
@@ -1173,9 +1196,13 @@ export default function FieldManagement() {
                     placeholder="피해자 연락처"
                     disabled={isReadOnly}
                     data-testid="input-victim-contact"
+                    className={intakeFieldClass}
                     style={{
-                      fontFamily: "Pretendard",
-                      background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                      ...intakeFieldStyle,
+                      ...(isReadOnly && {
+                        background: "rgba(12, 12, 12, 0.05)",
+                        color: "rgba(12, 12, 12, 0.6)",
+                      }),
                     }}
                   />
                 </div>
@@ -1198,9 +1225,13 @@ export default function FieldManagement() {
                       placeholder="상세주소"
                       disabled={isReadOnly}
                       data-testid="input-victim-address"
+                      className={intakeFieldClass}
                       style={{
-                        fontFamily: "Pretendard",
-                        background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                        ...intakeFieldStyle,
+                        ...(isReadOnly && {
+                          background: "rgba(12, 12, 12, 0.05)",
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }),
                       }}
                     />
                   </div>
@@ -1444,9 +1475,13 @@ export default function FieldManagement() {
                   placeholder="기타선택시 설명해주세요"
                   disabled={isReadOnly}
                   data-testid="input-processing-type-other"
+                  className={intakeFieldClass}
                   style={{
-                    fontFamily: "Pretendard",
-                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                    ...intakeFieldStyle,
+                    ...(isReadOnly && {
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }),
                   }}
                 />
               )}
