@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { User, VALID_ROLES } from "@shared/schema";
+import { User, VALID_ROLES, type ExcelData } from "@shared/schema";
 import {
   Select,
   SelectContent,
@@ -341,6 +341,33 @@ export default function AdminSettings() {
     enabled: !!user,
   });
 
+  // Fetch labor cost Excel data
+  const { data: laborExcelDataFromDB } = useQuery<ExcelData | null>({
+    queryKey: ["/api/excel-data/노무비"],
+    enabled: !!user && activeMenu === "DB 관리",
+  });
+
+  // Fetch material cost Excel data
+  const { data: materialExcelDataFromDB } = useQuery<ExcelData | null>({
+    queryKey: ["/api/excel-data/자재비"],
+    enabled: !!user && activeMenu === "DB 관리",
+  });
+
+  // Sync DB data to local state
+  useEffect(() => {
+    if (laborExcelDataFromDB) {
+      setLaborExcelHeaders(laborExcelDataFromDB.headers);
+      setLaborExcelData(laborExcelDataFromDB.data);
+    }
+  }, [laborExcelDataFromDB]);
+
+  useEffect(() => {
+    if (materialExcelDataFromDB) {
+      setMaterialExcelHeaders(materialExcelDataFromDB.headers);
+      setMaterialExcelData(materialExcelDataFromDB.data);
+    }
+  }, [materialExcelDataFromDB]);
+
   useEffect(() => {
     if (!userLoading && !user) {
       setLocation("/");
@@ -354,6 +381,25 @@ export default function AdminSettings() {
     { name: "DB 관리", active: false },
     { name: "기준정보 관리", active: false },
   ];
+
+  // Excel data mutations
+  const saveExcelDataMutation = useMutation({
+    mutationFn: async (data: { type: string; headers: string[]; data: any[][] }) => {
+      return await apiRequest("POST", "/api/excel-data", data);
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/excel-data/${variables.type}`] });
+    },
+  });
+
+  const deleteExcelDataMutation = useMutation({
+    mutationFn: async (type: string) => {
+      return await apiRequest("DELETE", `/api/excel-data/${type}`);
+    },
+    onSuccess: (_, type) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/excel-data/${type}`] });
+    },
+  });
 
   // Use VALID_ROLES from schema for role filter options
   const roleFilters = ["전체", ...VALID_ROLES];
@@ -1222,7 +1268,7 @@ export default function AdminSettings() {
                       const file = e.target.files[0];
                       if (file) {
                         const reader = new FileReader();
-                        reader.onload = (event) => {
+                        reader.onload = async (event) => {
                           const data = new Uint8Array(event.target?.result as ArrayBuffer);
                           const workbook = XLSX.read(data, { type: 'array' });
                           const sheetName = workbook.SheetNames[0];
@@ -1230,12 +1276,31 @@ export default function AdminSettings() {
                           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                           
                           if (jsonData.length > 0) {
-                            setHeaders(jsonData[0] as string[]);
-                            setData(jsonData.slice(1) as any[]);
-                            toast({
-                              title: "업로드 완료",
-                              description: `${currentTab} 엑셀 파일이 성공적으로 업로드되었습니다.`,
-                            });
+                            const headers = jsonData[0] as string[];
+                            const rows = jsonData.slice(1) as any[];
+                            
+                            setHeaders(headers);
+                            setData(rows);
+                            
+                            // Save to database
+                            try {
+                              await saveExcelDataMutation.mutateAsync({
+                                type: currentTab,
+                                headers,
+                                data: rows,
+                              });
+                              
+                              toast({
+                                title: "업로드 완료",
+                                description: `${currentTab} 엑셀 파일이 성공적으로 업로드되어 저장되었습니다.`,
+                              });
+                            } catch (error) {
+                              toast({
+                                title: "저장 실패",
+                                description: "데이터베이스 저장 중 오류가 발생했습니다.",
+                                variant: "destructive",
+                              });
+                            }
                           }
                         };
                         reader.readAsArrayBuffer(file);
@@ -1253,9 +1318,10 @@ export default function AdminSettings() {
                     color: "#FFFFFF",
                   }}
                   data-testid="button-upload-excel"
+                  disabled={saveExcelDataMutation.isPending}
                 >
                   <Upload size={16} />
-                  {dbTab} 엑셀 업로드
+                  {saveExcelDataMutation.isPending ? "업로드 중..." : `${dbTab} 엑셀 업로드`}
                 </button>
               </div>
 
@@ -1389,7 +1455,7 @@ export default function AdminSettings() {
                   인쇄
                 </button>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     const currentData = dbTab === "노무비" ? laborExcelData : materialExcelData;
                     const setCurrentData = dbTab === "노무비" ? setLaborExcelData : setMaterialExcelData;
                     const setCurrentHeaders = dbTab === "노무비" ? setLaborExcelHeaders : setMaterialExcelHeaders;
@@ -1404,12 +1470,25 @@ export default function AdminSettings() {
                     }
                     
                     if (confirm(`정말로 ${dbTab} 데이터를 모두 삭제하시겠습니까?`)) {
-                      setCurrentData([]);
-                      setCurrentHeaders([]);
-                      toast({
-                        title: "데이터 삭제 완료",
-                        description: `${dbTab} 데이터가 삭제되었습니다.`,
-                      });
+                      try {
+                        // Delete from database
+                        await deleteExcelDataMutation.mutateAsync(dbTab);
+                        
+                        // Clear local state
+                        setCurrentData([]);
+                        setCurrentHeaders([]);
+                        
+                        toast({
+                          title: "데이터 삭제 완료",
+                          description: `${dbTab} 데이터가 삭제되었습니다.`,
+                        });
+                      } catch (error) {
+                        toast({
+                          title: "삭제 실패",
+                          description: "데이터베이스 삭제 중 오류가 발생했습니다.",
+                          variant: "destructive",
+                        });
+                      }
                     }
                   }}
                   className="flex items-center gap-2 px-4 py-2"
@@ -1422,9 +1501,10 @@ export default function AdminSettings() {
                     color: "#FFFFFF",
                   }}
                   data-testid="button-delete-data"
+                  disabled={deleteExcelDataMutation.isPending}
                 >
                   <X size={16} />
-                  데이터 삭제
+                  {deleteExcelDataMutation.isPending ? "삭제 중..." : "데이터 삭제"}
                 </button>
               </div>
 

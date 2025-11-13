@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -562,6 +562,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Save role permission error:", error);
       res.status(500).json({ error: "권한 정보를 저장하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Excel Data APIs (노무비/자재비)
+  app.get("/api/excel-data/:type", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { type } = req.params;
+      if (type !== "노무비" && type !== "자재비") {
+        return res.status(400).json({ error: "잘못된 데이터 타입입니다" });
+      }
+
+      const data = await storage.getExcelData(type);
+      res.json(data);
+    } catch (error) {
+      console.error("Get excel data error:", error);
+      res.status(500).json({ error: "데이터를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  app.post("/api/excel-data", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const validatedData = insertExcelDataSchema.parse(req.body);
+      const result = await storage.saveExcelData(validatedData);
+      res.json(result);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Save excel data error:", error);
+      res.status(500).json({ error: "데이터를 저장하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  app.delete("/api/excel-data/:type", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { type } = req.params;
+      if (type !== "노무비" && type !== "자재비") {
+        return res.status(400).json({ error: "잘못된 데이터 타입입니다" });
+      }
+
+      await storage.deleteExcelData(type);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete excel data error:", error);
+      res.status(500).json({ error: "데이터를 삭제하는 중 오류가 발생했습니다" });
     }
   });
 

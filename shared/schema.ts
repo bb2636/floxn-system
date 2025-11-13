@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -244,3 +244,22 @@ export const PERMISSION_CATEGORIES = {
   "통계 및 정산": ["통계", "정산조회", "정산하기"],
   "관리자 설정": ["계정관리", "DB관리", "기준정보 관리", "접근권한관리"],
 } as const;
+
+// 엑셀 데이터 저장 테이블 (노무비/자재비)
+export const excelData = pgTable("excel_data", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(), // "노무비" | "자재비"
+  headers: json("headers").$type<string[]>().notNull(),
+  data: json("data").$type<any[][]>().notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertExcelDataSchema = createInsertSchema(excelData).omit({
+  id: true,
+  uploadedAt: true,
+  updatedAt: true,
+});
+
+export type InsertExcelData = z.infer<typeof insertExcelDataSchema>;
+export type ExcelData = typeof excelData.$inferSelect;

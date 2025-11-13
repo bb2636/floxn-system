@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -64,6 +64,9 @@ export interface IStorage {
   getRolePermission(roleName: string): Promise<RolePermission | undefined>;
   saveRolePermission(data: InsertRolePermission): Promise<RolePermission>;
   getAllRolePermissions(): Promise<RolePermission[]>;
+  getExcelData(type: string): Promise<ExcelData | null>;
+  saveExcelData(data: InsertExcelData): Promise<ExcelData>;
+  deleteExcelData(type: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -1152,6 +1155,27 @@ export class MemStorage implements IStorage {
   async getAllRolePermissions(): Promise<RolePermission[]> {
     return Array.from(this.rolePermissions.values());
   }
+
+  async getExcelData(type: string): Promise<ExcelData | null> {
+    // MemStorage is not used in production
+    return null;
+  }
+
+  async saveExcelData(data: InsertExcelData): Promise<ExcelData> {
+    // MemStorage is not used in production
+    return {
+      id: randomUUID(),
+      type: data.type,
+      headers: data.headers as any,
+      data: data.data as any,
+      uploadedAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  async deleteExcelData(type: string): Promise<void> {
+    // MemStorage is not used in production
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -1675,6 +1699,42 @@ export class DbStorage implements IStorage {
 
   async getAllRolePermissions(): Promise<RolePermission[]> {
     return await db.select().from(rolePermissions);
+  }
+
+  async getExcelData(type: string): Promise<ExcelData | null> {
+    const result = await db.select().from(excelData).where(eq(excelData.type, type));
+    return result[0] || null;
+  }
+
+  async saveExcelData(data: InsertExcelData): Promise<ExcelData> {
+    const existing = await this.getExcelData(data.type);
+    
+    if (existing) {
+      // Update existing
+      const updated = await db.update(excelData)
+        .set({
+          headers: data.headers as any,
+          data: data.data as any,
+          updatedAt: new Date(),
+        })
+        .where(eq(excelData.type, data.type))
+        .returning();
+      return updated[0];
+    } else {
+      // Create new
+      const created = await db.insert(excelData)
+        .values({
+          type: data.type,
+          headers: data.headers as any,
+          data: data.data as any,
+        })
+        .returning();
+      return created[0];
+    }
+  }
+
+  async deleteExcelData(type: string): Promise<void> {
+    await db.delete(excelData).where(eq(excelData.type, type));
   }
 }
 
