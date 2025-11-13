@@ -271,6 +271,7 @@ export const inquiries = pgTable("inquiries", {
   title: text("title").notNull(),
   content: text("content").notNull(),
   status: text("status").notNull().default("대기"), // "대기" | "완료"
+  responseTitle: text("response_title"),
   response: text("response"),
   respondedBy: varchar("responded_by").references(() => users.id),
   respondedAt: timestamp("responded_at"),
@@ -289,6 +290,7 @@ export const updateInquirySchema = insertInquirySchema.partial().extend({
 });
 
 export const respondInquirySchema = z.object({
+  responseTitle: z.string().min(1, "답변 제목을 입력해주세요"),
   response: z.string().min(1, "답변 내용을 입력해주세요"),
 });
 

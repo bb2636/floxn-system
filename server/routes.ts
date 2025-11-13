@@ -695,6 +695,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = respondInquirySchema.parse(req.body);
 
       const updateData = {
+        responseTitle: validatedData.responseTitle,
         response: validatedData.response,
         respondedBy: req.session.userId,
         respondedAt: new Date(),

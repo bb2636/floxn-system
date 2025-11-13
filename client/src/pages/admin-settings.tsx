@@ -400,8 +400,8 @@ export default function AdminSettings() {
 
   // Inquiry mutations
   const updateInquiryMutation = useMutation({
-    mutationFn: async ({ id, response }: { id: string; response: string }) => {
-      return await apiRequest("PATCH", `/api/inquiries/${id}`, { response });
+    mutationFn: async ({ id, responseTitle, response }: { id: string; responseTitle: string; response: string }) => {
+      return await apiRequest("PATCH", `/api/inquiries/${id}`, { responseTitle, response });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
@@ -925,6 +925,7 @@ export default function AdminSettings() {
                       className="fixed inset-0 bg-black bg-opacity-50 z-40"
                       onClick={() => {
                         setSelectedInquiry(null);
+                        setReplyTitle("");
                         setReplyContent("");
                       }}
                       data-testid="modal-overlay-inquiry"
@@ -959,6 +960,7 @@ export default function AdminSettings() {
                         <button
                           onClick={() => {
                             setSelectedInquiry(null);
+                            setReplyTitle("");
                             setReplyContent("");
                           }}
                           className="text-gray-400 hover:text-gray-600"
@@ -1104,10 +1106,47 @@ export default function AdminSettings() {
                                 color: "#0C0C0C",
                               }}
                             >
-                              관리자 답변
+                              등록된 답변
                             </h4>
+                            
+                            {/* 답변일 */}
+                            {selectedInquiry.respondedAt && (
+                              <div
+                                className="mb-4"
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "12px",
+                                  fontWeight: 400,
+                                  color: "#686A6E",
+                                }}
+                              >
+                                {new Date(selectedInquiry.respondedAt).toLocaleDateString('ko-KR', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit'
+                                }).replace(/\. /g, '-').replace('.', '')} 답변
+                              </div>
+                            )}
+                            
+                            {/* 답변 제목 */}
+                            {selectedInquiry.responseTitle && (
+                              <h5
+                                className="mb-4"
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "16px",
+                                  fontWeight: 600,
+                                  letterSpacing: "-0.02em",
+                                  color: "#0C0C0C",
+                                }}
+                              >
+                                {selectedInquiry.responseTitle}
+                              </h5>
+                            )}
+                            
+                            {/* 답변 내용 */}
                             <div
-                              className="p-4 mb-4"
+                              className="p-4"
                               style={{
                                 background: "rgba(0, 143, 237, 0.04)",
                                 borderRadius: "8px",
@@ -1127,24 +1166,6 @@ export default function AdminSettings() {
                                 {selectedInquiry.response}
                               </p>
                             </div>
-                            {selectedInquiry.respondedAt && (
-                              <div
-                                style={{
-                                  fontFamily: "Pretendard",
-                                  fontSize: "12px",
-                                  fontWeight: 400,
-                                  color: "#686A6E",
-                                }}
-                              >
-                                {new Date(selectedInquiry.respondedAt).toLocaleDateString('ko-KR', {
-                                  year: 'numeric',
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })} 답변 완료
-                              </div>
-                            )}
                           </>
                         ) : (
                           <>
@@ -1160,8 +1181,8 @@ export default function AdminSettings() {
                               답변하기
                             </h4>
 
-                            {/* Reply Title - 제거 예정 */}
-                            <div className="mb-4" style={{ display: 'none' }}>
+                            {/* Reply Title */}
+                            <div className="mb-4">
                               <label
                                 className="block mb-2"
                                 style={{
@@ -1171,13 +1192,13 @@ export default function AdminSettings() {
                                   color: "#686A6E",
                                 }}
                               >
-                                제목
+                                답변 제목
                               </label>
                               <input
                                 type="text"
                                 value={replyTitle}
                                 onChange={(e) => setReplyTitle(e.target.value)}
-                                placeholder="문의 제목을 입력하세요"
+                                placeholder="답변 제목을 입력하세요"
                                 className="w-full px-4 py-3 outline-none"
                                 style={{
                                   background: "#FDFDFD",
@@ -1201,7 +1222,7 @@ export default function AdminSettings() {
                                   color: "#686A6E",
                                 }}
                               >
-                                내용
+                                답변 내용
                               </label>
                               <textarea
                                 value={replyContent}
@@ -1239,6 +1260,7 @@ export default function AdminSettings() {
                             <div className="flex gap-3">
                               <button
                                 onClick={() => {
+                                  setReplyTitle("");
                                   setReplyContent("");
                                 }}
                                 className="flex-1 py-3"
@@ -1256,10 +1278,10 @@ export default function AdminSettings() {
                               </button>
                               <button
                                 onClick={async () => {
-                                  if (!replyContent.trim()) {
+                                  if (!replyTitle.trim() || !replyContent.trim()) {
                                     toast({
                                       title: "입력 오류",
-                                      description: "답변 내용을 입력해주세요.",
+                                      description: "답변 제목과 내용을 모두 입력해주세요.",
                                       variant: "destructive",
                                     });
                                     return;
@@ -1268,7 +1290,10 @@ export default function AdminSettings() {
                                   try {
                                     await apiRequest(`/api/inquiries/${selectedInquiry.id}`, {
                                       method: "PATCH",
-                                      body: { response: replyContent },
+                                      body: { 
+                                        responseTitle: replyTitle,
+                                        response: replyContent 
+                                      },
                                     });
                                     
                                     await queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
@@ -1279,6 +1304,7 @@ export default function AdminSettings() {
                                     });
                                     
                                     setSelectedInquiry(null);
+                                    setReplyTitle("");
                                     setReplyContent("");
                                   } catch (error) {
                                     toast({
