@@ -55,9 +55,10 @@ The system is a full-stack web application utilizing a React-based frontend and 
     - **Layout Structure**: Uses DrawingLayout component with GlobalHeader + dedicated content area
     - **Left Sidebar (180px)**: Menu navigation including 현장관리, 도면 작성, 종합자료 등록, 견적서작성조사
     - **Case Information Display**: Shows case name (M0숭례문역4) and case number (ZK2109043) with blue dot indicator
-    - **Canvas Area**: 600x400px white drawing canvas with grid background (10px squares, rgba(218,218,218,0.5))
-    - **Top Center Toolbar**: 4 drawing tools (선택/pointer, 이미지 업로드/upload, 사각형/rectangle, 누수 지점/leak marker) with active state highlighting
-    - **Control UI (Right Sidebar)**: Shows when object selected - lock/delete buttons, width/height inputs for rectangles
+    - **Canvas Area**: Full-screen grid background (10px squares, rgba(218,218,218,0.5)) - no boundary limits for free drawing anywhere
+    - **Bottom-Center Toolbar**: 4 drawing tools (선택/pointer, 이미지 업로드/upload, 사각형/rectangle, 누수 지점/leak marker) with active state highlighting
+    - **Top-Right Save Buttons**: "저장" and "PNG 저장" buttons for saving work and exporting as PNG
+    - **Control UI**: Shows when object selected - lock/delete buttons, width/height inputs for rectangles (floating above selected entity)
     - **Drawing Tools**:
       - **Pointer Tool**: Select, drag (move) images and rectangles, show control UI
       - **Image Upload Tool**: Upload image files only (image/* filter), auto-resize to max 300px width
@@ -65,11 +66,16 @@ The system is a full-stack web application utilizing a React-based frontend and 
       - **Leak Marker Tool**: Click to place red target marker icon
     - **Drag & Lock Features**:
       - ActiveTransform state machine tracks drag operations (entityType, entityId, mode, start positions)
-      - Boundary clamping within canvas (maxX = 600 - width, maxY = 400 - height)
+      - NO boundary clamping - free drawing anywhere on screen
       - Drag cleared on mouseUp, mouseLeave, or e.buttons === 0 (prevents drag state leak)
       - Cursor changes to "move" when hovering unlocked draggable items
       - Lock button toggles locked state (locked items cannot be dragged)
-    - **Top Action Buttons**: 저장 and PNG 저장 buttons for saving work
+      - 8-handle resize system (4 corners + 4 edges) for rectangles and images with activeTransformRef for stable delta accumulation
+    - **PNG Export**: 
+      - High-resolution export (2x scale) using html2canvas library
+      - UI elements (toolbar, buttons, control panels) temporarily hidden during capture via data-ui selectors
+      - Robust error handling with try/finally to ensure UI restoration even on failures
+      - Downloads as `도면_${date}.png` with success/error toast notifications
     - **Critical Layout**: Uses h-full/min-h-0 with flex-shrink-0 on fixed elements to prevent vertical overflow and ensure single viewport workspace without double scrollbars
 - **Restoration Estimation (Drawing)**: Digital drawing for damage scope and restoration area calculation, automatically linking to estimates and reports.
 - **Image & File Management**: Upload and manage initial, intermediate, final images, and supporting documents with case-specific access control.

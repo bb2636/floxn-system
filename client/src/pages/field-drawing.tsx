@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { User } from "@shared/schema";
 import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import html2canvas from "html2canvas";
 
 interface UploadedImage {
   id: string;
@@ -103,21 +104,15 @@ export default function FieldDrawing() {
       const deltaY = e.clientY - transform.startY;
 
         if (transform.mode === 'drag') {
-          // Drag mode
+          // Drag mode - 자유롭게 아무 곳에서나 이동 가능
           const newX = transform.startEntityX + deltaX;
           const newY = transform.startEntityY + deltaY;
-
-          // Canvas boundary clamping
-          const maxX = 1200 - transform.startWidth;
-          const maxY = 800 - transform.startHeight;
-          const clampedX = Math.max(0, Math.min(newX, maxX));
-          const clampedY = Math.max(0, Math.min(newY, maxY));
 
           if (transform.entityType === 'image') {
             setUploadedImages(prev =>
               prev.map(img =>
                 img.id === transform.entityId
-                  ? { ...img, x: clampedX, y: clampedY }
+                  ? { ...img, x: newX, y: newY }
                   : img
               )
             );
@@ -125,7 +120,7 @@ export default function FieldDrawing() {
             setRectangles(prev =>
               prev.map(rect =>
                 rect.id === transform.entityId
-                  ? { ...rect, x: clampedX, y: clampedY }
+                  ? { ...rect, x: newX, y: newY }
                   : rect
               )
             );
@@ -133,7 +128,7 @@ export default function FieldDrawing() {
             setAccidentAreas(prev =>
               prev.map(area =>
                 area.id === transform.entityId
-                  ? { ...area, x: clampedX, y: clampedY }
+                  ? { ...area, x: newX, y: newY }
                   : area
               )
             );
@@ -169,34 +164,7 @@ export default function FieldDrawing() {
             newWidth = transform.startWidth + deltaX;
           }
 
-          // Canvas boundary clamping (preserving opposite edge) - BEFORE min size
-          if (handle.includes('w')) {
-            if (newX < 0) {
-              newX = 0;
-              newWidth = rightEdge;
-            } else if (newX + newWidth > 1200) {
-              newWidth = 1200 - newX;
-            }
-          } else if (handle.includes('e')) {
-            if (newX + newWidth > 1200) {
-              newWidth = 1200 - newX;
-            }
-          }
-
-          if (handle.includes('n')) {
-            if (newY < 0) {
-              newY = 0;
-              newHeight = bottomEdge;
-            } else if (newY + newHeight > 800) {
-              newHeight = 800 - newY;
-            }
-          } else if (handle.includes('s')) {
-            if (newY + newHeight > 800) {
-              newHeight = 800 - newY;
-            }
-          }
-
-          // Minimum size constraint (after boundary clamping)
+          // Minimum size constraint only (no boundary clamping - 자유롭게 리사이즈)
           const minSize = 20;
           if (newWidth < minSize) {
             newWidth = minSize;
@@ -209,25 +177,12 @@ export default function FieldDrawing() {
                 newWidth = Math.min(minSize, rightEdge);
               }
             }
-            // For east handles, prevent exceeding canvas
-            if (newX + newWidth > 1200) {
-              newX = 1200 - minSize;
-            }
           }
           if (newHeight < minSize) {
             newHeight = minSize;
             // For north handles, preserve the bottom edge (if possible)
             if (handle.includes('n')) {
               newY = bottomEdge - minSize;
-              // Re-clamp to prevent negative coordinates
-              if (newY < 0) {
-                newY = 0;
-                newHeight = Math.min(minSize, bottomEdge);
-              }
-            }
-            // For south handles, prevent exceeding canvas
-            if (newY + newHeight > 800) {
-              newY = 800 - minSize;
             }
           }
 
@@ -381,6 +336,57 @@ export default function FieldDrawing() {
     // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  // PNG 저장 핸들러
+  const handleSavePNG = async () => {
+    if (!canvasRef.current) return;
+    
+    // UI 요소들을 일시적으로 숨김
+    const toolbar = document.querySelector('[data-ui="toolbar"]') as HTMLElement;
+    const saveButtons = document.querySelector('[data-ui="save-buttons"]') as HTMLElement;
+    const controls = document.querySelectorAll('[data-ui="control-panel"]');
+    
+    const elementsToHide = [toolbar, saveButtons, ...Array.from(controls)].filter(Boolean);
+    
+    try {
+      elementsToHide.forEach(el => {
+        if (el instanceof HTMLElement) el.style.display = 'none';
+      });
+      
+      // 캔버스 캡처
+      const canvas = await html2canvas(canvasRef.current, {
+        backgroundColor: null,
+        scale: 2, // 고해상도
+        logging: false,
+      });
+      
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `도면_${new Date().toISOString().split('T')[0]}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        toast({
+          title: "저장 완료",
+          description: "도면이 PNG 파일로 저장되었습니다.",
+        });
+      });
+    } catch (error) {
+      toast({
+        title: "저장 실패",
+        description: "도면 저장 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      // UI 요소들 다시 표시 (항상 실행)
+      elementsToHide.forEach(el => {
+        if (el instanceof HTMLElement) el.style.display = '';
+      });
     }
   };
 
@@ -798,8 +804,38 @@ export default function FieldDrawing() {
             data-testid="input-file-upload"
           />
 
-          {/* 툴바 (상단 중앙) */}
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+          {/* 저장 버튼 (우측 상단) */}
+          <div className="absolute top-4 right-4 z-10 flex gap-2" data-ui="save-buttons">
+            <button
+              className="px-6 py-2.5 rounded-lg font-medium transition-all hover-elevate active-elevate-2"
+              style={{
+                background: "white",
+                color: "#008FED",
+                border: "1px solid #008FED",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+              data-testid="button-save"
+            >
+              저장
+            </button>
+            <button
+              onClick={handleSavePNG}
+              className="px-6 py-2.5 rounded-lg font-medium transition-all hover-elevate active-elevate-2"
+              style={{
+                background: "#008FED",
+                color: "white",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+              data-testid="button-save-png"
+            >
+              PNG 저장
+            </button>
+          </div>
+
+          {/* 툴바 (하단 중앙) */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10" data-ui="toolbar">
             <div 
               className="flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg"
               style={{
@@ -828,6 +864,7 @@ export default function FieldDrawing() {
           {selectedRectangle && selectedTool === "pointer" && (
             <div 
               className="absolute z-10"
+              data-ui="control-panel"
               style={{
                 left: `calc(${selectedRectangle.x}px + 180px)`,
                 top: `${Math.max(selectedRectangle.y - 60, 80)}px`,
@@ -889,6 +926,7 @@ export default function FieldDrawing() {
           {(selectedImage || selectedLeakId) && selectedTool === "pointer" && (
             <div 
               className="absolute z-10"
+              data-ui="control-panel"
               style={{
                 left: selectedImage ? `calc(${selectedImage.x}px + 180px)` : `calc(${leakMarkers.find(l => l.id === selectedLeakId)?.x}px + 180px - 40px)`,
                 top: selectedImage ? `${Math.max(selectedImage.y - 50, 80)}px` : `${Math.max((leakMarkers.find(l => l.id === selectedLeakId)?.y || 0) - 50, 80)}px`,
@@ -920,32 +958,21 @@ export default function FieldDrawing() {
             </div>
           )}
 
-          {/* 캔버스 영역 */}
+          {/* 캔버스 영역 - 전체 화면 */}
           <div 
+            ref={canvasRef}
             className="flex-1 relative overflow-hidden"
             style={{
               background: "linear-gradient(0deg, rgba(218, 218, 218, 0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(218, 218, 218, 0.5) 1px, transparent 1px)",
               backgroundSize: "10px 10px",
+              cursor: selectedTool === "rectangle" || selectedTool === "accident-area" || selectedTool === "leak" ? "crosshair" : "default",
             }}
+            data-testid="canvas-area"
             onClick={handleCanvasClick}
+            onMouseDown={handleCanvasMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
           >
-            <div className="absolute inset-0 flex items-center justify-center">
-              {/* 도면 컨테이너 */}
-              <div
-                ref={canvasRef}
-                className="bg-white rounded"
-                style={{
-                  width: "1200px",
-                  height: "800px",
-                  border: "1px solid #DADADA",
-                  position: "relative",
-                  cursor: selectedTool === "rectangle" || selectedTool === "accident-area" || selectedTool === "leak" ? "crosshair" : "default",
-                }}
-                data-testid="canvas-area"
-                onMouseDown={handleCanvasMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-              >
                 {/* 업로드된 이미지들 */}
                 {uploadedImages.map((image) => (
                   <div
@@ -1155,8 +1182,6 @@ export default function FieldDrawing() {
                     />
                   </div>
                 ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>
