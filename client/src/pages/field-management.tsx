@@ -802,11 +802,12 @@ export default function FieldManagement() {
       </SectionCard>
 
       {/* 현장조사 정보 섹션 */}
-      <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-[rgba(0,143,237,0.2)]">
-        <SectionHeader title="현장조사 정보" sectionKey="fieldSurvey" />
-        
-        {expandedSections.fieldSurvey && (
-          <div className="space-y-6">
+      <SectionCard
+        title="현장조사 정보"
+        isOpen={damageInfoOpen}
+        onToggle={() => setDamageInfoOpen(!damageInfoOpen)}
+      >
+        <div className="space-y-6">
             {/* 현장정보 */}
             <div>
               <h4 
@@ -1342,16 +1343,16 @@ export default function FieldManagement() {
                 {voc.length}/800
               </div>
             </div>
-          </div>
-        )}
-      </div>
+        </div>
+      </SectionCard>
 
       {/* 피해 복구 방식 및 차액 유형 섹션 */}
-      <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-[rgba(0,143,237,0.2)]">
-        <SectionHeader title="피해 복구 방식 및 차액 유형" sectionKey="recoveryMethod" />
-        
-        {expandedSections.recoveryMethod && (
-          <div className="space-y-6">
+      <SectionCard
+        title="피해 복구 방식 및 차액 유형"
+        isOpen={recoveryMethodOpen}
+        onToggle={() => setRecoveryMethodOpen(!recoveryMethodOpen)}
+      >
+        <div className="space-y-6">
             {/* 처리 유형(복수선택) */}
             <div>
               <label
@@ -1456,9 +1457,8 @@ export default function FieldManagement() {
                 ))}
               </div>
             </div>
-          </div>
-        )}
-      </div>
+        </div>
+      </SectionCard>
 
       {/* 접수 정보 섹션 */}
       <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-[rgba(0,143,237,0.2)]">
