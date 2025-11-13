@@ -1308,6 +1308,52 @@ export default function FieldManagement() {
                 )}
               </div>
             </div>
+
+            {/* VOC(고객의 소리) 서브섹션 */}
+            <div>
+              <h3
+                className="mb-4"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  color: "rgba(12, 12, 12, 0.8)",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                VOC(고객의 소리)
+              </h3>
+              <div>
+                <Textarea
+                  id="voc"
+                  value={voc}
+                  onChange={(e) => setVoc(e.target.value)}
+                  placeholder="내용을 적어주세요"
+                  className="min-h-[120px]"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    padding: "16px 20px",
+                    background: "#FDFDFD",
+                    border: "2px solid rgba(12,12,12,0.08)",
+                    borderRadius: "8px",
+                    resize: "none",
+                  }}
+                  disabled={isReadOnly}
+                  data-testid="textarea-voc"
+                />
+                <div 
+                  className="text-right mt-1"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "12px",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                >
+                  {voc.length}/800
+                </div>
+              </div>
+            </div>
           </div>
         </SectionCard>
 
