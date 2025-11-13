@@ -27,6 +27,7 @@ export default function Intake() {
   const [sameAsPolicyHolder, setSameAsPolicyHolder] = useState(false);
   const [damagePreventionCost, setDamagePreventionCost] = useState(false);
   const [victimIncidentAssistance, setVictimIncidentAssistance] = useState(false);
+  const [additionalVictims, setAdditionalVictims] = useState<Array<{name: string, phone: string, address: string}>>([]);
   
   // 협력사 검색 팝업 상태
   const [isPartnerSearchOpen, setIsPartnerSearchOpen] = useState(false);
@@ -160,6 +161,8 @@ export default function Intake() {
     insuredAddress: "",
     victimName: "",
     victimContact: "",
+    victimAddress: "",
+    accompaniedPerson: "",
     // 사고 및 피해사항
     accidentType: "",
     accidentCause: "",
@@ -220,6 +223,7 @@ export default function Intake() {
           damagePreventionCost: savedDamagePreventionCost,
           victimIncidentAssistance: savedVictimIncidentAssistance,
           selectedPartner: savedSelectedPartner,
+          additionalVictims: savedAdditionalVictims,
         } = JSON.parse(savedDraft);
         
         setFormData(savedFormData);
@@ -227,6 +231,7 @@ export default function Intake() {
         if (savedDamagePreventionCost !== undefined) setDamagePreventionCost(savedDamagePreventionCost);
         if (savedVictimIncidentAssistance !== undefined) setVictimIncidentAssistance(savedVictimIncidentAssistance);
         if (savedSelectedPartner) setSelectedPartner(savedSelectedPartner);
+        if (savedAdditionalVictims) setAdditionalVictims(savedAdditionalVictims);
         
         toast({
           description: "이전에 저장한 내용을 불러왔습니다.",
@@ -261,6 +266,12 @@ export default function Intake() {
         }
       }
     });
+    // sameAsPolicyHolder 체크박스 상태 추가
+    cleaned.sameAsPolicyHolder = sameAsPolicyHolder ? "true" : "false";
+    // additionalVictims 배열을 JSON 문자열로 변환
+    if (additionalVictims.length > 0) {
+      cleaned.additionalVictims = JSON.stringify(additionalVictims);
+    }
     return cleaned;
   };
 
@@ -346,6 +357,7 @@ export default function Intake() {
         damagePreventionCost,
         victimIncidentAssistance,
         selectedPartner,
+        additionalVictims,
         timestamp: new Date().toISOString(),
       }));
       toast({
@@ -388,6 +400,8 @@ export default function Intake() {
       insuredAddress: "",
       victimName: "",
       victimContact: "",
+      victimAddress: "",
+      accompaniedPerson: "",
       accidentType: "",
       accidentCause: "",
       restorationMethod: "",
@@ -415,6 +429,7 @@ export default function Intake() {
     setSameAsPolicyHolder(false);
     setDamagePreventionCost(false);
     setVictimIncidentAssistance(false);
+    setAdditionalVictims([]);
     localStorage.removeItem('intakeFormDraft');
     
     toast({

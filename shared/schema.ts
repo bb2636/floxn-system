@@ -120,10 +120,16 @@ export const cases = pgTable("cases", {
   insuredIdNumber: text("insured_id_number"),
   insuredContact: text("insured_contact"),
   insuredAddress: text("insured_address"),
+  sameAsPolicyHolder: text("same_as_policy_holder"), // "true" | "false" | null
   
   // 피해자 정보
   victimName: text("victim_name"),
   victimContact: text("victim_contact"),
+  victimAddress: text("victim_address"),
+  additionalVictims: text("additional_victims"), // JSON string of additional victims array
+  
+  // 현장조사 정보
+  accompaniedPerson: text("accompanied_person"), // 출동담당자
   
   // 기타 (기존 필드)
   clientPhone: text("client_phone"),

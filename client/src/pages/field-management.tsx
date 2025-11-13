@@ -154,6 +154,10 @@ export default function FieldManagement() {
       setVisitTime("");
     }
 
+    // 출동담당자
+    setAccompaniedPerson(selectedCaseData.accompaniedPerson || "");
+    setTravelDistance(selectedCaseData.accidentLocation || "");
+
     // 사고 정보
     setAccidentCategory(selectedCaseData.accidentType || "배관");
     setAccidentCause(selectedCaseData.accidentCause || "");
@@ -162,7 +166,20 @@ export default function FieldManagement() {
     // 피해자 정보
     setVictimName(selectedCaseData.victimName || "");
     setVictimContact(selectedCaseData.victimContact || "");
-    setVictimAddress(selectedCaseData.insuredAddress || "");
+    setVictimAddress(selectedCaseData.victimAddress || "");
+    
+    // 추가 피해자 목록 (JSON 파싱)
+    if (selectedCaseData.additionalVictims) {
+      try {
+        const parsed = JSON.parse(selectedCaseData.additionalVictims);
+        setAdditionalVictims(Array.isArray(parsed) ? parsed : []);
+      } catch (e) {
+        console.error("Error parsing additionalVictims:", e);
+        setAdditionalVictims([]);
+      }
+    } else {
+      setAdditionalVictims([]);
+    }
 
     // VOC 정보
     setVoc(selectedCaseData.specialRequests || "");
