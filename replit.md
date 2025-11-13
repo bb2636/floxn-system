@@ -53,10 +53,22 @@ The system is a full-stack web application utilizing a React-based frontend and 
   - **Field Survey Management Page** (`/field-survey/management`): Multi-section form with collapsible sections for basic info, damage assessment, insurance details, insured/victim information, and damage recovery method selection.
   - **Drawing Creation Page** (`/field-survey/drawing`): Digital drawing workspace with dedicated layout separate from FieldSurveyLayout.
     - **Layout Structure**: Uses DrawingLayout component with GlobalHeader + dedicated content area
-    - **Left Sidebar (180px)**: Menu navigation including 도면 목록, 층별자료 등록, 견적서 작성, 현장종합보고서
+    - **Left Sidebar (180px)**: Menu navigation including 현장관리, 도면 작성, 종합자료 등록, 견적서작성조사
     - **Case Information Display**: Shows case name (M0숭례문역4) and case number (ZK2109043) with blue dot indicator
-    - **Canvas Area**: Grid background for drawing/blueprint creation with responsive viewport-fitting layout
-    - **Bottom Toolbar**: Drawing tools including 포인터, 사각형, 확대, 축소, 이동 with visual selection states
+    - **Canvas Area**: 600x400px white drawing canvas with grid background (10px squares, rgba(218,218,218,0.5))
+    - **Top Center Toolbar**: 4 drawing tools (선택/pointer, 이미지 업로드/upload, 사각형/rectangle, 누수 지점/leak marker) with active state highlighting
+    - **Control UI (Right Sidebar)**: Shows when object selected - lock/delete buttons, width/height inputs for rectangles
+    - **Drawing Tools**:
+      - **Pointer Tool**: Select, drag (move) images and rectangles, show control UI
+      - **Image Upload Tool**: Upload image files only (image/* filter), auto-resize to max 300px width
+      - **Rectangle Tool**: Draw by drag, text input, width/height in mm labels (bottom and right side)
+      - **Leak Marker Tool**: Click to place red target marker icon
+    - **Drag & Lock Features**:
+      - ActiveTransform state machine tracks drag operations (entityType, entityId, mode, start positions)
+      - Boundary clamping within canvas (maxX = 600 - width, maxY = 400 - height)
+      - Drag cleared on mouseUp, mouseLeave, or e.buttons === 0 (prevents drag state leak)
+      - Cursor changes to "move" when hovering unlocked draggable items
+      - Lock button toggles locked state (locked items cannot be dragged)
     - **Top Action Buttons**: 저장 and PNG 저장 buttons for saving work
     - **Critical Layout**: Uses h-full/min-h-0 with flex-shrink-0 on fixed elements to prevent vertical overflow and ensure single viewport workspace without double scrollbars
 - **Restoration Estimation (Drawing)**: Digital drawing for damage scope and restoration area calculation, automatically linking to estimates and reports.
