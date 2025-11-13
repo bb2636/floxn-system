@@ -566,6 +566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Excel Data APIs (노무비/자재비)
+  // Get latest version for a type (backward compatibility - original behavior)
   app.get("/api/excel-data/:type", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
@@ -589,6 +590,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get list of all versions for a type (new endpoint for version management)
+  app.get("/api/excel-data/:type/versions", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { type } = req.params;
+      if (type !== "노무비" && type !== "자재비") {
+        return res.status(400).json({ error: "잘못된 데이터 타입입니다" });
+      }
+
+      const dataList = await storage.listExcelData(type);
+      res.json(dataList);
+    } catch (error) {
+      console.error("List excel data versions error:", error);
+      res.status(500).json({ error: "데이터를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get specific version by ID
+  app.get("/api/excel-data/detail/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      const data = await storage.getExcelDataById(id);
+      
+      if (!data) {
+        return res.status(404).json({ error: "데이터를 찾을 수 없습니다" });
+      }
+      
+      res.json(data);
+    } catch (error) {
+      console.error("Get excel data by ID error:", error);
+      res.status(500).json({ error: "데이터를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   app.post("/api/excel-data", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
@@ -606,11 +656,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }
+      // Handle unique constraint violation (Postgres error code 23505)
+      if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+        return res.status(409).json({ 
+          error: "동일한 제목의 데이터가 이미 존재합니다. 다른 제목을 사용해주세요." 
+        });
+      }
       console.error("Save excel data error:", error);
       res.status(500).json({ error: "데이터를 저장하는 중 오류가 발생했습니다" });
     }
   });
 
+  // Delete all versions by type (original behavior - backward compatibility)
   app.delete("/api/excel-data/:type", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
@@ -627,6 +684,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       await storage.deleteExcelData(type);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete excel data error:", error);
+      res.status(500).json({ error: "데이터를 삭제하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Delete specific version by ID (new endpoint for version management)
+  app.delete("/api/excel-data/id/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      
+      const deleted = await storage.deleteExcelDataById(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "데이터를 찾을 수 없습니다" });
+      }
+      
       res.json({ success: true });
     } catch (error) {
       console.error("Delete excel data error:", error);

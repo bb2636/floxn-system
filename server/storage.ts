@@ -2,7 +2,7 @@ import { type User, type InsertUser, users, type Case, type CaseWithLatestProgre
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, desc } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
 
@@ -64,8 +64,12 @@ export interface IStorage {
   getRolePermission(roleName: string): Promise<RolePermission | undefined>;
   saveRolePermission(data: InsertRolePermission): Promise<RolePermission>;
   getAllRolePermissions(): Promise<RolePermission[]>;
-  getExcelData(type: string): Promise<ExcelData | null>;
+  listExcelData(type: string): Promise<ExcelData[]>;
+  getExcelDataById(id: string): Promise<ExcelData | null>;
   saveExcelData(data: InsertExcelData): Promise<ExcelData>;
+  deleteExcelDataById(id: string): Promise<boolean>;
+  // Legacy methods (deprecated, for backward compatibility during migration)
+  getExcelData(type: string): Promise<ExcelData | null>;
   deleteExcelData(type: string): Promise<void>;
   createInquiry(data: InsertInquiry): Promise<Inquiry>;
   getAllInquiries(): Promise<Inquiry[]>;
@@ -73,17 +77,23 @@ export interface IStorage {
   updateInquiry(id: string, data: Partial<UpdateInquiry>): Promise<Inquiry | null>;
 }
 
+// @deprecated - MemStorage is not used in production. Use DbStorage instead.
+// Kept only for backward compatibility with functional in-memory implementations.
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private cases: Map<string, Case>;
   private progressUpdates: Map<string, ProgressUpdate>;
   private rolePermissions: Map<string, RolePermission>;
+  private excelData: Map<string, ExcelData>;
+  private inquiries: Map<string, Inquiry>;
 
   constructor() {
     this.users = new Map();
     this.cases = new Map();
     this.progressUpdates = new Map();
     this.rolePermissions = new Map();
+    this.excelData = new Map();
+    this.inquiries = new Map();
     this.seedTestUser();
     this.seedTestCases();
   }
@@ -1160,25 +1170,92 @@ export class MemStorage implements IStorage {
     return Array.from(this.rolePermissions.values());
   }
 
-  async getExcelData(type: string): Promise<ExcelData | null> {
-    // MemStorage is not used in production
-    return null;
+  // Excel Data methods (in-memory implementation)
+  async listExcelData(type: string): Promise<ExcelData[]> {
+    const allData = Array.from(this.excelData.values());
+    return allData
+      .filter(item => item.type === type)
+      .sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
+  }
+
+  async getExcelDataById(id: string): Promise<ExcelData | null> {
+    return this.excelData.get(id) || null;
+  }
+
+  async deleteExcelDataById(id: string): Promise<boolean> {
+    return this.excelData.delete(id);
   }
 
   async saveExcelData(data: InsertExcelData): Promise<ExcelData> {
-    // MemStorage is not used in production
-    return {
+    const currentDate = new Date();
+    const newData: ExcelData = {
       id: randomUUID(),
       type: data.type,
+      title: data.title,
       headers: data.headers as any,
       data: data.data as any,
-      uploadedAt: new Date(),
-      updatedAt: new Date(),
+      uploadedAt: currentDate,
+      updatedAt: currentDate,
     };
+    this.excelData.set(newData.id, newData);
+    return newData;
+  }
+
+  // Legacy methods
+  async getExcelData(type: string): Promise<ExcelData | null> {
+    const versions = await this.listExcelData(type);
+    return versions[0] || null;
   }
 
   async deleteExcelData(type: string): Promise<void> {
-    // MemStorage is not used in production
+    const allData = Array.from(this.excelData.values());
+    const toDelete = allData.filter(item => item.type === type);
+    toDelete.forEach(item => this.excelData.delete(item.id));
+  }
+
+  // Inquiry methods (in-memory implementation)
+  async createInquiry(data: InsertInquiry): Promise<Inquiry> {
+    const currentDate = new Date();
+    const newInquiry: Inquiry = {
+      id: randomUUID(),
+      userId: data.userId,
+      title: data.title,
+      content: data.content,
+      status: data.status || "대기",
+      response: data.response || null,
+      respondedBy: data.respondedBy || null,
+      respondedAt: data.respondedAt || null,
+      createdAt: currentDate,
+      updatedAt: currentDate,
+    };
+    this.inquiries.set(newInquiry.id, newInquiry);
+    return newInquiry;
+  }
+
+  async getAllInquiries(): Promise<Inquiry[]> {
+    return Array.from(this.inquiries.values())
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+
+  async getInquiriesByUserId(userId: string): Promise<Inquiry[]> {
+    const allInquiries = Array.from(this.inquiries.values());
+    return allInquiries
+      .filter(inquiry => inquiry.userId === userId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+
+  async updateInquiry(id: string, data: Partial<UpdateInquiry>): Promise<Inquiry | null> {
+    const existing = this.inquiries.get(id);
+    if (!existing) {
+      return null;
+    }
+    const updated: Inquiry = {
+      ...existing,
+      ...data,
+      updatedAt: new Date(),
+    };
+    this.inquiries.set(id, updated);
+    return updated;
   }
 }
 
@@ -1705,39 +1782,52 @@ export class DbStorage implements IStorage {
     return await db.select().from(rolePermissions);
   }
 
-  async getExcelData(type: string): Promise<ExcelData | null> {
-    const result = await db.select().from(excelData).where(eq(excelData.type, type));
+  // New methods for multi-version support
+  async listExcelData(type: string): Promise<ExcelData[]> {
+    const result = await db.select()
+      .from(excelData)
+      .where(eq(excelData.type, type))
+      .orderBy(desc(excelData.uploadedAt));
+    return result;
+  }
+
+  async getExcelDataById(id: string): Promise<ExcelData | null> {
+    const result = await db.select()
+      .from(excelData)
+      .where(eq(excelData.id, id))
+      .limit(1);
     return result[0] || null;
   }
 
+  async deleteExcelDataById(id: string): Promise<boolean> {
+    const deleted = await db.delete(excelData)
+      .where(eq(excelData.id, id))
+      .returning();
+    return deleted.length > 0;
+  }
+
   async saveExcelData(data: InsertExcelData): Promise<ExcelData> {
-    const existing = await this.getExcelData(data.type);
-    
-    if (existing) {
-      // Update existing
-      const updated = await db.update(excelData)
-        .set({
-          headers: data.headers as any,
-          data: data.data as any,
-          updatedAt: new Date(),
-        })
-        .where(eq(excelData.type, data.type))
-        .returning();
-      return updated[0];
-    } else {
-      // Create new
-      const created = await db.insert(excelData)
-        .values({
-          type: data.type,
-          headers: data.headers as any,
-          data: data.data as any,
-        })
-        .returning();
-      return created[0];
-    }
+    // Create new version (no longer overwrites existing)
+    const created = await db.insert(excelData)
+      .values({
+        type: data.type,
+        title: data.title,
+        headers: data.headers as any,
+        data: data.data as any,
+      })
+      .returning();
+    return created[0];
+  }
+
+  // Legacy methods (deprecated, for backward compatibility during migration)
+  async getExcelData(type: string): Promise<ExcelData | null> {
+    // Use listExcelData to get the latest version (already ordered by uploadedAt DESC)
+    const versions = await this.listExcelData(type);
+    return versions[0] || null;
   }
 
   async deleteExcelData(type: string): Promise<void> {
+    // Delete all versions of this type
     await db.delete(excelData).where(eq(excelData.type, type));
   }
 

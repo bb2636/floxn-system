@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, json, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -249,11 +249,14 @@ export const PERMISSION_CATEGORIES = {
 export const excelData = pgTable("excel_data", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   type: text("type").notNull(), // "노무비" | "자재비"
+  title: text("title").notNull(), // "2025-09-01 전국 - 정부노임단가"
   headers: json("headers").$type<string[]>().notNull(),
   data: json("data").$type<any[][]>().notNull(),
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  typeTitleUnique: unique("type_title_unique").on(table.type, table.title),
+}));
 
 export const insertExcelDataSchema = createInsertSchema(excelData).omit({
   id: true,
