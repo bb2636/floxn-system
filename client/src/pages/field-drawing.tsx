@@ -411,6 +411,32 @@ export default function FieldDrawing() {
     { id: "accident-area" as ToolType, icon: Focus, label: "사고 영역" },
   ];
 
+  // 이미지를 캔버스에 추가하는 공통 함수
+  const addImageToCanvas = (dataUrl: string) => {
+    const img = new Image();
+    img.onload = () => {
+      const newImage: UploadedImage = {
+        id: `img-${Date.now()}`,
+        src: dataUrl,
+        x: 50,
+        y: 50,
+        width: Math.min(img.width, 300),
+        height: (Math.min(img.width, 300) * img.height) / img.width,
+        locked: false,
+      };
+      setUploadedImages(prev => [...prev, newImage]);
+      setSelectedImageId(newImage.id);
+      setSelectedRectangleId(null);
+      setSelectedAccidentAreaId(null);
+      setSelectedLeakId(null);
+      toast({
+        title: "이미지 추가",
+        description: "이미지가 추가되었습니다.",
+      });
+    };
+    img.src = dataUrl;
+  };
+
   // 파일 업로드 핸들러
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -428,28 +454,9 @@ export default function FieldDrawing() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const newImage: UploadedImage = {
-          id: `img-${Date.now()}`,
-          src: event.target?.result as string,
-          x: 50,
-          y: 50,
-          width: Math.min(img.width, 300),
-          height: (Math.min(img.width, 300) * img.height) / img.width,
-          locked: false,
-        };
-        setUploadedImages(prev => [...prev, newImage]);
-        setSelectedImageId(newImage.id);
-        setSelectedRectangleId(null);
-        setSelectedAccidentAreaId(null);
-        setSelectedLeakId(null);
-        toast({
-          title: "이미지 추가",
-          description: "이미지가 추가되었습니다.",
-        });
-      };
-      img.src = event.target?.result as string;
+      if (event.target?.result) {
+        addImageToCanvas(event.target.result as string);
+      }
     };
     reader.readAsDataURL(file);
     
@@ -458,6 +465,41 @@ export default function FieldDrawing() {
       fileInputRef.current.value = '';
     }
   };
+
+  // 클립보드 붙여넣기 핸들러
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        // 이미지 타입인 경우
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          const blob = item.getAsFile();
+          if (!blob) continue;
+
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            if (event.target?.result) {
+              addImageToCanvas(event.target.result as string);
+            }
+          };
+          reader.readAsDataURL(blob);
+          break;
+        }
+      }
+    };
+
+    // 전역 paste 이벤트 리스너 등록
+    document.addEventListener('paste', handlePaste);
+
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, []);
 
   // 도면 저장 핸들러
   const handleSave = () => {
