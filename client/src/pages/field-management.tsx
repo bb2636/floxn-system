@@ -24,11 +24,6 @@ export default function FieldManagement() {
   const [insuredInfoOpen, setInsuredInfoOpen] = useState(true);
   const [recoveryMethodOpen, setRecoveryMethodOpen] = useState(true);
   
-  // 기존 섹션들을 위한 expandedSections (task 7에서 제거 예정)
-  const [expandedSections, setExpandedSections] = useState({
-    reception: false,
-    insurance: false,
-  });
 
   const [accidentDate, setAccidentDate] = useState<Date | undefined>(undefined);
   const [accidentTime, setAccidentTime] = useState("");
@@ -182,35 +177,6 @@ export default function FieldManagement() {
     fontSize: "16px",
     letterSpacing: "-0.02em",
     color: "#0C0C0C",
-  };
-
-  // SectionHeader: 기존 섹션용 (task 7에서 제거 예정)
-  const SectionHeader = ({ title, sectionKey }: { title: string; sectionKey: string }) => {
-    const isExpanded = expandedSections[sectionKey as keyof typeof expandedSections];
-    return (
-      <div className="flex items-center justify-between mb-4">
-        <h3
-          style={{
-            fontFamily: "Pretendard",
-            fontSize: "18px",
-            fontWeight: 600,
-            color: "rgba(12, 12, 12, 0.9)",
-          }}
-        >
-          {title}
-        </h3>
-        <button
-          onClick={() => setExpandedSections(prev => ({ ...prev, [sectionKey]: !prev[sectionKey as keyof typeof prev] }))}
-          className="p-2 hover-elevate active-elevate-2 rounded"
-        >
-          {isExpanded ? (
-            <ChevronUp className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
-          ) : (
-            <ChevronDown className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
-          )}
-        </button>
-      </div>
-    );
   };
 
   // SectionCard: intake.tsx 스타일의 Collapsible 카드
@@ -689,9 +655,9 @@ export default function FieldManagement() {
         </div>
       </SectionCard>
 
-      {/* 손해 평가 섹션 */}
+      {/* 현장조사 정보 섹션 */}
       <SectionCard
-        title="손해 평가"
+        title="현장조사 정보"
         isOpen={damageInfoOpen}
         onToggle={() => setDamageInfoOpen(!damageInfoOpen)}
       >
