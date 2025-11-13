@@ -909,9 +909,15 @@ export default function FieldManagement() {
               <div className="flex items-center gap-2">
                 <Input
                   id="travel-distance"
-                  type="number"
+                  type="text"
                   value={travelDistance}
-                  onChange={(e) => setTravelDistance(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // 숫자만 입력 가능 (빈 문자열 허용)
+                    if (value === '' || /^\d+$/.test(value)) {
+                      setTravelDistance(value);
+                    }
+                  }}
                   className={intakeFieldClass}
                   style={{
                     ...intakeFieldStyle,
