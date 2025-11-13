@@ -17,9 +17,16 @@ export default function FieldManagement() {
   const [selectedCase, setSelectedCase] = useState<string>("");
   
   // Collapsible states - intake.tsx 스타일
+  const [scheduleOpen, setScheduleOpen] = useState(true);
   const [basicInfoOpen, setBasicInfoOpen] = useState(true);
   const [damageInfoOpen, setDamageInfoOpen] = useState(true);
   const [recoveryMethodOpen, setRecoveryMethodOpen] = useState(true);
+  
+  // 기존 섹션들을 위한 expandedSections (task 7에서 제거 예정)
+  const [expandedSections, setExpandedSections] = useState({
+    reception: false,
+    insurance: false,
+  });
 
   const [accidentDate, setAccidentDate] = useState<Date | undefined>(undefined);
   const [accidentTime, setAccidentTime] = useState("");
@@ -175,6 +182,35 @@ export default function FieldManagement() {
     color: "#0C0C0C",
   };
 
+  // SectionHeader: 기존 섹션용 (task 7에서 제거 예정)
+  const SectionHeader = ({ title, sectionKey }: { title: string; sectionKey: string }) => {
+    const isExpanded = expandedSections[sectionKey as keyof typeof expandedSections];
+    return (
+      <div className="flex items-center justify-between mb-4">
+        <h3
+          style={{
+            fontFamily: "Pretendard",
+            fontSize: "18px",
+            fontWeight: 600,
+            color: "rgba(12, 12, 12, 0.9)",
+          }}
+        >
+          {title}
+        </h3>
+        <button
+          onClick={() => setExpandedSections(prev => ({ ...prev, [sectionKey]: !prev[sectionKey as keyof typeof prev] }))}
+          className="p-2 hover-elevate active-elevate-2 rounded"
+        >
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
+          ) : (
+            <ChevronDown className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
+          )}
+        </button>
+      </div>
+    );
+  };
+
   // SectionCard: intake.tsx 스타일의 Collapsible 카드
   const SectionCard = ({
     title,
@@ -247,22 +283,23 @@ export default function FieldManagement() {
   return (
     <div className="relative p-8">
       {/* 현장일력 섹션 */}
-      <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-[rgba(0,143,237,0.2)]">
-        <SectionHeader title="현장일력" sectionKey="schedule" />
-        
-        {expandedSections.schedule && (
-          <div>
-            <p 
-              className="mb-3"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: "rgba(12, 12, 12, 0.7)",
-              }}
-            >
-              접수건 선택
-            </p>
+      <SectionCard
+        title="현장일력"
+        isOpen={scheduleOpen}
+        onToggle={() => setScheduleOpen(!scheduleOpen)}
+      >
+        <div>
+          <p 
+            className="mb-3"
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: 500,
+              color: "rgba(12, 12, 12, 0.7)",
+            }}
+          >
+            접수건 선택
+          </p>
             
             {/* 접수건 카드 리스트 */}
             {casesLoading ? (
@@ -432,9 +469,8 @@ export default function FieldManagement() {
                 ))}
               </div>
             )}
-          </div>
-        )}
-      </div>
+        </div>
+      </SectionCard>
 
       {/* 기본 정보 섹션 */}
       <SectionCard 
