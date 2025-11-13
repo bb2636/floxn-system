@@ -269,6 +269,9 @@ export default function AdminSettings() {
   
   // DB 관리 states
   const [dbTab, setDbTab] = useState("노무비");
+  const [uploadTitle, setUploadTitle] = useState("");
+  const [selectedLaborVersionId, setSelectedLaborVersionId] = useState<string | null>(null);
+  const [selectedMaterialVersionId, setSelectedMaterialVersionId] = useState<string | null>(null);
   // 노무비 데이터
   const [laborExcelData, setLaborExcelData] = useState<any[]>([]);
   const [laborExcelHeaders, setLaborExcelHeaders] = useState<string[]>([]);
@@ -332,32 +335,67 @@ export default function AdminSettings() {
     enabled: !!user,
   });
 
-  // Fetch labor cost Excel data
-  const { data: laborExcelDataFromDB } = useQuery<ExcelData | null>({
-    queryKey: ["/api/excel-data/노무비"],
+  // Fetch labor cost Excel versions
+  const { data: laborVersions = [], isLoading: laborVersionsLoading } = useQuery<ExcelData[]>({
+    queryKey: ["/api/excel-data/노무비/versions"],
     enabled: !!user && activeMenu === "DB 관리",
   });
 
-  // Fetch material cost Excel data
-  const { data: materialExcelDataFromDB } = useQuery<ExcelData | null>({
-    queryKey: ["/api/excel-data/자재비"],
+  // Fetch material cost Excel versions
+  const { data: materialVersions = [], isLoading: materialVersionsLoading } = useQuery<ExcelData[]>({
+    queryKey: ["/api/excel-data/자재비/versions"],
     enabled: !!user && activeMenu === "DB 관리",
   });
 
-  // Sync DB data to local state
+  // Fetch selected labor version detail
+  const { data: selectedLaborVersion } = useQuery<ExcelData | null>({
+    queryKey: [`/api/excel-data/detail/${selectedLaborVersionId}`],
+    enabled: !!selectedLaborVersionId && activeMenu === "DB 관리",
+  });
+
+  // Fetch selected material version detail
+  const { data: selectedMaterialVersion } = useQuery<ExcelData | null>({
+    queryKey: [`/api/excel-data/detail/${selectedMaterialVersionId}`],
+    enabled: !!selectedMaterialVersionId && activeMenu === "DB 관리",
+  });
+
+  // Auto-select latest version when versions change (validates selection still exists)
   useEffect(() => {
-    if (laborExcelDataFromDB) {
-      setLaborExcelHeaders(laborExcelDataFromDB.headers);
-      setLaborExcelData(laborExcelDataFromDB.data);
+    if (laborVersions.length > 0 && !laborVersions.find(v => v.id === selectedLaborVersionId)) {
+      setSelectedLaborVersionId(laborVersions[0].id);
+    } else if (laborVersions.length === 0 && selectedLaborVersionId !== null) {
+      setSelectedLaborVersionId(null);
     }
-  }, [laborExcelDataFromDB]);
+  }, [laborVersions, selectedLaborVersionId]);
 
   useEffect(() => {
-    if (materialExcelDataFromDB) {
-      setMaterialExcelHeaders(materialExcelDataFromDB.headers);
-      setMaterialExcelData(materialExcelDataFromDB.data);
+    if (materialVersions.length > 0 && !materialVersions.find(v => v.id === selectedMaterialVersionId)) {
+      setSelectedMaterialVersionId(materialVersions[0].id);
+    } else if (materialVersions.length === 0 && selectedMaterialVersionId !== null) {
+      setSelectedMaterialVersionId(null);
     }
-  }, [materialExcelDataFromDB]);
+  }, [materialVersions, selectedMaterialVersionId]);
+
+  // Sync selected version data to local state
+  useEffect(() => {
+    if (selectedLaborVersion) {
+      setLaborExcelHeaders(selectedLaborVersion.headers);
+      setLaborExcelData(selectedLaborVersion.data);
+    } else {
+      setLaborExcelHeaders([]);
+      setLaborExcelData([]);
+    }
+  }, [selectedLaborVersion]);
+
+  useEffect(() => {
+    if (selectedMaterialVersion) {
+      setMaterialExcelHeaders(selectedMaterialVersion.headers);
+      setMaterialExcelData(selectedMaterialVersion.data);
+    } else {
+      setMaterialExcelHeaders([]);
+      setMaterialExcelData([]);
+    }
+  }, [selectedMaterialVersion]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -375,20 +413,36 @@ export default function AdminSettings() {
 
   // Excel data mutations
   const saveExcelDataMutation = useMutation({
-    mutationFn: async (data: { type: string; headers: string[]; data: any[][] }) => {
+    mutationFn: async (data: { type: string; title: string; headers: string[]; data: any[][] }) => {
       return await apiRequest("POST", "/api/excel-data", data);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/excel-data/${variables.type}`] });
+    onSuccess: (result, variables) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/excel-data/${variables.type}/versions`] });
+      // Auto-select newly created version
+      if (variables.type === "노무비") {
+        setSelectedLaborVersionId(result.id);
+      } else {
+        setSelectedMaterialVersionId(result.id);
+      }
     },
   });
 
-  const deleteExcelDataMutation = useMutation({
-    mutationFn: async (type: string) => {
-      return await apiRequest("DELETE", `/api/excel-data/${type}`);
+  const deleteVersionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/excel-data/id/${id}`);
     },
-    onSuccess: (_, type) => {
-      queryClient.invalidateQueries({ queryKey: [`/api/excel-data/${type}`] });
+    onSuccess: async (_, deletedId) => {
+      const currentType = dbTab;
+      
+      // Clear selection if deleted version was selected
+      if (currentType === "노무비" && selectedLaborVersionId === deletedId) {
+        setSelectedLaborVersionId(null);
+      } else if (currentType === "자재비" && selectedMaterialVersionId === deletedId) {
+        setSelectedMaterialVersionId(null);
+      }
+      
+      // Invalidate and refetch versions (useEffect will auto-select latest)
+      await queryClient.invalidateQueries({ queryKey: [`/api/excel-data/${currentType}/versions`] });
     },
   });
 
@@ -1372,8 +1426,36 @@ export default function AdminSettings() {
                   </div>
                 </div>
 
-                <button
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={uploadTitle}
+                    onChange={(e) => setUploadTitle(e.target.value)}
+                    placeholder="버전 제목 입력 (예: 2025-01 기준)"
+                    className="px-4 py-2"
+                    style={{
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRadius: "6px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 400,
+                      color: "#0C0C0C",
+                      width: "240px",
+                    }}
+                    data-testid="input-excel-title"
+                  />
+                  <button
                   onClick={() => {
+                    // Validate title
+                    if (!uploadTitle.trim()) {
+                      toast({
+                        title: "버전 제목 필요",
+                        description: "버전 제목을 입력해주세요.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
                     const currentTab = dbTab;
                     const setData = currentTab === "노무비" ? setLaborExcelData : setMaterialExcelData;
                     const setHeaders = currentTab === "노무비" ? setLaborExcelHeaders : setMaterialExcelHeaders;
@@ -1403,6 +1485,7 @@ export default function AdminSettings() {
                             try {
                               await saveExcelDataMutation.mutateAsync({
                                 type: currentTab,
+                                title: uploadTitle.trim(),
                                 headers,
                                 data: rows,
                               });
@@ -1411,12 +1494,24 @@ export default function AdminSettings() {
                                 title: "업로드 완료",
                                 description: `${currentTab} 엑셀 파일이 성공적으로 업로드되어 저장되었습니다.`,
                               });
-                            } catch (error) {
-                              toast({
-                                title: "저장 실패",
-                                description: "데이터베이스 저장 중 오류가 발생했습니다.",
-                                variant: "destructive",
-                              });
+                              
+                              // Clear title input
+                              setUploadTitle("");
+                            } catch (error: any) {
+                              // Check for duplicate title error (409)
+                              if (error?.status === 409 || error?.response?.status === 409) {
+                                toast({
+                                  title: "중복된 제목",
+                                  description: "이미 같은 제목의 버전이 존재합니다. 다른 제목을 사용해주세요.",
+                                  variant: "destructive",
+                                });
+                              } else {
+                                toast({
+                                  title: "저장 실패",
+                                  description: "데이터베이스 저장 중 오류가 발생했습니다.",
+                                  variant: "destructive",
+                                });
+                              }
                             }
                           }
                         };
@@ -1440,6 +1535,7 @@ export default function AdminSettings() {
                   <Upload size={16} />
                   {saveExcelDataMutation.isPending ? "업로드 중..." : `${dbTab} 엑셀 업로드`}
                 </button>
+                </div>
               </div>
 
               {/* Tabs */}
@@ -1476,41 +1572,79 @@ export default function AdminSettings() {
                 </button>
               </div>
 
-              {/* Date Info */}
-              <h2
-                className="mb-3"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "20px",
-                  fontWeight: 600,
-                  letterSpacing: "-0.02em",
-                  color: "#0C0C0C",
-                }}
-              >
-                2025-09-01 전국 · 정부노임단가
-              </h2>
-
+              {/* Version Selector */}
               <div className="flex items-center gap-4 mb-6">
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 400,
-                    color: "#686A6E",
-                  }}
-                >
-                  기본값: 26025-00-00
-                </span>
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 400,
-                    color: "#686A6E",
-                  }}
-                >
-                  출처: 대한건설협회 시플노임단가
-                </span>
+                <div className="flex-1">
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                      marginBottom: "8px",
+                      display: "block",
+                    }}
+                  >
+                    버전 선택
+                  </label>
+                  <Select
+                    value={dbTab === "노무비" ? (selectedLaborVersionId || "") : (selectedMaterialVersionId || "")}
+                    onValueChange={(value) => {
+                      if (dbTab === "노무비") {
+                        setSelectedLaborVersionId(value);
+                      } else {
+                        setSelectedMaterialVersionId(value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger
+                      className="w-full"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        borderRadius: "6px",
+                      }}
+                      data-testid="select-excel-version"
+                    >
+                      <SelectValue placeholder="버전을 선택하세요" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(() => {
+                        const versions = dbTab === "노무비" ? laborVersions : materialVersions;
+                        const isLoading = dbTab === "노무비" ? laborVersionsLoading : materialVersionsLoading;
+                        
+                        if (isLoading) {
+                          return (
+                            <SelectItem value="loading" disabled>
+                              로딩 중...
+                            </SelectItem>
+                          );
+                        }
+                        
+                        if (versions.length === 0) {
+                          return (
+                            <SelectItem value="empty" disabled>
+                              등록된 버전이 없습니다
+                            </SelectItem>
+                          );
+                        }
+                        
+                        return versions.map((version, index) => (
+                          <SelectItem key={version.id} value={version.id} data-testid={`select-version-${version.id}`}>
+                            {version.title} · {new Date(version.uploadedAt).toLocaleString('ko-KR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                            {index === 0 && " (최신)"}
+                          </SelectItem>
+                        ));
+                      })()}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Action Buttons */}
@@ -1573,31 +1707,26 @@ export default function AdminSettings() {
                 </button>
                 <button
                   onClick={async () => {
-                    const currentData = dbTab === "노무비" ? laborExcelData : materialExcelData;
-                    const setCurrentData = dbTab === "노무비" ? setLaborExcelData : setMaterialExcelData;
-                    const setCurrentHeaders = dbTab === "노무비" ? setLaborExcelHeaders : setMaterialExcelHeaders;
+                    const selectedVersionId = dbTab === "노무비" ? selectedLaborVersionId : selectedMaterialVersionId;
+                    const versions = dbTab === "노무비" ? laborVersions : materialVersions;
+                    const selectedVersion = versions.find(v => v.id === selectedVersionId);
                     
-                    if (currentData.length === 0) {
+                    if (!selectedVersionId || !selectedVersion) {
                       toast({
-                        title: "데이터 없음",
-                        description: "삭제할 데이터가 없습니다.",
+                        title: "버전 선택 필요",
+                        description: "삭제할 버전을 선택해주세요.",
                         variant: "destructive",
                       });
                       return;
                     }
                     
-                    if (confirm(`정말로 ${dbTab} 데이터를 모두 삭제하시겠습니까?`)) {
+                    if (confirm(`정말로 "${selectedVersion.title}" 버전을 삭제하시겠습니까?`)) {
                       try {
-                        // Delete from database
-                        await deleteExcelDataMutation.mutateAsync(dbTab);
-                        
-                        // Clear local state
-                        setCurrentData([]);
-                        setCurrentHeaders([]);
+                        await deleteVersionMutation.mutateAsync(selectedVersionId);
                         
                         toast({
-                          title: "데이터 삭제 완료",
-                          description: `${dbTab} 데이터가 삭제되었습니다.`,
+                          title: "버전 삭제 완료",
+                          description: `"${selectedVersion.title}" 버전이 삭제되었습니다.`,
                         });
                       } catch (error) {
                         toast({
@@ -1617,16 +1746,16 @@ export default function AdminSettings() {
                     fontWeight: 500,
                     color: "#FFFFFF",
                   }}
-                  data-testid="button-delete-data"
-                  disabled={deleteExcelDataMutation.isPending}
+                  data-testid="button-delete-version"
+                  disabled={deleteVersionMutation.isPending}
                 >
                   <X size={16} />
-                  {deleteExcelDataMutation.isPending ? "삭제 중..." : "데이터 삭제"}
+                  {deleteVersionMutation.isPending ? "삭제 중..." : "선택 버전 삭제"}
                 </button>
               </div>
 
               {/* Table */}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" style={{ background: "#FFFFFF", borderRadius: "8px", padding: "16px" }}>
                 <table className="w-full">
                   <thead
                     style={{
