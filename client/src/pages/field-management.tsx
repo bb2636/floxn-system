@@ -14,6 +14,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
+// Helper function to normalize boolean values from string/boolean storage
+const normalizeBoolean = (value: any): boolean => {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.toLowerCase() === "true";
+  return false;
+};
+
 export default function FieldManagement() {
   const [selectedCase, setSelectedCase] = useState<string>("");
   
@@ -606,7 +613,7 @@ export default function FieldManagement() {
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="same-as-policyholder"
-                  checked={Boolean(selectedCaseData?.sameAsPolicyHolder === "true" || selectedCaseData?.sameAsPolicyHolder === true)}
+                  checked={normalizeBoolean(selectedCaseData?.sameAsPolicyHolder)}
                   disabled
                   data-testid="checkbox-same-as-policyholder"
                 />
@@ -927,10 +934,10 @@ export default function FieldManagement() {
               </div>
             </div>
 
-            {/* 출동 업장지 */}
+            {/* 출동 담당자 */}
             <div>
               <Label 
-                htmlFor="dispatch-location"
+                htmlFor="dispatch-manager"
                 className="mb-3"
                 style={{
                   fontFamily: "Pretendard",
@@ -939,17 +946,20 @@ export default function FieldManagement() {
                   color: "rgba(12, 12, 12, 0.7)",
                 }}
               >
-                출동 업장지
+                출동 담당자
               </Label>
               <Input
-                id="dispatch-location"
-                value={dispatchLocation}
-                onChange={(e) => setDispatchLocation(e.target.value)}
+                id="dispatch-manager"
+                value={selectedCaseData?.accompaniedPerson || ""}
+                readOnly
                 className={intakeFieldClass}
-                style={intakeFieldStyle}
-                disabled={isReadOnly}
-                placeholder="출동 업장지 설명"
-                data-testid="input-dispatch-location"
+                style={{
+                  ...intakeFieldStyle,
+                  background: "rgba(12, 12, 12, 0.04)",
+                  color: "rgba(12, 12, 12, 0.4)",
+                }}
+                placeholder="출동 담당자 성명"
+                data-testid="input-dispatch-manager"
               />
             </div>
           </div>
