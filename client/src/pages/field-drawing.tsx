@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User } from "@shared/schema";
-import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2 } from "lucide-react";
+import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { GlobalHeader } from "@/components/global-header";
 
@@ -26,15 +26,24 @@ interface DrawnRectangle {
   locked: boolean;
 }
 
+interface AccidentArea {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  locked: boolean;
+}
+
 interface LeakMarker {
   id: string;
   x: number;
   y: number;
 }
 
-type ToolType = "pointer" | "upload" | "rectangle" | "leak" | "select-area";
+type ToolType = "pointer" | "upload" | "rectangle" | "leak" | "accident-area";
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w';
-type EntityType = 'image' | 'rectangle';
+type EntityType = 'image' | 'rectangle' | 'accident-area';
 
 interface ActiveTransform {
   entityType: EntityType;
@@ -54,9 +63,11 @@ export default function FieldDrawing() {
   const [selectedTool, setSelectedTool] = useState<ToolType>("pointer");
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [rectangles, setRectangles] = useState<DrawnRectangle[]>([]);
+  const [accidentAreas, setAccidentAreas] = useState<AccidentArea[]>([]);
   const [leakMarkers, setLeakMarkers] = useState<LeakMarker[]>([]);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [selectedRectangleId, setSelectedRectangleId] = useState<string | null>(null);
+  const [selectedAccidentAreaId, setSelectedAccidentAreaId] = useState<string | null>(null);
   const [selectedLeakId, setSelectedLeakId] = useState<string | null>(null);
   const [activeTransform, setActiveTransform] = useState<ActiveTransform | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -81,6 +92,7 @@ export default function FieldDrawing() {
     { id: "upload" as ToolType, icon: ImagePlus, label: "이미지 업로드" },
     { id: "rectangle" as ToolType, icon: Square, label: "사각형" },
     { id: "leak" as ToolType, icon: Target, label: "누수 지점" },
+    { id: "accident-area" as ToolType, icon: Focus, label: "사고 영역" },
   ];
 
   // 파일 업로드 핸들러
