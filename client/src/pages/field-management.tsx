@@ -178,6 +178,14 @@ export default function FieldManagement() {
     letterSpacing: "-0.02em",
     color: "#0C0C0C",
   };
+  
+  // intake.tsx 스타일 버튼 클래스 (68px 높이 통일)
+  const intakeButtonClass = "h-[68px] px-4 rounded transition-colors";
+  const intakeButtonStyle = {
+    fontFamily: "Pretendard",
+    fontSize: "14px",
+    fontWeight: 500,
+  };
 
   // SectionCard: intake.tsx 스타일의 Collapsible 카드
   const SectionCard = ({
@@ -599,7 +607,7 @@ export default function FieldManagement() {
                       <Button
                         variant="outline"
                         disabled={isReadOnly}
-                        className="w-full justify-start text-left"
+                        className="w-full h-[68px] justify-start text-left"
                         data-testid="button-accident-date"
                         style={{
                           fontFamily: "Pretendard",
@@ -697,7 +705,7 @@ export default function FieldManagement() {
                       <Button
                         variant="outline"
                         disabled={isReadOnly}
-                        className="w-full justify-start text-left"
+                        className="w-full h-[68px] justify-start text-left"
                         data-testid="button-visit-date"
                         style={{
                           fontFamily: "Pretendard",
@@ -856,14 +864,12 @@ export default function FieldManagement() {
                       key={category}
                       onClick={() => setAccidentCategory(category)}
                       disabled={isReadOnly}
-                      className="px-4 py-2 rounded transition-colors"
+                      className={intakeButtonClass}
                       style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
+                        ...intakeButtonStyle,
                         background: accidentCategory === category ? "#008FED" : "white",
                         color: accidentCategory === category ? "white" : "rgba(12, 12, 12, 0.7)",
-                        border: `1px solid ${accidentCategory === category ? "#008FED" : "rgba(0, 143, 237, 0.2)"}`,
+                        border: `2px solid ${accidentCategory === category ? "#008FED" : "rgba(12, 12, 12, 0.08)"}`,
                         cursor: isReadOnly ? "not-allowed" : "pointer",
                         opacity: isReadOnly ? 0.6 : 1,
                       }}
@@ -1273,6 +1279,7 @@ export default function FieldManagement() {
                     variant="outline"
                     disabled={isReadOnly}
                     data-testid="button-search-address"
+                    className="h-[68px]"
                     style={{
                       fontFamily: "Pretendard",
                       fontWeight: 500,
