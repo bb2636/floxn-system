@@ -811,13 +811,15 @@ export default function FieldManagement() {
                   value={accompaniedPerson}
                   onChange={(e) => setAccompaniedPerson(e.target.value)}
                   placeholder="출동담당자 성명"
-                  disabled
+                  disabled={isReadOnly}
                   data-testid="input-accompanied-person"
                   className={intakeFieldClass}
                   style={{
                     ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.05)",
-                    color: "rgba(12, 12, 12, 0.6)",
+                    ...(isReadOnly && {
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }),
                   }}
                 />
               </div>
