@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { User } from "@shared/schema";
-import { ChevronDown, ChevronRight, Calendar as CalendarIcon, Clock, X, Plus } from "lucide-react";
+import { User, Case } from "@shared/schema";
+import { ChevronDown, ChevronRight, Calendar as CalendarIcon, Clock, X, Plus, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
 export default function FieldManagement() {
+  const [selectedCase, setSelectedCase] = useState<string>("");
   const [expandedSections, setExpandedSections] = useState({
     schedule: true,
     basic: true,
@@ -51,6 +52,11 @@ export default function FieldManagement() {
     queryKey: ["/api/user"],
   });
 
+  // 접수건 목록 가져오기
+  const { data: allCases, isLoading: casesLoading } = useQuery<Case[]>({
+    queryKey: ["/api/cases"],
+  });
+
   if (!user) {
     return null;
   }
@@ -58,6 +64,18 @@ export default function FieldManagement() {
   // 협력사만 입력 가능
   const isPartner = user.role === "협력사";
   const isReadOnly = !isPartner;
+
+  // 협력사는 자신에게 배당된 케이스만, 관리자는 모든 케이스 표시
+  const availableCases = isPartner 
+    ? allCases?.filter(c => c.assignedPartner === user.company) || []
+    : allCases || [];
+
+  // 첫 번째 케이스를 기본 선택 (useEffect로 이동)
+  useEffect(() => {
+    if (!selectedCase && availableCases.length > 0) {
+      setSelectedCase(availableCases[0].id);
+    }
+  }, [availableCases, selectedCase]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
@@ -128,47 +146,175 @@ export default function FieldManagement() {
             >
               접수건 선택
             </p>
-            {/* 드롭다운 선택 */}
-            <Select defaultValue="case1" disabled={isReadOnly}>
-              <SelectTrigger 
-                className="w-full"
-                data-testid="select-case"
-                style={{
-                  fontFamily: "Pretendard",
-                  background: "white",
-                }}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="case1">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 bg-[#008FED] rounded-full"></span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "15px",
-                          fontWeight: 600,
-                          color: "#008FED",
-                        }}
-                      >
-                        MG수원역센터 252198943
-                      </span>
+            
+            {/* 접수건 카드 리스트 */}
+            {casesLoading ? (
+              <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
+                접수건을 불러오는 중...
+              </div>
+            ) : availableCases.length === 0 ? (
+              <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
+                {isPartner ? "배당된 접수건이 없습니다." : "등록된 접수건이 없습니다."}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {availableCases.map((caseItem) => (
+                  <button
+                    key={caseItem.id}
+                    onClick={() => !isReadOnly && setSelectedCase(caseItem.id)}
+                    disabled={isReadOnly}
+                    className="w-full text-left rounded-xl transition-all"
+                    data-testid={`case-card-${caseItem.id}`}
+                    style={{
+                      padding: "16px",
+                      background: selectedCase === caseItem.id 
+                        ? "rgba(12, 12, 12, 0.04)" 
+                        : "rgba(255, 255, 255, 0.6)",
+                      backdropFilter: "blur(7px)",
+                      border: `1px solid ${selectedCase === caseItem.id ? "rgba(0, 143, 237, 0.3)" : "rgba(0, 143, 237, 0.1)"}`,
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
+                      opacity: isReadOnly ? 0.6 : 1,
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      {/* 왼쪽: 접수건 정보 */}
+                      <div className="flex flex-col gap-2 flex-1">
+                        {/* 첫 번째 줄: 파란 점 + 보험사명 + 케이스 번호 */}
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span 
+                              className="rounded-full"
+                              style={{
+                                width: "8px",
+                                height: "8px",
+                                background: "#008FED",
+                                flexShrink: 0,
+                              }}
+                            />
+                            <div className="flex items-center gap-2">
+                              <span
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "18px",
+                                  fontWeight: 600,
+                                  letterSpacing: "-0.02em",
+                                  color: "rgba(12, 12, 12, 0.9)",
+                                }}
+                              >
+                                {caseItem.insuranceCompany || "보험사 미지정"}
+                              </span>
+                              <span
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "18px",
+                                  fontWeight: 600,
+                                  letterSpacing: "-0.02em",
+                                  color: "rgba(12, 12, 12, 0.9)",
+                                }}
+                              >
+                                {caseItem.insuranceAccidentNo || caseItem.caseNumber}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+                        <div className="flex items-center gap-6 pl-6">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.02em",
+                                color: "rgba(12, 12, 12, 0.5)",
+                              }}
+                            >
+                              접수번호:
+                            </span>
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.02em",
+                                color: "rgba(12, 12, 12, 0.7)",
+                              }}
+                            >
+                              {caseItem.caseNumber}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.02em",
+                                color: "rgba(12, 12, 12, 0.5)",
+                              }}
+                            >
+                              계약자:
+                            </span>
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.02em",
+                                color: "rgba(12, 12, 12, 0.7)",
+                              }}
+                            >
+                              {caseItem.policyHolderName || "-"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.02em",
+                                color: "rgba(12, 12, 12, 0.5)",
+                              }}
+                            >
+                              담당자:
+                            </span>
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.02em",
+                                color: "rgba(12, 12, 12, 0.7)",
+                              }}
+                            >
+                              {caseItem.assignedPartnerManager || "-"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* 오른쪽: 선택 표시 또는 화살표 */}
+                      <div className="flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
+                        {selectedCase === caseItem.id ? (
+                          <Check 
+                            className="w-5 h-5"
+                            style={{ color: "#008FED" }}
+                            data-testid={`check-${caseItem.id}`}
+                          />
+                        ) : (
+                          <ChevronDown 
+                            className="w-5 h-5"
+                            style={{ color: "rgba(12, 12, 12, 0.4)" }}
+                          />
+                        )}
+                      </div>
                     </div>
-                    <span style={{ color: "rgba(12, 12, 12, 0.6)", fontSize: "14px" }}>
-                      접수번호: <span style={{ fontWeight: 600 }}>25145107</span>
-                    </span>
-                    <span style={{ color: "rgba(12, 12, 12, 0.6)", fontSize: "14px" }}>
-                      개인자: <span style={{ fontWeight: 600 }}>김해리</span>
-                    </span>
-                    <span style={{ color: "rgba(12, 12, 12, 0.6)", fontSize: "14px" }}>
-                      담당자: <span style={{ fontWeight: 600 }}>김해리</span>
-                    </span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
