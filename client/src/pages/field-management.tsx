@@ -1092,6 +1092,40 @@ export default function FieldManagement() {
                     {accidentCause.length}/800
                   </div>
                 </div>
+
+                {/* 특이사항 */}
+                <div>
+                  <Label 
+                    htmlFor="special-notes"
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    특이사항
+                  </Label>
+                  <Textarea
+                    id="special-notes"
+                    value={specialNotes}
+                    onChange={(e) => setSpecialNotes(e.target.value)}
+                    placeholder="특이사항 입력"
+                    className="min-h-[120px]"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      padding: "16px 20px",
+                      background: "#FDFDFD",
+                      border: "2px solid rgba(12,12,12,0.08)",
+                      borderRadius: "8px",
+                      resize: "none",
+                    }}
+                    disabled={isReadOnly}
+                    data-testid="textarea-special-notes"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -1105,101 +1139,7 @@ export default function FieldManagement() {
           disabled={!selectedCaseData}
         >
           <div className="space-y-6">
-
-
-            {/* 사고 정보 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label 
-                  htmlFor="accident-category"
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                  }}
-                >
-                  사고 구분
-                </Label>
-                <Select
-                  value={accidentCategory}
-                  onValueChange={setAccidentCategory}
-                  disabled={isReadOnly}
-                >
-                  <SelectTrigger 
-                    id="accident-category" 
-                    className={intakeFieldClass}
-                    style={intakeFieldStyle}
-                    data-testid="select-accident-category"
-                  >
-                    <SelectValue placeholder="사고 구분 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="배관">배관</SelectItem>
-                    <SelectItem value="화재">화재</SelectItem>
-                    <SelectItem value="누수">누수</SelectItem>
-                    <SelectItem value="기타">기타</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label 
-                  htmlFor="accident-cause"
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                  }}
-                >
-                  사고 원인
-                </Label>
-                <Input
-                  id="accident-cause"
-                  value={accidentCause}
-                  onChange={(e) => setAccidentCause(e.target.value)}
-                  placeholder="사고 원인 입력"
-                  className={intakeFieldClass}
-                  style={intakeFieldStyle}
-                  disabled={isReadOnly}
-                  data-testid="input-accident-cause"
-                />
-              </div>
-            </div>
-
-            {/* 특이사항 */}
-            <div>
-              <Label 
-                htmlFor="special-notes"
-                className="mb-2"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "rgba(12, 12, 12, 0.7)",
-                }}
-              >
-                특이사항
-              </Label>
-              <Textarea
-                id="special-notes"
-                value={specialNotes}
-                onChange={(e) => setSpecialNotes(e.target.value)}
-                placeholder="특이사항 입력"
-                className="min-h-[120px]"
-                style={{
-                  ...intakeFieldStyle,
-                  padding: "16px 20px",
-                  background: "#FDFDFD",
-                  border: "2px solid rgba(12,12,12,0.08)",
-                  borderRadius: "8px",
-                }}
-                disabled={isReadOnly}
-                data-testid="textarea-special-notes"
-              />
-            </div>
+            {/* 피해 및 복구 평가 내용은 여기에 추가 예정 */}
           </div>
         </SectionCard>
 
