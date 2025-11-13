@@ -269,8 +269,12 @@ export default function AdminSettings() {
   
   // DB 관리 states
   const [dbTab, setDbTab] = useState("노무비");
-  const [excelData, setExcelData] = useState<any[]>([]);
-  const [excelHeaders, setExcelHeaders] = useState<string[]>([]);
+  // 노무비 데이터
+  const [laborExcelData, setLaborExcelData] = useState<any[]>([]);
+  const [laborExcelHeaders, setLaborExcelHeaders] = useState<string[]>([]);
+  // 자재비 데이터
+  const [materialExcelData, setMaterialExcelData] = useState<any[]>([]);
+  const [materialExcelHeaders, setMaterialExcelHeaders] = useState<string[]>([]);
   
   // 기준정보 관리 states
   const [selectedCategory, setSelectedCategory] = useState("보험사");
@@ -1207,6 +1211,10 @@ export default function AdminSettings() {
 
                 <button
                   onClick={() => {
+                    const currentTab = dbTab;
+                    const setData = currentTab === "노무비" ? setLaborExcelData : setMaterialExcelData;
+                    const setHeaders = currentTab === "노무비" ? setLaborExcelHeaders : setMaterialExcelHeaders;
+                    
                     const input = document.createElement('input');
                     input.type = 'file';
                     input.accept = '.xlsx, .xls';
@@ -1222,11 +1230,11 @@ export default function AdminSettings() {
                           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                           
                           if (jsonData.length > 0) {
-                            setExcelHeaders(jsonData[0] as string[]);
-                            setExcelData(jsonData.slice(1) as any[]);
+                            setHeaders(jsonData[0] as string[]);
+                            setData(jsonData.slice(1) as any[]);
                             toast({
                               title: "업로드 완료",
-                              description: "엑셀 파일이 성공적으로 업로드되었습니다.",
+                              description: `${currentTab} 엑셀 파일이 성공적으로 업로드되었습니다.`,
                             });
                           }
                         };
@@ -1247,7 +1255,7 @@ export default function AdminSettings() {
                   data-testid="button-upload-excel"
                 >
                   <Upload size={16} />
-                  바탕 엑셀 업로드
+                  {dbTab} 엑셀 업로드
                 </button>
               </div>
 
@@ -1326,7 +1334,10 @@ export default function AdminSettings() {
               <div className="flex gap-3 mb-6">
                 <button
                   onClick={() => {
-                    if (excelData.length === 0) {
+                    const currentData = dbTab === "노무비" ? laborExcelData : materialExcelData;
+                    const currentHeaders = dbTab === "노무비" ? laborExcelHeaders : materialExcelHeaders;
+                    
+                    if (currentData.length === 0) {
                       toast({
                         title: "데이터 없음",
                         description: "다운로드할 데이터가 없습니다.",
@@ -1335,14 +1346,14 @@ export default function AdminSettings() {
                       return;
                     }
                     
-                    const worksheet = XLSX.utils.aoa_to_sheet([excelHeaders, ...excelData]);
+                    const worksheet = XLSX.utils.aoa_to_sheet([currentHeaders, ...currentData]);
                     const workbook = XLSX.utils.book_new();
                     XLSX.utils.book_append_sheet(workbook, worksheet, dbTab);
                     XLSX.writeFile(workbook, `${dbTab}_${new Date().toISOString().split('T')[0]}.xlsx`);
                     
                     toast({
                       title: "다운로드 완료",
-                      description: "엑셀 파일이 다운로드되었습니다.",
+                      description: `${dbTab} 엑셀 파일이 다운로드되었습니다.`,
                     });
                   }}
                   className="flex items-center gap-2 px-4 py-2"
@@ -1379,7 +1390,11 @@ export default function AdminSettings() {
                 </button>
                 <button
                   onClick={() => {
-                    if (excelData.length === 0) {
+                    const currentData = dbTab === "노무비" ? laborExcelData : materialExcelData;
+                    const setCurrentData = dbTab === "노무비" ? setLaborExcelData : setMaterialExcelData;
+                    const setCurrentHeaders = dbTab === "노무비" ? setLaborExcelHeaders : setMaterialExcelHeaders;
+                    
+                    if (currentData.length === 0) {
                       toast({
                         title: "데이터 없음",
                         description: "삭제할 데이터가 없습니다.",
@@ -1388,12 +1403,12 @@ export default function AdminSettings() {
                       return;
                     }
                     
-                    if (confirm("정말로 모든 데이터를 삭제하시겠습니까?")) {
-                      setExcelData([]);
-                      setExcelHeaders([]);
+                    if (confirm(`정말로 ${dbTab} 데이터를 모두 삭제하시겠습니까?`)) {
+                      setCurrentData([]);
+                      setCurrentHeaders([]);
                       toast({
                         title: "데이터 삭제 완료",
-                        description: "모든 데이터가 삭제되었습니다.",
+                        description: `${dbTab} 데이터가 삭제되었습니다.`,
                       });
                     }
                   }}
@@ -1422,83 +1437,89 @@ export default function AdminSettings() {
                     }}
                   >
                     <tr>
-                      {excelHeaders.length > 0 ? (
-                        excelHeaders.map((header, idx) => (
-                          <th
-                            key={idx}
-                            className="px-4 py-4 text-left"
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              fontWeight: 600,
-                              letterSpacing: "-0.01em",
-                              color: "#686A6E",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {header}
-                          </th>
-                        ))
-                      ) : (
-                        <>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>공종</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>공사명</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>규격</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>세부공사</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>유형</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>단위</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>직종명</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>할상임(분)</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>기준노임(원)</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>제품주수</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>산정단가(원)</th>
-                          <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>지역</th>
-                        </>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {excelData.length > 0 ? (
-                      excelData.map((row, rowIdx) => (
-                        <tr
-                          key={rowIdx}
-                          style={{
-                            borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                          }}
-                        >
-                          {Array.isArray(row) && row.map((cell, cellIdx) => (
-                            <td
-                              key={cellIdx}
-                              className="px-4 py-4"
+                      {(() => {
+                        const currentHeaders = dbTab === "노무비" ? laborExcelHeaders : materialExcelHeaders;
+                        return currentHeaders.length > 0 ? (
+                          currentHeaders.map((header: string, idx: number) => (
+                            <th
+                              key={idx}
+                              className="px-4 py-4 text-left"
                               style={{
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
-                                fontWeight: 400,
-                                color: "#0C0C0C",
+                                fontWeight: 600,
+                                letterSpacing: "-0.01em",
+                                color: "#686A6E",
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              {cell}
-                            </td>
-                          ))}
+                              {header}
+                            </th>
+                          ))
+                        ) : (
+                          <>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>공종</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>공사명</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>규격</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>세부공사</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>유형</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>단위</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>직종명</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>할상임(분)</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>기준노임(원)</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>제품주수</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>산정단가(원)</th>
+                            <th className="px-4 py-4 text-left" style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#686A6E" }}>지역</th>
+                          </>
+                        );
+                      })()}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const currentData = dbTab === "노무비" ? laborExcelData : materialExcelData;
+                      return currentData.length > 0 ? (
+                        currentData.map((row: any, rowIdx: number) => (
+                          <tr
+                            key={rowIdx}
+                            style={{
+                              borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                            }}
+                          >
+                            {Array.isArray(row) && row.map((cell: any, cellIdx: number) => (
+                              <td
+                                key={cellIdx}
+                                className="px-4 py-4"
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  fontWeight: 400,
+                                  color: "#0C0C0C",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={12}
+                            className="px-4 py-8 text-center"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 400,
+                              color: "#686A6E",
+                            }}
+                          >
+                            {dbTab} 엑셀 파일을 업로드하면 데이터가 표시됩니다.
+                          </td>
                         </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td
-                          colSpan={12}
-                          className="px-4 py-8 text-center"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            fontWeight: 400,
-                            color: "#686A6E",
-                          }}
-                        >
-                          엑셀 파일을 업로드하면 데이터가 표시됩니다.
-                        </td>
-                      </tr>
-                    )}
+                      );
+                    })()}
                   </tbody>
                 </table>
               </div>
