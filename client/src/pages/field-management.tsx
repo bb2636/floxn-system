@@ -680,17 +680,18 @@ export default function FieldManagement() {
                     color: "rgba(12, 12, 12, 0.7)",
                   }}
                 >
-                  동행 담당자
+                  출동담당자
                 </label>
                 <Input
                   value={accompaniedPerson}
                   onChange={(e) => setAccompaniedPerson(e.target.value)}
-                  placeholder="동행 담당자 성명"
-                  disabled={isReadOnly}
+                  placeholder="출동담당자 성명"
+                  disabled
                   data-testid="input-accompanied-person"
                   style={{
                     fontFamily: "Pretendard",
-                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                    background: "rgba(12, 12, 12, 0.05)",
+                    color: "rgba(12, 12, 12, 0.6)",
                   }}
                 />
               </div>
@@ -722,7 +723,7 @@ export default function FieldManagement() {
                   카테고리
                 </label>
                 <div className="flex gap-2">
-                  {["배관", "표면", "방수", "기타"].map((category) => (
+                  {["배관", "코킹", "방수", "기타"].map((category) => (
                     <button
                       key={category}
                       onClick={() => setAccidentCategory(category)}
