@@ -301,3 +301,52 @@ export type InsertInquiry = z.infer<typeof insertInquirySchema>;
 export type UpdateInquiry = z.infer<typeof updateInquirySchema>;
 export type RespondInquiry = z.infer<typeof respondInquirySchema>;
 export type Inquiry = typeof inquiries.$inferSelect;
+
+// 도면 저장 테이블
+export const drawings = pgTable("drawings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseId: varchar("case_id"), // optional: can save drawing without case
+  uploadedImages: json("uploaded_images").$type<{
+    id: string;
+    src: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    locked: boolean;
+  }[]>().notNull().default(sql`'[]'`),
+  rectangles: json("rectangles").$type<{
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    text: string;
+    locked: boolean;
+  }[]>().notNull().default(sql`'[]'`),
+  accidentAreas: json("accident_areas").$type<{
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    locked: boolean;
+  }[]>().notNull().default(sql`'[]'`),
+  leakMarkers: json("leak_markers").$type<{
+    id: string;
+    x: number;
+    y: number;
+  }[]>().notNull().default(sql`'[]'`),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertDrawingSchema = createInsertSchema(drawings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertDrawing = z.infer<typeof insertDrawingSchema>;
+export type Drawing = typeof drawings.$inferSelect;
