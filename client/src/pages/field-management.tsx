@@ -535,7 +535,7 @@ export default function FieldManagement() {
                       disabled={isReadOnly}
                       data-testid="button-visit-date"
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
+                      <CalendarIcon className="mr-2 h-4 w-4" />
                       {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
                     </Button>
                   </PopoverTrigger>
@@ -674,7 +674,7 @@ export default function FieldManagement() {
                         disabled={isReadOnly}
                         data-testid="button-accident-date"
                       >
-                        <Calendar className="mr-2 h-4 w-4" />
+                        <CalendarIcon className="mr-2 h-4 w-4" />
                         {accidentDate ? format(accidentDate, "PPP", { locale: ko }) : <span>날짜 선택</span>}
                       </Button>
                     </PopoverTrigger>
