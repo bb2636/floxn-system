@@ -59,7 +59,7 @@ The system is a full-stack web application utilizing a React-based frontend and 
     - **현장출동보고서** (`/field-survey/report`): Field dispatch report page (placeholder)
   - **Drawing Creation Page** (`/field-survey/drawing`): Digital drawing workspace with dedicated layout separate from FieldSurveyLayout.
     - **Layout Structure**: Uses DrawingLayout component with GlobalHeader + dedicated content area
-    - **Left Sidebar (180px)**: Menu navigation with updated labels
+    - **Left Sidebar (180px)**: Menu navigation with same updated labels as Field Survey Sidebar (현장입력, 도면작성, 증빙자료 등록, 견적서 작성, 현장출동보고서)
     - **Case Information Display**: Shows case name (M0숭례문역4) and case number (ZK2109043) with blue dot indicator
     - **Canvas Area**: Full-screen grid background (10px squares, rgba(218,218,218,0.5)) - no boundary limits for free drawing anywhere
     - **Bottom-Center Toolbar**: 4 drawing tools (선택/pointer, 이미지 업로드/upload, 사각형/rectangle, 누수 지점/leak marker) with active state highlighting

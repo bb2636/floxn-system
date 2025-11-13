@@ -397,10 +397,11 @@ export default function FieldDrawing() {
   };
 
   const fieldSurveyMenuItems = [
-    { title: "현장관리", url: "/field-survey/management" },
-    { title: "도면 작성", url: "/field-survey/drawing" },
-    { title: "종합자료 등록", url: "/field-survey/documents" },
-    { title: "견적서작성조사", url: "/field-survey/estimate" },
+    { title: "현장입력", url: "/field-survey/management" },
+    { title: "도면작성", url: "/field-survey/drawing" },
+    { title: "증빙자료 등록", url: "/field-survey/documents" },
+    { title: "견적서 작성", url: "/field-survey/estimate" },
+    { title: "현장출동보고서", url: "/field-survey/report" },
   ];
 
   const tools = [
