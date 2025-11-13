@@ -4,7 +4,6 @@ import { useLocation } from "wouter";
 import { User } from "@shared/schema";
 import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { GlobalHeader } from "@/components/global-header";
 
 interface UploadedImage {
   id: string;
@@ -703,7 +702,6 @@ export default function FieldDrawing() {
 
   return (
     <>
-      <GlobalHeader />
       <div className="flex h-[calc(100vh-89px)] min-h-0 overflow-hidden">
         {/* 왼쪽 사이드바 */}
         <div 
