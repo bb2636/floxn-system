@@ -555,8 +555,12 @@ export default function FieldDrawing() {
 
   // 이미지 마우스 다운 핸들러
   const handleImageMouseDown = (e: React.MouseEvent, image: UploadedImage) => {
+    // In drawing modes (rectangle/accident-area/leak), let event bubble to canvas
+    if (selectedTool !== "pointer") return;
+    
+    // In pointer mode, stop propagation and handle selection/drag
     e.stopPropagation();
-    if (selectedTool !== "pointer" || image.locked) return;
+    if (image.locked) return;
     
     setSelectedImageId(image.id);
     setSelectedRectangleId(null);
@@ -584,8 +588,12 @@ export default function FieldDrawing() {
 
   // 사각형 마우스 다운 핸들러
   const handleRectangleMouseDown = (e: React.MouseEvent, rect: DrawnRectangle) => {
+    // In drawing modes, let event bubble to canvas
+    if (selectedTool !== "pointer") return;
+    
+    // In pointer mode, stop propagation and handle selection/drag
     e.stopPropagation();
-    if (selectedTool !== "pointer" || rect.locked) return;
+    if (rect.locked) return;
     
     setSelectedRectangleId(rect.id);
     setSelectedImageId(null);
@@ -613,8 +621,12 @@ export default function FieldDrawing() {
 
   // 사고영역 마우스 다운 핸들러
   const handleAccidentAreaMouseDown = (e: React.MouseEvent, area: AccidentArea) => {
+    // In drawing modes, let event bubble to canvas
+    if (selectedTool !== "pointer") return;
+    
+    // In pointer mode, stop propagation and handle selection/drag
     e.stopPropagation();
-    if (selectedTool !== "pointer" || area.locked) return;
+    if (area.locked) return;
     
     setSelectedAccidentAreaId(area.id);
     setSelectedImageId(null);
