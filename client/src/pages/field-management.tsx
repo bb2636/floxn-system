@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case } from "@shared/schema";
 import { ChevronDown, ChevronRight, Calendar as CalendarIcon, Clock, X, Plus, Check } from "lucide-react";
@@ -70,12 +70,103 @@ export default function FieldManagement() {
     ? allCases?.filter(c => c.assignedPartner === user.company) || []
     : allCases || [];
 
-  // 첫 번째 케이스를 기본 선택 (useEffect로 이동)
+  // 선택한 케이스 데이터 가져오기
+  const selectedCaseData = useMemo(() => {
+    if (!selectedCase || !availableCases) return null;
+    return availableCases.find(c => c.id === selectedCase) || null;
+  }, [selectedCase, availableCases]);
+
+  // 케이스 선택 관리: 첫 번째 케이스 자동 선택 & 현재 선택된 케이스가 목록에 없으면 초기화
   useEffect(() => {
-    if (!selectedCase && availableCases.length > 0) {
+    if (availableCases.length === 0) {
+      // 케이스가 없으면 선택 해제
+      setSelectedCase("");
+      return;
+    }
+
+    // 현재 선택된 케이스가 목록에 없으면 (재배당되거나 삭제됨)
+    const isCurrentCaseAvailable = selectedCase && availableCases.some(c => c.id === selectedCase);
+    
+    if (!isCurrentCaseAvailable) {
+      // 첫 번째 케이스로 자동 선택
       setSelectedCase(availableCases[0].id);
     }
   }, [availableCases, selectedCase]);
+
+  // 선택한 케이스의 데이터를 폼에 로드
+  useEffect(() => {
+    if (!selectedCaseData) {
+      // 케이스가 없으면 모든 state 초기화
+      setAccidentDate(undefined);
+      setAccidentTime("");
+      setVisitDate(undefined);
+      setVisitTime("");
+      setTravelDistance("");
+      setAccompaniedPerson("");
+      setAccidentCategory("배관");
+      setAccidentCause("");
+      setSpecialNotes("");
+      setVictimName("");
+      setVictimContact("");
+      setVictimAddress("");
+      setAdditionalVictims([]);
+      setVoc("");
+      setProcessingTypes(new Set());
+      setProcessingTypeOther("");
+      setRecoveryMethodType("부분수리");
+      return;
+    }
+
+    // 사고 발생일시
+    if (selectedCaseData.accidentDate) {
+      try {
+        const [datePart, timePart] = selectedCaseData.accidentDate.split(' ');
+        if (datePart) {
+          setAccidentDate(new Date(datePart));
+        }
+        if (timePart) {
+          setAccidentTime(timePart);
+        }
+      } catch (e) {
+        console.error("Error parsing accident date:", e);
+      }
+    } else {
+      setAccidentDate(undefined);
+      setAccidentTime("");
+    }
+
+    // 현장조사 정보
+    if (selectedCaseData.fieldSurveyDate) {
+      try {
+        const [datePart, timePart] = selectedCaseData.fieldSurveyDate.split(' ');
+        if (datePart) {
+          setVisitDate(new Date(datePart));
+        }
+        if (timePart) {
+          setVisitTime(timePart);
+        }
+      } catch (e) {
+        console.error("Error parsing visit date:", e);
+      }
+    } else {
+      setVisitDate(undefined);
+      setVisitTime("");
+    }
+
+    // 사고 정보
+    setAccidentCategory(selectedCaseData.accidentType || "배관");
+    setAccidentCause(selectedCaseData.accidentCause || "");
+    setSpecialNotes(selectedCaseData.specialNotes || "");
+
+    // 피해자 정보
+    setVictimName(selectedCaseData.victimName || "");
+    setVictimContact(selectedCaseData.victimContact || "");
+    setVictimAddress(selectedCaseData.insuredAddress || "");
+
+    // VOC 정보
+    setVoc(selectedCaseData.specialRequests || "");
+
+  }, [selectedCaseData]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections(prev => ({
@@ -340,7 +431,7 @@ export default function FieldManagement() {
                   협력사
                 </label>
                 <Input
-                  value="협력사명"
+                  value={selectedCaseData?.assignedPartner || ""}
                   disabled={isReadOnly}
                   data-testid="input-partner-company"
                   style={{
@@ -363,7 +454,7 @@ export default function FieldManagement() {
                   담당자명
                 </label>
                 <Input
-                  value="담당자명"
+                  value={selectedCaseData?.assignedPartnerManager || ""}
                   disabled={isReadOnly}
                   data-testid="input-manager-name"
                   style={{
@@ -386,7 +477,7 @@ export default function FieldManagement() {
                   담당자 연락처
                 </label>
                 <Input
-                  value="담당자 연락처"
+                  value={selectedCaseData?.assignedPartnerContact || ""}
                   disabled={isReadOnly}
                   data-testid="input-manager-contact"
                   style={{
@@ -425,7 +516,7 @@ export default function FieldManagement() {
                     접수번호
                   </label>
                   <Input
-                    value="접수번호"
+                    value={selectedCaseData?.caseNumber || ""}
                     disabled
                     data-testid="input-reception-number"
                     style={{
@@ -447,21 +538,16 @@ export default function FieldManagement() {
                   >
                     보험사
                 </label>
-                  <Select value="insurance1" disabled>
-                    <SelectTrigger 
-                      data-testid="select-insurance"
-                      style={{
-                        fontFamily: "Pretendard",
-                        background: "rgba(12, 12, 12, 0.05)",
-                        color: "rgba(12, 12, 12, 0.6)",
-                      }}
-                    >
-                      <SelectValue placeholder="보험사 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="insurance1">보험사 선택</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={selectedCaseData?.insuranceCompany || ""}
+                    disabled
+                    data-testid="input-insurance"
+                    style={{
+                      fontFamily: "Pretendard",
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -518,7 +604,7 @@ export default function FieldManagement() {
                       보험계약자
                     </label>
                     <Input
-                      value="보험계약자 성명"
+                      value={selectedCaseData?.policyHolderName || ""}
                       disabled
                       data-testid="input-contractor"
                       style={{
@@ -541,7 +627,7 @@ export default function FieldManagement() {
                       피보험자
                     </label>
                     <Input
-                      value="피보험자 성명"
+                      value={selectedCaseData?.insuredName || ""}
                       disabled
                       data-testid="input-insured"
                       style={{
@@ -564,7 +650,7 @@ export default function FieldManagement() {
                       피보험자 연락처<span style={{ color: "red" }}>*</span>
                     </label>
                     <Input
-                      value="피보험자 연락처"
+                      value={selectedCaseData?.insuredContact || ""}
                       disabled
                       data-testid="input-insured-contact"
                       style={{
@@ -588,7 +674,7 @@ export default function FieldManagement() {
                     피보험자 주소<span style={{ color: "red" }}>*</span>
                   </label>
                   <Input
-                    value="도로명 주소, 상세 주소"
+                    value={selectedCaseData?.insuredAddress || ""}
                     disabled
                     data-testid="input-insured-address"
                     style={{
