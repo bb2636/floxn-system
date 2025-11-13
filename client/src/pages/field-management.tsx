@@ -576,194 +576,29 @@ export default function FieldManagement() {
               >
                 접수 정보
               </h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    접수번호
-                  </label>
-                  <Input
-                    value={selectedCaseData?.caseNumber || ""}
-                    disabled
-                    data-testid="input-reception-number"
-                    className={intakeFieldClass}
-                    style={{
-                      ...intakeFieldStyle,
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    보험사
-                </label>
-                  <Input
-                    value={selectedCaseData?.insuranceCompany || ""}
-                    disabled
-                    data-testid="input-insurance"
-                    className={intakeFieldClass}
-                    style={{
-                      ...intakeFieldStyle,
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 보험계약자 및 피보험자 정보 하위 섹션 */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h4 
+              <div>
+                <label
+                  className="block mb-2"
                   style={{
                     fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    color: "#0C0C0C",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
                   }}
                 >
-                  보험계약자 및 피보험자 정보
-                </h4>
-                <div 
-                  className="flex items-center gap-2 px-2 py-1 rounded"
+                  접수번호
+                </label>
+                <Input
+                  value={selectedCaseData?.caseNumber || ""}
+                  disabled
+                  data-testid="input-reception-number"
+                  className={intakeFieldClass}
                   style={{
+                    ...intakeFieldStyle,
                     background: "rgba(12, 12, 12, 0.05)",
+                    color: "rgba(12, 12, 12, 0.6)",
                   }}
-                >
-                  <Checkbox 
-                    id="same-as-contractor" 
-                    disabled 
-                    data-testid="checkbox-same-contractor"
-                  />
-                  <label
-                    htmlFor="same-as-contractor"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      cursor: "not-allowed",
-                    }}
-                  >
-                    보험계약자 = 피보험자
-                  </label>
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label
-                      className="block mb-2"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}
-                    >
-                      보험계약자
-                    </label>
-                    <Input
-                      value={selectedCaseData?.policyHolderName || ""}
-                      disabled
-                      data-testid="input-contractor"
-                      className={intakeFieldClass}
-                      style={{
-                        ...intakeFieldStyle,
-                        background: "rgba(12, 12, 12, 0.05)",
-                        color: "rgba(12, 12, 12, 0.6)",
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-2"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}
-                    >
-                      피보험자
-                    </label>
-                    <Input
-                      value={selectedCaseData?.insuredName || ""}
-                      disabled
-                      data-testid="input-insured"
-                      className={intakeFieldClass}
-                      style={{
-                        ...intakeFieldStyle,
-                        background: "rgba(12, 12, 12, 0.05)",
-                        color: "rgba(12, 12, 12, 0.6)",
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label
-                      className="block mb-2"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}
-                    >
-                      피보험자 연락처<span style={{ color: "red" }}>*</span>
-                    </label>
-                    <Input
-                      value={selectedCaseData?.insuredContact || ""}
-                      disabled
-                      data-testid="input-insured-contact"
-                      className={intakeFieldClass}
-                      style={{
-                        ...intakeFieldStyle,
-                        background: "rgba(12, 12, 12, 0.05)",
-                        color: "rgba(12, 12, 12, 0.6)",
-                      }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    피보험자 주소<span style={{ color: "red" }}>*</span>
-                  </label>
-                  <Input
-                    value={selectedCaseData?.insuredAddress || ""}
-                    disabled
-                    data-testid="input-insured-address"
-                    className={intakeFieldClass}
-                    style={{
-                      ...intakeFieldStyle,
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }}
-                  />
-                </div>
+                />
               </div>
             </div>
 
@@ -854,9 +689,9 @@ export default function FieldManagement() {
         </div>
       </SectionCard>
 
-      {/* 현장조사 정보 섹션 */}
+      {/* 손해 평가 섹션 */}
       <SectionCard
-        title="현장조사 정보"
+        title="손해 평가"
         isOpen={damageInfoOpen}
         onToggle={() => setDamageInfoOpen(!damageInfoOpen)}
       >
@@ -1138,6 +973,226 @@ export default function FieldManagement() {
               </div>
             </div>
 
+            {/* VOC(고객의 소리) */}
+            <div>
+              <h4 
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
+                }}
+              >
+                VOC(고객의 소리)
+              </h4>
+              <Textarea
+                value={voc}
+                onChange={(e) => setVoc(e.target.value)}
+                placeholder="내용을 작성해주세요"
+                rows={4}
+                maxLength={800}
+                disabled={isReadOnly}
+                data-testid="textarea-voc"
+                style={{
+                  fontFamily: "Pretendard",
+                  background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                }}
+              />
+              <div 
+                className="text-right mt-1"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "12px",
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+              >
+                {voc.length}/800
+              </div>
+            </div>
+        </div>
+      </SectionCard>
+
+      {/* 보험 정보 섹션 */}
+      <SectionCard
+        title="보험 정보"
+        isOpen={insuranceInfoOpen}
+        onToggle={() => setInsuranceInfoOpen(!insuranceInfoOpen)}
+      >
+        <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label
+                  className="block mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  보험사
+                </label>
+                <Input
+                  value={selectedCaseData?.insuranceCompany || ""}
+                  disabled
+                  data-testid="input-insurance"
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    background: "rgba(12, 12, 12, 0.05)",
+                    color: "rgba(12, 12, 12, 0.6)",
+                  }}
+                />
+              </div>
+              <div>
+                <label
+                  className="block mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  보험계약자
+                </label>
+                <Input
+                  value={selectedCaseData?.policyHolderName || ""}
+                  disabled
+                  data-testid="input-contractor"
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    background: "rgba(12, 12, 12, 0.05)",
+                    color: "rgba(12, 12, 12, 0.6)",
+                  }}
+                />
+              </div>
+            </div>
+        </div>
+      </SectionCard>
+
+      {/* 피보험자/피해자 정보 섹션 */}
+      <SectionCard
+        title="피보험자/피해자 정보"
+        isOpen={insuredInfoOpen}
+        onToggle={() => setInsuredInfoOpen(!insuredInfoOpen)}
+      >
+        <div className="space-y-6">
+            {/* 피보험자 정보 */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  피보험자 정보
+                </h4>
+                <div 
+                  className="flex items-center gap-2 px-2 py-1 rounded"
+                  style={{
+                    background: "rgba(12, 12, 12, 0.05)",
+                  }}
+                >
+                  <Checkbox 
+                    id="same-as-contractor" 
+                    disabled 
+                    data-testid="checkbox-same-contractor"
+                  />
+                  <label
+                    htmlFor="same-as-contractor"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      cursor: "not-allowed",
+                    }}
+                  >
+                    보험계약자 = 피보험자
+                  </label>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    피보험자
+                  </label>
+                  <Input
+                    value={selectedCaseData?.insuredName || ""}
+                    disabled
+                    data-testid="input-insured"
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    피보험자 연락처<span style={{ color: "red" }}>*</span>
+                  </label>
+                  <Input
+                    value={selectedCaseData?.insuredContact || ""}
+                    disabled
+                    data-testid="input-insured-contact"
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  />
+                </div>
+                <div>
+                  <label
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    피보험자 주소<span style={{ color: "red" }}>*</span>
+                  </label>
+                  <Input
+                    value={selectedCaseData?.insuredAddress || ""}
+                    disabled
+                    data-testid="input-insured-address"
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.05)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* 피해자 정보 */}
             <div>
               <h4 
@@ -1313,103 +1368,62 @@ export default function FieldManagement() {
                   <div className="space-y-2">
                     {additionalVictims.map((victim, index) => (
                       <div 
-                        key={index}
-                        className="flex items-center gap-3 p-3 rounded"
+                        key={index} 
+                        className="flex items-center gap-2 p-3 rounded"
                         style={{
-                          background: "rgba(0, 143, 237, 0.05)",
-                          border: "1px solid rgba(0, 143, 237, 0.15)",
+                          background: "rgba(12, 12, 12, 0.03)",
+                          border: "1px solid rgba(12, 12, 12, 0.1)",
                         }}
-                        data-testid={`additional-victim-${index}`}
+                        data-testid={`victim-item-${index}`}
                       >
-                        <span 
-                          className="w-2 h-2 rounded-full"
-                          style={{ background: "#008FED" }}
-                          data-testid={`victim-indicator-${index}`}
-                        />
-                        <span
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            color: "#008FED",
-                          }}
-                          data-testid={`victim-name-${index}`}
-                        >
-                          {victim.name}
-                        </span>
-                        <span
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            color: "rgba(12, 12, 12, 0.6)",
-                          }}
-                          data-testid={`victim-phone-${index}`}
-                        >
-                          {victim.phone}
-                        </span>
-                        <span
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            color: "rgba(12, 12, 12, 0.6)",
-                          }}
-                          data-testid={`victim-address-${index}`}
-                        >
-                          {victim.address}
-                        </span>
+                        <div className="flex-1 grid grid-cols-3 gap-2">
+                          <span 
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              color: "#0C0C0C",
+                            }}
+                          >
+                            {victim.name}
+                          </span>
+                          <span 
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.7)",
+                            }}
+                          >
+                            {victim.phone}
+                          </span>
+                          <span 
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.7)",
+                            }}
+                          >
+                            {victim.address}
+                          </span>
+                        </div>
                         {!isReadOnly && (
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={() => {
                               setAdditionalVictims(prev => prev.filter((_, i) => i !== index));
                             }}
-                            className="ml-auto p-1 rounded-full hover-elevate active-elevate-2"
                             data-testid={`button-remove-victim-${index}`}
+                            style={{
+                              fontFamily: "Pretendard",
+                            }}
                           >
                             <X className="w-4 h-4" />
-                          </button>
+                          </Button>
                         )}
                       </div>
                     ))}
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* VOC(고객의 소리) */}
-            <div>
-              <h4 
-                className="mb-3"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                }}
-              >
-                VOC(고객의 소리)
-              </h4>
-              <Textarea
-                value={voc}
-                onChange={(e) => setVoc(e.target.value)}
-                placeholder="내용을 작성해주세요"
-                rows={4}
-                maxLength={800}
-                disabled={isReadOnly}
-                data-testid="textarea-voc"
-                style={{
-                  fontFamily: "Pretendard",
-                  background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                }}
-              />
-              <div 
-                className="text-right mt-1"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "12px",
-                  color: "rgba(12, 12, 12, 0.5)",
-                }}
-              >
-                {voc.length}/800
               </div>
             </div>
         </div>
