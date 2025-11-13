@@ -179,7 +179,7 @@ export default function FieldManagement() {
         
         {expandedSections.basic && (
           <div className="space-y-6">
-            {/* 상단 3개 필드: 협력사, 담당자명, 담당자 연락처 - 모두 비활성화 */}
+            {/* 상단 3개 필드: 협력사, 담당자명, 담당자 연락처 - 협력사만 수정 가능 */}
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label
@@ -195,12 +195,12 @@ export default function FieldManagement() {
                 </label>
                 <Input
                   value="협력사명"
-                  disabled
+                  disabled={isReadOnly}
                   data-testid="input-partner-company"
                   style={{
                     fontFamily: "Pretendard",
-                    background: "rgba(12, 12, 12, 0.05)",
-                    color: "rgba(12, 12, 12, 0.6)",
+                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                    color: isReadOnly ? "rgba(12, 12, 12, 0.6)" : "#0C0C0C",
                   }}
                 />
               </div>
@@ -218,12 +218,12 @@ export default function FieldManagement() {
                 </label>
                 <Input
                   value="담당자명"
-                  disabled
+                  disabled={isReadOnly}
                   data-testid="input-manager-name"
                   style={{
                     fontFamily: "Pretendard",
-                    background: "rgba(12, 12, 12, 0.05)",
-                    color: "rgba(12, 12, 12, 0.6)",
+                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                    color: isReadOnly ? "rgba(12, 12, 12, 0.6)" : "#0C0C0C",
                   }}
                 />
               </div>
@@ -241,12 +241,12 @@ export default function FieldManagement() {
                 </label>
                 <Input
                   value="담당자 연락처"
-                  disabled
+                  disabled={isReadOnly}
                   data-testid="input-manager-contact"
                   style={{
                     fontFamily: "Pretendard",
-                    background: "rgba(12, 12, 12, 0.05)",
-                    color: "rgba(12, 12, 12, 0.6)",
+                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                    color: isReadOnly ? "rgba(12, 12, 12, 0.6)" : "#0C0C0C",
                   }}
                 />
               </div>
@@ -1452,82 +1452,6 @@ export default function FieldManagement() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* 사고 발생 일시 섹션 */}
-      <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-[rgba(0,143,237,0.2)]">
-        <SectionHeader title="사고 발생 일시" sectionKey="accident" hasCollapseButton={false} />
-        
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div>
-            <label
-              className="block mb-2"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: "rgba(12, 12, 12, 0.7)",
-              }}
-            >
-              날짜 선택
-            </label>
-            <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  disabled={isReadOnly}
-                  className="w-full justify-start text-left"
-                  data-testid="button-select-date"
-                  style={{
-                    fontFamily: "Pretendard",
-                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                  }}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {accidentDate ? format(accidentDate, "PPP", { locale: ko }) : "날짜 선택"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={accidentDate}
-                  onSelect={(date) => {
-                    setAccidentDate(date);
-                    setDatePickerOpen(false);
-                  }}
-                  locale={ko}
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div>
-            <label
-              className="block mb-2"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: "rgba(12, 12, 12, 0.7)",
-              }}
-            >
-              시간 선택
-            </label>
-            <div className="relative">
-              <Input
-                type="time"
-                value={accidentTime}
-                onChange={(e) => setAccidentTime(e.target.value)}
-                disabled={isReadOnly}
-                data-testid="input-accident-time"
-                style={{
-                  fontFamily: "Pretendard",
-                  background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                }}
-              />
-              <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* 저장 버튼 (협력사만 표시) */}

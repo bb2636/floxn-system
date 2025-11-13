@@ -24,6 +24,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Login} />
+      <Route path="/login" component={Login} />
       <Route path="/forbidden" component={Forbidden} />
       
       <Route path="/dashboard" component={Dashboard} />
