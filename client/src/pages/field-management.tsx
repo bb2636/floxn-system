@@ -294,7 +294,7 @@ export default function FieldManagement() {
             접수건 선택
           </p>
             
-            {/* 접수건 카드 리스트 */}
+            {/* 접수건 드롭다운 */}
             {casesLoading ? (
               <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
                 접수건을 불러오는 중...
@@ -304,179 +304,142 @@ export default function FieldManagement() {
                 {isPartner ? "배당된 접수건이 없습니다." : "등록된 접수건이 없습니다."}
               </div>
             ) : (
-              <div className="space-y-3">
-                {availableCases.map((caseItem) => (
-                  <button
-                    key={caseItem.id}
-                    onClick={() => !isReadOnly && setSelectedCase(caseItem.id)}
-                    disabled={isReadOnly}
-                    className="w-full text-left rounded-xl transition-all"
-                    data-testid={`case-card-${caseItem.id}`}
-                    style={{
-                      padding: "16px",
-                      background: selectedCase === caseItem.id 
-                        ? "rgba(12, 12, 12, 0.04)" 
-                        : "rgba(255, 255, 255, 0.6)",
-                      backdropFilter: "blur(7px)",
-                      border: `1px solid ${selectedCase === caseItem.id ? "rgba(0, 143, 237, 0.3)" : "rgba(0, 143, 237, 0.1)"}`,
-                      cursor: isReadOnly ? "not-allowed" : "pointer",
-                      opacity: isReadOnly ? 0.6 : 1,
-                    }}
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      {/* 왼쪽: 접수건 정보 */}
-                      <div className="flex flex-col gap-2 flex-1">
-                        {/* 첫 번째 줄: 파란 점 + 보험사명 + 케이스 번호 */}
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <span 
-                              className="rounded-full"
-                              style={{
-                                width: "8px",
-                                height: "8px",
-                                background: "#008FED",
-                                flexShrink: 0,
-                              }}
-                            />
-                            <div className="flex items-center gap-2">
-                              <span
-                                style={{
-                                  fontFamily: "Pretendard",
-                                  fontSize: "18px",
-                                  fontWeight: 600,
-                                  letterSpacing: "-0.02em",
-                                  color: "rgba(12, 12, 12, 0.9)",
-                                }}
-                              >
-                                {caseItem.insuranceCompany || "보험사 미지정"}
-                              </span>
-                              <span
-                                style={{
-                                  fontFamily: "Pretendard",
-                                  fontSize: "18px",
-                                  fontWeight: 600,
-                                  letterSpacing: "-0.02em",
-                                  color: "rgba(12, 12, 12, 0.9)",
-                                }}
-                              >
-                                {caseItem.insuranceAccidentNo || caseItem.caseNumber}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
-                        <div className="flex items-center gap-6 pl-6">
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              style={{
-                                fontFamily: "Pretendard",
-                                fontSize: "16px",
-                                fontWeight: 400,
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.5)",
-                              }}
-                            >
-                              접수번호:
-                            </span>
-                            <span
-                              style={{
-                                fontFamily: "Pretendard",
-                                fontSize: "16px",
-                                fontWeight: 400,
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}
-                            >
-                              {caseItem.caseNumber}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              style={{
-                                fontFamily: "Pretendard",
-                                fontSize: "16px",
-                                fontWeight: 400,
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.5)",
-                              }}
-                            >
-                              계약자:
-                            </span>
-                            <span
-                              style={{
-                                fontFamily: "Pretendard",
-                                fontSize: "16px",
-                                fontWeight: 400,
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}
-                            >
-                              {caseItem.policyHolderName || "-"}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span
-                              style={{
-                                fontFamily: "Pretendard",
-                                fontSize: "16px",
-                                fontWeight: 400,
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.5)",
-                              }}
-                            >
-                              담당자:
-                            </span>
-                            <span
-                              style={{
-                                fontFamily: "Pretendard",
-                                fontSize: "16px",
-                                fontWeight: 400,
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}
-                            >
-                              {caseItem.assignedPartnerManager || "-"}
-                            </span>
-                          </div>
-                        </div>
+              <Select
+                value={selectedCase}
+                onValueChange={(value) => !isReadOnly && setSelectedCase(value)}
+                disabled={isReadOnly}
+              >
+                <SelectTrigger 
+                  className="border-0 focus:ring-0"
+                  style={{
+                    width: "788px",
+                    height: "auto",
+                    padding: "20px 24px",
+                    background: "#F0F1F3",
+                    borderRadius: "12px",
+                  }}
+                  data-testid="select-case"
+                >
+                  {selectedCaseData ? (
+                    <div className="flex flex-col gap-2 w-full">
+                      {/* 첫 번째 줄: 파란 점 + 보험사명 + 케이스 번호 */}
+                      <div className="flex items-center gap-2">
+                        <span 
+                          className="rounded-full"
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            background: "#008FED",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "18px",
+                            fontWeight: 600,
+                            letterSpacing: "-0.02em",
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          {selectedCaseData.insuranceCompany || "보험사 미지정"} {selectedCaseData.caseNumber || ""}
+                        </span>
                       </div>
-                      
-                      {/* 오른쪽: 선택 표시 또는 화살표 */}
-                      <div className="flex items-center justify-center" style={{ width: "24px", height: "24px" }}>
-                        {selectedCase === caseItem.id ? (
-                          <Check 
-                            className="w-5 h-5"
-                            style={{ color: "#008FED" }}
-                            data-testid={`check-${caseItem.id}`}
-                          />
-                        ) : (
-                          <ChevronDown 
-                            className="w-5 h-5"
-                            style={{ color: "rgba(12, 12, 12, 0.4)" }}
-                          />
-                        )}
+                      {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+                      <div 
+                        className="flex items-center gap-4"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}
+                      >
+                        <span>접수번호 {selectedCaseData.insuranceAccidentNo || "-"}</span>
+                        <span>계약자 {selectedCaseData.policyHolderName || "-"}</span>
+                        <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
                       </div>
                     </div>
-                  </button>
-                ))}
-              </div>
+                  ) : (
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        color: "rgba(12, 12, 12, 0.5)",
+                      }}
+                    >
+                      접수건을 선택하세요
+                    </span>
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {availableCases.map((caseItem) => (
+                    <SelectItem 
+                      key={caseItem.id} 
+                      value={caseItem.id}
+                      data-testid={`case-option-${caseItem.id}`}
+                    >
+                      <div className="flex flex-col gap-1 py-1">
+                        {/* 첫 번째 줄: 파란 점 + 보험사명 + 케이스 번호 */}
+                        <div className="flex items-center gap-2">
+                          <span 
+                            className="rounded-full"
+                            style={{
+                              width: "6px",
+                              height: "6px",
+                              background: "#008FED",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: 600,
+                              letterSpacing: "-0.02em",
+                              color: "#0C0C0C",
+                            }}
+                          >
+                            {caseItem.insuranceCompany || "보험사 미지정"} {caseItem.caseNumber || ""}
+                          </span>
+                        </div>
+                        {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+                        <div 
+                          className="flex items-center gap-3 pl-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "12px",
+                            fontWeight: 500,
+                            color: "rgba(12, 12, 12, 0.6)",
+                          }}
+                        >
+                          <span>접수번호 {caseItem.insuranceAccidentNo || "-"}</span>
+                          <span>계약자 {caseItem.policyHolderName || "-"}</span>
+                          <span>담당자 {caseItem.assignedPartnerManager || "-"}</span>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
 
-      {/* 기본 정보 섹션 */}
-      <SectionCard 
-        title="기본 정보" 
-        isOpen={basicInfoOpen} 
-        onToggle={() => setBasicInfoOpen(!basicInfoOpen)}
-      >
-        <div className="space-y-6">
-            {/* 상단 3개 필드: 협력사, 담당자명, 담당자 연락처 - 협력사만 수정 가능 */}
-            <div className="grid grid-cols-3 gap-4">
+        {/* 기본정보 섹션 */}
+        <SectionCard
+          title="기본정보"
+          isOpen={basicInfoOpen}
+          onToggle={() => setBasicInfoOpen(!basicInfoOpen)}
+          disabled={!selectedCaseData}
+        >
+          <div className="space-y-6">
+            {/* 사고 발생일시 */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label
-                  className="block mb-2"
+                <Label 
+                  htmlFor="accident-date"
+                  className="mb-2"
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",
@@ -484,158 +447,28 @@ export default function FieldManagement() {
                     color: "rgba(12, 12, 12, 0.7)",
                   }}
                 >
-                  협력사
-                </label>
-                <Input
-                  value={selectedCaseData?.assignedPartner || ""}
-                  disabled={isReadOnly}
-                  data-testid="input-partner-company"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    ...(isReadOnly && {
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }),
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  className="block mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                  }}
-                >
-                  담당자명
-                </label>
-                <Input
-                  value={selectedCaseData?.assignedPartnerManager || ""}
-                  disabled={isReadOnly}
-                  data-testid="input-manager-name"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    ...(isReadOnly && {
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }),
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  className="block mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                  }}
-                >
-                  담당자 연락처
-                </label>
-                <Input
-                  value={selectedCaseData?.assignedPartnerContact || ""}
-                  disabled={isReadOnly}
-                  data-testid="input-manager-contact"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    ...(isReadOnly && {
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }),
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* 접수정보 하위 섹션 */}
-            <div>
-              <h4 
-                className="mb-3"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                }}
-              >
-                접수 정보
-              </h4>
-              <div>
-                <label
-                  className="block mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                  }}
-                >
-                  접수번호
-                </label>
-                <Input
-                  value={selectedCaseData?.caseNumber || ""}
-                  disabled
-                  data-testid="input-reception-number"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.05)",
-                    color: "rgba(12, 12, 12, 0.6)",
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* 사고 발생일시 - 협력사만 입력 가능 */}
-            <div>
-              <h4 
-                className="mb-3"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                }}
-              >
-                사고 발생일시
-              </h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    날짜 선택
-                  </label>
+                  사고 발생일시
+                </Label>
+                <div className="flex gap-2">
                   <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                     <PopoverTrigger asChild>
                       <Button
                         variant="outline"
-                        disabled={isReadOnly}
-                        className="w-full h-[68px] justify-start text-left"
-                        data-testid="button-accident-date"
+                        className={intakeButtonClass}
                         style={{
-                          fontFamily: "Pretendard",
-                          background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
+                          ...intakeButtonStyle,
+                          justifyContent: "flex-start",
+                          background: "#FDFDFD",
+                          border: "2px solid rgba(12,12,12,0.08)",
                         }}
+                        disabled={isReadOnly}
+                        data-testid="button-accident-date"
                       >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {accidentDate ? format(accidentDate, "PPP", { locale: ko }) : "날짜 선택"}
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {accidentDate ? format(accidentDate, "PPP", { locale: ko }) : <span>날짜 선택</span>}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
                         selected={accidentDate}
@@ -643,186 +476,62 @@ export default function FieldManagement() {
                           setAccidentDate(date);
                           setDatePickerOpen(false);
                         }}
-                        locale={ko}
+                        initialFocus
                       />
                     </PopoverContent>
                   </Popover>
-                </div>
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    시간 선택
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="time"
-                      value={accidentTime}
-                      onChange={(e) => setAccidentTime(e.target.value)}
-                      disabled={isReadOnly}
-                      data-testid="input-accident-time"
-                      className={intakeFieldClass}
-                      style={{
-                        ...intakeFieldStyle,
-                        ...(isReadOnly && {
-                          background: "rgba(12, 12, 12, 0.05)",
-                          color: "rgba(12, 12, 12, 0.6)",
-                        }),
-                      }}
-                    />
-                    <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                  </div>
+                  <Input
+                    type="time"
+                    value={accidentTime}
+                    onChange={(e) => setAccidentTime(e.target.value)}
+                    className={intakeFieldClass}
+                    style={intakeFieldStyle}
+                    disabled={isReadOnly}
+                    data-testid="input-accident-time"
+                  />
                 </div>
               </div>
             </div>
-        </div>
-      </SectionCard>
+          </div>
+        </SectionCard>
 
-      {/* 현장조사 정보 섹션 */}
-      <SectionCard
-        title="현장조사 정보"
-        isOpen={damageInfoOpen}
-        onToggle={() => setDamageInfoOpen(!damageInfoOpen)}
-      >
-        <div className="space-y-6">
-            {/* 현장정보 */}
-            <div>
-              <h4 
-                className="mb-3"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                }}
-              >
-                현장정보
-              </h4>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    방문 일시
-                  </label>
-                  <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        disabled={isReadOnly}
-                        className="w-full h-[68px] justify-start text-left"
-                        data-testid="button-visit-date"
-                        style={{
-                          fontFamily: "Pretendard",
-                          background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                        }}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {visitDate ? format(visitDate, "PPP", { locale: ko }) : "날짜 선택"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={visitDate}
-                        onSelect={(date) => {
-                          setVisitDate(date);
-                          setVisitDatePickerOpen(false);
-                        }}
-                        locale={ko}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    시간 선택
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="time"
-                      value={visitTime}
-                      onChange={(e) => setVisitTime(e.target.value)}
-                      disabled={isReadOnly}
-                      data-testid="input-visit-time"
-                      className={intakeFieldClass}
-                      style={{
-                        ...intakeFieldStyle,
-                        ...(isReadOnly && {
-                          background: "rgba(12, 12, 12, 0.05)",
-                          color: "rgba(12, 12, 12, 0.6)",
-                        }),
-                      }}
-                    />
-                    <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                  </div>
-                </div>
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    현장 이동 거리
-                  </label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      value={travelDistance}
-                      onChange={(e) => setTravelDistance(e.target.value)}
-                      placeholder="0"
-                      disabled={isReadOnly}
-                      data-testid="input-travel-distance"
-                      className={intakeFieldClass}
-                      style={{
-                        ...intakeFieldStyle,
-                        ...(isReadOnly && {
-                          background: "rgba(12, 12, 12, 0.05)",
-                          color: "rgba(12, 12, 12, 0.6)",
-                        }),
-                      }}
-                    />
-                    <span
-                      className="flex items-center px-3 py-2 bg-gray-100 rounded"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.7)",
-                        minWidth: "40px",
-                      }}
-                    >
-                      km
-                    </span>
-                  </div>
-                </div>
+        {/* 피해 및 복구 평가 섹션 */}
+        <SectionCard
+          title="피해 및 복구 평가"
+          isOpen={damageInfoOpen}
+          onToggle={() => setDamageInfoOpen(!damageInfoOpen)}
+          disabled={!selectedCaseData}
+        >
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label 
+                  htmlFor="travel-distance"
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  이동거리
+                </Label>
+                <Input
+                  id="travel-distance"
+                  value={travelDistance}
+                  onChange={(e) => setTravelDistance(e.target.value)}
+                  placeholder="예: 15km"
+                  className={intakeFieldClass}
+                  style={intakeFieldStyle}
+                  disabled={isReadOnly}
+                  data-testid="input-travel-distance"
+                />
               </div>
-              <div className="mt-4">
-                <label
-                  className="block mb-2"
+              <div>
+                <Label 
+                  htmlFor="accompanied-person"
+                  className="mb-2"
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",
@@ -831,41 +540,26 @@ export default function FieldManagement() {
                   }}
                 >
                   출동담당자
-                </label>
+                </Label>
                 <Input
+                  id="accompanied-person"
                   value={accompaniedPerson}
                   onChange={(e) => setAccompaniedPerson(e.target.value)}
-                  placeholder="출동담당자 성명"
+                  placeholder="출동담당자 입력"
+                  className={intakeFieldClass}
+                  style={intakeFieldStyle}
                   disabled={isReadOnly}
                   data-testid="input-accompanied-person"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    ...(isReadOnly && {
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }),
-                  }}
                 />
               </div>
             </div>
 
-            {/* 사고 원인(누수원천) */}
-            <div>
-              <h4 
-                className="mb-3"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                }}
-              >
-                사고 원인(누수원천)
-              </h4>
-              <div className="mb-4">
-                <label
-                  className="block mb-2"
+            {/* 현장출동 일시 */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label 
+                  htmlFor="visit-date"
+                  className="mb-2"
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",
@@ -873,33 +567,58 @@ export default function FieldManagement() {
                     color: "rgba(12, 12, 12, 0.7)",
                   }}
                 >
-                  카테고리
-                </label>
+                  현장출동 일시
+                </Label>
                 <div className="flex gap-2">
-                  {["배관", "코킹", "방수", "기타"].map((category) => (
-                    <button
-                      key={category}
-                      onClick={() => setAccidentCategory(category)}
-                      disabled={isReadOnly}
-                      className={intakeButtonClass}
-                      style={{
-                        ...intakeButtonStyle,
-                        background: accidentCategory === category ? "#008FED" : "white",
-                        color: accidentCategory === category ? "white" : "rgba(12, 12, 12, 0.7)",
-                        border: `2px solid ${accidentCategory === category ? "#008FED" : "rgba(12, 12, 12, 0.08)"}`,
-                        cursor: isReadOnly ? "not-allowed" : "pointer",
-                        opacity: isReadOnly ? 0.6 : 1,
-                      }}
-                      data-testid={`button-category-${category}`}
-                    >
-                      {category}
-                    </button>
-                  ))}
+                  <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={intakeButtonClass}
+                        style={{
+                          ...intakeButtonStyle,
+                          justifyContent: "flex-start",
+                          background: "#FDFDFD",
+                          border: "2px solid rgba(12,12,12,0.08)",
+                        }}
+                        disabled={isReadOnly}
+                        data-testid="button-visit-date"
+                      >
+                        <Calendar className="mr-2 h-4 w-4" />
+                        {visitDate ? format(visitDate, "PPP", { locale: ko }) : <span>날짜 선택</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={visitDate}
+                        onSelect={(date) => {
+                          setVisitDate(date);
+                          setVisitDatePickerOpen(false);
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Input
+                    type="time"
+                    value={visitTime}
+                    onChange={(e) => setVisitTime(e.target.value)}
+                    className={intakeFieldClass}
+                    style={intakeFieldStyle}
+                    disabled={isReadOnly}
+                    data-testid="input-visit-time"
+                  />
                 </div>
               </div>
+            </div>
+
+            {/* 사고 정보 */}
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label
-                  className="block mb-2"
+                <Label 
+                  htmlFor="accident-category"
+                  className="mb-2"
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",
@@ -907,540 +626,60 @@ export default function FieldManagement() {
                     color: "rgba(12, 12, 12, 0.7)",
                   }}
                 >
-                  사고원인
-                </label>
-                <Textarea
-                  value={accidentCause}
-                  onChange={(e) => setAccidentCause(e.target.value)}
-                  placeholder="누수원인, 누수지점 등 가능 등이 상세하게 입력해주세요"
-                  rows={4}
-                  maxLength={800}
+                  사고 구분
+                </Label>
+                <Select
+                  value={accidentCategory}
+                  onValueChange={setAccidentCategory}
                   disabled={isReadOnly}
-                  data-testid="textarea-accident-cause"
+                >
+                  <SelectTrigger 
+                    id="accident-category" 
+                    className={intakeFieldClass}
+                    style={intakeFieldStyle}
+                    data-testid="select-accident-category"
+                  >
+                    <SelectValue placeholder="사고 구분 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="배관">배관</SelectItem>
+                    <SelectItem value="화재">화재</SelectItem>
+                    <SelectItem value="누수">누수</SelectItem>
+                    <SelectItem value="기타">기타</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label 
+                  htmlFor="accident-cause"
+                  className="mb-2"
                   style={{
                     fontFamily: "Pretendard",
-                    background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                  }}
-                />
-                <div 
-                  className="text-right mt-1"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "12px",
-                    color: "rgba(12, 12, 12, 0.5)",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
                   }}
                 >
-                  {accidentCause.length}/800
-                </div>
+                  사고 원인
+                </Label>
+                <Input
+                  id="accident-cause"
+                  value={accidentCause}
+                  onChange={(e) => setAccidentCause(e.target.value)}
+                  placeholder="사고 원인 입력"
+                  className={intakeFieldClass}
+                  style={intakeFieldStyle}
+                  disabled={isReadOnly}
+                  data-testid="input-accident-cause"
+                />
               </div>
             </div>
 
             {/* 특이사항 */}
             <div>
-              <h4 
-                className="mb-3"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                }}
-              >
-                특이사항
-              </h4>
-              <Textarea
-                value={specialNotes}
-                onChange={(e) => setSpecialNotes(e.target.value)}
-                placeholder="내용을 작성해주세요"
-                rows={4}
-                maxLength={800}
-                disabled={isReadOnly}
-                data-testid="textarea-special-notes"
-                style={{
-                  fontFamily: "Pretendard",
-                  background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                }}
-              />
-              <div 
-                className="text-right mt-1"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "12px",
-                  color: "rgba(12, 12, 12, 0.5)",
-                }}
-              >
-                {specialNotes.length}/800
-              </div>
-            </div>
-
-            {/* VOC(고객의 소리) */}
-            <div>
-              <h4 
-                className="mb-3"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                }}
-              >
-                VOC(고객의 소리)
-              </h4>
-              <Textarea
-                value={voc}
-                onChange={(e) => setVoc(e.target.value)}
-                placeholder="내용을 작성해주세요"
-                rows={4}
-                maxLength={800}
-                disabled={isReadOnly}
-                data-testid="textarea-voc"
-                style={{
-                  fontFamily: "Pretendard",
-                  background: isReadOnly ? "rgba(12, 12, 12, 0.05)" : "white",
-                }}
-              />
-              <div 
-                className="text-right mt-1"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "12px",
-                  color: "rgba(12, 12, 12, 0.5)",
-                }}
-              >
-                {voc.length}/800
-              </div>
-            </div>
-        </div>
-      </SectionCard>
-
-      {/* 보험 정보 섹션 */}
-      <SectionCard
-        title="보험 정보"
-        isOpen={insuranceInfoOpen}
-        onToggle={() => setInsuranceInfoOpen(!insuranceInfoOpen)}
-      >
-        <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label
-                  className="block mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                  }}
-                >
-                  보험사
-                </label>
-                <Input
-                  value={selectedCaseData?.insuranceCompany || ""}
-                  disabled
-                  data-testid="input-insurance"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.05)",
-                    color: "rgba(12, 12, 12, 0.6)",
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  className="block mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                  }}
-                >
-                  보험계약자
-                </label>
-                <Input
-                  value={selectedCaseData?.policyHolderName || ""}
-                  disabled
-                  data-testid="input-contractor"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.05)",
-                    color: "rgba(12, 12, 12, 0.6)",
-                  }}
-                />
-              </div>
-            </div>
-        </div>
-      </SectionCard>
-
-      {/* 피보험자/피해자 정보 섹션 */}
-      <SectionCard
-        title="피보험자/피해자 정보"
-        isOpen={insuredInfoOpen}
-        onToggle={() => setInsuredInfoOpen(!insuredInfoOpen)}
-      >
-        <div className="space-y-6">
-            {/* 피보험자 정보 */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h4 
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    color: "#0C0C0C",
-                  }}
-                >
-                  피보험자 정보
-                </h4>
-                <div 
-                  className="flex items-center gap-2 px-2 py-1 rounded"
-                  style={{
-                    background: "rgba(12, 12, 12, 0.05)",
-                  }}
-                >
-                  <Checkbox 
-                    id="same-as-contractor" 
-                    disabled 
-                    data-testid="checkbox-same-contractor"
-                  />
-                  <label
-                    htmlFor="same-as-contractor"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      cursor: "not-allowed",
-                    }}
-                  >
-                    보험계약자 = 피보험자
-                  </label>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    피보험자
-                  </label>
-                  <Input
-                    value={selectedCaseData?.insuredName || ""}
-                    disabled
-                    data-testid="input-insured"
-                    className={intakeFieldClass}
-                    style={{
-                      ...intakeFieldStyle,
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    피보험자 연락처<span style={{ color: "red" }}>*</span>
-                  </label>
-                  <Input
-                    value={selectedCaseData?.insuredContact || ""}
-                    disabled
-                    data-testid="input-insured-contact"
-                    className={intakeFieldClass}
-                    style={{
-                      ...intakeFieldStyle,
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    피보험자 주소<span style={{ color: "red" }}>*</span>
-                  </label>
-                  <Input
-                    value={selectedCaseData?.insuredAddress || ""}
-                    disabled
-                    data-testid="input-insured-address"
-                    className={intakeFieldClass}
-                    style={{
-                      ...intakeFieldStyle,
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 피해자 정보 */}
-            <div>
-              <h4 
-                className="mb-3"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                }}
-              >
-                피해자 정보
-              </h4>
-              <div className="grid grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    피해자
-                  </label>
-                  <Input
-                    value={victimName}
-                    onChange={(e) => setVictimName(e.target.value)}
-                    placeholder="피해자 성명"
-                    disabled={isReadOnly}
-                    data-testid="input-victim-name"
-                    className={intakeFieldClass}
-                    style={{
-                      ...intakeFieldStyle,
-                      ...(isReadOnly && {
-                        background: "rgba(12, 12, 12, 0.05)",
-                        color: "rgba(12, 12, 12, 0.6)",
-                      }),
-                    }}
-                  />
-                </div>
-                <div>
-                  <label
-                    className="block mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    피해자 연락처
-                  </label>
-                  <Input
-                    value={victimContact}
-                    onChange={(e) => setVictimContact(e.target.value)}
-                    placeholder="피해자 연락처"
-                    disabled={isReadOnly}
-                    data-testid="input-victim-contact"
-                    className={intakeFieldClass}
-                    style={{
-                      ...intakeFieldStyle,
-                      ...(isReadOnly && {
-                        background: "rgba(12, 12, 12, 0.05)",
-                        color: "rgba(12, 12, 12, 0.6)",
-                      }),
-                    }}
-                  />
-                </div>
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <label
-                      className="block mb-2"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}
-                    >
-                      피해자 주소
-                    </label>
-                    <Input
-                      value={victimAddress}
-                      onChange={(e) => setVictimAddress(e.target.value)}
-                      placeholder="상세주소"
-                      disabled={isReadOnly}
-                      data-testid="input-victim-address"
-                      className={intakeFieldClass}
-                      style={{
-                        ...intakeFieldStyle,
-                        ...(isReadOnly && {
-                          background: "rgba(12, 12, 12, 0.05)",
-                          color: "rgba(12, 12, 12, 0.6)",
-                        }),
-                      }}
-                    />
-                  </div>
-                  <Button
-                    variant="outline"
-                    disabled={isReadOnly}
-                    data-testid="button-search-address"
-                    className="h-[68px]"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 500,
-                    }}
-                  >
-                    검색
-                  </Button>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 mb-4">
-                <Checkbox
-                  id="mobile-victim"
-                  disabled={isReadOnly}
-                  data-testid="checkbox-mobile-victim"
-                />
-                <label
-                  htmlFor="mobile-victim"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    color: "rgba(12, 12, 12, 0.7)",
-                    cursor: isReadOnly ? "not-allowed" : "pointer",
-                  }}
-                >
-                  휴대전화 피해자
-                </label>
-              </div>
-
-              {/* 기타등록 피해자 */}
-              <div className="mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h5 
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      color: "#0C0C0C",
-                    }}
-                  >
-                    기타등록 피해자
-                  </h5>
-                  {!isReadOnly && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (victimName || victimContact || victimAddress) {
-                          setAdditionalVictims(prev => [...prev, {
-                            name: victimName,
-                            phone: victimContact,
-                            address: victimAddress,
-                          }]);
-                          setVictimName("");
-                          setVictimContact("");
-                          setVictimAddress("");
-                        }
-                      }}
-                      data-testid="button-add-victim"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontWeight: 500,
-                      }}
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      추가
-                    </Button>
-                  )}
-                </div>
-                {additionalVictims.length > 0 && (
-                  <div className="space-y-2">
-                    {additionalVictims.map((victim, index) => (
-                      <div 
-                        key={index} 
-                        className="flex items-center gap-2 p-3 rounded"
-                        style={{
-                          background: "rgba(12, 12, 12, 0.03)",
-                          border: "1px solid rgba(12, 12, 12, 0.1)",
-                        }}
-                        data-testid={`victim-item-${index}`}
-                      >
-                        <div className="flex-1 grid grid-cols-3 gap-2">
-                          <span 
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              color: "#0C0C0C",
-                            }}
-                          >
-                            {victim.name}
-                          </span>
-                          <span 
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.7)",
-                            }}
-                          >
-                            {victim.phone}
-                          </span>
-                          <span 
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.7)",
-                            }}
-                          >
-                            {victim.address}
-                          </span>
-                        </div>
-                        {!isReadOnly && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setAdditionalVictims(prev => prev.filter((_, i) => i !== index));
-                            }}
-                            data-testid={`button-remove-victim-${index}`}
-                            style={{
-                              fontFamily: "Pretendard",
-                            }}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-        </div>
-      </SectionCard>
-
-      {/* 피해 복구 방식 및 차액 유형 섹션 */}
-      <SectionCard
-        title="피해 복구 방식 및 차액 유형"
-        isOpen={recoveryMethodOpen}
-        onToggle={() => setRecoveryMethodOpen(!recoveryMethodOpen)}
-      >
-        <div className="space-y-6">
-            {/* 처리 유형(복수선택) */}
-            <div>
-              <label
-                className="block mb-3"
+              <Label 
+                htmlFor="special-notes"
+                className="mb-2"
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",
@@ -1448,38 +687,400 @@ export default function FieldManagement() {
                   color: "rgba(12, 12, 12, 0.7)",
                 }}
               >
-                처리 유형(복수선택)
-              </label>
-              <div className="flex gap-2 mb-3">
-                {["수리", "비교견적", "기타"].map((type) => (
+                특이사항
+              </Label>
+              <Textarea
+                id="special-notes"
+                value={specialNotes}
+                onChange={(e) => setSpecialNotes(e.target.value)}
+                placeholder="특이사항 입력"
+                className="min-h-[120px]"
+                style={{
+                  ...intakeFieldStyle,
+                  padding: "16px 20px",
+                  background: "#FDFDFD",
+                  border: "2px solid rgba(12,12,12,0.08)",
+                  borderRadius: "8px",
+                }}
+                disabled={isReadOnly}
+                data-testid="textarea-special-notes"
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* 보험 및 피보험자 정보 섹션 */}
+        <SectionCard
+          title="보험 및 피보험자 정보"
+          isOpen={insuranceInfoOpen}
+          onToggle={() => setInsuranceInfoOpen(!insuranceInfoOpen)}
+          disabled={!selectedCaseData}
+        >
+          <div className="space-y-6">
+            {/* 보험사명, 증권번호 - readonly */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label 
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  보험사명
+                </Label>
+                <Input
+                  value={selectedCaseData?.insuranceCompany || ""}
+                  readOnly
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    background: "rgba(12, 12, 12, 0.03)",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                  data-testid="input-insurance-company"
+                />
+              </div>
+              <div>
+                <Label 
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  증권번호
+                </Label>
+                <Input
+                  value={selectedCaseData?.insurancePolicyNo || ""}
+                  readOnly
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    background: "rgba(12, 12, 12, 0.03)",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                  data-testid="input-insurance-policy-no"
+                />
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* 피보험자 및 피해자 정보 섹션 */}
+        <SectionCard
+          title="피보험자 및 피해자 정보"
+          isOpen={insuredInfoOpen}
+          onToggle={() => setInsuredInfoOpen(!insuredInfoOpen)}
+          disabled={!selectedCaseData}
+        >
+          <div className="space-y-6">
+            {/* 피보험자 정보 - readonly */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label 
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  피보험자 성명
+                </Label>
+                <Input
+                  value={selectedCaseData?.insuredName || ""}
+                  readOnly
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    background: "rgba(12, 12, 12, 0.03)",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                  data-testid="input-insured-name"
+                />
+              </div>
+              <div>
+                <Label 
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  피보험자 연락처
+                </Label>
+                <Input
+                  value={selectedCaseData?.insuredContact || ""}
+                  readOnly
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    background: "rgba(12, 12, 12, 0.03)",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                  data-testid="input-insured-contact"
+                />
+              </div>
+            </div>
+
+            {/* 피해자 정보 */}
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label 
+                  htmlFor="victim-name"
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  피해자 성명
+                </Label>
+                <Input
+                  id="victim-name"
+                  value={victimName}
+                  onChange={(e) => setVictimName(e.target.value)}
+                  placeholder="피해자 성명"
+                  className={intakeFieldClass}
+                  style={intakeFieldStyle}
+                  disabled={isReadOnly}
+                  data-testid="input-victim-name"
+                />
+              </div>
+              <div>
+                <Label 
+                  htmlFor="victim-contact"
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  피해자 연락처
+                </Label>
+                <Input
+                  id="victim-contact"
+                  value={victimContact}
+                  onChange={(e) => setVictimContact(e.target.value)}
+                  placeholder="피해자 연락처"
+                  className={intakeFieldClass}
+                  style={intakeFieldStyle}
+                  disabled={isReadOnly}
+                  data-testid="input-victim-contact"
+                />
+              </div>
+              <div>
+                <Label 
+                  htmlFor="victim-address"
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  피해자 주소
+                </Label>
+                <Input
+                  id="victim-address"
+                  value={victimAddress}
+                  onChange={(e) => setVictimAddress(e.target.value)}
+                  placeholder="피해자 주소"
+                  className={intakeFieldClass}
+                  style={intakeFieldStyle}
+                  disabled={isReadOnly}
+                  data-testid="input-victim-address"
+                />
+              </div>
+            </div>
+
+            {/* 추가 피해자 목록 표시 */}
+            {additionalVictims.length > 0 && (
+              <div className="space-y-3">
+                <Label 
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  추가 피해자 목록
+                </Label>
+                {additionalVictims.map((victim, index) => (
+                  <div 
+                    key={index}
+                    className="grid grid-cols-3 gap-4 p-4 rounded-lg"
+                    style={{
+                      background: "rgba(12, 12, 12, 0.02)",
+                      border: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <div>
+                      <Label 
+                        className="mb-1"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}
+                      >
+                        성명
+                      </Label>
+                      <p
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        {victim.name}
+                      </p>
+                    </div>
+                    <div>
+                      <Label 
+                        className="mb-1"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}
+                      >
+                        연락처
+                      </Label>
+                      <p
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        {victim.phone}
+                      </p>
+                    </div>
+                    <div>
+                      <Label 
+                        className="mb-1"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}
+                      >
+                        주소
+                      </Label>
+                      <p
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        {victim.address}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* VOC */}
+            <div>
+              <Label 
+                htmlFor="voc"
+                className="mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}
+              >
+                VOC (고객 요청사항)
+              </Label>
+              <Textarea
+                id="voc"
+                value={voc}
+                onChange={(e) => setVoc(e.target.value)}
+                placeholder="고객 요청사항 입력"
+                className="min-h-[120px]"
+                style={{
+                  ...intakeFieldStyle,
+                  padding: "16px 20px",
+                  background: "#FDFDFD",
+                  border: "2px solid rgba(12,12,12,0.08)",
+                  borderRadius: "8px",
+                }}
+                disabled={isReadOnly}
+                data-testid="textarea-voc"
+              />
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* 피해 복구 방식 및 차액 유형 섹션 */}
+        <SectionCard
+          title="피해 복구 방식 및 차액 유형"
+          isOpen={recoveryMethodOpen}
+          onToggle={() => setRecoveryMethodOpen(!recoveryMethodOpen)}
+          disabled={!selectedCaseData}
+        >
+          <div className="space-y-6">
+            {/* 처리유형 (복수 선택 가능) */}
+            <div>
+              <Label 
+                className="mb-3"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}
+              >
+                처리유형 (복수선택 가능)
+              </Label>
+              <div className="grid grid-cols-3 gap-3">
+                {["차액없음", "예상차액발생", "차액발생", "기타"].map((type) => (
                   <button
                     key={type}
                     onClick={() => {
-                      if (!isReadOnly) {
-                        setProcessingTypes(prev => {
-                          const newSet = new Set(prev);
-                          if (newSet.has(type)) {
-                            newSet.delete(type);
-                          } else {
-                            newSet.add(type);
-                          }
-                          return newSet;
-                        });
+                      if (isReadOnly) return;
+                      const newSet = new Set(processingTypes);
+                      if (newSet.has(type)) {
+                        newSet.delete(type);
+                      } else {
+                        newSet.add(type);
                       }
+                      setProcessingTypes(newSet);
+                    }}
+                    className={intakeButtonClass}
+                    style={{
+                      ...intakeButtonStyle,
+                      background: processingTypes.has(type) ? "#008FED" : "#FDFDFD",
+                      color: processingTypes.has(type) ? "#FFFFFF" : "#0C0C0C",
+                      border: `2px solid ${processingTypes.has(type) ? "#008FED" : "rgba(12,12,12,0.08)"}`,
                     }}
                     disabled={isReadOnly}
                     data-testid={`button-processing-type-${type}`}
-                    className="px-4 py-2 rounded hover-elevate active-elevate-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      background: processingTypes.has(type) ? "#008FED" : "white",
-                      color: processingTypes.has(type) ? "white" : "rgba(12, 12, 12, 0.7)",
-                      border: processingTypes.has(type) ? "1px solid #008FED" : "1px solid rgba(0, 143, 237, 0.3)",
-                      cursor: isReadOnly ? "not-allowed" : "pointer",
-                      opacity: isReadOnly ? 0.6 : 1,
-                    }}
                   >
                     {type}
                   </button>
@@ -1489,25 +1090,19 @@ export default function FieldManagement() {
                 <Input
                   value={processingTypeOther}
                   onChange={(e) => setProcessingTypeOther(e.target.value)}
-                  placeholder="기타선택시 설명해주세요"
+                  placeholder="기타 처리유형 입력"
+                  className={`${intakeFieldClass} mt-3`}
+                  style={intakeFieldStyle}
                   disabled={isReadOnly}
                   data-testid="input-processing-type-other"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    ...(isReadOnly && {
-                      background: "rgba(12, 12, 12, 0.05)",
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }),
-                  }}
                 />
               )}
             </div>
 
-            {/* 복구 방식 */}
+            {/* 복구방법 */}
             <div>
-              <label
-                className="block mb-3"
+              <Label 
+                className="mb-3"
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",
@@ -1515,65 +1110,30 @@ export default function FieldManagement() {
                   color: "rgba(12, 12, 12, 0.7)",
                 }}
               >
-                복구 방식
-              </label>
-              <div className="flex gap-2">
+                복구방법
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
                 {["부분수리", "전체수리"].map((method) => (
                   <button
                     key={method}
-                    onClick={() => {
-                      if (!isReadOnly) {
-                        setRecoveryMethodType(method);
-                      }
+                    onClick={() => !isReadOnly && setRecoveryMethodType(method)}
+                    className={intakeButtonClass}
+                    style={{
+                      ...intakeButtonStyle,
+                      background: recoveryMethodType === method ? "#008FED" : "#FDFDFD",
+                      color: recoveryMethodType === method ? "#FFFFFF" : "#0C0C0C",
+                      border: `2px solid ${recoveryMethodType === method ? "#008FED" : "rgba(12,12,12,0.08)"}`,
                     }}
                     disabled={isReadOnly}
                     data-testid={`button-recovery-method-${method}`}
-                    className="px-4 py-2 rounded hover-elevate active-elevate-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      background: recoveryMethodType === method ? "#008FED" : "white",
-                      color: recoveryMethodType === method ? "white" : "rgba(12, 12, 12, 0.7)",
-                      border: recoveryMethodType === method ? "1px solid #008FED" : "1px solid rgba(0, 143, 237, 0.3)",
-                      cursor: isReadOnly ? "not-allowed" : "pointer",
-                      opacity: isReadOnly ? 0.6 : 1,
-                    }}
                   >
                     {method}
                   </button>
                 ))}
               </div>
             </div>
-        </div>
-      </SectionCard>
-
-      {/* 저장 버튼 (협력사만 표시) */}
-      {isPartner && (
-        <div className="flex justify-end gap-3">
-          <Button
-            variant="outline"
-            data-testid="button-cancel"
-            style={{
-              fontFamily: "Pretendard",
-              fontWeight: 500,
-            }}
-          >
-            취소
-          </Button>
-          <Button
-            data-testid="button-save"
-            style={{
-              fontFamily: "Pretendard",
-              fontWeight: 600,
-              background: "#008FED",
-              color: "white",
-            }}
-          >
-            저장
-          </Button>
-        </div>
-      )}
-    </div>
+          </div>
+        </SectionCard>
+      </div>
   );
 }
