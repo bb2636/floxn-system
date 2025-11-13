@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -75,6 +75,10 @@ export interface IStorage {
   getAllInquiries(): Promise<Inquiry[]>;
   getInquiriesByUserId(userId: string): Promise<Inquiry[]>;
   updateInquiry(id: string, data: Partial<UpdateInquiry>): Promise<Inquiry | null>;
+  // Drawing methods
+  saveDrawing(data: InsertDrawing): Promise<Drawing>;
+  getDrawing(id: string): Promise<Drawing | null>;
+  getDrawingByCaseId(caseId: string): Promise<Drawing | null>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -86,6 +90,7 @@ export class MemStorage implements IStorage {
   private rolePermissions: Map<string, RolePermission>;
   private excelData: Map<string, ExcelData>;
   private inquiries: Map<string, Inquiry>;
+  private drawings: Map<string, Drawing>;
 
   constructor() {
     this.users = new Map();
@@ -94,6 +99,7 @@ export class MemStorage implements IStorage {
     this.rolePermissions = new Map();
     this.excelData = new Map();
     this.inquiries = new Map();
+    this.drawings = new Map();
     this.seedTestUser();
     this.seedTestCases();
   }
@@ -1257,6 +1263,31 @@ export class MemStorage implements IStorage {
     this.inquiries.set(id, updated);
     return updated;
   }
+
+  async saveDrawing(data: InsertDrawing): Promise<Drawing> {
+    const id = Math.random().toString(36).substr(2, 9);
+    const drawing: Drawing = {
+      id,
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.drawings.set(id, drawing);
+    return drawing;
+  }
+
+  async getDrawing(id: string): Promise<Drawing | null> {
+    return this.drawings.get(id) || null;
+  }
+
+  async getDrawingByCaseId(caseId: string): Promise<Drawing | null> {
+    for (const drawing of this.drawings.values()) {
+      if (drawing.caseId === caseId) {
+        return drawing;
+      }
+    }
+    return null;
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -1865,6 +1896,36 @@ export class DbStorage implements IStorage {
       .where(eq(inquiries.id, id))
       .returning();
     return updated[0] || null;
+  }
+
+  async saveDrawing(data: InsertDrawing): Promise<Drawing> {
+    const created = await db.insert(drawings)
+      .values({
+        caseId: data.caseId,
+        uploadedImages: data.uploadedImages,
+        rectangles: data.rectangles,
+        accidentAreas: data.accidentAreas,
+        leakMarkers: data.leakMarkers,
+        createdBy: data.createdBy,
+      })
+      .returning();
+    return created[0];
+  }
+
+  async getDrawing(id: string): Promise<Drawing | null> {
+    const result = await db.select()
+      .from(drawings)
+      .where(eq(drawings.id, id))
+      .limit(1);
+    return result[0] || null;
+  }
+
+  async getDrawingByCaseId(caseId: string): Promise<Drawing | null> {
+    const result = await db.select()
+      .from(drawings)
+      .where(eq(drawings.caseId, caseId))
+      .limit(1);
+    return result[0] || null;
   }
 }
 
