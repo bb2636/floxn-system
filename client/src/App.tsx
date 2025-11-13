@@ -117,7 +117,17 @@ function Router() {
         {() => (
           <ProtectedRoute category="현장조사">
             <FieldSurveyLayout>
-              <div className="p-8">견적서작성조사 페이지 (준비중)</div>
+              <div className="p-8">견적서 작성 페이지 (준비중)</div>
+            </FieldSurveyLayout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      
+      <Route path="/field-survey/report">
+        {() => (
+          <ProtectedRoute category="현장조사">
+            <FieldSurveyLayout>
+              <div className="p-8">현장출동보고서 페이지 (준비중)</div>
             </FieldSurveyLayout>
           </ProtectedRoute>
         )}

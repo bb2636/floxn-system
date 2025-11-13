@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case } from "@shared/schema";
-import { ChevronDown, ChevronRight, Calendar as CalendarIcon, Clock, X, Plus, Check, Minus } from "lucide-react";
+import { ChevronDown, ChevronRight, Calendar as CalendarIcon, Clock, X, Plus, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,54 +9,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-
-// intake.tsx 스타일 상수
-const cardStyles = {
-  background: '#FFFFFF',
-  boxShadow: '0px 0px 20px #DBE9F5',
-  borderRadius: '12px',
-  overflow: 'hidden' as const,
-};
-
-const sectionHeaderStyles = {
-  padding: '24px',
-  height: '82px',
-  borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
-};
-
-const sectionTitleStyles = {
-  fontFamily: 'Pretendard',
-  fontWeight: 600,
-  fontSize: '24px',
-  lineHeight: '128%',
-  letterSpacing: '-0.02em',
-  color: '#0C0C0C',
-};
-
-const sectionContentStyles = {
-  padding: '16px 0 32px 0',
-};
-
-const labelStyles = {
-  fontFamily: 'Pretendard',
-  fontWeight: 500,
-  fontSize: '14px',
-  lineHeight: '128%',
-  letterSpacing: '-0.01em',
-  color: '#686A6E',
-};
-
-const subSectionTitleStyles = {
-  fontFamily: 'Pretendard',
-  fontWeight: 600,
-  fontSize: '20px',
-  lineHeight: '128%',
-  letterSpacing: '-0.02em',
-  color: 'rgba(12, 12, 12, 0.8)',
-};
 
 export default function FieldManagement() {
   const [selectedCase, setSelectedCase] = useState<string>("");
@@ -123,45 +77,75 @@ export default function FieldManagement() {
     }
   }, [availableCases, selectedCase]);
 
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
+  };
+
+  const SectionHeader = ({ 
+    title, 
+    sectionKey, 
+    hasCollapseButton = true 
+  }: { 
+    title: string; 
+    sectionKey: keyof typeof expandedSections; 
+    hasCollapseButton?: boolean 
+  }) => (
+    <div className="flex items-center justify-between mb-4">
+      <h3 
+        style={{
+          fontFamily: "Pretendard",
+          fontSize: "18px",
+          fontWeight: 600,
+          letterSpacing: "-0.02em",
+          color: "#0C0C0C",
+        }}
+      >
+        {title}
+      </h3>
+      {hasCollapseButton && (
+        <button
+          onClick={() => toggleSection(sectionKey)}
+          className="flex items-center gap-1 px-3 py-1 rounded hover-elevate active-elevate-2"
+          style={{
+            fontFamily: "Pretendard",
+            fontSize: "14px",
+            fontWeight: 500,
+            color: "rgba(12, 12, 12, 0.6)",
+          }}
+          data-testid={`button-toggle-${sectionKey}`}
+        >
+          {expandedSections[sectionKey] ? (
+            <ChevronDown className="w-4 h-4" />
+          ) : (
+            <ChevronRight className="w-4 h-4" />
+          )}
+        </button>
+      )}
+    </div>
+  );
+
   return (
-    <div className="relative" style={{ padding: '0 0 40px 0' }}>
-      {/* 1660px Centered Container */}
-      <div style={{ width: '1660px', margin: '0 auto' }}>
-        {/* Form Sections Container */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', width: '1596px', margin: '0 32px' }}>
-          
-          {/* 현장일력 섹션 */}
-          <div style={cardStyles}>
-            <Collapsible 
-              open={expandedSections.schedule} 
-              onOpenChange={(value) => setExpandedSections(prev => ({...prev, schedule: value}))}
+    <div className="relative p-8">
+      {/* 현장일력 섹션 */}
+      <div className="mb-6 bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-[rgba(0,143,237,0.2)]">
+        <SectionHeader title="현장일력" sectionKey="schedule" />
+        
+        {expandedSections.schedule && (
+          <div>
+            <p 
+              className="mb-3"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "rgba(12, 12, 12, 0.7)",
+              }}
             >
-              <div className="flex items-center justify-between" style={sectionHeaderStyles}>
-                <h2 style={sectionTitleStyles}>현장일력</h2>
-                <CollapsibleTrigger asChild>
-                  <button 
-                    className="w-[34px] h-[34px] flex items-center justify-center"
-                    data-testid="button-toggle-schedule"
-                  >
-                    <Minus className="w-4 h-4" style={{ color: '#008FED' }} />
-                  </button>
-                </CollapsibleTrigger>
-              </div>
-              
-              <CollapsibleContent>
-                <div style={sectionContentStyles}>
-                  <div style={{ padding: '0 20px' }}>
-                    <p 
-                      className="mb-3"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}
-                    >
-                      접수건 선택
-                    </p>
+              접수건 선택
+            </p>
             
             {/* 접수건 카드 리스트 */}
             {casesLoading ? (
@@ -1617,35 +1601,32 @@ export default function FieldManagement() {
         )}
       </div>
 
-        {/* 저장 버튼 (협력사만 표시) */}
-        {isPartner && (
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              data-testid="button-cancel"
-              style={{
-                fontFamily: "Pretendard",
-                fontWeight: 500,
-              }}
-            >
-              취소
-            </Button>
-            <Button
-              data-testid="button-save"
-              style={{
-                fontFamily: "Pretendard",
-                fontWeight: 600,
-                background: "#008FED",
-                color: "white",
-              }}
-            >
-              저장
-            </Button>
-          </div>
-        )}
-        
+      {/* 저장 버튼 (협력사만 표시) */}
+      {isPartner && (
+        <div className="flex justify-end gap-3">
+          <Button
+            variant="outline"
+            data-testid="button-cancel"
+            style={{
+              fontFamily: "Pretendard",
+              fontWeight: 500,
+            }}
+          >
+            취소
+          </Button>
+          <Button
+            data-testid="button-save"
+            style={{
+              fontFamily: "Pretendard",
+              fontWeight: 600,
+              background: "#008FED",
+              color: "white",
+            }}
+          >
+            저장
+          </Button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

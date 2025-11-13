@@ -51,9 +51,15 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Reception Management**: New water damage case registration and management, including assigning repair companies based on service areas.
 - **Field Survey**: Input field investigation results and details by repair companies.
   - **Field Survey Management Page** (`/field-survey/management`): Multi-section form with collapsible sections for basic info, damage assessment, insurance details, insured/victim information, and damage recovery method selection.
+  - **Field Survey Sidebar Menu** (updated November 13, 2025):
+    - **현장입력** (`/field-survey/management`): Field management page
+    - **도면작성** (`/field-survey/drawing`): Drawing creation page
+    - **증빙자료 등록** (`/field-survey/documents`): Documents upload page (placeholder)
+    - **견적서 작성** (`/field-survey/estimate`): Estimate creation page (placeholder)
+    - **현장출동보고서** (`/field-survey/report`): Field dispatch report page (placeholder)
   - **Drawing Creation Page** (`/field-survey/drawing`): Digital drawing workspace with dedicated layout separate from FieldSurveyLayout.
     - **Layout Structure**: Uses DrawingLayout component with GlobalHeader + dedicated content area
-    - **Left Sidebar (180px)**: Menu navigation including 현장관리, 도면 작성, 종합자료 등록, 견적서작성조사
+    - **Left Sidebar (180px)**: Menu navigation with updated labels
     - **Case Information Display**: Shows case name (M0숭례문역4) and case number (ZK2109043) with blue dot indicator
     - **Canvas Area**: Full-screen grid background (10px squares, rgba(218,218,218,0.5)) - no boundary limits for free drawing anywhere
     - **Bottom-Center Toolbar**: 4 drawing tools (선택/pointer, 이미지 업로드/upload, 사각형/rectangle, 누수 지점/leak marker) with active state highlighting
