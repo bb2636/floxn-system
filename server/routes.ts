@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -795,6 +795,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Update inquiry error:", error);
       res.status(500).json({ error: "문의를 수정하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // ==================== DRAWING ROUTES ====================
+
+  // Save drawing (create or update)
+  app.post("/api/drawings", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const validatedData = insertDrawingSchema.parse({
+        ...req.body,
+        createdBy: req.session.userId,
+      });
+      
+      // Check if a drawing already exists for this case
+      let existing = null;
+      if (validatedData.caseId) {
+        existing = await storage.getDrawingByCaseId(validatedData.caseId);
+      }
+
+      let drawing;
+      if (existing) {
+        // Update existing drawing (exclude immutable fields)
+        const updateData = {
+          uploadedImages: validatedData.uploadedImages,
+          rectangles: validatedData.rectangles,
+          accidentAreas: validatedData.accidentAreas,
+          leakMarkers: validatedData.leakMarkers,
+        };
+        drawing = await storage.updateDrawing(existing.id, updateData);
+      } else {
+        // Create new drawing
+        drawing = await storage.saveDrawing(validatedData);
+      }
+      
+      res.json(drawing);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Save drawing error:", error);
+      res.status(500).json({ error: "도면을 저장하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get drawing by ID
+  app.get("/api/drawings/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      const drawing = await storage.getDrawing(id);
+      
+      if (!drawing) {
+        return res.status(404).json({ error: "도면을 찾을 수 없습니다" });
+      }
+
+      res.json(drawing);
+    } catch (error) {
+      console.error("Get drawing error:", error);
+      res.status(500).json({ error: "도면을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get drawing by case ID
+  app.get("/api/drawings/case/:caseId", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const drawing = await storage.getDrawingByCaseId(caseId);
+      
+      if (!drawing) {
+        return res.status(404).json({ error: "도면을 찾을 수 없습니다" });
+      }
+
+      res.json(drawing);
+    } catch (error) {
+      console.error("Get drawing by case error:", error);
+      res.status(500).json({ error: "도면을 조회하는 중 오류가 발생했습니다" });
     }
   });
 

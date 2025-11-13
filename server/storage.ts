@@ -79,6 +79,7 @@ export interface IStorage {
   saveDrawing(data: InsertDrawing): Promise<Drawing>;
   getDrawing(id: string): Promise<Drawing | null>;
   getDrawingByCaseId(caseId: string): Promise<Drawing | null>;
+  updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -1288,6 +1289,20 @@ export class MemStorage implements IStorage {
     }
     return null;
   }
+
+  async updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null> {
+    const existing = this.drawings.get(id);
+    if (!existing) {
+      return null;
+    }
+    const updated: Drawing = {
+      ...existing,
+      ...data,
+      updatedAt: new Date(),
+    };
+    this.drawings.set(id, updated);
+    return updated;
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -1926,6 +1941,17 @@ export class DbStorage implements IStorage {
       .where(eq(drawings.caseId, caseId))
       .limit(1);
     return result[0] || null;
+  }
+
+  async updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null> {
+    const updated = await db.update(drawings)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(drawings.id, id))
+      .returning();
+    return updated[0] || null;
   }
 }
 
