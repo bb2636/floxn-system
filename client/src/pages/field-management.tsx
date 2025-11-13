@@ -823,150 +823,276 @@ export default function FieldManagement() {
           </div>
         </SectionCard>
 
-        {/* 현장정보 섹션 */}
+        {/* 현장조사 정보 섹션 */}
         <SectionCard
-          title="현장정보"
+          title="현장조사 정보"
           isOpen={true}
           onToggle={() => {}}
           disabled={!selectedCaseData}
         >
-          <div className="grid grid-cols-3 gap-4">
-            {/* 방문 일시 */}
+          <div className="space-y-6">
+            {/* 현장정보 서브섹션 */}
             <div>
-              <Label 
-                htmlFor="visit-date"
-                className="mb-3"
+              <h3
+                className="mb-4"
                 style={{
                   fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "rgba(12, 12, 12, 0.7)",
+                  fontSize: "18px",
+                  fontWeight: 600,
+                  color: "rgba(12, 12, 12, 0.8)",
                 }}
               >
-                방문 일시
-              </Label>
-              <div className="flex gap-2">
-                <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={intakeButtonClass}
+                현장정보
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                {/* 방문 일시 */}
+                <div>
+                  <Label 
+                    htmlFor="visit-date"
+                    className="mb-3"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    방문 일시
+                  </Label>
+                  <div className="flex gap-2">
+                    <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={intakeButtonClass}
+                          style={{
+                            ...intakeButtonStyle,
+                            justifyContent: "flex-start",
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12,12,12,0.08)",
+                            flex: 1,
+                          }}
+                          disabled={isReadOnly}
+                          data-testid="button-visit-date"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={visitDate}
+                          onSelect={(date) => {
+                            setVisitDate(date);
+                            setVisitDatePickerOpen(false);
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      type="time"
+                      value={visitTime}
+                      onChange={(e) => setVisitTime(e.target.value)}
+                      className={intakeFieldClass}
                       style={{
-                        ...intakeButtonStyle,
-                        justifyContent: "flex-start",
-                        background: "#FDFDFD",
-                        border: "2px solid rgba(12,12,12,0.08)",
+                        ...intakeFieldStyle,
                         flex: 1,
                       }}
                       disabled={isReadOnly}
-                      data-testid="button-visit-date"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={visitDate}
-                      onSelect={(date) => {
-                        setVisitDate(date);
-                        setVisitDatePickerOpen(false);
-                      }}
-                      initialFocus
+                      data-testid="input-visit-time"
                     />
-                  </PopoverContent>
-                </Popover>
-                <Input
-                  type="time"
-                  value={visitTime}
-                  onChange={(e) => setVisitTime(e.target.value)}
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    flex: 1,
-                  }}
-                  disabled={isReadOnly}
-                  data-testid="input-visit-time"
-                />
+                  </div>
+                </div>
+
+                {/* 현장 이동 거리 */}
+                <div>
+                  <Label 
+                    htmlFor="travel-distance"
+                    className="mb-3"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    현장 이동 거리
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="travel-distance"
+                      type="text"
+                      value={travelDistance}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        // 숫자만 입력 가능 (빈 문자열 허용)
+                        if (value === '' || /^\d+$/.test(value)) {
+                          setTravelDistance(value);
+                        }
+                      }}
+                      className={intakeFieldClass}
+                      style={{
+                        ...intakeFieldStyle,
+                        flex: 1,
+                      }}
+                      disabled={isReadOnly}
+                      placeholder="0"
+                      data-testid="input-travel-distance"
+                    />
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "#0C0C0C",
+                      }}
+                    >
+                      km
+                    </span>
+                  </div>
+                </div>
+
+                {/* 출동 담당자 */}
+                <div>
+                  <Label 
+                    htmlFor="dispatch-manager"
+                    className="mb-3"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    출동 담당자
+                  </Label>
+                  <Input
+                    id="dispatch-manager"
+                    value={selectedCaseData?.accompaniedPerson || ""}
+                    readOnly
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.04)",
+                      color: "rgba(12, 12, 12, 0.4)",
+                    }}
+                    placeholder="출동 담당자 성명"
+                    data-testid="input-dispatch-manager"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* 현장 이동 거리 */}
+            {/* 사고 원인(누수소견서) 서브섹션 */}
             <div>
-              <Label 
-                htmlFor="travel-distance"
-                className="mb-3"
+              <h3
+                className="mb-4"
                 style={{
                   fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "rgba(12, 12, 12, 0.7)",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  color: "rgba(12, 12, 12, 0.8)",
+                  letterSpacing: "-0.02em",
                 }}
               >
-                현장 이동 거리
-              </Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="travel-distance"
-                  type="text"
-                  value={travelDistance}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // 숫자만 입력 가능 (빈 문자열 허용)
-                    if (value === '' || /^\d+$/.test(value)) {
-                      setTravelDistance(value);
-                    }
-                  }}
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    flex: 1,
-                  }}
-                  disabled={isReadOnly}
-                  placeholder="0"
-                  data-testid="input-travel-distance"
-                />
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    color: "#0C0C0C",
-                  }}
-                >
-                  km
-                </span>
-              </div>
-            </div>
+                사고 원인(누수소견서)
+              </h3>
+              <div className="space-y-4">
+                {/* 카테고리 */}
+                <div>
+                  <Label 
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    카테고리
+                  </Label>
+                  <div className="flex gap-2">
+                    {["배관", "교체", "방수", "기타"].map((category) => (
+                      <Button
+                        key={category}
+                        type="button"
+                        onClick={() => setAccidentCategory(category)}
+                        disabled={isReadOnly}
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          height: "52px",
+                          padding: "12px 16px",
+                          borderRadius: "6px",
+                          border: accidentCategory === category 
+                            ? "2px solid rgba(255, 255, 255, 0.04)" 
+                            : "1px solid rgba(12, 12, 12, 0.3)",
+                          background: accidentCategory === category 
+                            ? "rgba(0, 143, 237, 0.1)" 
+                            : "#FDFDFD",
+                          color: accidentCategory === category 
+                            ? "#008FED" 
+                            : "rgba(12, 12, 12, 0.9)",
+                          boxShadow: accidentCategory === category 
+                            ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
+                            : "none",
+                          backdropFilter: accidentCategory === category ? "blur(7px)" : "none",
+                        }}
+                        data-testid={`button-category-${category}`}
+                      >
+                        {category}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* 출동 담당자 */}
-            <div>
-              <Label 
-                htmlFor="dispatch-manager"
-                className="mb-3"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "rgba(12, 12, 12, 0.7)",
-                }}
-              >
-                출동 담당자
-              </Label>
-              <Input
-                id="dispatch-manager"
-                value={selectedCaseData?.accompaniedPerson || ""}
-                readOnly
-                className={intakeFieldClass}
-                style={{
-                  ...intakeFieldStyle,
-                  background: "rgba(12, 12, 12, 0.04)",
-                  color: "rgba(12, 12, 12, 0.4)",
-                }}
-                placeholder="출동 담당자 성명"
-                data-testid="input-dispatch-manager"
-              />
+                {/* 사고원인 */}
+                <div>
+                  <Label 
+                    htmlFor="accident-cause-detail"
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    사고원인
+                  </Label>
+                  <Textarea
+                    id="accident-cause-detail"
+                    value={accidentCause}
+                    onChange={(e) => setAccidentCause(e.target.value)}
+                    placeholder="누수원인, 누수지점 등 기타 특이사항을 입력해주세요."
+                    className="min-h-[200px]"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      padding: "16px 20px",
+                      background: "#FDFDFD",
+                      border: "2px solid rgba(12,12,12,0.08)",
+                      borderRadius: "8px",
+                      resize: "none",
+                    }}
+                    disabled={isReadOnly}
+                    data-testid="textarea-accident-cause"
+                  />
+                  <div 
+                    className="text-right mt-1"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "12px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                    }}
+                  >
+                    {accidentCause.length}/800
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </SectionCard>
