@@ -34,6 +34,20 @@ interface LeakMarker {
 
 type ToolType = "pointer" | "upload" | "rectangle" | "leak" | "select-area";
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w';
+type EntityType = 'image' | 'rectangle';
+
+interface ActiveTransform {
+  entityType: EntityType;
+  entityId: string;
+  mode: 'drag' | 'resize';
+  handle?: ResizeHandle;
+  startX: number;
+  startY: number;
+  startWidth: number;
+  startHeight: number;
+  startEntityX: number;
+  startEntityY: number;
+}
 
 export default function FieldDrawing() {
   const [location, setLocation] = useLocation();
@@ -44,16 +58,12 @@ export default function FieldDrawing() {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [selectedRectangleId, setSelectedRectangleId] = useState<string | null>(null);
   const [selectedLeakId, setSelectedLeakId] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
+  const [activeTransform, setActiveTransform] = useState<ActiveTransform | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [resizeHandle, setResizeHandle] = useState<ResizeHandle | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
-  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
+  const { toast} = useToast();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -155,24 +165,54 @@ export default function FieldDrawing() {
     }
   };
 
-  // 이미지 클릭 핸들러
-  const handleImageClick = (e: React.MouseEvent, imageId: string) => {
+  // 이미지 마우스 다운 핸들러
+  const handleImageMouseDown = (e: React.MouseEvent, image: UploadedImage) => {
     e.stopPropagation();
-    if (selectedTool === "pointer") {
-      setSelectedImageId(imageId);
-      setSelectedRectangleId(null);
-      setSelectedLeakId(null);
-    }
+    if (selectedTool !== "pointer" || image.locked) return;
+    
+    setSelectedImageId(image.id);
+    setSelectedRectangleId(null);
+    setSelectedLeakId(null);
+    
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (!canvasRect) return;
+    
+    setActiveTransform({
+      entityType: 'image',
+      entityId: image.id,
+      mode: 'drag',
+      startX: e.clientX,
+      startY: e.clientY,
+      startWidth: image.width,
+      startHeight: image.height,
+      startEntityX: image.x,
+      startEntityY: image.y,
+    });
   };
 
-  // 사각형 클릭 핸들러
-  const handleRectangleClick = (e: React.MouseEvent, rectangleId: string) => {
+  // 사각형 마우스 다운 핸들러
+  const handleRectangleMouseDown = (e: React.MouseEvent, rect: DrawnRectangle) => {
     e.stopPropagation();
-    if (selectedTool === "pointer") {
-      setSelectedRectangleId(rectangleId);
-      setSelectedImageId(null);
-      setSelectedLeakId(null);
-    }
+    if (selectedTool !== "pointer" || rect.locked) return;
+    
+    setSelectedRectangleId(rect.id);
+    setSelectedImageId(null);
+    setSelectedLeakId(null);
+    
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (!canvasRect) return;
+    
+    setActiveTransform({
+      entityType: 'rectangle',
+      entityId: rect.id,
+      mode: 'drag',
+      startX: e.clientX,
+      startY: e.clientY,
+      startWidth: rect.width,
+      startHeight: rect.height,
+      startEntityX: rect.x,
+      startEntityY: rect.y,
+    });
   };
 
   // 누수 마커 클릭 핸들러
@@ -271,38 +311,85 @@ export default function FieldDrawing() {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!canvasRef.current || !isDrawing || selectedTool !== "rectangle") return;
+    if (!canvasRef.current) return;
     
-    // 드래그 중 미리보기 (향후 구현 가능)
+    // 사각형 그리기 중
+    if (isDrawing && selectedTool === "rectangle") {
+      return;
+    }
+    
+    // 드래그 또는 리사이즈 중
+    if (activeTransform) {
+      const deltaX = e.clientX - activeTransform.startX;
+      const deltaY = e.clientY - activeTransform.startY;
+      
+      if (activeTransform.mode === 'drag') {
+        // 드래그 모드
+        const newX = activeTransform.startEntityX + deltaX;
+        const newY = activeTransform.startEntityY + deltaY;
+        
+        // 캔버스 경계 내로 제한
+        const maxX = 600 - activeTransform.startWidth;
+        const maxY = 400 - activeTransform.startHeight;
+        const clampedX = Math.max(0, Math.min(newX, maxX));
+        const clampedY = Math.max(0, Math.min(newY, maxY));
+        
+        if (activeTransform.entityType === 'image') {
+          setUploadedImages(prev =>
+            prev.map(img =>
+              img.id === activeTransform.entityId
+                ? { ...img, x: clampedX, y: clampedY }
+                : img
+            )
+          );
+        } else if (activeTransform.entityType === 'rectangle') {
+          setRectangles(prev =>
+            prev.map(rect =>
+              rect.id === activeTransform.entityId
+                ? { ...rect, x: clampedX, y: clampedY }
+                : rect
+            )
+          );
+        }
+      } else if (activeTransform.mode === 'resize' && activeTransform.handle) {
+        // 리사이즈 모드 (향후 구현)
+      }
+    }
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!canvasRef.current || !isDrawing || selectedTool !== "rectangle") return;
-    
-    const canvasRect = canvasRef.current.getBoundingClientRect();
-    const endX = e.clientX - canvasRect.left;
-    const endY = e.clientY - canvasRect.top;
-    
-    const width = Math.abs(endX - drawStart.x);
-    const height = Math.abs(endY - drawStart.y);
-    
-    if (width > 10 && height > 10) {
-      const newRectangle: DrawnRectangle = {
-        id: `rect-${Date.now()}`,
-        x: Math.min(drawStart.x, endX),
-        y: Math.min(drawStart.y, endY),
-        width,
-        height,
-        text: "",
-        locked: false,
-      };
-      setRectangles(prev => [...prev, newRectangle]);
-      setSelectedRectangleId(newRectangle.id);
-      setSelectedImageId(null);
-      setSelectedLeakId(null);
+    // 사각형 그리기 완료
+    if (isDrawing && selectedTool === "rectangle" && canvasRef.current) {
+      const canvasRect = canvasRef.current.getBoundingClientRect();
+      const endX = e.clientX - canvasRect.left;
+      const endY = e.clientY - canvasRect.top;
+      
+      const width = Math.abs(endX - drawStart.x);
+      const height = Math.abs(endY - drawStart.y);
+      
+      if (width > 10 && height > 10) {
+        const newRectangle: DrawnRectangle = {
+          id: `rect-${Date.now()}`,
+          x: Math.min(drawStart.x, endX),
+          y: Math.min(drawStart.y, endY),
+          width,
+          height,
+          text: "",
+          locked: false,
+        };
+        setRectangles(prev => [...prev, newRectangle]);
+        setSelectedRectangleId(newRectangle.id);
+        setSelectedImageId(null);
+        setSelectedLeakId(null);
+      }
+      
+      setIsDrawing(false);
     }
     
-    setIsDrawing(false);
+    // 드래그/리사이즈 완료
+    if (activeTransform) {
+      setActiveTransform(null);
+    }
   };
 
   if (!user) {
@@ -564,7 +651,7 @@ export default function FieldDrawing() {
                 {uploadedImages.map((image) => (
                   <div
                     key={image.id}
-                    onClick={(e) => handleImageClick(e, image.id)}
+                    onMouseDown={(e) => handleImageMouseDown(e, image)}
                     style={{
                       position: "absolute",
                       left: `${image.x}px`,
@@ -572,7 +659,7 @@ export default function FieldDrawing() {
                       width: `${image.width}px`,
                       height: `${image.height}px`,
                       border: selectedImageId === image.id ? "2px solid #008FED" : "none",
-                      cursor: "pointer",
+                      cursor: selectedTool === "pointer" && !image.locked ? "move" : "pointer",
                     }}
                     data-testid={`image-${image.id}`}
                   >
@@ -583,6 +670,7 @@ export default function FieldDrawing() {
                         width: "100%",
                         height: "100%",
                         objectFit: "contain",
+                        pointerEvents: "none",
                       }}
                     />
                   </div>
@@ -592,7 +680,7 @@ export default function FieldDrawing() {
                 {rectangles.map((rect) => (
                   <div
                     key={rect.id}
-                    onClick={(e) => handleRectangleClick(e, rect.id)}
+                    onMouseDown={(e) => handleRectangleMouseDown(e, rect)}
                     style={{
                       position: "absolute",
                       left: `${rect.x}px`,
@@ -601,7 +689,7 @@ export default function FieldDrawing() {
                       height: `${rect.height}px`,
                       border: selectedRectangleId === rect.id ? "2px solid #008FED" : "1px solid #0C0C0C",
                       background: "rgba(255, 255, 255, 0.8)",
-                      cursor: "pointer",
+                      cursor: selectedTool === "pointer" && !rect.locked ? "move" : "pointer",
                     }}
                     data-testid={`rectangle-${rect.id}`}
                   >
