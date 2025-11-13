@@ -426,6 +426,73 @@ export default function FieldManagement() {
           </div>
         </SectionCard>
 
+        {/* 접수정보 섹션 */}
+        <SectionCard
+          title="접수정보"
+          isOpen={true}
+          onToggle={() => {}}
+          disabled={!selectedCaseData}
+        >
+          <div className="grid grid-cols-2 gap-4">
+            {/* 접수번호 */}
+            <div>
+              <Label 
+                htmlFor="case-number"
+                className="mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}
+              >
+                접수번호
+              </Label>
+              <Input
+                id="case-number"
+                value={selectedCaseData?.caseNumber || ""}
+                readOnly
+                className={intakeFieldClass}
+                style={{
+                  ...intakeFieldStyle,
+                  background: "rgba(12, 12, 12, 0.03)",
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+                data-testid="input-case-number"
+              />
+            </div>
+            
+            {/* 보험사 */}
+            <div>
+              <Label 
+                htmlFor="insurance-company-display"
+                className="mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}
+              >
+                보험사
+              </Label>
+              <Input
+                id="insurance-company-display"
+                value={selectedCaseData?.insuranceCompany || ""}
+                readOnly
+                placeholder="보험회사 선택"
+                className={intakeFieldClass}
+                style={{
+                  ...intakeFieldStyle,
+                  background: "rgba(12, 12, 12, 0.03)",
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+                data-testid="input-insurance-company-display"
+              />
+            </div>
+          </div>
+        </SectionCard>
+
         {/* 기본정보 섹션 */}
         <SectionCard
           title="기본정보"
