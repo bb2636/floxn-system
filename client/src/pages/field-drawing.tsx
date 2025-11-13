@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User } from "@shared/schema";
@@ -74,11 +74,207 @@ export default function FieldDrawing() {
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Hybrid approach: activeTransformRef prevents stale closures in document-level listeners
+  // while activeTransform state drives UI updates (resize handles, selection highlights)
+  const activeTransformRef = useRef<ActiveTransform | null>(null);
   const { toast} = useToast();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
+
+  // Document level mouse event handlers for drag/resize
+  // Dependencies: [isDrawing, selectedTool] only - activeTransform removed to prevent listener re-creation
+  // This ensures document handlers persist and always read fresh transform state from ref
+  useEffect(() => {
+    const handleDocumentMouseMove = (e: MouseEvent) => {
+      if (!canvasRef.current) return;
+
+      // Read from ref to avoid stale closure - critical for delta accumulation
+      const transform = activeTransformRef.current;
+      if (!transform) return;
+
+      // Get canvas bounding rect
+      const canvasRect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - canvasRect.left;
+      const y = e.clientY - canvasRect.top;
+
+      // Handle drag or resize
+      const deltaX = e.clientX - transform.startX;
+      const deltaY = e.clientY - transform.startY;
+
+        if (transform.mode === 'drag') {
+          // Drag mode
+          const newX = transform.startEntityX + deltaX;
+          const newY = transform.startEntityY + deltaY;
+
+          // Canvas boundary clamping
+          const maxX = 600 - transform.startWidth;
+          const maxY = 400 - transform.startHeight;
+          const clampedX = Math.max(0, Math.min(newX, maxX));
+          const clampedY = Math.max(0, Math.min(newY, maxY));
+
+          if (transform.entityType === 'image') {
+            setUploadedImages(prev =>
+              prev.map(img =>
+                img.id === transform.entityId
+                  ? { ...img, x: clampedX, y: clampedY }
+                  : img
+              )
+            );
+          } else if (transform.entityType === 'rectangle') {
+            setRectangles(prev =>
+              prev.map(rect =>
+                rect.id === transform.entityId
+                  ? { ...rect, x: clampedX, y: clampedY }
+                  : rect
+              )
+            );
+          } else if (transform.entityType === 'accident-area') {
+            setAccidentAreas(prev =>
+              prev.map(area =>
+                area.id === transform.entityId
+                  ? { ...area, x: clampedX, y: clampedY }
+                  : area
+              )
+            );
+          }
+        } else if (transform.mode === 'resize' && transform.handle) {
+          // Resize mode - reuse existing logic
+          const handle = transform.handle;
+          let newX = transform.startEntityX;
+          let newY = transform.startEntityY;
+          let newWidth = transform.startWidth;
+          let newHeight = transform.startHeight;
+
+          const rightEdge = transform.startEntityX + transform.startWidth;
+          const bottomEdge = transform.startEntityY + transform.startHeight;
+
+          // Development logging for resize debugging
+          if (import.meta.env.DEV) {
+            console.log('[Resize Debug]', { handle, deltaX, deltaY, startEntityX: transform.startEntityX, startEntityY: transform.startEntityY, rightEdge, bottomEdge });
+          }
+
+          // Apply delta based on handle direction
+          if (handle.includes('n')) {
+            newY = transform.startEntityY + deltaY;
+            newHeight = transform.startHeight - deltaY;
+          } else if (handle.includes('s')) {
+            newHeight = transform.startHeight + deltaY;
+          }
+
+          if (handle.includes('w')) {
+            newX = transform.startEntityX + deltaX;
+            newWidth = transform.startWidth - deltaX;
+          } else if (handle.includes('e')) {
+            newWidth = transform.startWidth + deltaX;
+          }
+
+          // Canvas boundary clamping (preserving opposite edge) - BEFORE min size
+          if (handle.includes('w')) {
+            if (newX < 0) {
+              newX = 0;
+              newWidth = rightEdge;
+            } else if (newX + newWidth > 600) {
+              newWidth = 600 - newX;
+            }
+          } else if (handle.includes('e')) {
+            if (newX + newWidth > 600) {
+              newWidth = 600 - newX;
+            }
+          }
+
+          if (handle.includes('n')) {
+            if (newY < 0) {
+              newY = 0;
+              newHeight = bottomEdge;
+            } else if (newY + newHeight > 400) {
+              newHeight = 400 - newY;
+            }
+          } else if (handle.includes('s')) {
+            if (newY + newHeight > 400) {
+              newHeight = 400 - newY;
+            }
+          }
+
+          // Minimum size constraint (after boundary clamping)
+          const minSize = 20;
+          if (newWidth < minSize) {
+            newWidth = minSize;
+            // For west handles, preserve the right edge (if possible)
+            if (handle.includes('w')) {
+              newX = rightEdge - minSize;
+              // Re-clamp to prevent negative coordinates
+              if (newX < 0) {
+                newX = 0;
+                newWidth = Math.min(minSize, rightEdge);
+              }
+            }
+            // For east handles, prevent exceeding canvas
+            if (newX + newWidth > 600) {
+              newX = 600 - minSize;
+            }
+          }
+          if (newHeight < minSize) {
+            newHeight = minSize;
+            // For north handles, preserve the bottom edge (if possible)
+            if (handle.includes('n')) {
+              newY = bottomEdge - minSize;
+              // Re-clamp to prevent negative coordinates
+              if (newY < 0) {
+                newY = 0;
+                newHeight = Math.min(minSize, bottomEdge);
+              }
+            }
+            // For south handles, prevent exceeding canvas
+            if (newY + newHeight > 400) {
+              newY = 400 - minSize;
+            }
+          }
+
+          // Update entity state
+          if (transform.entityType === 'image') {
+            setUploadedImages(prev =>
+              prev.map(img =>
+                img.id === transform.entityId
+                  ? { ...img, x: newX, y: newY, width: newWidth, height: newHeight }
+                  : img
+              )
+            );
+          } else if (transform.entityType === 'rectangle') {
+            setRectangles(prev =>
+              prev.map(rect =>
+                rect.id === transform.entityId
+                  ? { ...rect, x: newX, y: newY, width: newWidth, height: newHeight }
+                  : rect
+              )
+            );
+          } else if (transform.entityType === 'accident-area') {
+            setAccidentAreas(prev =>
+              prev.map(area =>
+                area.id === transform.entityId
+                  ? { ...area, x: newX, y: newY, width: newWidth, height: newHeight }
+                  : area
+              )
+            );
+          }
+        }
+    };
+
+    const handleDocumentMouseUp = () => {
+      activeTransformRef.current = null;
+      setActiveTransform(null);
+      setIsDrawing(false);
+    };
+
+    document.addEventListener('mousemove', handleDocumentMouseMove);
+    document.addEventListener('mouseup', handleDocumentMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleDocumentMouseMove);
+      document.removeEventListener('mouseup', handleDocumentMouseUp);
+    };
+  }, [isDrawing, selectedTool]);
 
   // 리사이즈 핸들 마우스 다운 핸들러
   const handleResizeHandleMouseDown = (
@@ -89,10 +285,10 @@ export default function FieldDrawing() {
   ) => {
     e.stopPropagation();
     
-    setActiveTransform({
+    const newTransform = {
       entityType,
       entityId: entity.id,
-      mode: 'resize',
+      mode: 'resize' as const,
       handle,
       startX: e.clientX,
       startY: e.clientY,
@@ -100,7 +296,30 @@ export default function FieldDrawing() {
       startHeight: entity.height,
       startEntityX: entity.x,
       startEntityY: entity.y,
-    });
+    };
+    
+    // Update ref first to prevent stale closures
+    activeTransformRef.current = newTransform;
+    // Then update state for UI
+    setActiveTransform(newTransform);
+    
+    // Ensure selection is set so resize handles render
+    if (entityType === 'image') {
+      setSelectedImageId(entity.id);
+      setSelectedRectangleId(null);
+      setSelectedAccidentAreaId(null);
+      setSelectedLeakId(null);
+    } else if (entityType === 'rectangle') {
+      setSelectedRectangleId(entity.id);
+      setSelectedImageId(null);
+      setSelectedAccidentAreaId(null);
+      setSelectedLeakId(null);
+    } else if (entityType === 'accident-area') {
+      setSelectedAccidentAreaId(entity.id);
+      setSelectedImageId(null);
+      setSelectedRectangleId(null);
+      setSelectedLeakId(null);
+    }
   };
 
   const fieldSurveyMenuItems = [
@@ -215,17 +434,20 @@ export default function FieldDrawing() {
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     if (!canvasRect) return;
     
-    setActiveTransform({
-      entityType: 'image',
+    const newTransform = {
+      entityType: 'image' as const,
       entityId: image.id,
-      mode: 'drag',
+      mode: 'drag' as const,
       startX: e.clientX,
       startY: e.clientY,
       startWidth: image.width,
       startHeight: image.height,
       startEntityX: image.x,
       startEntityY: image.y,
-    });
+    };
+    
+    activeTransformRef.current = newTransform;
+    setActiveTransform(newTransform);
   };
 
   // 사각형 마우스 다운 핸들러
@@ -241,17 +463,20 @@ export default function FieldDrawing() {
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     if (!canvasRect) return;
     
-    setActiveTransform({
-      entityType: 'rectangle',
+    const newTransform = {
+      entityType: 'rectangle' as const,
       entityId: rect.id,
-      mode: 'drag',
+      mode: 'drag' as const,
       startX: e.clientX,
       startY: e.clientY,
       startWidth: rect.width,
       startHeight: rect.height,
       startEntityX: rect.x,
       startEntityY: rect.y,
-    });
+    };
+    
+    activeTransformRef.current = newTransform;
+    setActiveTransform(newTransform);
   };
 
   // 사고영역 마우스 다운 핸들러
@@ -267,17 +492,20 @@ export default function FieldDrawing() {
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     if (!canvasRect) return;
     
-    setActiveTransform({
-      entityType: 'accident-area',
+    const newTransform = {
+      entityType: 'accident-area' as const,
       entityId: area.id,
-      mode: 'drag',
+      mode: 'drag' as const,
       startX: e.clientX,
       startY: e.clientY,
       startWidth: area.width,
       startHeight: area.height,
       startEntityX: area.x,
       startEntityY: area.y,
-    });
+    };
+    
+    activeTransformRef.current = newTransform;
+    setActiveTransform(newTransform);
   };
 
   // 누수 마커 클릭 핸들러
@@ -387,160 +615,16 @@ export default function FieldDrawing() {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!canvasRef.current) return;
+    // Canvas-level handler now only handles drawing preview
+    // Drag and resize are handled by document-level listeners in useEffect
     
-    // 버튼이 눌려있지 않으면 드래그/그리기 상태 클리어
-    if (e.buttons === 0) {
-      if (activeTransform) setActiveTransform(null);
-      if (isDrawing) setIsDrawing(false);
-      return;
-    }
-    
-    // 사각형/사고영역 그리기 중
+    // Drawing preview for rectangle/accident-area (visual feedback only)
     if (isDrawing && (selectedTool === "rectangle" || selectedTool === "accident-area")) {
+      // Drawing preview is handled by render logic
       return;
     }
     
-    // 드래그 또는 리사이즈 중
-    if (activeTransform) {
-      const deltaX = e.clientX - activeTransform.startX;
-      const deltaY = e.clientY - activeTransform.startY;
-      
-      if (activeTransform.mode === 'drag') {
-        // 드래그 모드
-        const newX = activeTransform.startEntityX + deltaX;
-        const newY = activeTransform.startEntityY + deltaY;
-        
-        // 캔버스 경계 내로 제한
-        const maxX = 600 - activeTransform.startWidth;
-        const maxY = 400 - activeTransform.startHeight;
-        const clampedX = Math.max(0, Math.min(newX, maxX));
-        const clampedY = Math.max(0, Math.min(newY, maxY));
-        
-        if (activeTransform.entityType === 'image') {
-          setUploadedImages(prev =>
-            prev.map(img =>
-              img.id === activeTransform.entityId
-                ? { ...img, x: clampedX, y: clampedY }
-                : img
-            )
-          );
-        } else if (activeTransform.entityType === 'rectangle') {
-          setRectangles(prev =>
-            prev.map(rect =>
-              rect.id === activeTransform.entityId
-                ? { ...rect, x: clampedX, y: clampedY }
-                : rect
-            )
-          );
-        } else if (activeTransform.entityType === 'accident-area') {
-          setAccidentAreas(prev =>
-            prev.map(area =>
-              area.id === activeTransform.entityId
-                ? { ...area, x: clampedX, y: clampedY }
-                : area
-            )
-          );
-        }
-      } else if (activeTransform.mode === 'resize' && activeTransform.handle) {
-        // 리사이즈 모드
-        const handle = activeTransform.handle;
-        let newX = activeTransform.startEntityX;
-        let newY = activeTransform.startEntityY;
-        let newWidth = activeTransform.startWidth;
-        let newHeight = activeTransform.startHeight;
-        
-        // 반대쪽 엣지의 고정 위치 계산
-        const rightEdge = activeTransform.startEntityX + activeTransform.startWidth;
-        const bottomEdge = activeTransform.startEntityY + activeTransform.startHeight;
-        
-        // 핸들에 따라 크기 조정
-        if (handle.includes('n')) {
-          newY = activeTransform.startEntityY + deltaY;
-          newHeight = activeTransform.startHeight - deltaY;
-        } else if (handle.includes('s')) {
-          newHeight = activeTransform.startHeight + deltaY;
-        }
-        
-        if (handle.includes('w')) {
-          newX = activeTransform.startEntityX + deltaX;
-          newWidth = activeTransform.startWidth - deltaX;
-        } else if (handle.includes('e')) {
-          newWidth = activeTransform.startWidth + deltaX;
-        }
-        
-        // 최소 크기 제한
-        const minSize = 20;
-        if (newWidth < minSize) {
-          if (handle.includes('w')) {
-            newX = rightEdge - minSize;
-          }
-          newWidth = minSize;
-        }
-        if (newHeight < minSize) {
-          if (handle.includes('n')) {
-            newY = bottomEdge - minSize;
-          }
-          newHeight = minSize;
-        }
-        
-        // 캔버스 경계 제한 (반대쪽 엣지 고정)
-        if (handle.includes('w')) {
-          if (newX < 0) {
-            newX = 0;
-            newWidth = rightEdge;
-          }
-          if (newX + newWidth > 600) {
-            newWidth = 600 - newX;
-          }
-        } else if (handle.includes('e')) {
-          if (newX + newWidth > 600) {
-            newWidth = 600 - newX;
-          }
-        }
-        
-        if (handle.includes('n')) {
-          if (newY < 0) {
-            newY = 0;
-            newHeight = bottomEdge;
-          }
-          if (newY + newHeight > 400) {
-            newHeight = 400 - newY;
-          }
-        } else if (handle.includes('s')) {
-          if (newY + newHeight > 400) {
-            newHeight = 400 - newY;
-          }
-        }
-        
-        // 상태 업데이트
-        if (activeTransform.entityType === 'image') {
-          setUploadedImages(prev =>
-            prev.map(img =>
-              img.id === activeTransform.entityId
-                ? { ...img, x: newX, y: newY, width: newWidth, height: newHeight }
-                : img
-            )
-          );
-        } else if (activeTransform.entityType === 'rectangle') {
-          setRectangles(prev =>
-            prev.map(rect =>
-              rect.id === activeTransform.entityId
-                ? { ...rect, x: newX, y: newY, width: newWidth, height: newHeight }
-                : rect
-            )
-          );
-        } else if (activeTransform.entityType === 'accident-area') {
-          setAccidentAreas(prev =>
-            prev.map(area =>
-              area.id === activeTransform.entityId
-                ? { ...area, x: newX, y: newY, width: newWidth, height: newHeight }
-                : area
-            )
-          );
-        }
-      }
-    }
+    // All drag/resize logic moved to document listeners
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -863,10 +947,6 @@ export default function FieldDrawing() {
                 onMouseDown={handleCanvasMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
-                onMouseLeave={() => {
-                  setIsDrawing(false);
-                  setActiveTransform(null);
-                }}
               >
                 {/* 업로드된 이미지들 */}
                 {uploadedImages.map((image) => (
@@ -899,15 +979,15 @@ export default function FieldDrawing() {
                     {selectedImageId === image.id && !image.locked && (
                       <>
                         {/* 모서리 핸들 */}
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'nw', image, 'image')} style={{ position: 'absolute', top: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'nw-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'ne', image, 'image')} style={{ position: 'absolute', top: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'ne-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'sw', image, 'image')} style={{ position: 'absolute', bottom: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'sw-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'se', image, 'image')} style={{ position: 'absolute', bottom: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'se-resize', zIndex: 10 }} />
+                        <div data-testid={`resize-handle-nw-${image.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'nw', image, 'image')} style={{ position: 'absolute', top: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'nw-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-ne-${image.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'ne', image, 'image')} style={{ position: 'absolute', top: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'ne-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-sw-${image.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'sw', image, 'image')} style={{ position: 'absolute', bottom: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'sw-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-se-${image.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'se', image, 'image')} style={{ position: 'absolute', bottom: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'se-resize', zIndex: 10, pointerEvents: 'auto' }} />
                         {/* 엣지 핸들 */}
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'n', image, 'image')} style={{ position: 'absolute', top: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'n-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 's', image, 'image')} style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 's-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'e', image, 'image')} style={{ position: 'absolute', top: '50%', right: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'e-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'w', image, 'image')} style={{ position: 'absolute', top: '50%', left: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'w-resize', zIndex: 10 }} />
+                        <div data-testid={`resize-handle-n-${image.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'n', image, 'image')} style={{ position: 'absolute', top: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'n-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-s-${image.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 's', image, 'image')} style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 's-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-e-${image.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'e', image, 'image')} style={{ position: 'absolute', top: '50%', right: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'e-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-w-${image.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'w', image, 'image')} style={{ position: 'absolute', top: '50%', left: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'w-resize', zIndex: 10, pointerEvents: 'auto' }} />
                       </>
                     )}
                   </div>
@@ -1020,15 +1100,15 @@ export default function FieldDrawing() {
                     {selectedAccidentAreaId === area.id && !area.locked && (
                       <>
                         {/* 모서리 핸들 */}
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'nw', area, 'accident-area')} style={{ position: 'absolute', top: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'nw-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'ne', area, 'accident-area')} style={{ position: 'absolute', top: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'ne-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'sw', area, 'accident-area')} style={{ position: 'absolute', bottom: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'sw-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'se', area, 'accident-area')} style={{ position: 'absolute', bottom: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'se-resize', zIndex: 10 }} />
+                        <div data-testid={`resize-handle-nw-${area.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'nw', area, 'accident-area')} style={{ position: 'absolute', top: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'nw-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-ne-${area.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'ne', area, 'accident-area')} style={{ position: 'absolute', top: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'ne-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-sw-${area.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'sw', area, 'accident-area')} style={{ position: 'absolute', bottom: -4, left: -4, width: 8, height: 8, background: '#008FED', cursor: 'sw-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-se-${area.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'se', area, 'accident-area')} style={{ position: 'absolute', bottom: -4, right: -4, width: 8, height: 8, background: '#008FED', cursor: 'se-resize', zIndex: 10, pointerEvents: 'auto' }} />
                         {/* 엣지 핸들 */}
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'n', area, 'accident-area')} style={{ position: 'absolute', top: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'n-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 's', area, 'accident-area')} style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 's-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'e', area, 'accident-area')} style={{ position: 'absolute', top: '50%', right: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'e-resize', zIndex: 10 }} />
-                        <div onMouseDown={(e) => handleResizeHandleMouseDown(e, 'w', area, 'accident-area')} style={{ position: 'absolute', top: '50%', left: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'w-resize', zIndex: 10 }} />
+                        <div data-testid={`resize-handle-n-${area.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'n', area, 'accident-area')} style={{ position: 'absolute', top: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'n-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-s-${area.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 's', area, 'accident-area')} style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 8, height: 8, background: '#008FED', cursor: 's-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-e-${area.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'e', area, 'accident-area')} style={{ position: 'absolute', top: '50%', right: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'e-resize', zIndex: 10, pointerEvents: 'auto' }} />
+                        <div data-testid={`resize-handle-w-${area.id}`} onMouseDown={(e) => handleResizeHandleMouseDown(e, 'w', area, 'accident-area')} style={{ position: 'absolute', top: '50%', left: -4, transform: 'translateY(-50%)', width: 8, height: 8, background: '#008FED', cursor: 'w-resize', zIndex: 10, pointerEvents: 'auto' }} />
                       </>
                     )}
                   </div>
