@@ -2,24 +2,29 @@ import { useLocation } from "wouter";
 
 const menuItems = [
   {
-    title: "현장관리",
+    title: "현장입력",
     url: "/field-survey/management",
     testId: "submenu-field-management",
   },
   {
-    title: "도면 작성",
+    title: "도면작성",
     url: "/field-survey/drawing",
     testId: "submenu-drawing",
   },
   {
-    title: "종합자료 등록",
+    title: "증빙자료 등록",
     url: "/field-survey/documents",
     testId: "submenu-documents",
   },
   {
-    title: "견적서작성조사",
+    title: "견적서 작성",
     url: "/field-survey/estimate",
     testId: "submenu-estimate",
+  },
+  {
+    title: "현장출동보고서",
+    url: "/field-survey/report",
+    testId: "submenu-report",
   },
 ];
 
