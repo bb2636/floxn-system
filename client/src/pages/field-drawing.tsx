@@ -109,8 +109,8 @@ export default function FieldDrawing() {
           const newY = transform.startEntityY + deltaY;
 
           // Canvas boundary clamping
-          const maxX = 600 - transform.startWidth;
-          const maxY = 400 - transform.startHeight;
+          const maxX = 1200 - transform.startWidth;
+          const maxY = 800 - transform.startHeight;
           const clampedX = Math.max(0, Math.min(newX, maxX));
           const clampedY = Math.max(0, Math.min(newY, maxY));
 
@@ -175,12 +175,12 @@ export default function FieldDrawing() {
             if (newX < 0) {
               newX = 0;
               newWidth = rightEdge;
-            } else if (newX + newWidth > 600) {
-              newWidth = 600 - newX;
+            } else if (newX + newWidth > 1200) {
+              newWidth = 1200 - newX;
             }
           } else if (handle.includes('e')) {
-            if (newX + newWidth > 600) {
-              newWidth = 600 - newX;
+            if (newX + newWidth > 1200) {
+              newWidth = 1200 - newX;
             }
           }
 
@@ -188,12 +188,12 @@ export default function FieldDrawing() {
             if (newY < 0) {
               newY = 0;
               newHeight = bottomEdge;
-            } else if (newY + newHeight > 400) {
-              newHeight = 400 - newY;
+            } else if (newY + newHeight > 800) {
+              newHeight = 800 - newY;
             }
           } else if (handle.includes('s')) {
-            if (newY + newHeight > 400) {
-              newHeight = 400 - newY;
+            if (newY + newHeight > 800) {
+              newHeight = 800 - newY;
             }
           }
 
@@ -211,8 +211,8 @@ export default function FieldDrawing() {
               }
             }
             // For east handles, prevent exceeding canvas
-            if (newX + newWidth > 600) {
-              newX = 600 - minSize;
+            if (newX + newWidth > 1200) {
+              newX = 1200 - minSize;
             }
           }
           if (newHeight < minSize) {
@@ -227,8 +227,8 @@ export default function FieldDrawing() {
               }
             }
             // For south handles, prevent exceeding canvas
-            if (newY + newHeight > 400) {
-              newY = 400 - minSize;
+            if (newY + newHeight > 800) {
+              newY = 800 - minSize;
             }
           }
 
@@ -937,8 +937,8 @@ export default function FieldDrawing() {
                 ref={canvasRef}
                 className="bg-white rounded"
                 style={{
-                  width: "600px",
-                  height: "400px",
+                  width: "1200px",
+                  height: "800px",
                   border: "1px solid #DADADA",
                   position: "relative",
                   cursor: selectedTool === "rectangle" || selectedTool === "accident-area" || selectedTool === "leak" ? "crosshair" : "default",
