@@ -114,7 +114,7 @@ export default function FieldDrawing() {
 
   // 로드된 도면으로 canvas state 초기화 + ownership verification
   useEffect(() => {
-    if (savedDrawing && !isLoadingDrawing && user && activeCaseData) {
+    if (savedDrawing && !isLoadingDrawing && user) {
       // Verify ownership before hydrating canvas state
       if (savedDrawing.createdBy !== user.id) {
         // Drawing belongs to another user - clear invalid ID
@@ -129,7 +129,9 @@ export default function FieldDrawing() {
       }
 
       // Verify case match before hydrating canvas state
-      if (savedDrawing.caseId !== activeCaseData.caseId) {
+      // Use activeCaseData if available, otherwise fall back to selectedCase
+      const currentCaseId = activeCaseData?.caseId || selectedCase?.id;
+      if (currentCaseId && savedDrawing.caseId !== currentCaseId) {
         // Drawing belongs to different case - clear invalid ID
         setCurrentDrawingId(null);
         localStorage.removeItem('currentDrawingId');
@@ -146,18 +148,23 @@ export default function FieldDrawing() {
       setAccidentAreas(savedDrawing.accidentAreas || []);
       setLeakMarkers(savedDrawing.leakMarkers || []);
     }
-  }, [savedDrawing, isLoadingDrawing, user, activeCaseData]);
+  }, [savedDrawing, isLoadingDrawing, user, activeCaseData, selectedCase]);
 
   // Check if save is ready (validation complete) - explicit boolean coercion
-  // Includes loading guards for both user, active case, and drawing queries
-  const isSaveReady = Boolean(user && activeCaseData && !isLoadingActiveCase && (!currentDrawingId || !isLoadingDrawing));
+  // Includes loading guards for both user, selected case, and drawing queries
+  // TODO: Align /api/drawings/active-case-id with localStorage selection mechanism
+  const isSaveReady = Boolean(user && !isLoadingSelectedCase && selectedCase && (!currentDrawingId || !isLoadingDrawing));
 
   // 도면 저장 mutation
   const saveDrawingMutation = useMutation({
     mutationFn: async () => {
+      if (!selectedCase) {
+        throw new Error("선택된 케이스가 없습니다");
+      }
+      
       const response = await apiRequest("POST", "/api/drawings", {
         drawingId: currentDrawingId, // Include drawing ID for updates
-        // caseId resolved server-side via getOrCreateActiveCase
+        caseId: selectedCase.id, // Use selected case ID from localStorage
         uploadedImages,
         rectangles,
         accidentAreas,
