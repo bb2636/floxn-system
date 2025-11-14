@@ -392,7 +392,7 @@ export default function FieldManagement() {
                     </span>
                   )}
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4}>
                   {availableCases.map((caseItem) => (
                     <SelectItem 
                       key={caseItem.id} 
