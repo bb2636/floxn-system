@@ -253,11 +253,7 @@ export default function FieldEstimate() {
   return (
     <FieldSurveyLayout>
       <div
-        style={{
-          maxWidth: "1400px",
-          margin: "0 auto",
-          padding: "32px 40px 60px",
-        }}
+        className="relative p-8"
       >
         {/* 페이지 타이틀 */}
         <div className="flex items-center gap-2 mb-8">
