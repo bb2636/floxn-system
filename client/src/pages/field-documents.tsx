@@ -126,10 +126,37 @@ export default function FieldDocuments() {
     ? uploadedFiles
     : uploadedFiles.filter(f => f.category === selectedCategory);
 
+  // 저장 핸들러
+  const handleSave = () => {
+    toast({
+      title: "증빙자료가 저장되었습니다",
+      description: "",
+      className: "bg-[#008FED] text-white border-0",
+      action: (
+        <button
+          onClick={() => {
+            // 확인하기 클릭 시 동작 (필요시 추가)
+          }}
+          className="px-4 py-2 rounded"
+          style={{
+            background: "white",
+            color: "#008FED",
+            fontFamily: "Pretendard",
+            fontSize: "14px",
+            fontWeight: 600,
+            textDecoration: "underline",
+          }}
+        >
+          확인하기
+        </button>
+      ),
+    });
+  };
+
   return (
     <div className="flex-1 overflow-y-auto bg-[#F5F7FA] p-8">
       {/* 헤더 */}
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center justify-between mb-8">
         <h1
           style={{
             fontFamily: "Pretendard",
@@ -141,6 +168,25 @@ export default function FieldDocuments() {
         >
           증빙자료 등록
         </h1>
+        
+        {/* 저장 버튼 */}
+        <button
+          type="button"
+          onClick={handleSave}
+          className="px-8 py-3 rounded-lg hover-elevate active-elevate-2"
+          style={{
+            background: "#008FED",
+            color: "white",
+            fontFamily: "Pretendard",
+            fontSize: "16px",
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            border: "none",
+          }}
+          data-testid="button-save"
+        >
+          저장
+        </button>
       </div>
 
       {/* 작성중인 건 */}
