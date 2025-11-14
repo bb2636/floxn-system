@@ -2,16 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevent auto-scroll on focus */
-* {
-  scroll-margin-top: 0;
-  scroll-margin-bottom: 0;
-}
-
-html {
-  overflow-anchor: none;
-}
-
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0,0,0, .10);
