@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type CaseDocument, type InsertCaseDocument, caseDocuments } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -82,6 +82,12 @@ export interface IStorage {
   updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null>;
   // Case helper for drawing persistence
   getOrCreateActiveCase(userId: string): Promise<Case>;
+  // Document methods
+  saveDocument(data: InsertCaseDocument): Promise<CaseDocument>;
+  getDocument(id: string): Promise<CaseDocument | null>;
+  getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]>;
+  deleteDocument(id: string): Promise<void>;
+  updateDocumentCategory(id: string, category: string): Promise<CaseDocument | null>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -94,6 +100,7 @@ export class MemStorage implements IStorage {
   private excelData: Map<string, ExcelData>;
   private inquiries: Map<string, Inquiry>;
   private drawings: Map<string, Drawing>;
+  private documents: Map<string, CaseDocument>;
 
   constructor() {
     this.users = new Map();
@@ -103,6 +110,7 @@ export class MemStorage implements IStorage {
     this.excelData = new Map();
     this.inquiries = new Map();
     this.drawings = new Map();
+    this.documents = new Map();
     this.seedTestUser();
     this.seedTestCases();
   }
@@ -1383,6 +1391,49 @@ export class MemStorage implements IStorage {
     this.cases.set(newCase.id, newCase);
     return newCase;
   }
+
+  // Document methods
+  async saveDocument(data: InsertCaseDocument): Promise<CaseDocument> {
+    const id = randomUUID();
+    const document: CaseDocument = {
+      id,
+      ...data,
+      createdAt: new Date(),
+    };
+    this.documents.set(id, document);
+    return document;
+  }
+
+  async getDocument(id: string): Promise<CaseDocument | null> {
+    return this.documents.get(id) || null;
+  }
+
+  async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
+    const result: CaseDocument[] = [];
+    for (const doc of this.documents.values()) {
+      if (doc.caseId === caseId) {
+        result.push(doc);
+      }
+    }
+    return result;
+  }
+
+  async deleteDocument(id: string): Promise<void> {
+    this.documents.delete(id);
+  }
+
+  async updateDocumentCategory(id: string, category: string): Promise<CaseDocument | null> {
+    const existing = this.documents.get(id);
+    if (!existing) {
+      return null;
+    }
+    const updated: CaseDocument = {
+      ...existing,
+      category,
+    };
+    this.documents.set(id, updated);
+    return updated;
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -2095,6 +2146,51 @@ export class DbStorage implements IStorage {
       .returning();
 
     return newCase[0];
+  }
+
+  // Document methods
+  async saveDocument(data: InsertCaseDocument): Promise<CaseDocument> {
+    const created = await db.insert(caseDocuments)
+      .values({
+        caseId: data.caseId,
+        category: data.category,
+        fileName: data.fileName,
+        fileType: data.fileType,
+        fileSize: data.fileSize,
+        fileData: data.fileData,
+        createdBy: data.createdBy,
+      })
+      .returning();
+    return created[0];
+  }
+
+  async getDocument(id: string): Promise<CaseDocument | null> {
+    const result = await db.select()
+      .from(caseDocuments)
+      .where(eq(caseDocuments.id, id))
+      .limit(1);
+    return result[0] || null;
+  }
+
+  async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
+    const result = await db.select()
+      .from(caseDocuments)
+      .where(eq(caseDocuments.caseId, caseId))
+      .orderBy(desc(caseDocuments.createdAt));
+    return result;
+  }
+
+  async deleteDocument(id: string): Promise<void> {
+    await db.delete(caseDocuments)
+      .where(eq(caseDocuments.id, id));
+  }
+
+  async updateDocumentCategory(id: string, category: string): Promise<CaseDocument | null> {
+    const updated = await db.update(caseDocuments)
+      .set({ category })
+      .where(eq(caseDocuments.id, id))
+      .returning();
+    return updated[0] || null;
   }
 }
 

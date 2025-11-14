@@ -366,3 +366,27 @@ export const insertDrawingSchema = createInsertSchema(drawings).omit({
 
 export type InsertDrawing = z.infer<typeof insertDrawingSchema>;
 export type Drawing = typeof drawings.$inferSelect;
+
+// 증빙자료 문서 테이블
+export const caseDocuments = pgTable("case_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseId: varchar("case_id").notNull().references(() => cases.id),
+  category: text("category").notNull(), // "전체", "현장", "수리중", "복구완료", "청구", "개인정보"
+  fileName: text("file_name").notNull(),
+  fileType: text("file_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  fileData: text("file_data").notNull(), // Base64 encoded file data
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const DOCUMENT_CATEGORIES = ["현장", "수리중", "복구완료", "청구", "개인정보"] as const;
+export type DocumentCategory = typeof DOCUMENT_CATEGORIES[number];
+
+export const insertCaseDocumentSchema = createInsertSchema(caseDocuments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCaseDocument = z.infer<typeof insertCaseDocumentSchema>;
+export type CaseDocument = typeof caseDocuments.$inferSelect;

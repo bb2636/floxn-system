@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -987,6 +987,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get active case ID error:", error);
       res.status(500).json({ error: "활성 케이스 ID를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // ===== 증빙자료 Documents API =====
+  
+  // Upload document(s) to a case
+  app.post("/api/documents", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const validatedData = insertCaseDocumentSchema.parse(req.body);
+      const document = await storage.saveDocument(validatedData);
+      res.json(document);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Upload document error:", error);
+      res.status(500).json({ error: "문서를 업로드하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get all documents for a case
+  app.get("/api/documents/case/:caseId", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const documents = await storage.getDocumentsByCaseId(caseId);
+      res.json(documents);
+    } catch (error) {
+      console.error("Get documents error:", error);
+      res.status(500).json({ error: "문서를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Delete a document
+  app.delete("/api/documents/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      
+      // Verify existence
+      const document = await storage.getDocument(id);
+      if (!document) {
+        return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
+      }
+      
+      // Allow admins and assessors to manage all documents, others only their own
+      const userRole = req.session.userRole;
+      const isPrivilegedRole = userRole === "관리자" || userRole === "심사사";
+      
+      if (!isPrivilegedRole && document.createdBy !== req.session.userId) {
+        return res.status(403).json({ error: "권한이 없습니다" });
+      }
+
+      await storage.deleteDocument(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete document error:", error);
+      res.status(500).json({ error: "문서를 삭제하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Update document category
+  app.patch("/api/documents/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      const { category } = req.body;
+
+      if (!category) {
+        return res.status(400).json({ error: "카테고리를 입력해주세요" });
+      }
+
+      // Verify existence
+      const document = await storage.getDocument(id);
+      if (!document) {
+        return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
+      }
+      
+      // Allow admins and assessors to manage all documents, others only their own
+      const userRole = req.session.userRole;
+      const isPrivilegedRole = userRole === "관리자" || userRole === "심사사";
+      
+      if (!isPrivilegedRole && document.createdBy !== req.session.userId) {
+        return res.status(403).json({ error: "권한이 없습니다" });
+      }
+
+      const updated = await storage.updateDocumentCategory(id, category);
+      res.json(updated);
+    } catch (error) {
+      console.error("Update document category error:", error);
+      res.status(500).json({ error: "카테고리를 변경하는 중 오류가 발생했습니다" });
     }
   });
 
