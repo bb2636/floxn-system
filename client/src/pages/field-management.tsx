@@ -762,7 +762,7 @@ export default function FieldManagement() {
                 사고 발생일시
               </Label>
               <div className="flex gap-2">
-                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
@@ -847,7 +847,7 @@ export default function FieldManagement() {
                     방문 일시
                   </Label>
                   <div className="flex gap-2">
-                    <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen}>
+                    <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen} modal={false}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
