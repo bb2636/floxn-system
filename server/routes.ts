@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1370,6 +1370,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Update master data error:", error);
       res.status(500).json({ error: "기준정보를 수정하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Labor cost endpoints
+  // Get all labor costs
+  app.get("/api/labor-costs", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const data = await storage.getLaborCosts();
+      res.json(data);
+    } catch (error) {
+      console.error("Get labor costs error:", error);
+      res.status(500).json({ error: "노무비를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Create new labor cost item (admin only)
+  app.post("/api/labor-costs", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const userRole = req.session.userRole;
+    if (userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자만 노무비를 추가할 수 있습니다" });
+    }
+
+    try {
+      const validated = insertLaborCostSchema.parse(req.body);
+      const created = await storage.createLaborCost(validated);
+      res.json(created);
+    } catch (error) {
+      console.error("Create labor cost error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "입력 데이터 형식이 올바르지 않습니다",
+          details: error.errors 
+        });
+      }
+      res.status(500).json({ error: "노무비를 추가하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Delete labor cost item (admin only)
+  app.delete("/api/labor-costs/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const userRole = req.session.userRole;
+    if (userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자만 노무비를 삭제할 수 있습니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      await storage.deleteLaborCost(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete labor cost error:", error);
+      res.status(500).json({ error: "노무비를 삭제하는 중 오류가 발생했습니다" });
     }
   });
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Case, MasterData } from "@shared/schema";
+import { Case, MasterData, LaborCost } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Check } from "lucide-react";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
@@ -28,12 +28,32 @@ interface AreaCalculationRow {
   note: string; // 비고
 }
 
+interface LaborCostRow {
+  id: string;
+  category: string; // 공종
+  workName: string; // 공사명
+  detailWork: string; // 세부공사
+  detailItem: string | null; // 세부항목
+  priceStandard: string; // 단가 기준
+  unit: string; // 단위
+  standardPrice: string; // 기준가(원/단위)
+  quantity: string; // 수량 (editable)
+  applicationRate: string; // 적용면
+  pricePerSqm: string; // 기준가(㎡)
+  damageArea: string; // 피해면적
+  deduction: string; // 공제(원)
+  expenseStatus: string; // 경비여부
+  request: string; // 요청
+}
+
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
 
 export default function FieldEstimate() {
   const [selectedCategory, setSelectedCategory] = useState("복구면적 산출표");
   const [rows, setRows] = useState<AreaCalculationRow[]>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [laborCostRows, setLaborCostRows] = useState<LaborCostRow[]>([]);
+  const [selectedLaborRows, setSelectedLaborRows] = useState<Set<string>>(new Set());
 
   // 현장입력에서 선택한 케이스 ID 가져오기
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
@@ -43,6 +63,11 @@ export default function FieldEstimate() {
   // 마스터 데이터 조회
   const { data: masterDataList = [] } = useQuery<MasterData[]>({
     queryKey: ['/api/master-data'],
+  });
+
+  // 노무비 데이터 조회
+  const { data: laborCostData = [], isLoading: isLoadingLaborCosts } = useQuery<LaborCost[]>({
+    queryKey: ['/api/labor-costs'],
   });
 
   // 카테고리별 마스터 데이터 필터링
@@ -172,6 +197,120 @@ export default function FieldEstimate() {
     if (confirm("입력한 내용을 모두 초기화하시겠습니까?")) {
       setRows([createBlankRow()]);
       setSelectedRows(new Set());
+    }
+  };
+
+  // ===== 노무비 관련 함수 =====
+  
+  // 공종별 고유 공사명 리스트
+  const laborCategories = Array.from(new Set(laborCostData.map(item => item.category)));
+  
+  // 노무비 행 추가
+  const addLaborRow = () => {
+    if (laborCostData.length === 0) {
+      toast({
+        title: "잠시만 기다려주세요",
+        description: "노무비 데이터를 로딩 중입니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const firstCategory = laborCategories[0] || "";
+    const firstItem = laborCostData.find(item => item.category === firstCategory);
+    
+    const newRow: LaborCostRow = {
+      id: `labor-${Date.now()}-${Math.random()}`,
+      category: firstItem?.category || "",
+      workName: firstItem?.workName || "",
+      detailWork: firstItem?.detailWork || "",
+      detailItem: firstItem?.detailItem || "",
+      priceStandard: firstItem?.priceStandard || "",
+      unit: firstItem?.unit || "",
+      standardPrice: firstItem?.standardPrice?.toString() || "0",
+      quantity: "1",
+      applicationRate: "",
+      pricePerSqm: "",
+      damageArea: "",
+      deduction: "",
+      expenseStatus: "",
+      request: "",
+    };
+    
+    setLaborCostRows(prev => [...prev, newRow]);
+  };
+  
+  // 선택된 노무비 행 삭제
+  const deleteLaborRows = () => {
+    if (selectedLaborRows.size === 0) {
+      toast({
+        title: "삭제할 항목을 선택하세요",
+        description: "삭제할 노무비 항목을 먼저 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (confirm(`선택한 ${selectedLaborRows.size}개의 항목을 삭제하시겠습니까?`)) {
+      setLaborCostRows(prev => prev.filter(row => !selectedLaborRows.has(row.id)));
+      setSelectedLaborRows(new Set());
+    }
+  };
+  
+  // 노무비 행 체크박스 토글
+  const toggleLaborRow = (rowId: string) => {
+    setSelectedLaborRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(rowId)) {
+        newSet.delete(rowId);
+      } else {
+        newSet.add(rowId);
+      }
+      return newSet;
+    });
+  };
+  
+  // 노무비 행 업데이트 (캐스케이딩 드롭다운)
+  const updateLaborRow = (rowId: string, field: keyof LaborCostRow, value: string) => {
+    setLaborCostRows(prev => prev.map(row => {
+      if (row.id === rowId) {
+        // 공종 선택 시 캐스케이딩: 해당 공종의 첫 번째 항목으로 자동 채움
+        if (field === 'category') {
+          const matchedItem = laborCostData.find(item => item.category === value);
+          if (matchedItem) {
+            return {
+              ...row,
+              category: matchedItem.category,
+              workName: matchedItem.workName,
+              detailWork: matchedItem.detailWork,
+              detailItem: matchedItem.detailItem,
+              priceStandard: matchedItem.priceStandard,
+              unit: matchedItem.unit,
+              standardPrice: matchedItem.standardPrice.toString(),
+            };
+          }
+        }
+        
+        // 수량 변경
+        return { ...row, [field]: value };
+      }
+      return row;
+    }));
+  };
+  
+  // 노무비 테이블 리셋
+  const resetLaborTable = () => {
+    if (laborCostData.length === 0) {
+      toast({
+        title: "잠시만 기다려주세요",
+        description: "노무비 데이터를 로딩 중입니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (confirm("노무비 입력 내용을 모두 초기화하시겠습니까?")) {
+      setLaborCostRows([]);
+      setSelectedLaborRows(new Set());
     }
   };
 
@@ -1012,7 +1151,7 @@ export default function FieldEstimate() {
                     <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>단위</th>
                     <th style={{ width: "120px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>기준가(원/단위)</th>
                     <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>수량</th>
-                    <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>적용률</th>
+                    <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>적용면</th>
                     <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>기준가(㎡)</th>
                     <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>피해면적</th>
                     <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>공제(원)</th>
@@ -1021,9 +1160,9 @@ export default function FieldEstimate() {
                   </tr>
                 </thead>
                 <tbody>
-                  {[1, 2, 3].map((_, index) => (
+                  {laborCostRows.map((row) => (
                     <tr
-                      key={index}
+                      key={row.id}
                       style={{
                         borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
                       }}
@@ -1031,110 +1170,218 @@ export default function FieldEstimate() {
                       <td style={{ padding: "8px", textAlign: "center" }}>
                         <input
                           type="checkbox"
+                          checked={selectedLaborRows.has(row.id)}
+                          onChange={() => toggleLaborRow(row.id)}
                           style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                          data-testid={`checkbox-labor-${row.id}`}
                         />
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <Select defaultValue="furniture">
-                          <SelectTrigger className="border focus:ring-0" style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="furniture">가구공사</SelectItem>
-                            <SelectItem value="etc">기타</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input type="text" defaultValue="고정" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <Select defaultValue="silicon">
-                          <SelectTrigger className="border focus:ring-0" style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="silicon">실리콘</SelectItem>
-                            <SelectItem value="etc">기타</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <Select defaultValue="empty">
-                          <SelectTrigger className="border focus:ring-0" style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="empty">-</SelectItem>
-                            <SelectItem value="item1">항목1</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <Select defaultValue="unit">
-                          <SelectTrigger className="border focus:ring-0" style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="unit">인</SelectItem>
-                            <SelectItem value="m2">㎡</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <Select defaultValue="day">
-                          <SelectTrigger className="border focus:ring-0" style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="day">일</SelectItem>
-                            <SelectItem value="hour">시간</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input type="text" defaultValue="157069" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input type="text" defaultValue="1" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input type="text" defaultValue="30" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input type="text" defaultValue="30" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <input type="text" defaultValue="157069" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
-                      </td>
-                      <td style={{ padding: "8px", textAlign: "center" }}>
-                        <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
-                      </td>
-                      <td style={{ padding: "8px", textAlign: "center" }}>
-                        <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
-                      </td>
-                      <td style={{ padding: "8px", textAlign: "center" }}>
-                        <button
-                          className="hover-elevate active-elevate-2"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            padding: "6px 12px",
-                            background: "white",
-                            color: "#008FED",
-                            border: "1px solid #008FED",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                          }}
+                        <Select 
+                          value={row.category}
+                          onValueChange={(value) => updateLaborRow(row.id, 'category', value)}
                         >
-                          복제
-                        </button>
+                          <SelectTrigger 
+                            className="border focus:ring-0" 
+                            style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}
+                            data-testid={`select-category-${row.id}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {laborCategories.map(cat => (
+                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.workName} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-workName-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.detailWork} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-detailWork-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.detailItem || "-"} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-detailItem-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.priceStandard} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-priceStandard-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.unit} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-unit-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.standardPrice} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-standardPrice-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.quantity} 
+                          onChange={(e) => updateLaborRow(row.id, 'quantity', e.target.value)}
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} 
+                          data-testid={`input-quantity-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.applicationRate} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-applicationRate-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.pricePerSqm} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-pricePerSqm-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.damageArea} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-damageArea-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.deduction} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-deduction-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px", textAlign: "center" }}>
+                        <input 
+                          type="checkbox" 
+                          checked={row.expenseStatus === "true"} 
+                          readOnly
+                          style={{ width: "16px", height: "16px", cursor: "not-allowed" }} 
+                          data-testid={`checkbox-expenseStatus-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px", textAlign: "center" }}>
+                        <input 
+                          type="checkbox" 
+                          checked={row.request === "true"} 
+                          readOnly
+                          style={{ width: "16px", height: "16px", cursor: "not-allowed" }} 
+                          data-testid={`checkbox-request-${row.id}`}
+                        />
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* 노무비 버튼 영역 */}
+            <div className="flex gap-3 mt-6">
+              <Button
+                type="button"
+                onClick={addLaborRow}
+                disabled={isLoadingLaborCosts}
+                className="hover-elevate active-elevate-2"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  padding: "10px 20px",
+                  background: "#008FED",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: isLoadingLaborCosts ? "not-allowed" : "pointer",
+                  opacity: isLoadingLaborCosts ? 0.5 : 1,
+                }}
+                data-testid="button-add-labor-row"
+              >
+                <Plus className="w-4 h-4" />
+                항목 추가
+              </Button>
+
+              <Button
+                type="button"
+                onClick={deleteLaborRows}
+                disabled={selectedLaborRows.size === 0}
+                className="hover-elevate active-elevate-2"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  padding: "10px 20px",
+                  background: "white",
+                  color: "#FF4D4F",
+                  border: "1px solid #FF4D4F",
+                  borderRadius: "6px",
+                  cursor: selectedLaborRows.size === 0 ? "not-allowed" : "pointer",
+                  opacity: selectedLaborRows.size === 0 ? 0.5 : 1,
+                }}
+                data-testid="button-delete-labor-rows"
+              >
+                <Trash2 className="w-4 h-4" />
+                삭제
+              </Button>
             </div>
           </div>
         )}
@@ -1161,7 +1408,7 @@ export default function FieldEstimate() {
           </div>
         )}
 
-        {/* 하단 버튼 */}
+        {/* 하단 버튼 - 복구면적 산출표 */}
         {selectedCategory === "복구면적 산출표" && (
           <div
             className="flex justify-between items-center mt-8"
@@ -1202,6 +1449,53 @@ export default function FieldEstimate() {
                 borderRadius: "8px",
               }}
               data-testid="button-save"
+            >
+              저장
+            </button>
+          </div>
+        )}
+
+        {/* 하단 버튼 - 노무비 */}
+        {selectedCategory === "노무비" && (
+          <div
+            className="flex justify-between items-center mt-8"
+            style={{
+              padding: "20px 0",
+            }}
+          >
+            <button
+              type="button"
+              onClick={resetLaborTable}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                color: "#FF4D4F",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-reset-labor"
+            >
+              초기화
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSave}
+              className="hover-elevate active-elevate-2"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                height: "52px",
+                padding: "12px 48px",
+                background: "#008FED",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "8px",
+              }}
+              data-testid="button-save-labor"
             >
               저장
             </button>

@@ -467,3 +467,26 @@ export type InsertEstimate = z.infer<typeof insertEstimateSchema>;
 export type Estimate = typeof estimates.$inferSelect;
 export type InsertEstimateRow = z.infer<typeof insertEstimateRowSchema>;
 export type EstimateRow = typeof estimateRows.$inferSelect;
+
+// 노무비 마스터 테이블
+export const laborCosts = pgTable("labor_costs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: text("category").notNull(), // 공종: 가구공사, 도배공사 등
+  workName: text("work_name").notNull(), // 공사명: 고정, 철거 등
+  detailWork: text("detail_work").notNull(), // 세부공사: 실리콘, 타일 등
+  detailItem: text("detail_item"), // 세부항목: 선택적
+  priceStandard: text("price_standard").notNull(), // 단가기준: 인, 일, 시간 등
+  unit: text("unit").notNull(), // 단위: 일, 시간, ㎡ 등
+  standardPrice: integer("standard_price").notNull(), // 기준가(원)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertLaborCostSchema = createInsertSchema(laborCosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertLaborCost = z.infer<typeof insertLaborCostSchema>;
+export type LaborCost = typeof laborCosts.$inferSelect;
