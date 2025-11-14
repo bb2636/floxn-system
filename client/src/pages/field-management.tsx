@@ -89,6 +89,20 @@ export default function FieldManagement() {
     ? allCases?.filter(c => c.assignedPartner === user.company) || []
     : allCases || [];
 
+  // 각 섹션 완료 상태 체크
+  // 현장입력 완료: 필수 필드 입력 완료
+  const isFieldInputComplete = useMemo(() => {
+    return !!(visitDate && visitTime && accidentCategory && victimName);
+  }, [visitDate, visitTime, accidentCategory, victimName]);
+
+  // 나머지 섹션은 일단 false (각 페이지에서 완료 처리 예정)
+  const isDrawingComplete = false; // 도면작성 완료
+  const isDocumentsComplete = false; // 증빙자료 업로드 완료
+  const isEstimateComplete = false; // 견적서 작성 완료
+
+  // 모든 섹션이 완료되어야 제출 가능
+  const canSubmit = isFieldInputComplete && isDrawingComplete && isDocumentsComplete && isEstimateComplete;
+
   // 선택한 케이스 데이터 가져오기
   const selectedCaseData = useMemo(() => {
     if (!selectedCase || !availableCases) return null;
@@ -1589,32 +1603,19 @@ export default function FieldManagement() {
             </div>
           </div>
         </SectionCard>
-      </div>
 
-      {/* 하단 고정 버튼 바 */}
+      {/* 하단 액션 버튼 영역 */}
       {selectedCaseData && (
         <div
           style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: "rgba(255, 255, 255, 0.95)",
-            backdropFilter: "blur(10px)",
-            borderTop: "1px solid rgba(12, 12, 12, 0.1)",
-            zIndex: 1000,
+            maxWidth: "1400px",
+            margin: "40px auto 60px",
+            padding: "0 40px",
+            display: "flex",
+            justifyContent: isPartner ? "space-between" : "flex-end",
+            alignItems: "center",
           }}
         >
-          <div
-            style={{
-              maxWidth: "1400px",
-              margin: "0 auto",
-              padding: "20px 40px",
-              display: "flex",
-              justifyContent: isPartner ? "space-between" : "flex-end",
-              alignItems: "center",
-            }}
-          >
             {/* 왼쪽: 초기화 버튼 (협력사만 표시) */}
             {isPartner && (
               <Button
@@ -1772,22 +1773,36 @@ export default function FieldManagement() {
                       });
                     }
                   }}
-                  disabled={isReadOnly}
+                  disabled={isReadOnly || !canSubmit}
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "16px",
                     fontWeight: 600,
                     height: "52px",
                     padding: "12px 32px",
-                    background: "#008FED",
+                    background: (!canSubmit) ? "#CCCCCC" : "#008FED",
                     color: "#FFFFFF",
                     border: "none",
                     borderRadius: "8px",
+                    cursor: (!canSubmit) ? "not-allowed" : "pointer",
+                    opacity: (!canSubmit) ? 0.6 : 1,
                   }}
                   data-testid="button-submit"
                 >
                   제출
                 </Button>
+                {!canSubmit && (
+                  <p
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "13px",
+                      color: "#FF4D4F",
+                      marginTop: "8px",
+                    }}
+                  >
+                    * 현장입력, 도면작성, 증빙자료 등록, 견적서 작성을 모두 완료해야 제출할 수 있습니다.
+                  </p>
+                )}
               </>
             ) : (
               <>
@@ -1869,8 +1884,8 @@ export default function FieldManagement() {
             )}
           </div>
         </div>
-        </div>
       )}
+      </div>
     </>
   );
 }
