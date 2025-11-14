@@ -1452,6 +1452,30 @@ export default function FieldDrawing() {
                   </div>
                 ))}
 
+                {/* 사고 영역 드래그 미리보기 */}
+                {isDrawing && selectedTool === "accident-area" && (() => {
+                  const previewX = Math.min(drawStart.x, drawCurrent.x);
+                  const previewY = Math.min(drawStart.y, drawCurrent.y);
+                  const previewWidth = Math.abs(drawCurrent.x - drawStart.x);
+                  const previewHeight = Math.abs(drawCurrent.y - drawStart.y);
+                  
+                  return (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: `${previewX}px`,
+                        top: `${previewY}px`,
+                        width: `${previewWidth}px`,
+                        height: `${previewHeight}px`,
+                        border: "2px dashed #9E9E9E",
+                        background: "rgba(189, 189, 189, 0.2)",
+                        pointerEvents: "none",
+                        zIndex: 100,
+                      }}
+                    />
+                  );
+                })()}
+
                 {/* 누수 마커들 */}
                 {leakMarkers.map((marker) => (
                   <div
