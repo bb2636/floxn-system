@@ -53,6 +53,12 @@ export default function FieldManagement() {
   const [additionalVictims, setAdditionalVictims] = useState<Array<{name: string, phone: string, address: string}>>([]);
   const [voc, setVoc] = useState("");
   
+  // 새 피해자 입력용 state
+  const [newVictimName, setNewVictimName] = useState("");
+  const [newVictimContact, setNewVictimContact] = useState("");
+  const [newVictimAddress, setNewVictimAddress] = useState("");
+  const [sameAsInsured, setSameAsInsured] = useState(false);
+  
   // 피해 복구 방식 및 차액 유형 관련 상태
   const [processingTypes, setProcessingTypes] = useState<Set<string>>(new Set());
   const [processingTypeOther, setProcessingTypeOther] = useState("");
@@ -1117,172 +1123,286 @@ export default function FieldManagement() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                피해자 정보
+                총 {1 + additionalVictims.length}명의 피해자
               </h3>
               
-              {/* 기본 피해자 정보 (접수건에서 로드) */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <Label 
-                      className="mb-2"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "#686A6E",
-                      }}
-                    >
-                      피해자 성명
-                    </Label>
-                    <Input
-                      value={victimName}
-                      onChange={(e) => setVictimName(e.target.value)}
-                      placeholder="성함을 입력해주세요"
-                      className={intakeFieldClass}
-                      style={intakeFieldStyle}
-                      disabled={isReadOnly}
-                      data-testid="input-victim-name"
-                    />
+              <div className="space-y-3">
+                {/* 기본 피해자 (접수건에서 로드) */}
+                {victimName && (
+                  <div
+                    style={{
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      padding: "16px 20px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        style={{
+                          width: "6px",
+                          height: "6px",
+                          borderRadius: "50%",
+                          background: "#008FED",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}
+                      >
+                        {victimName}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}
+                      >
+                        {victimContact}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}
+                      >
+                        {victimAddress}
+                      </span>
+                    </div>
+                    {!isReadOnly && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setVictimName("");
+                          setVictimContact("");
+                          setVictimAddress("");
+                        }}
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "50%",
+                          background: "rgba(12, 12, 12, 0.1)",
+                        }}
+                        data-testid="button-remove-primary-victim"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      </Button>
+                    )}
                   </div>
-                  <div>
-                    <Label 
-                      className="mb-2"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "#686A6E",
-                      }}
-                    >
-                      피해자 연락처
-                    </Label>
-                    <Input
-                      value={victimContact}
-                      onChange={(e) => setVictimContact(e.target.value)}
-                      placeholder="연락처를 입력해주세요"
-                      className={intakeFieldClass}
-                      style={intakeFieldStyle}
-                      disabled={isReadOnly}
-                      data-testid="input-victim-contact"
-                    />
-                  </div>
-                  <div>
-                    <Label 
-                      className="mb-2"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "#686A6E",
-                      }}
-                    >
-                      피해자 주소
-                    </Label>
-                    <Input
-                      value={victimAddress}
-                      onChange={(e) => setVictimAddress(e.target.value)}
-                      placeholder="주소를 입력해주세요"
-                      className={intakeFieldClass}
-                      style={intakeFieldStyle}
-                      disabled={isReadOnly}
-                      data-testid="input-victim-address"
-                    />
-                  </div>
-                </div>
+                )}
 
                 {/* 추가 피해자 목록 */}
                 {additionalVictims.map((victim, index) => (
-                  <div key={index} className="grid grid-cols-3 gap-3">
-                    <div>
-                      <Input
-                        value={victim.name}
-                        onChange={(e) => {
-                          const updated = [...additionalVictims];
-                          updated[index] = { ...updated[index], name: e.target.value };
-                          setAdditionalVictims(updated);
-                        }}
-                        placeholder="성함을 입력해주세요"
-                        className={intakeFieldClass}
-                        style={intakeFieldStyle}
-                        disabled={isReadOnly}
-                        data-testid={`input-additional-victim-name-${index}`}
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        value={victim.phone}
-                        onChange={(e) => {
-                          const updated = [...additionalVictims];
-                          updated[index] = { ...updated[index], phone: e.target.value };
-                          setAdditionalVictims(updated);
-                        }}
-                        placeholder="연락처를 입력해주세요"
-                        className={intakeFieldClass}
-                        style={intakeFieldStyle}
-                        disabled={isReadOnly}
-                        data-testid={`input-additional-victim-contact-${index}`}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={victim.address}
-                        onChange={(e) => {
-                          const updated = [...additionalVictims];
-                          updated[index] = { ...updated[index], address: e.target.value };
-                          setAdditionalVictims(updated);
-                        }}
-                        placeholder="주소를 입력해주세요"
-                        className={intakeFieldClass}
+                  <div
+                    key={index}
+                    style={{
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      padding: "16px 20px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
                         style={{
-                          ...intakeFieldStyle,
-                          flex: 1,
+                          width: "6px",
+                          height: "6px",
+                          borderRadius: "50%",
+                          background: "#008FED",
+                          flexShrink: 0,
                         }}
-                        disabled={isReadOnly}
-                        data-testid={`input-additional-victim-address-${index}`}
                       />
-                      {!isReadOnly && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => {
-                            const updated = additionalVictims.filter((_, i) => i !== index);
-                            setAdditionalVictims(updated);
-                          }}
-                          className="h-[68px] w-[68px] flex-shrink-0"
-                          data-testid={`button-remove-victim-${index}`}
-                        >
-                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          </svg>
-                        </Button>
-                      )}
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}
+                      >
+                        {victim.name}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}
+                      >
+                        {victim.phone}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}
+                      >
+                        {victim.address}
+                      </span>
                     </div>
+                    {!isReadOnly && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          const updated = additionalVictims.filter((_, i) => i !== index);
+                          setAdditionalVictims(updated);
+                        }}
+                        style={{
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "50%",
+                          background: "rgba(12, 12, 12, 0.1)",
+                        }}
+                        data-testid={`button-remove-victim-${index}`}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                        </svg>
+                      </Button>
+                    )}
                   </div>
                 ))}
+              </div>
 
-                {/* 피해자 추가 버튼 */}
-                {!isReadOnly && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setAdditionalVictims([...additionalVictims, { name: "", phone: "", address: "" }]);
-                    }}
-                    className="h-[68px]"
+              {/* 새 피해자 추가 폼 */}
+              {!isReadOnly && (
+                <div className="mt-6 space-y-4">
+                  <div
                     style={{
                       fontFamily: "Pretendard",
                       fontSize: "16px",
                       fontWeight: 600,
-                      border: "2px dashed rgba(12, 12, 12, 0.2)",
-                      color: "rgba(12, 12, 12, 0.6)",
+                      color: "rgba(12, 12, 12, 0.8)",
                     }}
-                    data-testid="button-add-victim"
                   >
-                    + 피해자 추가
-                  </Button>
-                )}
-              </div>
+                    피해자 추가
+                  </div>
+                  
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        value={newVictimName}
+                        onChange={(e) => setNewVictimName(e.target.value)}
+                        placeholder="성함을 입력해주세요"
+                        className={intakeFieldClass}
+                        style={intakeFieldStyle}
+                        data-testid="input-new-victim-name"
+                      />
+                      <Input
+                        value={newVictimContact}
+                        onChange={(e) => setNewVictimContact(e.target.value)}
+                        placeholder="연락처를 입력해주세요"
+                        className={intakeFieldClass}
+                        style={intakeFieldStyle}
+                        data-testid="input-new-victim-contact"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={newVictimAddress}
+                          onChange={(e) => setNewVictimAddress(e.target.value)}
+                          placeholder="상세주소"
+                          className={intakeFieldClass}
+                          style={{
+                            ...intakeFieldStyle,
+                            flex: 1,
+                          }}
+                          disabled={sameAsInsured}
+                          data-testid="input-new-victim-address"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="same-as-insured-address"
+                            checked={sameAsInsured}
+                            onCheckedChange={(checked) => {
+                              setSameAsInsured(checked === true);
+                              if (checked === true) {
+                                setNewVictimAddress(selectedCaseData?.insuredAddress || "");
+                              } else {
+                                setNewVictimAddress("");
+                              }
+                            }}
+                            data-testid="checkbox-same-as-insured"
+                          />
+                          <label
+                            htmlFor="same-as-insured-address"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 500,
+                              color: "#686A6E",
+                              whiteSpace: "nowrap",
+                              cursor: "pointer",
+                            }}
+                          >
+                            주소지 등일
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        if (newVictimName && newVictimContact && newVictimAddress) {
+                          setAdditionalVictims([
+                            ...additionalVictims,
+                            {
+                              name: newVictimName,
+                              phone: newVictimContact,
+                              address: newVictimAddress,
+                            },
+                          ]);
+                          setNewVictimName("");
+                          setNewVictimContact("");
+                          setNewVictimAddress("");
+                          setSameAsInsured(false);
+                        }
+                      }}
+                      disabled={!newVictimName || !newVictimContact || !newVictimAddress}
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        height: "68px",
+                        width: "120px",
+                        background: newVictimName && newVictimContact && newVictimAddress 
+                          ? "#ECECEC" 
+                          : "rgba(12, 12, 12, 0.04)",
+                        color: newVictimName && newVictimContact && newVictimAddress 
+                          ? "rgba(12, 12, 12, 0.8)" 
+                          : "rgba(12, 12, 12, 0.3)",
+                        border: "none",
+                        borderRadius: "8px",
+                      }}
+                      data-testid="button-add-new-victim"
+                    >
+                      입력
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* VOC(고객의 소리) 서브섹션 */}
