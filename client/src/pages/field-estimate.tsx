@@ -527,7 +527,9 @@ export default function FieldEstimate() {
                             }}
                             data-testid={`select-category-${index}`}
                           >
-                            <SelectValue />
+                            <SelectValue>
+                              {row.category}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {roomCategories.map(cat => (
@@ -560,7 +562,9 @@ export default function FieldEstimate() {
                             }}
                             data-testid={`select-location-${index}`}
                           >
-                            <SelectValue />
+                            <SelectValue>
+                              {row.location}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {locations.map(loc => (
@@ -593,7 +597,9 @@ export default function FieldEstimate() {
                             }}
                             data-testid={`select-workname-${index}`}
                           >
-                            <SelectValue />
+                            <SelectValue>
+                              {row.workName}
+                            </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             {workNames.map(work => (
