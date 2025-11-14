@@ -1273,6 +1273,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Master Data endpoints
+  // Get master data (optionally filtered by category)
+  app.get("/api/master-data", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { category } = req.query;
+      const data = await storage.getMasterData(category as string | undefined);
+      res.json(data);
+    } catch (error) {
+      console.error("Get master data error:", error);
+      res.status(500).json({ error: "기준정보를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Create new master data item (admin only)
+  app.post("/api/master-data", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const userRole = req.session.userRole;
+    if (userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자만 기준정보를 추가할 수 있습니다" });
+    }
+
+    try {
+      const { category, value, displayOrder } = req.body;
+
+      if (!category || !value) {
+        return res.status(400).json({ error: "카테고리와 값을 입력해주세요" });
+      }
+
+      const created = await storage.createMasterData({
+        category,
+        value,
+        isActive: "true",
+        displayOrder: displayOrder || 0,
+      });
+
+      res.json(created);
+    } catch (error) {
+      console.error("Create master data error:", error);
+      res.status(500).json({ error: "기준정보를 추가하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Delete master data item (admin only, soft delete)
+  app.delete("/api/master-data/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const userRole = req.session.userRole;
+    if (userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자만 기준정보를 삭제할 수 있습니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      await storage.deleteMasterData(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete master data error:", error);
+      res.status(500).json({ error: "기준정보를 삭제하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Update master data item (admin only)
+  app.patch("/api/master-data/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const userRole = req.session.userRole;
+    if (userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자만 기준정보를 수정할 수 있습니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      const { value, displayOrder, isActive } = req.body;
+
+      const updated = await storage.updateMasterData(id, {
+        value,
+        displayOrder,
+        isActive,
+      });
+
+      if (!updated) {
+        return res.status(404).json({ error: "기준정보를 찾을 수 없습니다" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Update master data error:", error);
+      res.status(500).json({ error: "기준정보를 수정하는 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
