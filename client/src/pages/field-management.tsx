@@ -1655,141 +1655,211 @@ export default function FieldManagement() {
             초기화
           </Button>
 
-          {/* 오른쪽: 임시저장 + 제출 버튼 */}
+          {/* 오른쪽: 역할별 버튼 */}
           <div className="flex gap-3">
-            <Button
-              type="button"
-              onClick={async () => {
-                if (!selectedCaseData?.id) return;
+            {isPartner ? (
+              <>
+                {/* 협력사: 임시저장 + 제출 */}
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    if (!selectedCaseData?.id) return;
 
-                try {
-                  const payload = {
-                    visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
-                    visitTime,
-                    travelDistance,
-                    dispatchLocation,
-                    accompaniedPerson,
-                    accidentTime,
-                    accidentCategory,
-                    accidentCause,
-                    specialNotes,
-                    victimName,
-                    victimContact,
-                    victimAddress,
-                    additionalVictims: JSON.stringify(additionalVictims),
-                    specialRequests: voc,
-                    processingTypes: JSON.stringify(Array.from(processingTypes)),
-                    processingTypeOther,
-                    recoveryMethodType,
-                    fieldSurveyStatus: "draft",
-                  };
+                    try {
+                      const payload = {
+                        visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
+                        visitTime,
+                        travelDistance,
+                        dispatchLocation,
+                        accompaniedPerson,
+                        accidentTime,
+                        accidentCategory,
+                        accidentCause,
+                        specialNotes,
+                        victimName,
+                        victimContact,
+                        victimAddress,
+                        additionalVictims: JSON.stringify(additionalVictims),
+                        specialRequests: voc,
+                        processingTypes: JSON.stringify(Array.from(processingTypes)),
+                        processingTypeOther,
+                        recoveryMethodType,
+                        fieldSurveyStatus: "draft",
+                      };
 
-                  await apiRequest(`/api/cases/${selectedCaseData.id}/field-survey`, {
-                    method: "PATCH",
-                    body: JSON.stringify(payload),
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                  });
+                      await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
 
-                  toast({
-                    title: "임시저장 완료",
-                    description: "현장조사 정보가 임시저장되었습니다.",
-                  });
+                      toast({
+                        title: "임시저장 완료",
+                        description: "현장조사 정보가 임시저장되었습니다.",
+                      });
 
-                  queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-                } catch (error) {
-                  console.error("임시저장 에러:", error);
-                  toast({
-                    title: "임시저장 실패",
-                    description: "현장조사 정보 저장 중 오류가 발생했습니다.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              disabled={isReadOnly}
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "16px",
-                fontWeight: 600,
-                height: "52px",
-                padding: "12px 32px",
-                background: "#ECECEC",
-                color: "rgba(12, 12, 12, 0.8)",
-                border: "none",
-                borderRadius: "8px",
-              }}
-              data-testid="button-draft"
-            >
-              임시저장
-            </Button>
+                      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                    } catch (error) {
+                      console.error("임시저장 에러:", error);
+                      toast({
+                        title: "임시저장 실패",
+                        description: "현장조사 정보 저장 중 오류가 발생했습니다.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={isReadOnly}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    height: "52px",
+                    padding: "12px 32px",
+                    background: "#ECECEC",
+                    color: "rgba(12, 12, 12, 0.8)",
+                    border: "none",
+                    borderRadius: "8px",
+                  }}
+                  data-testid="button-draft"
+                >
+                  임시저장
+                </Button>
 
-            <Button
-              type="button"
-              onClick={async () => {
-                if (!selectedCaseData?.id) return;
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    if (!selectedCaseData?.id) return;
 
-                try {
-                  const payload = {
-                    visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
-                    visitTime,
-                    travelDistance,
-                    dispatchLocation,
-                    accompaniedPerson,
-                    accidentTime,
-                    accidentCategory,
-                    accidentCause,
-                    specialNotes,
-                    victimName,
-                    victimContact,
-                    victimAddress,
-                    additionalVictims: JSON.stringify(additionalVictims),
-                    specialRequests: voc,
-                    processingTypes: JSON.stringify(Array.from(processingTypes)),
-                    processingTypeOther,
-                    recoveryMethodType,
-                    fieldSurveyStatus: "submitted",
-                  };
+                    try {
+                      const payload = {
+                        visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
+                        visitTime,
+                        travelDistance,
+                        dispatchLocation,
+                        accompaniedPerson,
+                        accidentTime,
+                        accidentCategory,
+                        accidentCause,
+                        specialNotes,
+                        victimName,
+                        victimContact,
+                        victimAddress,
+                        additionalVictims: JSON.stringify(additionalVictims),
+                        specialRequests: voc,
+                        processingTypes: JSON.stringify(Array.from(processingTypes)),
+                        processingTypeOther,
+                        recoveryMethodType,
+                        fieldSurveyStatus: "submitted",
+                      };
 
-                  await apiRequest(`/api/cases/${selectedCaseData.id}/field-survey`, {
-                    method: "PATCH",
-                    body: JSON.stringify(payload),
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                  });
+                      await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
 
-                  toast({
-                    title: "제출 완료",
-                    description: "현장조사 정보가 제출되었습니다.",
-                  });
+                      toast({
+                        title: "제출 완료",
+                        description: "현장조사 정보가 제출되었습니다.",
+                      });
 
-                  queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-                } catch (error) {
-                  console.error("제출 에러:", error);
-                  toast({
-                    title: "제출 실패",
-                    description: "현장조사 정보 제출 중 오류가 발생했습니다.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              disabled={isReadOnly}
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "16px",
-                fontWeight: 600,
-                height: "52px",
-                padding: "12px 32px",
-                background: "#008FED",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: "8px",
-              }}
-              data-testid="button-submit"
-            >
-              제출
-            </Button>
+                      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                    } catch (error) {
+                      console.error("제출 에러:", error);
+                      toast({
+                        title: "제출 실패",
+                        description: "현장조사 정보 제출 중 오류가 발생했습니다.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={isReadOnly}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    height: "52px",
+                    padding: "12px 32px",
+                    background: "#008FED",
+                    color: "#FFFFFF",
+                    border: "none",
+                    borderRadius: "8px",
+                  }}
+                  data-testid="button-submit"
+                >
+                  제출
+                </Button>
+              </>
+            ) : (
+              <>
+                {/* 관리자: 반려 + 승인 */}
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    if (!selectedCaseData?.id) return;
+
+                    try {
+                      // 반려 API 호출 (구현 예정)
+                      console.log("반려 처리");
+                      toast({
+                        title: "반려 완료",
+                        description: "현장조사가 반려되었습니다.",
+                      });
+                    } catch (error) {
+                      console.error("반려 에러:", error);
+                      toast({
+                        title: "반려 실패",
+                        description: "반려 처리 중 오류가 발생했습니다.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    height: "52px",
+                    padding: "12px 32px",
+                    background: "#FFFFFF",
+                    color: "#FF4D4F",
+                    border: "1px solid #FF4D4F",
+                    borderRadius: "8px",
+                  }}
+                  data-testid="button-reject"
+                >
+                  반려
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    if (!selectedCaseData?.id) return;
+
+                    try {
+                      // 승인 API 호출 (구현 예정)
+                      console.log("승인 처리");
+                      toast({
+                        title: "승인 완료",
+                        description: "현장조사가 승인되었습니다.",
+                      });
+                    } catch (error) {
+                      console.error("승인 에러:", error);
+                      toast({
+                        title: "승인 실패",
+                        description: "승인 처리 중 오류가 발생했습니다.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    height: "52px",
+                    padding: "12px 32px",
+                    background: "#008FED",
+                    color: "#FFFFFF",
+                    border: "none",
+                    borderRadius: "8px",
+                  }}
+                  data-testid="button-approve"
+                >
+                  승인
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}
