@@ -1603,15 +1603,21 @@ export default function FieldManagement() {
             background: "rgba(255, 255, 255, 0.95)",
             backdropFilter: "blur(10px)",
             borderTop: "1px solid rgba(12, 12, 12, 0.1)",
-            padding: "20px 40px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
             zIndex: 1000,
           }}
         >
-          {/* 왼쪽: 초기화 버튼 */}
-          <Button
+          <div
+            style={{
+              maxWidth: "1400px",
+              margin: "0 auto",
+              padding: "20px 40px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            {/* 왼쪽: 초기화 버튼 */}
+            <Button
             type="button"
             variant="ghost"
             onClick={() => {
@@ -1861,6 +1867,7 @@ export default function FieldManagement() {
               </>
             )}
           </div>
+        </div>
         </div>
       )}
     </>
