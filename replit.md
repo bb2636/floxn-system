@@ -49,18 +49,27 @@ The system is a full-stack web application utilizing a React-based frontend and 
 ### Feature Specifications
 - **Home**: Overview of progress, key metrics, and quick navigation for all users.
 - **Reception Management**: New water damage case registration and management, including assigning repair companies based on service areas.
-- **Field Survey**: Input field investigation results and details by repair companies.
+- **Field Survey Workflow** (Sequential Process): 
+  - **CRITICAL**: All field survey pages work on the SAME selected case from 현장입력, connected via `localStorage.selectedFieldSurveyCaseId`
+  - **Complete Workflow Sequence** (하나의 접수건에 대한 전체 처리 프로세스):
+    1. **현장입력** (`/field-survey/management`) → Select case and input field investigation data
+    2. **도면작성** (`/field-survey/drawing`) → Create damage scope drawings
+    3. **증빙자료 등록** (`/field-survey/documents`) → Upload photos and supporting documents
+    4. **견적서 작성** (`/field-survey/estimate`) → Create cost estimates
+    5. **현장출동보고서** (`/field-survey/report`) → Generate final field dispatch report
   - **Field Survey Management Page** (`/field-survey/management`): Multi-section form with collapsible sections for basic info, damage assessment, insurance details, insured/victim information, and damage recovery method selection.
   - **Field Survey Sidebar Menu** (updated November 13, 2025):
     - **현장입력** (`/field-survey/management`): Field management page
     - **도면작성** (`/field-survey/drawing`): Drawing creation page
-    - **증빙자료 등록** (`/field-survey/documents`): Documents upload page (placeholder)
+    - **증빙자료 등록** (`/field-survey/documents`): Documents upload page - IMPLEMENTED with PostgreSQL persistence
     - **견적서 작성** (`/field-survey/estimate`): Estimate creation page (placeholder)
     - **현장출동보고서** (`/field-survey/report`): Field dispatch report page (placeholder)
   - **Drawing Creation Page** (`/field-survey/drawing`): Digital drawing workspace with dedicated layout separate from FieldSurveyLayout.
     - **Layout Structure**: Uses DrawingLayout component with GlobalHeader + dedicated content area
     - **Left Sidebar (180px)**: Menu navigation with same updated labels as Field Survey Sidebar (현장입력, 도면작성, 증빙자료 등록, 견적서 작성, 현장출동보고서)
-    - **Case Information Display**: Shows case name (M0숭례문역4) and case number (ZK2109043) with blue dot indicator
+    - **Case Information Display**: 
+      - Left sidebar: Shows case info with blue dot, insurance company/accident number, and case number
+      - Canvas top-left: "작성중인 건" display showing selected case from 현장입력
     - **Canvas Area**: Full-screen grid background (10px squares, rgba(218,218,218,0.5)) - no boundary limits for free drawing anywhere
     - **Bottom-Center Toolbar**: 4 drawing tools (선택/pointer, 이미지 업로드/upload, 사각형/rectangle, 누수 지점/leak marker) with active state highlighting
     - **Top-Right Save Buttons**: "저장" and "PNG 저장" buttons for saving work and exporting as PNG
@@ -83,6 +92,19 @@ The system is a full-stack web application utilizing a React-based frontend and 
       - Robust error handling with try/finally to ensure UI restoration even on failures
       - Downloads as `도면_${date}.png` with success/error toast notifications
     - **Critical Layout**: Uses h-full/min-h-0 with flex-shrink-0 on fixed elements to prevent vertical overflow and ensure single viewport workspace without double scrollbars
+  - **Documents Upload Page** (`/field-survey/documents`): Document and photo upload system with persistent storage.
+    - **Database Persistence**: caseDocuments table with Base64 file encoding for binary storage in PostgreSQL
+    - **Features**:
+      - Upload files via drag-and-drop or click
+      - Progress bar during upload
+      - Category management (전체, 현장, 수리중, 복구완료, 청구, 개인정보)
+      - File download (filename click or download icon)
+      - Image thumbnails (64x64px)
+      - File metadata display (name, size, category)
+      - Delete functionality
+      - Toast notifications for upload/category change
+    - **Authorization**: 관리자/심사사 can manage all documents, others only their own
+    - **Case Information Display**: "작성중인 건" showing selected case from 현장입력
 - **Restoration Estimation (Drawing)**: Digital drawing for damage scope and restoration area calculation, automatically linking to estimates and reports.
 - **Image & File Management**: Upload and manage initial, intermediate, final images, and supporting documents with case-specific access control.
 - **Estimate Management**: Create and submit restoration cost estimates with automatic calculations and PDF/Excel export.
