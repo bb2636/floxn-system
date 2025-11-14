@@ -266,8 +266,7 @@ export default function FieldManagement() {
   }) => (
     <div
       style={{
-        background: '#FFFFFF',
-        boxShadow: '0px 0px 20px #DBE9F5',
+        background: 'transparent',
         borderRadius: '12px',
         marginBottom: '20px',
       }}
@@ -323,9 +322,9 @@ export default function FieldManagement() {
   return (
     <>
     <div className="relative p-8">
-      {/* 현장일력 섹션 */}
+      {/* 현장입력 섹션 */}
       <SectionCard
-        title="현장일력"
+        title="현장입력"
         isOpen={scheduleOpen}
         onToggle={() => setScheduleOpen(!scheduleOpen)}
       >
