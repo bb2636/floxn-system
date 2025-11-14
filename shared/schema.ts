@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, json, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, serial, timestamp, json, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -470,7 +470,7 @@ export type EstimateRow = typeof estimateRows.$inferSelect;
 
 // 노무비 마스터 테이블
 export const laborCosts = pgTable("labor_costs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: serial("id").primaryKey(),
   category: text("category").notNull(), // 공종: 가구공사, 도배공사 등
   workName: text("work_name").notNull(), // 공사명: 고정, 철거 등
   detailWork: text("detail_work").notNull(), // 세부공사: 실리콘, 타일 등
