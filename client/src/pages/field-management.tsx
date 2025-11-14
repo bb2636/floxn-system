@@ -1635,62 +1635,15 @@ export default function FieldManagement() {
             margin: "40px auto 60px",
             padding: "0 40px",
             display: "flex",
-            justifyContent: isPartner ? "space-between" : "flex-end",
+            justifyContent: "flex-end",
             alignItems: "center",
           }}
         >
-            {/* 왼쪽: 초기화 버튼 (협력사만 표시) */}
-            {isPartner && (
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => {
-                  if (confirm("입력한 내용을 모두 초기화하시겠습니까?")) {
-                    // 모든 state 초기화
-                    setAccidentDate(selectedCaseData.accidentDate ? new Date(selectedCaseData.accidentDate) : undefined);
-                    setAccidentTime(selectedCaseData.accidentTime || "");
-                    setVisitDate(undefined);
-                    setVisitTime("");
-                    setTravelDistance("");
-                    setDispatchLocation("");
-                    setAccompaniedPerson("");
-                    setAccidentCategory("배관");
-                    setAccidentCause("");
-                    setSpecialNotes("");
-                    setVictimName(selectedCaseData.victimName || "");
-                    setVictimContact(selectedCaseData.victimContact || "");
-                    setVictimAddress(selectedCaseData.victimAddress || "");
-                    setAdditionalVictims([]);
-                    setVoc("");
-                    setProcessingTypes(new Set());
-                    setProcessingTypeOther("");
-                    setRecoveryMethodType("부분수리");
-                    setNewVictimName("");
-                    setNewVictimContact("");
-                    setNewVictimAddress("");
-                    setSameAsInsured(false);
-                  }
-                }}
-                disabled={isReadOnly}
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  color: "#FF4D4F",
-                  background: "transparent",
-                  border: "none",
-                }}
-                data-testid="button-reset"
-              >
-                초기화
-              </Button>
-            )}
-
-          {/* 오른쪽: 역할별 버튼 */}
+          {/* 역할별 버튼 */}
           <div className="flex gap-3">
             {isPartner ? (
               <>
-                {/* 협력사: 임시저장 + 제출 */}
+                {/* 협력사: 저장 버튼 */}
                 <Button
                   type="button"
                   onClick={async () => {
@@ -1721,15 +1674,15 @@ export default function FieldManagement() {
                       await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
 
                       toast({
-                        title: "임시저장 완료",
-                        description: "현장조사 정보가 임시저장되었습니다.",
+                        title: "저장 완료",
+                        description: "현장조사 정보가 저장되었습니다.",
                       });
 
                       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
                     } catch (error) {
-                      console.error("임시저장 에러:", error);
+                      console.error("저장 에러:", error);
                       toast({
-                        title: "임시저장 실패",
+                        title: "저장 실패",
                         description: "현장조사 정보 저장 중 오류가 발생했습니다.",
                         variant: "destructive",
                       });
@@ -1742,90 +1695,15 @@ export default function FieldManagement() {
                     fontWeight: 600,
                     height: "52px",
                     padding: "12px 32px",
-                    background: "#ECECEC",
-                    color: "rgba(12, 12, 12, 0.8)",
-                    border: "none",
-                    borderRadius: "8px",
-                  }}
-                  data-testid="button-draft"
-                >
-                  임시저장
-                </Button>
-
-                <Button
-                  type="button"
-                  onClick={async () => {
-                    if (!selectedCaseData?.id) return;
-
-                    try {
-                      const payload = {
-                        visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
-                        visitTime,
-                        travelDistance,
-                        dispatchLocation,
-                        accompaniedPerson,
-                        accidentTime,
-                        accidentCategory,
-                        accidentCause,
-                        specialNotes,
-                        victimName,
-                        victimContact,
-                        victimAddress,
-                        additionalVictims: JSON.stringify(additionalVictims),
-                        specialRequests: voc,
-                        processingTypes: JSON.stringify(Array.from(processingTypes)),
-                        processingTypeOther,
-                        recoveryMethodType,
-                        fieldSurveyStatus: "submitted",
-                      };
-
-                      await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
-
-                      toast({
-                        title: "제출 완료",
-                        description: "현장조사 정보가 제출되었습니다.",
-                      });
-
-                      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-                    } catch (error) {
-                      console.error("제출 에러:", error);
-                      toast({
-                        title: "제출 실패",
-                        description: "현장조사 정보 제출 중 오류가 발생했습니다.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  disabled={isReadOnly || !canSubmit}
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    height: "52px",
-                    padding: "12px 32px",
-                    background: (!canSubmit) ? "#CCCCCC" : "#008FED",
+                    background: "#008FED",
                     color: "#FFFFFF",
                     border: "none",
                     borderRadius: "8px",
-                    cursor: (!canSubmit) ? "not-allowed" : "pointer",
-                    opacity: (!canSubmit) ? 0.6 : 1,
                   }}
-                  data-testid="button-submit"
+                  data-testid="button-save"
                 >
-                  제출
+                  저장
                 </Button>
-                {!canSubmit && (
-                  <p
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "13px",
-                      color: "#FF4D4F",
-                      marginTop: "8px",
-                    }}
-                  >
-                    * 현장입력, 도면작성, 증빙자료 등록, 견적서 작성을 모두 완료해야 제출할 수 있습니다.
-                  </p>
-                )}
               </>
             ) : (
               <>
