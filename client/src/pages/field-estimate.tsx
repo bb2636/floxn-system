@@ -2,10 +2,17 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Case } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Check } from "lucide-react";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface AreaCalculationRow {
   id: string;
@@ -478,60 +485,99 @@ export default function FieldEstimate() {
                         />
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <select
+                        <Select
                           value={row.category}
-                          onChange={(e) => updateRow(row.id, 'category', e.target.value)}
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            border: "1px solid rgba(12, 12, 12, 0.1)",
-                            borderRadius: "4px",
-                            background: "white",
-                          }}
-                          data-testid={`select-category-${index}`}
+                          onValueChange={(value) => updateRow(row.id, 'category', value)}
                         >
-                          {ROOM_CATEGORIES.map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
-                          ))}
-                        </select>
+                          <SelectTrigger 
+                            className="border focus:ring-0"
+                            style={{
+                              width: "100%",
+                              height: "40px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              borderColor: "rgba(12, 12, 12, 0.2)",
+                              borderRadius: "6px",
+                            }}
+                            data-testid={`select-category-${index}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROOM_CATEGORIES.map(cat => (
+                              <SelectItem key={cat} value={cat}>
+                                <div className="flex items-center justify-between w-full">
+                                  <span>{cat}</span>
+                                  {row.category === cat && (
+                                    <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <select
+                        <Select
                           value={row.location}
-                          onChange={(e) => updateRow(row.id, 'location', e.target.value)}
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            border: "1px solid rgba(12, 12, 12, 0.1)",
-                            borderRadius: "4px",
-                            background: "white",
-                          }}
-                          data-testid={`select-location-${index}`}
+                          onValueChange={(value) => updateRow(row.id, 'location', value)}
                         >
-                          <option value="선택">선택</option>
-                        </select>
+                          <SelectTrigger 
+                            className="border focus:ring-0"
+                            style={{
+                              width: "100%",
+                              height: "40px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              borderColor: "rgba(12, 12, 12, 0.2)",
+                              borderRadius: "6px",
+                            }}
+                            data-testid={`select-location-${index}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="선택">
+                              <div className="flex items-center justify-between w-full">
+                                <span>선택</span>
+                                {row.location === "선택" && (
+                                  <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
+                                )}
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <select
+                        <Select
                           value={row.workName}
-                          onChange={(e) => updateRow(row.id, 'workName', e.target.value)}
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            border: "1px solid rgba(12, 12, 12, 0.1)",
-                            borderRadius: "4px",
-                            background: "white",
-                          }}
-                          data-testid={`select-workname-${index}`}
+                          onValueChange={(value) => updateRow(row.id, 'workName', value)}
                         >
-                          <option value="선택">선택</option>
-                        </select>
+                          <SelectTrigger 
+                            className="border focus:ring-0"
+                            style={{
+                              width: "100%",
+                              height: "40px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              borderColor: "rgba(12, 12, 12, 0.2)",
+                              borderRadius: "6px",
+                            }}
+                            data-testid={`select-workname-${index}`}
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="선택">
+                              <div className="flex items-center justify-between w-full">
+                                <span>선택</span>
+                                {row.workName === "선택" && (
+                                  <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
+                                )}
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
                         <input
