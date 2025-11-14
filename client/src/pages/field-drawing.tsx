@@ -1009,6 +1009,59 @@ export default function FieldDrawing() {
             data-testid="input-file-upload"
           />
 
+          {/* 작성중인 건 표시 */}
+          {selectedCase && (
+            <div 
+              className="absolute top-4 left-4 z-10 px-4 py-3 rounded-lg"
+              data-ui="case-info"
+              style={{
+                background: "white",
+                border: "1px solid rgba(0, 143, 237, 0.15)",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "12px",
+                  fontWeight: 400,
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.5)",
+                  marginBottom: "6px",
+                }}
+              >
+                작성중인 건
+              </div>
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ background: "#008FED" }}
+                />
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                  }}
+                >
+                  {selectedCase.clientName || selectedCase.insuranceCompany}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "12px",
+                    fontWeight: 400,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                >
+                  {selectedCase.caseNumber}
+                </span>
+              </div>
+            </div>
+          )}
+
           {/* 저장 버튼 (우측 상단) */}
           <div className="absolute top-4 right-4 z-10 flex gap-2" data-ui="save-buttons">
             <button
