@@ -620,13 +620,14 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.damageWidth}
                           onChange={(e) => updateRow(row.id, 'damageWidth', e.target.value)}
+                          className="focus:outline-none focus:border-2 focus:border-[#008FED]"
                           style={{
                             width: "100%",
                             padding: "8px",
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             border: "1px solid rgba(12, 12, 12, 0.1)",
-                            borderRadius: "4px",
+                            borderRadius: "8px",
                             textAlign: "center",
                           }}
                           data-testid={`input-damage-width-${index}`}
@@ -637,13 +638,14 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.damageHeight}
                           onChange={(e) => updateRow(row.id, 'damageHeight', e.target.value)}
+                          className="focus:outline-none focus:border-2 focus:border-[#008FED]"
                           style={{
                             width: "100%",
                             padding: "8px",
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             border: "1px solid rgba(12, 12, 12, 0.1)",
-                            borderRadius: "4px",
+                            borderRadius: "8px",
                             textAlign: "center",
                           }}
                           data-testid={`input-damage-height-${index}`}
@@ -672,13 +674,14 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.repairWidth}
                           onChange={(e) => updateRow(row.id, 'repairWidth', e.target.value)}
+                          className="focus:outline-none focus:border-2 focus:border-[#008FED]"
                           style={{
                             width: "100%",
                             padding: "8px",
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             border: "1px solid rgba(12, 12, 12, 0.1)",
-                            borderRadius: "4px",
+                            borderRadius: "8px",
                             textAlign: "center",
                           }}
                           data-testid={`input-repair-width-${index}`}
@@ -689,13 +692,14 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.repairHeight}
                           onChange={(e) => updateRow(row.id, 'repairHeight', e.target.value)}
+                          className="focus:outline-none focus:border-2 focus:border-[#008FED]"
                           style={{
                             width: "100%",
                             padding: "8px",
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             border: "1px solid rgba(12, 12, 12, 0.1)",
-                            borderRadius: "4px",
+                            borderRadius: "8px",
                             textAlign: "center",
                           }}
                           data-testid={`input-repair-height-${index}`}
@@ -724,13 +728,14 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.note}
                           onChange={(e) => updateRow(row.id, 'note', e.target.value)}
+                          className="focus:outline-none focus:border-2 focus:border-[#008FED]"
                           style={{
                             width: "100%",
                             padding: "8px",
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             border: "1px solid rgba(12, 12, 12, 0.1)",
-                            borderRadius: "4px",
+                            borderRadius: "8px",
                           }}
                           data-testid={`input-note-${index}`}
                         />
