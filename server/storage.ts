@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type CaseDocument, type InsertCaseDocument, caseDocuments, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -94,6 +94,11 @@ export interface IStorage {
   getLatestEstimate(caseId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
   getEstimateVersion(caseId: string, version: number): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
   listEstimateVersions(caseId: string): Promise<Estimate[]>;
+  // Master data methods
+  getMasterData(category?: string): Promise<MasterData[]>;
+  createMasterData(data: InsertMasterData): Promise<MasterData>;
+  deleteMasterData(id: string): Promise<void>;
+  updateMasterData(id: string, data: Partial<InsertMasterData>): Promise<MasterData | null>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -1461,6 +1466,22 @@ export class MemStorage implements IStorage {
   async listEstimateVersions(caseId: string): Promise<Estimate[]> {
     throw new Error("Estimate methods not implemented in MemStorage");
   }
+
+  async getMasterData(category?: string): Promise<MasterData[]> {
+    throw new Error("Master data methods not implemented in MemStorage");
+  }
+
+  async createMasterData(data: InsertMasterData): Promise<MasterData> {
+    throw new Error("Master data methods not implemented in MemStorage");
+  }
+
+  async deleteMasterData(id: string): Promise<void> {
+    throw new Error("Master data methods not implemented in MemStorage");
+  }
+
+  async updateMasterData(id: string, data: Partial<InsertMasterData>): Promise<MasterData | null> {
+    throw new Error("Master data methods not implemented in MemStorage");
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -2341,6 +2362,51 @@ export class DbStorage implements IStorage {
       .orderBy(desc(estimates.version));
 
     return allVersions;
+  }
+
+  // Master data methods
+  async getMasterData(category?: string): Promise<MasterData[]> {
+    if (category) {
+      // 특정 카테고리의 활성 데이터만 조회 (displayOrder 순서로)
+      return await db
+        .select()
+        .from(masterData)
+        .where(and(
+          eq(masterData.category, category),
+          eq(masterData.isActive, "true")
+        ))
+        .orderBy(asc(masterData.displayOrder), asc(masterData.value));
+    } else {
+      // 모든 활성 데이터 조회
+      return await db
+        .select()
+        .from(masterData)
+        .where(eq(masterData.isActive, "true"))
+        .orderBy(asc(masterData.category), asc(masterData.displayOrder), asc(masterData.value));
+    }
+  }
+
+  async createMasterData(data: InsertMasterData): Promise<MasterData> {
+    const [created] = await db.insert(masterData).values(data).returning();
+    return created;
+  }
+
+  async deleteMasterData(id: string): Promise<void> {
+    // Soft delete: isActive를 false로 설정
+    await db
+      .update(masterData)
+      .set({ isActive: "false", updatedAt: new Date() })
+      .where(eq(masterData.id, id));
+  }
+
+  async updateMasterData(id: string, data: Partial<InsertMasterData>): Promise<MasterData | null> {
+    const [updated] = await db
+      .update(masterData)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(masterData.id, id))
+      .returning();
+    
+    return updated || null;
   }
 }
 

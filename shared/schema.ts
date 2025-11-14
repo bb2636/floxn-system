@@ -391,6 +391,32 @@ export const insertCaseDocumentSchema = createInsertSchema(caseDocuments).omit({
 export type InsertCaseDocument = z.infer<typeof insertCaseDocumentSchema>;
 export type CaseDocument = typeof caseDocuments.$inferSelect;
 
+// 마스터 데이터 테이블 (관리자 기준정보관리용)
+export const masterData = pgTable("master_data", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: text("category").notNull(), // "room_category" | "location" | "work_name"
+  value: text("value").notNull(), // 실제 표시 값
+  isActive: text("is_active").notNull().default("true"), // "true" | "false"
+  displayOrder: integer("display_order").notNull().default(0), // 표시 순서
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // unique constraint: 같은 카테고리에서 같은 값 중복 방지
+  unq: unique().on(table.category, table.value),
+}));
+
+export const MASTER_DATA_CATEGORIES = ["room_category", "location", "work_name"] as const;
+export type MasterDataCategory = typeof MASTER_DATA_CATEGORIES[number];
+
+export const insertMasterDataSchema = createInsertSchema(masterData).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMasterData = z.infer<typeof insertMasterDataSchema>;
+export type MasterData = typeof masterData.$inferSelect;
+
 // 견적서 테이블 (부모 테이블)
 export const estimates = pgTable("estimates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
