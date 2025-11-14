@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User, Drawing } from "@shared/schema";
+import { User, Drawing, Case } from "@shared/schema";
 import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
@@ -87,6 +87,15 @@ export default function FieldDrawing() {
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
+  });
+
+  // 현장입력에서 선택한 케이스 ID 가져오기
+  const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
+
+  // 선택된 케이스 데이터 가져오기
+  const { data: selectedCase } = useQuery<Case>({
+    queryKey: ["/api/cases", selectedCaseId],
+    enabled: !!selectedCaseId,
   });
 
   // 활성 케이스 ID 조회
@@ -925,31 +934,45 @@ export default function FieldDrawing() {
               borderBottom: "1px solid rgba(0, 143, 237, 0.15)",
             }}
           >
-            <div className="flex items-center gap-2 mb-1">
-              <div 
-                className="w-2 h-2 rounded-full"
-                style={{ background: "#008FED" }}
-              />
+            {selectedCase ? (
+              <>
+                <div className="flex items-center gap-2 mb-1">
+                  <div 
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: "#008FED" }}
+                  />
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {selectedCase.insuranceCompany} {selectedCase.insuranceAccidentNo}
+                  </span>
+                </div>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "11px",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                >
+                  {selectedCase.caseNumber}
+                </span>
+              </>
+            ) : (
               <span
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "12px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
+                  color: "rgba(12, 12, 12, 0.5)",
                 }}
               >
-                M0숭례문역4
+                케이스를 선택해주세요
               </span>
-            </div>
-            <span
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "11px",
-                color: "rgba(12, 12, 12, 0.5)",
-              }}
-            >
-              ZK2109043
-            </span>
+            )}
           </div>
 
           {/* 메뉴 아이템들 */}

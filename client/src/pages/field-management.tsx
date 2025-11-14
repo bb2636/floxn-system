@@ -25,7 +25,10 @@ const normalizeBoolean = (value: any): boolean => {
 
 export default function FieldManagement() {
   const { toast } = useToast();
-  const [selectedCase, setSelectedCase] = useState<string>("");
+  const [selectedCase, setSelectedCase] = useState<string>(() => {
+    // Load from localStorage on mount
+    return localStorage.getItem('selectedFieldSurveyCaseId') || "";
+  });
   
   // Collapsible states - intake.tsx 스타일
   const [scheduleOpen, setScheduleOpen] = useState(true);
@@ -114,6 +117,7 @@ export default function FieldManagement() {
     if (availableCases.length === 0) {
       // 케이스가 없으면 선택 해제
       setSelectedCase("");
+      localStorage.removeItem('selectedFieldSurveyCaseId');
       return;
     }
 
@@ -122,9 +126,17 @@ export default function FieldManagement() {
     
     if (!isCurrentCaseAvailable) {
       // 첫 번째 케이스로 자동 선택
-      setSelectedCase(availableCases[0].id);
+      const newCaseId = availableCases[0].id;
+      setSelectedCase(newCaseId);
+      localStorage.setItem('selectedFieldSurveyCaseId', newCaseId);
     }
   }, [availableCases, selectedCase]);
+
+  // 케이스 선택 변경 시 localStorage에 저장
+  const handleCaseChange = (caseId: string) => {
+    setSelectedCase(caseId);
+    localStorage.setItem('selectedFieldSurveyCaseId', caseId);
+  };
 
   // 선택한 케이스의 데이터를 폼에 로드
   useEffect(() => {
@@ -342,7 +354,7 @@ export default function FieldManagement() {
             ) : (
               <Select
                 value={selectedCase}
-                onValueChange={setSelectedCase}
+                onValueChange={handleCaseChange}
               >
                 <SelectTrigger 
                   className="border-0 focus:ring-0"
