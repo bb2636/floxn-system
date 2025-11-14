@@ -375,36 +375,52 @@ export default function FieldDocuments() {
       )}
 
       {/* 카테고리 탭 */}
-      <div className="flex gap-2 mb-6">
+      <div 
+        className="flex gap-8 mb-6"
+        style={{
+          borderBottom: "2px solid rgba(12, 12, 12, 0.08)",
+        }}
+      >
         {categories.map((category) => (
           <button
             key={category}
             type="button"
             onClick={() => setSelectedCategory(category)}
-            className="px-6 py-3 rounded-lg transition-all"
+            className="pb-3 transition-all relative"
             style={{
               fontFamily: "Pretendard",
               fontSize: "16px",
-              fontWeight: 500,
+              fontWeight: selectedCategory === category ? 600 : 400,
               letterSpacing: "-0.02em",
-              background: selectedCategory === category ? "#008FED" : "white",
-              color: selectedCategory === category ? "white" : "rgba(12, 12, 12, 0.7)",
-              border: selectedCategory === category ? "none" : "1px solid rgba(12, 12, 12, 0.1)",
+              background: "transparent",
+              color: selectedCategory === category ? "#008FED" : "rgba(12, 12, 12, 0.5)",
+              border: "none",
             }}
             data-testid={`tab-${category}`}
           >
             {category}
+            {selectedCategory === category && (
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "-2px",
+                  left: 0,
+                  right: 0,
+                  height: "2px",
+                  background: "#008FED",
+                }}
+              />
+            )}
           </button>
         ))}
       </div>
 
       {/* 파일 업로드 영역 */}
       <div
-        className={`mb-6 border-2 border-dashed rounded-xl p-12 transition-all cursor-pointer ${
-          isDragging ? "border-[#008FED] bg-blue-50" : "border-gray-300"
-        }`}
+        className="mb-6 rounded-xl p-12 transition-all cursor-pointer"
         style={{
-          background: isDragging ? "rgba(0, 143, 237, 0.05)" : "white",
+          background: isDragging ? "rgba(0, 143, 237, 0.08)" : "rgba(0, 143, 237, 0.03)",
+          border: "none",
         }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -428,26 +444,26 @@ export default function FieldDocuments() {
             <div
               style={{
                 fontFamily: "Pretendard",
-                fontSize: "16px",
-                fontWeight: 500,
+                fontSize: "15px",
+                fontWeight: 400,
                 letterSpacing: "-0.02em",
-                color: "rgba(12, 12, 12, 0.7)",
-                marginBottom: "8px",
+                color: "rgba(12, 12, 12, 0.5)",
+                marginBottom: "12px",
               }}
             >
               파일 또는 이미지를 이곳에 올려주세요
             </div>
             <button
               type="button"
-              className="px-6 py-2 rounded-lg"
               style={{
                 fontFamily: "Pretendard",
-                fontSize: "14px",
+                fontSize: "15px",
                 fontWeight: 500,
                 letterSpacing: "-0.02em",
                 color: "#008FED",
-                border: "1px solid #008FED",
-                background: "white",
+                border: "none",
+                background: "transparent",
+                cursor: "pointer",
               }}
               data-testid="button-select-file"
             >
