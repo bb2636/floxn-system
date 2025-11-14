@@ -13,6 +13,7 @@ import SettlementsInquiry from "@/pages/settlements-inquiry";
 import SettlementAction from "@/pages/settlement-action";
 import FieldManagement from "@/pages/field-management";
 import FieldDrawing from "@/pages/field-drawing";
+import FieldDocuments from "@/pages/field-documents";
 import Forbidden from "@/pages/forbidden";
 import NotFound from "@/pages/not-found";
 import { StatisticsLayout } from "@/components/statistics-layout";
@@ -107,7 +108,7 @@ function Router() {
         {() => (
           <ProtectedRoute category="현장조사">
             <FieldSurveyLayout>
-              <div className="p-8">종합자료 등록 페이지 (준비중)</div>
+              <FieldDocuments />
             </FieldSurveyLayout>
           </ProtectedRoute>
         )}
