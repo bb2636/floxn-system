@@ -293,6 +293,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single case by ID endpoint
+  app.get("/api/cases/:id", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      const caseData = await storage.getCaseById(id);
+      
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      res.json(caseData);
+    } catch (error) {
+      console.error("Get case by ID error:", error);
+      res.status(500).json({ error: "케이스를 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Update case status endpoint (admin only)
   app.patch("/api/cases/:caseId/status", async (req, res) => {
     // Check authentication

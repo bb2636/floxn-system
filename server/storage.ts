@@ -54,6 +54,7 @@ export interface IStorage {
   updatePassword(username: string, newPassword: string): Promise<User | null>;
   deleteAccount(username: string): Promise<User | null>;
   createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
+  getCaseById(caseId: string): Promise<Case | null>;
   getAllCases(): Promise<CaseWithLatestProgress[]>;
   updateCaseStatus(caseId: string, status: string): Promise<Case | null>;
   updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null>;
@@ -947,6 +948,10 @@ export class MemStorage implements IStorage {
     return deletedUser;
   }
 
+  async getCaseById(caseId: string): Promise<Case | null> {
+    return this.cases.get(caseId) || null;
+  }
+
   async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
     const id = randomUUID();
     const currentDate = getKSTDate();
@@ -1715,6 +1720,11 @@ export class DbStorage implements IStorage {
       .where(eq(users.username, username))
       .returning();
     
+    return result[0] || null;
+  }
+
+  async getCaseById(caseId: string): Promise<Case | null> {
+    const result = await db.select().from(cases).where(eq(cases.id, caseId)).limit(1);
     return result[0] || null;
   }
 
