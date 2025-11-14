@@ -941,8 +941,206 @@ export default function FieldEstimate() {
           </div>
         )}
 
-        {/* 다른 카테고리는 준비중 표시 */}
-        {selectedCategory !== "복구면적 산출표" && (
+        {/* 노무비 컨텐츠 */}
+        {selectedCategory === "노무비" && (
+          <div>
+            {/* 노무비 헤더 */}
+            <div className="flex items-center justify-between mb-4">
+              <h2
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "18px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
+                노무비
+              </h2>
+              <Select defaultValue="all">
+                <SelectTrigger 
+                  className="border focus:ring-0"
+                  style={{
+                    width: "150px",
+                    height: "40px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    borderColor: "rgba(12, 12, 12, 0.2)",
+                    borderRadius: "6px",
+                  }}
+                >
+                  <SelectValue placeholder="종류 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">종류 선택</SelectItem>
+                  <SelectItem value="type1">유형1</SelectItem>
+                  <SelectItem value="type2">유형2</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 테이블 */}
+            <div
+              style={{
+                background: "white",
+                borderRadius: "8px",
+                overflow: "auto",
+              }}
+            >
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  minWidth: "1600px",
+                  borderRadius: "8px 8px 0px 0px",
+                  overflow: "hidden",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                    }}
+                  >
+                    <th style={{ width: "54px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}></th>
+                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>공종</th>
+                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>공사명</th>
+                    <th style={{ width: "120px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세부공사</th>
+                    <th style={{ width: "120px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세부항목</th>
+                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>단가 기준</th>
+                    <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>단위</th>
+                    <th style={{ width: "120px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>기준가(원/단위)</th>
+                    <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>수량</th>
+                    <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>적용률</th>
+                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>기준가(㎡)</th>
+                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>피해면적</th>
+                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>공제(원)</th>
+                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>경비여부</th>
+                    <th style={{ width: "80px", padding: "17.5px 8px", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>요청</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3].map((_, index) => (
+                    <tr
+                      key={index}
+                      style={{
+                        borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                      }}
+                    >
+                      <td style={{ padding: "8px", textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <Select defaultValue="furniture">
+                          <SelectTrigger className="border focus:ring-0" style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="furniture">가구공사</SelectItem>
+                            <SelectItem value="etc">기타</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input type="text" defaultValue="고정" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <Select defaultValue="silicon">
+                          <SelectTrigger className="border focus:ring-0" style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="silicon">실리콘</SelectItem>
+                            <SelectItem value="etc">기타</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <Select defaultValue="empty">
+                          <SelectTrigger className="border focus:ring-0" style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="empty">-</SelectItem>
+                            <SelectItem value="item1">항목1</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <Select defaultValue="unit">
+                          <SelectTrigger className="border focus:ring-0" style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unit">인</SelectItem>
+                            <SelectItem value="m2">㎡</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <Select defaultValue="day">
+                          <SelectTrigger className="border focus:ring-0" style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="day">일</SelectItem>
+                            <SelectItem value="hour">시간</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input type="text" defaultValue="157069" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input type="text" defaultValue="1" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input type="text" defaultValue="30" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input type="text" defaultValue="30" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input type="text" defaultValue="157069" className="input-focus-blue" style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} />
+                      </td>
+                      <td style={{ padding: "8px", textAlign: "center" }}>
+                        <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                      </td>
+                      <td style={{ padding: "8px", textAlign: "center" }}>
+                        <input type="checkbox" style={{ width: "16px", height: "16px", cursor: "pointer" }} />
+                      </td>
+                      <td style={{ padding: "8px", textAlign: "center" }}>
+                        <button
+                          className="hover-elevate active-elevate-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            padding: "6px 12px",
+                            background: "white",
+                            color: "#008FED",
+                            border: "1px solid #008FED",
+                            borderRadius: "6px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          복제
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 자재비, 견적서는 준비중 표시 */}
+        {(selectedCategory === "자재비" || selectedCategory === "견적서") && (
           <div
             className="flex items-center justify-center"
             style={{
