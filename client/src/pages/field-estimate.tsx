@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Case } from "@shared/schema";
+import { Case, MasterData } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Check } from "lucide-react";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
@@ -29,7 +29,6 @@ interface AreaCalculationRow {
 }
 
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
-const ROOM_CATEGORIES = ["주방", "화장실", "방안", "거실상"];
 
 export default function FieldEstimate() {
   const [selectedCategory, setSelectedCategory] = useState("복구면적 산출표");
@@ -40,6 +39,22 @@ export default function FieldEstimate() {
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
 
   const { toast } = useToast();
+
+  // 마스터 데이터 조회
+  const { data: masterDataList = [] } = useQuery<MasterData[]>({
+    queryKey: ['/api/master-data'],
+  });
+
+  // 카테고리별 마스터 데이터 필터링
+  const roomCategories = masterDataList
+    .filter(item => item.category === 'room_category')
+    .map(item => item.value);
+  const locations = masterDataList
+    .filter(item => item.category === 'location')
+    .map(item => item.value);
+  const workNames = masterDataList
+    .filter(item => item.category === 'work_name')
+    .map(item => item.value);
 
   // 선택된 케이스 데이터 가져오기
   const { data: selectedCase, isLoading: isLoadingSelectedCase } = useQuery<Case>({
@@ -59,9 +74,9 @@ export default function FieldEstimate() {
       // 기존 견적이 있으면 불러오기
       const loadedRows = latestEstimate.rows.map((row: any) => ({
         id: `row-${row.id}`,
-        category: row.category || "주방",
-        location: row.location || "선택",
-        workName: row.workName || "선택",
+        category: row.category || (roomCategories[0] || ""),
+        location: row.location || (locations[0] || ""),
+        workName: row.workName || (workNames[0] || ""),
         damageWidth: row.damageWidth?.toString() || "0000",
         damageHeight: row.damageHeight?.toString() || "0000",
         damageArea: row.damageArea ? (row.damageArea / 1000000).toFixed(2) : "0000",
@@ -71,18 +86,18 @@ export default function FieldEstimate() {
         note: row.note || "",
       }));
       setRows(loadedRows);
-    } else if (rows.length === 0) {
-      // 견적이 없으면 빈 행 생성
+    } else if (rows.length === 0 && masterDataList.length > 0) {
+      // 견적이 없고 마스터 데이터가 로드되었으면 빈 행 생성
       addRow();
     }
-  }, [latestEstimate]);
+  }, [latestEstimate, masterDataList]);
 
   // 빈 행 생성 함수
   const createBlankRow = (): AreaCalculationRow => ({
     id: `row-${Date.now()}-${Math.random()}`,
-    category: "주방",
-    location: "선택",
-    workName: "선택",
+    category: roomCategories[0] || "",
+    location: locations[0] || "",
+    workName: workNames[0] || "",
     damageWidth: "0000",
     damageHeight: "0000",
     damageArea: "0000",
@@ -146,6 +161,14 @@ export default function FieldEstimate() {
 
   // 초기화
   const handleReset = () => {
+    if (masterDataList.length === 0) {
+      toast({
+        title: "잠시만 기다려주세요",
+        description: "마스터 데이터를 로딩 중입니다.",
+        variant: "destructive",
+      });
+      return;
+    }
     if (confirm("입력한 내용을 모두 초기화하시겠습니까?")) {
       setRows([createBlankRow()]);
       setSelectedRows(new Set());
@@ -379,14 +402,17 @@ export default function FieldEstimate() {
                 <button
                   type="button"
                   onClick={addRow}
+                  disabled={masterDataList.length === 0}
                   className="px-4 py-2 rounded-md flex items-center gap-2 hover-elevate active-elevate-2"
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     fontWeight: 500,
-                    background: "white",
-                    color: "#008FED",
-                    border: "1px solid #008FED",
+                    background: masterDataList.length === 0 ? "#f5f5f5" : "white",
+                    color: masterDataList.length === 0 ? "rgba(12, 12, 12, 0.3)" : "#008FED",
+                    border: masterDataList.length === 0 ? "1px solid rgba(12, 12, 12, 0.1)" : "1px solid #008FED",
+                    cursor: masterDataList.length === 0 ? "not-allowed" : "pointer",
+                    opacity: masterDataList.length === 0 ? 0.6 : 1,
                   }}
                   data-testid="button-add-row"
                 >
@@ -504,7 +530,7 @@ export default function FieldEstimate() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {ROOM_CATEGORIES.map(cat => (
+                            {roomCategories.map(cat => (
                               <SelectItem key={cat} value={cat}>
                                 <div className="flex items-center justify-between w-full">
                                   <span>{cat}</span>
@@ -537,14 +563,16 @@ export default function FieldEstimate() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="선택">
-                              <div className="flex items-center justify-between w-full">
-                                <span>선택</span>
-                                {row.location === "선택" && (
-                                  <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
-                                )}
-                              </div>
-                            </SelectItem>
+                            {locations.map(loc => (
+                              <SelectItem key={loc} value={loc}>
+                                <div className="flex items-center justify-between w-full">
+                                  <span>{loc}</span>
+                                  {row.location === loc && (
+                                    <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </td>
@@ -568,14 +596,16 @@ export default function FieldEstimate() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="선택">
-                              <div className="flex items-center justify-between w-full">
-                                <span>선택</span>
-                                {row.workName === "선택" && (
-                                  <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
-                                )}
-                              </div>
-                            </SelectItem>
+                            {workNames.map(work => (
+                              <SelectItem key={work} value={work}>
+                                <div className="flex items-center justify-between w-full">
+                                  <span>{work}</span>
+                                  {row.workName === work && (
+                                    <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </td>
