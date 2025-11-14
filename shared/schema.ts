@@ -390,3 +390,51 @@ export const insertCaseDocumentSchema = createInsertSchema(caseDocuments).omit({
 
 export type InsertCaseDocument = z.infer<typeof insertCaseDocumentSchema>;
 export type CaseDocument = typeof caseDocuments.$inferSelect;
+
+// 견적서 테이블 (부모 테이블)
+export const estimates = pgTable("estimates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseId: varchar("case_id").notNull().references(() => cases.id),
+  version: integer("version").notNull().default(1), // 버전 관리
+  status: text("status").notNull().default("draft"), // "draft" | "submitted" | "approved"
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // unique constraint: 케이스당 버전별로 하나만 허용
+  unq: unique().on(table.caseId, table.version),
+}));
+
+// 복구면적 산출표 행 테이블 (자식 테이블)
+export const estimateRows = pgTable("estimate_rows", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  estimateId: varchar("estimate_id").notNull().references(() => estimates.id),
+  category: text("category").notNull(), // 항소: 주방, 화장실, 방안, 거실상
+  location: text("location"), // 위치
+  workName: text("work_name"), // 공사명
+  damageWidth: integer("damage_width"), // 피해면적 가로 (mm)
+  damageHeight: integer("damage_height"), // 피해면적 세로 (mm)
+  damageArea: integer("damage_area"), // 피해면적 면적 (mm²) - 계산된 값
+  repairWidth: integer("repair_width"), // 복구면적 가로 (mm)
+  repairHeight: integer("repair_height"), // 복구면적 세로 (mm)
+  repairArea: integer("repair_area"), // 복구면적 면적 (mm²) - 계산된 값
+  note: text("note"), // 비고
+  rowOrder: integer("row_order").notNull(), // 행 순서
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertEstimateSchema = createInsertSchema(estimates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEstimateRowSchema = createInsertSchema(estimateRows).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertEstimate = z.infer<typeof insertEstimateSchema>;
+export type Estimate = typeof estimates.$inferSelect;
+export type InsertEstimateRow = z.infer<typeof insertEstimateRowSchema>;
+export type EstimateRow = typeof estimateRows.$inferSelect;
