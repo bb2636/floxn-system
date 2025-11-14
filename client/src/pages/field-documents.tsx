@@ -316,13 +316,7 @@ export default function FieldDocuments() {
 
       {/* 작성중인 건 */}
       {selectedCase && (
-        <div 
-          className="mb-6 p-6 rounded-xl"
-          style={{
-            background: "rgba(0, 143, 237, 0.04)",
-            border: "1px solid rgba(0, 143, 237, 0.1)",
-          }}
-        >
+        <div className="mb-6">
           <div
             style={{
               fontFamily: "Pretendard",
@@ -330,46 +324,53 @@ export default function FieldDocuments() {
               fontWeight: 400,
               letterSpacing: "-0.02em",
               color: "rgba(12, 12, 12, 0.5)",
-              marginBottom: "12px",
+              marginBottom: "8px",
             }}
           >
             작성중인 건
           </div>
           
-          {/* 첫 번째 줄: 보험사명 + 사고번호 */}
-          <div className="flex items-center gap-2 mb-2">
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ background: "#008FED" }}
-            />
-            <span
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "16px",
-                fontWeight: 600,
-                letterSpacing: "-0.02em",
-                color: "#0C0C0C",
-              }}
-            >
-              {selectedCase.insuranceCompany || "보험사 미정"} {selectedCase.insuranceAccidentNo || ""}
-            </span>
-          </div>
-          
-          {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
           <div 
-            className="flex items-center gap-4"
+            className="p-4 rounded-lg"
             style={{
-              fontFamily: "Pretendard",
-              fontSize: "13px",
-              fontWeight: 400,
-              letterSpacing: "-0.02em",
-              color: "rgba(12, 12, 12, 0.6)",
-              paddingLeft: "12px",
+              background: "rgba(12, 12, 12, 0.03)",
             }}
           >
-            <span>접수번호 {selectedCase.caseNumber}</span>
-            <span>계약자 {selectedCase.clientName || "미정"}</span>
-            <span>담당자 {selectedCase.assessorId || "미정"}</span>
+            {/* 첫 번째 줄: 보험사명 + 사고번호 */}
+            <div className="flex items-center gap-2 mb-2">
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ background: "#008FED" }}
+              />
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
+                {selectedCase.insuranceCompany || "보험사 미정"} {selectedCase.insuranceAccidentNo || ""}
+              </span>
+            </div>
+            
+            {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+            <div 
+              className="flex items-center gap-4"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "13px",
+                fontWeight: 400,
+                letterSpacing: "-0.02em",
+                color: "rgba(12, 12, 12, 0.5)",
+                paddingLeft: "12px",
+              }}
+            >
+              <span>접수번호 {selectedCase.caseNumber}</span>
+              <span>계약자 {selectedCase.clientName || "미정"}</span>
+              <span>담당자 {selectedCase.assessorId || "미정"}</span>
+            </div>
           </div>
         </div>
       )}
