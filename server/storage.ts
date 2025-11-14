@@ -100,7 +100,7 @@ export interface IStorage {
   deleteMasterData(id: string): Promise<void>;
   updateMasterData(id: string, data: Partial<InsertMasterData>): Promise<MasterData | null>;
   // Labor cost methods
-  getLaborCosts(): Promise<LaborCost[]>;
+  getLaborCosts(filters?: { category?: string; workName?: string; detailWork?: string }): Promise<LaborCost[]>;
   createLaborCost(data: InsertLaborCost): Promise<LaborCost>;
   deleteLaborCost(id: string): Promise<void>;
 }
@@ -1487,7 +1487,7 @@ export class MemStorage implements IStorage {
     throw new Error("Master data methods not implemented in MemStorage");
   }
 
-  async getLaborCosts(): Promise<LaborCost[]> {
+  async getLaborCosts(filters?: { category?: string; workName?: string; detailWork?: string }): Promise<LaborCost[]> {
     throw new Error("Labor cost methods not implemented in MemStorage");
   }
 
@@ -2426,11 +2426,25 @@ export class DbStorage implements IStorage {
   }
 
   // Labor cost methods
-  async getLaborCosts(): Promise<LaborCost[]> {
-    return await db
-      .select()
-      .from(laborCosts)
-      .orderBy(asc(laborCosts.category), asc(laborCosts.workName));
+  async getLaborCosts(filters?: { category?: string; workName?: string; detailWork?: string }): Promise<LaborCost[]> {
+    let query = db.select().from(laborCosts);
+    
+    const conditions = [];
+    if (filters?.category) {
+      conditions.push(eq(laborCosts.category, filters.category));
+    }
+    if (filters?.workName) {
+      conditions.push(eq(laborCosts.workName, filters.workName));
+    }
+    if (filters?.detailWork) {
+      conditions.push(eq(laborCosts.detailWork, filters.detailWork));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    return await query.orderBy(asc(laborCosts.category), asc(laborCosts.workName));
   }
 
   async createLaborCost(data: InsertLaborCost): Promise<LaborCost> {

@@ -1374,14 +1374,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Labor cost endpoints
-  // Get all labor costs
+  // Get all labor costs (with optional filters)
   app.get("/api/labor-costs", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     try {
-      const data = await storage.getLaborCosts();
+      const { category, workName, detailWork } = req.query;
+      const filters: { category?: string; workName?: string; detailWork?: string } = {};
+      
+      if (typeof category === 'string') filters.category = category;
+      if (typeof workName === 'string') filters.workName = workName;
+      if (typeof detailWork === 'string') filters.detailWork = detailWork;
+      
+      const data = await storage.getLaborCosts(Object.keys(filters).length > 0 ? filters : undefined);
       res.json(data);
     } catch (error) {
       console.error("Get labor costs error:", error);
