@@ -1,4 +1,4 @@
-import { ReactNode, useRef, useEffect } from "react";
+import { ReactNode } from "react";
 import { AppSidebarFieldSurvey } from "@/components/app-sidebar-field-survey";
 import { GlobalHeader } from "@/components/global-header";
 
@@ -7,39 +7,6 @@ interface FieldSurveyLayoutProps {
 }
 
 export function FieldSurveyLayout({ children }: FieldSurveyLayoutProps) {
-  const mainRef = useRef<HTMLElement>(null);
-  const scrollPositionRef = useRef(0);
-
-  // Prevent unwanted scroll restoration
-  useEffect(() => {
-    const mainElement = mainRef.current;
-    if (!mainElement) return;
-
-    const saveScrollPosition = () => {
-      scrollPositionRef.current = mainElement.scrollTop;
-    };
-
-    // Save scroll position on any scroll event
-    mainElement.addEventListener('scroll', saveScrollPosition, { passive: true });
-
-    // Restore scroll position after any focus event
-    const restoreScrollOnFocus = () => {
-      const savedScroll = scrollPositionRef.current;
-      requestAnimationFrame(() => {
-        if (mainElement.scrollTop !== savedScroll) {
-          mainElement.scrollTop = savedScroll;
-        }
-      });
-    };
-
-    mainElement.addEventListener('focusin', restoreScrollOnFocus, { passive: true });
-
-    return () => {
-      mainElement.removeEventListener('scroll', saveScrollPosition);
-      mainElement.removeEventListener('focusin', restoreScrollOnFocus);
-    };
-  }, []);
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E7EDFE] to-white relative overflow-hidden">
       {/* Background blur effects */}
@@ -52,14 +19,7 @@ export function FieldSurveyLayout({ children }: FieldSurveyLayoutProps) {
       {/* Main Content */}
       <div className="relative flex" style={{ height: "calc(100vh - 89px)" }}>
         <AppSidebarFieldSurvey />
-        <main 
-          ref={mainRef}
-          className="flex-1 overflow-y-auto"
-          style={{
-            scrollBehavior: 'auto',
-            overscrollBehavior: 'contain',
-          }}
-        >
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
