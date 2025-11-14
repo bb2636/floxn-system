@@ -93,7 +93,7 @@ export default function FieldDrawing() {
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
 
   // 선택된 케이스 데이터 가져오기
-  const { data: selectedCase } = useQuery<Case>({
+  const { data: selectedCase, isLoading: isLoadingSelectedCase } = useQuery<Case>({
     queryKey: ["/api/cases", selectedCaseId],
     enabled: !!selectedCaseId,
   });
@@ -934,7 +934,17 @@ export default function FieldDrawing() {
               borderBottom: "1px solid rgba(0, 143, 237, 0.15)",
             }}
           >
-            {selectedCase ? (
+            {isLoadingSelectedCase ? (
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "12px",
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+              >
+                로딩 중...
+              </span>
+            ) : selectedCase ? (
               <>
                 <div className="flex items-center gap-2 mb-1">
                   <div 
@@ -962,6 +972,16 @@ export default function FieldDrawing() {
                   {selectedCase.caseNumber}
                 </span>
               </>
+            ) : selectedCaseId ? (
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "12px",
+                  color: "#ef4444",
+                }}
+              >
+                케이스를 찾을 수 없습니다
+              </span>
             ) : (
               <span
                 style={{
