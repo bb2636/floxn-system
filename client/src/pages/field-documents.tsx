@@ -75,6 +75,13 @@ export default function FieldDocuments() {
             f.id === fileId ? { ...f, progress: 100, uploaded: true } : f
           )
         );
+        
+        // 업로드 완료 토스트 메시지
+        toast({
+          title: "파일이 업로드 되었습니다",
+          description: "",
+          className: "bg-[#008FED] text-white border-0",
+        });
       } else {
         setUploadedFiles(prev =>
           prev.map(f =>
