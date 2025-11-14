@@ -73,6 +73,7 @@ export default function FieldDrawing() {
   const [activeTransform, setActiveTransform] = useState<ActiveTransform | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
+  const [drawCurrent, setDrawCurrent] = useState({ x: 0, y: 0 });
   const [currentDrawingId, setCurrentDrawingId] = useState<string | null>(() => {
     // Load drawing ID from localStorage on mount
     // TODO: Replace with case-based loading in Task 6
@@ -98,12 +99,7 @@ export default function FieldDrawing() {
     enabled: !!selectedCaseId,
   });
 
-  // 활성 케이스 ID 조회
-  const { data: activeCaseData, isLoading: isLoadingActiveCase } = useQuery<{ caseId: string }>({
-    queryKey: ["/api/drawings/active-case-id"],
-    enabled: !!user, // Only fetch when user is available
-    staleTime: Infinity, // Active case doesn't change during session
-  });
+  // 활성 케이스 ID는 localStorage의 selectedFieldSurveyCaseId 사용
 
   // 저장된 도면 로드 (Task 6)
   const { data: savedDrawing, isLoading: isLoadingDrawing } = useQuery<Drawing>({
@@ -129,9 +125,8 @@ export default function FieldDrawing() {
       }
 
       // Verify case match before hydrating canvas state
-      // Use activeCaseData if available, otherwise fall back to selectedCase
-      const currentCaseId = activeCaseData?.caseId || selectedCase?.id;
-      if (currentCaseId && savedDrawing.caseId !== currentCaseId) {
+      // Use selectedCaseId from localStorage (현장입력에서 선택한 케이스)
+      if (selectedCaseId && savedDrawing.caseId !== selectedCaseId) {
         // Drawing belongs to different case - clear invalid ID
         setCurrentDrawingId(null);
         localStorage.removeItem('currentDrawingId');
@@ -148,7 +143,7 @@ export default function FieldDrawing() {
       setAccidentAreas(savedDrawing.accidentAreas || []);
       setLeakMarkers(savedDrawing.leakMarkers || []);
     }
-  }, [savedDrawing, isLoadingDrawing, user, activeCaseData, selectedCase]);
+  }, [savedDrawing, isLoadingDrawing, user, selectedCaseId]);
 
   // Check if save is ready (validation complete) - explicit boolean coercion
   // Includes loading guards for both user, selected case, and drawing queries
@@ -812,19 +807,21 @@ export default function FieldDrawing() {
     if (selectedTool === "rectangle" || selectedTool === "accident-area") {
       setIsDrawing(true);
       setDrawStart({ x, y });
+      setDrawCurrent({ x, y });
     } else if (selectedTool === "pointer") {
       // 드래그 시작 로직
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Canvas-level handler now only handles drawing preview
-    // Drag and resize are handled by document-level listeners in useEffect
+    if (!canvasRef.current) return;
     
-    // Drawing preview for rectangle/accident-area (visual feedback only)
+    // 사각형 그리기 미리보기 업데이트
     if (isDrawing && (selectedTool === "rectangle" || selectedTool === "accident-area")) {
-      // Drawing preview is handled by render logic
-      return;
+      const canvasRect = canvasRef.current.getBoundingClientRect();
+      const x = e.clientX - canvasRect.left;
+      const y = e.clientY - canvasRect.top;
+      setDrawCurrent({ x, y });
     }
     
     // All drag/resize logic moved to document listeners
@@ -1394,6 +1391,30 @@ export default function FieldDrawing() {
                     </div>
                   </div>
                 ))}
+
+                {/* 사각형 드래그 미리보기 (윈도우 캡처 스타일) */}
+                {isDrawing && selectedTool === "rectangle" && (() => {
+                  const previewX = Math.min(drawStart.x, drawCurrent.x);
+                  const previewY = Math.min(drawStart.y, drawCurrent.y);
+                  const previewWidth = Math.abs(drawCurrent.x - drawStart.x);
+                  const previewHeight = Math.abs(drawCurrent.y - drawStart.y);
+                  
+                  return (
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: `${previewX}px`,
+                        top: `${previewY}px`,
+                        width: `${previewWidth}px`,
+                        height: `${previewHeight}px`,
+                        border: "2px solid #008FED",
+                        background: "rgba(0, 143, 237, 0.1)",
+                        pointerEvents: "none",
+                        zIndex: 100,
+                      }}
+                    />
+                  );
+                })()}
 
                 {/* 사고 영역들 */}
                 {accidentAreas.map((area) => (
