@@ -1065,7 +1065,7 @@ export default function FieldDrawing() {
                     color: "#0C0C0C",
                   }}
                 >
-                  {selectedCase.clientName || selectedCase.insuranceCompany}
+                  {selectedCase.assignedPartnerManager || selectedCase.clientName || selectedCase.insuranceCompany}
                 </span>
                 <span
                   style={{
