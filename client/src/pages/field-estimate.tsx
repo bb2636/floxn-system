@@ -16,7 +16,7 @@ import {
 
 interface AreaCalculationRow {
   id: string;
-  category: string; // 항소: 주방, 화장실, 방안, 거실상
+  category: string; // 장소: 주방, 화장실, 방안, 거실상
   location: string; // 위치
   workName: string; // 공사명
   damageWidth: string; // 피해면적 가로 (mm)
@@ -463,7 +463,7 @@ export default function FieldEstimate() {
                     }}
                   >
                     <th style={{ width: "40px", padding: "12px 8px" }}></th>
-                    <th style={{ width: "120px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>항소</th>
+                    <th style={{ width: "120px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>장소</th>
                     <th style={{ width: "120px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>위치</th>
                     <th style={{ width: "120px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>공사명</th>
                     <th style={{ padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }} colSpan={3}>
