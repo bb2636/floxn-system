@@ -620,7 +620,7 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.damageWidth}
                           onChange={(e) => updateRow(row.id, 'damageWidth', e.target.value)}
-                          className="focus:outline-none focus:border-2 focus:border-[#008FED]"
+                          className="input-focus-blue"
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -638,7 +638,7 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.damageHeight}
                           onChange={(e) => updateRow(row.id, 'damageHeight', e.target.value)}
-                          className="focus:outline-none focus:border-2 focus:border-[#008FED]"
+                          className="input-focus-blue"
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -674,7 +674,7 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.repairWidth}
                           onChange={(e) => updateRow(row.id, 'repairWidth', e.target.value)}
-                          className="focus:outline-none focus:border-2 focus:border-[#008FED]"
+                          className="input-focus-blue"
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -692,7 +692,7 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.repairHeight}
                           onChange={(e) => updateRow(row.id, 'repairHeight', e.target.value)}
-                          className="focus:outline-none focus:border-2 focus:border-[#008FED]"
+                          className="input-focus-blue"
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -728,7 +728,7 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.note}
                           onChange={(e) => updateRow(row.id, 'note', e.target.value)}
-                          className="focus:outline-none focus:border-2 focus:border-[#008FED]"
+                          className="input-focus-blue"
                           style={{
                             width: "100%",
                             padding: "8px",

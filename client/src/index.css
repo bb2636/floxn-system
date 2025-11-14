@@ -318,4 +318,10 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* Custom input focus style for field estimate */
+  .input-focus-blue:focus {
+    outline: none;
+    border: 2px solid #008FED !important;
+  }
 }
