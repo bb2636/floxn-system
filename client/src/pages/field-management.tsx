@@ -362,7 +362,7 @@ export default function FieldManagement() {
                     width: "788px",
                     height: "auto",
                     padding: "20px 24px",
-                    background: "transparent",
+                    background: "rgba(12, 12, 12, 0.03)",
                     borderRadius: "12px",
                   }}
                   data-testid="select-case"
