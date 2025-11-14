@@ -284,6 +284,7 @@ export default function FieldManagement() {
           </h3>
           <CollapsibleTrigger asChild>
             <button
+              type="button"
               className="flex items-center gap-1 px-3 py-2 rounded hover-elevate active-elevate-2"
               disabled={disabled}
               data-testid={`button-toggle-${title}`}
@@ -778,6 +779,7 @@ export default function FieldManagement() {
                 <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
                   <PopoverTrigger asChild>
                     <Button
+                      type="button"
                       variant="outline"
                       className={intakeButtonClass}
                       style={{
@@ -863,6 +865,7 @@ export default function FieldManagement() {
                     <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen} modal={false}>
                       <PopoverTrigger asChild>
                         <Button
+                          type="button"
                           variant="outline"
                           className={intakeButtonClass}
                           style={{
