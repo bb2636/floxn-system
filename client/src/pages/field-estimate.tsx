@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Case, MasterData } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Check } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -532,12 +532,7 @@ export default function FieldEstimate() {
                           <SelectContent>
                             {roomCategories.map(cat => (
                               <SelectItem key={cat} value={cat}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{cat}</span>
-                                  {row.category === cat && (
-                                    <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
-                                  )}
-                                </div>
+                                {cat}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -565,12 +560,7 @@ export default function FieldEstimate() {
                           <SelectContent>
                             {locations.map(loc => (
                               <SelectItem key={loc} value={loc}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{loc}</span>
-                                  {row.location === loc && (
-                                    <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
-                                  )}
-                                </div>
+                                {loc}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -598,12 +588,7 @@ export default function FieldEstimate() {
                           <SelectContent>
                             {workNames.map(work => (
                               <SelectItem key={work} value={work}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{work}</span>
-                                  {row.workName === work && (
-                                    <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
-                                  )}
-                                </div>
+                                {work}
                               </SelectItem>
                             ))}
                           </SelectContent>
