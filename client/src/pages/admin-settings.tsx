@@ -5,7 +5,7 @@ import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer } from 
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { User, VALID_ROLES, type ExcelData, type Inquiry } from "@shared/schema";
+import { User, VALID_ROLES, type ExcelData, type Inquiry, type MasterData, type InsertMasterData } from "@shared/schema";
 import {
   Select,
   SelectContent,
@@ -280,7 +280,7 @@ export default function AdminSettings() {
   const [materialExcelHeaders, setMaterialExcelHeaders] = useState<string[]>([]);
   
   // 기준정보 관리 states
-  const [selectedCategory, setSelectedCategory] = useState("보험사");
+  const [selectedCategory, setSelectedCategory] = useState("장소");
   const [categoryItems, setCategoryItems] = useState<Record<string, string[]>>({
     "보험사": ["보험사 1", "보험사 2", "보험사 3"],
     "협력사": ["협력사 1", "협력사 2"],
@@ -325,6 +325,88 @@ export default function AdminSettings() {
   // Check authentication
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
+  });
+
+  // 마스터 데이터 카테고리 매핑 (UI 표시명 → DB 카테고리명)
+  const MASTER_DATA_CATEGORIES: Record<string, string> = {
+    "장소": "room_category",
+    "위치": "location",
+    "공사내용": "work_name",
+  };
+
+  // DB 연동 마스터 데이터 조회
+  const { data: masterDataList = [], refetch: refetchMasterData } = useQuery<MasterData[]>({
+    queryKey: ["/api/master-data"],
+    enabled: !!user && user.role === "관리자",
+  });
+
+  // 선택된 카테고리의 마스터 데이터 필터링
+  const currentMasterData = masterDataList.filter(
+    (item) => item.category === MASTER_DATA_CATEGORIES[selectedCategory]
+  );
+
+  // 전체 카테고리 목록 (DB 연동 + 메모리 state)
+  const allCategories = [...Object.keys(MASTER_DATA_CATEGORIES), ...Object.keys(categoryItems)];
+
+  // 카테고리가 DB 연동 카테고리인지 확인
+  const isMasterDataCategory = (category: string) => category in MASTER_DATA_CATEGORIES;
+
+  // 카테고리의 항목 개수 계산
+  const getCategoryCount = (category: string) => {
+    if (isMasterDataCategory(category)) {
+      return masterDataList.filter(item => item.category === MASTER_DATA_CATEGORIES[category]).length;
+    }
+    return categoryItems[category]?.length || 0;
+  };
+
+  // 카테고리의 항목 목록 가져오기
+  const getCategoryItems = (category: string) => {
+    if (isMasterDataCategory(category)) {
+      return masterDataList.filter(item => item.category === MASTER_DATA_CATEGORIES[category]);
+    }
+    return categoryItems[category] || [];
+  };
+
+  // 마스터 데이터 생성 mutation
+  const createMasterDataMutation = useMutation({
+    mutationFn: async (data: InsertMasterData) => {
+      return await apiRequest("POST", "/api/master-data", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/master-data"] });
+      toast({
+        title: "항목 추가 완료",
+        description: "항목이 성공적으로 추가되었습니다.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "추가 실패",
+        description: error.message || "항목을 추가하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 마스터 데이터 삭제 mutation
+  const deleteMasterDataMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/master-data/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/master-data"] });
+      toast({
+        title: "삭제 완료",
+        description: "항목이 삭제되었습니다.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "삭제 실패",
+        description: error.message || "항목을 삭제하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Fetch all users from server
@@ -1912,7 +1994,7 @@ export default function AdminSettings() {
                   </h3>
 
                   <div className="space-y-2">
-                    {Object.keys(categoryItems).map((category) => (
+                    {allCategories.map((category) => (
                       <div key={category}>
                         <button
                           onClick={() => setSelectedCategory(category)}
@@ -1934,7 +2016,7 @@ export default function AdminSettings() {
                                 color: "#686A6E",
                               }}
                             >
-                              {categoryItems[category].length}개
+                              {getCategoryCount(category)}개
                             </span>
                           </div>
                           <div
@@ -2062,15 +2144,28 @@ export default function AdminSettings() {
                             return;
                           }
                           
-                          setCategoryItems({
-                            ...categoryItems,
-                            [selectedCategory]: [...categoryItems[selectedCategory], newItemInput.trim()],
-                          });
+                          if (isMasterDataCategory(selectedCategory)) {
+                            // DB 연동 카테고리: mutation 사용
+                            const categoryKey = MASTER_DATA_CATEGORIES[selectedCategory];
+                            const currentCount = getCategoryCount(selectedCategory);
+                            createMasterDataMutation.mutate({
+                              category: categoryKey,
+                              value: newItemInput.trim(),
+                              isActive: "true",
+                              displayOrder: currentCount,
+                            });
+                          } else {
+                            // 메모리 state 카테고리: 기존 로직 유지
+                            setCategoryItems(prev => ({
+                              ...prev,
+                              [selectedCategory]: [...(prev[selectedCategory] || []), newItemInput.trim()],
+                            }));
+                            toast({
+                              title: "항목 추가 완료",
+                              description: `${newItemInput.trim()}이(가) 추가되었습니다.`,
+                            });
+                          }
                           setNewItemInput("");
-                          toast({
-                            title: "항목 추가 완료",
-                            description: `${newItemInput.trim()}이(가) 추가되었습니다.`,
-                          });
                         }}
                         className="px-6 py-3"
                         style={{
@@ -2101,17 +2196,26 @@ export default function AdminSettings() {
                       >
                         등록된 항목
                       </h4>
-                      {categoryItems[selectedCategory].length > 0 && (
+                      {getCategoryCount(selectedCategory) > 0 && (
                         <button
                           onClick={() => {
-                            setCategoryItems({
-                              ...categoryItems,
-                              [selectedCategory]: [],
-                            });
-                            toast({
-                              title: "전체 삭제 완료",
-                              description: "모든 항목이 삭제되었습니다.",
-                            });
+                            if (isMasterDataCategory(selectedCategory)) {
+                              // DB 연동 카테고리: 각 항목을 개별 삭제
+                              const items = getCategoryItems(selectedCategory) as MasterData[];
+                              items.forEach(item => {
+                                deleteMasterDataMutation.mutate(item.id);
+                              });
+                            } else {
+                              // 메모리 state 카테고리: 기존 로직 유지
+                              setCategoryItems(prev => ({
+                                ...prev,
+                                [selectedCategory]: [],
+                              }));
+                              toast({
+                                title: "전체 삭제 완료",
+                                description: "모든 항목이 삭제되었습니다.",
+                              });
+                            }
                           }}
                           className="px-4 py-2"
                           style={{
@@ -2186,97 +2290,113 @@ export default function AdminSettings() {
                         </tr>
                       </thead>
                       <tbody>
-                        {categoryItems[selectedCategory].length > 0 ? (
-                          categoryItems[selectedCategory].map((item, idx) => (
-                            <tr
-                              key={idx}
-                              style={{
-                                borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                              }}
-                            >
-                              <td
-                                className="px-4 py-4"
-                                style={{
-                                  fontFamily: "Pretendard",
-                                  fontSize: "14px",
-                                  fontWeight: 400,
-                                  color: "#0C0C0C",
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  className="w-4 h-4"
+                        {(() => {
+                          const items = getCategoryItems(selectedCategory);
+                          const isMasterCategory = isMasterDataCategory(selectedCategory);
+                          
+                          if (items.length === 0) {
+                            return (
+                              <tr>
+                                <td
+                                  colSpan={4}
+                                  className="px-4 py-8 text-center"
                                   style={{
-                                    accentColor: "#008FED",
-                                  }}
-                                />
-                              </td>
-                              <td
-                                className="px-4 py-4"
-                                style={{
-                                  fontFamily: "Pretendard",
-                                  fontSize: "14px",
-                                  fontWeight: 400,
-                                  color: "#686A6E",
-                                }}
-                              >
-                                내용
-                              </td>
-                              <td
-                                className="px-4 py-4"
-                                style={{
-                                  fontFamily: "Pretendard",
-                                  fontSize: "14px",
-                                  fontWeight: 500,
-                                  color: "#0C0C0C",
-                                }}
-                              >
-                                {item}
-                              </td>
-                              <td className="px-4 py-4 text-center">
-                                <button
-                                  onClick={() => {
-                                    setCategoryItems({
-                                      ...categoryItems,
-                                      [selectedCategory]: categoryItems[selectedCategory].filter((_, i) => i !== idx),
-                                    });
-                                    toast({
-                                      title: "삭제 완료",
-                                      description: `${item}이(가) 삭제되었습니다.`,
-                                    });
-                                  }}
-                                  className="px-3 py-1"
-                                  style={{
-                                    background: "rgba(239, 68, 68, 0.1)",
-                                    borderRadius: "4px",
                                     fontFamily: "Pretendard",
-                                    fontSize: "13px",
-                                    fontWeight: 500,
-                                    color: "#EF4444",
+                                    fontSize: "14px",
+                                    fontWeight: 400,
+                                    color: "#686A6E",
                                   }}
-                                  data-testid={`button-delete-item-${idx}`}
                                 >
-                                  -
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              className="px-4 py-8 text-center"
-                              style={{
-                                fontFamily: "Pretendard",
-                                fontSize: "14px",
-                                fontWeight: 400,
-                                color: "#686A6E",
-                              }}
-                            >
-                              등록된 항목이 없습니다. 항목을 추가해주세요.
-                            </td>
-                          </tr>
-                        )}
+                                  등록된 항목이 없습니다. 항목을 추가해주세요.
+                                </td>
+                              </tr>
+                            );
+                          }
+                          
+                          return items.map((item, idx) => {
+                            const itemValue = isMasterCategory ? (item as MasterData).value : (item as string);
+                            const itemId = isMasterCategory ? (item as MasterData).id : null;
+                            
+                            return (
+                              <tr
+                                key={isMasterCategory ? itemId : idx}
+                                style={{
+                                  borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                                }}
+                              >
+                                <td
+                                  className="px-4 py-4"
+                                  style={{
+                                    fontFamily: "Pretendard",
+                                    fontSize: "14px",
+                                    fontWeight: 400,
+                                    color: "#0C0C0C",
+                                  }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="w-4 h-4"
+                                    style={{
+                                      accentColor: "#008FED",
+                                    }}
+                                  />
+                                </td>
+                                <td
+                                  className="px-4 py-4"
+                                  style={{
+                                    fontFamily: "Pretendard",
+                                    fontSize: "14px",
+                                    fontWeight: 400,
+                                    color: "#686A6E",
+                                  }}
+                                >
+                                  내용
+                                </td>
+                                <td
+                                  className="px-4 py-4"
+                                  style={{
+                                    fontFamily: "Pretendard",
+                                    fontSize: "14px",
+                                    fontWeight: 500,
+                                    color: "#0C0C0C",
+                                  }}
+                                >
+                                  {itemValue}
+                                </td>
+                                <td className="px-4 py-4 text-center">
+                                  <button
+                                    onClick={() => {
+                                      if (isMasterCategory && itemId) {
+                                        deleteMasterDataMutation.mutate(itemId);
+                                      } else {
+                                        setCategoryItems(prev => ({
+                                          ...prev,
+                                          [selectedCategory]: (prev[selectedCategory] || []).filter((_, i) => i !== idx),
+                                        }));
+                                        toast({
+                                          title: "삭제 완료",
+                                          description: `${itemValue}이(가) 삭제되었습니다.`,
+                                        });
+                                      }
+                                    }}
+                                    className="px-3 py-1"
+                                    style={{
+                                      background: "rgba(239, 68, 68, 0.1)",
+                                      borderRadius: "4px",
+                                      fontFamily: "Pretendard",
+                                      fontSize: "13px",
+                                      fontWeight: 500,
+                                      color: "#EF4444",
+                                    }}
+                                    data-testid={`button-delete-item-${idx}`}
+                                  >
+                                    -
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          });
+                        })()}
                       </tbody>
                     </table>
                   </div>

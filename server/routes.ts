@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1302,22 +1302,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const { category, value, displayOrder } = req.body;
+      // Validate request body with Zod schema
+      const validated = insertMasterDataSchema.parse(req.body);
 
-      if (!category || !value) {
-        return res.status(400).json({ error: "카테고리와 값을 입력해주세요" });
-      }
-
-      const created = await storage.createMasterData({
-        category,
-        value,
-        isActive: "true",
-        displayOrder: displayOrder || 0,
-      });
+      const created = await storage.createMasterData(validated);
 
       res.json(created);
     } catch (error) {
       console.error("Create master data error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "입력 데이터 형식이 올바르지 않습니다",
+          details: error.errors 
+        });
+      }
       res.status(500).json({ error: "기준정보를 추가하는 중 오류가 발생했습니다" });
     }
   });
