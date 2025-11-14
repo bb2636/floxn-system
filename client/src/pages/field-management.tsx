@@ -739,32 +739,19 @@ export default function FieldManagement() {
             </div>
 
             {/* 사고 발생 일시 */}
-            <div
-              style={{
-                marginTop: "24px",
-                marginBottom: "16px",
-                fontFamily: "Pretendard",
-                fontSize: "18px",
-                fontWeight: 600,
-                color: "#0C0C0C",
-              }}
-            >
-              사고 발생 일시
-            </div>
-
-            <div className="grid grid-cols-2 gap-5">
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  날짜 선택
-                </Label>
+            <div>
+              <Label 
+                className="mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
+                사고 발생일시
+              </Label>
+              <div className="flex gap-2">
                 <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -774,14 +761,14 @@ export default function FieldManagement() {
                         ...intakeButtonStyle,
                         justifyContent: "flex-start",
                         background: "#FDFDFD",
-                        border: "2px solid rgba(12,12,12,0.08)",
-                        width: "100%",
+                        border: isReadOnly ? "none" : "2px solid rgba(12,12,12,0.08)",
+                        flex: 1,
                       }}
                       disabled={isReadOnly}
                       data-testid="button-accident-date"
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {accidentDate ? format(accidentDate, "PPP", { locale: ko }) : <span>날짜 선택</span>}
+                      {accidentDate ? format(accidentDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -792,29 +779,19 @@ export default function FieldManagement() {
                         setAccidentDate(date);
                         setDatePickerOpen(false);
                       }}
-                      initialFocus
                     />
                   </PopoverContent>
                 </Popover>
-              </div>
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  시간 선택
-                </Label>
                 <Input
                   type="time"
                   value={accidentTime}
                   onChange={(e) => setAccidentTime(e.target.value)}
                   className={intakeFieldClass}
-                  style={intakeFieldStyle}
+                  style={{
+                    ...intakeFieldStyle,
+                    flex: 1,
+                    border: isReadOnly ? "none" : undefined,
+                  }}
                   disabled={isReadOnly}
                   data-testid="input-accident-time"
                 />
@@ -887,7 +864,6 @@ export default function FieldManagement() {
                             setVisitDate(date);
                             setVisitDatePickerOpen(false);
                           }}
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
