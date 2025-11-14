@@ -1780,6 +1780,40 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
+  async updateCaseFieldSurvey(caseId: string, fieldData: {
+    visitDate?: string | null;
+    visitTime?: string | null;
+    travelDistance?: string | null;
+    dispatchLocation?: string | null;
+    accompaniedPerson?: string | null;
+    accidentTime?: string | null;
+    accidentCategory?: string | null;
+    accidentCause?: string | null;
+    specialNotes?: string | null;
+    victimName?: string | null;
+    victimContact?: string | null;
+    victimAddress?: string | null;
+    additionalVictims?: string | null;
+    specialRequests?: string | null;
+    processingTypes?: string | null;
+    processingTypeOther?: string | null;
+    recoveryMethodType?: string | null;
+    fieldSurveyStatus?: string | null;
+  }): Promise<Case | null> {
+    const currentDate = getKSTDate();
+    
+    const result = await db.update(cases)
+      .set({ ...fieldData, updatedAt: currentDate })
+      .where(eq(cases.id, caseId))
+      .returning();
+    
+    if (result.length === 0) {
+      return null;
+    }
+    
+    return result[0];
+  }
+
   async getPartnerStats(): Promise<PartnerStats[]> {
     const allCases = await db.select().from(cases);
     const allUsers = await db.select().from(users).where(eq(users.role, "협력사"));

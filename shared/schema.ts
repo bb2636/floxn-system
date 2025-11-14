@@ -129,9 +129,17 @@ export const cases = pgTable("cases", {
   additionalVictims: text("additional_victims"), // JSON string of additional victims array
   
   // 현장조사 정보
+  visitDate: text("visit_date"), // 방문 일시 (날짜)
+  visitTime: text("visit_time"), // 방문 일시 (시간)
   accompaniedPerson: text("accompanied_person"), // 출동담당자
   travelDistance: text("travel_distance"), // 현장 이동 거리
   dispatchLocation: text("dispatch_location"), // 출동 업장지
+  accidentTime: text("accident_time"), // 사고 발생 시각
+  accidentCategory: text("accident_category"), // 사고 원인 카테고리 (배관, 교체, 방수, 기타)
+  processingTypes: text("processing_types"), // 처리 유형 (JSON array)
+  processingTypeOther: text("processing_type_other"), // 기타 처리 유형
+  recoveryMethodType: text("recovery_method_type"), // 복구 방식 (부분수리, 전체수리)
+  fieldSurveyStatus: text("field_survey_status").default("draft"), // 현장조사 상태 (draft/submitted)
   
   // 기타 (기존 필드)
   clientPhone: text("client_phone"),

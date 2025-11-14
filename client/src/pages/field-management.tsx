@@ -13,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 // Helper function to normalize boolean values from string/boolean storage
 const normalizeBoolean = (value: any): boolean => {
@@ -22,6 +24,7 @@ const normalizeBoolean = (value: any): boolean => {
 };
 
 export default function FieldManagement() {
+  const { toast } = useToast();
   const [selectedCase, setSelectedCase] = useState<string>("");
   
   // Collapsible states - intake.tsx 스타일
@@ -291,6 +294,7 @@ export default function FieldManagement() {
   );
 
   return (
+    <>
     <div className="relative p-8">
       {/* 현장일력 섹션 */}
       <SectionCard
@@ -1587,5 +1591,208 @@ export default function FieldManagement() {
           </div>
         </SectionCard>
       </div>
+
+      {/* 하단 고정 버튼 바 */}
+      {selectedCaseData && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(10px)",
+            borderTop: "1px solid rgba(12, 12, 12, 0.1)",
+            padding: "20px 40px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          {/* 왼쪽: 초기화 버튼 */}
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              if (confirm("입력한 내용을 모두 초기화하시겠습니까?")) {
+                // 모든 state 초기화
+                setAccidentDate(selectedCaseData.accidentDate ? new Date(selectedCaseData.accidentDate) : undefined);
+                setAccidentTime(selectedCaseData.accidentTime || "");
+                setVisitDate(undefined);
+                setVisitTime("");
+                setTravelDistance("");
+                setDispatchLocation("");
+                setAccompaniedPerson("");
+                setAccidentCategory("배관");
+                setAccidentCause("");
+                setSpecialNotes("");
+                setVictimName(selectedCaseData.victimName || "");
+                setVictimContact(selectedCaseData.victimContact || "");
+                setVictimAddress(selectedCaseData.victimAddress || "");
+                setAdditionalVictims([]);
+                setVoc("");
+                setProcessingTypes(new Set());
+                setProcessingTypeOther("");
+                setRecoveryMethodType("부분수리");
+                setNewVictimName("");
+                setNewVictimContact("");
+                setNewVictimAddress("");
+                setSameAsInsured(false);
+              }
+            }}
+            disabled={isReadOnly}
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "16px",
+              fontWeight: 600,
+              color: "#FF4D4F",
+              background: "transparent",
+              border: "none",
+            }}
+            data-testid="button-reset"
+          >
+            초기화
+          </Button>
+
+          {/* 오른쪽: 임시저장 + 제출 버튼 */}
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              onClick={async () => {
+                if (!selectedCaseData?.id) return;
+
+                try {
+                  const payload = {
+                    visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
+                    visitTime,
+                    travelDistance,
+                    dispatchLocation,
+                    accompaniedPerson,
+                    accidentTime,
+                    accidentCategory,
+                    accidentCause,
+                    specialNotes,
+                    victimName,
+                    victimContact,
+                    victimAddress,
+                    additionalVictims: JSON.stringify(additionalVictims),
+                    specialRequests: voc,
+                    processingTypes: JSON.stringify(Array.from(processingTypes)),
+                    processingTypeOther,
+                    recoveryMethodType,
+                    fieldSurveyStatus: "draft",
+                  };
+
+                  await apiRequest(`/api/cases/${selectedCaseData.id}/field-survey`, {
+                    method: "PATCH",
+                    body: JSON.stringify(payload),
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  });
+
+                  toast({
+                    title: "임시저장 완료",
+                    description: "현장조사 정보가 임시저장되었습니다.",
+                  });
+
+                  queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                } catch (error) {
+                  console.error("임시저장 에러:", error);
+                  toast({
+                    title: "임시저장 실패",
+                    description: "현장조사 정보 저장 중 오류가 발생했습니다.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              disabled={isReadOnly}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                height: "52px",
+                padding: "12px 32px",
+                background: "#ECECEC",
+                color: "rgba(12, 12, 12, 0.8)",
+                border: "none",
+                borderRadius: "8px",
+              }}
+              data-testid="button-draft"
+            >
+              임시저장
+            </Button>
+
+            <Button
+              type="button"
+              onClick={async () => {
+                if (!selectedCaseData?.id) return;
+
+                try {
+                  const payload = {
+                    visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
+                    visitTime,
+                    travelDistance,
+                    dispatchLocation,
+                    accompaniedPerson,
+                    accidentTime,
+                    accidentCategory,
+                    accidentCause,
+                    specialNotes,
+                    victimName,
+                    victimContact,
+                    victimAddress,
+                    additionalVictims: JSON.stringify(additionalVictims),
+                    specialRequests: voc,
+                    processingTypes: JSON.stringify(Array.from(processingTypes)),
+                    processingTypeOther,
+                    recoveryMethodType,
+                    fieldSurveyStatus: "submitted",
+                  };
+
+                  await apiRequest(`/api/cases/${selectedCaseData.id}/field-survey`, {
+                    method: "PATCH",
+                    body: JSON.stringify(payload),
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                  });
+
+                  toast({
+                    title: "제출 완료",
+                    description: "현장조사 정보가 제출되었습니다.",
+                  });
+
+                  queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                } catch (error) {
+                  console.error("제출 에러:", error);
+                  toast({
+                    title: "제출 실패",
+                    description: "현장조사 정보 제출 중 오류가 발생했습니다.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              disabled={isReadOnly}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                height: "52px",
+                padding: "12px 32px",
+                background: "#008FED",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "8px",
+              }}
+              data-testid="button-submit"
+            >
+              제출
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

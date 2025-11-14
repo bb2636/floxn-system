@@ -364,6 +364,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update case field survey endpoint (협력사 only)
+  app.patch("/api/cases/:caseId/field-survey", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check authorization (협력사만 가능)
+    if (req.session.userRole !== "협력사") {
+      return res.status(403).json({ error: "협력사 권한이 필요합니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      
+      // Validate field data with Zod
+      const updateSchema = z.object({
+        visitDate: z.string().nullable().optional(),
+        visitTime: z.string().nullable().optional(),
+        travelDistance: z.string().nullable().optional(),
+        dispatchLocation: z.string().nullable().optional(),
+        accompaniedPerson: z.string().nullable().optional(),
+        accidentTime: z.string().nullable().optional(),
+        accidentCategory: z.string().nullable().optional(),
+        accidentCause: z.string().nullable().optional(),
+        specialNotes: z.string().nullable().optional(),
+        victimName: z.string().nullable().optional(),
+        victimContact: z.string().nullable().optional(),
+        victimAddress: z.string().nullable().optional(),
+        additionalVictims: z.string().nullable().optional(),
+        specialRequests: z.string().nullable().optional(),
+        processingTypes: z.string().nullable().optional(),
+        processingTypeOther: z.string().nullable().optional(),
+        recoveryMethodType: z.string().nullable().optional(),
+        fieldSurveyStatus: z.string().nullable().optional(),
+      });
+      
+      const fieldData = updateSchema.parse(req.body);
+
+      const updatedCase = await storage.updateCaseFieldSurvey(caseId, fieldData);
+      
+      if (!updatedCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      res.json({ success: true, case: updatedCase });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Update case field survey error:", error);
+      res.status(500).json({ error: "현장조사 정보 저장 중 오류가 발생했습니다" });
+    }
+  });
+
   // Get partner statistics endpoint
   app.get("/api/partner-stats", async (req, res) => {
     // Check authentication
