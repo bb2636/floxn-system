@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Case } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface AreaCalculationRow {
   id: string;
@@ -30,41 +32,68 @@ export default function FieldEstimate() {
   // 현장입력에서 선택한 케이스 ID 가져오기
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
 
+  const { toast } = useToast();
+
   // 선택된 케이스 데이터 가져오기
   const { data: selectedCase, isLoading: isLoadingSelectedCase } = useQuery<Case>({
     queryKey: ["/api/cases", selectedCaseId],
     enabled: !!selectedCaseId,
   });
 
-  // 초기 빈 행 생성
+  // 최신 견적 가져오기
+  const { data: latestEstimate } = useQuery<{ estimate: any; rows: any[] }>({
+    queryKey: ["/api/estimates", selectedCaseId, "latest"],
+    enabled: !!selectedCaseId,
+  });
+
+  // 초기 빈 행 생성 또는 견적 불러오기
   useEffect(() => {
-    if (rows.length === 0) {
+    if (latestEstimate?.rows && latestEstimate.rows.length > 0) {
+      // 기존 견적이 있으면 불러오기
+      const loadedRows = latestEstimate.rows.map((row: any) => ({
+        id: `row-${row.id}`,
+        category: row.category || "주방",
+        location: row.location || "선택",
+        workName: row.workName || "선택",
+        damageWidth: row.damageWidth?.toString() || "0000",
+        damageHeight: row.damageHeight?.toString() || "0000",
+        damageArea: row.damageArea ? (row.damageArea / 1000000).toFixed(2) : "0000",
+        repairWidth: row.repairWidth?.toString() || "0000",
+        repairHeight: row.repairHeight?.toString() || "0000",
+        repairArea: row.repairArea ? (row.repairArea / 1000000).toFixed(2) : "0000",
+        note: row.note || "",
+      }));
+      setRows(loadedRows);
+    } else if (rows.length === 0) {
+      // 견적이 없으면 빈 행 생성
       addRow();
     }
-  }, []);
+  }, [latestEstimate]);
+
+  // 빈 행 생성 함수
+  const createBlankRow = (): AreaCalculationRow => ({
+    id: `row-${Date.now()}-${Math.random()}`,
+    category: "주방",
+    location: "선택",
+    workName: "선택",
+    damageWidth: "0000",
+    damageHeight: "0000",
+    damageArea: "0000",
+    repairWidth: "0000",
+    repairHeight: "0000",
+    repairArea: "0000",
+    note: "",
+  });
 
   // 행 추가
   const addRow = () => {
-    const newRow: AreaCalculationRow = {
-      id: `row-${Date.now()}-${Math.random()}`,
-      category: "주방",
-      location: "선택",
-      workName: "선택",
-      damageWidth: "0000",
-      damageHeight: "0000",
-      damageArea: "0000",
-      repairWidth: "0000",
-      repairHeight: "0000",
-      repairArea: "0000",
-      note: "",
-    };
-    setRows([...rows, newRow]);
+    setRows(prev => [...prev, createBlankRow()]);
   };
 
   // 선택된 행 삭제
   const deleteSelectedRows = () => {
     if (selectedRows.size === 0) return;
-    setRows(rows.filter(row => !selectedRows.has(row.id)));
+    setRows(prev => prev.filter(row => !selectedRows.has(row.id)));
     setSelectedRows(new Set());
   };
 
@@ -81,7 +110,7 @@ export default function FieldEstimate() {
 
   // 행 업데이트
   const updateRow = (rowId: string, field: keyof AreaCalculationRow, value: string) => {
-    setRows(rows.map(row => {
+    setRows(prev => prev.map(row => {
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
         
@@ -111,16 +140,55 @@ export default function FieldEstimate() {
   // 초기화
   const handleReset = () => {
     if (confirm("입력한 내용을 모두 초기화하시겠습니까?")) {
-      setRows([]);
+      setRows([createBlankRow()]);
       setSelectedRows(new Set());
-      addRow();
     }
   };
 
+  // 저장 mutation
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedCaseId) {
+        throw new Error("케이스가 선택되지 않았습니다");
+      }
+
+      // UI 데이터를 API 형식으로 변환 (rowOrder는 서버에서 자동 할당)
+      const apiRows = rows.map((row) => ({
+        category: row.category,
+        location: row.location === "선택" ? null : row.location,
+        workName: row.workName === "선택" ? null : row.workName,
+        damageWidth: row.damageWidth,
+        damageHeight: row.damageHeight,
+        damageArea: row.damageArea,
+        repairWidth: row.repairWidth,
+        repairHeight: row.repairHeight,
+        repairArea: row.repairArea,
+        note: row.note,
+      }));
+
+      return await apiRequest("POST", `/api/estimates/${selectedCaseId}`, { rows: apiRows });
+    },
+    onSuccess: () => {
+      toast({
+        title: "저장 완료",
+        description: "견적이 성공적으로 저장되었습니다.",
+      });
+      // 견적 목록 및 최신 견적 갱신
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId, "latest"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "저장 실패",
+        description: error.message || "견적 저장 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // 저장
   const handleSave = () => {
-    console.log("저장:", rows);
-    // TODO: API 호출
+    saveMutation.mutate();
   };
 
   if (isLoadingSelectedCase) {

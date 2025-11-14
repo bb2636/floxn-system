@@ -1116,6 +1116,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Estimate endpoints
+  // Create new estimate version
+  app.post("/api/estimates/:caseId", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const { rows } = req.body;
+
+      if (!rows || !Array.isArray(rows)) {
+        return res.status(400).json({ error: "견적 행 데이터가 필요합니다" });
+      }
+
+      // Verify case exists
+      const existingCase = await storage.getCaseById(caseId);
+      if (!existingCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // Validation schema for estimate row from UI
+      const estimateRowSchema = z.object({
+        category: z.string().min(1, "항소를 선택해주세요"),
+        location: z.string().nullable().optional(),
+        workName: z.string().nullable().optional(),
+        damageWidth: z.union([z.string(), z.number()]).nullable().optional(),
+        damageHeight: z.union([z.string(), z.number()]).nullable().optional(),
+        damageArea: z.union([z.string(), z.number()]).nullable().optional(),
+        repairWidth: z.union([z.string(), z.number()]).nullable().optional(),
+        repairHeight: z.union([z.string(), z.number()]).nullable().optional(),
+        repairArea: z.union([z.string(), z.number()]).nullable().optional(),
+        note: z.string().nullable().optional(),
+      });
+
+      // Validate and transform UI row data to DB format
+      const dbRows = rows.map((row: any, index: number) => {
+        // Validate row structure
+        const validated = estimateRowSchema.parse(row);
+
+        // Convert to DB format with safe parsing
+        // For width/height: simple integer conversion (mm)
+        const toMillimeter = (val: string | number | null | undefined): number | null => {
+          if (val === null || val === undefined || val === "" || val === "0000") return null;
+          const num = typeof val === "string" ? parseInt(val, 10) : val;
+          return !isNaN(num) && num >= 0 ? num : null;
+        };
+
+        // For area: convert m² to mm² (multiply by 1,000,000)
+        const squareMeterToMillimeter = (val: string | number | null | undefined): number | null => {
+          if (val === null || val === undefined || val === "" || val === "0000") return null;
+          const num = typeof val === "string" ? parseFloat(val) : val;
+          if (isNaN(num) || num < 0) return null;
+          // Convert m² to mm² (multiply by 1,000,000)
+          return Math.round(num * 1000000);
+        };
+
+        return {
+          category: validated.category,
+          location: validated.location === "선택" ? null : validated.location,
+          workName: validated.workName === "선택" ? null : validated.workName,
+          damageWidth: toMillimeter(validated.damageWidth),
+          damageHeight: toMillimeter(validated.damageHeight),
+          damageArea: squareMeterToMillimeter(validated.damageArea),
+          repairWidth: toMillimeter(validated.repairWidth),
+          repairHeight: toMillimeter(validated.repairHeight),
+          repairArea: squareMeterToMillimeter(validated.repairArea),
+          note: validated.note || null,
+          rowOrder: index + 1, // Server assigns 1-based ordering
+        };
+      });
+
+      const result = await storage.createEstimateVersion(caseId, req.session.userId, dbRows);
+      res.json(result);
+    } catch (error) {
+      console.error("Create estimate error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "견적 데이터 형식이 올바르지 않습니다",
+          details: error.errors 
+        });
+      }
+      res.status(500).json({ error: "견적을 저장하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get latest estimate
+  app.get("/api/estimates/:caseId/latest", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const result = await storage.getLatestEstimate(caseId);
+      
+      if (!result) {
+        // Return empty result instead of 404 for easier frontend handling
+        return res.json({ estimate: null, rows: [] });
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Get latest estimate error:", error);
+      res.status(500).json({ error: "견적을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get all estimate versions
+  app.get("/api/estimates/:caseId/versions", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const versions = await storage.listEstimateVersions(caseId);
+      res.json(versions);
+    } catch (error) {
+      console.error("List estimate versions error:", error);
+      res.status(500).json({ error: "견적 버전을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get specific estimate version
+  app.get("/api/estimates/:caseId/versions/:version", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId, version } = req.params;
+      const versionNum = parseInt(version, 10);
+
+      if (isNaN(versionNum)) {
+        return res.status(400).json({ error: "유효하지 않은 버전 번호입니다" });
+      }
+
+      const result = await storage.getEstimateVersion(caseId, versionNum);
+      
+      if (!result) {
+        return res.status(404).json({ error: "견적 버전을 찾을 수 없습니다" });
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Get estimate version error:", error);
+      res.status(500).json({ error: "견적 버전을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -421,7 +421,10 @@ export const estimateRows = pgTable("estimate_rows", {
   note: text("note"), // 비고
   rowOrder: integer("row_order").notNull(), // 행 순서
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // unique constraint: 각 견적 내에서 행 순서는 중복되지 않음
+  unqOrder: unique().on(table.estimateId, table.rowOrder),
+}));
 
 export const insertEstimateSchema = createInsertSchema(estimates).omit({
   id: true,

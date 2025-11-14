@@ -89,6 +89,11 @@ export interface IStorage {
   getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]>;
   deleteDocument(id: string): Promise<void>;
   updateDocumentCategory(id: string, category: string): Promise<CaseDocument | null>;
+  // Estimate methods
+  createEstimateVersion(caseId: string, userId: string, rows: Omit<InsertEstimateRow, 'estimateId'>[]): Promise<{ estimate: Estimate; rows: EstimateRow[] }>;
+  getLatestEstimate(caseId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
+  getEstimateVersion(caseId: string, version: number): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
+  listEstimateVersions(caseId: string): Promise<Estimate[]>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -1439,6 +1444,23 @@ export class MemStorage implements IStorage {
     this.documents.set(id, updated);
     return updated;
   }
+
+  // Estimate methods (stub - not implemented for MemStorage)
+  async createEstimateVersion(caseId: string, userId: string, rows: Omit<InsertEstimateRow, 'estimateId'>[]): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
+    throw new Error("Estimate methods not implemented in MemStorage");
+  }
+
+  async getLatestEstimate(caseId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+    throw new Error("Estimate methods not implemented in MemStorage");
+  }
+
+  async getEstimateVersion(caseId: string, version: number): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+    throw new Error("Estimate methods not implemented in MemStorage");
+  }
+
+  async listEstimateVersions(caseId: string): Promise<Estimate[]> {
+    throw new Error("Estimate methods not implemented in MemStorage");
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -2201,6 +2223,124 @@ export class DbStorage implements IStorage {
       .where(eq(caseDocuments.id, id))
       .returning();
     return updated[0] || null;
+  }
+
+  // Estimate methods
+  async createEstimateVersion(caseId: string, userId: string, rows: Omit<InsertEstimateRow, 'estimateId'>[]): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
+    return await db.transaction(async (tx) => {
+      // 1. 현재 최대 버전 조회 (row-level locking으로 동시성 제어)
+      const existingEstimates = await tx
+        .select({ version: estimates.version })
+        .from(estimates)
+        .where(eq(estimates.caseId, caseId))
+        .orderBy(desc(estimates.version))
+        .limit(1)
+        .for('update'); // row-level lock 추가
+
+      const nextVersion = existingEstimates.length > 0 ? existingEstimates[0].version + 1 : 1;
+
+      // 2. 새 견적 레코드 생성
+      const [newEstimate] = await tx
+        .insert(estimates)
+        .values({
+          caseId,
+          version: nextVersion,
+          status: "draft",
+          createdBy: userId,
+        })
+        .returning();
+
+      // 3. 견적 행들을 배치로 삽입
+      if (rows.length > 0) {
+        // rowOrder 정규화: 정렬 후 1부터 순차적으로 할당
+        const sortedInputRows = [...rows].sort((a, b) => {
+          const orderA = a.rowOrder ?? 0;
+          const orderB = b.rowOrder ?? 0;
+          return orderA - orderB;
+        });
+
+        const rowsWithEstimateId = sortedInputRows.map((row, index) => ({
+          ...row,
+          estimateId: newEstimate.id,
+          rowOrder: index + 1, // 1부터 시작하는 순차적 번호
+        }));
+
+        const insertedRows = await tx
+          .insert(estimateRows)
+          .values(rowsWithEstimateId)
+          .returning();
+
+        // rowOrder로 정렬하여 반환
+        const sortedRows = insertedRows.sort((a, b) => a.rowOrder - b.rowOrder);
+
+        return { estimate: newEstimate, rows: sortedRows };
+      }
+
+      return { estimate: newEstimate, rows: [] };
+    });
+  }
+
+  async getLatestEstimate(caseId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+    // 최신 버전의 견적 조회
+    const latestEstimate = await db
+      .select()
+      .from(estimates)
+      .where(eq(estimates.caseId, caseId))
+      .orderBy(desc(estimates.version))
+      .limit(1);
+
+    if (latestEstimate.length === 0) {
+      return null;
+    }
+
+    const estimate = latestEstimate[0];
+
+    // 해당 견적의 행들을 조회
+    const rows = await db
+      .select()
+      .from(estimateRows)
+      .where(eq(estimateRows.estimateId, estimate.id))
+      .orderBy(asc(estimateRows.rowOrder));
+
+    return { estimate, rows };
+  }
+
+  async getEstimateVersion(caseId: string, version: number): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+    // 특정 버전의 견적 조회
+    const result = await db
+      .select()
+      .from(estimates)
+      .where(and(
+        eq(estimates.caseId, caseId),
+        eq(estimates.version, version)
+      ))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    const estimate = result[0];
+
+    // 해당 견적의 행들을 조회
+    const rows = await db
+      .select()
+      .from(estimateRows)
+      .where(eq(estimateRows.estimateId, estimate.id))
+      .orderBy(asc(estimateRows.rowOrder));
+
+    return { estimate, rows };
+  }
+
+  async listEstimateVersions(caseId: string): Promise<Estimate[]> {
+    // 모든 버전의 견적 리스트 조회 (최신 버전부터)
+    const allVersions = await db
+      .select()
+      .from(estimates)
+      .where(eq(estimates.caseId, caseId))
+      .orderBy(desc(estimates.version));
+
+    return allVersions;
   }
 }
 
