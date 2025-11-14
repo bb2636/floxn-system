@@ -107,11 +107,31 @@ The system is a full-stack web application utilizing a React-based frontend and 
     - **Case Information Display**: "작성중인 건" showing selected case from 현장입력
 - **Restoration Estimation (Drawing)**: Digital drawing for damage scope and restoration area calculation, automatically linking to estimates and reports.
 - **Image & File Management**: Upload and manage initial, intermediate, final images, and supporting documents with case-specific access control.
-- **Estimate Management**: Create and submit restoration cost estimates with automatic calculations and PDF/Excel export.
+- **Estimate Management** (`/field-survey/estimate`): Create and submit restoration cost estimates with automatic calculations and PDF/Excel export.
+  - **복구면적 산출표** (Restoration Area Calculation Table): Dynamic table with DB-driven dropdowns
+    - **Database Integration**: All dropdown values (장소/room category, 위치/location, 공사내용/work name) loaded from masterData table
+    - **Loading Guards**: "항목 추가" button disabled until master data loads, handleReset shows toast if master data not ready
+    - **Row Operations**: Add rows, delete selected rows, reset to single blank row with DB defaults
+    - **Category Tabs**: 복구면적 산출표, 견적내역서, 견적서
+    - **Versioning**: Save estimates with version tracking, view and restore previous versions
+  - **Database Persistence**: Estimates stored in caseEstimates table with versioned JSON data
+  - **Case Information Display**: "작성중인 건" showing selected case from 현장입력
+- **Master Data Management** (기준정보 관리): Administrator-only feature for managing dropdown options used throughout the system.
+  - **Database Table**: `masterData` with columns (id: serial, category: varchar, label: varchar)
+  - **Categories**: 
+    - "장소" (room_category): 거실, 주방, 침실, 욕실 + custom additions
+    - "위치" (location): 천장, 벽면, 바닥 + custom additions
+    - "공사내용" (work_name): 도배, 장판, 싱크대, 타일 + custom additions
+  - **API Endpoints**:
+    - GET /api/master-data?category=room_category|location|work_name
+    - POST /api/master-data (admin only) - Add new item
+    - DELETE /api/master-data/:id (admin only) - Remove item
+  - **Access Control**: Only administrators can add/delete master data items
+  - **Real-time Updates**: Changes immediately reflect in all dropdowns via queryClient.invalidateQueries
+  - **Integration**: Used in field-estimate.tsx for 복구면적 산출표 dropdowns
 - **Field Reports**: Generate comprehensive reports integrating data from field surveys, drawings, images, and estimates for submission to insurance companies.
 - **Progress Management**: Track case progress, manage approvals/rejections, and send notifications.
 - **Finance & Settlement**: View statistics, manage settlements, track receivables, and match payments.
-- **Admin Menu**: Manage master data, users, roles, permissions, and send notifications.
 
 ### System Design Choices
 - **Frontend**: React with TypeScript, Wouter for routing, TanStack Query for data fetching, React Hook Form with Zod for form validation, Shadcn UI and Tailwind CSS for component styling, and Lucide React for icons.
