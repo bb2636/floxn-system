@@ -1611,54 +1611,56 @@ export default function FieldManagement() {
               margin: "0 auto",
               padding: "20px 40px",
               display: "flex",
-              justifyContent: "space-between",
+              justifyContent: isPartner ? "space-between" : "flex-end",
               alignItems: "center",
             }}
           >
-            {/* 왼쪽: 초기화 버튼 */}
-            <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              if (confirm("입력한 내용을 모두 초기화하시겠습니까?")) {
-                // 모든 state 초기화
-                setAccidentDate(selectedCaseData.accidentDate ? new Date(selectedCaseData.accidentDate) : undefined);
-                setAccidentTime(selectedCaseData.accidentTime || "");
-                setVisitDate(undefined);
-                setVisitTime("");
-                setTravelDistance("");
-                setDispatchLocation("");
-                setAccompaniedPerson("");
-                setAccidentCategory("배관");
-                setAccidentCause("");
-                setSpecialNotes("");
-                setVictimName(selectedCaseData.victimName || "");
-                setVictimContact(selectedCaseData.victimContact || "");
-                setVictimAddress(selectedCaseData.victimAddress || "");
-                setAdditionalVictims([]);
-                setVoc("");
-                setProcessingTypes(new Set());
-                setProcessingTypeOther("");
-                setRecoveryMethodType("부분수리");
-                setNewVictimName("");
-                setNewVictimContact("");
-                setNewVictimAddress("");
-                setSameAsInsured(false);
-              }
-            }}
-            disabled={isReadOnly}
-            style={{
-              fontFamily: "Pretendard",
-              fontSize: "16px",
-              fontWeight: 600,
-              color: "#FF4D4F",
-              background: "transparent",
-              border: "none",
-            }}
-            data-testid="button-reset"
-          >
-            초기화
-          </Button>
+            {/* 왼쪽: 초기화 버튼 (협력사만 표시) */}
+            {isPartner && (
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  if (confirm("입력한 내용을 모두 초기화하시겠습니까?")) {
+                    // 모든 state 초기화
+                    setAccidentDate(selectedCaseData.accidentDate ? new Date(selectedCaseData.accidentDate) : undefined);
+                    setAccidentTime(selectedCaseData.accidentTime || "");
+                    setVisitDate(undefined);
+                    setVisitTime("");
+                    setTravelDistance("");
+                    setDispatchLocation("");
+                    setAccompaniedPerson("");
+                    setAccidentCategory("배관");
+                    setAccidentCause("");
+                    setSpecialNotes("");
+                    setVictimName(selectedCaseData.victimName || "");
+                    setVictimContact(selectedCaseData.victimContact || "");
+                    setVictimAddress(selectedCaseData.victimAddress || "");
+                    setAdditionalVictims([]);
+                    setVoc("");
+                    setProcessingTypes(new Set());
+                    setProcessingTypeOther("");
+                    setRecoveryMethodType("부분수리");
+                    setNewVictimName("");
+                    setNewVictimContact("");
+                    setNewVictimAddress("");
+                    setSameAsInsured(false);
+                  }
+                }}
+                disabled={isReadOnly}
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#FF4D4F",
+                  background: "transparent",
+                  border: "none",
+                }}
+                data-testid="button-reset"
+              >
+                초기화
+              </Button>
+            )}
 
           {/* 오른쪽: 역할별 버튼 */}
           <div className="flex gap-3">
