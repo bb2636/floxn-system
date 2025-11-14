@@ -368,8 +368,8 @@ export default function FieldDocuments() {
               }}
             >
               <span>접수번호 {selectedCase.caseNumber}</span>
-              <span>계약자 {selectedCase.clientName || "미정"}</span>
-              <span>담당자 {selectedCase.assessorId || "미정"}</span>
+              <span>계약자 {selectedCase.policyHolderName || selectedCase.clientName || "미정"}</span>
+              <span>담당자 {selectedCase.assignedPartnerManager || "미정"}</span>
             </div>
           </div>
         </div>
