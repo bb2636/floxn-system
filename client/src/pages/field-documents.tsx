@@ -279,7 +279,7 @@ export default function FieldDocuments() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#F5F7FA] p-8">
+    <div className="flex-1 overflow-y-auto p-8">
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-8">
         <h1
