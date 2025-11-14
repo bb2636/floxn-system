@@ -101,6 +101,7 @@ export function GlobalHeader() {
 
         {/* Logout Button */}
         <button
+          type="button"
           onClick={() => logoutMutation.mutate()}
           className="flex items-center justify-center"
           style={{
@@ -155,6 +156,7 @@ export function GlobalHeader() {
         <div className="flex items-center gap-6 flex-1 px-6">
           {menuItems.map((item) => (
             <button
+              type="button"
               key={item.name}
               onClick={() => {
                 if (item.name === "홈") {

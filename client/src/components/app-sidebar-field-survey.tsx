@@ -59,6 +59,7 @@ export function AppSidebarFieldSurvey() {
       <div className="flex flex-col px-3 gap-2">
         {menuItems.map((item) => (
           <button
+            type="button"
             key={item.title}
             onClick={() => setLocation(item.url)}
             className="flex items-center px-5 py-3 rounded-lg transition-colors"
