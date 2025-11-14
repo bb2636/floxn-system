@@ -884,17 +884,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Get or create active case for this user
-      const activeCase = await storage.getOrCreateActiveCase(req.session.userId!);
-      
       // Extract drawingId if provided (for updates)
       const { drawingId, ...bodyData } = req.body;
       
+      // Validate the request data
       const validatedData = insertDrawingSchema.parse({
         ...bodyData,
-        caseId: activeCase.id, // Use resolved case ID
         createdBy: req.session.userId,
       });
+
+      // Verify the user has access to this case
+      const requestedCase = await storage.getCaseById(validatedData.caseId);
+      if (!requestedCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // Note: Additional permission checks could be added here based on user role
+      // Currently relying on frontend filtering (field-management page shows only accessible cases)
       
       let drawing;
       
@@ -908,8 +914,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (existing.createdBy !== req.session.userId) {
           return res.status(403).json({ error: "권한이 없습니다" });
         }
-        // Verify case ownership
-        if (existing.caseId !== activeCase.id) {
+        // Verify case match
+        if (existing.caseId !== validatedData.caseId) {
           return res.status(403).json({ error: "다른 케이스의 도면입니다" });
         }
         
@@ -923,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         drawing = await storage.updateDrawing(drawingId, updateData);
       } else {
         // Check if a drawing already exists for this case
-        const existing = await storage.getDrawingByCaseId(activeCase.id);
+        const existing = await storage.getDrawingByCaseId(validatedData.caseId);
 
         if (existing) {
           // Verify ownership before updating

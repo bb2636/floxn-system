@@ -74,11 +74,6 @@ export default function FieldDrawing() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
   const [drawCurrent, setDrawCurrent] = useState({ x: 0, y: 0 });
-  const [currentDrawingId, setCurrentDrawingId] = useState<string | null>(() => {
-    // Load drawing ID from localStorage on mount
-    // TODO: Replace with case-based loading in Task 6
-    return localStorage.getItem('currentDrawingId');
-  });
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Hybrid approach: activeTransformRef prevents stale closures in document-level listeners
@@ -99,56 +94,32 @@ export default function FieldDrawing() {
     enabled: !!selectedCaseId,
   });
 
-  // 활성 케이스 ID는 localStorage의 selectedFieldSurveyCaseId 사용
-
-  // 저장된 도면 로드 (Task 6)
+  // 케이스 ID로 저장된 도면 로드
   const { data: savedDrawing, isLoading: isLoadingDrawing } = useQuery<Drawing>({
-    queryKey: ["/api/drawings", currentDrawingId],
-    enabled: !!currentDrawingId,
-    staleTime: 0, // Always fetch fresh data
+    queryKey: ["/api/drawings", "case", selectedCaseId],
+    enabled: !!selectedCaseId && !!user,
+    staleTime: 0,
   });
 
-  // 로드된 도면으로 canvas state 초기화 + ownership verification
+  // 로드된 도면으로 canvas state 초기화
   useEffect(() => {
-    if (savedDrawing && !isLoadingDrawing && user) {
-      // Verify ownership before hydrating canvas state
-      if (savedDrawing.createdBy !== user.id) {
-        // Drawing belongs to another user - clear invalid ID
-        setCurrentDrawingId(null);
-        localStorage.removeItem('currentDrawingId');
-        toast({
-          title: "권한 없음",
-          description: "다른 사용자의 도면입니다. 새로운 도면을 시작합니다.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Verify case match before hydrating canvas state
-      // Use selectedCaseId from localStorage (현장입력에서 선택한 케이스)
-      if (selectedCaseId && savedDrawing.caseId !== selectedCaseId) {
-        // Drawing belongs to different case - clear invalid ID
-        setCurrentDrawingId(null);
-        localStorage.removeItem('currentDrawingId');
-        toast({
-          title: "다른 케이스",
-          description: "이전 케이스의 도면입니다. 새로운 도면을 시작합니다.",
-        });
-        return;
-      }
-      
+    if (savedDrawing && !isLoadingDrawing) {
       // Valid drawing - hydrate canvas state
       setUploadedImages(savedDrawing.uploadedImages || []);
       setRectangles(savedDrawing.rectangles || []);
       setAccidentAreas(savedDrawing.accidentAreas || []);
       setLeakMarkers(savedDrawing.leakMarkers || []);
+    } else if (!isLoadingDrawing && selectedCaseId) {
+      // No drawing exists for this case - reset canvas
+      setUploadedImages([]);
+      setRectangles([]);
+      setAccidentAreas([]);
+      setLeakMarkers([]);
     }
-  }, [savedDrawing, isLoadingDrawing, user, selectedCaseId]);
+  }, [savedDrawing, isLoadingDrawing, selectedCaseId]);
 
-  // Check if save is ready (validation complete) - explicit boolean coercion
-  // Includes loading guards for both user, selected case, and drawing queries
-  // TODO: Align /api/drawings/active-case-id with localStorage selection mechanism
-  const isSaveReady = Boolean(user && !isLoadingSelectedCase && selectedCase && (!currentDrawingId || !isLoadingDrawing));
+  // Check if save is ready
+  const isSaveReady = Boolean(user && !isLoadingSelectedCase && selectedCase && !isLoadingDrawing);
 
   // 도면 저장 mutation
   const saveDrawingMutation = useMutation({
@@ -158,8 +129,8 @@ export default function FieldDrawing() {
       }
       
       const response = await apiRequest("POST", "/api/drawings", {
-        drawingId: currentDrawingId, // Include drawing ID for updates
-        caseId: selectedCase.id, // Use selected case ID from localStorage
+        drawingId: savedDrawing?.id, // Include drawing ID for updates if exists
+        caseId: selectedCase.id,
         uploadedImages,
         rectangles,
         accidentAreas,
@@ -167,25 +138,18 @@ export default function FieldDrawing() {
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to save drawing: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to save drawing: ${response.status}`);
       }
       
       return await response.json();
     },
     onSuccess: (data) => {
-      const isNewDrawing = !currentDrawingId;
-      
-      // Store the drawing ID for future updates
-      setCurrentDrawingId(data.id);
-      // Persist to localStorage to survive page reloads
-      // TODO: Replace with case-based storage in Task 6
-      localStorage.setItem('currentDrawingId', data.id);
+      const isNewDrawing = !savedDrawing;
       
       // Update query cache directly
       queryClient.setQueryData(["/api/drawings", data.id], data);
-      if (data.caseId) {
-        queryClient.setQueryData(["/api/drawings", "case", data.caseId], data);
-      }
+      queryClient.setQueryData(["/api/drawings", "case", data.caseId], data);
       
       const timestamp = new Date().toLocaleTimeString('ko-KR');
       const action = isNewDrawing ? "생성" : "업데이트";
@@ -197,14 +161,7 @@ export default function FieldDrawing() {
     onError: (error) => {
       console.error("Save drawing error:", error);
       
-      // Only clear ID on permission/ownership errors, not network errors
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const isPermissionError = errorMessage.includes("권한") || errorMessage.includes("케이스") || errorMessage.includes("403");
-      
-      if (isPermissionError) {
-        setCurrentDrawingId(null);
-        localStorage.removeItem('currentDrawingId');
-      }
       
       toast({
         title: "저장 실패",
