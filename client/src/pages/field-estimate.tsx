@@ -453,44 +453,241 @@ export default function FieldEstimate() {
                   width: "100%",
                   borderCollapse: "collapse",
                   minWidth: "1200px",
+                  borderRadius: "8px 8px 0px 0px",
+                  overflow: "hidden",
                 }}
               >
                 <thead>
                   <tr
                     style={{
-                      background: "rgba(12, 12, 12, 0.03)",
-                      borderBottom: "2px solid rgba(12, 12, 12, 0.08)",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
                     }}
                   >
-                    <th style={{ width: "40px", padding: "12px 8px" }}></th>
-                    <th style={{ width: "120px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>장소</th>
-                    <th style={{ width: "120px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>위치</th>
-                    <th style={{ width: "120px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>공사명</th>
-                    <th style={{ padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }} colSpan={3}>
-                      피해면적
+                    <th 
+                      style={{ 
+                        width: "54px", 
+                        padding: "17.5px 8px",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                      }}
+                    ></th>
+                    <th 
+                      style={{ 
+                        width: "183px", 
+                        padding: "17.5px 8px", 
+                        fontFamily: "Pretendard", 
+                        fontSize: "15px", 
+                        fontWeight: 600, 
+                        color: "rgba(12, 12, 12, 0.6)", 
+                        textAlign: "center",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                      }}
+                    >
+                      장소
                     </th>
-                    <th style={{ padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }} colSpan={3}>
-                      복구면적
+                    <th 
+                      style={{ 
+                        width: "185px", 
+                        padding: "17.5px 8px", 
+                        fontFamily: "Pretendard", 
+                        fontSize: "15px", 
+                        fontWeight: 600, 
+                        color: "rgba(12, 12, 12, 0.6)", 
+                        textAlign: "center",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                      }}
+                    >
+                      위치
                     </th>
-                    <th style={{ width: "100px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>비고</th>
-                  </tr>
-                  <tr
-                    style={{
-                      background: "rgba(12, 12, 12, 0.02)",
-                      borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th></th>
-                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>가로(mm)</th>
-                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세로(mm)</th>
-                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>면적(m²)</th>
-                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>가로(mm)</th>
-                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세로(mm)</th>
-                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>면적(m²)</th>
-                    <th></th>
+                    <th 
+                      style={{ 
+                        width: "183px", 
+                        padding: "17.5px 8px", 
+                        fontFamily: "Pretendard", 
+                        fontSize: "15px", 
+                        fontWeight: 600, 
+                        color: "rgba(12, 12, 12, 0.6)", 
+                        textAlign: "center",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                      }}
+                    >
+                      공사내용
+                    </th>
+                    <th 
+                      style={{ 
+                        width: "393px",
+                        padding: "0",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                      }} 
+                      colSpan={3}
+                    >
+                      <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
+                        <div 
+                          style={{ 
+                            padding: "17.5px 8px", 
+                            fontFamily: "Pretendard", 
+                            fontSize: "15px", 
+                            fontWeight: 600, 
+                            color: "rgba(12, 12, 12, 0.6)", 
+                            textAlign: "center",
+                            background: "rgba(12, 12, 12, 0.04)",
+                            height: "43px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          피해면적
+                        </div>
+                        <div style={{ display: "flex", width: "100%" }}>
+                          <div 
+                            style={{ 
+                              flex: 1,
+                              padding: "17.5px 8px", 
+                              fontFamily: "Pretendard", 
+                              fontSize: "15px", 
+                              fontWeight: 600, 
+                              color: "rgba(12, 12, 12, 0.6)", 
+                              textAlign: "center",
+                              height: "43px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            가로(mm)
+                          </div>
+                          <div 
+                            style={{ 
+                              flex: 1,
+                              padding: "17.5px 8px", 
+                              fontFamily: "Pretendard", 
+                              fontSize: "15px", 
+                              fontWeight: 600, 
+                              color: "rgba(12, 12, 12, 0.6)", 
+                              textAlign: "center",
+                              height: "43px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            세로(mm)
+                          </div>
+                          <div 
+                            style={{ 
+                              flex: 1,
+                              padding: "17.5px 8px", 
+                              fontFamily: "Pretendard", 
+                              fontSize: "15px", 
+                              fontWeight: 600, 
+                              color: "rgba(12, 12, 12, 0.6)", 
+                              textAlign: "center",
+                              height: "43px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            면적(㎡)
+                          </div>
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      style={{ 
+                        width: "393px",
+                        padding: "0",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                      }} 
+                      colSpan={3}
+                    >
+                      <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
+                        <div 
+                          style={{ 
+                            padding: "17.5px 8px", 
+                            fontFamily: "Pretendard", 
+                            fontSize: "15px", 
+                            fontWeight: 600, 
+                            color: "rgba(12, 12, 12, 0.6)", 
+                            textAlign: "center",
+                            background: "rgba(12, 12, 12, 0.04)",
+                            height: "43px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          복구면적
+                        </div>
+                        <div style={{ display: "flex", width: "100%" }}>
+                          <div 
+                            style={{ 
+                              flex: 1,
+                              padding: "17.5px 8px", 
+                              fontFamily: "Pretendard", 
+                              fontSize: "15px", 
+                              fontWeight: 600, 
+                              color: "rgba(12, 12, 12, 0.6)", 
+                              textAlign: "center",
+                              height: "43px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            가로(mm)
+                          </div>
+                          <div 
+                            style={{ 
+                              flex: 1,
+                              padding: "17.5px 8px", 
+                              fontFamily: "Pretendard", 
+                              fontSize: "15px", 
+                              fontWeight: 600, 
+                              color: "rgba(12, 12, 12, 0.6)", 
+                              textAlign: "center",
+                              height: "43px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            세로(mm)
+                          </div>
+                          <div 
+                            style={{ 
+                              flex: 1,
+                              padding: "17.5px 8px", 
+                              fontFamily: "Pretendard", 
+                              fontSize: "15px", 
+                              fontWeight: 600, 
+                              color: "rgba(12, 12, 12, 0.6)", 
+                              textAlign: "center",
+                              height: "43px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            면적(㎡)
+                          </div>
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      style={{ 
+                        width: "205px", 
+                        padding: "17.5px 8px", 
+                        fontFamily: "Pretendard", 
+                        fontSize: "15px", 
+                        fontWeight: 600, 
+                        color: "rgba(12, 12, 12, 0.6)", 
+                        textAlign: "center",
+                      }}
+                    >
+                      비고
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
