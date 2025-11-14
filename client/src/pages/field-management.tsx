@@ -327,8 +327,7 @@ export default function FieldManagement() {
             ) : (
               <Select
                 value={selectedCase}
-                onValueChange={(value) => !isReadOnly && setSelectedCase(value)}
-                disabled={isReadOnly}
+                onValueChange={setSelectedCase}
               >
                 <SelectTrigger 
                   className="border-0 focus:ring-0"
