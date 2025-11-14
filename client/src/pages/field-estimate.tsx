@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Case, MasterData, LaborCost } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -205,6 +205,39 @@ export default function FieldEstimate() {
   // 공종별 고유 공사명 리스트
   const laborCategories = Array.from(new Set(laborCostData.map(item => item.category)));
   
+  // 계층적 옵션 생성 (useMemo로 최적화)
+  const laborOptions = useMemo(() => {
+    const options = new Map<string, {
+      workNames: Set<string>;
+      detailWorks: Map<string, Set<string>>;
+      items: Map<string, LaborCost>;
+    }>();
+    
+    laborCostData.forEach(item => {
+      if (!options.has(item.category)) {
+        options.set(item.category, {
+          workNames: new Set(),
+          detailWorks: new Map(),
+          items: new Map(),
+        });
+      }
+      
+      const catData = options.get(item.category)!;
+      catData.workNames.add(item.workName);
+      
+      const workKey = item.workName;
+      if (!catData.detailWorks.has(workKey)) {
+        catData.detailWorks.set(workKey, new Set());
+      }
+      catData.detailWorks.get(workKey)!.add(item.detailWork);
+      
+      const itemKey = `${item.category}|${item.workName}|${item.detailWork}|${item.detailItem || ''}`;
+      catData.items.set(itemKey, item);
+    });
+    
+    return options;
+  }, [laborCostData]);
+  
   // 노무비 행 추가
   const addLaborRow = () => {
     if (laborCostData.length === 0) {
@@ -270,20 +303,75 @@ export default function FieldEstimate() {
     });
   };
   
-  // 노무비 행 업데이트 (캐스케이딩 드롭다운)
+  // 노무비 행 업데이트 (계층적 캐스케이딩 드롭다운)
   const updateLaborRow = (rowId: string, field: keyof LaborCostRow, value: string) => {
     setLaborCostRows(prev => prev.map(row => {
       if (row.id === rowId) {
-        // 공종 선택 시 캐스케이딩: 해당 공종의 첫 번째 항목으로 자동 채움
+        // 공종 선택 시: 공사명만 자동 채움, 나머지는 초기화
         if (field === 'category') {
-          const matchedItem = laborCostData.find(item => item.category === value);
+          const catData = laborOptions.get(value);
+          if (catData) {
+            const firstWorkName = Array.from(catData.workNames)[0] || "";
+            return {
+              ...row,
+              category: value,
+              workName: firstWorkName,
+              detailWork: "", // 세부공사 초기화 (사용자가 선택해야 함)
+              detailItem: "",
+              priceStandard: "",
+              unit: "",
+              standardPrice: "0",
+            };
+          } else {
+            // catData가 없는 경우에도 모든 필드 초기화
+            return {
+              ...row,
+              category: value,
+              workName: "",
+              detailWork: "",
+              detailItem: "",
+              priceStandard: "",
+              unit: "",
+              standardPrice: "0",
+            };
+          }
+        }
+        
+        // 공사명 선택 시: 세부공사, 세부항목, 가격 필드 초기화
+        if (field === 'workName') {
+          return {
+            ...row,
+            workName: value,
+            detailWork: "", // 세부공사 초기화
+            detailItem: "",
+            priceStandard: "",
+            unit: "",
+            standardPrice: "0",
+          };
+        }
+        
+        // 세부공사 선택 시: 세부항목은 초기화, 나머지는 유지
+        if (field === 'detailWork') {
+          return {
+            ...row,
+            detailWork: value,
+            detailItem: "", // 세부항목 초기화 (사용자가 선택해야 함)
+            priceStandard: "",
+            unit: "",
+            standardPrice: "0",
+          };
+        }
+        
+        // 세부항목 선택 시: DB에서 해당 항목 찾아서 나머지 필드 자동 채움
+        if (field === 'detailItem') {
+          const itemKey = `${row.category}|${row.workName}|${row.detailWork}|${value}`;
+          const catData = laborOptions.get(row.category);
+          const matchedItem = catData?.items.get(itemKey);
+          
           if (matchedItem) {
             return {
               ...row,
-              category: matchedItem.category,
-              workName: matchedItem.workName,
-              detailWork: matchedItem.detailWork,
-              detailItem: matchedItem.detailItem,
+              detailItem: value,
               priceStandard: matchedItem.priceStandard,
               unit: matchedItem.unit,
               standardPrice: matchedItem.standardPrice.toString(),
@@ -291,7 +379,7 @@ export default function FieldEstimate() {
           }
         }
         
-        // 수량 변경
+        // 그 외 필드 변경 (quantity 등)
         return { ...row, [field]: value };
       }
       return row;
@@ -1196,34 +1284,108 @@ export default function FieldEstimate() {
                         </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <input 
-                          type="text" 
-                          value={row.workName} 
-                          readOnly
-                          className="input-focus-blue" 
-                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
-                          data-testid={`input-workName-${row.id}`}
-                        />
+                        <Select 
+                          value={row.workName || undefined}
+                          onValueChange={(value) => updateLaborRow(row.id, 'workName', value)}
+                          disabled={!row.category}
+                        >
+                          <SelectTrigger 
+                            className="border focus:ring-0" 
+                            style={{ 
+                              width: "100%", 
+                              height: "40px", 
+                              fontFamily: "Pretendard", 
+                              fontSize: "14px", 
+                              borderColor: "rgba(12, 12, 12, 0.2)", 
+                              borderRadius: "6px",
+                              background: !row.category ? "rgba(12, 12, 12, 0.02)" : "white"
+                            }}
+                            data-testid={`select-workName-${row.id}`}
+                          >
+                            <SelectValue placeholder="선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {row.category && laborOptions.get(row.category)?.workNames ? (
+                              Array.from(laborOptions.get(row.category)!.workNames).map(wn => (
+                                <SelectItem key={wn} value={wn}>{wn}</SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-option" disabled>선택할 수 있는 항목이 없습니다</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <input 
-                          type="text" 
-                          value={row.detailWork} 
-                          readOnly
-                          className="input-focus-blue" 
-                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
-                          data-testid={`input-detailWork-${row.id}`}
-                        />
+                        <Select 
+                          value={row.detailWork || ""}
+                          onValueChange={(value) => updateLaborRow(row.id, 'detailWork', value)}
+                          disabled={!row.category || !row.workName}
+                        >
+                          <SelectTrigger 
+                            className="border focus:ring-0" 
+                            style={{ 
+                              width: "100%", 
+                              height: "40px", 
+                              fontFamily: "Pretendard", 
+                              fontSize: "14px", 
+                              borderColor: "rgba(12, 12, 12, 0.2)", 
+                              borderRadius: "6px",
+                              background: (!row.category || !row.workName) ? "rgba(12, 12, 12, 0.02)" : "white"
+                            }}
+                            data-testid={`select-detailWork-${row.id}`}
+                          >
+                            <SelectValue placeholder="선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {row.category && row.workName && laborOptions.get(row.category)?.detailWorks.get(row.workName) && 
+                             Array.from(laborOptions.get(row.category)!.detailWorks.get(row.workName)!).length > 0 ? (
+                              Array.from(laborOptions.get(row.category)!.detailWorks.get(row.workName)!).map(dw => (
+                                <SelectItem key={dw} value={dw}>{dw}</SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-option" disabled>선택할 수 있는 항목이 없습니다</SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <input 
-                          type="text" 
-                          value={row.detailItem || "-"} 
-                          readOnly
-                          className="input-focus-blue" 
-                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
-                          data-testid={`input-detailItem-${row.id}`}
-                        />
+                        <Select 
+                          value={row.detailItem || ""}
+                          onValueChange={(value) => updateLaborRow(row.id, 'detailItem', value)}
+                          disabled={!row.category || !row.workName || !row.detailWork}
+                        >
+                          <SelectTrigger 
+                            className="border focus:ring-0" 
+                            style={{ 
+                              width: "100%", 
+                              height: "40px", 
+                              fontFamily: "Pretendard", 
+                              fontSize: "14px", 
+                              borderColor: "rgba(12, 12, 12, 0.2)", 
+                              borderRadius: "6px",
+                              background: (!row.category || !row.workName || !row.detailWork) ? "rgba(12, 12, 12, 0.02)" : "white"
+                            }}
+                            data-testid={`select-detailItem-${row.id}`}
+                          >
+                            <SelectValue placeholder="선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(() => {
+                              const filteredItems = laborCostData.filter(item => 
+                                item.category === row.category && 
+                                item.workName === row.workName && 
+                                item.detailWork === row.detailWork
+                              );
+                              return filteredItems.length > 0 ? (
+                                filteredItems.map(item => (
+                                  <SelectItem key={item.id} value={item.detailItem || ""}>{item.detailItem || "-"}</SelectItem>
+                                ))
+                              ) : (
+                                <SelectItem value="no-option" disabled>선택할 수 있는 항목이 없습니다</SelectItem>
+                              );
+                            })()}
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
                         <input 
