@@ -14,6 +14,7 @@ import SettlementAction from "@/pages/settlement-action";
 import FieldManagement from "@/pages/field-management";
 import FieldDrawing from "@/pages/field-drawing";
 import FieldDocuments from "@/pages/field-documents";
+import FieldEstimate from "@/pages/field-estimate";
 import Forbidden from "@/pages/forbidden";
 import NotFound from "@/pages/not-found";
 import { StatisticsLayout } from "@/components/statistics-layout";
@@ -117,9 +118,7 @@ function Router() {
       <Route path="/field-survey/estimate">
         {() => (
           <ProtectedRoute category="현장조사">
-            <FieldSurveyLayout>
-              <div className="p-8">견적서 작성 페이지 (준비중)</div>
-            </FieldSurveyLayout>
+            <FieldEstimate />
           </ProtectedRoute>
         )}
       </Route>

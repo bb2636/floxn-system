@@ -1,0 +1,667 @@
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Case } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { Plus, Trash2 } from "lucide-react";
+import { FieldSurveyLayout } from "@/components/field-survey-layout";
+
+interface AreaCalculationRow {
+  id: string;
+  category: string; // 항소: 주방, 화장실, 방안, 거실상
+  location: string; // 위치
+  workName: string; // 공사명
+  damageWidth: string; // 피해면적 가로 (mm)
+  damageHeight: string; // 피해면적 세로 (mm)
+  damageArea: string; // 피해면적 면적 (m²)
+  repairWidth: string; // 복구면적 가로 (mm)
+  repairHeight: string; // 복구면적 세로 (mm)
+  repairArea: string; // 복구면적 면적 (m²)
+  note: string; // 비고
+}
+
+const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
+const ROOM_CATEGORIES = ["주방", "화장실", "방안", "거실상"];
+
+export default function FieldEstimate() {
+  const [selectedCategory, setSelectedCategory] = useState("복구면적 산출표");
+  const [rows, setRows] = useState<AreaCalculationRow[]>([]);
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
+  // 현장입력에서 선택한 케이스 ID 가져오기
+  const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
+
+  // 선택된 케이스 데이터 가져오기
+  const { data: selectedCase, isLoading: isLoadingSelectedCase } = useQuery<Case>({
+    queryKey: ["/api/cases", selectedCaseId],
+    enabled: !!selectedCaseId,
+  });
+
+  // 초기 빈 행 생성
+  useEffect(() => {
+    if (rows.length === 0) {
+      addRow();
+    }
+  }, []);
+
+  // 행 추가
+  const addRow = () => {
+    const newRow: AreaCalculationRow = {
+      id: `row-${Date.now()}-${Math.random()}`,
+      category: "주방",
+      location: "선택",
+      workName: "선택",
+      damageWidth: "0000",
+      damageHeight: "0000",
+      damageArea: "0000",
+      repairWidth: "0000",
+      repairHeight: "0000",
+      repairArea: "0000",
+      note: "",
+    };
+    setRows([...rows, newRow]);
+  };
+
+  // 선택된 행 삭제
+  const deleteSelectedRows = () => {
+    if (selectedRows.size === 0) return;
+    setRows(rows.filter(row => !selectedRows.has(row.id)));
+    setSelectedRows(new Set());
+  };
+
+  // 체크박스 토글
+  const toggleRowSelection = (rowId: string) => {
+    const newSelected = new Set(selectedRows);
+    if (newSelected.has(rowId)) {
+      newSelected.delete(rowId);
+    } else {
+      newSelected.add(rowId);
+    }
+    setSelectedRows(newSelected);
+  };
+
+  // 행 업데이트
+  const updateRow = (rowId: string, field: keyof AreaCalculationRow, value: string) => {
+    setRows(rows.map(row => {
+      if (row.id === rowId) {
+        const updated = { ...row, [field]: value };
+        
+        // 가로/세로 변경 시 면적 자동 계산
+        if (field === 'damageWidth' || field === 'damageHeight') {
+          const width = parseFloat(field === 'damageWidth' ? value : row.damageWidth) || 0;
+          const height = parseFloat(field === 'damageHeight' ? value : row.damageHeight) || 0;
+          // mm² -> m² 변환 (1,000,000 mm² = 1 m²)
+          const area = (width * height / 1000000).toFixed(2);
+          updated.damageArea = area;
+        }
+        
+        if (field === 'repairWidth' || field === 'repairHeight') {
+          const width = parseFloat(field === 'repairWidth' ? value : row.repairWidth) || 0;
+          const height = parseFloat(field === 'repairHeight' ? value : row.repairHeight) || 0;
+          // mm² -> m² 변환
+          const area = (width * height / 1000000).toFixed(2);
+          updated.repairArea = area;
+        }
+        
+        return updated;
+      }
+      return row;
+    }));
+  };
+
+  // 초기화
+  const handleReset = () => {
+    if (confirm("입력한 내용을 모두 초기화하시겠습니까?")) {
+      setRows([]);
+      setSelectedRows(new Set());
+      addRow();
+    }
+  };
+
+  // 저장
+  const handleSave = () => {
+    console.log("저장:", rows);
+    // TODO: API 호출
+  };
+
+  if (isLoadingSelectedCase) {
+    return (
+      <FieldSurveyLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.6)" }}>
+              로딩 중...
+            </p>
+          </div>
+        </div>
+      </FieldSurveyLayout>
+    );
+  }
+
+  if (!selectedCase) {
+    return (
+      <FieldSurveyLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <p style={{ fontFamily: "Pretendard", fontSize: "16px", color: "rgba(12, 12, 12, 0.6)" }}>
+              현장입력에서 케이스를 먼저 선택해주세요.
+            </p>
+          </div>
+        </div>
+      </FieldSurveyLayout>
+    );
+  }
+
+  return (
+    <FieldSurveyLayout>
+      <div
+        style={{
+          maxWidth: "1400px",
+          margin: "0 auto",
+          padding: "32px 40px 60px",
+        }}
+      >
+        {/* 페이지 타이틀 */}
+        <div className="flex items-center gap-2 mb-8">
+          <h1
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "24px",
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              color: "#0C0C0C",
+            }}
+          >
+            견적서 작성
+          </h1>
+          <div
+            style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              background: "rgba(12, 12, 12, 0.2)",
+            }}
+          />
+        </div>
+
+        {/* 작성중인 건 */}
+        <div className="mb-6">
+          <div
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: 400,
+              letterSpacing: "-0.02em",
+              color: "rgba(12, 12, 12, 0.5)",
+              marginBottom: "8px",
+            }}
+          >
+            작성중인 건
+          </div>
+          
+          <div 
+            className="p-4 rounded-lg"
+            style={{
+              background: "rgba(12, 12, 12, 0.03)",
+            }}
+          >
+            {/* 첫 번째 줄: 보험사명 + 사고번호 */}
+            <div className="flex items-center gap-2 mb-2">
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ background: "#008FED" }}
+              />
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
+                {selectedCase.insuranceCompany || "보험사 미정"} {selectedCase.insuranceAccidentNo || ""}
+              </span>
+            </div>
+            
+            {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+            <div 
+              className="flex items-center gap-4"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "13px",
+                fontWeight: 400,
+                letterSpacing: "-0.02em",
+                color: "rgba(12, 12, 12, 0.5)",
+                paddingLeft: "12px",
+              }}
+            >
+              <span>접수번호 {selectedCase.caseNumber}</span>
+              <span>계약자 {selectedCase.policyHolderName || selectedCase.clientName || "미정"}</span>
+              <span>담당자 {selectedCase.assignedPartnerManager || "미정"}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 카테고리 탭 */}
+        <div 
+          className="flex gap-8 mb-6"
+          style={{
+            borderBottom: "2px solid rgba(12, 12, 12, 0.08)",
+          }}
+        >
+          {CATEGORIES.map((category) => (
+            <button
+              key={category}
+              type="button"
+              onClick={() => setSelectedCategory(category)}
+              className="pb-3 transition-all relative"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: selectedCategory === category ? 600 : 400,
+                letterSpacing: "-0.02em",
+                background: "transparent",
+                color: selectedCategory === category ? "#008FED" : "rgba(12, 12, 12, 0.5)",
+                border: "none",
+              }}
+              data-testid={`tab-${category}`}
+            >
+              {category}
+              {selectedCategory === category && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "-2px",
+                    left: 0,
+                    right: 0,
+                    height: "2px",
+                    background: "#008FED",
+                  }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* 복구면적 산출표 컨텐츠 */}
+        {selectedCategory === "복구면적 산출표" && (
+          <div>
+            {/* 복구면적 산출표 헤더 */}
+            <div className="flex items-center justify-between mb-4">
+              <h2
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "18px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
+                복구면적 산출표
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={addRow}
+                  className="px-4 py-2 rounded-md flex items-center gap-2 hover-elevate active-elevate-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    background: "white",
+                    color: "#008FED",
+                    border: "1px solid #008FED",
+                  }}
+                  data-testid="button-add-row"
+                >
+                  항목 추가
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteSelectedRows}
+                  disabled={selectedRows.size === 0}
+                  className="px-4 py-2 rounded-md flex items-center gap-2 hover-elevate active-elevate-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    background: selectedRows.size === 0 ? "#f5f5f5" : "#FF4D4F",
+                    color: selectedRows.size === 0 ? "rgba(12, 12, 12, 0.3)" : "white",
+                    border: "none",
+                    cursor: selectedRows.size === 0 ? "not-allowed" : "pointer",
+                    opacity: selectedRows.size === 0 ? 0.6 : 1,
+                  }}
+                  data-testid="button-delete-rows"
+                >
+                  행 삭제
+                </button>
+              </div>
+            </div>
+
+            {/* 테이블 */}
+            <div
+              style={{
+                background: "white",
+                borderRadius: "8px",
+                overflow: "auto",
+              }}
+            >
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  minWidth: "1200px",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      background: "rgba(12, 12, 12, 0.03)",
+                      borderBottom: "2px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <th style={{ width: "40px", padding: "12px 8px" }}></th>
+                    <th style={{ width: "120px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>항소</th>
+                    <th style={{ width: "120px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>위치</th>
+                    <th style={{ width: "120px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>공사명</th>
+                    <th style={{ padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }} colSpan={3}>
+                      피해면적
+                    </th>
+                    <th style={{ padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }} colSpan={3}>
+                      복구면적
+                    </th>
+                    <th style={{ width: "100px", padding: "12px 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center" }}>비고</th>
+                  </tr>
+                  <tr
+                    style={{
+                      background: "rgba(12, 12, 12, 0.02)",
+                      borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>가로(mm)</th>
+                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세로(mm)</th>
+                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>면적(m²)</th>
+                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>가로(mm)</th>
+                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세로(mm)</th>
+                    <th style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>면적(m²)</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, index) => (
+                    <tr
+                      key={row.id}
+                      style={{
+                        borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                      }}
+                    >
+                      <td style={{ padding: "8px", textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.has(row.id)}
+                          onChange={() => toggleRowSelection(row.id)}
+                          style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                          data-testid={`checkbox-row-${index}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <select
+                          value={row.category}
+                          onChange={(e) => updateRow(row.id, 'category', e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.1)",
+                            borderRadius: "4px",
+                            background: "white",
+                          }}
+                          data-testid={`select-category-${index}`}
+                        >
+                          {ROOM_CATEGORIES.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <select
+                          value={row.location}
+                          onChange={(e) => updateRow(row.id, 'location', e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.1)",
+                            borderRadius: "4px",
+                            background: "white",
+                          }}
+                          data-testid={`select-location-${index}`}
+                        >
+                          <option value="선택">선택</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <select
+                          value={row.workName}
+                          onChange={(e) => updateRow(row.id, 'workName', e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.1)",
+                            borderRadius: "4px",
+                            background: "white",
+                          }}
+                          data-testid={`select-workname-${index}`}
+                        >
+                          <option value="선택">선택</option>
+                        </select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="text"
+                          value={row.damageWidth}
+                          onChange={(e) => updateRow(row.id, 'damageWidth', e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.1)",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                          }}
+                          data-testid={`input-damage-width-${index}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="text"
+                          value={row.damageHeight}
+                          onChange={(e) => updateRow(row.id, 'damageHeight', e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.1)",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                          }}
+                          data-testid={`input-damage-height-${index}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="text"
+                          value={row.damageArea}
+                          readOnly
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.1)",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                            background: "rgba(12, 12, 12, 0.02)",
+                          }}
+                          data-testid={`input-damage-area-${index}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="text"
+                          value={row.repairWidth}
+                          onChange={(e) => updateRow(row.id, 'repairWidth', e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.1)",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                          }}
+                          data-testid={`input-repair-width-${index}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="text"
+                          value={row.repairHeight}
+                          onChange={(e) => updateRow(row.id, 'repairHeight', e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.1)",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                          }}
+                          data-testid={`input-repair-height-${index}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="text"
+                          value={row.repairArea}
+                          readOnly
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.1)",
+                            borderRadius: "4px",
+                            textAlign: "center",
+                            background: "rgba(12, 12, 12, 0.02)",
+                          }}
+                          data-testid={`input-repair-area-${index}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input
+                          type="text"
+                          value={row.note}
+                          onChange={(e) => updateRow(row.id, 'note', e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.1)",
+                            borderRadius: "4px",
+                          }}
+                          data-testid={`input-note-${index}`}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* 다른 카테고리는 준비중 표시 */}
+        {selectedCategory !== "복구면적 산출표" && (
+          <div
+            className="flex items-center justify-center"
+            style={{
+              minHeight: "400px",
+              background: "rgba(12, 12, 12, 0.02)",
+              borderRadius: "8px",
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                color: "rgba(12, 12, 12, 0.4)",
+              }}
+            >
+              {selectedCategory} - 준비 중입니다
+            </p>
+          </div>
+        )}
+
+        {/* 하단 버튼 */}
+        {selectedCategory === "복구면적 산출표" && (
+          <div
+            className="flex justify-between items-center mt-8"
+            style={{
+              padding: "20px 0",
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleReset}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                color: "#FF4D4F",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-reset"
+            >
+              초기화
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSave}
+              className="hover-elevate active-elevate-2"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                height: "52px",
+                padding: "12px 48px",
+                background: "#008FED",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "8px",
+              }}
+              data-testid="button-save"
+            >
+              저장
+            </button>
+          </div>
+        )}
+      </div>
+    </FieldSurveyLayout>
+  );
+}
