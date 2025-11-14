@@ -1,12 +1,15 @@
 import { useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { User, Case } from "@shared/schema";
-import { Upload, X, Check } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { User, Case, CaseDocument } from "@shared/schema";
+import { Upload, X, Check, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
-interface UploadedFile {
+type DocumentCategory = "전체" | "현장" | "수리중" | "복구완료" | "청구" | "개인정보";
+
+interface UploadingFile {
   id: string;
   file: File;
   category: string;
@@ -14,13 +17,48 @@ interface UploadedFile {
   uploaded: boolean;
 }
 
-type DocumentCategory = "전체" | "현장" | "수리중" | "복구완료" | "청구" | "개인정보";
+// Helper function to convert File to Base64
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove the data URL prefix (e.g., "data:image/png;base64,")
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
+// Helper function to download a file from Base64
+const downloadFile = (fileName: string, fileType: string, base64Data: string) => {
+  // Create blob from base64
+  const byteCharacters = atob(base64Data);
+  const byteNumbers = new Array(byteCharacters.length);
+  for (let i = 0; i < byteCharacters.length; i++) {
+    byteNumbers[i] = byteCharacters.charCodeAt(i);
+  }
+  const byteArray = new Uint8Array(byteNumbers);
+  const blob = new Blob([byteArray], { type: fileType });
+
+  // Create download link
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
 
 export default function FieldDocuments() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("전체");
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
   const { data: user } = useQuery<User>({
@@ -36,17 +74,84 @@ export default function FieldDocuments() {
     enabled: !!selectedCaseId,
   });
 
-  if (!user) {
-    return null;
+  // 문서 목록 조회
+  const { data: documents = [], isLoading } = useQuery<CaseDocument[]>({
+    queryKey: ["/api/documents/case", selectedCaseId],
+    enabled: !!selectedCaseId,
+  });
+
+  // 문서 업로드 mutation
+  const uploadMutation = useMutation({
+    mutationFn: async (data: {
+      caseId: string;
+      category: string;
+      fileName: string;
+      fileType: string;
+      fileSize: number;
+      fileData: string;
+      createdBy: string;
+    }) => {
+      return await apiRequest("POST", "/api/documents", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
+      toast({
+        title: "파일이 업로드 되었습니다",
+        description: "",
+        className: "bg-[#008FED] text-white border-0",
+      });
+    },
+  });
+
+  // 문서 삭제 mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (documentId: string) => {
+      return await apiRequest("DELETE", `/api/documents/${documentId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
+    },
+  });
+
+  // 카테고리 변경 mutation
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ documentId, category }: { documentId: string; category: string }) => {
+      return await apiRequest("PATCH", `/api/documents/${documentId}`, { category });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
+      const fileName = documents.find(d => d.id === variables.documentId)?.fileName || "파일";
+      toast({
+        title: `${fileName}을(를) ${variables.category} 카테고리로 이동했습니다.`,
+        description: "",
+      });
+    },
+  });
+
+  if (!user || !selectedCaseId) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[#F5F7FA]">
+        <div
+          style={{
+            fontFamily: "Pretendard",
+            fontSize: "16px",
+            fontWeight: 500,
+            color: "rgba(12, 12, 12, 0.5)",
+          }}
+        >
+          케이스를 선택해주세요
+        </div>
+      </div>
+    );
   }
 
   const categories: DocumentCategory[] = ["전체", "현장", "수리중", "복구완료", "청구", "개인정보"];
 
   // 파일 선택 핸들러
-  const handleFileSelect = (files: FileList | null) => {
+  const handleFileSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    const newFiles: UploadedFile[] = Array.from(files).map(file => ({
+    const newFiles: UploadingFile[] = Array.from(files).map(file => ({
       id: `${Date.now()}-${Math.random()}`,
       file,
       category: selectedCategory === "전체" ? "현장" : selectedCategory,
@@ -54,47 +159,67 @@ export default function FieldDocuments() {
       uploaded: false,
     }));
 
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    setUploadingFiles(prev => [...prev, ...newFiles]);
 
-    // 시뮬레이션: 파일 업로드 진행
-    newFiles.forEach(uploadedFile => {
-      simulateUpload(uploadedFile.id);
-    });
-  };
+    // 파일 업로드
+    for (const uploadingFile of newFiles) {
+      try {
+        // Progress simulation
+        const interval = setInterval(() => {
+          setUploadingFiles(prev =>
+            prev.map(f =>
+              f.id === uploadingFile.id ? { ...f, progress: Math.min(f.progress + 20, 90) } : f
+            )
+          );
+        }, 200);
 
-  // 업로드 시뮬레이션
-  const simulateUpload = (fileId: string) => {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 20;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        setUploadedFiles(prev =>
-          prev.map(f =>
-            f.id === fileId ? { ...f, progress: 100, uploaded: true } : f
-          )
-        );
-        
-        // 업로드 완료 토스트 메시지
-        toast({
-          title: "파일이 업로드 되었습니다",
-          description: "",
-          className: "bg-[#008FED] text-white border-0",
+        // Convert to Base64
+        const base64Data = await fileToBase64(uploadingFile.file);
+
+        // Upload to server
+        await uploadMutation.mutateAsync({
+          caseId: selectedCaseId,
+          category: uploadingFile.category,
+          fileName: uploadingFile.file.name,
+          fileType: uploadingFile.file.type,
+          fileSize: uploadingFile.file.size,
+          fileData: base64Data,
+          createdBy: user.id,
         });
-      } else {
-        setUploadedFiles(prev =>
+
+        clearInterval(interval);
+
+        // Mark as complete
+        setUploadingFiles(prev =>
           prev.map(f =>
-            f.id === fileId ? { ...f, progress } : f
+            f.id === uploadingFile.id ? { ...f, progress: 100, uploaded: true } : f
           )
         );
+
+        // Remove from uploading list after a delay
+        setTimeout(() => {
+          setUploadingFiles(prev => prev.filter(f => f.id !== uploadingFile.id));
+        }, 1000);
+      } catch (error) {
+        console.error("Upload error:", error);
+        setUploadingFiles(prev => prev.filter(f => f.id !== uploadingFile.id));
+        toast({
+          title: "업로드 중 오류가 발생했습니다",
+          description: "",
+          variant: "destructive",
+        });
       }
-    }, 300);
+    }
   };
 
   // 파일 삭제
-  const handleFileRemove = (fileId: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+  const handleFileRemove = (documentId: string) => {
+    deleteMutation.mutate(documentId);
+  };
+
+  // 카테고리 변경
+  const handleCategoryChange = (documentId: string, newCategory: string) => {
+    updateCategoryMutation.mutate({ documentId, category: newCategory });
   };
 
   // 드래그 앤 드롭 핸들러
@@ -122,9 +247,9 @@ export default function FieldDocuments() {
   };
 
   // 필터링된 파일 목록
-  const filteredFiles = selectedCategory === "전체"
-    ? uploadedFiles
-    : uploadedFiles.filter(f => f.category === selectedCategory);
+  const filteredDocuments = selectedCategory === "전체"
+    ? documents
+    : documents.filter(d => d.category === selectedCategory);
 
   // 저장 핸들러
   const handleSave = () => {
@@ -193,163 +318,64 @@ export default function FieldDocuments() {
       {selectedCase && (
         <div className="mb-6">
           <div
-            className="mb-4"
             style={{
               fontFamily: "Pretendard",
-              fontSize: "15px",
-              fontWeight: 600,
+              fontSize: "14px",
+              fontWeight: 400,
               letterSpacing: "-0.02em",
-              color: "rgba(12, 12, 12, 0.7)",
+              color: "rgba(12, 12, 12, 0.5)",
+              marginBottom: "8px",
             }}
           >
             작성중인 건
           </div>
-          <div
-            className="p-4 rounded-xl"
-            style={{
-              background: "rgba(12, 12, 12, 0.04)",
-              backdropFilter: "blur(7px)",
-            }}
-          >
-            <div className="flex items-start gap-4">
-              {/* 케이스 정보 */}
-              <div className="flex-1">
-                <div className="flex items-center gap-4 mb-2">
-                  <div className="w-2 h-2 rounded-full" style={{ background: "#008FED" }} />
-                  <div className="flex items-center gap-2">
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "18px",
-                        fontWeight: 600,
-                        letterSpacing: "-0.02em",
-                        color: "rgba(12, 12, 12, 0.9)",
-                      }}
-                    >
-                      {selectedCase.insuranceCompany}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "18px",
-                        fontWeight: 600,
-                        letterSpacing: "-0.02em",
-                        color: "rgba(12, 12, 12, 0.9)",
-                      }}
-                    >
-                      {selectedCase.insuranceAccidentNo}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-6 pl-6">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 400,
-                        letterSpacing: "-0.02em",
-                        color: "rgba(12, 12, 12, 0.5)",
-                      }}
-                    >
-                      접수번호
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 400,
-                        letterSpacing: "-0.02em",
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}
-                    >
-                      {selectedCase.insurancePolicyNo || "-"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 400,
-                        letterSpacing: "-0.02em",
-                        color: "rgba(12, 12, 12, 0.5)",
-                      }}
-                    >
-                      계약자
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 400,
-                        letterSpacing: "-0.02em",
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}
-                    >
-                      {selectedCase.policyHolderName || "-"}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 400,
-                        letterSpacing: "-0.02em",
-                        color: "rgba(12, 12, 12, 0.5)",
-                      }}
-                    >
-                      담당자
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 400,
-                        letterSpacing: "-0.02em",
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}
-                    >
-                      {selectedCase.insuredName || "-"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center gap-3">
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{ background: "#008FED" }}
+            ></div>
+            <span
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+              }}
+            >
+              {selectedCase.clientName || "미정"}
+            </span>
+            <span
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 400,
+                letterSpacing: "-0.02em",
+                color: "rgba(12, 12, 12, 0.5)",
+              }}
+            >
+              {selectedCase.caseNumber}
+            </span>
           </div>
         </div>
       )}
 
-      {/* 증빙자료 정보 섹션 */}
-      <div
-        className="mb-6"
-        style={{
-          fontFamily: "Pretendard",
-          fontSize: "18px",
-          fontWeight: 600,
-          letterSpacing: "-0.02em",
-          color: "#0C0C0C",
-        }}
-      >
-        증빙자료 정보
-      </div>
-
       {/* 카테고리 탭 */}
-      <div className="flex border-b mb-6" style={{ borderColor: "rgba(12, 12, 12, 0.1)" }}>
+      <div className="flex gap-2 mb-6">
         {categories.map((category) => (
           <button
             key={category}
             type="button"
             onClick={() => setSelectedCategory(category)}
-            className="px-8 py-3 transition-colors"
+            className="px-6 py-3 rounded-lg transition-all"
             style={{
               fontFamily: "Pretendard",
               fontSize: "16px",
-              fontWeight: selectedCategory === category ? 600 : 500,
+              fontWeight: 500,
               letterSpacing: "-0.02em",
-              color: selectedCategory === category ? "#008FED" : "rgba(12, 12, 12, 0.5)",
-              borderBottom: selectedCategory === category ? "2px solid #008FED" : "2px solid transparent",
+              background: selectedCategory === category ? "#008FED" : "white",
+              color: selectedCategory === category ? "white" : "rgba(12, 12, 12, 0.7)",
+              border: selectedCategory === category ? "none" : "1px solid rgba(12, 12, 12, 0.1)",
             }}
             data-testid={`tab-${category}`}
           >
@@ -360,10 +386,11 @@ export default function FieldDocuments() {
 
       {/* 파일 업로드 영역 */}
       <div
-        className="rounded-2xl p-12 mb-6 cursor-pointer transition-all"
+        className={`mb-6 border-2 border-dashed rounded-xl p-12 transition-all cursor-pointer ${
+          isDragging ? "border-[#008FED] bg-blue-50" : "border-gray-300"
+        }`}
         style={{
-          background: isDragging ? "rgba(0, 143, 237, 0.05)" : "rgba(12, 12, 12, 0.02)",
-          border: isDragging ? "2px dashed #008FED" : "2px dashed rgba(12, 12, 12, 0.1)",
+          background: isDragging ? "rgba(0, 143, 237, 0.05)" : "white",
         }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -416,6 +443,103 @@ export default function FieldDocuments() {
         </div>
       </div>
 
+      {/* Uploading files (progress) */}
+      {uploadingFiles.length > 0 && (
+        <div className="mb-6">
+          <div
+            className="mb-2"
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "15px",
+              fontWeight: 500,
+              letterSpacing: "-0.02em",
+              color: "rgba(12, 12, 12, 0.7)",
+            }}
+          >
+            업로드 중 {uploadingFiles.length}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {uploadingFiles.map((uploadingFile) => (
+              <div
+                key={uploadingFile.id}
+                className="relative p-4 rounded-xl flex items-start gap-4"
+                style={{
+                  background: "white",
+                  border: "1px solid rgba(12, 12, 12, 0.08)",
+                }}
+              >
+                <div
+                  className="flex-shrink-0 rounded-lg overflow-hidden"
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    background: "rgba(12, 12, 12, 0.04)",
+                  }}
+                >
+                  {uploadingFile.file.type.startsWith('image/') ? (
+                    <img
+                      src={URL.createObjectURL(uploadingFile.file)}
+                      alt={uploadingFile.file.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Upload className="w-6 h-6" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div
+                    className="truncate mb-1"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {uploadingFile.file.name}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "12px",
+                      fontWeight: 400,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    {formatFileSize(uploadingFile.file.size)}
+                  </div>
+
+                  {/* Progress bar */}
+                  <Progress value={uploadingFile.progress} className="h-1.5" />
+
+                  {uploadingFile.uploaded && (
+                    <div
+                      className="mt-2 flex items-center gap-1"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        letterSpacing: "-0.02em",
+                        color: "#008FED",
+                      }}
+                    >
+                      <Check className="w-3 h-3" />
+                      업로드 완료
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 파일 목록 */}
       <div
         className="mb-2"
@@ -427,173 +551,159 @@ export default function FieldDocuments() {
           color: "rgba(12, 12, 12, 0.7)",
         }}
       >
-        파일 목록 {filteredFiles.length}
+        파일 목록 {filteredDocuments.length}
       </div>
 
-      {/* 업로드된 파일들 */}
-      <div className="grid grid-cols-2 gap-4">
-        {filteredFiles.map((uploadedFile) => (
+      {/* 업로드된 문서들 */}
+      {isLoading ? (
+        <div className="text-center py-12">
           <div
-            key={uploadedFile.id}
-            className="relative p-4 rounded-xl flex items-start gap-4"
             style={{
-              background: "white",
-              border: "1px solid rgba(12, 12, 12, 0.08)",
+              fontFamily: "Pretendard",
+              fontSize: "16px",
+              fontWeight: 400,
+              color: "rgba(12, 12, 12, 0.5)",
             }}
           >
-            {/* 썸네일 */}
-            <div
-              className="flex-shrink-0 rounded-lg overflow-hidden"
-              style={{
-                width: "64px",
-                height: "64px",
-                background: "rgba(12, 12, 12, 0.04)",
-              }}
-            >
-              {uploadedFile.file.type.startsWith('image/') ? (
-                <img
-                  src={URL.createObjectURL(uploadedFile.file)}
-                  alt={uploadedFile.file.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Upload className="w-6 h-6" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
+            불러오는 중...
+          </div>
+        </div>
+      ) : filteredDocuments.length === 0 ? (
+        <div className="text-center py-12">
+          <div
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "16px",
+              fontWeight: 400,
+              color: "rgba(12, 12, 12, 0.5)",
+            }}
+          >
+            업로드된 파일이 없습니다
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          {filteredDocuments.map((doc) => {
+            const isImage = doc.fileType.startsWith('image/');
+            return (
+              <div
+                key={doc.id}
+                className="relative p-4 rounded-xl flex items-start gap-4"
+                style={{
+                  background: "white",
+                  border: "1px solid rgba(12, 12, 12, 0.08)",
+                }}
+              >
+                {/* 썸네일 */}
+                <div
+                  className="flex-shrink-0 rounded-lg overflow-hidden"
+                  style={{
+                    width: "64px",
+                    height: "64px",
+                    background: "rgba(12, 12, 12, 0.04)",
+                  }}
+                >
+                  {isImage ? (
+                    <img
+                      src={`data:${doc.fileType};base64,${doc.fileData}`}
+                      alt={doc.fileName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Upload className="w-6 h-6" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* 파일 정보 */}
-            <div className="flex-1 min-w-0">
-              <div
-                className="truncate mb-1"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  letterSpacing: "-0.02em",
-                  color: "#0C0C0C",
-                }}
-              >
-                {uploadedFile.file.name}
-              </div>
-              <div
-                className="mb-2"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "12px",
-                  fontWeight: 400,
-                  color: "rgba(12, 12, 12, 0.5)",
-                }}
-              >
-                {formatFileSize(uploadedFile.file.size)}
-              </div>
-
-              {/* 업로드 진행바 또는 카테고리 선택 */}
-              {!uploadedFile.uploaded ? (
-                <div className="space-y-2">
-                  <Progress value={uploadedFile.progress} className="h-1.5" />
+                {/* 파일 정보 */}
+                <div className="flex-1 min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => downloadFile(doc.fileName, doc.fileType, doc.fileData)}
+                    className="truncate mb-1 text-left w-full hover:underline"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                    data-testid={`button-download-${doc.id}`}
+                  >
+                    {doc.fileName}
+                  </button>
                   <div
-                    className="text-right"
                     style={{
                       fontFamily: "Pretendard",
                       fontSize: "12px",
-                      fontWeight: 500,
-                      color: "#008FED",
+                      fontWeight: 400,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      marginBottom: "8px",
                     }}
                   >
-                    {Math.round(uploadedFile.progress)}%
+                    {formatFileSize(doc.fileSize)}
                   </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "12px",
-                      fontWeight: 500,
-                      color: "#008FED",
-                    }}
-                  >
-                    업로드 완료
-                  </span>
+
+                  {/* Category dropdown */}
                   <Select
-                    value={uploadedFile.category}
-                    onValueChange={(value) => {
-                      const newCategory = value as DocumentCategory;
-                      setUploadedFiles(prev =>
-                        prev.map(f =>
-                          f.id === uploadedFile.id ? { ...f, category: newCategory } : f
-                        )
-                      );
-                      toast({
-                        title: "카테고리 변경",
-                        description: `"${uploadedFile.file.name}"을(를) ${newCategory} 카테고리로 이동했습니다.`,
-                      });
-                    }}
+                    value={doc.category}
+                    onValueChange={(value) => handleCategoryChange(doc.id, value)}
                   >
-                    <SelectTrigger 
-                      className="h-7 w-[100px] text-xs"
+                    <SelectTrigger
+                      className="w-32 h-8"
                       style={{
                         fontFamily: "Pretendard",
                         fontSize: "12px",
-                        borderColor: "rgba(12, 12, 12, 0.2)",
+                        fontWeight: 400,
                       }}
-                      data-testid={`select-category-${uploadedFile.id}`}
                     >
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {categories.filter(c => c !== "전체").map((category) => (
-                        <SelectItem 
-                          key={category} 
-                          value={category}
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "12px",
-                          }}
-                        >
+                        <SelectItem key={category} value={category}>
                           <div className="flex items-center gap-2">
+                            {doc.category === category && <Check className="w-3 h-3" />}
                             <span>{category}</span>
-                            {uploadedFile.category === category && (
-                              <Check className="w-3 h-3" style={{ color: "#008FED" }} />
-                            )}
                           </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              )}
-            </div>
 
-            {/* 삭제 버튼 */}
-            <button
-              type="button"
-              onClick={() => handleFileRemove(uploadedFile.id)}
-              className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center hover-elevate active-elevate-2"
-              style={{
-                background: "rgba(12, 12, 12, 0.05)",
-              }}
-              data-testid={`button-remove-${uploadedFile.id}`}
-            >
-              <X className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.5)" }} />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {/* 빈 상태 */}
-      {filteredFiles.length === 0 && (
-        <div
-          className="text-center py-12"
-          style={{
-            fontFamily: "Pretendard",
-            fontSize: "14px",
-            color: "rgba(12, 12, 12, 0.4)",
-          }}
-        >
-          업로드된 파일이 없습니다
+                {/* 다운로드 및 삭제 버튼 */}
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => downloadFile(doc.fileName, doc.fileType, doc.fileData)}
+                    className="p-1.5 rounded-lg hover-elevate active-elevate-2"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.9)",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                    }}
+                    data-testid={`button-download-icon-${doc.id}`}
+                  >
+                    <Download className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.5)" }} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleFileRemove(doc.id)}
+                    className="p-1.5 rounded-lg hover-elevate active-elevate-2"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.9)",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                    }}
+                    data-testid={`button-delete-${doc.id}`}
+                  >
+                    <X className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.5)" }} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
