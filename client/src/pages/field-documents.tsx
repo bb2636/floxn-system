@@ -1,9 +1,10 @@
 import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case } from "@shared/schema";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface UploadedFile {
   id: string;
@@ -452,30 +453,64 @@ export default function FieldDocuments() {
                   </div>
                 </div>
               ) : (
-                <select
-                  value={uploadedFile.category}
-                  onChange={(e) => {
-                    const newCategory = e.target.value as DocumentCategory;
-                    setUploadedFiles(prev =>
-                      prev.map(f =>
-                        f.id === uploadedFile.id ? { ...f, category: newCategory } : f
-                      )
-                    );
-                  }}
-                  className="px-3 py-1.5 rounded border text-sm"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "12px",
-                    borderColor: "rgba(12, 12, 12, 0.2)",
-                  }}
-                  data-testid={`select-category-${uploadedFile.id}`}
-                >
-                  {categories.filter(c => c !== "전체").map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center gap-2">
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      color: "#008FED",
+                    }}
+                  >
+                    업로드 완료
+                  </span>
+                  <Select
+                    value={uploadedFile.category}
+                    onValueChange={(value) => {
+                      const newCategory = value as DocumentCategory;
+                      setUploadedFiles(prev =>
+                        prev.map(f =>
+                          f.id === uploadedFile.id ? { ...f, category: newCategory } : f
+                        )
+                      );
+                      toast({
+                        title: "카테고리 변경",
+                        description: `"${uploadedFile.file.name}"을(를) ${newCategory} 카테고리로 이동했습니다.`,
+                      });
+                    }}
+                  >
+                    <SelectTrigger 
+                      className="h-7 w-[100px] text-xs"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        borderColor: "rgba(12, 12, 12, 0.2)",
+                      }}
+                      data-testid={`select-category-${uploadedFile.id}`}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.filter(c => c !== "전체").map((category) => (
+                        <SelectItem 
+                          key={category} 
+                          value={category}
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "12px",
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{category}</span>
+                            {uploadedFile.category === category && (
+                              <Check className="w-3 h-3" style={{ color: "#008FED" }} />
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
             </div>
 
