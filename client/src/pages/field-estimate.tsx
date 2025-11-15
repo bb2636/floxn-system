@@ -47,6 +47,27 @@ interface LaborCostRow {
   request: string; // 요청
 }
 
+interface Material {
+  id: string; // 고유 ID (materialName-spec-unit)
+  materialName: string; // 자재명
+  specification: string; // 규격
+  unit: string; // 단위
+  standardPrice: number; // 단가 (숫자)
+}
+
+interface MaterialRow {
+  id: string;
+  materialName: string; // 공종 (자재명)
+  specification: string; // 규격
+  unit: string; // 단위
+  standardPrice: number; // 기준가
+  quantity: number; // 수량 (editable)
+  amount: number; // 금액 (계산값)
+  deduction: number; // 공제(원) (editable)
+  expenseStatus: boolean; // 경비여부 (editable)
+  request: string; // 요청 (editable)
+}
+
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
 
 export default function FieldEstimate() {
@@ -55,6 +76,8 @@ export default function FieldEstimate() {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [laborCostRows, setLaborCostRows] = useState<LaborCostRow[]>([]);
   const [selectedLaborRows, setSelectedLaborRows] = useState<Set<string>>(new Set());
+  const [materialRows, setMaterialRows] = useState<MaterialRow[]>([]);
+  const [selectedMaterialRows, setSelectedMaterialRows] = useState<Set<string>>(new Set());
 
   // 현장입력에서 선택한 케이스 ID 가져오기
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
@@ -80,10 +103,19 @@ export default function FieldEstimate() {
     queryKey: ['/api/labor-costs/options'],
   });
 
+  // 자재비 데이터 조회
+  const { data: materialsData = [], isLoading: isLoadingMaterials } = useQuery<Material[]>({
+    queryKey: ['/api/materials'],
+  });
+
   // 노무비 캐스케이딩 선택기 state
   const [selectedCostCategory, setSelectedCostCategory] = useState("");
   const [selectedCostWorkName, setSelectedCostWorkName] = useState("");
   const [selectedCostDetailWork, setSelectedCostDetailWork] = useState(""); // 세부공사 (노무비 or 일위대가)
+
+  // 자재비 선택기 state
+  const [selectedMaterialName, setSelectedMaterialName] = useState("");
+  const [selectedMaterialSpec, setSelectedMaterialSpec] = useState("");
 
   // 카테고리별 마스터 데이터 필터링
   const roomCategories = masterDataList
@@ -316,6 +348,108 @@ export default function FieldEstimate() {
     }
   };
   
+  // 자재비 관련 computed values
+  const materialNames = useMemo(() => {
+    const names = new Set<string>();
+    materialsData.forEach(m => names.add(m.materialName));
+    return Array.from(names).sort();
+  }, [materialsData]);
+
+  const materialSpecifications = useMemo(() => {
+    if (!selectedMaterialName) return [];
+    return materialsData
+      .filter(m => m.materialName === selectedMaterialName)
+      .map(m => ({ 
+        id: m.id,
+        label: `${m.specification} (${m.unit})` 
+      }));
+  }, [materialsData, selectedMaterialName]);
+
+  // 자재 추가 함수
+  const handleAddMaterial = () => {
+    if (!selectedMaterialName || !selectedMaterialSpec) {
+      toast({
+        title: "자재를 선택하세요",
+        description: "공종과 자재를 모두 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedMaterial = materialsData.find(m => m.id === selectedMaterialSpec);
+
+    if (!selectedMaterial) {
+      toast({
+        title: "자재를 찾을 수 없습니다",
+        description: "선택한 자재 정보를 찾을 수 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newRow: MaterialRow = {
+      id: `material-${Date.now()}-${Math.random()}`,
+      materialName: selectedMaterial.materialName,
+      specification: selectedMaterial.specification,
+      unit: selectedMaterial.unit,
+      standardPrice: selectedMaterial.standardPrice,
+      quantity: 1,
+      amount: selectedMaterial.standardPrice,
+      deduction: 0,
+      expenseStatus: false,
+      request: "",
+    };
+
+    setMaterialRows(prev => [...prev, newRow]);
+    
+    // 선택 초기화 (연속 추가 가능하도록)
+    setSelectedMaterialSpec("");
+    
+    toast({
+      title: "자재가 추가되었습니다",
+      description: `${selectedMaterial.materialName} - ${selectedMaterial.specification}`,
+    });
+  };
+
+  // 자재비 행 삭제
+  const deleteMaterialRows = () => {
+    if (selectedMaterialRows.size === 0) {
+      toast({
+        title: "삭제할 항목을 선택하세요",
+        description: "삭제할 자재 항목을 먼저 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (confirm(`선택한 ${selectedMaterialRows.size}개의 항목을 삭제하시겠습니까?`)) {
+      setMaterialRows(prev => prev.filter(row => !selectedMaterialRows.has(row.id)));
+      setSelectedMaterialRows(new Set());
+    }
+  };
+
+  // 자재비 행 체크박스 토글
+  const toggleMaterialRow = (rowId: string) => {
+    setSelectedMaterialRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(rowId)) {
+        newSet.delete(rowId);
+      } else {
+        newSet.add(rowId);
+      }
+      return newSet;
+    });
+  };
+
+  // 자재비 전체 선택/해제
+  const toggleAllMaterialRows = () => {
+    if (selectedMaterialRows.size === materialRows.length) {
+      setSelectedMaterialRows(new Set());
+    } else {
+      setSelectedMaterialRows(new Set(materialRows.map(row => row.id)));
+    }
+  };
+
   // 노무비 행 체크박스 토글
   const toggleLaborRow = (rowId: string) => {
     setSelectedLaborRows(prev => {
@@ -1666,6 +1800,626 @@ export default function FieldEstimate() {
                 borderRadius: "8px",
               }}
               data-testid="button-save-labor"
+            >
+              저장
+            </button>
+          </div>
+        )}
+
+        {/* 자재비 컨텐츠 */}
+        {selectedCategory === "자재비" && (
+          <div>
+            {/* 자재비 헤더 */}
+            <h2
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "18px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+                marginBottom: "16px",
+              }}
+            >
+              자재비
+            </h2>
+
+            {/* 자재 선택기 패널 */}
+            <div
+              style={{
+                background: "rgba(12, 12, 12, 0.02)",
+                borderRadius: "8px",
+                padding: "16px",
+                marginBottom: "16px",
+                border: "1px solid rgba(12, 12, 12, 0.06)",
+              }}
+            >
+              <div className="flex items-end gap-3">
+                {/* 공종 선택 */}
+                <div style={{ flex: 1 }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    공종
+                  </label>
+                  <Select
+                    value={selectedMaterialName}
+                    onValueChange={(value) => {
+                      setSelectedMaterialName(value);
+                      setSelectedMaterialSpec("");
+                    }}
+                    data-testid="select-material-name"
+                  >
+                    <SelectTrigger
+                      className="w-full"
+                      style={{
+                        height: "42px",
+                        fontFamily: "Pretendard",
+                        fontSize: "15px",
+                        borderRadius: "6px",
+                        border: "1px solid rgba(12, 12, 12, 0.12)",
+                      }}
+                    >
+                      <SelectValue placeholder="공종 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {materialNames.map((name) => (
+                        <SelectItem key={name} value={name}>
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 자재 선택 */}
+                <div style={{ flex: 1 }}>
+                  <label
+                    style={{
+                      display: "block",
+                      marginBottom: "8px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    자재
+                  </label>
+                  <Select
+                    value={selectedMaterialSpec}
+                    onValueChange={setSelectedMaterialSpec}
+                    disabled={!selectedMaterialName}
+                    data-testid="select-material-spec"
+                  >
+                    <SelectTrigger
+                      className="w-full"
+                      style={{
+                        height: "42px",
+                        fontFamily: "Pretendard",
+                        fontSize: "15px",
+                        borderRadius: "6px",
+                        border: "1px solid rgba(12, 12, 12, 0.12)",
+                      }}
+                    >
+                      <SelectValue placeholder="자재 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {materialSpecifications.map((spec) => (
+                        <SelectItem key={spec.id} value={spec.id}>
+                          {spec.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 항목 추가 버튼 */}
+                <Button
+                  type="button"
+                  onClick={handleAddMaterial}
+                  disabled={!selectedMaterialName || !selectedMaterialSpec}
+                  className="hover-elevate active-elevate-2"
+                  style={{
+                    height: "42px",
+                    padding: "0 24px",
+                    background: "#008FED",
+                    color: "#FFFFFF",
+                    border: "none",
+                    borderRadius: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                  }}
+                  data-testid="button-add-material"
+                >
+                  항목 추가
+                </Button>
+              </div>
+            </div>
+
+            {/* 자재비 테이블 */}
+            <div style={{ overflowX: "auto" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  marginBottom: "16px",
+                }}
+              >
+                <thead>
+                  <tr>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        width: "40px",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={materialRows.length > 0 && selectedMaterialRows.size === materialRows.length}
+                        onChange={toggleAllMaterialRows}
+                        style={{ cursor: "pointer" }}
+                        data-testid="checkbox-all-materials"
+                      />
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        minWidth: "100px",
+                      }}
+                    >
+                      공종
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        minWidth: "100px",
+                      }}
+                    >
+                      자재
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        minWidth: "80px",
+                      }}
+                    >
+                      규격
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        minWidth: "60px",
+                      }}
+                    >
+                      단위
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        minWidth: "100px",
+                      }}
+                    >
+                      기준가
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        minWidth: "80px",
+                      }}
+                    >
+                      수량
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        minWidth: "100px",
+                      }}
+                    >
+                      금액
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        minWidth: "100px",
+                      }}
+                    >
+                      공제(원)
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        minWidth: "80px",
+                      }}
+                    >
+                      경비여부
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        background: "rgba(12, 12, 12, 0.02)",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        minWidth: "150px",
+                      }}
+                    >
+                      요청
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {materialRows.map((row) => (
+                    <tr key={row.id}>
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                          textAlign: "center",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedMaterialRows.has(row.id)}
+                          onChange={() => toggleMaterialRow(row.id)}
+                          style={{ cursor: "pointer" }}
+                          data-testid={`checkbox-material-${row.id}`}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={row.materialName}
+                          readOnly
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            border: "1px solid rgba(12, 12, 12, 0.06)",
+                            borderRadius: "4px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            background: "rgba(12, 12, 12, 0.02)",
+                            cursor: "not-allowed",
+                          }}
+                          data-testid={`input-materialName-${row.id}`}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={row.specification}
+                          readOnly
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            border: "1px solid rgba(12, 12, 12, 0.06)",
+                            borderRadius: "4px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            background: "rgba(12, 12, 12, 0.02)",
+                            cursor: "not-allowed",
+                          }}
+                          data-testid={`input-specification-${row.id}`}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={row.unit}
+                          readOnly
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            border: "1px solid rgba(12, 12, 12, 0.06)",
+                            borderRadius: "4px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            background: "rgba(12, 12, 12, 0.02)",
+                            cursor: "not-allowed",
+                          }}
+                          data-testid={`input-unit-${row.id}`}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={row.standardPrice}
+                          readOnly
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            border: "1px solid rgba(12, 12, 12, 0.06)",
+                            borderRadius: "4px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            background: "rgba(12, 12, 12, 0.02)",
+                            cursor: "not-allowed",
+                          }}
+                          data-testid={`input-standardPrice-${row.id}`}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                      >
+                        <input
+                          type="number"
+                          value={row.quantity}
+                          onChange={(e) => {
+                            const quantity = Number(e.target.value) || 0;
+                            const amount = quantity * row.standardPrice;
+                            setMaterialRows(prev =>
+                              prev.map(r =>
+                                r.id === row.id
+                                  ? { ...r, quantity, amount }
+                                  : r
+                              )
+                            );
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            border: "1px solid rgba(12, 12, 12, 0.12)",
+                            borderRadius: "4px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                          }}
+                          data-testid={`input-quantity-${row.id}`}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={row.amount}
+                          readOnly
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            border: "1px solid rgba(12, 12, 12, 0.06)",
+                            borderRadius: "4px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            background: "rgba(12, 12, 12, 0.02)",
+                            cursor: "not-allowed",
+                          }}
+                          data-testid={`input-amount-${row.id}`}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                      >
+                        <input
+                          type="number"
+                          value={row.deduction}
+                          onChange={(e) => {
+                            const deduction = Number(e.target.value) || 0;
+                            setMaterialRows(prev =>
+                              prev.map(r =>
+                                r.id === row.id
+                                  ? { ...r, deduction }
+                                  : r
+                              )
+                            );
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            border: "1px solid rgba(12, 12, 12, 0.12)",
+                            borderRadius: "4px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                          }}
+                          data-testid={`input-deduction-${row.id}`}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                          textAlign: "center",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={row.expenseStatus}
+                          onChange={(e) => {
+                            setMaterialRows(prev =>
+                              prev.map(r =>
+                                r.id === row.id
+                                  ? { ...r, expenseStatus: e.target.checked }
+                                  : r
+                              )
+                            );
+                          }}
+                          style={{ cursor: "pointer" }}
+                          data-testid={`checkbox-expenseStatus-${row.id}`}
+                        />
+                      </td>
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={row.request}
+                          onChange={(e) => {
+                            setMaterialRows(prev =>
+                              prev.map(r =>
+                                r.id === row.id
+                                  ? { ...r, request: e.target.value }
+                                  : r
+                              )
+                            );
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            border: "1px solid rgba(12, 12, 12, 0.12)",
+                            borderRadius: "4px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                          }}
+                          data-testid={`input-request-${row.id}`}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* 삭제 버튼 */}
+              <div style={{ marginTop: "16px" }}>
+                <Button
+                  type="button"
+                  onClick={deleteMaterialRows}
+                  disabled={selectedMaterialRows.size === 0}
+                  className="hover-elevate active-elevate-2"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 500,
+                    padding: "10px 20px",
+                    background: "white",
+                    color: "#FF4D4F",
+                    border: "1px solid rgba(12, 12, 12, 0.12)",
+                    borderRadius: "6px",
+                  }}
+                  data-testid="button-delete-materials"
+                >
+                  <Trash2 size={16} />
+                  삭제
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 하단 버튼 - 자재비 */}
+        {selectedCategory === "자재비" && (
+          <div
+            className="flex justify-between items-center mt-8"
+            style={{
+              padding: "20px 0",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setMaterialRows([])}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                color: "#FF4D4F",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-reset-materials"
+            >
+              초기화
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSave}
+              className="hover-elevate active-elevate-2"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                height: "52px",
+                padding: "12px 48px",
+                background: "#008FED",
+                color: "#FFFFFF",
+                border: "none",
+                borderRadius: "8px",
+              }}
+              data-testid="button-save-materials"
             >
               저장
             </button>
