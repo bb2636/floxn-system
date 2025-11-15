@@ -108,6 +108,42 @@ export default function FieldEstimate() {
     };
   };
 
+  // 빈 노무비 행 생성 함수
+  const createBlankLaborRow = (): LaborCostRow => {
+    return {
+      id: `labor-${Date.now()}-${Math.random()}`,
+      category: "가구공사",
+      workName: "코킹",
+      detailWork: "실리콘",
+      detailItem: "-",
+      priceStandard: "인",
+      unit: "원",
+      standardPrice: "157069",
+      quantity: "1",
+      applicationRates: {
+        ceiling: false,
+        wall: true,
+        floor: false,
+        molding: false,
+      },
+      salesMarkupRate: "30",
+      pricePerSqm: "30",
+      damageArea: "157069",
+      deduction: "",
+      expenseStatus: "",
+      amount: "0",
+      request: "",
+      includeInEstimate: false,
+    };
+  };
+
+  // 노무비 초기 첫 행 설정
+  useEffect(() => {
+    if (laborCostRows.length === 0) {
+      setLaborCostRows([createBlankLaborRow()]);
+    }
+  }, []);
+
   // 자재비 초기 빈 행 설정
   useEffect(() => {
     if (materialRows.length === 0) {
