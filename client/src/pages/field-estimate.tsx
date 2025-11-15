@@ -1691,24 +1691,751 @@ export default function FieldEstimate() {
         )}
 
         {/* 자재비, 견적서는 준비중 표시 */}
-        {(selectedCategory === "자재비" || selectedCategory === "견적서") && (
+        {/* 견적서 탭 */}
+        {selectedCategory === "견적서" && (
           <div
-            className="flex items-center justify-center"
             style={{
-              minHeight: "400px",
-              background: "rgba(12, 12, 12, 0.02)",
-              borderRadius: "8px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
             }}
           >
-            <p
+            {/* 견적서 제목 */}
+            <div
               style={{
-                fontFamily: "Pretendard",
-                fontSize: "16px",
-                color: "rgba(12, 12, 12, 0.4)",
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                padding: "16px 32px",
+                gap: "16px",
               }}
             >
-              {selectedCategory} - 준비 중입니다
-            </p>
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 500,
+                  fontSize: "16px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
+                견적서
+              </span>
+            </div>
+
+            {/* 작성자 정보 & 고객 정보 */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "flex-start",
+                gap: "20px",
+              }}
+            >
+              {/* 작성자 정보 */}
+              <div
+                style={{
+                  flex: 1,
+                  background: "rgba(12, 12, 12, 0.04)",
+                  borderRadius: "12px",
+                  padding: "20px",
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "18px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                    marginBottom: "20px",
+                  }}
+                >
+                  작성자 정보
+                </h3>
+                
+                {/* 담당자 */}
+                <div style={{ marginBottom: "12px" }}>
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                      display: "block",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    담당자
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="성함을 입력해주세요."
+                    style={{
+                      width: "100%",
+                      padding: "10px 20px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      border: "none",
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                    data-testid="input-writer-name"
+                  />
+                </div>
+
+                {/* 협력사명 */}
+                <div style={{ marginBottom: "12px" }}>
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                      display: "block",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    협력사명
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="협력사명"
+                    style={{
+                      width: "100%",
+                      padding: "10px 20px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      border: "none",
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                    data-testid="input-company-name"
+                  />
+                </div>
+
+                {/* 연락처 */}
+                <div>
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                      display: "block",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    연락처
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="010-0000-0000"
+                    style={{
+                      width: "100%",
+                      padding: "10px 20px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      border: "none",
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                    data-testid="input-contact"
+                  />
+                </div>
+              </div>
+
+              {/* 고객 정보 */}
+              <div
+                style={{
+                  flex: 1,
+                  background: "rgba(12, 12, 12, 0.04)",
+                  borderRadius: "12px",
+                  padding: "20px",
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "18px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                    marginBottom: "20px",
+                  }}
+                >
+                  고객 정보
+                </h3>
+                
+                {/* 착수일 */}
+                <div style={{ marginBottom: "12px" }}>
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                      display: "block",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    착수일
+                  </label>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <input
+                      type="date"
+                      style={{
+                        flex: 1,
+                        padding: "10px 20px",
+                        background: "rgba(12, 12, 12, 0.04)",
+                        borderRadius: "8px",
+                        border: "none",
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "16px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.02em",
+                        color: "#0C0C0C",
+                      }}
+                      data-testid="input-start-date"
+                    />
+                    <button
+                      style={{
+                        padding: "10px 24px",
+                        background: "#008FED",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "14px",
+                        cursor: "pointer",
+                      }}
+                      data-testid="button-set-date"
+                    >
+                      조회
+                    </button>
+                  </div>
+                </div>
+
+                {/* 피보험자 */}
+                <div style={{ marginBottom: "12px" }}>
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                      display: "block",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    피보험자
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="입력값이 들어간 것으로 보임"
+                    style={{
+                      width: "100%",
+                      padding: "10px 20px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      border: "none",
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                    data-testid="input-insured"
+                  />
+                </div>
+
+                {/* 피보험자명 */}
+                <div style={{ marginBottom: "12px" }}>
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                      display: "block",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    피보험자명
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="피보험자명"
+                    style={{
+                      width: "100%",
+                      padding: "10px 20px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      border: "none",
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                    data-testid="input-insured-name"
+                  />
+                </div>
+
+                {/* 주소 */}
+                <div>
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                      display: "block",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    주소
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="주소"
+                    style={{
+                      width: "100%",
+                      padding: "10px 20px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      border: "none",
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                    data-testid="input-address"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 복구면적 산출표 섹션 */}
+            <div style={{ marginTop: "40px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <div>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    복구면적 산출표
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      color: "#686A6E",
+                      marginLeft: "12px",
+                    }}
+                  >
+                    2025-00-00
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    style={{
+                      padding: "6px 12px",
+                      background: "white",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRadius: "4px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-add-row-area"
+                  >
+                    월 추가
+                  </button>
+                  <button
+                    style={{
+                      padding: "6px 12px",
+                      background: "white",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRadius: "4px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#D02B20",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-delete-row-area"
+                  >
+                    행 삭제
+                  </button>
+                </div>
+              </div>
+              
+              {/* 복구면적 산출표 테이블 */}
+              {rows.length > 0 && (
+                <div
+                  style={{
+                    background: "#FDFDFD",
+                    boxShadow: "0px 0px 20px #DBE9F5",
+                    borderRadius: "8px",
+                    overflow: "auto",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      minWidth: "1200px",
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          background: "rgba(12, 12, 12, 0.04)",
+                          borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                        }}
+                      >
+                        <th style={{ width: "40px", padding: "12px", textAlign: "center" }}></th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>장소</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>위치</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공사내용</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가(mm)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>면적(mm)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가(mm)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>면적(m²)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>비고</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, index) => (
+                        <tr key={index} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                          <td style={{ padding: "8px", textAlign: "center" }}>
+                            <input type="checkbox" />
+                          </td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.category}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.location}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.workName}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.damageArea}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.damageWidth}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.damageHeight}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.repairWidth}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.repairArea}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.note}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* 노무비 섹션 */}
+            <div style={{ marginTop: "40px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <div>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    노무비
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      color: "#686A6E",
+                      marginLeft: "12px",
+                    }}
+                  >
+                    2025-00-00
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    style={{
+                      padding: "6px 12px",
+                      background: "white",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRadius: "4px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-add-row-labor"
+                  >
+                    월 추가
+                  </button>
+                  <button
+                    style={{
+                      padding: "6px 12px",
+                      background: "white",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRadius: "4px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#D02B20",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-delete-row-labor"
+                  >
+                    행 삭제
+                  </button>
+                </div>
+              </div>
+              
+              {/* 노무비 테이블 */}
+              {laborCostRows.length > 0 && (
+                <div
+                  style={{
+                    background: "#FDFDFD",
+                    boxShadow: "0px 0px 20px #DBE9F5",
+                    borderRadius: "8px",
+                    overflow: "auto",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      minWidth: "1600px",
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          background: "rgba(12, 12, 12, 0.04)",
+                          borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                        }}
+                      >
+                        <th style={{ width: "40px", padding: "12px", textAlign: "center" }}></th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공종</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공사명</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>세부공사</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>세부항목</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단가 기준</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단위</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가(미지)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>수량</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>적용률</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가(m²)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공제(원)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>경비여부</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>요청</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {laborCostRows.map((row) => (
+                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                          <td style={{ padding: "8px", textAlign: "center" }}>
+                            <input type="checkbox" />
+                          </td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.category}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.workName}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.detailWork}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.detailItem}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.priceStandard}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.unit}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.standardPrice}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.quantity}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.applicationRate}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.pricePerSqm}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.damageArea}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.deduction}</td>
+                          <td style={{ padding: "8px", textAlign: "center" }}>{row.expenseStatus}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.request}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* 자재비 섹션 */}
+            <div style={{ marginTop: "40px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <div>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    자재비
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      color: "#686A6E",
+                      marginLeft: "12px",
+                    }}
+                  >
+                    2025-00-00
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    style={{
+                      padding: "6px 12px",
+                      background: "white",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRadius: "4px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-add-row-material"
+                  >
+                    월 추가
+                  </button>
+                  <button
+                    style={{
+                      padding: "6px 12px",
+                      background: "white",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRadius: "4px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#D02B20",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-delete-row-material"
+                  >
+                    행 삭제
+                  </button>
+                </div>
+              </div>
+              
+              {/* 자재비 테이블 */}
+              {materialRows.length > 0 && (
+                <div
+                  style={{
+                    background: "#FDFDFD",
+                    boxShadow: "0px 0px 20px #DBE9F5",
+                    borderRadius: "8px",
+                    overflow: "auto",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      minWidth: "1000px",
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          background: "rgba(12, 12, 12, 0.04)",
+                          borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                        }}
+                      >
+                        <th style={{ width: "40px", padding: "12px", textAlign: "center" }}></th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공종</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>자재명</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>규격</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단위</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>수량</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>금액</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>비고</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {materialRows.map((row) => (
+                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                          <td style={{ padding: "8px", textAlign: "center" }}>
+                            <input type="checkbox" />
+                          </td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.materialName}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.materialName}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.specification}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.unit}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.standardPrice}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.quantity}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.amount}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.request}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
