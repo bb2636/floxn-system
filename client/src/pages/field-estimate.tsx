@@ -1929,167 +1929,170 @@ export default function FieldEstimate() {
             {/* 견적서 제목 */}
             <div
               style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                padding: "16px 32px",
-                gap: "16px",
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "20px",
+                lineHeight: "128%",
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+                marginBottom: "24px",
               }}
             >
-              <span
+              견적서
+            </div>
+
+            {/* 작성자 정보 */}
+            <div
+              style={{
+                background: "rgba(12, 12, 12, 0.02)",
+                borderRadius: "12px",
+                padding: "24px",
+              }}
+            >
+              <h3
                 style={{
                   fontFamily: "Pretendard",
-                  fontWeight: 500,
+                  fontWeight: 600,
                   fontSize: "16px",
                   lineHeight: "128%",
                   letterSpacing: "-0.02em",
                   color: "#0C0C0C",
+                  marginBottom: "20px",
                 }}
               >
-                견적서
-              </span>
+                작성자 정보
+              </h3>
+
+              {/* 담당자 */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <label
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 400,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    width: "100px",
+                    flexShrink: 0,
+                  }}
+                >
+                  담당자
+                </label>
+                <div
+                  style={{
+                    flex: 1,
+                    padding: "12px 16px",
+                    background: "rgba(12, 12, 12, 0.04)",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontWeight: 400,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                  }}
+                >
+                  {selectedCase?.assignedPartnerManager || "담당자 성함"}
+                </div>
+              </div>
+
+              {/* 협력사명 */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <label
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 400,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    width: "100px",
+                    flexShrink: 0,
+                  }}
+                >
+                  협력사명
+                </label>
+                <div
+                  style={{
+                    flex: 1,
+                    padding: "12px 16px",
+                    background: "rgba(12, 12, 12, 0.04)",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontWeight: 400,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                  }}
+                >
+                  {selectedCase?.assignedPartner || "협력사명"}
+                </div>
+              </div>
+
+              {/* 연락처 */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <label
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 400,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    width: "100px",
+                    flexShrink: 0,
+                  }}
+                >
+                  연락처
+                </label>
+                <div
+                  style={{
+                    flex: 1,
+                    padding: "12px 16px",
+                    background: "rgba(12, 12, 12, 0.04)",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontWeight: 400,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                  }}
+                >
+                  {selectedCase?.assignedPartnerContact || "'-'빼고 입력"}
+                </div>
+              </div>
             </div>
 
-            {/* 작성자 정보 & 고객 정보 */}
+            {/* 고객 정보 & 기타 섹션 */}
             <div
               style={{
                 display: "flex",
                 flexDirection: "row",
                 alignItems: "flex-start",
                 gap: "20px",
+                marginTop: "24px",
               }}
             >
-              {/* 작성자 정보 */}
-              <div
-                style={{
-                  flex: 1,
-                  background: "rgba(12, 12, 12, 0.04)",
-                  borderRadius: "12px",
-                  padding: "20px",
-                }}
-              >
-                <h3
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontWeight: 500,
-                    fontSize: "18px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "#0C0C0C",
-                    marginBottom: "20px",
-                  }}
-                >
-                  작성자 정보
-                </h3>
-                
-                {/* 담당자 */}
-                <div style={{ marginBottom: "12px" }}>
-                  <label
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 500,
-                      fontSize: "14px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.01em",
-                      color: "#686A6E",
-                      display: "block",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    담당자
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="성함을 입력해주세요."
-                    style={{
-                      width: "100%",
-                      padding: "10px 20px",
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRadius: "8px",
-                      border: "none",
-                      fontFamily: "Pretendard",
-                      fontWeight: 600,
-                      fontSize: "16px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "#0C0C0C",
-                    }}
-                    data-testid="input-writer-name"
-                  />
-                </div>
-
-                {/* 협력사명 */}
-                <div style={{ marginBottom: "12px" }}>
-                  <label
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 500,
-                      fontSize: "14px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.01em",
-                      color: "#686A6E",
-                      display: "block",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    협력사명
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="협력사명"
-                    style={{
-                      width: "100%",
-                      padding: "10px 20px",
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRadius: "8px",
-                      border: "none",
-                      fontFamily: "Pretendard",
-                      fontWeight: 600,
-                      fontSize: "16px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "#0C0C0C",
-                    }}
-                    data-testid="input-company-name"
-                  />
-                </div>
-
-                {/* 연락처 */}
-                <div>
-                  <label
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 500,
-                      fontSize: "14px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.01em",
-                      color: "#686A6E",
-                      display: "block",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    연락처
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="010-0000-0000"
-                    style={{
-                      width: "100%",
-                      padding: "10px 20px",
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRadius: "8px",
-                      border: "none",
-                      fontFamily: "Pretendard",
-                      fontWeight: 600,
-                      fontSize: "16px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "#0C0C0C",
-                    }}
-                    data-testid="input-contact"
-                  />
-                </div>
-              </div>
 
               {/* 고객 정보 */}
               <div
