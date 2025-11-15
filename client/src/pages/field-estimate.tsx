@@ -83,8 +83,7 @@ export default function FieldEstimate() {
   // 노무비 캐스케이딩 선택기 state
   const [selectedCostCategory, setSelectedCostCategory] = useState("");
   const [selectedCostWorkName, setSelectedCostWorkName] = useState("");
-  const [selectedCostDetailWork, setSelectedCostDetailWork] = useState("");
-  const [selectedCostType, setSelectedCostType] = useState(""); // "노무비" or "일위대가"
+  const [selectedCostDetailWork, setSelectedCostDetailWork] = useState(""); // 세부공사 (노무비 or 일위대가)
 
   // 카테고리별 마스터 데이터 필터링
   const roomCategories = masterDataList
@@ -234,17 +233,11 @@ export default function FieldEstimate() {
   useEffect(() => {
     setSelectedCostWorkName("");
     setSelectedCostDetailWork("");
-    setSelectedCostType("");
   }, [selectedCostCategory]);
 
   useEffect(() => {
     setSelectedCostDetailWork("");
-    setSelectedCostType("");
   }, [selectedCostWorkName]);
-
-  useEffect(() => {
-    setSelectedCostType("");
-  }, [selectedCostDetailWork]);
   
   // 노무비 항목 추가 (선택한 조합의 모든 DB 항목을 테이블에 추가)
   const handleAddLaborItems = () => {
@@ -256,34 +249,13 @@ export default function FieldEstimate() {
       });
       return;
     }
-
-    // "누수탐지 비용"이 아닌 경우 노무비/일위대가 선택 필수
-    if (selectedCostCategory !== "누수탐지 비용" && !selectedCostType) {
-      toast({
-        title: "타입을 선택해주세요",
-        description: "노무비 또는 일위대가를 선택해주세요.",
-        variant: "destructive",
-      });
-      return;
-    }
     
     // 선택한 조합에 맞는 노무비 DB 항목 필터링
-    const filtered = laborCostData.filter(item => {
-      const matchesBase =
-        item.category === selectedCostCategory &&
-        item.workName === selectedCostWorkName &&
-        item.detailWork === selectedCostDetailWork;
-      
-      // "누수탐지 비용"이면 타입 필터링 없이 모두 추가
-      if (selectedCostCategory === "누수탐지 비용") {
-        return matchesBase;
-      }
-      
-      // 노무비: priceStandard에 "인" 포함
-      // 일위대가: priceStandard에 "인" 없음
-      const isPerson = item.priceStandard.includes("인");
-      return matchesBase && (selectedCostType === "노무비" ? isPerson : !isPerson);
-    });
+    const filtered = laborCostData.filter(item =>
+      item.category === selectedCostCategory &&
+      item.workName === selectedCostWorkName &&
+      item.detailWork === selectedCostDetailWork
+    );
     
     if (filtered.length === 0) {
       toast({
