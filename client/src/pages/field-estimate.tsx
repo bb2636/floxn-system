@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { LaborCostSection, type LaborCatalogItem, type LaborCostRow } from "@/components/labor-cost-section";
 
 interface AreaCalculationRow {
   id: string;
@@ -181,10 +182,143 @@ export default function FieldEstimate() {
     queryKey: ['/api/materials'],
   });
 
-  // 노무비 캐스케이딩 선택기 state
-  const [selectedCostCategory, setSelectedCostCategory] = useState("");
-  const [selectedCostWorkName, setSelectedCostWorkName] = useState("");
-  const [selectedCostDetailWork, setSelectedCostDetailWork] = useState(""); // 세부공사 (노무비 or 일위대가)
+  // 노무비 카탈로그 기반 캐스케이딩 옵션 생성
+  const labor공종Options = useMemo(() => {
+    if (!laborCatalog.length) return [];
+    const unique = new Set(laborCatalog.map(item => item.공종));
+    return Array.from(unique);
+  }, [laborCatalog]);
+
+  const get공사명Options = (공종: string) => {
+    if (!laborCatalog.length || !공종) return [];
+    const filtered = laborCatalog.filter(item => item.공종 === 공종);
+    const unique = new Set(filtered.map(item => item.공사명));
+    return Array.from(unique);
+  };
+
+  const get세부공사Options = (공종: string, 공사명: string) => {
+    if (!laborCatalog.length || !공종 || !공사명) return [];
+    const filtered = laborCatalog.filter(item => 
+      item.공종 === 공종 && item.공사명 === 공사명
+    );
+    const unique = new Set(filtered.map(item => item.세부공사));
+    return Array.from(unique);
+  };
+
+  const get세부항목Options = (공종: string, 공사명: string, 세부공사: string) => {
+    if (!laborCatalog.length || !공종 || !공사명 || !세부공사) return [];
+    const filtered = laborCatalog.filter(item => 
+      item.공종 === 공종 && 
+      item.공사명 === 공사명 && 
+      item.세부공사 === 세부공사
+    );
+    return filtered.map(item => item.세부항목);
+  };
+
+  // 노무비 행 업데이트 함수
+  const updateLaborRow = (rowId: string, field: keyof LaborCostRow, value: any) => {
+    setLaborCostRows(prev => prev.map(row => {
+      if (row.id === rowId) {
+        const updated = { ...row, [field]: value };
+
+        // 공종 변경 시 하위 필드 리셋
+        if (field === '공종') {
+          updated.공사명 = '';
+          updated.세부공사 = '';
+          updated.세부항목 = '';
+          updated.단위 = '';
+          updated.기준가_단위 = 0;
+          updated.기준가_적용면 = 0;
+        }
+
+        // 공사명 변경 시 하위 필드 리셋
+        if (field === '공사명') {
+          updated.세부공사 = '';
+          updated.세부항목 = '';
+          updated.단위 = '';
+          updated.기준가_단위 = 0;
+          updated.기준가_적용면 = 0;
+        }
+
+        // 세부공사 변경 시 하위 필드 리셋
+        if (field === '세부공사') {
+          updated.세부항목 = '';
+          updated.단위 = '';
+          updated.기준가_단위 = 0;
+          updated.기준가_적용면 = 0;
+        }
+
+        // 세부항목 변경 시 카탈로그에서 데이터 채우기
+        if (field === '세부항목') {
+          const catalogItem = laborCatalog.find(item =>
+            item.공종 === updated.공종 &&
+            item.공사명 === updated.공사명 &&
+            item.세부공사 === updated.세부공사 &&
+            item.세부항목 === value
+          );
+          if (catalogItem) {
+            updated.단위 = catalogItem.단위 || '';
+            updated.기준가_단위 = catalogItem.단가_인 || 0;
+            // 적용면 기본값 설정
+            if (catalogItem.단가_천장) updated.적용면 = '천장';
+            else if (catalogItem.단가_벽체) updated.적용면 = '벽체';
+            else if (catalogItem.단가_바닥) updated.적용면 = '바닥';
+            else if (catalogItem.단가_길이) updated.적용면 = '길이';
+            
+            // 기준가_적용면 설정
+            if (updated.적용면 === '천장') updated.기준가_적용면 = catalogItem.단가_천장 || 0;
+            else if (updated.적용면 === '벽체') updated.기준가_적용면 = catalogItem.단가_벽체 || 0;
+            else if (updated.적용면 === '바닥') updated.기준가_적용면 = catalogItem.단가_바닥 || 0;
+            else if (updated.적용면 === '길이') updated.기준가_적용면 = catalogItem.단가_길이 || 0;
+          }
+        }
+
+        // 적용면 변경 시 기준가_적용면 업데이트
+        if (field === '적용면') {
+          const catalogItem = laborCatalog.find(item =>
+            item.공종 === updated.공종 &&
+            item.공사명 === updated.공사명 &&
+            item.세부공사 === updated.세부공사 &&
+            item.세부항목 === updated.세부항목
+          );
+          if (catalogItem) {
+            if (value === '천장') updated.기준가_적용면 = catalogItem.단가_천장 || 0;
+            else if (value === '벽체') updated.기준가_적용면 = catalogItem.단가_벽체 || 0;
+            else if (value === '바닥') updated.기준가_적용면 = catalogItem.단가_바닥 || 0;
+            else if (value === '길이') updated.기준가_적용면 = catalogItem.단가_길이 || 0;
+          }
+        }
+
+        // 금액 계산
+        if (updated.세부공사 === '노무비') {
+          updated.금액 = updated.기준가_단위 * updated.수량;
+        } else if (updated.세부공사 === '일위대가') {
+          updated.금액 = updated.기준가_적용면 * updated.피해면적 * updated.수량;
+        }
+
+        return updated;
+      }
+      return row;
+    }));
+  };
+
+  // 노무비 행 추가
+  const addLaborRow = () => {
+    setLaborCostRows(prev => [...prev, createBlankLaborRow()]);
+  };
+
+  // 선택된 노무비 행 삭제
+  const deleteSelectedLaborRows = () => {
+    if (selectedLaborRows.size === 0) return;
+    setLaborCostRows(prev => prev.filter(row => !selectedLaborRows.has(row.id)));
+    setSelectedLaborRows(new Set());
+  };
+
+  // 노무비 행 복제
+  const duplicateLaborRow = (row: LaborCostRow) => {
+    const newRow = { ...row, id: `labor-${Date.now()}-${Math.random()}` };
+    setLaborCostRows(prev => [...prev, newRow]);
+  };
 
   // 자재비 선택기 state
   const [selectedMaterialCategory, setSelectedMaterialCategory] = useState("");
@@ -620,47 +754,9 @@ export default function FieldEstimate() {
     });
   };
   
-  // 노무비 행 업데이트
-  const updateLaborRow = (rowId: string, field: keyof LaborCostRow | string, value: any) => {
-    setLaborCostRows(prev => prev.map(row => {
-      if (row.id === rowId) {
-        // 적용률 체크박스 업데이트
-        if (field.startsWith('applicationRates.')) {
-          const rateType = field.split('.')[1] as keyof typeof row.applicationRates;
-          return {
-            ...row,
-            applicationRates: {
-              ...row.applicationRates,
-              [rateType]: value,
-            },
-          };
-        }
-        
-        // 일반 필드 업데이트
-        return { ...row, [field]: value };
-      }
-      return row;
-    }));
-  };
-
-  // 노무비 행 복제
-  const duplicateLaborRow = (rowId: string) => {
-    const rowToDuplicate = laborCostRows.find(r => r.id === rowId);
-    if (rowToDuplicate) {
-      const newRow: LaborCostRow = {
-        ...rowToDuplicate,
-        id: `labor-${Date.now()}-${Math.random()}`,
-      };
-      setLaborCostRows(prev => [...prev, newRow]);
-      toast({
-        title: "행이 복제되었습니다",
-      });
-    }
-  };
-  
   // 노무비 테이블 리셋
   const resetLaborTable = () => {
-    if (laborCostData.length === 0) {
+    if (laborCatalog.length === 0) {
       toast({
         title: "잠시만 기다려주세요",
         description: "노무비 데이터를 로딩 중입니다.",
@@ -669,7 +765,7 @@ export default function FieldEstimate() {
       return;
     }
     if (confirm("노무비 입력 내용을 모두 초기화하시겠습니까?")) {
-      setLaborCostRows([]);
+      setLaborCostRows([createBlankLaborRow()]);
       setSelectedLaborRows(new Set());
     }
   };
@@ -2434,10 +2530,50 @@ export default function FieldEstimate() {
                     2025-00-00
                   </span>
                 </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <Button
+                    onClick={addLaborRow}
+                    variant="outline"
+                    size="sm"
+                    disabled={isLoadingLaborCatalog}
+                    data-testid="button-add-labor-row"
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    행 추가
+                  </Button>
+                  <Button
+                    onClick={deleteSelectedLaborRows}
+                    variant="outline"
+                    size="sm"
+                    disabled={selectedLaborRows.size === 0}
+                    data-testid="button-delete-labor-rows"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    행 삭제
+                  </Button>
+                </div>
               </div>
               
-              {/* 노무비 테이블 */}
-              {laborCostRows.length > 0 && (
+              {/* 노무비 테이블 컴포넌트 - 새로운 프롬프트 기반 UI */}
+              <LaborCostSection
+                rows={laborCostRows}
+                onRowsChange={setLaborCostRows}
+                catalog={laborCatalog}
+                selectedRows={selectedLaborRows}
+                onSelectRow={toggleLaborRow}
+                onSelectAll={() => {
+                  if (selectedLaborRows.size === laborCostRows.length) {
+                    setSelectedLaborRows(new Set());
+                  } else {
+                    setSelectedLaborRows(new Set(laborCostRows.map(r => r.id)));
+                  }
+                }}
+                isLoading={isLoadingLaborCatalog}
+              />
+            </div>
+
+            {/* 기존 노무비 테이블 (임시 주석 처리) */}
+            {false && laborCostRows.length > 0 && (
                 <div style={{ overflowX: "auto" }}>
                   <table
                     style={{
@@ -2713,8 +2849,8 @@ export default function FieldEstimate() {
                     </tbody>
                   </table>
                 </div>
-              )}
-            </div>
+              )
+            }
 
             {/* 자재비 섹션 */}
             <div style={{ marginTop: "40px" }}>
