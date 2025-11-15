@@ -78,6 +78,7 @@ export default function FieldEstimate() {
   const [selectedLaborRows, setSelectedLaborRows] = useState<Set<string>>(new Set());
   const [materialRows, setMaterialRows] = useState<MaterialRow[]>([]);
   const [selectedMaterialRows, setSelectedMaterialRows] = useState<Set<string>>(new Set());
+  const [vatIncluded, setVatIncluded] = useState(true); // VAT 포함 여부
 
   // 현장입력에서 선택한 케이스 ID 가져오기
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
@@ -230,6 +231,46 @@ export default function FieldEstimate() {
       return row;
     }));
   };
+
+  // 총 비용 계산 (견적서 탭용)
+  const estimateSummary = useMemo(() => {
+    // 노무비 총합 (공제 필드 합계)
+    const laborTotal = laborCostRows.reduce((sum, row) => {
+      const deduction = parseFloat(row.deduction) || 0;
+      return sum + deduction;
+    }, 0);
+
+    // 자재비 총합 (금액 필드 합계)
+    const materialTotal = materialRows.reduce((sum, row) => {
+      return sum + (row.amount || 0);
+    }, 0);
+
+    // 소계
+    const subtotal = laborTotal + materialTotal;
+
+    // 일반관리비 (6%)
+    const managementFee = Math.round(subtotal * 0.06);
+
+    // 이윤 (15%)
+    const profit = Math.round(subtotal * 0.15);
+
+    // VAT 기준액 (소계 + 일반관리비 + 이윤)
+    const vatBase = subtotal + managementFee + profit;
+
+    // VAT (10%)
+    const vat = Math.round(vatBase * 0.1);
+
+    // 총 합계
+    const total = vatIncluded ? vatBase + vat : vatBase;
+
+    return {
+      subtotal,
+      managementFee,
+      profit,
+      vat,
+      total,
+    };
+  }, [laborCostRows, materialRows, vatIncluded]);
 
   // 초기화
   const handleReset = () => {
@@ -2435,6 +2476,253 @@ export default function FieldEstimate() {
                   </table>
                 </div>
               )}
+
+              {/* 총 비용 계산 섹션 */}
+              <div
+                style={{
+                  marginTop: "40px",
+                  padding: "24px 32px",
+                  background: "rgba(0, 143, 237, 0.03)",
+                  borderRadius: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    maxWidth: "500px",
+                    marginLeft: "auto",
+                  }}
+                >
+                  {/* 소계 */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      소계
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                    >
+                      {estimateSummary.subtotal.toLocaleString()}
+                    </span>
+                  </div>
+
+                  {/* 일반관리비 (6%) */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      일반관리비 (6%)
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                    >
+                      {estimateSummary.managementFee.toLocaleString()}
+                    </span>
+                  </div>
+
+                  {/* 이윤 (15%) */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      이윤 (15%)
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                    >
+                      {estimateSummary.profit.toLocaleString()}
+                    </span>
+                  </div>
+
+                  {/* VAT */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "16px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}
+                      >
+                        VAT
+                      </span>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "12px",
+                        }}
+                      >
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            checked={vatIncluded}
+                            onChange={() => setVatIncluded(true)}
+                            style={{
+                              accentColor: "#008FED",
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.7)",
+                            }}
+                          >
+                            포함
+                          </span>
+                        </label>
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            checked={!vatIncluded}
+                            onChange={() => setVatIncluded(false)}
+                            style={{
+                              accentColor: "#008FED",
+                            }}
+                          />
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.7)",
+                            }}
+                          >
+                            별도
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                    >
+                      {estimateSummary.vat.toLocaleString()}
+                    </span>
+                  </div>
+
+                  {/* 구분선 */}
+                  <div
+                    style={{
+                      height: "1px",
+                      background: "rgba(12, 12, 12, 0.1)",
+                      margin: "8px 0",
+                    }}
+                  />
+
+                  {/* 총 합계 */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "18px",
+                        fontWeight: 600,
+                        color: "#008FED",
+                      }}
+                    >
+                      총 합계
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "24px",
+                        fontWeight: 700,
+                        color: "#008FED",
+                      }}
+                      data-testid="text-total-amount"
+                    >
+                      {estimateSummary.total.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
