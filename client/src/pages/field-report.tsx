@@ -1034,52 +1034,260 @@ export default function FieldReport() {
 
         {/* 견적서 탭 */}
         <TabsContent value="견적서">
-          <Card>
-            <CardContent className="p-6">
-              {estimate.estimate && estimate.rows && estimate.rows.length > 0 ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold">복구면적 산출표</h3>
-                    <div className="text-xs text-muted-foreground">
-                      버전 {estimate.estimate.version} • {estimate.estimate.status}
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm border-collapse">
-                      <thead>
-                        <tr className="border-b">
-                          <th className="p-2 text-left">장소</th>
-                          <th className="p-2 text-left">위치</th>
-                          <th className="p-2 text-left">공사내용</th>
-                          <th className="p-2 text-right">피해면적 (㎡)</th>
-                          <th className="p-2 text-right">복구면적 (㎡)</th>
-                          <th className="p-2 text-left">비고</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {estimate.rows.map((row) => (
-                          <tr key={row.id} className="border-b">
-                            <td className="p-2">{row.category}</td>
-                            <td className="p-2">{row.location}</td>
-                            <td className="p-2">{row.workName}</td>
-                            <td className="p-2 text-right">
-                              {row.damageArea ? (row.damageArea / 1_000_000).toFixed(2) : '-'}
-                            </td>
-                            <td className="p-2 text-right">
-                              {row.repairArea ? (row.repairArea / 1_000_000).toFixed(2) : '-'}
-                            </td>
-                            <td className="p-2">{row.note || '-'}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+          <div>
+            {estimate.estimate && estimate.rows && estimate.rows.length > 0 ? (
+              <>
+                {/* 헤더 */}
+                <div className="flex items-center justify-between mb-6">
+                  <h2
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    견적서 {new Date(estimate.estimate.createdAt).toISOString().split('T')[0]}
+                  </h2>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        // TODO: 다운로드 기능 구현
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
+                      style={{
+                        background: "rgba(0, 143, 237, 0.1)",
+                        border: "1px solid rgba(0, 143, 237, 0.3)",
+                      }}
+                      data-testid="button-download-estimate"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#008FED",
+                        }}
+                      >
+                        다운로드
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        // TODO: 이메일 전송 기능 구현
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
+                      style={{
+                        background: "rgba(0, 143, 237, 0.1)",
+                        border: "1px solid rgba(0, 143, 237, 0.3)",
+                      }}
+                      data-testid="button-email-estimate"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <path d="M22 6l-10 7L2 6" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#008FED",
+                        }}
+                      >
+                        이메일 전송
+                      </span>
+                    </button>
                   </div>
                 </div>
-              ) : (
-                <p className="text-muted-foreground">등록된 견적서가 없습니다.</p>
-              )}
-            </CardContent>
-          </Card>
+
+                {/* 복구면적 산출표 */}
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      복구면적 산출표 {new Date(estimate.estimate.createdAt).toISOString().split('T')[0]}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table
+                        style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          fontFamily: "Pretendard",
+                          fontSize: "13px",
+                        }}
+                      >
+                        <thead>
+                          <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
+                            <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>장소</th>
+                            <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>위치</th>
+                            <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>공사내용</th>
+                            <th colSpan={3} style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>피해면적</th>
+                            <th colSpan={3} style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>복구면적</th>
+                            <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>비고</th>
+                          </tr>
+                          <tr style={{ background: "rgba(12, 12, 12, 0.02)" }}>
+                            <th colSpan={3} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
+                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>가로(mm)</th>
+                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>세로(mm)</th>
+                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>면적(㎡)</th>
+                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>가로(mm)</th>
+                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>세로(mm)</th>
+                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>면적(㎡)</th>
+                            <th style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {estimate.rows.map((row, index) => (
+                            <tr key={row.id} style={{ borderBottom: index === estimate.rows.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
+                              <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.location || '-'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center", borderLeft: "1px solid rgba(12, 12, 12, 0.06)" }}>{row.damageWidth || '0000'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.damageHeight || '0000'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center" }}>
+                                {row.damageArea ? (row.damageArea / 1_000_000).toFixed(2) : '0000'}
+                              </td>
+                              <td style={{ padding: "10px 8px", textAlign: "center", borderLeft: "1px solid rgba(12, 12, 12, 0.06)" }}>{row.repairWidth || '0000'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.repairHeight || '0000'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center" }}>
+                                {row.repairArea ? (row.repairArea / 1_000_000).toFixed(2) : '0000'}
+                              </td>
+                              <td style={{ padding: "10px 8px", textAlign: "center", borderLeft: "1px solid rgba(12, 12, 12, 0.06)" }}>{row.note || '-'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 노무비 - 향후 구현 예정 */}
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      노무비 {new Date(estimate.estimate.createdAt).toISOString().split('T')[0]}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        color: "rgba(12, 12, 12, 0.5)",
+                        textAlign: "center",
+                        padding: "40px 0",
+                      }}
+                    >
+                      노무비 데이터가 없습니다.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* 자재비 - 향후 구현 예정 */}
+                <Card className="mb-6">
+                  <CardHeader>
+                    <CardTitle
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      자재비 {new Date(estimate.estimate.createdAt).toISOString().split('T')[0]}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        color: "rgba(12, 12, 12, 0.5)",
+                        textAlign: "center",
+                        padding: "40px 0",
+                      }}
+                    >
+                      자재비 데이터가 없습니다.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* 합계 섹션 */}
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>소계</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>0</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>일반관리비 (6%)</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>0</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>이윤 (15%)</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>0</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b">
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>VAT</span>
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-1">
+                            <input type="radio" name="vat" checked disabled />
+                            <span style={{ fontFamily: "Pretendard", fontSize: "13px" }}>포함</span>
+                          </label>
+                          <label className="flex items-center gap-1">
+                            <input type="radio" name="vat" disabled />
+                            <span style={{ fontFamily: "Pretendard", fontSize: "13px" }}>별도</span>
+                          </label>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, marginLeft: "8px" }}>0</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center py-3 border-t-2">
+                        <span style={{ fontFamily: "Pretendard", fontSize: "16px", fontWeight: 700, color: "#008FED" }}>총 합계</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 700, color: "#008FED" }}>0</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="p-6">
+                  <p
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      textAlign: "center",
+                      padding: "40px 0",
+                    }}
+                  >
+                    등록된 견적서가 없습니다.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         {/* 기타사항/원인 탭 */}
