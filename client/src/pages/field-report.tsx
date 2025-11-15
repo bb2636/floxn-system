@@ -132,10 +132,11 @@ export default function FieldReport() {
   // 기타사항 저장 mutation
   const saveNotesMutation = useMutation({
     mutationFn: async (notes: string) => {
-      return apiRequest(`/api/cases/${selectedCaseId}/additional-notes`, {
-        method: "PATCH",
-        body: JSON.stringify({ additionalNotes: notes }),
-      });
+      return apiRequest(
+        "PATCH",
+        `/api/cases/${selectedCaseId}/additional-notes`,
+        { additionalNotes: notes }
+      );
     },
     onSuccess: () => {
       toast({
@@ -156,9 +157,7 @@ export default function FieldReport() {
   // 보고서 제출 mutation
   const submitReportMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/cases/${selectedCaseId}/submit`, {
-        method: "PATCH",
-      });
+      return apiRequest("PATCH", `/api/cases/${selectedCaseId}/submit`);
     },
     onSuccess: () => {
       toast({
@@ -180,13 +179,14 @@ export default function FieldReport() {
   // 보고서 심사 mutation
   const reviewMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/cases/${selectedCaseId}/review`, {
-        method: "PATCH",
-        body: JSON.stringify({
+      return apiRequest(
+        "PATCH",
+        `/api/cases/${selectedCaseId}/review`,
+        {
           decision: reviewDecision,
           reviewComment: reviewComment || "",
-        }),
-      });
+        }
+      );
     },
     onSuccess: () => {
       toast({
@@ -220,7 +220,8 @@ export default function FieldReport() {
     );
   }
 
-  if (isLoading) {
+  // 역할 정보 로딩 중이거나 데이터 로딩 중이면 로딩 화면 표시
+  if (isLoading || isUserLoading) {
     return (
       <div className="p-8">
         <Card>
