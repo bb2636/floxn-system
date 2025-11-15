@@ -2745,8 +2745,7 @@ export default function FieldEstimate() {
                     </tbody>
                   </table>
                 </div>
-              )
-            }
+              )}
           </div>
         )}
 
@@ -3120,7 +3119,6 @@ export default function FieldEstimate() {
                   </div>
                 </div>
               </div>
-            </div>
           </div>
         )}
 
