@@ -17,6 +17,23 @@ interface Case {
   assignedPartner: string;
   assignedPartnerManager: string;
   assignedPartnerContact: string;
+  // 현장조사 정보
+  visitDate: string | null;
+  visitTime: string | null;
+  travelDistance: string | null;
+  dispatchLocation: string | null;
+  accompaniedPerson: string | null;
+  accidentCategory: string | null;
+  accidentCause: string | null;
+  specialNotes: string | null;
+  victimName: string | null;
+  victimContact: string | null;
+  victimAddress: string | null;
+  additionalVictims: string | null;
+  specialRequests: string | null;
+  processingTypes: string | null;
+  processingTypeOther: string | null;
+  recoveryMethodType: string | null;
 }
 
 interface Drawing {
@@ -213,92 +230,423 @@ export default function FieldReport() {
 
         {/* 현장조사 탭 */}
         <TabsContent value="현장조사" className="space-y-6">
-          {/* 기본 정보 섹션 */}
+          {/* 현장조사 정보 섹션 */}
           <div>
-            <h2 className="text-lg font-semibold mb-4">기본 정보</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {/* 협력사 정보 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">협력사 정보</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground w-24">업체</span>
-                    <span className="text-sm">{caseData.assignedPartner || "미배정"}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground w-24">담당자명</span>
-                    <span className="text-sm">{caseData.assignedPartnerManager || "미정"}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground w-24">담당자 연락처</span>
-                    <span className="text-sm">{caseData.assignedPartnerContact || "미정"}</span>
-                  </div>
-                </CardContent>
-              </Card>
+            <h2
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "20px",
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+                marginBottom: "24px",
+              }}
+            >
+              현장조사 정보
+            </h2>
 
-              {/* 가옥 정보 */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">가옥 정보</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground w-24">접수번호</span>
-                    <span className="text-sm">{caseData.caseNumber}</span>
+            {/* 현장정보 */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}
+                >
+                  현장정보
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center">
+                  <span
+                    className="w-32"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    방문일시
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {caseData.visitDate && caseData.visitTime 
+                      ? `${caseData.visitDate} ${caseData.visitTime}` 
+                      : caseData.visitDate || "-"}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span
+                    className="w-32"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    현장 이동 거리
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {caseData.travelDistance ? `${caseData.travelDistance}km` : "-"}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span
+                    className="w-32"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    출동 담당자
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {caseData.accompaniedPerson || "-"}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span
+                    className="w-32"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    피보험자 주소
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {caseData.insuredAddress || "-"}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 사고 원인(누수원천) */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}
+                >
+                  사고 원인(누수원천)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center">
+                  <span
+                    className="w-32"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    카테고리
+                  </span>
+                  <div
+                    className="px-3 py-1 rounded"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#008FED",
+                      background: "rgba(0, 143, 237, 0.1)",
+                    }}
+                  >
+                    {caseData.accidentCategory || "-"}
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground w-24">보험사</span>
-                    <span className="text-sm">{caseData.insuranceCompany || "미정"}</span>
+                </div>
+                <div>
+                  <span
+                    className="block mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    사고원인
+                  </span>
+                  <div
+                    className="p-4 rounded"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                      background: "rgba(12, 12, 12, 0.03)",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {caseData.accidentCause || "이 안에는 사고원인이 적성됩니다."}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 현장 특이사항 */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}
+                >
+                  현장 특이사항
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div
+                  className="p-4 rounded"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: "#0C0C0C",
+                    background: "rgba(12, 12, 12, 0.03)",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {caseData.specialNotes || "이 안에는 특이사항이 적성됩니다."}
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* 보험계약자 및 피보험자 정보 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">보험계약자 및 피보험자 정보</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground w-24">보험계약자</span>
-                    <span className="text-sm">{caseData.policyHolderName || "미정"}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground w-24">피보험자</span>
-                    <span className="text-sm">{caseData.insuredName || "미정"}</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground w-24">피보험자 연락처</span>
-                    <span className="text-sm">{caseData.insuredContact || "미정"}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-muted-foreground w-24">피보험자 주소</span>
-                    <span className="text-sm">{caseData.insuredAddress || "미정"}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* 피해 복구방식 및 처리 유형 섹션 */}
+          <div>
+            <h2
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "20px",
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+                marginBottom: "24px",
+              }}
+            >
+              피해 복구방식 및 처리 유형
+            </h2>
 
-          {/* 사고 발생 일시 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">사고 발생 일시</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <span className="text-sm">
-                {caseData.accidentDate ? `${caseData.accidentDate} ${caseData.accidentTime || ''}` : "미정"}
-              </span>
-            </CardContent>
-          </Card>
+            {/* 피해자 정보 */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}
+                >
+                  피해자 정보
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {(() => {
+                  const victims = [];
+                  
+                  // 기본 피해자
+                  if (caseData.victimName) {
+                    victims.push({
+                      name: caseData.victimName,
+                      contact: caseData.victimContact || "",
+                      address: caseData.victimAddress || "",
+                    });
+                  }
+                  
+                  // 추가 피해자
+                  if (caseData.additionalVictims && caseData.additionalVictims.trim()) {
+                    try {
+                      const additional = JSON.parse(caseData.additionalVictims);
+                      if (Array.isArray(additional)) {
+                        victims.push(...additional);
+                      }
+                    } catch (e) {
+                      console.error("Error parsing additional victims:", e);
+                    }
+                  }
+                  
+                  return victims.length > 0 ? (
+                    victims.map((victim, index) => (
+                      <div 
+                        key={index}
+                        className="p-3 rounded flex items-center gap-3"
+                        style={{ background: "rgba(12, 12, 12, 0.03)" }}
+                      >
+                        <div
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ background: "#008FED" }}
+                        />
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          {victim.name}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            color: "rgba(12, 12, 12, 0.6)",
+                          }}
+                        >
+                          {victim.contact}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            color: "rgba(12, 12, 12, 0.6)",
+                          }}
+                        >
+                          {victim.address}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>
+                      등록된 피해자가 없습니다.
+                    </p>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* 처리 유형 및 복구 방식 */}
+            <Card>
+              <CardHeader>
+                <CardTitle
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}
+                >
+                  처리 유형 및 복구 방식
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center">
+                  <span
+                    className="w-32"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    처리 유형
+                  </span>
+                  <div className="flex gap-2">
+                    {(() => {
+                      let types: string[] = [];
+                      
+                      if (caseData.processingTypes && caseData.processingTypes.trim()) {
+                        try {
+                          const parsed = JSON.parse(caseData.processingTypes);
+                          if (Array.isArray(parsed)) {
+                            types = parsed;
+                          }
+                        } catch (e) {
+                          console.error("Error parsing processing types:", e);
+                        }
+                      }
+                      
+                      return types.length > 0 ? (
+                        types.map((type: string, index: number) => (
+                          <div
+                            key={index}
+                            className="px-3 py-1 rounded"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              color: "#008FED",
+                              background: "rgba(0, 143, 237, 0.1)",
+                            }}
+                          >
+                            {type}
+                          </div>
+                        ))
+                      ) : (
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>
+                          -
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
+                <div className="flex items-center">
+                  <span
+                    className="w-32"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    복구 방식
+                  </span>
+                  <div
+                    className="px-3 py-1 rounded"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#008FED",
+                      background: "rgba(0, 143, 237, 0.1)",
+                    }}
+                  >
+                    {caseData.recoveryMethodType || "-"}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* 도면 탭 */}
