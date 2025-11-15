@@ -218,12 +218,17 @@ export default function FieldEstimate() {
   // ===== 노무비 관련 함수 =====
   
   // 캐스케이딩 필터링 옵션 (useMemo로 성능 최적화)
-  const availableWorkNames = useMemo(() => {
+  const availableCostCategories = useMemo(() => {
+    if (!laborOptions) return [];
+    return laborOptions.categories || [];
+  }, [laborOptions]);
+
+  const availableCostWorkNames = useMemo(() => {
     if (!laborOptions || !selectedCostCategory) return [];
     return laborOptions.workNamesByCategory[selectedCostCategory] || [];
   }, [laborOptions, selectedCostCategory]);
 
-  const availableDetailWorks = useMemo(() => {
+  const availableCostDetailWorks = useMemo(() => {
     if (!laborOptions || !selectedCostCategory || !selectedCostWorkName) return [];
     const workKey = `${selectedCostCategory}|${selectedCostWorkName}`;
     return laborOptions.detailWorksByWork[workKey] || [];
@@ -1160,38 +1165,172 @@ export default function FieldEstimate() {
         {selectedCategory === "노무비" && (
           <div>
             {/* 노무비 헤더 */}
-            <div className="flex items-center justify-between mb-4">
-              <h2
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  letterSpacing: "-0.02em",
-                  color: "#0C0C0C",
-                }}
-              >
-                노무비
-              </h2>
-              <Select defaultValue="all">
-                <SelectTrigger 
-                  className="border focus:ring-0"
+            <h2
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "18px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+                marginBottom: "16px",
+              }}
+            >
+              노무비
+            </h2>
+
+            {/* 캐스케이딩 선택기 패널 */}
+            <div
+              style={{
+                background: "rgba(12, 12, 12, 0.02)",
+                borderRadius: "8px",
+                padding: "16px",
+                marginBottom: "16px",
+                border: "1px solid rgba(12, 12, 12, 0.06)",
+              }}
+            >
+              <div className="flex items-end gap-3">
+                {/* 공종 선택 */}
+                <div style={{ flex: 1 }}>
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                      display: "block",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    공종
+                  </label>
+                  <Select
+                    value={selectedCostCategory}
+                    onValueChange={setSelectedCostCategory}
+                  >
+                    <SelectTrigger 
+                      className="border focus:ring-0"
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        borderColor: "rgba(12, 12, 12, 0.2)",
+                        borderRadius: "6px",
+                        background: "white",
+                      }}
+                      data-testid="select-cost-category"
+                    >
+                      <SelectValue placeholder="공종 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCostCategories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 공사명 선택 */}
+                <div style={{ flex: 1 }}>
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                      display: "block",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    공사명
+                  </label>
+                  <Select
+                    value={selectedCostWorkName}
+                    onValueChange={setSelectedCostWorkName}
+                    disabled={!selectedCostCategory}
+                  >
+                    <SelectTrigger 
+                      className="border focus:ring-0"
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        borderColor: "rgba(12, 12, 12, 0.2)",
+                        borderRadius: "6px",
+                        background: selectedCostCategory ? "white" : "rgba(12, 12, 12, 0.02)",
+                      }}
+                      data-testid="select-cost-workname"
+                    >
+                      <SelectValue placeholder="공사명 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCostWorkNames.map(name => (
+                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 세부공사 선택 (노무비/일위대가) */}
+                <div style={{ flex: 1 }}>
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                      display: "block",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    세부공사
+                  </label>
+                  <Select
+                    value={selectedCostDetailWork}
+                    onValueChange={setSelectedCostDetailWork}
+                    disabled={!selectedCostWorkName}
+                  >
+                    <SelectTrigger 
+                      className="border focus:ring-0"
+                      style={{
+                        width: "100%",
+                        height: "40px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        borderColor: "rgba(12, 12, 12, 0.2)",
+                        borderRadius: "6px",
+                        background: selectedCostWorkName ? "white" : "rgba(12, 12, 12, 0.02)",
+                      }}
+                      data-testid="select-cost-detailwork"
+                    >
+                      <SelectValue placeholder="세부공사 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCostDetailWorks.map(detail => (
+                        <SelectItem key={detail} value={detail}>{detail}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 항목 추가 버튼 */}
+                <Button
+                  onClick={handleAddLaborItems}
+                  disabled={!selectedCostDetailWork}
                   style={{
-                    width: "150px",
                     height: "40px",
+                    paddingLeft: "20px",
+                    paddingRight: "20px",
                     fontFamily: "Pretendard",
                     fontSize: "14px",
-                    borderColor: "rgba(12, 12, 12, 0.2)",
-                    borderRadius: "6px",
+                    fontWeight: 500,
                   }}
+                  data-testid="button-add-labor-items"
                 >
-                  <SelectValue placeholder="종류 선택" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">종류 선택</SelectItem>
-                  <SelectItem value="type1">유형1</SelectItem>
-                  <SelectItem value="type2">유형2</SelectItem>
-                </SelectContent>
-              </Select>
+                  항목 추가
+                </Button>
+              </div>
             </div>
 
             {/* 테이블 */}
@@ -1219,8 +1358,6 @@ export default function FieldEstimate() {
                     }}
                   >
                     <th style={{ width: "54px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}></th>
-                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>공종</th>
-                    <th style={{ width: "220px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>항목 선택</th>
                     <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>공사명</th>
                     <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세부공사</th>
                     <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세부항목</th>
@@ -1252,60 +1389,6 @@ export default function FieldEstimate() {
                           style={{ width: "16px", height: "16px", cursor: "pointer" }}
                           data-testid={`checkbox-labor-${row.id}`}
                         />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <Select 
-                          value={row.category}
-                          onValueChange={(value) => updateLaborRow(row.id, 'category', value)}
-                        >
-                          <SelectTrigger 
-                            className="border focus:ring-0" 
-                            style={{ width: "100%", height: "40px", fontFamily: "Pretendard", fontSize: "14px", borderColor: "rgba(12, 12, 12, 0.2)", borderRadius: "6px" }}
-                            data-testid={`select-category-${row.id}`}
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {laborCategories.map(cat => (
-                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <Select 
-                          value={row.laborItemId || ""}
-                          onValueChange={(value) => updateLaborRow(row.id, 'laborItemId', value)}
-                          disabled={!row.category}
-                        >
-                          <SelectTrigger 
-                            className="border focus:ring-0" 
-                            style={{ 
-                              width: "100%", 
-                              height: "40px", 
-                              fontFamily: "Pretendard", 
-                              fontSize: "14px", 
-                              borderColor: "rgba(12, 12, 12, 0.2)", 
-                              borderRadius: "6px",
-                              background: !row.category ? "rgba(12, 12, 12, 0.02)" : "white"
-                            }}
-                            data-testid={`select-laborItem-${row.id}`}
-                          >
-                            <SelectValue placeholder="선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {laborCostData
-                              .filter(item => item.category === row.category)
-                              .map(item => (
-                                <SelectItem key={item.id} value={item.id.toString()}>
-                                  {item.workName} / {item.detailWork} / {item.detailItem || "-"}
-                                </SelectItem>
-                              ))}
-                            {laborCostData.filter(item => item.category === row.category).length === 0 && (
-                              <SelectItem value="no-option" disabled>선택할 수 있는 항목이 없습니다</SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
                         <input 
@@ -1381,9 +1464,9 @@ export default function FieldEstimate() {
                         <input 
                           type="text" 
                           value={row.applicationRate} 
-                          readOnly
+                          onChange={(e) => updateLaborRow(row.id, 'applicationRate', e.target.value)}
                           className="input-focus-blue" 
-                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} 
                           data-testid={`input-applicationRate-${row.id}`}
                         />
                       </td>
@@ -1391,9 +1474,9 @@ export default function FieldEstimate() {
                         <input 
                           type="text" 
                           value={row.pricePerSqm} 
-                          readOnly
+                          onChange={(e) => updateLaborRow(row.id, 'pricePerSqm', e.target.value)}
                           className="input-focus-blue" 
-                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} 
                           data-testid={`input-pricePerSqm-${row.id}`}
                         />
                       </td>
@@ -1401,9 +1484,9 @@ export default function FieldEstimate() {
                         <input 
                           type="text" 
                           value={row.damageArea} 
-                          readOnly
+                          onChange={(e) => updateLaborRow(row.id, 'damageArea', e.target.value)}
                           className="input-focus-blue" 
-                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} 
                           data-testid={`input-damageArea-${row.id}`}
                         />
                       </td>
@@ -1411,9 +1494,9 @@ export default function FieldEstimate() {
                         <input 
                           type="text" 
                           value={row.deduction} 
-                          readOnly
+                          onChange={(e) => updateLaborRow(row.id, 'deduction', e.target.value)}
                           className="input-focus-blue" 
-                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center" }} 
                           data-testid={`input-deduction-${row.id}`}
                         />
                       </td>
@@ -1421,8 +1504,8 @@ export default function FieldEstimate() {
                         <input 
                           type="checkbox" 
                           checked={row.expenseStatus === "true"} 
-                          readOnly
-                          style={{ width: "16px", height: "16px", cursor: "not-allowed" }} 
+                          onChange={(e) => updateLaborRow(row.id, 'expenseStatus', e.target.checked ? "true" : "false")}
+                          style={{ width: "16px", height: "16px", cursor: "pointer" }} 
                           data-testid={`checkbox-expenseStatus-${row.id}`}
                         />
                       </td>
@@ -1430,8 +1513,8 @@ export default function FieldEstimate() {
                         <input 
                           type="checkbox" 
                           checked={row.request === "true"} 
-                          readOnly
-                          style={{ width: "16px", height: "16px", cursor: "not-allowed" }} 
+                          onChange={(e) => updateLaborRow(row.id, 'request', e.target.checked ? "true" : "false")}
+                          style={{ width: "16px", height: "16px", cursor: "pointer" }} 
                           data-testid={`checkbox-request-${row.id}`}
                         />
                       </td>
@@ -1443,31 +1526,6 @@ export default function FieldEstimate() {
 
             {/* 노무비 버튼 영역 */}
             <div className="flex gap-3 mt-6">
-              <Button
-                type="button"
-                onClick={addLaborRow}
-                disabled={isLoadingLaborCosts}
-                className="hover-elevate active-elevate-2"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 500,
-                  padding: "10px 20px",
-                  background: "#008FED",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: isLoadingLaborCosts ? "not-allowed" : "pointer",
-                  opacity: isLoadingLaborCosts ? 0.5 : 1,
-                }}
-                data-testid="button-add-labor-row"
-              >
-                <Plus className="w-4 h-4" />
-                항목 추가
-              </Button>
 
               <Button
                 type="button"
