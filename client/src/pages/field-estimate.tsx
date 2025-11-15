@@ -494,115 +494,6 @@ export default function FieldEstimate() {
       setSelectedRows(new Set());
     }
   };
-
-  // ===== 노무비 관련 함수 =====
-  
-  // 캐스케이딩 필터링 옵션 (useMemo로 성능 최적화)
-  const availableCostCategories = useMemo(() => {
-    if (!laborOptions) return [];
-    return laborOptions.categories || [];
-  }, [laborOptions]);
-
-  const availableCostWorkNames = useMemo(() => {
-    if (!laborOptions || !selectedCostCategory) return [];
-    return laborOptions.workNamesByCategory[selectedCostCategory] || [];
-  }, [laborOptions, selectedCostCategory]);
-
-  const availableCostDetailWorks = useMemo(() => {
-    if (!laborOptions || !selectedCostCategory || !selectedCostWorkName) return [];
-    const workKey = `${selectedCostCategory}|${selectedCostWorkName}`;
-    return laborOptions.detailWorksByWork[workKey] || [];
-  }, [laborOptions, selectedCostCategory, selectedCostWorkName]);
-
-  // 캐스케이딩 선택: 상위 선택 변경 시 하위 선택 초기화
-  useEffect(() => {
-    setSelectedCostWorkName("");
-    setSelectedCostDetailWork("");
-  }, [selectedCostCategory]);
-
-  useEffect(() => {
-    setSelectedCostDetailWork("");
-  }, [selectedCostWorkName]);
-  
-  // 노무비 항목 추가 (선택한 조합의 모든 DB 항목을 테이블에 추가)
-  const handleAddLaborItems = () => {
-    if (!selectedCostCategory || !selectedCostWorkName || !selectedCostDetailWork) {
-      toast({
-        title: "선택을 완료해주세요",
-        description: "공종, 공사명, 세부공사를 모두 선택해주세요.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // 선택한 조합에 맞는 노무비 DB 항목 필터링
-    const filtered = laborCostData.filter(item =>
-      item.category === selectedCostCategory &&
-      item.workName === selectedCostWorkName &&
-      item.detailWork === selectedCostDetailWork
-    );
-    
-    if (filtered.length === 0) {
-      toast({
-        title: "항목이 없습니다",
-        description: "선택한 조합에 해당하는 항목이 없습니다.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // 필터링된 항목들을 테이블 행으로 변환
-    const newRows: LaborCostRow[] = filtered.map(item => ({
-      id: `labor-${Date.now()}-${Math.random()}`,
-      laborItemId: item.id.toString(),
-      category: item.category,
-      workName: item.workName,
-      detailWork: item.detailWork,
-      detailItem: item.detailItem || "",
-      priceStandard: item.priceStandard,
-      unit: item.unit,
-      standardPrice: item.standardPrice.toString(),
-      quantity: "1",
-      applicationRates: {
-        ceiling: false,
-        wall: false,
-        floor: false,
-        molding: false,
-      },
-      pricePerSqm: "30",
-      damageArea: "",
-      deduction: "",
-      expenseStatus: "",
-      salesMarkupRate: "30",
-      amount: item.standardPrice.toString(),
-      request: "",
-      includeInEstimate: false,
-    }));
-    
-    setLaborCostRows(prev => [...prev, ...newRows]);
-    
-    toast({
-      title: "항목이 추가되었습니다",
-      description: `${filtered.length}개의 항목이 테이블에 추가되었습니다.`,
-    });
-  };
-  
-  // 선택된 노무비 행 삭제
-  const deleteLaborRows = () => {
-    if (selectedLaborRows.size === 0) {
-      toast({
-        title: "삭제할 항목을 선택하세요",
-        description: "삭제할 노무비 항목을 먼저 선택해주세요.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (confirm(`선택한 ${selectedLaborRows.size}개의 항목을 삭제하시겠습니까?`)) {
-      setLaborCostRows(prev => prev.filter(row => !selectedLaborRows.has(row.id)));
-      setSelectedLaborRows(new Set());
-    }
-  };
   
   // 자재비 관련 computed values
   const availableMaterialCategories = useMemo(() => {
@@ -1536,8 +1427,8 @@ export default function FieldEstimate() {
           </div>
         )}
 
-        {/* 노무비 컨텐츠 */}
-        {selectedCategory === "노무비" && (
+        {/* 노무비 컨텐츠 - OLD (임시 비활성화) */}
+        {false && selectedCategory === "노무비" && (
           <div>
             {/* 상단 탭 버튼 및 공종 선택 */}
             <div
@@ -2495,7 +2386,12 @@ export default function FieldEstimate() {
                 </div>
               )}
             </div>
+          </div>
+        )}
 
+        {/* 노무비 컨텐츠 - NEW */}
+        {selectedCategory === "노무비" && (
+          <div>
             {/* 노무비 섹션 */}
             <div style={{ marginTop: "40px" }}>
               <div
@@ -2851,9 +2747,12 @@ export default function FieldEstimate() {
                 </div>
               )
             }
+          </div>
+        )}
 
-            {/* 자재비 섹션 */}
-            <div style={{ marginTop: "40px" }}>
+        {/* 자재비 컨텐츠 - NEW */}
+        {selectedCategory === "자재비" && (
+          <div style={{ marginTop: "40px" }}>
               <div
                 style={{
                   display: "flex",
