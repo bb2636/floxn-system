@@ -3,6 +3,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect } from "react";
@@ -61,6 +71,14 @@ interface EstimateRow {
   note: string;
 }
 
+interface CompletionStatus {
+  fieldSurvey: boolean;
+  drawing: boolean;
+  documents: boolean;
+  estimate: boolean;
+  isComplete: boolean;
+}
+
 interface ReportData {
   case: Case;
   drawing: Drawing | null;
@@ -69,6 +87,7 @@ interface ReportData {
     estimate: Estimate | null;
     rows: EstimateRow[];
   };
+  completionStatus: CompletionStatus;
 }
 
 export default function FieldReport() {
@@ -84,6 +103,9 @@ export default function FieldReport() {
 
   // 기타사항 상태
   const [additionalNotes, setAdditionalNotes] = useState('');
+  
+  // 제출 확인 다이얼로그 상태
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false);
 
   // reportData가 변경될 때 additionalNotes 상태 업데이트
   useEffect(() => {
@@ -111,6 +133,29 @@ export default function FieldReport() {
       toast({
         title: "저장 실패",
         description: error.message || "기타사항 저장 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 보고서 제출 mutation
+  const submitReportMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/cases/${selectedCaseId}/submit`, {
+        method: "PATCH",
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "제출 완료",
+        description: "현장출동보고서가 성공적으로 제출되었습니다.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "제출 실패",
+        description: error.message || "보고서 제출 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     },
@@ -152,32 +197,110 @@ export default function FieldReport() {
     );
   }
 
-  const { case: caseData, drawing, documents, estimate } = reportData;
+  const { case: caseData, drawing, documents, estimate, completionStatus } = reportData;
 
   return (
     <div className="relative p-8">
-      {/* 페이지 타이틀 */}
-      <div className="flex items-center gap-2 mb-8">
-        <h1
-          style={{
-            fontFamily: "Pretendard",
-            fontSize: "24px",
-            fontWeight: 700,
-            letterSpacing: "-0.02em",
-            color: "#0C0C0C",
-          }}
-        >
-          현장출동보고서
-        </h1>
-        <div
-          style={{
-            width: "8px",
-            height: "8px",
-            borderRadius: "50%",
-            background: "rgba(12, 12, 12, 0.2)",
-          }}
-        />
+      {/* 페이지 타이틀 및 버튼 */}
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-2">
+          <h1
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "24px",
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              color: "#0C0C0C",
+            }}
+          >
+            현장출동보고서
+          </h1>
+          <div
+            style={{
+              width: "8px",
+              height: "8px",
+              borderRadius: "50%",
+              background: "rgba(12, 12, 12, 0.2)",
+            }}
+          />
+        </div>
+
+        {/* 저장/제출 버튼 */}
+        <div className="flex items-center gap-3">
+          <Button
+            data-testid="button-save-notes"
+            variant="outline"
+            onClick={() => saveNotesMutation.mutate(additionalNotes)}
+            disabled={saveNotesMutation.isPending}
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: "500",
+            }}
+          >
+            {saveNotesMutation.isPending ? "저장 중..." : "저장"}
+          </Button>
+          <Button
+            data-testid="button-submit-report"
+            onClick={() => setShowSubmitDialog(true)}
+            disabled={submitReportMutation.isPending || !completionStatus.isComplete || caseData.fieldSurveyStatus === "submitted"}
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: "500",
+            }}
+          >
+            {submitReportMutation.isPending ? "제출 중..." : "제출"}
+          </Button>
+        </div>
       </div>
+
+      {/* 제출 확인 다이얼로그 */}
+      <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "18px",
+                fontWeight: "600",
+              }}
+            >
+              보고서 제출 확인
+            </AlertDialogTitle>
+            <AlertDialogDescription
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              현장출동보고서를 제출하시겠습니까?{"\n"}
+              제출 후에는 수정이 불가능합니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              data-testid="button-cancel-submit"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-submit"
+              onClick={() => submitReportMutation.mutate()}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              제출
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* 작성중인 건 */}
       <div className="mb-6">

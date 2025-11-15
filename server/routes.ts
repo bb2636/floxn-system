@@ -424,6 +424,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Submit field survey endpoint (협력사 only)
+  app.patch("/api/cases/:caseId/submit", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check authorization (협력사만 가능)
+    if (req.session.userRole !== "협력사") {
+      return res.status(403).json({ error: "협력사 권한이 필요합니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      
+      // 케이스 정보 조회
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 도면 조회
+      const drawing = await storage.getDrawingByCaseId(caseId);
+      
+      // 증빙자료 조회
+      const documents = await storage.getDocumentsByCaseId(caseId);
+      
+      // 최신 견적 조회
+      const estimateData = await storage.getLatestEstimate(caseId);
+      
+      // 완료 여부 체크
+      const isFieldSurveyComplete = !!(caseData.visitDate && caseData.visitTime && caseData.accidentCategory);
+      const isDrawingComplete = !!drawing;
+      const isDocumentsComplete = documents.length > 0;
+      const isEstimateComplete = !!(estimateData?.rows && estimateData.rows.length > 0);
+      
+      if (!isFieldSurveyComplete || !isDrawingComplete || !isDocumentsComplete || !isEstimateComplete) {
+        const missingItems = [];
+        if (!isFieldSurveyComplete) missingItems.push("현장조사 정보");
+        if (!isDrawingComplete) missingItems.push("도면");
+        if (!isDocumentsComplete) missingItems.push("증빙자료");
+        if (!isEstimateComplete) missingItems.push("견적서");
+        
+        return res.status(400).json({ 
+          error: `다음 항목을 완료해주세요: ${missingItems.join(", ")}` 
+        });
+      }
+
+      // 제출 처리
+      const updatedCase = await storage.submitFieldSurvey(caseId);
+      
+      if (!updatedCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      res.json({ success: true, case: updatedCase });
+    } catch (error) {
+      console.error("Submit field survey error:", error);
+      res.status(500).json({ error: "현장조사 보고서 제출 중 오류가 발생했습니다" });
+    }
+  });
+
   // Update case field survey endpoint (협력사 only)
   app.patch("/api/cases/:caseId/field-survey", async (req, res) => {
     // Check authentication
@@ -1585,12 +1647,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 최신 견적 조회
       const estimateData = await storage.getLatestEstimate(caseId);
       
+      // 각 섹션 완료 여부 체크
+      const completionStatus = {
+        fieldSurvey: !!(caseData.visitDate && caseData.visitTime && caseData.accidentCategory),
+        drawing: !!drawing,
+        documents: documents.length > 0,
+        estimate: !!(estimateData?.rows && estimateData.rows.length > 0),
+        isComplete: false,
+      };
+      
+      // 전체 완료 여부 (기타사항은 optional이므로 제외)
+      completionStatus.isComplete = 
+        completionStatus.fieldSurvey &&
+        completionStatus.drawing &&
+        completionStatus.documents &&
+        completionStatus.estimate;
+      
       // 통합된 보고서 데이터 반환
       res.json({
         case: caseData,
         drawing: drawing || null,
         documents: documents || [],
         estimate: estimateData || { estimate: null, rows: [] },
+        completionStatus,
       });
     } catch (error) {
       console.error("Get field survey report error:", error);

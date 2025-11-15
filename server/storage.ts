@@ -59,6 +59,7 @@ export interface IStorage {
   updateCaseStatus(caseId: string, status: string): Promise<Case | null>;
   updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null>;
   updateCaseAdditionalNotes(caseId: string, additionalNotes: string | null): Promise<Case | null>;
+  submitFieldSurvey(caseId: string): Promise<Case | null>;
   getPartnerStats(): Promise<PartnerStats[]>;
   createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate>;
   getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]>;
@@ -1115,6 +1116,23 @@ export class MemStorage implements IStorage {
     return updatedCase;
   }
 
+  async submitFieldSurvey(caseId: string): Promise<Case | null> {
+    const caseItem = this.cases.get(caseId);
+    if (!caseItem) {
+      return null;
+    }
+    
+    const updatedCase: Case = {
+      ...caseItem,
+      fieldSurveyStatus: "submitted",
+      status: "제출",
+      updatedAt: getKSTDate(),
+    };
+    
+    this.cases.set(caseId, updatedCase);
+    return updatedCase;
+  }
+
   async getPartnerStats(): Promise<PartnerStats[]> {
     const allCases = Array.from(this.cases.values());
     const allUsers = Array.from(this.users.values());
@@ -1935,6 +1953,25 @@ export class DbStorage implements IStorage {
     
     const result = await db.update(cases)
       .set({ additionalNotes, updatedAt: currentDate })
+      .where(eq(cases.id, caseId))
+      .returning();
+    
+    if (result.length === 0) {
+      return null;
+    }
+    
+    return result[0];
+  }
+
+  async submitFieldSurvey(caseId: string): Promise<Case | null> {
+    const currentDate = getKSTDate();
+    
+    const result = await db.update(cases)
+      .set({ 
+        fieldSurveyStatus: "submitted",
+        status: "제출",
+        updatedAt: currentDate 
+      })
       .where(eq(cases.id, caseId))
       .returning();
     
