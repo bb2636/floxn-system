@@ -61,15 +61,15 @@ interface Material {
 
 interface MaterialRow {
   id: string;
-  materialName: string; // 공종 (자재명)
+  category: string; // 공종 (드롭다운)
+  materialName: string; // 자재 (드롭다운)
   specification: string; // 규격
   unit: string; // 단위
-  standardPrice: number; // 기준가
-  quantity: number; // 수량 (editable)
+  areaUnit: string; // 단위² (m² 등)
+  standardPrice: number; // 기본단가
+  quantity: string; // 수량 (editable)
   amount: number; // 금액 (계산값)
-  deduction: number; // 공제(원) (editable)
-  expenseStatus: boolean; // 경비여부 (editable)
-  request: string; // 요청 (editable)
+  note: string; // 비고 (editable)
 }
 
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
@@ -119,6 +119,7 @@ export default function FieldEstimate() {
   const [selectedCostDetailWork, setSelectedCostDetailWork] = useState(""); // 세부공사 (노무비 or 일위대가)
 
   // 자재비 선택기 state
+  const [selectedMaterialCategory, setSelectedMaterialCategory] = useState("");
   const [selectedMaterialName, setSelectedMaterialName] = useState("");
   const [selectedMaterialSpec, setSelectedMaterialSpec] = useState("");
 
@@ -398,6 +399,16 @@ export default function FieldEstimate() {
   };
   
   // 자재비 관련 computed values
+  const availableMaterialCategories = useMemo(() => {
+    const categories = new Set<string>();
+    materialsData.forEach(m => {
+      // materialsData에서 category 필드가 있으면 추출, 없으면 자재명을 카테고리로 사용
+      const category = m.materialName; // DB에 category 컬럼이 없으므로 materialName을 사용
+      categories.add(category);
+    });
+    return Array.from(categories).sort();
+  }, [materialsData]);
+
   const materialNames = useMemo(() => {
     const names = new Set<string>();
     materialsData.forEach(m => names.add(m.materialName));
@@ -438,15 +449,15 @@ export default function FieldEstimate() {
 
     const newRow: MaterialRow = {
       id: `material-${Date.now()}-${Math.random()}`,
+      category: selectedMaterial.materialName, // 공종으로 자재명 사용
       materialName: selectedMaterial.materialName,
       specification: selectedMaterial.specification,
       unit: selectedMaterial.unit,
+      areaUnit: "m²", // 기본값
       standardPrice: selectedMaterial.standardPrice,
-      quantity: 1,
+      quantity: "1",
       amount: selectedMaterial.standardPrice,
-      deduction: 0,
-      expenseStatus: false,
-      request: "",
+      note: "",
     };
 
     setMaterialRows(prev => [...prev, newRow]);
@@ -458,6 +469,25 @@ export default function FieldEstimate() {
       title: "자재가 추가되었습니다",
       description: `${selectedMaterial.materialName} - ${selectedMaterial.specification}`,
     });
+  };
+
+  // 자재비 행 수정
+  const updateMaterialRow = (rowId: string, updates: Partial<MaterialRow>) => {
+    setMaterialRows(prev => 
+      prev.map(row => {
+        if (row.id !== rowId) return row;
+        
+        const updatedRow = { ...row, ...updates };
+        
+        // quantity가 변경되면 amount 재계산
+        if (updates.quantity !== undefined) {
+          const qty = parseFloat(updatedRow.quantity) || 0;
+          updatedRow.amount = qty * updatedRow.standardPrice;
+        }
+        
+        return updatedRow;
+      })
+    );
   };
 
   // 자재비 행 삭제
@@ -3050,19 +3080,96 @@ export default function FieldEstimate() {
         {/* 자재비 컨텐츠 */}
         {selectedCategory === "자재비" && (
           <div>
-            {/* 자재비 헤더 */}
-            <h2
+            {/* 상단 탭 버튼 및 공종 선택 */}
+            <div
               style={{
-                fontFamily: "Pretendard",
-                fontSize: "18px",
-                fontWeight: 600,
-                letterSpacing: "-0.02em",
-                color: "#0C0C0C",
-                marginBottom: "16px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "20px",
               }}
             >
-              자재비
-            </h2>
+              {/* 좌측 탭 버튼 */}
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  style={{
+                    padding: "10px 20px",
+                    background: "white",
+                    border: "1px solid rgba(12, 12, 12, 0.1)",
+                    borderRadius: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                    cursor: "pointer",
+                  }}
+                  data-testid="button-pyeongsu"
+                >
+                  평수별
+                </button>
+                <button
+                  style={{
+                    padding: "10px 20px",
+                    background: "white",
+                    border: "1px solid rgba(12, 12, 12, 0.1)",
+                    borderRadius: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                    cursor: "pointer",
+                  }}
+                  data-testid="button-hyeong-materials"
+                >
+                  형 자재
+                </button>
+                <button
+                  style={{
+                    padding: "10px 20px",
+                    background: "white",
+                    border: "1px solid rgba(12, 12, 12, 0.1)",
+                    borderRadius: "6px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                    cursor: "pointer",
+                  }}
+                  data-testid="button-go-to-estimate-materials"
+                >
+                  견적서 이동
+                </button>
+              </div>
+
+              {/* 우측 공종 선택 */}
+              <div style={{ width: "200px" }}>
+                <Select
+                  value={selectedMaterialCategory}
+                  onValueChange={setSelectedMaterialCategory}
+                >
+                  <SelectTrigger 
+                    className="border focus:ring-0"
+                    style={{
+                      width: "100%",
+                      height: "40px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      borderColor: "rgba(12, 12, 12, 0.2)",
+                      borderRadius: "6px",
+                      background: "white",
+                    }}
+                    data-testid="select-material-category-filter"
+                  >
+                    <SelectValue placeholder="공종 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableMaterialCategories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
             {/* 자재 선택기 패널 */}
             <div
@@ -3224,7 +3331,7 @@ export default function FieldEstimate() {
                         border: "1px solid rgba(12, 12, 12, 0.08)",
                         fontWeight: 600,
                         textAlign: "center",
-                        minWidth: "100px",
+                        minWidth: "120px",
                       }}
                     >
                       공종
@@ -3236,7 +3343,7 @@ export default function FieldEstimate() {
                         border: "1px solid rgba(12, 12, 12, 0.08)",
                         fontWeight: 600,
                         textAlign: "center",
-                        minWidth: "100px",
+                        minWidth: "120px",
                       }}
                     >
                       자재
@@ -3248,7 +3355,7 @@ export default function FieldEstimate() {
                         border: "1px solid rgba(12, 12, 12, 0.08)",
                         fontWeight: 600,
                         textAlign: "center",
-                        minWidth: "80px",
+                        minWidth: "100px",
                       }}
                     >
                       규격
@@ -3260,7 +3367,7 @@ export default function FieldEstimate() {
                         border: "1px solid rgba(12, 12, 12, 0.08)",
                         fontWeight: 600,
                         textAlign: "center",
-                        minWidth: "60px",
+                        minWidth: "70px",
                       }}
                     >
                       단위
@@ -3275,7 +3382,7 @@ export default function FieldEstimate() {
                         minWidth: "100px",
                       }}
                     >
-                      기준가
+                      기본단가
                     </th>
                     <th
                       style={{
@@ -3284,7 +3391,7 @@ export default function FieldEstimate() {
                         border: "1px solid rgba(12, 12, 12, 0.08)",
                         fontWeight: 600,
                         textAlign: "center",
-                        minWidth: "80px",
+                        minWidth: "90px",
                       }}
                     >
                       수량
@@ -3296,7 +3403,7 @@ export default function FieldEstimate() {
                         border: "1px solid rgba(12, 12, 12, 0.08)",
                         fontWeight: 600,
                         textAlign: "center",
-                        minWidth: "100px",
+                        minWidth: "110px",
                       }}
                     >
                       금액
@@ -3308,40 +3415,17 @@ export default function FieldEstimate() {
                         border: "1px solid rgba(12, 12, 12, 0.08)",
                         fontWeight: 600,
                         textAlign: "center",
-                        minWidth: "100px",
+                        minWidth: "200px",
                       }}
                     >
-                      공제(원)
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        minWidth: "80px",
-                      }}
-                    >
-                      경비여부
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        minWidth: "150px",
-                      }}
-                    >
-                      요청
+                      비고
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {materialRows.map((row) => (
                     <tr key={row.id}>
+                      {/* 체크박스 */}
                       <td
                         style={{
                           padding: "8px",
@@ -3357,16 +3441,15 @@ export default function FieldEstimate() {
                           data-testid={`checkbox-material-${row.id}`}
                         />
                       </td>
+
+                      {/* 공종 (드롭다운 또는 텍스트) */}
                       <td
                         style={{
                           padding: "8px",
                           border: "1px solid rgba(12, 12, 12, 0.08)",
                         }}
                       >
-                        <input
-                          type="text"
-                          value={row.materialName}
-                          readOnly
+                        <div
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -3375,21 +3458,22 @@ export default function FieldEstimate() {
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             background: "rgba(12, 12, 12, 0.02)",
-                            cursor: "not-allowed",
+                            color: "#0C0C0C",
                           }}
-                          data-testid={`input-materialName-${row.id}`}
-                        />
+                          data-testid={`text-category-${row.id}`}
+                        >
+                          {row.category}
+                        </div>
                       </td>
+
+                      {/* 자재 (드롭다운 또는 텍스트) */}
                       <td
                         style={{
                           padding: "8px",
                           border: "1px solid rgba(12, 12, 12, 0.08)",
                         }}
                       >
-                        <input
-                          type="text"
-                          value={row.specification}
-                          readOnly
+                        <div
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -3398,21 +3482,22 @@ export default function FieldEstimate() {
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             background: "rgba(12, 12, 12, 0.02)",
-                            cursor: "not-allowed",
+                            color: "#0C0C0C",
                           }}
-                          data-testid={`input-specification-${row.id}`}
-                        />
+                          data-testid={`text-materialName-${row.id}`}
+                        >
+                          {row.materialName}
+                        </div>
                       </td>
+
+                      {/* 규격 (읽기전용) */}
                       <td
                         style={{
                           padding: "8px",
                           border: "1px solid rgba(12, 12, 12, 0.08)",
                         }}
                       >
-                        <input
-                          type="text"
-                          value={row.unit}
-                          readOnly
+                        <div
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -3421,21 +3506,22 @@ export default function FieldEstimate() {
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             background: "rgba(12, 12, 12, 0.02)",
-                            cursor: "not-allowed",
+                            color: "#0C0C0C",
                           }}
-                          data-testid={`input-unit-${row.id}`}
-                        />
+                          data-testid={`text-specification-${row.id}`}
+                        >
+                          {row.specification}
+                        </div>
                       </td>
+
+                      {/* 단위 (읽기전용) */}
                       <td
                         style={{
                           padding: "8px",
                           border: "1px solid rgba(12, 12, 12, 0.08)",
                         }}
                       >
-                        <input
-                          type="text"
-                          value={row.standardPrice}
-                          readOnly
+                        <div
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -3444,11 +3530,41 @@ export default function FieldEstimate() {
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             background: "rgba(12, 12, 12, 0.02)",
-                            cursor: "not-allowed",
+                            color: "#0C0C0C",
+                            textAlign: "center",
                           }}
-                          data-testid={`input-standardPrice-${row.id}`}
-                        />
+                          data-testid={`text-unit-${row.id}`}
+                        >
+                          {row.unit}
+                        </div>
                       </td>
+
+                      {/* 기본단가 (읽기전용) */}
+                      <td
+                        style={{
+                          padding: "8px",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                            border: "1px solid rgba(12, 12, 12, 0.06)",
+                            borderRadius: "4px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            background: "rgba(12, 12, 12, 0.02)",
+                            color: "#0C0C0C",
+                            textAlign: "right",
+                          }}
+                          data-testid={`text-standardPrice-${row.id}`}
+                        >
+                          {row.standardPrice.toLocaleString()}
+                        </div>
+                      </td>
+
+                      {/* 수량 (편집 가능, 파란색 테두리) */}
                       <td
                         style={{
                           padding: "8px",
@@ -3456,40 +3572,30 @@ export default function FieldEstimate() {
                         }}
                       >
                         <input
-                          type="number"
+                          type="text"
                           value={row.quantity}
-                          onChange={(e) => {
-                            const quantity = Number(e.target.value) || 0;
-                            const amount = quantity * row.standardPrice;
-                            setMaterialRows(prev =>
-                              prev.map(r =>
-                                r.id === row.id
-                                  ? { ...r, quantity, amount }
-                                  : r
-                              )
-                            );
-                          }}
+                          onChange={(e) => updateMaterialRow(row.id, { quantity: e.target.value })}
                           style={{
                             width: "100%",
                             padding: "8px",
-                            border: "1px solid rgba(12, 12, 12, 0.12)",
+                            border: "2px solid #008FED",
                             borderRadius: "4px",
                             fontFamily: "Pretendard",
                             fontSize: "14px",
+                            textAlign: "right",
                           }}
                           data-testid={`input-quantity-${row.id}`}
                         />
                       </td>
+
+                      {/* 금액 (읽기전용) */}
                       <td
                         style={{
                           padding: "8px",
                           border: "1px solid rgba(12, 12, 12, 0.08)",
                         }}
                       >
-                        <input
-                          type="text"
-                          value={row.amount}
-                          readOnly
+                        <div
                           style={{
                             width: "100%",
                             padding: "8px",
@@ -3498,64 +3604,16 @@ export default function FieldEstimate() {
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             background: "rgba(12, 12, 12, 0.02)",
-                            cursor: "not-allowed",
+                            color: "#0C0C0C",
+                            textAlign: "right",
                           }}
-                          data-testid={`input-amount-${row.id}`}
-                        />
+                          data-testid={`text-amount-${row.id}`}
+                        >
+                          {row.amount.toLocaleString()}
+                        </div>
                       </td>
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <input
-                          type="number"
-                          value={row.deduction}
-                          onChange={(e) => {
-                            const deduction = Number(e.target.value) || 0;
-                            setMaterialRows(prev =>
-                              prev.map(r =>
-                                r.id === row.id
-                                  ? { ...r, deduction }
-                                  : r
-                              )
-                            );
-                          }}
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "1px solid rgba(12, 12, 12, 0.12)",
-                            borderRadius: "4px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                          }}
-                          data-testid={`input-deduction-${row.id}`}
-                        />
-                      </td>
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                          textAlign: "center",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={row.expenseStatus}
-                          onChange={(e) => {
-                            setMaterialRows(prev =>
-                              prev.map(r =>
-                                r.id === row.id
-                                  ? { ...r, expenseStatus: e.target.checked }
-                                  : r
-                              )
-                            );
-                          }}
-                          style={{ cursor: "pointer" }}
-                          data-testid={`checkbox-expenseStatus-${row.id}`}
-                        />
-                      </td>
+
+                      {/* 비고 (편집 가능, 파란색 테두리, 넓음) */}
                       <td
                         style={{
                           padding: "8px",
@@ -3564,25 +3622,17 @@ export default function FieldEstimate() {
                       >
                         <input
                           type="text"
-                          value={row.request}
-                          onChange={(e) => {
-                            setMaterialRows(prev =>
-                              prev.map(r =>
-                                r.id === row.id
-                                  ? { ...r, request: e.target.value }
-                                  : r
-                              )
-                            );
-                          }}
+                          value={row.note}
+                          onChange={(e) => updateMaterialRow(row.id, { note: e.target.value })}
                           style={{
                             width: "100%",
                             padding: "8px",
-                            border: "1px solid rgba(12, 12, 12, 0.12)",
+                            border: "2px solid #008FED",
                             borderRadius: "4px",
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                           }}
-                          data-testid={`input-request-${row.id}`}
+                          data-testid={`input-note-${row.id}`}
                         />
                       </td>
                     </tr>
