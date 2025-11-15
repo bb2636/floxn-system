@@ -860,35 +860,176 @@ export default function FieldReport() {
 
         {/* 증빙자료 탭 */}
         <TabsContent value="증빙자료">
-          <Card>
-            <CardContent className="p-6">
-              {documents && documents.length > 0 ? (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold">등록된 증빙자료 ({documents.length}건)</h3>
-                  <div className="space-y-2">
-                    {documents.map((doc) => (
-                      <div 
-                        key={doc.id} 
-                        className="flex items-center justify-between p-3 border rounded-lg hover-elevate"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="text-sm font-medium">{doc.fileName}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {doc.category} • {(doc.fileSize / 1024).toFixed(1)} KB
-                          </div>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(doc.createdAt).toLocaleDateString('ko-KR')}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+          <div>
+            {documents && documents.length > 0 ? (
+              <>
+                {/* 헤더 */}
+                <div className="flex items-center justify-between mb-6">
+                  <h2
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    증빙자료 {documents.length}
+                  </h2>
+                  <button
+                    onClick={() => {
+                      // 전체 다운로드 함수
+                      documents.forEach((doc) => {
+                        const link = document.createElement('a');
+                        // Base64 데이터에 data URL prefix 추가
+                        const dataUrl = doc.fileData.startsWith('data:') 
+                          ? doc.fileData 
+                          : `data:${doc.fileType};base64,${doc.fileData}`;
+                        link.href = dataUrl;
+                        link.download = doc.fileName;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      });
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
+                    style={{
+                      background: "rgba(0, 143, 237, 0.1)",
+                      border: "1px solid rgba(0, 143, 237, 0.3)",
+                    }}
+                    data-testid="button-download-all"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: "#008FED",
+                      }}
+                    >
+                      전체 다운로드
+                    </span>
+                  </button>
                 </div>
-              ) : (
-                <p className="text-muted-foreground">등록된 증빙자료가 없습니다.</p>
-              )}
-            </CardContent>
-          </Card>
+              <div className="space-y-6">
+                {/* 카테고리별 그룹핑 */}
+                {["현장", "수리중", "복구완료", "청구", "개인정보"].map((category) => {
+                  const categoryDocs = documents.filter(doc => doc.category === category);
+                  if (categoryDocs.length === 0) return null;
+
+                  return (
+                    <Card key={category}>
+                      <CardHeader>
+                        <CardTitle
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 600,
+                            color: "rgba(12, 12, 12, 0.8)",
+                          }}
+                        >
+                          {category} {categoryDocs.length}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          {categoryDocs.map((doc) => (
+                            <div
+                              key={doc.id}
+                              className="flex items-center justify-between"
+                              style={{
+                                padding: "12px",
+                                background: "rgba(12, 12, 12, 0.02)",
+                                borderRadius: "8px",
+                              }}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div
+                                  style={{
+                                    width: "40px",
+                                    height: "40px",
+                                    borderRadius: "50%",
+                                    background: "rgba(12, 12, 12, 0.05)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                  }}
+                                >
+                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-7-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    <path d="M13 2v7h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  </svg>
+                                </div>
+                                <span
+                                  style={{
+                                    fontFamily: "Pretendard",
+                                    fontSize: "14px",
+                                    fontWeight: 500,
+                                    color: "#0C0C0C",
+                                  }}
+                                >
+                                  {doc.fileName}
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  // Base64 데이터에 data URL prefix 추가
+                                  const dataUrl = doc.fileData.startsWith('data:') 
+                                    ? doc.fileData 
+                                    : `data:${doc.fileType};base64,${doc.fileData}`;
+                                  link.href = dataUrl;
+                                  link.download = doc.fileName;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }}
+                                style={{
+                                  width: "32px",
+                                  height: "32px",
+                                  borderRadius: "4px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  background: "rgba(0, 143, 237, 0.1)",
+                                }}
+                                className="hover-elevate"
+                                data-testid={`button-download-document-${doc.id}`}
+                              >
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="p-6">
+                  <p
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      textAlign: "center",
+                      padding: "40px 0",
+                    }}
+                  >
+                    등록된 증빙자료가 없습니다.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         {/* 견적서 탭 */}
