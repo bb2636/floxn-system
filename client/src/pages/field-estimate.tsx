@@ -2588,35 +2588,149 @@ export default function FieldEstimate() {
                     2025-00-00
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: "6px" }}>
+              </div>
+              
+              {/* 필터 UI */}
+              <div
+                style={{
+                  padding: "16px",
+                  background: "#FAFAFA",
+                  border: "1px solid #E5E7EB",
+                  borderRadius: "6px",
+                  marginBottom: "12px",
+                }}
+              >
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  {/* 장소 드롭다운 */}
+                  <div style={{ flex: 1 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "#686A6E",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      장소
+                    </label>
+                    <Select>
+                      <SelectTrigger
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          background: "white",
+                        }}
+                        data-testid="select-labor-filter-location"
+                      >
+                        <SelectValue placeholder="가구공사" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="가구공사">가구공사</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* 공사명 드롭다운 */}
+                  <div style={{ flex: 1 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "#686A6E",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      공사명
+                    </label>
+                    <Select>
+                      <SelectTrigger
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          background: "white",
+                        }}
+                        data-testid="select-labor-filter-work"
+                      >
+                        <SelectValue placeholder="공사명 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="코킹">코킹</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* 세부공사 드롭다운 */}
+                  <div style={{ flex: 1 }}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "#686A6E",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      세부공사
+                    </label>
+                    <Select>
+                      <SelectTrigger
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          background: "white",
+                        }}
+                        data-testid="select-labor-filter-detail"
+                      >
+                        <SelectValue placeholder="세부공사 선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="실리콘">실리콘</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* 항목 추가 버튼 */}
                   <button
                     style={{
-                      padding: "6px 12px",
-                      background: "white",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                      borderRadius: "4px",
+                      marginTop: "22px",
+                      padding: "9px 16px",
+                      background: "#3B82F6",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
+                      fontWeight: 500,
                       cursor: "pointer",
+                      whiteSpace: "nowrap",
                     }}
-                    data-testid="button-add-row-labor"
+                    data-testid="button-add-labor-item"
                   >
-                    월 추가
+                    항목 추가
                   </button>
+                </div>
+
+                {/* 삭제 버튼 */}
+                <div style={{ marginTop: "12px" }}>
                   <button
                     style={{
                       padding: "6px 12px",
                       background: "white",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      border: "1px solid #D02B20",
                       borderRadius: "4px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
+                      fontSize: "13px",
                       color: "#D02B20",
                       cursor: "pointer",
                     }}
-                    data-testid="button-delete-row-labor"
+                    data-testid="button-delete-selected-labor"
                   >
-                    행 삭제
+                    선 삭제
                   </button>
                 </div>
               </div>
