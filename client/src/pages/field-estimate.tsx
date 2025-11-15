@@ -2201,15 +2201,125 @@ export default function FieldEstimate() {
                           <td style={{ padding: "8px", textAlign: "center" }}>
                             <input type="checkbox" />
                           </td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.category}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.location}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.workName}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.damageArea}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.damageWidth}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.damageHeight}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.repairWidth}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.repairArea}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.note}</td>
+                          <td style={{ padding: "8px" }}>
+                            <select
+                              value={row.category}
+                              onChange={(e) => updateRow(row.id, 'category', e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "6px 8px",
+                                border: "1px solid rgba(12, 12, 12, 0.1)",
+                                borderRadius: "4px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                              }}
+                            >
+                              {roomCategories.map((cat) => (
+                                <option key={cat} value={cat}>{cat}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{ padding: "8px" }}>
+                            <select
+                              value={row.location}
+                              onChange={(e) => updateRow(row.id, 'location', e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "6px 8px",
+                                border: "1px solid rgba(12, 12, 12, 0.1)",
+                                borderRadius: "4px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                              }}
+                            >
+                              {locations.map((loc) => (
+                                <option key={loc} value={loc}>{loc}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{ padding: "8px" }}>
+                            <select
+                              value={row.workName}
+                              onChange={(e) => updateRow(row.id, 'workName', e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "6px 8px",
+                                border: "1px solid rgba(12, 12, 12, 0.1)",
+                                borderRadius: "4px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                              }}
+                            >
+                              {workNames.map((work) => (
+                                <option key={work} value={work}>{work}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right", background: "rgba(12, 12, 12, 0.02)" }}>{row.damageArea}</td>
+                          <td style={{ padding: "8px" }}>
+                            <input
+                              type="text"
+                              value={row.damageWidth}
+                              onChange={(e) => updateRow(row.id, 'damageWidth', e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "6px 8px",
+                                border: "1px solid rgba(12, 12, 12, 0.1)",
+                                borderRadius: "4px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                textAlign: "right",
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: "8px" }}>
+                            <input
+                              type="text"
+                              value={row.damageHeight}
+                              onChange={(e) => updateRow(row.id, 'damageHeight', e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "6px 8px",
+                                border: "1px solid rgba(12, 12, 12, 0.1)",
+                                borderRadius: "4px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                textAlign: "right",
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: "8px" }}>
+                            <input
+                              type="text"
+                              value={row.repairWidth}
+                              onChange={(e) => updateRow(row.id, 'repairWidth', e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "6px 8px",
+                                border: "1px solid rgba(12, 12, 12, 0.1)",
+                                borderRadius: "4px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                textAlign: "right",
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right", background: "rgba(12, 12, 12, 0.02)" }}>{row.repairArea}</td>
+                          <td style={{ padding: "8px" }}>
+                            <input
+                              type="text"
+                              value={row.note}
+                              onChange={(e) => updateRow(row.id, 'note', e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "6px 8px",
+                                border: "1px solid rgba(12, 12, 12, 0.1)",
+                                borderRadius: "4px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                              }}
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
