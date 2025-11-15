@@ -1396,6 +1396,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/labor-costs/options", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const options = await storage.getLaborCostOptions();
+      res.json(options);
+    } catch (error) {
+      console.error("Get labor cost options error:", error);
+      res.status(500).json({ error: "노무비 옵션을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Create new labor cost item (admin only)
   app.post("/api/labor-costs", async (req, res) => {
     if (!req.session?.userId) {

@@ -101,6 +101,11 @@ export interface IStorage {
   updateMasterData(id: string, data: Partial<InsertMasterData>): Promise<MasterData | null>;
   // Labor cost methods
   getLaborCosts(filters?: { category?: string; workName?: string; detailWork?: string }): Promise<LaborCost[]>;
+  getLaborCostOptions(): Promise<{
+    categories: string[];
+    workNamesByCategory: Record<string, string[]>;
+    detailWorksByWork: Record<string, string[]>;
+  }>;
   createLaborCost(data: InsertLaborCost): Promise<LaborCost>;
   deleteLaborCost(id: string): Promise<void>;
 }
@@ -1491,6 +1496,14 @@ export class MemStorage implements IStorage {
     throw new Error("Labor cost methods not implemented in MemStorage");
   }
 
+  async getLaborCostOptions(): Promise<{
+    categories: string[];
+    workNamesByCategory: Record<string, string[]>;
+    detailWorksByWork: Record<string, string[]>;
+  }> {
+    throw new Error("Labor cost methods not implemented in MemStorage");
+  }
+
   async createLaborCost(data: InsertLaborCost): Promise<LaborCost> {
     throw new Error("Labor cost methods not implemented in MemStorage");
   }
@@ -2445,6 +2458,49 @@ export class DbStorage implements IStorage {
     }
     
     return await query.orderBy(asc(laborCosts.category), asc(laborCosts.workName));
+  }
+
+  async getLaborCostOptions(): Promise<{
+    categories: string[];
+    workNamesByCategory: Record<string, string[]>;
+    detailWorksByWork: Record<string, string[]>;
+  }> {
+    const allCosts = await db.select().from(laborCosts).orderBy(asc(laborCosts.category), asc(laborCosts.workName));
+    
+    const categories = new Set<string>();
+    const workNamesByCategory: Record<string, Set<string>> = {};
+    const detailWorksByWork: Record<string, Set<string>> = {};
+    
+    for (const cost of allCosts) {
+      const category = cost.category?.trim();
+      const workName = cost.workName?.trim();
+      const detailWork = cost.detailWork?.trim();
+      
+      if (!category || !workName || !detailWork) continue;
+      
+      categories.add(category);
+      
+      if (!workNamesByCategory[category]) {
+        workNamesByCategory[category] = new Set();
+      }
+      workNamesByCategory[category].add(workName);
+      
+      const workKey = `${category}|${workName}`;
+      if (!detailWorksByWork[workKey]) {
+        detailWorksByWork[workKey] = new Set();
+      }
+      detailWorksByWork[workKey].add(detailWork);
+    }
+    
+    return {
+      categories: Array.from(categories),
+      workNamesByCategory: Object.fromEntries(
+        Object.entries(workNamesByCategory).map(([k, v]) => [k, Array.from(v)])
+      ),
+      detailWorksByWork: Object.fromEntries(
+        Object.entries(detailWorksByWork).map(([k, v]) => [k, Array.from(v)])
+      ),
+    };
   }
 
   async createLaborCost(data: InsertLaborCost): Promise<LaborCost> {

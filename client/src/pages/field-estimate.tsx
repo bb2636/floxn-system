@@ -71,6 +71,21 @@ export default function FieldEstimate() {
     queryKey: ['/api/labor-costs'],
   });
 
+  // 노무비 캐스케이딩 선택기 옵션 조회
+  const { data: laborOptions } = useQuery<{
+    categories: string[];
+    workNamesByCategory: Record<string, string[]>;
+    detailWorksByWork: Record<string, string[]>;
+  }>({
+    queryKey: ['/api/labor-costs/options'],
+  });
+
+  // 노무비 캐스케이딩 선택기 state
+  const [selectedCostCategory, setSelectedCostCategory] = useState("");
+  const [selectedCostWorkName, setSelectedCostWorkName] = useState("");
+  const [selectedCostDetailWork, setSelectedCostDetailWork] = useState("");
+  const [selectedCostType, setSelectedCostType] = useState(""); // "노무비" or "일위대가"
+
   // 카테고리별 마스터 데이터 필터링
   const roomCategories = masterDataList
     .filter(item => item.category === 'room_category')
@@ -203,33 +218,93 @@ export default function FieldEstimate() {
 
   // ===== 노무비 관련 함수 =====
   
-  // 공종 리스트
-  const laborCategories = Array.from(new Set(laborCostData.map(item => item.category)));
+  // 캐스케이딩 필터링 옵션 (useMemo로 성능 최적화)
+  const availableWorkNames = useMemo(() => {
+    if (!laborOptions || !selectedCostCategory) return [];
+    return laborOptions.workNamesByCategory[selectedCostCategory] || [];
+  }, [laborOptions, selectedCostCategory]);
+
+  const availableDetailWorks = useMemo(() => {
+    if (!laborOptions || !selectedCostCategory || !selectedCostWorkName) return [];
+    const workKey = `${selectedCostCategory}|${selectedCostWorkName}`;
+    return laborOptions.detailWorksByWork[workKey] || [];
+  }, [laborOptions, selectedCostCategory, selectedCostWorkName]);
+
+  // 캐스케이딩 선택: 상위 선택 변경 시 하위 선택 초기화
+  useEffect(() => {
+    setSelectedCostWorkName("");
+    setSelectedCostDetailWork("");
+    setSelectedCostType("");
+  }, [selectedCostCategory]);
+
+  useEffect(() => {
+    setSelectedCostDetailWork("");
+    setSelectedCostType("");
+  }, [selectedCostWorkName]);
+
+  useEffect(() => {
+    setSelectedCostType("");
+  }, [selectedCostDetailWork]);
   
-  // 노무비 행 추가
-  const addLaborRow = () => {
-    if (laborCostData.length === 0) {
+  // 노무비 항목 추가 (선택한 조합의 모든 DB 항목을 테이블에 추가)
+  const handleAddLaborItems = () => {
+    if (!selectedCostCategory || !selectedCostWorkName || !selectedCostDetailWork) {
       toast({
-        title: "잠시만 기다려주세요",
-        description: "노무비 데이터를 로딩 중입니다.",
+        title: "선택을 완료해주세요",
+        description: "공종, 공사명, 세부공사를 모두 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // "누수탐지 비용"이 아닌 경우 노무비/일위대가 선택 필수
+    if (selectedCostCategory !== "누수탐지 비용" && !selectedCostType) {
+      toast({
+        title: "타입을 선택해주세요",
+        description: "노무비 또는 일위대가를 선택해주세요.",
         variant: "destructive",
       });
       return;
     }
     
-    const firstCategory = laborCategories[0] || "";
+    // 선택한 조합에 맞는 노무비 DB 항목 필터링
+    const filtered = laborCostData.filter(item => {
+      const matchesBase =
+        item.category === selectedCostCategory &&
+        item.workName === selectedCostWorkName &&
+        item.detailWork === selectedCostDetailWork;
+      
+      // "누수탐지 비용"이면 타입 필터링 없이 모두 추가
+      if (selectedCostCategory === "누수탐지 비용") {
+        return matchesBase;
+      }
+      
+      // 노무비: priceStandard에 "인" 포함
+      // 일위대가: priceStandard에 "인" 없음
+      const isPerson = item.priceStandard.includes("인");
+      return matchesBase && (selectedCostType === "노무비" ? isPerson : !isPerson);
+    });
     
-    // 빈 행으로 시작 (사용자가 직접 선택하도록)
-    const newRow: LaborCostRow = {
+    if (filtered.length === 0) {
+      toast({
+        title: "항목이 없습니다",
+        description: "선택한 조합에 해당하는 항목이 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // 필터링된 항목들을 테이블 행으로 변환
+    const newRows: LaborCostRow[] = filtered.map(item => ({
       id: `labor-${Date.now()}-${Math.random()}`,
-      laborItemId: "",
-      category: firstCategory,
-      workName: "",
-      detailWork: "",
-      detailItem: "",
-      priceStandard: "",
-      unit: "",
-      standardPrice: "0",
+      laborItemId: item.id.toString(),
+      category: item.category,
+      workName: item.workName,
+      detailWork: item.detailWork,
+      detailItem: item.detailItem || "",
+      priceStandard: item.priceStandard,
+      unit: item.unit,
+      standardPrice: item.standardPrice.toString(),
       quantity: "1",
       applicationRate: "",
       pricePerSqm: "",
@@ -237,9 +312,14 @@ export default function FieldEstimate() {
       deduction: "",
       expenseStatus: "",
       request: "",
-    };
+    }));
     
-    setLaborCostRows(prev => [...prev, newRow]);
+    setLaborCostRows(prev => [...prev, ...newRows]);
+    
+    toast({
+      title: "항목이 추가되었습니다",
+      description: `${filtered.length}개의 항목이 테이블에 추가되었습니다.`,
+    });
   };
   
   // 선택된 노무비 행 삭제
