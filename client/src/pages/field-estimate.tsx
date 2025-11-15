@@ -46,8 +46,12 @@ interface LaborCostRow {
     molding: boolean; // 몰이
   };
   pricePerSqm: string; // 기준가(㎡)
+  damageArea: string; // 피해면적
+  deduction: string; // 공제(원)
+  expenseStatus: string; // 경비여부
   salesMarkupRate: string; // 판매단가율 (editable)
   amount: string; // 금액(원) (calculated)
+  request: string; // 요청
   includeInEstimate: boolean; // 견적입력 (checkbox)
 }
 
@@ -70,6 +74,7 @@ interface MaterialRow {
   quantity: string; // 수량 (editable)
   amount: number; // 금액 (계산값)
   note: string; // 비고 (editable)
+  request: string; // 요청
 }
 
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
@@ -97,6 +102,7 @@ export default function FieldEstimate() {
       quantity: "",
       amount: 0,
       note: "",
+      request: "",
     };
   };
 
@@ -391,8 +397,12 @@ export default function FieldEstimate() {
         molding: false,
       },
       pricePerSqm: "30",
+      damageArea: "",
+      deduction: "",
+      expenseStatus: "",
       salesMarkupRate: "30",
       amount: item.standardPrice.toString(),
+      request: "",
       includeInEstimate: false,
     }));
     
@@ -481,6 +491,7 @@ export default function FieldEstimate() {
       quantity: "1",
       amount: selectedMaterial.standardPrice,
       note: "",
+      request: "",
     };
 
     setMaterialRows(prev => [...prev, newRow]);
@@ -2611,20 +2622,54 @@ export default function FieldEstimate() {
                       </tr>
                     </thead>
                     <tbody>
-                      {laborCostRows.map((row) => (
+                      {laborCostRows.map((row, index) => (
                         <tr key={row.id} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
                           <td style={{ padding: "8px", textAlign: "center" }}>
                             <input type="checkbox" />
                           </td>
                           <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.category}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.workName}</td>
+                          <td 
+                            style={{ 
+                              padding: "8px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              position: "relative",
+                              ...(index === 0 && {
+                                background: "rgba(0, 143, 237, 0.04)",
+                                border: "2px solid rgba(0, 143, 237, 0.8)",
+                                borderRadius: "8px",
+                              })
+                            }}
+                          >
+                            {row.workName}
+                            {index === 0 && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  right: "-1px",
+                                  top: "50%",
+                                  transform: "translateY(-50%)",
+                                  width: "2px",
+                                  height: "15px",
+                                  background: "#008FED",
+                                }}
+                              />
+                            )}
+                          </td>
                           <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.detailWork}</td>
                           <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.detailItem}</td>
                           <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.priceStandard}</td>
                           <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.unit}</td>
                           <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.standardPrice}</td>
                           <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.quantity}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.applicationRate}</td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "center" }}>
+                            {[
+                              row.applicationRates.ceiling && "천장",
+                              row.applicationRates.wall && "벽체",
+                              row.applicationRates.floor && "바닥",
+                              row.applicationRates.molding && "몰이"
+                            ].filter(Boolean).join(", ")}
+                          </td>
                           <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.pricePerSqm}</td>
                           <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.damageArea}</td>
                           <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.deduction}</td>
