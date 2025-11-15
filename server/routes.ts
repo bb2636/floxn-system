@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, reviewCaseSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -483,6 +483,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Submit field survey error:", error);
       res.status(500).json({ error: "현장조사 보고서 제출 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Review case endpoint (관리자 only)
+  app.patch("/api/cases/:caseId/review", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check authorization (관리자만 가능)
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      
+      // Validate review data with Zod
+      const parsed = reviewCaseSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          error: "입력 데이터가 유효하지 않습니다",
+          details: parsed.error.errors 
+        });
+      }
+
+      const { decision, reviewComment } = parsed.data;
+
+      // 케이스 확인
+      const existingCase = await storage.getCaseById(caseId);
+      if (!existingCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 제출된 보고서만 심사 가능
+      if (existingCase.fieldSurveyStatus !== "submitted") {
+        return res.status(400).json({ 
+          error: "제출된 보고서만 심사할 수 있습니다" 
+        });
+      }
+
+      // 심사 처리
+      const updatedCase = await storage.reviewCase(
+        caseId, 
+        decision, 
+        reviewComment || null, 
+        req.session.userId
+      );
+      
+      if (!updatedCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      res.json({ success: true, case: updatedCase });
+    } catch (error) {
+      console.error("Review case error:", error);
+      res.status(500).json({ error: "보고서 심사 중 오류가 발생했습니다" });
     }
   });
 

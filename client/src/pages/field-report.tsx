@@ -3,6 +3,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,6 +97,14 @@ export default function FieldReport() {
   // 현장입력에서 선택한 케이스 ID 가져오기
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
   
+  // 현재 사용자 정보 가져오기
+  const { data: currentUser, isLoading: isUserLoading } = useQuery<{ id: string; role: string }>({
+    queryKey: ["/api/user"],
+  });
+  
+  const isAdmin = currentUser?.role === "관리자";
+  const isPartner = currentUser?.role === "협력사";
+  
   // 통합 보고서 데이터 가져오기
   const { data: reportData, isLoading } = useQuery<ReportData>({
     queryKey: ["/api/field-surveys", selectedCaseId, "report"],
@@ -106,6 +116,11 @@ export default function FieldReport() {
   
   // 제출 확인 다이얼로그 상태
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
+  
+  // 심사 다이얼로그 상태
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [reviewDecision, setReviewDecision] = useState<"승인" | "비승인">("승인");
+  const [reviewComment, setReviewComment] = useState("");
 
   // reportData가 변경될 때 additionalNotes 상태 업데이트
   useEffect(() => {
@@ -151,11 +166,43 @@ export default function FieldReport() {
         description: "현장출동보고서가 성공적으로 제출되었습니다.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
+      setShowSubmitDialog(false);
     },
     onError: (error: Error) => {
       toast({
         title: "제출 실패",
         description: error.message || "보고서 제출 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 보고서 심사 mutation
+  const reviewMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/api/cases/${selectedCaseId}/review`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          decision: reviewDecision,
+          reviewComment: reviewComment || "",
+        }),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "심사 완료",
+        description: `보고서가 ${reviewDecision} 처리되었습니다.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      setShowReviewDialog(false);
+      setReviewDecision("승인");
+      setReviewComment("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "심사 실패",
+        description: error.message || "보고서 심사 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     },
@@ -225,33 +272,83 @@ export default function FieldReport() {
           />
         </div>
 
-        {/* 저장/제출 버튼 */}
+        {/* 역할별 버튼 */}
         <div className="flex items-center gap-3">
-          <Button
-            data-testid="button-save-notes"
-            variant="outline"
-            onClick={() => saveNotesMutation.mutate(additionalNotes)}
-            disabled={saveNotesMutation.isPending}
-            style={{
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: "500",
-            }}
-          >
-            {saveNotesMutation.isPending ? "저장 중..." : "저장"}
-          </Button>
-          <Button
-            data-testid="button-submit-report"
-            onClick={() => setShowSubmitDialog(true)}
-            disabled={submitReportMutation.isPending || !completionStatus.isComplete || caseData.fieldSurveyStatus === "submitted"}
-            style={{
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: "500",
-            }}
-          >
-            {submitReportMutation.isPending ? "제출 중..." : "제출"}
-          </Button>
+          {/* 역할 확인 중일 때는 버튼 표시하지 않음 */}
+          {!isUserLoading && isPartner && (
+            <>
+              <Button
+                data-testid="button-save-notes"
+                variant="outline"
+                onClick={() => saveNotesMutation.mutate(additionalNotes)}
+                disabled={saveNotesMutation.isPending || caseData.fieldSurveyStatus === "submitted"}
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                {saveNotesMutation.isPending ? "저장 중..." : "저장"}
+              </Button>
+              <Button
+                data-testid="button-submit-report"
+                onClick={() => setShowSubmitDialog(true)}
+                disabled={submitReportMutation.isPending || !completionStatus.isComplete || caseData.fieldSurveyStatus === "submitted"}
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                {submitReportMutation.isPending ? "제출 중..." : "제출"}
+              </Button>
+            </>
+          )}
+          
+          {!isUserLoading && isAdmin && (
+            <>
+              <Button
+                data-testid="button-pdf-download"
+                variant="outline"
+                onClick={() => {
+                  toast({ title: "준비 중", description: "PDF 저장 기능은 준비 중입니다." });
+                }}
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                PDF 저장
+              </Button>
+              <Button
+                data-testid="button-email-send"
+                variant="outline"
+                onClick={() => {
+                  toast({ title: "준비 중", description: "이메일 전송 기능은 준비 중입니다." });
+                }}
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                이메일 전송
+              </Button>
+              <Button
+                data-testid="button-review"
+                onClick={() => setShowReviewDialog(true)}
+                disabled={caseData.fieldSurveyStatus !== "submitted" || reviewMutation.isPending}
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                }}
+              >
+                {reviewMutation.isPending ? "심사 중..." : "심사"}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -291,6 +388,154 @@ export default function FieldReport() {
             <AlertDialogAction
               data-testid="button-confirm-submit"
               onClick={() => submitReportMutation.mutate()}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              제출
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 심사 다이얼로그 */}
+      <AlertDialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "18px",
+                fontWeight: "600",
+              }}
+            >
+              심사하기
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          {/* 심사중인 건 정보 */}
+          <div className="space-y-2 mb-4">
+            <div
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 400,
+                color: "rgba(12, 12, 12, 0.5)",
+              }}
+            >
+              심사중인 건
+            </div>
+            <div 
+              className="p-3 rounded-lg" 
+              style={{ background: "rgba(12, 12, 12, 0.03)" }}
+            >
+              <div
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
+                }}
+              >
+                {caseData.insuranceCompany || "보험사 미정"} {caseData.insuranceAccidentNo || ""}
+              </div>
+              <div
+                className="mt-1"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "13px",
+                  color: "rgba(12, 12, 12, 0.6)",
+                }}
+              >
+                접수일: {caseData.createdAt ? new Date(caseData.createdAt).toLocaleDateString('ko-KR') : "-"} | 
+                처리담당: {caseData.assignedPartner || "-"} | 
+                의뢰일: {caseData.assignmentDate || "-"} | 
+                긴급여부: {caseData.urgency || "-"}
+              </div>
+            </div>
+          </div>
+
+          {/* 심사결과 */}
+          <div className="space-y-3 mb-4">
+            <Label
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+            >
+              심사결과
+            </Label>
+            <RadioGroup value={reviewDecision} onValueChange={(value) => setReviewDecision(value as "승인" | "비승인")}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="승인" id="approve" data-testid="radio-approve" />
+                <Label htmlFor="approve" style={{ fontFamily: "Pretendard", fontSize: "14px", cursor: "pointer" }}>
+                  승인
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="비승인" id="reject" data-testid="radio-reject" />
+                <Label htmlFor="reject" style={{ fontFamily: "Pretendard", fontSize: "14px", cursor: "pointer" }}>
+                  비승인
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* 검토 의견 */}
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between items-center">
+              <Label
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                }}
+              >
+                검토 의견(선택)
+              </Label>
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "12px",
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+              >
+                {reviewComment.length}/800
+              </span>
+            </div>
+            <Textarea
+              data-testid="textarea-review-comment"
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value.slice(0, 800))}
+              placeholder="검토 의견을 입력해주세요"
+              className="resize-none"
+              rows={4}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              data-testid="button-cancel-review"
+              onClick={() => {
+                setReviewDecision("승인");
+                setReviewComment("");
+              }}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-review"
+              onClick={() => reviewMutation.mutate()}
               style={{
                 fontFamily: "Pretendard",
                 fontSize: "14px",
@@ -1488,7 +1733,7 @@ export default function FieldReport() {
                 <Textarea
                   id="additional-notes"
                   data-testid="textarea-additional-notes"
-                  placeholder="추가 메모 또는 특별 사항을 입력해주세요"
+                  placeholder={isAdmin ? "" : "추가 메모 또는 특별 사항을 입력해주세요"}
                   value={additionalNotes}
                   onChange={(e) => {
                     const value = e.target.value;
@@ -1497,6 +1742,7 @@ export default function FieldReport() {
                     }
                   }}
                   rows={10}
+                  readOnly={isAdmin}
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",

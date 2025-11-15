@@ -60,6 +60,7 @@ export interface IStorage {
   updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null>;
   updateCaseAdditionalNotes(caseId: string, additionalNotes: string | null): Promise<Case | null>;
   submitFieldSurvey(caseId: string): Promise<Case | null>;
+  reviewCase(caseId: string, decision: "승인" | "비승인", reviewComment: string | null, reviewedBy: string): Promise<Case | null>;
   getPartnerStats(): Promise<PartnerStats[]>;
   createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate>;
   getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]>;
@@ -1133,6 +1134,26 @@ export class MemStorage implements IStorage {
     return updatedCase;
   }
 
+  async reviewCase(caseId: string, decision: "승인" | "비승인", reviewComment: string | null, reviewedBy: string): Promise<Case | null> {
+    const caseItem = this.cases.get(caseId);
+    if (!caseItem) {
+      return null;
+    }
+    
+    const updatedCase: Case = {
+      ...caseItem,
+      reviewDecision: decision,
+      reviewComment: reviewComment || null,
+      reviewedAt: getKSTTimestamp(),
+      reviewedBy: reviewedBy,
+      status: decision === "승인" ? "1차승인" : "반려",
+      updatedAt: getKSTDate(),
+    };
+    
+    this.cases.set(caseId, updatedCase);
+    return updatedCase;
+  }
+
   async getPartnerStats(): Promise<PartnerStats[]> {
     const allCases = Array.from(this.cases.values());
     const allUsers = Array.from(this.users.values());
@@ -1970,6 +1991,29 @@ export class DbStorage implements IStorage {
       .set({ 
         fieldSurveyStatus: "submitted",
         status: "제출",
+        updatedAt: currentDate 
+      })
+      .where(eq(cases.id, caseId))
+      .returning();
+    
+    if (result.length === 0) {
+      return null;
+    }
+    
+    return result[0];
+  }
+
+  async reviewCase(caseId: string, decision: "승인" | "비승인", reviewComment: string | null, reviewedBy: string): Promise<Case | null> {
+    const currentDate = getKSTDate();
+    const currentTimestamp = getKSTTimestamp();
+    
+    const result = await db.update(cases)
+      .set({ 
+        reviewDecision: decision,
+        reviewComment: reviewComment || null,
+        reviewedAt: currentTimestamp,
+        reviewedBy: reviewedBy,
+        status: decision === "승인" ? "1차승인" : "반려",
         updatedAt: currentDate 
       })
       .where(eq(cases.id, caseId))

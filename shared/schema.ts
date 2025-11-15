@@ -179,13 +179,19 @@ export const cases = pgTable("cases", {
   contractorRepairDate: text("contractor_repair_date"), // 공사업체보수 배당
   completionDate: text("completion_date"), // 완공일
   
+  // 심사 관련 필드
+  reviewDecision: text("review_decision"), // 심사결과: "승인" | "비승인" | null
+  reviewComment: text("review_comment"), // 검토 의견
+  reviewedAt: text("reviewed_at"), // 심사 일시
+  reviewedBy: varchar("reviewed_by").references(() => users.id), // 심사자 ID
+  
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
 
-export const CASE_STATUSES = ["작성중", "제출", "검토중", "완료"] as const;
+export const CASE_STATUSES = ["작성중", "제출", "검토중", "1차승인", "반려", "완료"] as const;
 export type CaseStatus = typeof CASE_STATUSES[number];
 
 export const insertCaseSchema = createInsertSchema(cases).omit({
@@ -228,6 +234,14 @@ export const insertProgressUpdateSchema = createInsertSchema(progressUpdates).om
 
 export type InsertProgressUpdate = z.infer<typeof insertProgressUpdateSchema>;
 export type ProgressUpdate = typeof progressUpdates.$inferSelect;
+
+// 보고서 심사 스키마
+export const reviewCaseSchema = z.object({
+  decision: z.enum(["승인", "비승인"]),
+  reviewComment: z.string().max(800, "검토 의견은 800자를 초과할 수 없습니다").optional().or(z.literal("")),
+});
+
+export type ReviewCaseInput = z.infer<typeof reviewCaseSchema>;
 
 // 역할 권한 관리 테이블
 export const rolePermissions = pgTable("role_permissions", {
