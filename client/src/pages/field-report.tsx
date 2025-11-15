@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Drawing, CaseDocument as SchemaDocument } from "@shared/schema";
 
 interface Case {
   id: string;
@@ -36,28 +37,6 @@ interface Case {
   recoveryMethodType: string | null;
 }
 
-interface Drawing {
-  id: string;
-  caseId: string;
-  uploadedImages: Array<{
-    id: string;
-    src: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }>;
-}
-
-interface CaseDocument {
-  id: string;
-  caseId: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  category: string;
-  createdAt: string;
-}
 
 interface Estimate {
   id: string;
@@ -79,7 +58,7 @@ interface EstimateRow {
 interface ReportData {
   case: Case;
   drawing: Drawing | null;
-  documents: CaseDocument[];
+  documents: SchemaDocument[];
   estimate: {
     estimate: Estimate | null;
     rows: EstimateRow[];
@@ -651,28 +630,232 @@ export default function FieldReport() {
 
         {/* 도면 탭 */}
         <TabsContent value="도면">
-          <Card>
-            <CardContent className="p-6">
-              {drawing && drawing.uploadedImages && drawing.uploadedImages.length > 0 ? (
-                <div className="space-y-4">
-                  <h3 className="text-sm font-semibold">업로드된 도면 이미지</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    {drawing.uploadedImages.map((img) => (
-                      <div key={img.id} className="border rounded-lg p-2">
-                        <img 
-                          src={img.src} 
-                          alt={`도면 이미지 ${img.id}`}
-                          className="w-full h-auto rounded"
-                        />
+          <div>
+            <h2
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "20px",
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+                marginBottom: "24px",
+              }}
+            >
+              피해 복구방식 및 처리 유형
+            </h2>
+
+            {/* 도면 작성 */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}
+                >
+                  도면 작성
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {drawing ? (
+                  <div
+                    className="relative overflow-auto"
+                    style={{
+                      width: "100%",
+                      height: "600px",
+                      background: "white",
+                      backgroundImage: `
+                        linear-gradient(rgba(218, 218, 218, 0.5) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(218, 218, 218, 0.5) 1px, transparent 1px)
+                      `,
+                      backgroundSize: "10px 10px",
+                    }}
+                  >
+                    {/* 업로드된 이미지 */}
+                    {drawing.uploadedImages?.map((img) => (
+                      <img
+                        key={img.id}
+                        src={img.src}
+                        alt={`도면 이미지 ${img.id}`}
+                        style={{
+                          position: "absolute",
+                          left: `${img.x}px`,
+                          top: `${img.y}px`,
+                          width: `${img.width}px`,
+                          height: `${img.height}px`,
+                          userSelect: "none",
+                          zIndex: 1,
+                        }}
+                      />
+                    ))}
+
+                    {/* 사각형 */}
+                    {drawing.rectangles?.map((rect) => (
+                      <div
+                        key={rect.id}
+                        style={{
+                          position: "absolute",
+                          left: `${rect.x}px`,
+                          top: `${rect.y}px`,
+                          width: `${rect.width}px`,
+                          height: `${rect.height}px`,
+                          border: "1px solid #0C0C0C",
+                          background: "rgba(255, 255, 255, 0.8)",
+                          zIndex: 2,
+                        }}
+                      >
+                        {/* 텍스트 */}
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              color: "#0C0C0C",
+                            }}
+                          >
+                            {rect.text || ""}
+                          </span>
+                        </div>
+
+                        {/* mm 표시 (하단) */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: "-20px",
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            background: "rgba(218, 218, 218, 0.9)",
+                            padding: "2px 6px",
+                            borderRadius: "4px",
+                            fontSize: "11px",
+                            fontFamily: "Pretendard",
+                            color: "#0C0C0C",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {rect.width} mm
+                        </div>
+
+                        {/* mm 표시 (우측) */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            right: "-50px",
+                            top: "50%",
+                            transform: "translateY(-50%) rotate(90deg)",
+                            background: "rgba(218, 218, 218, 0.9)",
+                            padding: "2px 6px",
+                            borderRadius: "4px",
+                            fontSize: "11px",
+                            fontFamily: "Pretendard",
+                            color: "#0C0C0C",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {rect.height} mm
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* 사고 영역 */}
+                    {drawing.accidentAreas?.map((area) => (
+                      <div
+                        key={area.id}
+                        style={{
+                          position: "absolute",
+                          left: `${area.x}px`,
+                          top: `${area.y}px`,
+                          width: `${area.width}px`,
+                          height: `${area.height}px`,
+                          border: "2px dashed #9E9E9E",
+                          background: "rgba(189, 189, 189, 0.3)",
+                          zIndex: 1,
+                        }}
+                      />
+                    ))}
+
+                    {/* 누수 마커 */}
+                    {drawing.leakMarkers?.map((marker) => (
+                      <div
+                        key={marker.id}
+                        style={{
+                          position: "absolute",
+                          left: `${marker.x - 12}px`,
+                          top: `${marker.y - 12}px`,
+                          width: "24px",
+                          height: "24px",
+                          zIndex: 4,
+                        }}
+                      >
+                        <svg
+                          width="24"
+                          height="24"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <circle cx="12" cy="12" r="10" fill="#FF4D4F" opacity="0.2" />
+                          <circle cx="12" cy="12" r="6" fill="none" stroke="#FF4D4F" strokeWidth="2" />
+                          <line x1="12" y1="2" x2="12" y2="22" stroke="#FF4D4F" strokeWidth="2" />
+                          <line x1="2" y1="12" x2="22" y2="12" stroke="#FF4D4F" strokeWidth="2" />
+                        </svg>
                       </div>
                     ))}
                   </div>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">등록된 도면이 없습니다.</p>
-              )}
-            </CardContent>
-          </Card>
+                ) : (
+                  <p
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      textAlign: "center",
+                      padding: "60px 0",
+                    }}
+                  >
+                    등록된 도면이 없습니다.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 첨부된 파일 */}
+            {drawing && (
+              <Card>
+                <CardHeader>
+                  <CardTitle
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      color: "rgba(12, 12, 12, 0.8)",
+                    }}
+                  >
+                    첨부된 파일
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3 p-3 rounded" style={{ background: "rgba(12, 12, 12, 0.03)" }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#0C0C0C",
+                      }}
+                    >
+                      {caseData.insuranceCompany}회보_{caseData.caseNumber}.png
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         {/* 증빙자료 탭 */}
