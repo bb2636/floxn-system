@@ -13,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface AreaCalculationRow {
   id: string;
@@ -2585,99 +2587,276 @@ export default function FieldEstimate() {
               
               {/* 노무비 테이블 */}
               {laborCostRows.length > 0 && (
-                <div
-                  style={{
-                    background: "#FDFDFD",
-                    boxShadow: "0px 0px 20px #DBE9F5",
-                    borderRadius: "8px",
-                    overflow: "auto",
-                  }}
-                >
+                <div style={{ overflowX: "auto" }}>
                   <table
                     style={{
                       width: "100%",
-                      borderCollapse: "collapse",
-                      minWidth: "1600px",
+                      borderCollapse: "separate",
+                      borderSpacing: 0,
+                      minWidth: "1800px",
                     }}
                   >
                     <thead>
                       <tr
                         style={{
-                          background: "rgba(12, 12, 12, 0.04)",
-                          borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                          background: "rgba(12, 12, 12, 0.02)",
+                          height: "48px",
                         }}
                       >
-                        <th style={{ width: "40px", padding: "12px", textAlign: "center" }}></th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공종</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공사명</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>세부공사</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>세부항목</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단가 기준</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단위</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가(미지)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>수량</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>적용률</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가(m²)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공제(원)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>경비여부</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>요청</th>
+                        <th style={{ width: "50px", padding: "0 12px", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>
+                          <Checkbox data-testid="checkbox-select-all-labor" />
+                        </th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>공종</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>공사명</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>세부공사</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>세부항목</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>단가 기준</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>단위</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>기준가(단위)</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>수량</th>
+                        <th style={{ width: "200px", padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>적용률</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>기준가(m²)</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>피해면적</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>공제(원)</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>경비여부</th>
+                        <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>요청</th>
                       </tr>
                     </thead>
                     <tbody>
                       {laborCostRows.map((row, index) => (
-                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
-                          <td style={{ padding: "8px", textAlign: "center" }}>
-                            <input type="checkbox" />
+                        <tr key={row.id} style={{ height: "56px", borderBottom: "1px solid #E5E7EB" }}>
+                          {/* 체크박스 */}
+                          <td style={{ padding: "0 12px", textAlign: "center" }}>
+                            <Checkbox 
+                              checked={selectedLaborRows.has(row.id)}
+                              onCheckedChange={(checked) => {
+                                const newSet = new Set(selectedLaborRows);
+                                if (checked) {
+                                  newSet.add(row.id);
+                                } else {
+                                  newSet.delete(row.id);
+                                }
+                                setSelectedLaborRows(newSet);
+                              }}
+                              data-testid={`checkbox-labor-${index}`}
+                            />
                           </td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.category}</td>
-                          <td 
-                            style={{ 
-                              padding: "8px",
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              position: "relative",
-                              ...(index === 0 && {
-                                background: "rgba(0, 143, 237, 0.04)",
-                                border: "2px solid rgba(0, 143, 237, 0.8)",
-                                borderRadius: "8px",
-                              })
-                            }}
-                          >
+                          
+                          {/* 공종 - Select */}
+                          <td style={{ padding: "0 8px" }}>
+                            <Select value={row.category} onValueChange={(value) => {
+                              setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, category: value } : r));
+                            }}>
+                              <SelectTrigger 
+                                className="h-9 border-0" 
+                                style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                                data-testid={`select-category-${index}`}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="가구공사">가구공사</SelectItem>
+                                <SelectItem value="도배공사">도배공사</SelectItem>
+                                <SelectItem value="미장공사">미장공사</SelectItem>
+                                <SelectItem value="수장공사">수장공사</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          
+                          {/* 공사명 - Read-only */}
+                          <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
                             {row.workName}
-                            {index === 0 && (
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  right: "-1px",
-                                  top: "50%",
-                                  transform: "translateY(-50%)",
-                                  width: "2px",
-                                  height: "15px",
-                                  background: "#008FED",
+                          </td>
+                          
+                          {/* 세부공사 - Read-only */}
+                          <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
+                            {row.detailWork}
+                          </td>
+                          
+                          {/* 세부항목 - Read-only */}
+                          <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.6)" }}>
+                            {row.detailItem || "-"}
+                          </td>
+                          
+                          {/* 단가 기준 - Select */}
+                          <td style={{ padding: "0 8px" }}>
+                            <Select value={row.priceStandard} onValueChange={(value) => {
+                              setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, priceStandard: value } : r));
+                            }}>
+                              <SelectTrigger 
+                                className="h-9 border-0" 
+                                style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                                data-testid={`select-price-standard-${index}`}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="민">민</SelectItem>
+                                <SelectItem value="위">위</SelectItem>
+                                <SelectItem value="기">기</SelectItem>
+                                <SelectItem value="JV">JV</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          
+                          {/* 단위 - Select */}
+                          <td style={{ padding: "0 8px" }}>
+                            <Select value={row.unit} onValueChange={(value) => {
+                              setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, unit: value } : r));
+                            }}>
+                              <SelectTrigger 
+                                className="h-9 border-0" 
+                                style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                                data-testid={`select-unit-${index}`}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="인">인</SelectItem>
+                                <SelectItem value="m²">m²</SelectItem>
+                                <SelectItem value="개">개</SelectItem>
+                                <SelectItem value="식">식</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          
+                          {/* 기준가(단위) - Read-only */}
+                          <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
+                            {Number(row.standardPrice).toLocaleString()}
+                          </td>
+                          
+                          {/* 수량 - Editable Input */}
+                          <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                            <Input
+                              value={row.quantity}
+                              onChange={(e) => {
+                                setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, quantity: e.target.value } : r));
+                              }}
+                              className="h-9 border-0 bg-transparent text-right"
+                              style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                              data-testid={`input-quantity-${index}`}
+                            />
+                          </td>
+                          
+                          {/* 적용률 - Checkboxes + Input */}
+                          <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
+                                <Checkbox 
+                                  checked={row.applicationRates.ceiling}
+                                  onCheckedChange={(checked) => {
+                                    setLaborCostRows(prev => prev.map(r => r.id === row.id ? { 
+                                      ...r, 
+                                      applicationRates: { ...r.applicationRates, ceiling: !!checked }
+                                    } : r));
+                                  }}
+                                  data-testid={`checkbox-ceiling-${index}`}
+                                />
+                                <label style={{ fontFamily: "Pretendard", fontSize: "13px", color: row.applicationRates.ceiling ? "#222" : "rgba(12, 12, 12, 0.6)" }}>천장</label>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Checkbox 
+                                  checked={row.applicationRates.wall}
+                                  onCheckedChange={(checked) => {
+                                    setLaborCostRows(prev => prev.map(r => r.id === row.id ? { 
+                                      ...r, 
+                                      applicationRates: { ...r.applicationRates, wall: !!checked }
+                                    } : r));
+                                  }}
+                                  data-testid={`checkbox-wall-${index}`}
+                                />
+                                <label style={{ fontFamily: "Pretendard", fontSize: "13px", color: row.applicationRates.wall ? "#222" : "rgba(12, 12, 12, 0.6)" }}>벽체</label>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Checkbox 
+                                  checked={row.applicationRates.floor}
+                                  onCheckedChange={(checked) => {
+                                    setLaborCostRows(prev => prev.map(r => r.id === row.id ? { 
+                                      ...r, 
+                                      applicationRates: { ...r.applicationRates, floor: !!checked }
+                                    } : r));
+                                  }}
+                                  data-testid={`checkbox-floor-${index}`}
+                                />
+                                <label style={{ fontFamily: "Pretendard", fontSize: "13px", color: row.applicationRates.floor ? "#222" : "rgba(12, 12, 12, 0.6)" }}>바닥</label>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Checkbox 
+                                  checked={row.applicationRates.molding}
+                                  onCheckedChange={(checked) => {
+                                    setLaborCostRows(prev => prev.map(r => r.id === row.id ? { 
+                                      ...r, 
+                                      applicationRates: { ...r.applicationRates, molding: !!checked }
+                                    } : r));
+                                  }}
+                                  data-testid={`checkbox-molding-${index}`}
+                                />
+                                <label style={{ fontFamily: "Pretendard", fontSize: "13px", color: row.applicationRates.molding ? "#222" : "rgba(12, 12, 12, 0.6)" }}>몰이</label>
+                              </div>
+                              <Input
+                                value={row.salesMarkupRate}
+                                onChange={(e) => {
+                                  setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, salesMarkupRate: e.target.value } : r));
                                 }}
+                                className="h-9 w-16 border-0 bg-white text-right"
+                                style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                                data-testid={`input-rate-${index}`}
                               />
-                            )}
+                            </div>
                           </td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.detailWork}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.detailItem}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.priceStandard}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.unit}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.standardPrice}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.quantity}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "center" }}>
-                            {[
-                              row.applicationRates.ceiling && "천장",
-                              row.applicationRates.wall && "벽체",
-                              row.applicationRates.floor && "바닥",
-                              row.applicationRates.molding && "몰이"
-                            ].filter(Boolean).join(", ")}
+                          
+                          {/* 기준가(m²) - Editable Input */}
+                          <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                            <Input
+                              value={row.pricePerSqm}
+                              onChange={(e) => {
+                                setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, pricePerSqm: e.target.value } : r));
+                              }}
+                              className="h-9 border-0 bg-transparent text-right"
+                              style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                              data-testid={`input-price-sqm-${index}`}
+                            />
                           </td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.pricePerSqm}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.damageArea}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.deduction}</td>
-                          <td style={{ padding: "8px", textAlign: "center" }}>{row.expenseStatus}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.request}</td>
+                          
+                          {/* 피해면적 - Read-only */}
+                          <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
+                            {Number(row.damageArea).toLocaleString()}
+                          </td>
+                          
+                          {/* 공제(원) - Read-only */}
+                          <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
+                            {Number(row.deduction).toLocaleString()}
+                          </td>
+                          
+                          {/* 경비여부 - 복제 버튼 */}
+                          <td style={{ padding: "0 12px", textAlign: "center" }}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const newRow = { ...row, id: `labor-${Date.now()}-${Math.random()}` };
+                                setLaborCostRows(prev => [...prev, newRow]);
+                              }}
+                              style={{ fontFamily: "Pretendard", fontSize: "13px" }}
+                              data-testid={`button-duplicate-${index}`}
+                            >
+                              복제
+                            </Button>
+                          </td>
+                          
+                          {/* 요청 - Editable Input */}
+                          <td style={{ padding: "0 8px" }}>
+                            <Input
+                              value={row.request || ""}
+                              onChange={(e) => {
+                                setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, request: e.target.value } : r));
+                              }}
+                              className="h-9 border-0 bg-transparent"
+                              style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                              placeholder="-"
+                              data-testid={`input-request-${index}`}
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
