@@ -15,6 +15,7 @@ import FieldManagement from "@/pages/field-management";
 import FieldDrawing from "@/pages/field-drawing";
 import FieldDocuments from "@/pages/field-documents";
 import FieldEstimate from "@/pages/field-estimate";
+import FieldReport from "@/pages/field-report";
 import Forbidden from "@/pages/forbidden";
 import NotFound from "@/pages/not-found";
 import { StatisticsLayout } from "@/components/statistics-layout";
@@ -127,7 +128,7 @@ function Router() {
         {() => (
           <ProtectedRoute category="현장조사">
             <FieldSurveyLayout>
-              <div className="p-8">현장출동보고서 페이지 (준비중)</div>
+              <FieldReport />
             </FieldSurveyLayout>
           </ProtectedRoute>
         )}
