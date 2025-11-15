@@ -431,13 +431,13 @@ export default function FieldEstimate() {
   // 자재비 행 체크박스 토글
   const toggleMaterialRow = (rowId: string) => {
     setSelectedMaterialRows(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(rowId)) {
-        newSet.delete(rowId);
+      const next = new Set(prev);
+      if (next.has(rowId)) {
+        next.delete(rowId);
       } else {
-        newSet.add(rowId);
+        next.add(rowId);
       }
-      return newSet;
+      return next;
     });
   };
 
