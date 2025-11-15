@@ -1523,6 +1523,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get field survey report data (통합 조회)
+  app.get("/api/field-surveys/:caseId/report", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      
+      // 케이스 정보 조회
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 도면 조회
+      const drawing = await storage.getDrawingByCaseId(caseId);
+      
+      // 증빙자료 조회
+      const documents = await storage.getDocumentsByCaseId(caseId);
+      
+      // 최신 견적 조회
+      const estimateData = await storage.getLatestEstimate(caseId);
+      
+      // 통합된 보고서 데이터 반환
+      res.json({
+        case: caseData,
+        drawing: drawing || null,
+        documents: documents || [],
+        estimate: estimateData || { estimate: null, rows: [] },
+      });
+    } catch (error) {
+      console.error("Get field survey report error:", error);
+      res.status(500).json({ error: "현장조사 보고서를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
