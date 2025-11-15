@@ -1,6 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useState, useEffect } from "react";
 import type { Drawing, CaseDocument as SchemaDocument } from "@shared/schema";
 
 interface Case {
@@ -35,6 +40,7 @@ interface Case {
   processingTypes: string | null;
   processingTypeOther: string | null;
   recoveryMethodType: string | null;
+  additionalNotes: string | null;
 }
 
 
@@ -66,6 +72,7 @@ interface ReportData {
 }
 
 export default function FieldReport() {
+  const { toast } = useToast();
   // 현장입력에서 선택한 케이스 ID 가져오기
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
   
@@ -73,6 +80,40 @@ export default function FieldReport() {
   const { data: reportData, isLoading } = useQuery<ReportData>({
     queryKey: ["/api/field-surveys", selectedCaseId, "report"],
     enabled: !!selectedCaseId,
+  });
+
+  // 기타사항 상태
+  const [additionalNotes, setAdditionalNotes] = useState('');
+
+  // reportData가 변경될 때 additionalNotes 상태 업데이트
+  useEffect(() => {
+    if (reportData?.case.additionalNotes !== undefined) {
+      setAdditionalNotes(reportData.case.additionalNotes || '');
+    }
+  }, [reportData?.case.additionalNotes]);
+
+  // 기타사항 저장 mutation
+  const saveNotesMutation = useMutation({
+    mutationFn: async (notes: string) => {
+      return apiRequest(`/api/cases/${selectedCaseId}/additional-notes`, {
+        method: "PATCH",
+        body: JSON.stringify({ additionalNotes: notes }),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "저장 완료",
+        description: "기타사항이 저장되었습니다.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "저장 실패",
+        description: error.message || "기타사항 저장 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
   });
 
   if (!selectedCaseId) {
@@ -1292,9 +1333,80 @@ export default function FieldReport() {
 
         {/* 기타사항/원인 탭 */}
         <TabsContent value="기타사항/원인">
+          <div
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "20px",
+              fontWeight: "700",
+              lineHeight: "30px",
+              color: "#0C0C0C",
+              marginBottom: "24px",
+            }}
+          >
+            기타사항
+          </div>
+          
           <Card>
-            <CardContent className="p-6">
-              <p className="text-muted-foreground">기타사항/원인 데이터를 표시합니다.</p>
+            <CardContent className="p-6 space-y-4">
+              <div>
+                <label
+                  htmlFor="additional-notes"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#0C0C0C",
+                    display: "block",
+                    marginBottom: "8px",
+                  }}
+                >
+                  기타사항 입력
+                </label>
+                <Textarea
+                  id="additional-notes"
+                  data-testid="textarea-additional-notes"
+                  placeholder="추가 메모 또는 특별 사항을 입력해주세요"
+                  value={additionalNotes}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value.length <= 800) {
+                      setAdditionalNotes(value);
+                    }
+                  }}
+                  rows={10}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    resize: "none",
+                  }}
+                />
+                <div
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "12px",
+                    color: "rgba(12, 12, 12, 0.5)",
+                    textAlign: "right",
+                    marginTop: "8px",
+                  }}
+                >
+                  {additionalNotes.length}/800
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  data-testid="button-save-notes"
+                  onClick={() => saveNotesMutation.mutate(additionalNotes)}
+                  disabled={saveNotesMutation.isPending}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                  }}
+                >
+                  {saveNotesMutation.isPending ? "저장 중..." : "저장"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

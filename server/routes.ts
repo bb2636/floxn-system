@@ -386,6 +386,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update case additional notes endpoint (협력사 only)
+  app.patch("/api/cases/:caseId/additional-notes", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check authorization (협력사만 가능)
+    if (req.session.userRole !== "협력사") {
+      return res.status(403).json({ error: "협력사 권한이 필요합니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      
+      // Validate additionalNotes with Zod (800자 제한)
+      const updateSchema = z.object({
+        additionalNotes: z.string().max(800, "기타사항은 800자를 초과할 수 없습니다").nullable(),
+      });
+      
+      const { additionalNotes } = updateSchema.parse(req.body);
+
+      const updatedCase = await storage.updateCaseAdditionalNotes(caseId, additionalNotes);
+      
+      if (!updatedCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      res.json({ success: true, case: updatedCase });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Update case additional notes error:", error);
+      res.status(500).json({ error: "기타사항 저장 중 오류가 발생했습니다" });
+    }
+  });
+
   // Update case field survey endpoint (협력사 only)
   app.patch("/api/cases/:caseId/field-survey", async (req, res) => {
     // Check authentication
