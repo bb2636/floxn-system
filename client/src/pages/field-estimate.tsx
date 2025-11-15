@@ -30,6 +30,7 @@ interface AreaCalculationRow {
 
 interface LaborCostRow {
   id: string;
+  laborItemId?: string; // DB 노무비 항목 ID (선택용)
   category: string; // 공종
   workName: string; // 공사명
   detailWork: string; // 세부공사
@@ -202,41 +203,8 @@ export default function FieldEstimate() {
 
   // ===== 노무비 관련 함수 =====
   
-  // 공종별 고유 공사명 리스트
+  // 공종 리스트
   const laborCategories = Array.from(new Set(laborCostData.map(item => item.category)));
-  
-  // 계층적 옵션 생성 (useMemo로 최적화)
-  const laborOptions = useMemo(() => {
-    const options = new Map<string, {
-      workNames: Set<string>;
-      detailWorks: Map<string, Set<string>>;
-      items: Map<string, LaborCost>;
-    }>();
-    
-    laborCostData.forEach(item => {
-      if (!options.has(item.category)) {
-        options.set(item.category, {
-          workNames: new Set(),
-          detailWorks: new Map(),
-          items: new Map(),
-        });
-      }
-      
-      const catData = options.get(item.category)!;
-      catData.workNames.add(item.workName);
-      
-      const workKey = item.workName;
-      if (!catData.detailWorks.has(workKey)) {
-        catData.detailWorks.set(workKey, new Set());
-      }
-      catData.detailWorks.get(workKey)!.add(item.detailWork);
-      
-      const itemKey = `${item.category}|${item.workName}|${item.detailWork}|${item.detailItem || ''}`;
-      catData.items.set(itemKey, item);
-    });
-    
-    return options;
-  }, [laborCostData]);
   
   // 노무비 행 추가
   const addLaborRow = () => {
@@ -250,17 +218,18 @@ export default function FieldEstimate() {
     }
     
     const firstCategory = laborCategories[0] || "";
-    const firstItem = laborCostData.find(item => item.category === firstCategory);
     
+    // 빈 행으로 시작 (사용자가 직접 선택하도록)
     const newRow: LaborCostRow = {
       id: `labor-${Date.now()}-${Math.random()}`,
-      category: firstItem?.category || "",
-      workName: firstItem?.workName || "",
-      detailWork: firstItem?.detailWork || "",
-      detailItem: firstItem?.detailItem || "",
-      priceStandard: firstItem?.priceStandard || "",
-      unit: firstItem?.unit || "",
-      standardPrice: firstItem?.standardPrice?.toString() || "0",
+      laborItemId: "",
+      category: firstCategory,
+      workName: "",
+      detailWork: "",
+      detailItem: "",
+      priceStandard: "",
+      unit: "",
+      standardPrice: "0",
       quantity: "1",
       applicationRate: "",
       pricePerSqm: "",
@@ -303,78 +272,45 @@ export default function FieldEstimate() {
     });
   };
   
-  // 노무비 행 업데이트 (계층적 캐스케이딩 드롭다운)
+  // 노무비 행 업데이트
   const updateLaborRow = (rowId: string, field: keyof LaborCostRow, value: string) => {
     setLaborCostRows(prev => prev.map(row => {
       if (row.id === rowId) {
-        // 공종 선택 시: 공사명만 자동 채움, 나머지는 초기화
+        // 공종 선택 시: 모든 필드 초기화
         if (field === 'category') {
-          const catData = laborOptions.get(value);
-          if (catData) {
-            const firstWorkName = Array.from(catData.workNames)[0] || "";
-            return {
-              ...row,
-              category: value,
-              workName: firstWorkName,
-              detailWork: "", // 세부공사 초기화 (사용자가 선택해야 함)
-              detailItem: "",
-              priceStandard: "",
-              unit: "",
-              standardPrice: "0",
-            };
-          } else {
-            // catData가 없는 경우에도 모든 필드 초기화
-            return {
-              ...row,
-              category: value,
-              workName: "",
-              detailWork: "",
-              detailItem: "",
-              priceStandard: "",
-              unit: "",
-              standardPrice: "0",
-            };
-          }
-        }
-        
-        // 공사명 선택 시: 세부공사, 세부항목, 가격 필드 초기화
-        if (field === 'workName') {
           return {
             ...row,
-            workName: value,
-            detailWork: "", // 세부공사 초기화
+            category: value,
+            laborItemId: "", // laborItemId도 초기화
+            workName: "",
+            detailWork: "",
             detailItem: "",
             priceStandard: "",
             unit: "",
             standardPrice: "0",
+            quantity: "1",
+            applicationRate: "",
+            pricePerSqm: "",
+            damageArea: "",
+            deduction: "",
+            expenseStatus: "",
+            request: "",
           };
         }
         
-        // 세부공사 선택 시: 세부항목은 초기화, 나머지는 유지
-        if (field === 'detailWork') {
-          return {
-            ...row,
-            detailWork: value,
-            detailItem: "", // 세부항목 초기화 (사용자가 선택해야 함)
-            priceStandard: "",
-            unit: "",
-            standardPrice: "0",
-          };
-        }
-        
-        // 세부항목 선택 시: DB에서 해당 항목 찾아서 나머지 필드 자동 채움
-        if (field === 'detailItem') {
-          const itemKey = `${row.category}|${row.workName}|${row.detailWork}|${value}`;
-          const catData = laborOptions.get(row.category);
-          const matchedItem = catData?.items.get(itemKey);
-          
-          if (matchedItem) {
+        // 노무비 항목 ID 선택 시: DB에서 해당 항목 찾아서 모든 필드 자동 채움
+        if (field === 'laborItemId') {
+          const selectedItem = laborCostData.find(item => item.id === parseInt(value));
+          if (selectedItem) {
             return {
               ...row,
-              detailItem: value,
-              priceStandard: matchedItem.priceStandard,
-              unit: matchedItem.unit,
-              standardPrice: matchedItem.standardPrice.toString(),
+              laborItemId: value,
+              workName: selectedItem.workName,
+              detailWork: selectedItem.detailWork,
+              detailItem: selectedItem.detailItem || "",
+              priceStandard: selectedItem.priceStandard,
+              unit: selectedItem.unit,
+              standardPrice: selectedItem.standardPrice.toString(),
             };
           }
         }
@@ -1232,19 +1168,20 @@ export default function FieldEstimate() {
                   >
                     <th style={{ width: "54px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}></th>
                     <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>공종</th>
+                    <th style={{ width: "220px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>항목 선택</th>
                     <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>공사명</th>
-                    <th style={{ width: "120px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세부공사</th>
-                    <th style={{ width: "120px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세부항목</th>
+                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세부공사</th>
+                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>세부항목</th>
                     <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>단가 기준</th>
-                    <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>단위</th>
-                    <th style={{ width: "120px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>기준가(원/단위)</th>
-                    <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>수량</th>
-                    <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>적용면</th>
-                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>기준가(㎡)</th>
-                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>피해면적</th>
-                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>공제(원)</th>
-                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>경비여부</th>
-                    <th style={{ width: "80px", padding: "17.5px 8px", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>요청</th>
+                    <th style={{ width: "70px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>단위</th>
+                    <th style={{ width: "100px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>기준가</th>
+                    <th style={{ width: "70px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>수량</th>
+                    <th style={{ width: "70px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>적용면</th>
+                    <th style={{ width: "90px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>기준가(㎡)</th>
+                    <th style={{ width: "90px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>피해면적</th>
+                    <th style={{ width: "90px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>공제(원)</th>
+                    <th style={{ width: "80px", padding: "17.5px 8px", borderRight: "1px solid rgba(12, 12, 12, 0.06)", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>경비여부</th>
+                    <th style={{ width: "70px", padding: "17.5px 8px", fontFamily: "Pretendard", fontSize: "15px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>요청</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1285,8 +1222,8 @@ export default function FieldEstimate() {
                       </td>
                       <td style={{ padding: "8px" }}>
                         <Select 
-                          value={row.workName || undefined}
-                          onValueChange={(value) => updateLaborRow(row.id, 'workName', value)}
+                          value={row.laborItemId || ""}
+                          onValueChange={(value) => updateLaborRow(row.id, 'laborItemId', value)}
                           disabled={!row.category}
                         >
                           <SelectTrigger 
@@ -1300,92 +1237,53 @@ export default function FieldEstimate() {
                               borderRadius: "6px",
                               background: !row.category ? "rgba(12, 12, 12, 0.02)" : "white"
                             }}
-                            data-testid={`select-workName-${row.id}`}
+                            data-testid={`select-laborItem-${row.id}`}
                           >
                             <SelectValue placeholder="선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            {row.category && laborOptions.get(row.category)?.workNames ? (
-                              Array.from(laborOptions.get(row.category)!.workNames).map(wn => (
-                                <SelectItem key={wn} value={wn}>{wn}</SelectItem>
-                              ))
-                            ) : (
+                            {laborCostData
+                              .filter(item => item.category === row.category)
+                              .map(item => (
+                                <SelectItem key={item.id} value={item.id.toString()}>
+                                  {item.workName} / {item.detailWork} / {item.detailItem || "-"}
+                                </SelectItem>
+                              ))}
+                            {laborCostData.filter(item => item.category === row.category).length === 0 && (
                               <SelectItem value="no-option" disabled>선택할 수 있는 항목이 없습니다</SelectItem>
                             )}
                           </SelectContent>
                         </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <Select 
-                          value={row.detailWork || ""}
-                          onValueChange={(value) => updateLaborRow(row.id, 'detailWork', value)}
-                          disabled={!row.category || !row.workName}
-                        >
-                          <SelectTrigger 
-                            className="border focus:ring-0" 
-                            style={{ 
-                              width: "100%", 
-                              height: "40px", 
-                              fontFamily: "Pretendard", 
-                              fontSize: "14px", 
-                              borderColor: "rgba(12, 12, 12, 0.2)", 
-                              borderRadius: "6px",
-                              background: (!row.category || !row.workName) ? "rgba(12, 12, 12, 0.02)" : "white"
-                            }}
-                            data-testid={`select-detailWork-${row.id}`}
-                          >
-                            <SelectValue placeholder="선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {row.category && row.workName && laborOptions.get(row.category)?.detailWorks.get(row.workName) && 
-                             Array.from(laborOptions.get(row.category)!.detailWorks.get(row.workName)!).length > 0 ? (
-                              Array.from(laborOptions.get(row.category)!.detailWorks.get(row.workName)!).map(dw => (
-                                <SelectItem key={dw} value={dw}>{dw}</SelectItem>
-                              ))
-                            ) : (
-                              <SelectItem value="no-option" disabled>선택할 수 있는 항목이 없습니다</SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
+                        <input 
+                          type="text" 
+                          value={row.workName} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-workName-${row.id}`}
+                        />
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <Select 
-                          value={row.detailItem || ""}
-                          onValueChange={(value) => updateLaborRow(row.id, 'detailItem', value)}
-                          disabled={!row.category || !row.workName || !row.detailWork}
-                        >
-                          <SelectTrigger 
-                            className="border focus:ring-0" 
-                            style={{ 
-                              width: "100%", 
-                              height: "40px", 
-                              fontFamily: "Pretendard", 
-                              fontSize: "14px", 
-                              borderColor: "rgba(12, 12, 12, 0.2)", 
-                              borderRadius: "6px",
-                              background: (!row.category || !row.workName || !row.detailWork) ? "rgba(12, 12, 12, 0.02)" : "white"
-                            }}
-                            data-testid={`select-detailItem-${row.id}`}
-                          >
-                            <SelectValue placeholder="선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(() => {
-                              const filteredItems = laborCostData.filter(item => 
-                                item.category === row.category && 
-                                item.workName === row.workName && 
-                                item.detailWork === row.detailWork
-                              );
-                              return filteredItems.length > 0 ? (
-                                filteredItems.map(item => (
-                                  <SelectItem key={item.id} value={item.detailItem || ""}>{item.detailItem || "-"}</SelectItem>
-                                ))
-                              ) : (
-                                <SelectItem value="no-option" disabled>선택할 수 있는 항목이 없습니다</SelectItem>
-                              );
-                            })()}
-                          </SelectContent>
-                        </Select>
+                        <input 
+                          type="text" 
+                          value={row.detailWork} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-detailWork-${row.id}`}
+                        />
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <input 
+                          type="text" 
+                          value={row.detailItem || ""} 
+                          readOnly
+                          className="input-focus-blue" 
+                          style={{ width: "100%", padding: "8px", fontFamily: "Pretendard", fontSize: "14px", border: "1px solid rgba(12, 12, 12, 0.1)", borderRadius: "8px", textAlign: "center", background: "rgba(12, 12, 12, 0.02)", cursor: "not-allowed" }} 
+                          data-testid={`input-detailItem-${row.id}`}
+                        />
                       </td>
                       <td style={{ padding: "8px" }}>
                         <input 
