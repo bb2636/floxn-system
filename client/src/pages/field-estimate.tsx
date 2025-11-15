@@ -84,6 +84,29 @@ export default function FieldEstimate() {
   const [selectedMaterialRows, setSelectedMaterialRows] = useState<Set<string>>(new Set());
   const [vatIncluded, setVatIncluded] = useState(true); // VAT 포함 여부
 
+  // 빈 자재비 행 생성 함수
+  const createBlankMaterialRow = (): MaterialRow => {
+    return {
+      id: `material-${Date.now()}-${Math.random()}`,
+      category: "",
+      materialName: "",
+      specification: "",
+      unit: "",
+      areaUnit: "m²",
+      standardPrice: 0,
+      quantity: "",
+      amount: 0,
+      note: "",
+    };
+  };
+
+  // 자재비 초기 빈 행 설정
+  useEffect(() => {
+    if (materialRows.length === 0) {
+      setMaterialRows([createBlankMaterialRow()]);
+    }
+  }, []);
+
   // 현장입력에서 선택한 케이스 ID 가져오기
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
 
@@ -469,6 +492,11 @@ export default function FieldEstimate() {
       title: "자재가 추가되었습니다",
       description: `${selectedMaterial.materialName} - ${selectedMaterial.specification}`,
     });
+  };
+
+  // 자재비 빈 행 추가
+  const addBlankMaterialRow = () => {
+    setMaterialRows(prev => [...prev, createBlankMaterialRow()]);
   };
 
   // 자재비 행 수정
@@ -3171,126 +3199,30 @@ export default function FieldEstimate() {
               </div>
             </div>
 
-            {/* 자재 선택기 패널 */}
-            <div
-              style={{
-                background: "rgba(12, 12, 12, 0.02)",
-                borderRadius: "8px",
-                padding: "16px",
-                marginBottom: "16px",
-                border: "1px solid rgba(12, 12, 12, 0.06)",
-              }}
-            >
-              <div className="flex items-end gap-3">
-                {/* 공종 선택 */}
-                <div style={{ flex: 1 }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#0C0C0C",
-                    }}
-                  >
-                    공종
-                  </label>
-                  <Select
-                    value={selectedMaterialName}
-                    onValueChange={(value) => {
-                      setSelectedMaterialName(value);
-                      setSelectedMaterialSpec("");
-                    }}
-                    data-testid="select-material-name"
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      style={{
-                        height: "42px",
-                        fontFamily: "Pretendard",
-                        fontSize: "15px",
-                        borderRadius: "6px",
-                        border: "1px solid rgba(12, 12, 12, 0.12)",
-                      }}
-                    >
-                      <SelectValue placeholder="공종 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materialNames.map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* 자재 선택 */}
-                <div style={{ flex: 1 }}>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: "8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#0C0C0C",
-                    }}
-                  >
-                    자재
-                  </label>
-                  <Select
-                    value={selectedMaterialSpec}
-                    onValueChange={setSelectedMaterialSpec}
-                    disabled={!selectedMaterialName}
-                    data-testid="select-material-spec"
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      style={{
-                        height: "42px",
-                        fontFamily: "Pretendard",
-                        fontSize: "15px",
-                        borderRadius: "6px",
-                        border: "1px solid rgba(12, 12, 12, 0.12)",
-                      }}
-                    >
-                      <SelectValue placeholder="자재 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materialSpecifications.map((spec) => (
-                        <SelectItem key={spec.id} value={spec.id}>
-                          {spec.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* 항목 추가 버튼 */}
-                <Button
-                  type="button"
-                  onClick={handleAddMaterial}
-                  disabled={!selectedMaterialName || !selectedMaterialSpec}
-                  className="hover-elevate active-elevate-2"
-                  style={{
-                    height: "42px",
-                    padding: "0 24px",
-                    background: "#008FED",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "6px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    whiteSpace: "nowrap",
-                  }}
-                  data-testid="button-add-material"
-                >
-                  항목 추가
-                </Button>
-              </div>
+            {/* 항목 추가 버튼 */}
+            <div style={{ marginBottom: "16px" }}>
+              <Button
+                type="button"
+                onClick={addBlankMaterialRow}
+                className="hover-elevate active-elevate-2"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  padding: "10px 20px",
+                  background: "#008FED",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "6px",
+                }}
+                data-testid="button-add-material-row"
+              >
+                <Plus size={16} />
+                항목 추가
+              </Button>
             </div>
 
             {/* 자재비 테이블 */}
