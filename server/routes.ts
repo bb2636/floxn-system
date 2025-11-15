@@ -1568,6 +1568,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Labor catalog from excel_data
+  // Get parsed labor cost catalog from excel_data (all authenticated users)
+  app.get("/api/labor-catalog", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      // Get latest 노무비 data from excel_data table
+      const excelDataList = await storage.listExcelData('노무비');
+      
+      if (!excelDataList || excelDataList.length === 0) {
+        return res.json([]);
+      }
+
+      // Use the most recent entry
+      const excelData = excelDataList[0];
+      
+      if (!excelData.data || !Array.isArray(excelData.data)) {
+        return res.json([]);
+      }
+
+      // Parse excel data into structured catalog
+      // Expected columns: 공종, 공사명(품명), 세부공사, 세부항목, 단위, 인, 천장, 벽체, 바닥, 길이
+      const catalog: any[] = [];
+      let prevCategory: string | null = null;
+      let prevWorkName: string | null = null;
+      let prevDetailWork: string | null = null;
+
+      for (let i = 1; i < excelData.data.length; i++) { // Skip header row
+        const row = excelData.data[i];
+        if (!row || row.length === 0) continue;
+
+        // Extract and forward-fill merged cells
+        const category = row[0] || prevCategory;
+        const workName = row[1] || prevWorkName;
+        const detailWork = row[2] || prevDetailWork;
+        const detailItem = row[3] || '';
+        const unit = row[4] || '';
+        
+        // Parse price columns (remove commas, convert to number)
+        const parsePrice = (val: any): number | null => {
+          if (val === null || val === undefined || val === '') return null;
+          if (typeof val === 'number') return val;
+          const cleaned = String(val).replace(/,/g, '').trim();
+          const num = parseFloat(cleaned);
+          return isNaN(num) ? null : num;
+        };
+
+        const laborPrice = parsePrice(row[5]); // 인
+        const ceilingPrice = parsePrice(row[6]); // 천장
+        const wallPrice = parsePrice(row[7]); // 벽체
+        const floorPrice = parsePrice(row[8]); // 바닥
+        const lengthPrice = parsePrice(row[9]); // 길이
+
+        // Update forward-fill values
+        if (category) prevCategory = category;
+        if (workName) prevWorkName = workName;
+        if (detailWork) prevDetailWork = detailWork;
+
+        // Skip rows without enough data
+        if (!category || !workName || !detailWork) continue;
+
+        catalog.push({
+          공종: category,
+          공사명: workName,
+          세부공사: detailWork,
+          세부항목: detailItem,
+          단위: unit,
+          단가_인: laborPrice,
+          단가_천장: ceilingPrice,
+          단가_벽체: wallPrice,
+          단가_바닥: floorPrice,
+          단가_길이: lengthPrice,
+        });
+      }
+
+      res.json(catalog);
+    } catch (error) {
+      console.error("Get labor catalog error:", error);
+      res.status(500).json({ error: "노무비 카탈로그를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Materials (자재비) endpoints
   // Get parsed materials data from excel_data (all authenticated users)
   app.get("/api/materials", async (req, res) => {

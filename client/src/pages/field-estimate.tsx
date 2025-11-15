@@ -30,31 +30,35 @@ interface AreaCalculationRow {
   note: string; // 비고
 }
 
+// 노무비 카탈로그 항목 (from excel_data)
+interface LaborCatalogItem {
+  공종: string;
+  공사명: string;
+  세부공사: string; // '노무비' | '일위대가'
+  세부항목: string;
+  단위: string;
+  단가_인: number | null;
+  단가_천장: number | null;
+  단가_벽체: number | null;
+  단가_바닥: number | null;
+  단가_길이: number | null;
+}
+
+// 노무비 테이블 행
 interface LaborCostRow {
   id: string;
-  laborItemId?: string; // DB 노무비 항목 ID (선택용)
-  category: string; // 공종 (editable dropdown)
-  workName: string; // 공사명
-  detailWork: string; // 세부공사
-  detailItem: string | null; // 세부항목
-  priceStandard: string; // 단가 기준 (editable dropdown)
-  unit: string; // 단위
-  standardPrice: string; // 기준가(원/단위)
-  quantity: string; // 수량 (editable)
-  applicationRates: { // 적용률 (multiple checkboxes)
-    ceiling: boolean; // 천장
-    wall: boolean; // 벽체
-    floor: boolean; // 바닥
-    molding: boolean; // 몰이
-  };
-  pricePerSqm: string; // 기준가(㎡)
-  damageArea: string; // 피해면적
-  deduction: string; // 공제(원)
-  expenseStatus: string; // 경비여부
-  salesMarkupRate: string; // 판매단가율 (editable)
-  amount: string; // 금액(원) (calculated)
-  request: string; // 요청
-  includeInEstimate: boolean; // 견적입력 (checkbox)
+  공종: string; // select
+  공사명: string; // select (filtered by 공종)
+  세부공사: string; // select (filtered by 공사명)
+  세부항목: string; // select (filtered by 세부공사)
+  단위: string; // readonly
+  기준가_단위: number; // readonly (단가_인 for 노무비)
+  수량: number; // editable
+  적용면: '천장' | '벽체' | '바닥' | '길이' | ''; // radio selection
+  기준가_적용면: number; // readonly (단가_천장/벽체/바닥/길이)
+  피해면적: number; // editable
+  금액: number; // calculated
+  요청: string; // editable input with placeholder "-"
 }
 
 interface Material {
@@ -108,41 +112,38 @@ export default function FieldEstimate() {
     };
   };
 
+  // 노무비 카탈로그 조회 (from excel_data)
+  const { data: laborCatalog = [], isLoading: isLoadingLaborCatalog } = useQuery<LaborCatalogItem[]>({
+    queryKey: ['/api/labor-catalog'],
+  });
+
   // 빈 노무비 행 생성 함수
   const createBlankLaborRow = (): LaborCostRow => {
+    // 카탈로그에서 첫 번째 항목 기본값으로 사용
+    const firstItem = laborCatalog[0];
     return {
       id: `labor-${Date.now()}-${Math.random()}`,
-      category: "가구공사",
-      workName: "코킹",
-      detailWork: "실리콘",
-      detailItem: "-",
-      priceStandard: "인",
-      unit: "원",
-      standardPrice: "157069",
-      quantity: "1",
-      applicationRates: {
-        ceiling: false,
-        wall: true,
-        floor: false,
-        molding: false,
-      },
-      salesMarkupRate: "30",
-      pricePerSqm: "30",
-      damageArea: "157069",
-      deduction: "",
-      expenseStatus: "",
-      amount: "0",
-      request: "",
-      includeInEstimate: false,
+      공종: firstItem?.공종 || '',
+      공사명: firstItem?.공사명 || '',
+      세부공사: firstItem?.세부공사 || '',
+      세부항목: firstItem?.세부항목 || '',
+      단위: firstItem?.단위 || '',
+      기준가_단위: firstItem?.단가_인 || 0,
+      수량: 1,
+      적용면: '',
+      기준가_적용면: 0,
+      피해면적: 30,
+      금액: 0,
+      요청: '',
     };
   };
 
   // 노무비 초기 첫 행 설정
   useEffect(() => {
-    if (laborCostRows.length === 0) {
+    if (laborCostRows.length === 0 && laborCatalog.length > 0) {
       setLaborCostRows([createBlankLaborRow()]);
     }
-  }, []);
+  }, [laborCatalog]);
 
   // 자재비 초기 빈 행 설정
   useEffect(() => {
