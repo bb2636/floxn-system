@@ -2008,7 +2008,7 @@ export default function FieldEstimate() {
               )}
             </div>
 
-            {/* 노무비 섹션 */}
+            {/* 노무비 섹션 - 노무비 탭과 동일 */}
             <div style={{ marginTop: "40px" }}>
               <div
                 style={{
@@ -2042,130 +2042,24 @@ export default function FieldEstimate() {
                     {getCurrentDate()}
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <button
-                    style={{
-                      padding: "6px 12px",
-                      background: "white",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                      borderRadius: "4px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      cursor: "pointer",
-                    }}
-                    data-testid="button-estimate-labor-function"
-                  >
-                    함수기
-                  </button>
-                </div>
               </div>
-
-              {/* 노무비 테이블 */}
-              {laborCostRows.length > 0 && (
-                <div
-                  style={{
-                    background: "#FDFDFD",
-                    boxShadow: "0px 0px 20px #DBE9F5",
-                    borderRadius: "8px",
-                    overflow: "auto",
-                  }}
-                >
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      minWidth: "1600px",
-                    }}
-                  >
-                    <thead>
-                      <tr
-                        style={{
-                          background: "rgba(12, 12, 12, 0.04)",
-                          borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
-                        }}
-                      >
-                        <th style={{ width: "40px", padding: "12px" }}></th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공종</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공사명</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>세부공사</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>세부항목</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단가</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단위</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기초단가(팀/천장)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>수량</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>적용면</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가(m²)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공제(원)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>금액(원)</th>
-                        <th style={{ width: "100px", padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>작업</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {laborCostRows.map((row) => (
-                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
-                          <td style={{ padding: "8px", textAlign: "center" }}>
-                            <Checkbox
-                              checked={selectedLaborRows.has(row.id)}
-                              onCheckedChange={() => toggleLaborRow(row.id)}
-                              data-testid={`checkbox-labor-${row.id}`}
-                            />
-                          </td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.category}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.workName}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.detailWork}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.detailItem}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.standardPrice?.toLocaleString() || 0}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.unit}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.pricePerSqm?.toLocaleString() || 0}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.quantity}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>
-                            {row.applicationRates.ceiling && '천장 '}
-                            {row.applicationRates.wall && '벽체 '}
-                            {row.applicationRates.floor && '바닥 '}
-                            {row.applicationRates.molding && '길이'}
-                          </td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.pricePerSqm?.toLocaleString() || 0}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.damageArea}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.deduction?.toLocaleString() || 0}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right", fontWeight: 600 }}>{row.amount?.toLocaleString() || 0}</td>
-                          <td style={{ padding: "8px" }}>
-                            <div style={{ display: "flex", gap: "4px" }}>
-                              <button
-                                style={{
-                                  padding: "4px 8px",
-                                  background: "white",
-                                  border: "1px solid rgba(12, 12, 12, 0.1)",
-                                  borderRadius: "4px",
-                                  fontSize: "12px",
-                                  cursor: "pointer",
-                                }}
-                                data-testid={`button-adjust-labor-${row.id}`}
-                              >
-                                보정
-                              </button>
-                              <button
-                                onClick={() => duplicateLaborRow(row)}
-                                style={{
-                                  padding: "4px 8px",
-                                  background: "white",
-                                  border: "1px solid rgba(12, 12, 12, 0.1)",
-                                  borderRadius: "4px",
-                                  fontSize: "12px",
-                                  cursor: "pointer",
-                                }}
-                                data-testid={`button-duplicate-labor-${row.id}`}
-                              >
-                                복제
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              
+              {/* 노무비 테이블 - 노무비 탭과 동일한 LaborCostSection 사용 */}
+              <LaborCostSection
+                rows={laborCostRows}
+                onRowsChange={handleLaborRowsChange}
+                catalog={laborCatalog}
+                selectedRows={selectedLaborRows}
+                onSelectRow={toggleLaborRow}
+                onSelectAll={() => {
+                  if (selectedLaborRows.size === laborCostRows.length) {
+                    setSelectedLaborRows(new Set());
+                  } else {
+                    setSelectedLaborRows(new Set(laborCostRows.map(r => r.id)));
+                  }
+                }}
+                isLoading={isLoadingLaborCatalog}
+              />
             </div>
 
             {/* 자재비 섹션 */}
