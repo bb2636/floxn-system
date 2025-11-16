@@ -2619,19 +2619,24 @@ export default function FieldEstimate() {
                               data-testid={`checkbox-labor-${row.id}`}
                             />
                           </td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.공종}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.공사명}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.세부공사}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.세부항목}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.기준가_단위?.toLocaleString() || 0}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.단위}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.기준가_적용면?.toLocaleString() || 0}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.수량}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.적용면}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.기준가_적용면?.toLocaleString() || 0}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.피해면적}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>0</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right", fontWeight: 600 }}>{row.금액?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.category}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.workName}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.detailWork}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.detailItem}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.standardPrice?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.unit}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.pricePerSqm?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.quantity}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>
+                            {row.applicationRates.ceiling && '천장 '}
+                            {row.applicationRates.wall && '벽체 '}
+                            {row.applicationRates.floor && '바닥 '}
+                            {row.applicationRates.molding && '길이'}
+                          </td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.pricePerSqm?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.damageArea}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.deduction?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right", fontWeight: 600 }}>{row.amount?.toLocaleString() || 0}</td>
                           <td style={{ padding: "8px" }}>
                             <div style={{ display: "flex", gap: "4px" }}>
                               <button
