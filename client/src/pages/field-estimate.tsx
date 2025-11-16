@@ -439,14 +439,14 @@ export default function FieldEstimate() {
     // 노무비 총합 - 경비 여부에 따라 분리
     const laborTotalWithExpense = laborCostRows.reduce((sum, row) => {
       if (row.includeInEstimate) {
-        return sum + (row.deduction || 0);
+        return sum + (row.amount || 0);
       }
       return sum;
     }, 0);
 
     const laborTotalWithoutExpense = laborCostRows.reduce((sum, row) => {
       if (!row.includeInEstimate) {
-        return sum + (row.deduction || 0);
+        return sum + (row.amount || 0);
       }
       return sum;
     }, 0);

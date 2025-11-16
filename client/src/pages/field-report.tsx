@@ -53,6 +53,11 @@ interface Case {
   processingTypeOther: string | null;
   recoveryMethodType: string | null;
   additionalNotes: string | null;
+  // 추가 필드
+  fieldSurveyStatus?: string | null;
+  createdAt?: string | null;
+  assignmentDate?: string | null;
+  urgency?: string | null;
 }
 
 
@@ -1555,7 +1560,7 @@ export default function FieldReport() {
                       color: "#0C0C0C",
                     }}
                   >
-                    견적서 {new Date(estimate.estimate.createdAt).toISOString().split('T')[0]}
+                    견적서 {estimate.estimate.createdAt ? new Date(estimate.estimate.createdAt).toISOString().split('T')[0] : ''}
                   </h2>
                   <div className="flex gap-2">
                     <button
@@ -1623,7 +1628,7 @@ export default function FieldReport() {
                         color: "rgba(12, 12, 12, 0.8)",
                       }}
                     >
-                      복구면적 산출표 {new Date(estimate.estimate.createdAt).toISOString().split('T')[0]}
+                      복구면적 산출표 {estimate.estimate.createdAt ? new Date(estimate.estimate.createdAt).toISOString().split('T')[0] : ''}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
