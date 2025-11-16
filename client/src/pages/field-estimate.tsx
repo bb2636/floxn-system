@@ -120,20 +120,19 @@ export default function FieldEstimate() {
 
   // 빈 노무비 행 생성 함수
   const createBlankLaborRow = (): LaborCostRow => {
-    // 카탈로그에서 첫 번째 항목 기본값으로 사용
-    const firstItem = laborCatalog[0];
+    // 빈 행 생성 (사용자가 직접 선택하도록)
     return {
       id: `labor-${Date.now()}-${Math.random()}`,
-      공종: firstItem?.공종 || '',
-      공사명: firstItem?.공사명 || '',
-      세부공사: firstItem?.세부공사 || '',
-      세부항목: firstItem?.세부항목 || '',
-      단위: firstItem?.단위 || '',
-      기준가_단위: firstItem?.단가_인 || 0,
+      공종: '',
+      공사명: '',
+      세부공사: '',
+      세부항목: '',
+      단위: '',
+      기준가_단위: 0,
       수량: 1,
       적용면: '',
       기준가_적용면: 0,
-      피해면적: 30,
+      피해면적: 0,
       금액: 0,
       요청: '',
     };
