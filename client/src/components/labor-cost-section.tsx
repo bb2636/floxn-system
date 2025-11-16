@@ -388,44 +388,40 @@ export function LaborCostSection({
                 />
               </td>
               
-              {/* 적용면 - Checkboxes (only for 일위대가, only one can be selected) */}
-              <td style={{ padding: "0 8px", background: row.세부공사 === '일위대가' ? "#EFF6FF" : "transparent" }}>
-                {row.세부공사 === '일위대가' ? (
-                  <div className="flex gap-4">
-                    {get적용면Options(row.공종, row.공사명, row.세부공사, row.세부항목).map(opt => {
-                      const checkboxId = `checkbox-${row.id}-${opt}`;
-                      return (
-                        <div key={opt} className="flex items-center gap-1">
-                          <Checkbox
-                            id={checkboxId}
-                            checked={row.적용면 === opt}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                updateRow(row.id, '적용면', opt);
-                              } else {
-                                updateRow(row.id, '적용면', '');
-                              }
-                            }}
-                            data-testid={`checkbox-적용면-${opt}-${index}`}
-                          />
-                          <label 
-                            htmlFor={checkboxId}
-                            style={{ 
-                              fontFamily: "Pretendard", 
-                              fontSize: "13px", 
-                              cursor: "pointer",
-                              color: row.적용면 === opt ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)"
-                            }}
-                          >
-                            {opt}
-                          </label>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.4)" }}>-</span>
-                )}
+              {/* 적용면 - Checkboxes (항상 4개 표시, 한 번에 하나만 선택 가능) */}
+              <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                <div className="flex gap-4">
+                  {(['천장', '벽체', '바닥', '길이'] as const).map(opt => {
+                    const checkboxId = `checkbox-${row.id}-${opt}`;
+                    return (
+                      <div key={opt} className="flex items-center gap-1">
+                        <Checkbox
+                          id={checkboxId}
+                          checked={row.적용면 === opt}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              updateRow(row.id, '적용면', opt);
+                            } else {
+                              updateRow(row.id, '적용면', '');
+                            }
+                          }}
+                          data-testid={`checkbox-적용면-${opt}-${index}`}
+                        />
+                        <label 
+                          htmlFor={checkboxId}
+                          style={{ 
+                            fontFamily: "Pretendard", 
+                            fontSize: "13px", 
+                            cursor: "pointer",
+                            color: row.적용면 === opt ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)"
+                          }}
+                        >
+                          {opt}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
               </td>
               
               {/* 기준가(㎡/길이) - Readonly */}
