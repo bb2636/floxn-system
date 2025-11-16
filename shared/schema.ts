@@ -165,7 +165,8 @@ export const cases = pgTable("cases", {
   
   // 진행상황 관련 필드
   progressStatus: text("progress_status"), // 주요진행사항 (서류보완요청 등)
-  specialNotes: text("special_notes"), // 관리자 특이사항 메모
+  specialNotes: text("special_notes"), // 협력사 특이사항 메모
+  specialNotesConfirmedBy: varchar("special_notes_confirmed_by").references(() => users.id), // 관리자 확인자 ID
   additionalNotes: text("additional_notes"), // 협력사 기타사항 (800자 제한)
   
   // 일정 관련 필드
