@@ -80,7 +80,7 @@ export default function FieldEstimate() {
       규격: '',
       단위: '',
       기준단가: 0,
-      수량: 0,
+      수량: 1,
       금액: 0,
       비고: '',
       sourceLaborRowId,
@@ -109,7 +109,7 @@ export default function FieldEstimate() {
       priceStandard: '',
       unit: '',
       standardPrice: 0,
-      quantity: 0,
+      quantity: 1,
       applicationRates: {
         ceiling: false,
         wall: false,
