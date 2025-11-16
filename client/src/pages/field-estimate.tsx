@@ -2076,7 +2076,7 @@ export default function FieldEstimate() {
                     color: "#0C0C0C",
                   }}
                 >
-                  {currentUser?.phoneNumber || "-"}
+                  {currentUser?.phone || "-"}
                 </div>
               </div>
             </div>
@@ -3033,9 +3033,9 @@ export default function FieldEstimate() {
                       onClick={async () => {
                         // 전체 케이스 정보를 가져오기
                         try {
-                          const fullCase = await apiRequest<Case>(`/api/cases/${caseItem.id}`, {
-                            method: 'GET',
-                          });
+                          const response = await fetch(`/api/cases/${caseItem.id}`);
+                          if (!response.ok) throw new Error('Failed to fetch case');
+                          const fullCase: Case = await response.json();
                           setEstimateCase(fullCase);
                           setCaseSearchModalOpen(false);
                           toast({
