@@ -170,6 +170,21 @@ export default function FieldEstimate() {
     queryKey: ['/api/user'],
   });
 
+  // 현재 날짜 (KST) 가져오기
+  const getCurrentDate = () => {
+    const formatter = new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const parts = formatter.formatToParts(new Date());
+    const year = parts.find(p => p.type === 'year')?.value || '';
+    const month = parts.find(p => p.type === 'month')?.value || '';
+    const day = parts.find(p => p.type === 'day')?.value || '';
+    return `${year}-${month}-${day}`;
+  };
+
   // 배정된 케이스 목록 (견적서용 케이스 검색)
   const [caseSearchQuery, setCaseSearchQuery] = useState('');
   const { data: assignedCases = [] } = useQuery<Array<{
@@ -2280,7 +2295,7 @@ export default function FieldEstimate() {
                       marginLeft: "12px",
                     }}
                   >
-                    2025-00-00
+                    {getCurrentDate()}
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
@@ -2484,6 +2499,305 @@ export default function FieldEstimate() {
                 </div>
               )}
             </div>
+
+            {/* 노무비 섹션 */}
+            <div style={{ marginTop: "40px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <div>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    노무비
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      color: "#686A6E",
+                      marginLeft: "12px",
+                    }}
+                  >
+                    {getCurrentDate()}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    style={{
+                      padding: "6px 12px",
+                      background: "white",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRadius: "4px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-estimate-labor-function"
+                  >
+                    함수기
+                  </button>
+                </div>
+              </div>
+
+              {/* 노무비 테이블 */}
+              {laborCostRows.length > 0 && (
+                <div
+                  style={{
+                    background: "#FDFDFD",
+                    boxShadow: "0px 0px 20px #DBE9F5",
+                    borderRadius: "8px",
+                    overflow: "auto",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      minWidth: "1600px",
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          background: "rgba(12, 12, 12, 0.04)",
+                          borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                        }}
+                      >
+                        <th style={{ width: "40px", padding: "12px" }}></th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공종</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공사명</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>세부공사</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>세부항목</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단가</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단위</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기초단가(팀/천장)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>수량</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>적용면</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가(m²)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공제(원)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>금액(원)</th>
+                        <th style={{ width: "100px", padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>작업</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {laborCostRows.map((row) => (
+                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                          <td style={{ padding: "8px", textAlign: "center" }}>
+                            <Checkbox
+                              checked={selectedLaborRows.has(row.id)}
+                              onCheckedChange={() => toggleSelectLaborRow(row.id)}
+                              data-testid={`checkbox-labor-${row.id}`}
+                            />
+                          </td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.공종}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.공사명}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.세부공사}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.세부항목}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.기준가_단위?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.단위}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.기준가_적용면?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.수량}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.적용면}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.기준가_적용면?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.피해면적}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>0</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right", fontWeight: 600 }}>{row.금액?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px" }}>
+                            <div style={{ display: "flex", gap: "4px" }}>
+                              <button
+                                style={{
+                                  padding: "4px 8px",
+                                  background: "white",
+                                  border: "1px solid rgba(12, 12, 12, 0.1)",
+                                  borderRadius: "4px",
+                                  fontSize: "12px",
+                                  cursor: "pointer",
+                                }}
+                                data-testid={`button-adjust-labor-${row.id}`}
+                              >
+                                보정
+                              </button>
+                              <button
+                                onClick={() => duplicateLaborRow(row.id)}
+                                style={{
+                                  padding: "4px 8px",
+                                  background: "white",
+                                  border: "1px solid rgba(12, 12, 12, 0.1)",
+                                  borderRadius: "4px",
+                                  fontSize: "12px",
+                                  cursor: "pointer",
+                                }}
+                                data-testid={`button-duplicate-labor-${row.id}`}
+                              >
+                                복제
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* 자재비 섹션 */}
+            <div style={{ marginTop: "40px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                }}
+              >
+                <div>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    자재비
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      color: "#686A6E",
+                      marginLeft: "12px",
+                    }}
+                  >
+                    {getCurrentDate()}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    style={{
+                      padding: "6px 12px",
+                      background: "white",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRadius: "4px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-estimate-material-function"
+                  >
+                    함수기
+                  </button>
+                </div>
+              </div>
+
+              {/* 자재비 테이블 */}
+              {materialRows.length > 0 && (
+                <div
+                  style={{
+                    background: "#FDFDFD",
+                    boxShadow: "0px 0px 20px #DBE9F5",
+                    borderRadius: "8px",
+                    overflow: "auto",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      minWidth: "1200px",
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          background: "rgba(12, 12, 12, 0.04)",
+                          borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                        }}
+                      >
+                        <th style={{ width: "40px", padding: "12px" }}></th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공종</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>자재명</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>규격</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단위</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준단가</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>수량</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>금액</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>비고</th>
+                        <th style={{ width: "100px", padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>작업</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {materialRows.map((row) => (
+                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                          <td style={{ padding: "8px", textAlign: "center" }}>
+                            <Checkbox
+                              checked={selectedMaterialRows.has(row.id)}
+                              onCheckedChange={() => toggleSelectMaterialRow(row.id)}
+                              data-testid={`checkbox-material-${row.id}`}
+                            />
+                          </td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.공종}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.자재}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.규격}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.단위}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.기준단가?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.수량}</td>
+                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right", fontWeight: 600 }}>{row.금액?.toLocaleString() || 0}</td>
+                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.비고}</td>
+                          <td style={{ padding: "8px" }}>
+                            <div style={{ display: "flex", gap: "4px" }}>
+                              <button
+                                style={{
+                                  padding: "4px 8px",
+                                  background: "white",
+                                  border: "1px solid rgba(12, 12, 12, 0.1)",
+                                  borderRadius: "4px",
+                                  fontSize: "12px",
+                                  cursor: "pointer",
+                                }}
+                                data-testid={`button-adjust-material-${row.id}`}
+                              >
+                                보정
+                              </button>
+                              <button
+                                style={{
+                                  padding: "4px 8px",
+                                  background: "white",
+                                  border: "1px solid rgba(12, 12, 12, 0.1)",
+                                  borderRadius: "4px",
+                                  fontSize: "12px",
+                                  cursor: "pointer",
+                                }}
+                                data-testid={`button-duplicate-material-${row.id}`}
+                              >
+                                복제
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -2521,7 +2835,7 @@ export default function FieldEstimate() {
                       marginLeft: "12px",
                     }}
                   >
-                    2025-00-00
+                    {getCurrentDate()}
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
