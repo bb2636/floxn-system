@@ -61,6 +61,9 @@ interface Estimate {
   caseId: string;
   version: number;
   status: string;
+  laborCostData?: any;
+  materialCostData?: any;
+  createdAt?: string;
 }
 
 interface EstimateRow {
@@ -68,7 +71,11 @@ interface EstimateRow {
   category: string;
   location: string;
   workName: string;
+  damageWidth?: number;
+  damageHeight?: number;
   damageArea: number;
+  repairWidth?: number;
+  repairHeight?: number;
   repairArea: number;
   note: string;
 }
@@ -1584,7 +1591,7 @@ export default function FieldReport() {
                   </CardContent>
                 </Card>
 
-                {/* 노무비 - 향후 구현 예정 */}
+                {/* 노무비 */}
                 <Card className="mb-6">
                   <CardHeader>
                     <CardTitle
@@ -1595,25 +1602,65 @@ export default function FieldReport() {
                         color: "rgba(12, 12, 12, 0.8)",
                       }}
                     >
-                      노무비 {new Date(estimate.estimate.createdAt).toISOString().split('T')[0]}
+                      노무비 {estimate.estimate.createdAt ? new Date(estimate.estimate.createdAt).toISOString().split('T')[0] : ''}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.5)",
-                        textAlign: "center",
-                        padding: "40px 0",
-                      }}
-                    >
-                      노무비 데이터가 없습니다.
-                    </p>
+                    {estimate.estimate.laborCostData && Array.isArray(estimate.estimate.laborCostData) && estimate.estimate.laborCostData.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table
+                          style={{
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            fontFamily: "Pretendard",
+                            fontSize: "13px",
+                          }}
+                        >
+                          <thead>
+                            <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>공종</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>공사명</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>세부공사</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>세부항목</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>단위</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>기준가(단위)</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>수량</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>금액</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {estimate.estimate.laborCostData.map((row: any, index: number) => (
+                              <tr key={row.id || index} style={{ borderBottom: index === estimate.estimate.laborCostData.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailWork || '-'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailItem || '-'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.unit || '-'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "right" }}>{row.standardPrice ? row.standardPrice.toLocaleString() : '0'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.quantity || 0}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{row.amount ? row.amount.toLocaleString() : '0'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "rgba(12, 12, 12, 0.5)",
+                          textAlign: "center",
+                          padding: "40px 0",
+                        }}
+                      >
+                        노무비 데이터가 없습니다.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
 
-                {/* 자재비 - 향후 구현 예정 */}
+                {/* 자재비 */}
                 <Card className="mb-6">
                   <CardHeader>
                     <CardTitle
@@ -1624,21 +1671,61 @@ export default function FieldReport() {
                         color: "rgba(12, 12, 12, 0.8)",
                       }}
                     >
-                      자재비 {new Date(estimate.estimate.createdAt).toISOString().split('T')[0]}
+                      자재비 {estimate.estimate.createdAt ? new Date(estimate.estimate.createdAt).toISOString().split('T')[0] : ''}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.5)",
-                        textAlign: "center",
-                        padding: "40px 0",
-                      }}
-                    >
-                      자재비 데이터가 없습니다.
-                    </p>
+                    {estimate.estimate.materialCostData && Array.isArray(estimate.estimate.materialCostData) && estimate.estimate.materialCostData.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table
+                          style={{
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            fontFamily: "Pretendard",
+                            fontSize: "13px",
+                          }}
+                        >
+                          <thead>
+                            <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>공종</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>자재</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>규격</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>단위</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>기준단가</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>수량</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>금액</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>비고</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {estimate.estimate.materialCostData.map((row: any, index: number) => (
+                              <tr key={row.id || index} style={{ borderBottom: index === estimate.estimate.materialCostData.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.공종 || '-'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.자재 || '-'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.규격 || '-'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.단위 || '-'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "right" }}>{row.기준단가 ? row.기준단가.toLocaleString() : '0'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.수량 || 0}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{row.금액 ? row.금액.toLocaleString() : '0'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.비고 || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "rgba(12, 12, 12, 0.5)",
+                          textAlign: "center",
+                          padding: "40px 0",
+                        }}
+                      >
+                        자재비 데이터가 없습니다.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
 
