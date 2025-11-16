@@ -329,9 +329,9 @@ export default function ComprehensiveProgress() {
     }
   }, [showProgressDialog, progressForm]);
 
-  // 협력사 특이사항 폼 초기화 (탭 전환 시 또는 케이스 변경 시)
+  // 협력사 진행상황 폼 초기화 (탭 전환 시 또는 케이스 변경 시)
   useEffect(() => {
-    if (detailTab === "특이사항" && user?.role === "협력사" && selectedCase) {
+    if (detailTab === "진행상황" && user?.role === "협력사" && selectedCase) {
       specialNotesForm.reset({
         specialNotes: selectedCase.specialNotes || "",
       });
@@ -1017,7 +1017,7 @@ export default function ComprehensiveProgress() {
                   borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                   padding: "0 20px",
                 }}>
-                  {["기본정보", "일자", "특이사항"].map((tab) => (
+                  {["기본정보", "일자", "진행상황"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setDetailTab(tab)}
@@ -1456,152 +1456,11 @@ export default function ComprehensiveProgress() {
                 </div>
               )}
 
-              {/* 특이사항 탭 */}
-              {detailTab === "특이사항" && (
+              {/* 진행상황 탭 */}
+              {detailTab === "진행상황" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {/* 관리자 화면 */}
+                  {/* 관리자 화면 - 진행상황 입력 */}
                   {user?.role === "관리자" && (
-                    <>
-                      {/* 진행상황 */}
-                      {selectedCase.latestProgress && selectedCase.latestProgress.length > 0 && (
-                        <div 
-                          style={{
-                            background: "rgba(12, 12, 12, 0.04)",
-                            backdropFilter: "blur(7px)",
-                            borderRadius: "12px",
-                            padding: "16px",
-                          }}
-                        >
-                          <div style={{
-                            fontFamily: "Pretendard",
-                            fontWeight: 600,
-                            fontSize: "14px",
-                            color: "rgba(12, 12, 12, 0.9)",
-                            marginBottom: "12px",
-                          }}>
-                            진행상황
-                          </div>
-                          
-                          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                            {selectedCase.latestProgress.map((progress: any, idx: number) => (
-                              <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                                <div style={{
-                                  fontFamily: "Pretendard",
-                                  fontSize: "12px",
-                                  color: "rgba(12, 12, 12, 0.5)",
-                                }}>
-                                  {formatDate(progress.createdAt)}
-                                </div>
-                                <div style={{
-                                  fontFamily: "Pretendard",
-                                  fontSize: "14px",
-                                  color: "rgba(12, 12, 12, 0.8)",
-                                }}>
-                                  {progress.content}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 특이사항 */}
-                      <div 
-                        style={{
-                          background: "rgba(12, 12, 12, 0.04)",
-                          backdropFilter: "blur(7px)",
-                          borderRadius: "12px",
-                          padding: "16px",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
-                          {selectedCase.specialNotes && (
-                            <div style={{
-                              width: "6px",
-                              height: "6px",
-                              background: selectedCase.specialNotesConfirmedBy ? "#008FED" : "#ED1C00",
-                              borderRadius: "50%",
-                            }}></div>
-                          )}
-                          <div style={{
-                            fontFamily: "Pretendard",
-                            fontWeight: 600,
-                            fontSize: "14px",
-                            color: "rgba(12, 12, 12, 0.9)",
-                          }}>
-                            특이사항
-                          </div>
-                        </div>
-                        
-                        <div style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          color: selectedCase.specialNotes ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
-                          lineHeight: "1.6",
-                        }}>
-                          {selectedCase.specialNotes || "특이사항이 없습니다."}
-                        </div>
-                        
-                        {selectedCase.specialNotes && !selectedCase.specialNotesConfirmedBy && (
-                          <div style={{ marginTop: "12px" }}>
-                            <button
-                              onClick={() => {
-                                if (selectedCaseId) {
-                                  confirmSpecialNotesMutation.mutate(selectedCaseId);
-                                }
-                              }}
-                              disabled={confirmSpecialNotesMutation.isPending}
-                              style={{
-                                width: "100%",
-                                height: "40px",
-                                background: "#008FED",
-                                border: "none",
-                                borderRadius: "8px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 600,
-                                fontSize: "14px",
-                                color: "#FFFFFF",
-                                cursor: confirmSpecialNotesMutation.isPending ? "not-allowed" : "pointer",
-                                opacity: confirmSpecialNotesMutation.isPending ? 0.6 : 1,
-                              }}
-                              data-testid="button-confirm-special-notes"
-                            >
-                              {confirmSpecialNotesMutation.isPending ? "확인 중..." : "특이사항 확인"}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 진행상황 추가 버튼 */}
-                      <button
-                        onClick={handleOpenProgressDialog}
-                        style={{
-                          width: "100%",
-                          height: "52px",
-                          background: "#FFFFFF",
-                          border: "1px solid rgba(0, 143, 237, 0.3)",
-                          boxShadow: "2px 4px 30px #BDD1F0",
-                          borderRadius: "10px",
-                          padding: "10px",
-                          fontFamily: "Pretendard",
-                          fontWeight: 600,
-                          fontSize: "18px",
-                          letterSpacing: "-0.02em",
-                          color: "#0C95F6",
-                          cursor: "pointer",
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                        data-testid="button-add-progress"
-                      >
-                        진행상황 추가
-                      </button>
-                    </>
-                  )}
-
-                  {/* 협력사 화면 - 특이사항 입력 폼 */}
-                  {user?.role === "협력사" && (
                     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                       <div style={{
                         fontFamily: "Pretendard",
@@ -1610,15 +1469,15 @@ export default function ComprehensiveProgress() {
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.9)",
                       }}>
-                        특이사항 입력
+                        진행상황 입력
                       </div>
 
                       <div style={{ position: "relative" }}>
                         <textarea
                           value={specialNotesForm.watch("specialNotes")}
                           onChange={(e) => specialNotesForm.setValue("specialNotes", e.target.value)}
-                          placeholder="사전 허가로 사전 작업 모습시행을 정상처리 주세요"
-                          maxLength={850}
+                          placeholder="사업 참여자 사전 확보·포상제도 안내했습니다."
+                          maxLength={1000}
                           style={{
                             width: "100%",
                             minHeight: "200px",
@@ -1632,7 +1491,7 @@ export default function ComprehensiveProgress() {
                             color: "rgba(12, 12, 12, 0.9)",
                             resize: "vertical",
                           }}
-                          data-testid="textarea-special-notes"
+                          data-testid="textarea-progress-input"
                         />
                         <div style={{
                           position: "absolute",
@@ -1642,14 +1501,14 @@ export default function ComprehensiveProgress() {
                           fontSize: "12px",
                           color: "rgba(12, 12, 12, 0.5)",
                         }}>
-                          {specialNotesForm.watch("specialNotes").length} / 850
+                          {specialNotesForm.watch("specialNotes").length} / 1000
                         </div>
                       </div>
 
                       <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
                         <button
                           onClick={() => {
-                            specialNotesForm.reset();
+                            specialNotesForm.reset({ specialNotes: "" });
                           }}
                           style={{
                             padding: "10px 24px",
@@ -1662,9 +1521,9 @@ export default function ComprehensiveProgress() {
                             color: "rgba(12, 12, 12, 0.7)",
                             cursor: "pointer",
                           }}
-                          data-testid="button-cancel-special-notes"
+                          data-testid="button-reset-progress"
                         >
-                          취소
+                          초기화
                         </button>
                         <button
                           onClick={() => {
@@ -1688,10 +1547,45 @@ export default function ComprehensiveProgress() {
                             cursor: specialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim() ? "not-allowed" : "pointer",
                             opacity: specialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim() ? 0.6 : 1,
                           }}
-                          data-testid="button-save-special-notes"
+                          data-testid="button-save-progress"
                         >
                           {specialNotesMutation.isPending ? "저장 중..." : "저장"}
                         </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 협력사 화면 - 진행상황 보기 (읽기 전용) */}
+                  {user?.role === "협력사" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                      <div style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "16px",
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}>
+                        진행상황
+                      </div>
+
+                      <div 
+                        style={{
+                          width: "100%",
+                          minHeight: "200px",
+                          padding: "16px",
+                          background: "rgba(12, 12, 12, 0.04)",
+                          border: "1px solid rgba(12, 12, 12, 0.1)",
+                          borderRadius: "8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          lineHeight: "1.6",
+                          color: selectedCase.specialNotes ? "rgba(12, 12, 12, 0.9)" : "rgba(12, 12, 12, 0.5)",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                        data-testid="text-progress-readonly"
+                      >
+                        {selectedCase.specialNotes || "관리자가 입력한 진행상황이 없습니다."}
                       </div>
                     </div>
                   )}
