@@ -4,6 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Trash2 } from "lucide-react";
 import { useMemo } from "react";
 
+// MaterialCatalogItem is same as Material from field-estimate
+// Using this type for clarity
 export interface MaterialCatalogItem {
   id: string;
   materialName: string;

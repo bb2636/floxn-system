@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LaborCostSection, type LaborCatalogItem, type LaborCostRow } from "@/components/labor-cost-section";
+import { MaterialCostSection, type MaterialCatalogItem } from "@/components/material-cost-section";
 
 interface AreaCalculationRow {
   id: string;
@@ -115,6 +116,11 @@ export default function FieldEstimate() {
   // 노무비 카탈로그 조회 (from excel_data)
   const { data: laborCatalog = [], isLoading: isLoadingLaborCatalog } = useQuery<LaborCatalogItem[]>({
     queryKey: ['/api/labor-catalog'],
+  });
+
+  // 자재비 카탈로그 조회 (from excel_data)
+  const { data: materialCatalog = [], isLoading: isLoadingMaterialCatalog } = useQuery<MaterialCatalogItem[]>({
+    queryKey: ['/api/materials'],
   });
 
   // 빈 노무비 행 생성 함수
@@ -354,6 +360,54 @@ export default function FieldEstimate() {
     const newRow = { ...row, id: `labor-${Date.now()}-${Math.random()}` };
     setLaborCostRows(prev => [...prev, newRow]);
   };
+
+  // 자재비 행 추가
+  const addMaterialRow = () => {
+    setMaterialRows(prev => [...prev, createBlankMaterialRow()]);
+  };
+
+  // 선택된 자재비 행 삭제
+  const deleteSelectedMaterialRows = () => {
+    if (selectedMaterialRows.size === 0) return;
+    // 삭제된 행과 연결된 노무비 행 정보 제거
+    const deletedSourceIds = new Set(
+      materialRows
+        .filter(row => selectedMaterialRows.has(row.id))
+        .map(row => row.sourceLaborRowId)
+        .filter(Boolean)
+    );
+    setMaterialRows(prev => prev.filter(row => !selectedMaterialRows.has(row.id)));
+    setSelectedMaterialRows(new Set());
+  };
+
+  // 자재비 행 전체 선택/해제
+  const toggleSelectAllMaterialRows = () => {
+    if (selectedMaterialRows.size === materialRows.length) {
+      setSelectedMaterialRows(new Set());
+    } else {
+      setSelectedMaterialRows(new Set(materialRows.map(row => row.id)));
+    }
+  };
+
+  // 자재비 행 개별 선택
+  const toggleSelectMaterialRow = (rowId: string) => {
+    setSelectedMaterialRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(rowId)) {
+        newSet.delete(rowId);
+      } else {
+        newSet.add(rowId);
+      }
+      return newSet;
+    });
+  };
+
+  // 노무비 공종 목록 (자재비에서 사용)
+  const laborCategories = useMemo(() => {
+    if (!laborCatalog.length) return [];
+    const unique = new Set(laborCatalog.map(item => item.공종));
+    return Array.from(unique).sort();
+  }, [laborCatalog]);
 
   // 자재비 선택기 state
   const [selectedMaterialCategory, setSelectedMaterialCategory] = useState("");
@@ -2735,46 +2789,6 @@ export default function FieldEstimate() {
                               data-testid={`input-price-sqm-${index}`}
                             />
                           </td>
-                          
-                          {/* 피해면적 - Read-only */}
-                          <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
-                            {Number(row.damageArea).toLocaleString()}
-                          </td>
-                          
-                          {/* 공제(원) - Read-only */}
-                          <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
-                            {Number(row.deduction).toLocaleString()}
-                          </td>
-                          
-                          {/* 경비여부 - 복제 버튼 */}
-                          <td style={{ padding: "0 12px", textAlign: "center" }}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                const newRow = { ...row, id: `labor-${Date.now()}-${Math.random()}` };
-                                setLaborCostRows(prev => [...prev, newRow]);
-                              }}
-                              style={{ fontFamily: "Pretendard", fontSize: "13px" }}
-                              data-testid={`button-duplicate-${index}`}
-                            >
-                              복제
-                            </Button>
-                          </td>
-                          
-                          {/* 요청 - Editable Input */}
-                          <td style={{ padding: "0 8px" }}>
-                            <Input
-                              value={row.request || ""}
-                              onChange={(e) => {
-                                setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, request: e.target.value } : r));
-                              }}
-                              className="h-9 border-0 bg-transparent"
-                              style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                              placeholder="-"
-                              data-testid={`input-request-${index}`}
-                            />
-                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -2784,423 +2798,87 @@ export default function FieldEstimate() {
           </div>
         )}
 
-        {/* 자재비 컨텐츠 - NEW */}
+        {/* 자재비 섹션 */}
         {selectedCategory === "자재비" && (
           <div style={{ marginTop: "40px" }}>
-              <div
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "12px",
+              }}
+            >
+              <span
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "12px",
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "18px",
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
                 }}
               >
-                <div>
-                  <span
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 600,
-                      fontSize: "16px",
-                      letterSpacing: "-0.02em",
-                      color: "#0C0C0C",
-                    }}
-                  >
-                    자재비
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      color: "#686A6E",
-                      marginLeft: "12px",
-                    }}
-                  >
-                    2025-00-00
-                  </span>
-                </div>
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <button
-                    style={{
-                      padding: "6px 12px",
-                      background: "white",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                      borderRadius: "4px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      cursor: "pointer",
-                    }}
-                    data-testid="button-add-row-material"
-                  >
-                    월 추가
-                  </button>
-                  <button
-                    style={{
-                      padding: "6px 12px",
-                      background: "white",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                      borderRadius: "4px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "#D02B20",
-                      cursor: "pointer",
-                    }}
-                    data-testid="button-delete-row-material"
-                  >
-                    행 삭제
-                  </button>
-                </div>
-              </div>
-              
-              {/* 자재비 테이블 */}
-              {materialRows.length > 0 && (
-                <div
-                  style={{
-                    background: "#FDFDFD",
-                    boxShadow: "0px 0px 20px #DBE9F5",
-                    borderRadius: "8px",
-                    overflow: "auto",
-                  }}
+                자재비
+              </span>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <Button
+                  onClick={addMaterialRow}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-add-material-row"
                 >
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      minWidth: "1000px",
-                    }}
-                  >
-                    <thead>
-                      <tr
-                        style={{
-                          background: "rgba(12, 12, 12, 0.04)",
-                          borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
-                        }}
-                      >
-                        <th style={{ width: "40px", padding: "12px", textAlign: "center" }}></th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공종</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>자재명</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>규격</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단위</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>수량</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>금액</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>비고</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {materialRows.map((row) => (
-                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
-                          <td style={{ padding: "8px", textAlign: "center" }}>
-                            <input type="checkbox" />
-                          </td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.materialName}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.materialName}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.specification}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.unit}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.standardPrice}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.quantity}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right" }}>{row.amount}</td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px" }}>{row.request}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                  <Plus className="w-4 h-4 mr-1" />
+                  행 추가
+                </Button>
+                <Button
+                  onClick={deleteSelectedMaterialRows}
+                  variant="outline"
+                  size="sm"
+                  disabled={selectedMaterialRows.size === 0}
+                  data-testid="button-delete-material-rows"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  선택 삭제
+                </Button>
+              </div>
+            </div>
 
-              {/* 총 비용 계산 섹션 */}
-              <div
+            <MaterialCostSection
+              rows={materialRows}
+              onRowsChange={setMaterialRows}
+              catalog={materialCatalog}
+              laborCategories={laborCategories}
+              selectedRows={selectedMaterialRows}
+              onSelectRow={toggleSelectMaterialRow}
+              onSelectAll={toggleSelectAllMaterialRows}
+              isLoading={isLoadingMaterialCatalog}
+            />
+
+            {/* 하단 버튼 */}
+            <div
+              className="flex justify-end items-center mt-8"
+              style={{ padding: "20px 0" }}
+            >
+              <button
+                type="button"
+                onClick={handleSave}
+                className="hover-elevate active-elevate-2"
                 style={{
-                  marginTop: "40px",
-                  padding: "24px 32px",
-                  background: "rgba(0, 143, 237, 0.03)",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  height: "52px",
+                  padding: "12px 48px",
+                  background: "#008FED",
+                  color: "#FFFFFF",
+                  border: "none",
                   borderRadius: "8px",
                 }}
+                data-testid="button-save-material"
               >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "12px",
-                    maxWidth: "500px",
-                    marginLeft: "auto",
-                  }}
-                >
-                  {/* 소계 */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.8)",
-                      }}
-                    >
-                      소계
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        color: "rgba(12, 12, 12, 0.9)",
-                      }}
-                    >
-                      {estimateSummary.subtotal.toLocaleString()}
-                    </span>
-                  </div>
-
-                  {/* 일반관리비 (6%) */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.8)",
-                      }}
-                    >
-                      일반관리비 (6%)
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        color: "rgba(12, 12, 12, 0.9)",
-                      }}
-                    >
-                      {estimateSummary.managementFee.toLocaleString()}
-                    </span>
-                  </div>
-
-                  {/* 이윤 (15%) */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.8)",
-                      }}
-                    >
-                      이윤 (15%)
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        color: "rgba(12, 12, 12, 0.9)",
-                      }}
-                    >
-                      {estimateSummary.profit.toLocaleString()}
-                    </span>
-                  </div>
-
-                  {/* VAT */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "16px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 500,
-                          color: "rgba(12, 12, 12, 0.8)",
-                        }}
-                      >
-                        VAT
-                      </span>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "12px",
-                        }}
-                      >
-                        <label
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            checked={vatIncluded}
-                            onChange={() => setVatIncluded(true)}
-                            style={{
-                              accentColor: "#008FED",
-                            }}
-                          />
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.7)",
-                            }}
-                          >
-                            포함
-                          </span>
-                        </label>
-                        <label
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            checked={!vatIncluded}
-                            onChange={() => setVatIncluded(false)}
-                            style={{
-                              accentColor: "#008FED",
-                            }}
-                          />
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.7)",
-                            }}
-                          >
-                            별도
-                          </span>
-                        </label>
-                      </div>
-                    </div>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        color: "rgba(12, 12, 12, 0.9)",
-                      }}
-                    >
-                      {estimateSummary.vat.toLocaleString()}
-                    </span>
-                  </div>
-
-                  {/* 구분선 */}
-                  <div
-                    style={{
-                      height: "1px",
-                      background: "rgba(12, 12, 12, 0.1)",
-                      margin: "8px 0",
-                    }}
-                  />
-
-                  {/* 총 합계 */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "18px",
-                        fontWeight: 600,
-                        color: "#008FED",
-                      }}
-                    >
-                      총 합계
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "24px",
-                        fontWeight: 700,
-                        color: "#008FED",
-                      }}
-                      data-testid="text-total-amount"
-                    >
-                      {estimateSummary.total.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-          </div>
-        )}
-
-        {/* 하단 버튼 - 복구면적 산출표 */}
-        {selectedCategory === "복구면적 산출표" && (
-          <div
-            className="flex justify-between items-center mt-8"
-            style={{
-              padding: "20px 0",
-            }}
-          >
-            <button
-              type="button"
-              onClick={handleReset}
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "16px",
-                fontWeight: 600,
-                color: "#FF4D4F",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
-              data-testid="button-reset"
-            >
-              초기화
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSave}
-              className="hover-elevate active-elevate-2"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "16px",
-                fontWeight: 600,
-                height: "52px",
-                padding: "12px 48px",
-                background: "#008FED",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: "8px",
-              }}
-              data-testid="button-save"
-            >
-              저장
-            </button>
+                저장
+              </button>
+            </div>
           </div>
         )}
 
@@ -3252,548 +2930,8 @@ export default function FieldEstimate() {
         )}
 
         {/* 자재비 컨텐츠 */}
-        {selectedCategory === "자재비" && (
-          <div>
-            {/* 상단 탭 버튼 및 공종 선택 */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "20px",
-              }}
-            >
-              {/* 좌측 탭 버튼 */}
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  style={{
-                    padding: "10px 20px",
-                    background: "white",
-                    border: "1px solid rgba(12, 12, 12, 0.1)",
-                    borderRadius: "6px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#0C0C0C",
-                    cursor: "pointer",
-                  }}
-                  data-testid="button-pyeongsu"
-                >
-                  평수별
-                </button>
-                <button
-                  style={{
-                    padding: "10px 20px",
-                    background: "white",
-                    border: "1px solid rgba(12, 12, 12, 0.1)",
-                    borderRadius: "6px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#0C0C0C",
-                    cursor: "pointer",
-                  }}
-                  data-testid="button-hyeong-materials"
-                >
-                  형 자재
-                </button>
-                <button
-                  style={{
-                    padding: "10px 20px",
-                    background: "white",
-                    border: "1px solid rgba(12, 12, 12, 0.1)",
-                    borderRadius: "6px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#0C0C0C",
-                    cursor: "pointer",
-                  }}
-                  data-testid="button-go-to-estimate-materials"
-                >
-                  견적서 이동
-                </button>
-              </div>
-
-              {/* 우측 공종 선택 */}
-              <div style={{ width: "200px" }}>
-                <Select
-                  value={selectedMaterialCategory}
-                  onValueChange={setSelectedMaterialCategory}
-                >
-                  <SelectTrigger 
-                    className="border focus:ring-0"
-                    style={{
-                      width: "100%",
-                      height: "40px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      borderColor: "rgba(12, 12, 12, 0.2)",
-                      borderRadius: "6px",
-                      background: "white",
-                    }}
-                    data-testid="select-material-category-filter"
-                  >
-                    <SelectValue placeholder="공종 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableMaterialCategories.map(cat => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* 항목 추가 버튼 */}
-            <div style={{ marginBottom: "16px" }}>
-              <Button
-                type="button"
-                onClick={addBlankMaterialRow}
-                className="hover-elevate active-elevate-2"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 500,
-                  padding: "10px 20px",
-                  background: "#008FED",
-                  color: "#FFFFFF",
-                  border: "none",
-                  borderRadius: "6px",
-                }}
-                data-testid="button-add-material-row"
-              >
-                <Plus size={16} />
-                항목 추가
-              </Button>
-            </div>
-
-            {/* 자재비 테이블 */}
-            <div style={{ overflowX: "auto" }}>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  marginBottom: "16px",
-                }}
-              >
-                <thead>
-                  <tr>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        width: "40px",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={materialRows.length > 0 && selectedMaterialRows.size === materialRows.length}
-                        onChange={toggleAllMaterialRows}
-                        style={{ cursor: "pointer" }}
-                        data-testid="checkbox-all-materials"
-                      />
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        minWidth: "120px",
-                      }}
-                    >
-                      공종
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        minWidth: "120px",
-                      }}
-                    >
-                      자재
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        minWidth: "100px",
-                      }}
-                    >
-                      규격
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        minWidth: "70px",
-                      }}
-                    >
-                      단위
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        minWidth: "100px",
-                      }}
-                    >
-                      기본단가
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        minWidth: "90px",
-                      }}
-                    >
-                      수량
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        minWidth: "110px",
-                      }}
-                    >
-                      금액
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        background: "rgba(12, 12, 12, 0.02)",
-                        border: "1px solid rgba(12, 12, 12, 0.08)",
-                        fontWeight: 600,
-                        textAlign: "center",
-                        minWidth: "200px",
-                      }}
-                    >
-                      비고
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {materialRows.map((row) => (
-                    <tr key={row.id}>
-                      {/* 체크박스 */}
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                          textAlign: "center",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedMaterialRows.has(row.id)}
-                          onChange={() => toggleMaterialRow(row.id)}
-                          style={{ cursor: "pointer" }}
-                          data-testid={`checkbox-material-${row.id}`}
-                        />
-                      </td>
-
-                      {/* 공종 (드롭다운 또는 텍스트) */}
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "1px solid rgba(12, 12, 12, 0.06)",
-                            borderRadius: "4px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            background: "rgba(12, 12, 12, 0.02)",
-                            color: "#0C0C0C",
-                          }}
-                          data-testid={`text-category-${row.id}`}
-                        >
-                          {row.category}
-                        </div>
-                      </td>
-
-                      {/* 자재 (드롭다운 또는 텍스트) */}
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "1px solid rgba(12, 12, 12, 0.06)",
-                            borderRadius: "4px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            background: "rgba(12, 12, 12, 0.02)",
-                            color: "#0C0C0C",
-                          }}
-                          data-testid={`text-materialName-${row.id}`}
-                        >
-                          {row.materialName}
-                        </div>
-                      </td>
-
-                      {/* 규격 (읽기전용) */}
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "1px solid rgba(12, 12, 12, 0.06)",
-                            borderRadius: "4px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            background: "rgba(12, 12, 12, 0.02)",
-                            color: "#0C0C0C",
-                          }}
-                          data-testid={`text-specification-${row.id}`}
-                        >
-                          {row.specification}
-                        </div>
-                      </td>
-
-                      {/* 단위 (읽기전용) */}
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "1px solid rgba(12, 12, 12, 0.06)",
-                            borderRadius: "4px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            background: "rgba(12, 12, 12, 0.02)",
-                            color: "#0C0C0C",
-                            textAlign: "center",
-                          }}
-                          data-testid={`text-unit-${row.id}`}
-                        >
-                          {row.unit}
-                        </div>
-                      </td>
-
-                      {/* 기본단가 (읽기전용) */}
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "1px solid rgba(12, 12, 12, 0.06)",
-                            borderRadius: "4px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            background: "rgba(12, 12, 12, 0.02)",
-                            color: "#0C0C0C",
-                            textAlign: "right",
-                          }}
-                          data-testid={`text-standardPrice-${row.id}`}
-                        >
-                          {row.standardPrice.toLocaleString()}
-                        </div>
-                      </td>
-
-                      {/* 수량 (편집 가능, 파란색 테두리) */}
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <input
-                          type="text"
-                          value={row.quantity}
-                          onChange={(e) => updateMaterialRow(row.id, { quantity: e.target.value })}
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "2px solid #008FED",
-                            borderRadius: "4px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            textAlign: "right",
-                          }}
-                          data-testid={`input-quantity-${row.id}`}
-                        />
-                      </td>
-
-                      {/* 금액 (읽기전용) */}
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "1px solid rgba(12, 12, 12, 0.06)",
-                            borderRadius: "4px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            background: "rgba(12, 12, 12, 0.02)",
-                            color: "#0C0C0C",
-                            textAlign: "right",
-                          }}
-                          data-testid={`text-amount-${row.id}`}
-                        >
-                          {row.amount.toLocaleString()}
-                        </div>
-                      </td>
-
-                      {/* 비고 (편집 가능, 파란색 테두리, 넓음) */}
-                      <td
-                        style={{
-                          padding: "8px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <input
-                          type="text"
-                          value={row.note}
-                          onChange={(e) => updateMaterialRow(row.id, { note: e.target.value })}
-                          style={{
-                            width: "100%",
-                            padding: "8px",
-                            border: "2px solid #008FED",
-                            borderRadius: "4px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                          }}
-                          data-testid={`input-note-${row.id}`}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* 삭제 버튼 */}
-              <div style={{ marginTop: "16px" }}>
-                <Button
-                  type="button"
-                  onClick={deleteMaterialRows}
-                  disabled={selectedMaterialRows.size === 0}
-                  className="hover-elevate active-elevate-2"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 500,
-                    padding: "10px 20px",
-                    background: "white",
-                    color: "#FF4D4F",
-                    border: "1px solid rgba(12, 12, 12, 0.12)",
-                    borderRadius: "6px",
-                  }}
-                  data-testid="button-delete-materials"
-                >
-                  <Trash2 size={16} />
-                  삭제
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* 하단 버튼 - 자재비 */}
-        {selectedCategory === "자재비" && (
-          <div
-            className="flex justify-between items-center mt-8"
-            style={{
-              padding: "20px 0",
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setMaterialRows([])}
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "16px",
-                fontWeight: 600,
-                color: "#FF4D4F",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-              }}
-              data-testid="button-reset-materials"
-            >
-              초기화
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSave}
-              className="hover-elevate active-elevate-2"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "16px",
-                fontWeight: 600,
-                height: "52px",
-                padding: "12px 48px",
-                background: "#008FED",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: "8px",
-              }}
-              data-testid="button-save-materials"
-            >
-              저장
-            </button>
-          </div>
-        )}
       </div>
     </FieldSurveyLayout>
   );
