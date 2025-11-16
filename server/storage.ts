@@ -56,7 +56,7 @@ export interface IStorage {
   createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
   getCaseById(caseId: string): Promise<Case | null>;
   getAssignedCasesForUser(user: User, search?: string): Promise<Case[]>;
-  getAllCases(): Promise<CaseWithLatestProgress[]>;
+  getAllCases(user?: User): Promise<CaseWithLatestProgress[]>;
   updateCaseStatus(caseId: string, status: string): Promise<Case | null>;
   updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null>;
   confirmCaseSpecialNotes(caseId: string, confirmedBy: string): Promise<Case | null>;
@@ -1079,8 +1079,48 @@ export class MemStorage implements IStorage {
     return newCase;
   }
 
-  async getAllCases(): Promise<CaseWithLatestProgress[]> {
-    const allCases = Array.from(this.cases.values());
+  async getAllCases(user?: User): Promise<CaseWithLatestProgress[]> {
+    let allCases = Array.from(this.cases.values());
+    
+    // 권한별 필터링
+    if (user) {
+      switch (user.role) {
+        case "관리자":
+          // 관리자는 모든 케이스 조회 가능
+          break;
+        case "협력사":
+          // 팀장은 자기 회사의 모든 케이스
+          // 일반 직원은 자기가 맡은 케이스만
+          if (user.position === "팀장") {
+            allCases = allCases.filter(c => c.assignedPartner === user.company);
+          } else {
+            allCases = allCases.filter(c => 
+              c.assignedPartner === user.company && 
+              c.assignedPartnerManager === user.name
+            );
+          }
+          break;
+        case "보험사":
+          // 보험사는 자기 회사 케이스만
+          allCases = allCases.filter(c => c.insuranceCompany === user.company);
+          break;
+        case "심사사":
+          // 심사사는 자기가 맡은 케이스만
+          allCases = allCases.filter(c => c.assessorId === user.id);
+          break;
+        case "조사사":
+          // 조사사는 자기 팀 케이스만
+          allCases = allCases.filter(c => c.investigatorTeamName === user.company);
+          break;
+        case "의뢰사":
+          // 의뢰사는 자기가 의뢰한 케이스만
+          allCases = allCases.filter(c => c.clientName === user.name);
+          break;
+        default:
+          // 기타 role은 빈 배열 반환
+          allCases = [];
+      }
+    }
     
     // createdAt 기준 오름차순 정렬 (가장 오래된 것부터)
     allCases.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
@@ -2009,8 +2049,52 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async getAllCases(): Promise<CaseWithLatestProgress[]> {
-    const allCases = await db.select().from(cases).orderBy(asc(cases.createdAt));
+  async getAllCases(user?: User): Promise<CaseWithLatestProgress[]> {
+    let query: any = db.select().from(cases);
+    
+    // 권한별 필터링
+    if (user) {
+      switch (user.role) {
+        case "관리자":
+          // 관리자는 모든 케이스 조회 가능
+          break;
+        case "협력사":
+          // 팀장은 자기 회사의 모든 케이스
+          // 일반 직원은 자기가 맡은 케이스만
+          if (user.position === "팀장") {
+            query = query.where(eq(cases.assignedPartner, user.company));
+          } else {
+            query = query.where(
+              and(
+                eq(cases.assignedPartner, user.company),
+                eq(cases.assignedPartnerManager, user.name)
+              )
+            );
+          }
+          break;
+        case "보험사":
+          // 보험사는 자기 회사 케이스만
+          query = query.where(eq(cases.insuranceCompany, user.company));
+          break;
+        case "심사사":
+          // 심사사는 자기가 맡은 케이스만
+          query = query.where(eq(cases.assessorId, user.id));
+          break;
+        case "조사사":
+          // 조사사는 자기 팀 케이스만
+          query = query.where(eq(cases.investigatorTeamName, user.company));
+          break;
+        case "의뢰사":
+          // 의뢰사는 자기가 의뢰한 케이스만
+          query = query.where(eq(cases.clientName, user.name));
+          break;
+        default:
+          // 기타 role은 빈 배열 반환
+          return [];
+      }
+    }
+    
+    const allCases = await query.orderBy(asc(cases.createdAt));
     const allProgressUpdates = await db.select().from(progressUpdates);
     
     // 각 케이스의 최신 진행상황 찾기

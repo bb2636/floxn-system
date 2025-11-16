@@ -277,7 +277,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all cases endpoint
+  // Get all cases endpoint (with role-based filtering)
   app.get("/api/cases", async (req, res) => {
     // Check authentication
     if (!req.session?.userId) {
@@ -285,7 +285,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const cases = await storage.getAllCases();
+      // Get current user for permission-based filtering
+      const currentUser = await storage.getUser(req.session.userId);
+      
+      if (!currentUser) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+      
+      // Get cases filtered by user role and permissions
+      const cases = await storage.getAllCases(currentUser);
       res.json(cases);
     } catch (error) {
       console.error("Get cases error:", error);
@@ -737,7 +745,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get filtered cases for statistics endpoint
+  // Get filtered cases for statistics endpoint (with role-based filtering)
   app.get("/api/statistics/cases", async (req, res) => {
     // Check authentication
     if (!req.session?.userId) {
@@ -745,7 +753,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const allCases = await storage.getAllCases();
+      // Get current user for permission-based filtering
+      const currentUser = await storage.getUser(req.session.userId);
+      
+      if (!currentUser) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+      
+      // Get cases filtered by user role and permissions
+      const allCases = await storage.getAllCases(currentUser);
       res.json(allCases);
     } catch (error) {
       console.error("Get statistics cases error:", error);
