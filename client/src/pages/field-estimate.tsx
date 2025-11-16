@@ -2346,6 +2346,37 @@ export default function FieldEstimate() {
                 </span>
               </div>
             </div>
+
+            {/* 저장 버튼 */}
+            <div
+              style={{
+                marginTop: "24px",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                onClick={() => {
+                  // TODO: 저장 기능 구현
+                  console.log('견적서 저장');
+                }}
+                style={{
+                  padding: "12px 32px",
+                  background: "#008FED",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "white",
+                  cursor: "pointer",
+                  boxShadow: "0px 2px 8px rgba(0, 143, 237, 0.3)",
+                }}
+                data-testid="button-save-estimate"
+              >
+                저장
+              </button>
+            </div>
           </div>
         )}
 
