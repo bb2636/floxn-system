@@ -42,12 +42,17 @@ const specialNotesFormSchema = z.object({
   specialNotes: z.string(),
 });
 
+const progressFormSchema = z.object({
+  content: z.string().min(1, "진행상황 내용을 입력해주세요"),
+});
+
 export default function ComprehensiveProgress() {
   const [activeMenu, setActiveMenu] = useState("종합진행관리");
   const [activeTab, setActiveTab] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [showSpecialNotesDialog, setShowSpecialNotesDialog] = useState(false);
+  const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -100,6 +105,48 @@ export default function ComprehensiveProgress() {
     },
   });
 
+  const confirmSpecialNotesMutation = useMutation({
+    mutationFn: async (caseId: string) => {
+      return await apiRequest("PATCH", `/api/cases/${caseId}/special-notes-confirm`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      setShowSpecialNotesDialog(false);
+      toast({
+        variant: "snackbar",
+        title: "특이사항이 확인되었습니다",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "확인 실패",
+        description: "특이사항 확인 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addProgressMutation = useMutation({
+    mutationFn: async ({ caseId, content }: { caseId: string; content: string }) => {
+      return await apiRequest("POST", `/api/cases/${caseId}/progress`, { content });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      setShowProgressDialog(false);
+      toast({
+        variant: "snackbar",
+        title: "진행상황이 추가되었습니다",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "추가 실패",
+        description: "진행상황 추가 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Find selected case
   const selectedCase = cases?.find(c => c.id === selectedCaseId);
 
@@ -108,6 +155,14 @@ export default function ComprehensiveProgress() {
     resolver: zodResolver(specialNotesFormSchema),
     defaultValues: {
       specialNotes: "",
+    },
+  });
+
+  // Form for progress
+  const progressForm = useForm<z.infer<typeof progressFormSchema>>({
+    resolver: zodResolver(progressFormSchema),
+    defaultValues: {
+      content: "",
     },
   });
 
@@ -187,8 +242,8 @@ export default function ComprehensiveProgress() {
     updateStatusMutation.mutate({ caseId, status });
   };
 
-  // 특이사항 Dialog 열기 핸들러
-  const handleOpenSpecialNotesDialog = () => {
+  // 진행상황 Dialog 열기 핸들러 (관리자만)
+  const handleOpenProgressDialog = () => {
     if (!selectedCaseId) {
       toast({
         title: "케이스 선택 필요",
@@ -200,12 +255,47 @@ export default function ComprehensiveProgress() {
     if (user?.role !== "관리자") {
       toast({
         title: "권한 없음",
-        description: "관리자만 특이사항을 입력할 수 있습니다.",
+        description: "관리자만 진행상황을 입력할 수 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setShowProgressDialog(true);
+  };
+
+  // 특이사항 Dialog 열기 핸들러 (협력사만)
+  const handleOpenSpecialNotesDialog = () => {
+    if (!selectedCaseId) {
+      toast({
+        title: "케이스 선택 필요",
+        description: "케이스를 먼저 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (user?.role !== "협력사") {
+      toast({
+        title: "권한 없음",
+        description: "협력사만 특이사항을 입력할 수 있습니다.",
         variant: "destructive",
       });
       return;
     }
     setShowSpecialNotesDialog(true);
+  };
+
+  // 특이사항 확인 핸들러 (관리자만)
+  const handleConfirmSpecialNotes = () => {
+    if (!selectedCaseId) return;
+    if (user?.role !== "관리자") {
+      toast({
+        title: "권한 없음",
+        description: "관리자만 특이사항을 확인할 수 있습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    confirmSpecialNotesMutation.mutate(selectedCaseId);
   };
 
   // 특이사항 제출 핸들러
@@ -221,6 +311,16 @@ export default function ComprehensiveProgress() {
     });
   };
 
+  // 진행상황 제출 핸들러
+  const handleProgressSubmit = (values: z.infer<typeof progressFormSchema>) => {
+    if (!selectedCaseId) return;
+    
+    addProgressMutation.mutate({
+      caseId: selectedCaseId,
+      content: values.content.trim(),
+    });
+  };
+
   // Dialog 열릴 때 form reset
   useEffect(() => {
     if (showSpecialNotesDialog && selectedCase) {
@@ -229,6 +329,14 @@ export default function ComprehensiveProgress() {
       });
     }
   }, [showSpecialNotesDialog, selectedCase, specialNotesForm]);
+
+  useEffect(() => {
+    if (showProgressDialog) {
+      progressForm.reset({
+        content: "",
+      });
+    }
+  }, [showProgressDialog, progressForm]);
 
   // 당일차 계산 (접수일부터 오늘까지)
   const calculateDays = (createdAt: string | null) => {
@@ -795,7 +903,22 @@ export default function ComprehensiveProgress() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                  <div 
+                    style={{ 
+                      fontFamily: "Pretendard", 
+                      fontSize: "13px", 
+                      color: "rgba(12, 12, 12, 0.8)",
+                      cursor: user?.role === "관리자" ? "pointer" : "default",
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (user?.role === "관리자") {
+                        setSelectedCaseId(caseItem.id);
+                        setShowProgressDialog(true);
+                      }
+                    }}
+                    data-testid={`button-progress-${caseItem.id}`}
+                  >
                     {caseItem.latestProgress?.content || "-"}
                   </div>
                   <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -805,7 +928,7 @@ export default function ComprehensiveProgress() {
                           width: "8px",
                           height: "8px",
                           borderRadius: "50%",
-                          background: "#008FED",
+                          background: caseItem.specialNotesConfirmedBy ? "#008FED" : "#ED1C00",
                         }}
                         data-testid={`special-notes-indicator-${caseItem.id}`}
                       />
@@ -1593,12 +1716,208 @@ export default function ComprehensiveProgress() {
               </div>
             </div>
 
-            {/* 특이사항 Form */}
-            <Form {...specialNotesForm}>
-              <form onSubmit={specialNotesForm.handleSubmit(handleSpecialNotesSubmit)} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {/* 특이사항 Form - 협력사는 입력, 관리자는 확인 */}
+            {user?.role === "협력사" ? (
+              <Form {...specialNotesForm}>
+                <form onSubmit={specialNotesForm.handleSubmit(handleSpecialNotesSubmit)} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  <FormField
+                    control={specialNotesForm.control}
+                    name="specialNotes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 500,
+                          fontSize: "14px",
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                          marginBottom: "8px",
+                        }}>
+                          특이사항
+                        </div>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="특이사항을 입력하세요"
+                            style={{
+                              minHeight: "155px",
+                              borderRadius: "12px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                            }}
+                            data-testid="input-special-notes"
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* 버튼 */}
+                  <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowSpecialNotesDialog(false)}
+                      data-testid="button-cancel-special-notes"
+                    >
+                      취소
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={updateSpecialNotesMutation.isPending}
+                      data-testid="button-save-special-notes"
+                    >
+                      {updateSpecialNotesMutation.isPending ? "저장 중..." : "저장"}
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            ) : (
+              // 관리자는 특이사항 확인만 가능
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                <div>
+                  <div style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                    marginBottom: "8px",
+                  }}>
+                    특이사항
+                  </div>
+                  <div style={{
+                    minHeight: "155px",
+                    borderRadius: "12px",
+                    border: "1px solid rgba(12, 12, 12, 0.1)",
+                    padding: "12px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: "rgba(12, 12, 12, 0.8)",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}>
+                    {selectedCase?.specialNotes || "-"}
+                  </div>
+                  {selectedCase?.specialNotes && !selectedCase?.specialNotesConfirmedBy && (
+                    <div style={{
+                      marginTop: "8px",
+                      fontFamily: "Pretendard",
+                      fontSize: "12px",
+                      color: "#ED1C00",
+                    }}>
+                      ※ 협력사가 작성한 특이사항이 확인되지 않았습니다.
+                    </div>
+                  )}
+                  {selectedCase?.specialNotesConfirmedBy && (
+                    <div style={{
+                      marginTop: "8px",
+                      fontFamily: "Pretendard",
+                      fontSize: "12px",
+                      color: "#008FED",
+                    }}>
+                      ✓ 확인 완료
+                    </div>
+                  )}
+                </div>
+
+                {/* 버튼 */}
+                <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowSpecialNotesDialog(false)}
+                    data-testid="button-cancel-special-notes"
+                  >
+                    닫기
+                  </Button>
+                  {selectedCase?.specialNotes && !selectedCase?.specialNotesConfirmedBy && (
+                    <Button
+                      onClick={handleConfirmSpecialNotes}
+                      disabled={confirmSpecialNotesMutation.isPending}
+                      data-testid="button-confirm-special-notes"
+                    >
+                      {confirmSpecialNotesMutation.isPending ? "확인 중..." : "확인"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 진행상황 추가 Dialog (관리자 전용) */}
+      <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
+        <DialogContent style={{
+          maxWidth: "600px",
+          background: "rgba(253, 253, 253, 0.9)",
+          backdropFilter: "blur(17px)",
+          border: "none",
+          boxShadow: "0px 0px 60px rgba(170, 177, 194, 0.3), 6px 0px 40px rgba(219, 233, 245, 0.3)",
+          borderRadius: "24px",
+        }}>
+          <DialogHeader>
+            <DialogTitle style={{
+              fontFamily: "Pretendard",
+              fontWeight: 600,
+              fontSize: "20px",
+              color: "#0C0C0C",
+            }}>
+              진행상황 추가
+            </DialogTitle>
+          </DialogHeader>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "20px" }}>
+            {/* 케이스 정보 */}
+            <div style={{
+              padding: "16px",
+              background: "rgba(12, 12, 12, 0.03)",
+              borderRadius: "12px",
+            }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "auto 1fr",
+                gap: "8px 16px",
+              }}>
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.6)",
+                }}>
+                  접수번호
+                </span>
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 400,
+                  color: "rgba(12, 12, 12, 0.8)",
+                }}>
+                  {selectedCase?.caseNumber || "-"}
+                </span>
+
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.6)",
+                }}>
+                  보험사
+                </span>
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 400,
+                  color: "rgba(12, 12, 12, 0.8)",
+                }}>
+                  {selectedCase?.insuranceCompany || "-"}
+                </span>
+              </div>
+            </div>
+
+            {/* 진행상황 Form */}
+            <Form {...progressForm}>
+              <form onSubmit={progressForm.handleSubmit(handleProgressSubmit)} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
                 <FormField
-                  control={specialNotesForm.control}
-                  name="specialNotes"
+                  control={progressForm.control}
+                  name="content"
                   render={({ field }) => (
                     <FormItem>
                       <div style={{
@@ -1609,19 +1928,19 @@ export default function ComprehensiveProgress() {
                         color: "#686A6E",
                         marginBottom: "8px",
                       }}>
-                        특이사항
+                        진행상황 내용
                       </div>
                       <FormControl>
                         <Textarea
                           {...field}
-                          placeholder="특이사항을 입력하세요"
+                          placeholder="진행상황을 입력하세요"
                           style={{
                             minHeight: "155px",
                             borderRadius: "12px",
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                           }}
-                          data-testid="input-special-notes"
+                          data-testid="input-progress-content"
                         />
                       </FormControl>
                     </FormItem>
@@ -1633,17 +1952,17 @@ export default function ComprehensiveProgress() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowSpecialNotesDialog(false)}
-                    data-testid="button-cancel-special-notes"
+                    onClick={() => setShowProgressDialog(false)}
+                    data-testid="button-cancel-progress"
                   >
                     취소
                   </Button>
                   <Button
                     type="submit"
-                    disabled={updateSpecialNotesMutation.isPending}
-                    data-testid="button-save-special-notes"
+                    disabled={addProgressMutation.isPending}
+                    data-testid="button-save-progress"
                   >
-                    {updateSpecialNotesMutation.isPending ? "저장 중..." : "저장"}
+                    {addProgressMutation.isPending ? "추가 중..." : "추가"}
                   </Button>
                 </div>
               </form>
