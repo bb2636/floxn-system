@@ -115,7 +115,9 @@ export function LaborCostSection({
       item.공사명 === workName && 
       item.세부공사 === detailWork
     );
-    return filtered.map(item => item.세부항목);
+    // 중복 제거 (동일한 이름의 항목이 여러 번 나타날 수 있음)
+    const unique = new Set(filtered.map(item => item.세부항목));
+    return Array.from(unique);
   };
 
   const getApplicationRateOptions = (category: string, workName: string, detailWork: string, detailItem: string) => {
