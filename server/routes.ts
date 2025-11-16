@@ -1597,7 +1597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Parse excel data into structured catalog
-      // Expected columns: 공종, 공사명(품명), 세부공사, 세부항목, 단위, 인, 천장, 벽체, 바닥, 길이
+      // Actual columns: 공종, 공사명(품명), 세부공사, 세부항목, 인, 천장, 벽체, 바닥, 길이, ...
       const catalog: any[] = [];
       let prevCategory: string | null = null;
       let prevWorkName: string | null = null;
@@ -1612,7 +1612,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const workName = row[1] || prevWorkName;
         const detailWork = row[2] || prevDetailWork;
         const detailItem = row[3] || '';
-        const unit = row[4] || '';
         
         // Parse price columns (remove commas, convert to number)
         const parsePrice = (val: any): number | null => {
@@ -1623,11 +1622,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return isNaN(num) ? null : num;
         };
 
-        const laborPrice = parsePrice(row[5]); // 인
-        const ceilingPrice = parsePrice(row[6]); // 천장
-        const wallPrice = parsePrice(row[7]); // 벽체
-        const floorPrice = parsePrice(row[8]); // 바닥
-        const lengthPrice = parsePrice(row[9]); // 길이
+        const laborPrice = parsePrice(row[4]); // 인
+        const ceilingPrice = parsePrice(row[5]); // 천장
+        const wallPrice = parsePrice(row[6]); // 벽체
+        const floorPrice = parsePrice(row[7]); // 바닥
+        const lengthPrice = parsePrice(row[8]); // 길이
 
         // Update forward-fill values
         if (category) prevCategory = category;
@@ -1636,6 +1635,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Skip rows without enough data
         if (!category || !workName || !detailWork) continue;
+
+        // Determine unit based on detailWork (세부공사)
+        // For 노무비, unit is '인', otherwise use '㎡' or 'm' as default
+        let unit = 'm';
+        if (detailWork === '노무비') {
+          unit = '인';
+        } else if (ceilingPrice || wallPrice || floorPrice) {
+          unit = '㎡';
+        } else if (lengthPrice) {
+          unit = 'm';
+        }
 
         catalog.push({
           공종: category,
