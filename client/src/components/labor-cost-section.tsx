@@ -157,8 +157,16 @@ export function LaborCostSection({
             item.세부항목 === value
           );
           if (catalogItem) {
-            updated.단위 = catalogItem.단위 || '';
-            updated.기준가_단위 = catalogItem.단가_인 || 0;
+            // 세부공사가 "노무비"인 경우: 단위 = '인', 기준가_단위 = 단가_인
+            if (updated.세부공사 === '노무비') {
+              updated.단위 = '인';
+              updated.기준가_단위 = catalogItem.단가_인 || 0;
+            } else {
+              // 일위대가인 경우: catalogItem.단위 사용
+              updated.단위 = catalogItem.단위 || '';
+              updated.기준가_단위 = catalogItem.단가_인 || 0;
+            }
+            
             // 적용면 기본값 설정
             if (catalogItem.단가_천장) updated.적용면 = '천장';
             else if (catalogItem.단가_벽체) updated.적용면 = '벽체';
