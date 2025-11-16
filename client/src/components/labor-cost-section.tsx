@@ -9,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Copy } from "lucide-react";
 
 // 노무비 카탈로그 항목 (from excel_data)
@@ -36,7 +35,7 @@ export interface LaborCostRow {
   단위: string; // readonly
   기준가_단위: number; // readonly (단가_인 for 노무비)
   수량: number; // editable
-  적용면: '천장' | '벽체' | '바닥' | '길이' | ''; // radio selection
+  적용면: '천장' | '벽체' | '바닥' | '길이' | ''; // checkbox selection (only one can be selected)
   기준가_적용면: number; // readonly (단가_천장/벽체/바닥/길이)
   피해면적: number; // editable
   금액: number; // calculated
@@ -176,17 +175,22 @@ export function LaborCostSection({
 
         // 적용면 변경 시 기준가_적용면 업데이트
         if (field === '적용면') {
-          const catalogItem = catalog.find(item =>
-            item.공종 === updated.공종 &&
-            item.공사명 === updated.공사명 &&
-            item.세부공사 === updated.세부공사 &&
-            item.세부항목 === updated.세부항목
-          );
-          if (catalogItem) {
-            if (value === '천장') updated.기준가_적용면 = catalogItem.단가_천장 || 0;
-            else if (value === '벽체') updated.기준가_적용면 = catalogItem.단가_벽체 || 0;
-            else if (value === '바닥') updated.기준가_적용면 = catalogItem.단가_바닥 || 0;
-            else if (value === '길이') updated.기준가_적용면 = catalogItem.단가_길이 || 0;
+          if (value === '') {
+            // 적용면 선택 해제 시 기준가와 금액 리셋
+            updated.기준가_적용면 = 0;
+          } else {
+            const catalogItem = catalog.find(item =>
+              item.공종 === updated.공종 &&
+              item.공사명 === updated.공사명 &&
+              item.세부공사 === updated.세부공사 &&
+              item.세부항목 === updated.세부항목
+            );
+            if (catalogItem) {
+              if (value === '천장') updated.기준가_적용면 = catalogItem.단가_천장 || 0;
+              else if (value === '벽체') updated.기준가_적용면 = catalogItem.단가_벽체 || 0;
+              else if (value === '바닥') updated.기준가_적용면 = catalogItem.단가_바닥 || 0;
+              else if (value === '길이') updated.기준가_적용면 = catalogItem.단가_길이 || 0;
+            }
           }
         }
 
@@ -377,30 +381,43 @@ export function LaborCostSection({
                 />
               </td>
               
-              {/* 적용면 - Radio Group (only for 일위대가) */}
+              {/* 적용면 - Checkboxes (only for 일위대가, only one can be selected) */}
               <td style={{ padding: "0 8px", background: row.세부공사 === '일위대가' ? "#EFF6FF" : "transparent" }}>
                 {row.세부공사 === '일위대가' ? (
-                  <RadioGroup 
-                    value={row.적용면}
-                    onValueChange={(value: any) => updateRow(row.id, '적용면', value)}
-                    className="flex gap-4"
-                  >
+                  <div className="flex gap-4">
                     {get적용면Options(row.공종, row.공사명, row.세부공사, row.세부항목).map(opt => (
                       <div key={opt} className="flex items-center gap-1">
-                        <RadioGroupItem 
-                          value={opt} 
-                          id={`${row.id}-${opt}`}
-                          data-testid={`radio-${opt}-${index}`}
+                        <Checkbox
+                          checked={row.적용면 === opt}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              updateRow(row.id, '적용면', opt);
+                            } else {
+                              updateRow(row.id, '적용면', '');
+                            }
+                          }}
+                          data-testid={`checkbox-적용면-${opt}-${index}`}
                         />
                         <label 
-                          htmlFor={`${row.id}-${opt}`}
-                          style={{ fontFamily: "Pretendard", fontSize: "13px", cursor: "pointer" }}
+                          style={{ 
+                            fontFamily: "Pretendard", 
+                            fontSize: "13px", 
+                            cursor: "pointer",
+                            color: row.적용면 === opt ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)"
+                          }}
+                          onClick={() => {
+                            if (row.적용면 === opt) {
+                              updateRow(row.id, '적용면', '');
+                            } else {
+                              updateRow(row.id, '적용면', opt);
+                            }
+                          }}
                         >
                           {opt}
                         </label>
                       </div>
                     ))}
-                  </RadioGroup>
+                  </div>
                 ) : (
                   <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.4)" }}>-</span>
                 )}
