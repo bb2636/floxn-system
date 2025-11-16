@@ -78,6 +78,75 @@ export default function Dashboard() {
     },
   });
 
+  // Filter cases by period - exclude 작성중 globally
+  const filteredCasesByPeriod = useMemo(() => {
+    if (!allCases) return [];
+    
+    // Globally exclude 작성중 status
+    const activeCases = allCases.filter(c => c.status !== '작성중');
+    
+    if (periodType === 'all') return activeCases;
+    if (!dateRange?.from || !dateRange?.to) return activeCases;
+
+    return activeCases.filter(c => {
+      if (!c.accidentDate) return false;
+      try {
+        const caseDate = parseISO(c.accidentDate);
+        return isWithinInterval(caseDate, { start: dateRange.from!, end: dateRange.to! });
+      } catch {
+        return false;
+      }
+    });
+  }, [allCases, periodType, dateRange]);
+
+  // Filter cases by tab
+  const filteredCasesByTab = useMemo(() => {
+    if (!filteredCasesByPeriod) return [];
+
+    switch (activeTab) {
+      case 'reception':
+        // 접수된 케이스 (all active cases)
+        return filteredCasesByPeriod;
+      case 'pending':
+        // 미결 케이스 (제출, 검토중, 1차승인)
+        return filteredCasesByPeriod.filter(c => 
+          c.status === '제출' || c.status === '검토중' || c.status === '1차승인'
+        );
+      case 'insurance':
+        // 보험사 미정산 케이스 (완료된 케이스)
+        return filteredCasesByPeriod.filter(c => c.status === '완료');
+      case 'partner':
+        // 협력사 미정산 케이스 (완료된 케이스)
+        return filteredCasesByPeriod.filter(c => c.status === '완료');
+      default:
+        return filteredCasesByPeriod;
+    }
+  }, [filteredCasesByPeriod, activeTab]);
+
+  // Aggregate cases by assigned user
+  const staffSummary = useMemo(() => {
+    if (!filteredCasesByTab || !user) return [];
+
+    const userCaseCounts = new Map<string, { name: string; position: string; count: number }>();
+
+    filteredCasesByTab.forEach(c => {
+      const assignedTo = c.assignedTo || '미배정';
+
+      const existing = userCaseCounts.get(assignedTo);
+      if (existing) {
+        existing.count++;
+      } else {
+        userCaseCounts.set(assignedTo, {
+          name: assignedTo,
+          position: '직원',
+          count: 1,
+        });
+      }
+    });
+
+    return Array.from(userCaseCounts.values()).sort((a, b) => b.count - a.count);
+  }, [filteredCasesByTab, user]);
+
   useEffect(() => {
     if (!isLoading && !user) {
       setLocation("/");
@@ -185,75 +254,6 @@ export default function Dashboard() {
       });
     }
   };
-
-  // Filter cases by period - exclude 작성중 globally
-  const filteredCasesByPeriod = useMemo(() => {
-    if (!allCases) return [];
-    
-    // Globally exclude 작성중 status
-    const activeCases = allCases.filter(c => c.status !== '작성중');
-    
-    if (periodType === 'all') return activeCases;
-    if (!dateRange?.from || !dateRange?.to) return activeCases;
-
-    return activeCases.filter(c => {
-      if (!c.accidentDate) return false;
-      try {
-        const caseDate = parseISO(c.accidentDate);
-        return isWithinInterval(caseDate, { start: dateRange.from!, end: dateRange.to! });
-      } catch {
-        return false;
-      }
-    });
-  }, [allCases, periodType, dateRange]);
-
-  // Filter cases by tab
-  const filteredCasesByTab = useMemo(() => {
-    if (!filteredCasesByPeriod) return [];
-
-    switch (activeTab) {
-      case 'reception':
-        // 접수된 케이스 (all active cases)
-        return filteredCasesByPeriod;
-      case 'pending':
-        // 미결 케이스 (제출, 검토중, 1차승인)
-        return filteredCasesByPeriod.filter(c => 
-          c.status === '제출' || c.status === '검토중' || c.status === '1차승인'
-        );
-      case 'insurance':
-        // 보험사 미정산 케이스 (완료된 케이스)
-        return filteredCasesByPeriod.filter(c => c.status === '완료');
-      case 'partner':
-        // 협력사 미정산 케이스 (완료된 케이스)
-        return filteredCasesByPeriod.filter(c => c.status === '완료');
-      default:
-        return filteredCasesByPeriod;
-    }
-  }, [filteredCasesByPeriod, activeTab]);
-
-  // Aggregate cases by assigned user
-  const staffSummary = useMemo(() => {
-    if (!filteredCasesByTab || !user) return [];
-
-    const userCaseCounts = new Map<string, { name: string; position: string; count: number }>();
-
-    filteredCasesByTab.forEach(c => {
-      const assignedTo = c.assignedTo || '미배정';
-
-      const existing = userCaseCounts.get(assignedTo);
-      if (existing) {
-        existing.count++;
-      } else {
-        userCaseCounts.set(assignedTo, {
-          name: assignedTo,
-          position: '직원',
-          count: 1,
-        });
-      }
-    });
-
-    return Array.from(userCaseCounts.values()).sort((a, b) => b.count - a.count);
-  }, [filteredCasesByTab, user]);
 
   return (
     <div className="relative min-h-screen" style={{ background: '#E7EDFE' }}>
