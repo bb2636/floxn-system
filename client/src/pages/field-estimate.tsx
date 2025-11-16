@@ -207,7 +207,10 @@ export default function FieldEstimate() {
 
   // 노무비 행 추가
   const addLaborRow = () => {
-    setLaborCostRows(prev => [...prev, createBlankLaborRow()]);
+    const newLaborRow = createBlankLaborRow();
+    setLaborCostRows(prev => [...prev, newLaborRow]);
+    // 자재비 행도 자동으로 추가 (빈 상태, 노무비 행 ID로 연결)
+    setMaterialRows(prev => [...prev, createBlankMaterialRow('', newLaborRow.id)]);
   };
 
   // 선택된 노무비 행 삭제
@@ -221,6 +224,31 @@ export default function FieldEstimate() {
   const duplicateLaborRow = (row: LaborCostRow) => {
     const newRow = { ...row, id: `labor-${Date.now()}-${Math.random()}` };
     setLaborCostRows(prev => [...prev, newRow]);
+  };
+
+  // 노무비 행 변경 핸들러 (자재비 행과 연동)
+  const handleLaborRowsChange = (newLaborRows: LaborCostRow[]) => {
+    // 이전 값과 비교하여 category가 변경된 행 찾기 (ID 기반)
+    const oldRowsMap = new Map(laborCostRows.map(row => [row.id, row]));
+    const changedRows = newLaborRows.filter(newRow => {
+      const oldRow = oldRowsMap.get(newRow.id);
+      return oldRow && oldRow.category !== newRow.category;
+    });
+
+    // category가 변경된 행이 있으면 연결된 자재비 행의 공종도 업데이트
+    if (changedRows.length > 0) {
+      setMaterialRows(prev => 
+        prev.map(matRow => {
+          const changedLaborRow = changedRows.find(lr => lr.id === matRow.sourceLaborRowId);
+          if (changedLaborRow) {
+            return { ...matRow, 공종: changedLaborRow.category };
+          }
+          return matRow;
+        })
+      );
+    }
+
+    setLaborCostRows(newLaborRows);
   };
 
   // 자재비 행 추가
@@ -404,14 +432,14 @@ export default function FieldEstimate() {
     // 노무비 총합 - 경비 여부에 따라 분리
     const laborTotalWithExpense = laborCostRows.reduce((sum, row) => {
       if (row.includeInEstimate) {
-        return sum + (parseFloat(row.deduction) || 0);
+        return sum + (row.deduction || 0);
       }
       return sum;
     }, 0);
 
     const laborTotalWithoutExpense = laborCostRows.reduce((sum, row) => {
       if (!row.includeInEstimate) {
-        return sum + (parseFloat(row.deduction) || 0);
+        return sum + (row.deduction || 0);
       }
       return sum;
     }, 0);
@@ -518,16 +546,14 @@ export default function FieldEstimate() {
 
     const newRow: MaterialRow = {
       id: `material-${Date.now()}-${Math.random()}`,
-      category: selectedMaterial.materialName, // 공종으로 자재명 사용
-      materialName: selectedMaterial.materialName,
-      specification: selectedMaterial.specification,
-      unit: selectedMaterial.unit,
-      areaUnit: "m²", // 기본값
-      standardPrice: selectedMaterial.standardPrice,
-      quantity: "1",
-      amount: selectedMaterial.standardPrice,
-      note: "",
-      request: "",
+      공종: selectedMaterialName, // 선택된 공종 사용
+      자재: selectedMaterial.materialName,
+      규격: selectedMaterial.specification,
+      단위: selectedMaterial.unit,
+      기준단가: selectedMaterial.standardPrice,
+      수량: 1,
+      금액: selectedMaterial.standardPrice,
+      비고: "",
     };
 
     setMaterialRows(prev => [...prev, newRow]);
@@ -554,10 +580,9 @@ export default function FieldEstimate() {
         
         const updatedRow = { ...row, ...updates };
         
-        // quantity가 변경되면 amount 재계산
-        if (updates.quantity !== undefined) {
-          const qty = parseFloat(updatedRow.quantity) || 0;
-          updatedRow.amount = qty * updatedRow.standardPrice;
+        // 수량이 변경되면 금액 재계산
+        if (updates.수량 !== undefined) {
+          updatedRow.금액 = updatedRow.수량 * updatedRow.기준단가;
         }
         
         return updatedRow;
@@ -2075,7 +2100,7 @@ export default function FieldEstimate() {
                           <td style={{ padding: "8px", textAlign: "center" }}>
                             <Checkbox
                               checked={selectedLaborRows.has(row.id)}
-                              onCheckedChange={() => toggleSelectLaborRow(row.id)}
+                              onCheckedChange={() => toggleLaborRow(row.id)}
                               data-testid={`checkbox-labor-${row.id}`}
                             />
                           </td>
@@ -2113,7 +2138,7 @@ export default function FieldEstimate() {
                                 보정
                               </button>
                               <button
-                                onClick={() => duplicateLaborRow(row.id)}
+                                onClick={() => duplicateLaborRow(row)}
                                 style={{
                                   padding: "4px 8px",
                                   background: "white",
@@ -2582,7 +2607,7 @@ export default function FieldEstimate() {
               {/* 노무비 테이블 컴포넌트 - 새로운 프롬프트 기반 UI */}
               <LaborCostSection
                 rows={laborCostRows}
-                onRowsChange={setLaborCostRows}
+                onRowsChange={handleLaborRowsChange}
                 catalog={laborCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
@@ -2848,7 +2873,7 @@ export default function FieldEstimate() {
                               <Input
                                 value={row.salesMarkupRate}
                                 onChange={(e) => {
-                                  setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, salesMarkupRate: e.target.value } : r));
+                                  setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, salesMarkupRate: Number(e.target.value) || 0 } : r));
                                 }}
                                 className="h-9 w-16 border-0 bg-white text-right"
                                 style={{ fontFamily: "Pretendard", fontSize: "14px" }}
@@ -2862,7 +2887,7 @@ export default function FieldEstimate() {
                             <Input
                               value={row.pricePerSqm}
                               onChange={(e) => {
-                                setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, pricePerSqm: e.target.value } : r));
+                                setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, pricePerSqm: Number(e.target.value) || 0 } : r));
                               }}
                               className="h-9 border-0 bg-transparent text-right"
                               style={{ fontFamily: "Pretendard", fontSize: "14px" }}
