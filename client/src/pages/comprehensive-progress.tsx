@@ -37,6 +37,35 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// 진행상태 목록
+const CASE_STATUSES = [
+  "접수중",
+  "접수완료",
+  "현장방문",
+  "현장정보입력",
+  "검토중",
+  "반려",
+  "1차 승인",
+  "현장정보제출",
+  "2차 승인(복구요청)",
+  "직접복구-미복구",
+  "청구자료제출",
+  "청구",
+  "입금완료",
+  "일부입금",
+  "정산완료",
+  "접수취소",
+] as const;
+
+// 상태별 색상
+const getStatusColor = (status: string) => {
+  if (status === "1차 승인") return "#008FED"; // 파란색
+  if (status === "2차 승인(복구요청)") return "#00C853"; // 초록색
+  if (status === "접수취소") return "#ED1C00"; // 빨간색
+  return "rgba(12, 12, 12, 0.7)"; // 기본 회색
+};
 
 const specialNotesFormSchema = z.object({
   specialNotes: z.string(),
@@ -218,15 +247,6 @@ export default function ComprehensiveProgress() {
   });
 
   const totalCount = filteredData.length;
-
-  // 상태 옵션 정의 (모달에서 사용)
-  const statusOptions = [
-    { value: "심사대기", label: "심사대기", bg: "rgba(12, 149, 246, 0.2)", color: "#0077D8" },
-    { value: "협력사 미배정", label: "협력사 미배정", bg: "rgba(255, 226, 85, 0.2)", color: "#A16000" },
-    { value: "2차 심사대기", label: "2차 심사대기", bg: "rgba(164, 68, 248, 0.2)", color: "#8626DA" },
-    { value: "승인", label: "승인", bg: "rgba(76, 203, 160, 0.2)", color: "#2EAD82" },
-    { value: "반려", label: "반려", bg: "rgba(208, 43, 32, 0.2)", color: "#B20D02" },
-  ];
 
   // 상태 변경 핸들러
   const handleStatusChange = (caseId: string, status: string) => {
@@ -752,25 +772,6 @@ export default function ComprehensiveProgress() {
             </div>
           ) : (
             filteredData.map((caseItem, index) => {
-              const getStatusColor = (status: string | null) => {
-                switch (status) {
-                  case "심사대기":
-                    return { bg: "rgba(0, 143, 237, 0.15)", text: "#008FED" };
-                  case "협력사 미배정":
-                    return { bg: "rgba(255, 152, 0, 0.15)", text: "#FF9800" };
-                  case "2차 심사대기":
-                    return { bg: "rgba(233, 30, 99, 0.15)", text: "#E91E63" };
-                  case "승인":
-                    return { bg: "rgba(0, 200, 83, 0.15)", text: "#00C853" };
-                  case "반려":
-                    return { bg: "rgba(244, 67, 54, 0.15)", text: "#F44336" };
-                  default:
-                    return { bg: "rgba(12, 12, 12, 0.05)", text: "rgba(12, 12, 12, 0.6)" };
-                }
-              };
-
-              const statusColors = getStatusColor(caseItem.status);
-              
               return (
                 <div
                   key={caseItem.id}
@@ -815,73 +816,81 @@ export default function ComprehensiveProgress() {
                     {calculateDays(caseItem.createdAt)}
                   </div>
                   <div onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <div
-                          style={{
-                            padding: "6px 12px",
-                            background: statusColors.bg,
-                            borderRadius: "6px",
-                            fontFamily: "Pretendard",
-                            fontSize: "12px",
-                            fontWeight: 600,
-                            color: statusColors.text,
-                            textAlign: "center",
-                            whiteSpace: "nowrap",
-                            cursor: "pointer",
-                          }}
-                          data-testid={`button-status-${caseItem.id}`}
-                        >
-                          {caseItem.status || "대기중"}
-                        </div>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="start"
-                        style={{
-                          width: "212px",
-                          background: "rgba(253, 253, 253, 0.9)",
-                          backdropFilter: "blur(17px)",
-                          border: "none",
-                          boxShadow: "0px 0px 60px rgba(170, 177, 194, 0.3), 6px 0px 40px rgba(219, 233, 245, 0.3)",
-                          borderRadius: "12px",
-                          padding: "0",
-                        }}
-                      >
-                        {statusOptions.map((option) => (
-                          <DropdownMenuItem
-                            key={option.value}
-                            onClick={() => handleStatusChange(caseItem.id, option.value)}
+                    {user?.role === "관리자" ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <div
                             style={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                              padding: "12px",
-                              margin: "0",
-                              cursor: user?.role === "관리자" ? "pointer" : "not-allowed",
+                              padding: "6px 12px",
+                              background: "rgba(12, 12, 12, 0.05)",
+                              borderRadius: "6px",
+                              fontFamily: "Pretendard",
+                              fontSize: "12px",
+                              fontWeight: 600,
+                              color: getStatusColor(caseItem.status),
+                              textAlign: "center",
+                              whiteSpace: "nowrap",
+                              cursor: "pointer",
                             }}
-                            data-testid={`button-status-option-${option.value}`}
+                            data-testid={`button-status-${caseItem.id}`}
                           >
-                            <div
+                            {caseItem.status || "접수중"}
+                          </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="start"
+                          style={{
+                            width: "200px",
+                            background: "rgba(200, 200, 200, 0.95)",
+                            backdropFilter: "blur(10px)",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "8px",
+                          }}
+                        >
+                          {CASE_STATUSES.map((status) => (
+                            <DropdownMenuItem
+                              key={status}
+                              onClick={() => handleStatusChange(caseItem.id, status)}
                               style={{
-                                padding: "8px 12px",
-                                background: option.bg,
-                                backdropFilter: "blur(7px)",
-                                borderRadius: "20px",
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                padding: "10px 12px",
+                                margin: "0",
+                                cursor: "pointer",
                                 fontFamily: "Pretendard",
+                                fontSize: "14px",
                                 fontWeight: 500,
-                                fontSize: "16px",
-                                color: option.color,
-                                opacity: user?.role === "관리자" ? 1 : 0.6,
-                                minWidth: "120px",
-                                textAlign: "center",
+                                color: getStatusColor(status),
+                                background: "transparent",
+                                borderRadius: "4px",
                               }}
+                              data-testid={`button-status-option-${status}`}
                             >
-                              {option.label}
-                            </div>
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                              {status}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : (
+                      <div
+                        style={{
+                          padding: "6px 12px",
+                          background: "rgba(12, 12, 12, 0.05)",
+                          borderRadius: "6px",
+                          fontFamily: "Pretendard",
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          color: getStatusColor(caseItem.status),
+                          textAlign: "center",
+                          whiteSpace: "nowrap",
+                        }}
+                        data-testid={`text-status-${caseItem.id}`}
+                      >
+                        {caseItem.status || "접수중"}
+                      </div>
+                    )}
                   </div>
                   <div 
                     style={{ 
