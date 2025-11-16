@@ -439,6 +439,8 @@ export const estimates = pgTable("estimates", {
   version: integer("version").notNull().default(1), // 버전 관리
   status: text("status").notNull().default("draft"), // "draft" | "submitted" | "approved"
   createdBy: varchar("created_by").notNull().references(() => users.id),
+  laborCostData: json("labor_cost_data"), // 노무비 데이터 (JSON)
+  materialCostData: json("material_cost_data"), // 자재비 데이터 (JSON)
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({

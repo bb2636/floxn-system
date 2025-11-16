@@ -1289,7 +1289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      const { rows } = req.body;
+      const { rows, laborCostData, materialCostData } = req.body;
 
       if (!rows || !Array.isArray(rows)) {
         return res.status(400).json({ error: "견적 행 데이터가 필요합니다" });
@@ -1352,7 +1352,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
-      const result = await storage.createEstimateVersion(caseId, req.session.userId, dbRows);
+      const result = await storage.createEstimateVersion(
+        caseId, 
+        req.session.userId, 
+        dbRows,
+        laborCostData || null,
+        materialCostData || null
+      );
       res.json(result);
     } catch (error) {
       console.error("Create estimate error:", error);

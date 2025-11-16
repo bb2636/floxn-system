@@ -93,7 +93,7 @@ export interface IStorage {
   deleteDocument(id: string): Promise<void>;
   updateDocumentCategory(id: string, category: string): Promise<CaseDocument | null>;
   // Estimate methods
-  createEstimateVersion(caseId: string, userId: string, rows: Omit<InsertEstimateRow, 'estimateId'>[]): Promise<{ estimate: Estimate; rows: EstimateRow[] }>;
+  createEstimateVersion(caseId: string, userId: string, rows: Omit<InsertEstimateRow, 'estimateId'>[], laborCostData?: any | null, materialCostData?: any | null): Promise<{ estimate: Estimate; rows: EstimateRow[] }>;
   getLatestEstimate(caseId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
   getEstimateVersion(caseId: string, version: number): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
   listEstimateVersions(caseId: string): Promise<Estimate[]>;
@@ -1516,7 +1516,7 @@ export class MemStorage implements IStorage {
   }
 
   // Estimate methods (stub - not implemented for MemStorage)
-  async createEstimateVersion(caseId: string, userId: string, rows: Omit<InsertEstimateRow, 'estimateId'>[]): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
+  async createEstimateVersion(caseId: string, userId: string, rows: Omit<InsertEstimateRow, 'estimateId'>[], laborCostData?: any | null, materialCostData?: any | null): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
     throw new Error("Estimate methods not implemented in MemStorage");
   }
 
@@ -2389,7 +2389,13 @@ export class DbStorage implements IStorage {
   }
 
   // Estimate methods
-  async createEstimateVersion(caseId: string, userId: string, rows: Omit<InsertEstimateRow, 'estimateId'>[]): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
+  async createEstimateVersion(
+    caseId: string, 
+    userId: string, 
+    rows: Omit<InsertEstimateRow, 'estimateId'>[],
+    laborCostData: any | null = null,
+    materialCostData: any | null = null
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
     return await db.transaction(async (tx) => {
       // 1. 현재 최대 버전 조회 (row-level locking으로 동시성 제어)
       const existingEstimates = await tx
@@ -2402,7 +2408,7 @@ export class DbStorage implements IStorage {
 
       const nextVersion = existingEstimates.length > 0 ? existingEstimates[0].version + 1 : 1;
 
-      // 2. 새 견적 레코드 생성
+      // 2. 새 견적 레코드 생성 (노무비/자재비 데이터 포함)
       const [newEstimate] = await tx
         .insert(estimates)
         .values({
@@ -2410,6 +2416,8 @@ export class DbStorage implements IStorage {
           version: nextVersion,
           status: "draft",
           createdBy: userId,
+          laborCostData,
+          materialCostData,
         })
         .returning();
 

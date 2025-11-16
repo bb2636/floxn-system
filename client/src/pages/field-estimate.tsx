@@ -365,7 +365,7 @@ export default function FieldEstimate() {
   // 초기 빈 행 생성 또는 견적 불러오기
   useEffect(() => {
     if (latestEstimate?.rows && latestEstimate.rows.length > 0) {
-      // 기존 견적이 있으면 불러오기
+      // 기존 견적이 있으면 불러오기 (복구면적 산출표)
       const loadedRows = latestEstimate.rows.map((row: any) => ({
         id: `row-${row.id}`,
         category: row.category || (roomCategories[0] || ""),
@@ -380,6 +380,15 @@ export default function FieldEstimate() {
         note: row.note || "",
       }));
       setRows(loadedRows);
+      
+      // 노무비 데이터 불러오기
+      if (latestEstimate.estimate?.laborCostData && Array.isArray(latestEstimate.estimate.laborCostData)) {
+        const loadedLaborRows = latestEstimate.estimate.laborCostData.map((row: any) => ({
+          id: `labor-${Date.now()}-${Math.random()}`,
+          ...row,
+        }));
+        setLaborCostRows(loadedLaborRows);
+      }
     } else if (rows.length === 0 && masterDataList.length > 0) {
       // 견적이 없고 마스터 데이터가 로드되었으면 빈 행 생성
       addRow();
@@ -675,7 +684,7 @@ export default function FieldEstimate() {
     }
   };
 
-  // 저장 mutation
+  // 저장 mutation (복구면적 산출표 + 노무비 + 자재비 통합 저장)
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!selectedCaseId) {
@@ -696,7 +705,14 @@ export default function FieldEstimate() {
         note: row.note,
       }));
 
-      return await apiRequest("POST", `/api/estimates/${selectedCaseId}`, { rows: apiRows });
+      // 노무비 데이터 (id 제외)
+      const laborCostData = laborCostRows.map(({ id, ...rest }) => rest);
+
+      return await apiRequest("POST", `/api/estimates/${selectedCaseId}`, { 
+        rows: apiRows,
+        laborCostData,
+        materialCostData: null, // TODO: 자재비 구현 시 추가
+      });
     },
     onSuccess: () => {
       toast({
