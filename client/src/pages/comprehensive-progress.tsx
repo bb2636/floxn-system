@@ -53,6 +53,7 @@ export default function ComprehensiveProgress() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [showSpecialNotesDialog, setShowSpecialNotesDialog] = useState(false);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [detailTab, setDetailTab] = useState("기본정보");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -999,17 +1000,20 @@ export default function ComprehensiveProgress() {
           }}
           data-testid="sheet-case-detail"
         >
-          <SheetHeader className="mb-6">
-            <SheetTitle 
-              style={{
-                fontFamily: "Pretendard",
-                fontWeight: 600,
-                fontSize: "20px",
-                color: "#0C0C0C",
-              }}
-            >
-              진행건 상세보기
-            </SheetTitle>
+          <SheetHeader style={{ padding: "24px 20px", borderBottom: "1px solid rgba(12, 12, 12, 0.08)", marginBottom: "0" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <SheetTitle 
+                style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "22px",
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                }}
+              >
+                진행건 상세보기
+              </SheetTitle>
+            </div>
           </SheetHeader>
 
           {selectedCaseId && (() => {
@@ -1017,10 +1021,45 @@ export default function ComprehensiveProgress() {
             if (!selectedCase) return null;
 
             return (
-              <ScrollArea className="h-[calc(100vh-120px)]">
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "20px" }}>
-                  {/* 상단 카드 */}
-                  <div 
+              <>
+                {/* 탭 메뉴 */}
+                <div style={{ 
+                  display: "flex", 
+                  gap: "0px",
+                  borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                  padding: "0 20px",
+                }}>
+                  {["기본정보", "일자", "특이사항"].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setDetailTab(tab)}
+                      style={{
+                        padding: "16px 24px",
+                        background: "transparent",
+                        border: "none",
+                        borderBottom: detailTab === tab ? "2px solid #008FED" : "2px solid transparent",
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: detailTab === tab ? 600 : 400,
+                        color: detailTab === tab ? "#008FED" : "rgba(12, 12, 12, 0.6)",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                      data-testid={`tab-${tab}`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                <ScrollArea className="h-[calc(100vh-220px)]">
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "16px 20px 20px 20px" }}>
+                    
+                    {/* 기본정보 탭 */}
+                    {detailTab === "기본정보" && (
+                      <>
+                        {/* 상단 카드 */}
+                        <div 
                     style={{
                       background: "rgba(12, 12, 12, 0.04)",
                       backdropFilter: "blur(7px)",
@@ -1591,8 +1630,228 @@ export default function ComprehensiveProgress() {
                   >
                     특이사항 입력
                   </button>
+                </>
+              )}
+
+              {/* 일자 탭 */}
+              {detailTab === "일자" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {[
+                    { label: "접수", value: selectedCase?.receptionDate },
+                    { label: "검수일", value: selectedCase?.inspectionDate },
+                    { label: "배당일", value: selectedCase?.assignmentDate },
+                    { label: "현장방문일", value: selectedCase?.siteVisitDate },
+                    { label: "현장조사 제출일", value: selectedCase?.siteInvestigationSubmitDate },
+                    { label: "1차 송장일 (내부)", value: selectedCase?.firstInvoiceDate },
+                    { label: "승인요청일", value: selectedCase?.approvalRequestDate },
+                    { label: "승인일(공사 시작일)", value: selectedCase?.approvalDate },
+                    { label: "공사시작일", value: selectedCase?.constructionStartDate },
+                    { label: "공사완료일", value: selectedCase?.constructionCompletionDate },
+                    { label: "공사완료보고 제출일", value: selectedCase?.constructionReportSubmitDate },
+                    { label: "청구일", value: selectedCase?.claimDate },
+                  ].map((item) => (
+                    <div key={item.label} style={{
+                      display: "flex",
+                      alignItems: "center",
+                      paddingBottom: "12px",
+                      borderBottom: "1px solid rgba(12, 12, 12, 0.05)",
+                    }}>
+                      <span style={{
+                        width: "180px",
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.5)",
+                      }}>
+                        {item.label}
+                      </span>
+                      <span style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}>
+                        {item.value || "-"}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              </ScrollArea>
+              )}
+
+              {/* 특이사항 탭 */}
+              {detailTab === "특이사항" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {/* 진행상황 */}
+                  {selectedCase.latestProgress && selectedCase.latestProgress.length > 0 && (
+                    <div 
+                      style={{
+                        background: "rgba(12, 12, 12, 0.04)",
+                        backdropFilter: "blur(7px)",
+                        borderRadius: "12px",
+                        padding: "16px",
+                      }}
+                    >
+                      <div style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "14px",
+                        color: "rgba(12, 12, 12, 0.9)",
+                        marginBottom: "12px",
+                      }}>
+                        진행상황
+                      </div>
+                      
+                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                        {selectedCase.latestProgress.map((progress: any, idx: number) => (
+                          <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <div style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "12px",
+                              color: "rgba(12, 12, 12, 0.5)",
+                            }}>
+                              {formatDate(progress.createdAt)}
+                            </div>
+                            <div style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.8)",
+                            }}>
+                              {progress.content}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 특이사항 */}
+                  {selectedCase.specialNotes && (
+                    <div 
+                      style={{
+                        background: "rgba(12, 12, 12, 0.04)",
+                        backdropFilter: "blur(7px)",
+                        borderRadius: "12px",
+                        padding: "16px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                        <div style={{
+                          width: "6px",
+                          height: "6px",
+                          background: selectedCase.specialNotesConfirmedBy ? "#008FED" : "#ED1C00",
+                          borderRadius: "50%",
+                        }}></div>
+                        <div style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "14px",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}>
+                          특이사항
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        color: "rgba(12, 12, 12, 0.8)",
+                        lineHeight: "1.6",
+                      }}>
+                        {selectedCase.specialNotes}
+                      </div>
+                      
+                      {user?.role === "관리자" && selectedCase.specialNotes && !selectedCase.specialNotesConfirmedBy && (
+                        <div style={{ marginTop: "12px" }}>
+                          <button
+                            onClick={() => {
+                              confirmSpecialNotesMutation.mutate();
+                            }}
+                            disabled={confirmSpecialNotesMutation.isPending}
+                            style={{
+                              width: "100%",
+                              height: "40px",
+                              background: "#008FED",
+                              border: "none",
+                              borderRadius: "8px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 600,
+                              fontSize: "14px",
+                              color: "#FFFFFF",
+                              cursor: confirmSpecialNotesMutation.isPending ? "not-allowed" : "pointer",
+                              opacity: confirmSpecialNotesMutation.isPending ? 0.6 : 1,
+                            }}
+                            data-testid="button-confirm-special-notes"
+                          >
+                            {confirmSpecialNotesMutation.isPending ? "확인 중..." : "특이사항 확인"}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* 진행상황 추가 버튼 (관리자 전용) */}
+                  {user?.role === "관리자" && (
+                    <button
+                      onClick={handleOpenProgressDialog}
+                      style={{
+                        width: "100%",
+                        height: "52px",
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(0, 143, 237, 0.3)",
+                        boxShadow: "2px 4px 30px #BDD1F0",
+                        borderRadius: "10px",
+                        padding: "10px",
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "18px",
+                        letterSpacing: "-0.02em",
+                        color: "#0C95F6",
+                        cursor: "pointer",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                      data-testid="button-add-progress"
+                    >
+                      진행상황 추가
+                    </button>
+                  )}
+
+                  {/* 특이사항 입력 버튼 (협력사 전용) */}
+                  {user?.role === "협력사" && (
+                    <button
+                      onClick={handleOpenSpecialNotesDialog}
+                      style={{
+                        width: "100%",
+                        height: "52px",
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(0, 143, 237, 0.3)",
+                        boxShadow: "2px 4px 30px #BDD1F0",
+                        borderRadius: "10px",
+                        padding: "10px",
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "18px",
+                        letterSpacing: "-0.02em",
+                        color: "#0C95F6",
+                        cursor: "pointer",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                      data-testid="button-special-note-input"
+                    >
+                      특이사항 입력
+                    </button>
+                  )}
+                </div>
+              )}
+
+                  </div>
+                </ScrollArea>
+              </>
             );
           })()}
         </SheetContent>
