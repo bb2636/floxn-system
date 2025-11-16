@@ -68,7 +68,7 @@ const getStatusColor = (status: string) => {
 };
 
 const specialNotesFormSchema = z.object({
-  specialNotes: z.string(),
+  specialNotes: z.string().max(1000, "특이사항은 최대 1000자까지 입력 가능합니다"),
 });
 
 const progressFormSchema = z.object({

@@ -365,7 +365,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate specialNotes with Zod
       const updateSchema = z.object({
-        specialNotes: z.string().nullable(),
+        specialNotes: z.string().max(1000, "특이사항은 최대 1000자까지 입력 가능합니다").nullable(),
       });
       
       const { specialNotes } = updateSchema.parse(req.body);
