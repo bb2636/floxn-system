@@ -458,10 +458,10 @@ export function LaborCostSection({
                       <div key={key} className="flex items-center gap-1">
                         <Checkbox
                           id={checkboxId}
-                          checked={row.applicationRates[key]}
+                          checked={row.applicationRates?.[key] || false}
                           onCheckedChange={(checked) => {
                             updateRow(row.id, 'applicationRates', {
-                              ...row.applicationRates,
+                              ...(row.applicationRates || {}),
                               [key]: checked
                             });
                           }}
@@ -473,7 +473,7 @@ export function LaborCostSection({
                             fontFamily: "Pretendard", 
                             fontSize: "13px", 
                             cursor: "pointer",
-                            color: row.applicationRates[key] ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)"
+                            color: row.applicationRates?.[key] ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)"
                           }}
                         >
                           {label}
