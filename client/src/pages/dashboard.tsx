@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User } from "@shared/schema";
+import { User, Case } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -9,7 +9,7 @@ import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, Tr
 import logoIcon from "@assets/Vector_1762589710900.png";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format, startOfMonth, endOfMonth, startOfToday, subMonths, endOfToday } from "date-fns";
+import { format, startOfMonth, endOfMonth, startOfToday, subMonths, endOfToday, isWithinInterval, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import { GlobalHeader } from "@/components/global-header";
@@ -35,8 +35,6 @@ export default function Dashboard() {
     from: startOfMonth(new Date()),
     to: endOfMonth(new Date()),
   });
-  
-  const [staffTab, setStaffTab] = useState<StaffTabType>('reception');
 
   const { data: user, isLoading } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -53,6 +51,12 @@ export default function Dashboard() {
   }>({
     queryKey: ["/api/dashboard/stats"],
     enabled: !!user, // Only fetch stats when user is loaded
+  });
+
+  // Fetch all cases for progress summary
+  const { data: allCases, isLoading: casesLoading } = useQuery<Case[]>({
+    queryKey: ["/api/cases"],
+    enabled: !!user,
   });
 
   const logoutMutation = useMutation({
@@ -120,42 +124,6 @@ export default function Dashboard() {
     });
   };
 
-  const staffData = {
-    reception: [
-      { name: '김블락', position: '사원', count: 30 },
-      { name: '이철수', position: '대리', count: 25 },
-      { name: '박영희', position: '과장', count: 20 },
-      { name: '정민수', position: '차장', count: 18 },
-      { name: '최수진', position: '부장', count: 15 },
-      { name: '강동원', position: '사원', count: 12 },
-    ],
-    pending: [
-      { name: '김블락', position: '사원', count: 15 },
-      { name: '이철수', position: '대리', count: 12 },
-      { name: '박영희', position: '과장', count: 10 },
-      { name: '정민수', position: '차장', count: 8 },
-      { name: '최수진', position: '부장', count: 7 },
-      { name: '강동원', position: '사원', count: 5 },
-    ],
-    insurance: [
-      { name: '김블락', position: '사원', count: 30, amount: 7325000 },
-      { name: '이철수', position: '대리', count: 28, amount: 6850000 },
-      { name: '박영희', position: '과장', count: 25, amount: 6125000 },
-      { name: '정민수', position: '차장', count: 22, amount: 5400000 },
-      { name: '최수진', position: '부장', count: 20, amount: 4900000 },
-      { name: '강동원', position: '사원', count: 18, amount: 4400000 },
-    ],
-    partner: [
-      { name: '김블락', position: '사원', count: 30, amount: 7325000 },
-      { name: '이철수', position: '대리', count: 27, amount: 6625000 },
-      { name: '박영희', position: '과장', count: 24, amount: 5875000 },
-      { name: '정민수', position: '차장', count: 21, amount: 5145000 },
-      { name: '최수진', position: '부장', count: 19, amount: 4650000 },
-      { name: '강동원', position: '사원', count: 17, amount: 4165000 },
-    ],
-  };
-
-  const currentStaffData = staffData[staffTab];
 
   const getPeriodLabel = () => {
     switch (periodType) {
@@ -217,6 +185,75 @@ export default function Dashboard() {
       });
     }
   };
+
+  // Filter cases by period - exclude 작성중 globally
+  const filteredCasesByPeriod = useMemo(() => {
+    if (!allCases) return [];
+    
+    // Globally exclude 작성중 status
+    const activeCases = allCases.filter(c => c.status !== '작성중');
+    
+    if (periodType === 'all') return activeCases;
+    if (!dateRange?.from || !dateRange?.to) return activeCases;
+
+    return activeCases.filter(c => {
+      if (!c.accidentDate) return false;
+      try {
+        const caseDate = parseISO(c.accidentDate);
+        return isWithinInterval(caseDate, { start: dateRange.from!, end: dateRange.to! });
+      } catch {
+        return false;
+      }
+    });
+  }, [allCases, periodType, dateRange]);
+
+  // Filter cases by tab
+  const filteredCasesByTab = useMemo(() => {
+    if (!filteredCasesByPeriod) return [];
+
+    switch (activeTab) {
+      case 'reception':
+        // 접수된 케이스 (all active cases)
+        return filteredCasesByPeriod;
+      case 'pending':
+        // 미결 케이스 (제출, 검토중, 1차승인)
+        return filteredCasesByPeriod.filter(c => 
+          c.status === '제출' || c.status === '검토중' || c.status === '1차승인'
+        );
+      case 'insurance':
+        // 보험사 미정산 케이스 (완료된 케이스)
+        return filteredCasesByPeriod.filter(c => c.status === '완료');
+      case 'partner':
+        // 협력사 미정산 케이스 (완료된 케이스)
+        return filteredCasesByPeriod.filter(c => c.status === '완료');
+      default:
+        return filteredCasesByPeriod;
+    }
+  }, [filteredCasesByPeriod, activeTab]);
+
+  // Aggregate cases by assigned user
+  const staffSummary = useMemo(() => {
+    if (!filteredCasesByTab || !user) return [];
+
+    const userCaseCounts = new Map<string, { name: string; position: string; count: number }>();
+
+    filteredCasesByTab.forEach(c => {
+      const assignedTo = c.assignedTo || '미배정';
+
+      const existing = userCaseCounts.get(assignedTo);
+      if (existing) {
+        existing.count++;
+      } else {
+        userCaseCounts.set(assignedTo, {
+          name: assignedTo,
+          position: '직원',
+          count: 1,
+        });
+      }
+    });
+
+    return Array.from(userCaseCounts.values()).sort((a, b) => b.count - a.count);
+  }, [filteredCasesByTab, user]);
 
   return (
     <div className="relative min-h-screen" style={{ background: '#E7EDFE' }}>
@@ -655,91 +692,91 @@ export default function Dashboard() {
             {/* Tabs */}
             <div className="flex items-center w-full" style={{ maxWidth: '375px', margin: '0 auto', height: '40px', filter: 'drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.02))' }}>
               <button 
-                onClick={() => setStaffTab('reception')}
+                onClick={() => setActiveTab('reception')}
                 className="flex items-center justify-center"
                 style={{
                   width: '70px',
                   height: '40px',
                   padding: '10px',
-                  borderBottom: staffTab === 'reception' ? '2px solid #008FED' : 'none',
+                  borderBottom: activeTab === 'reception' ? '2px solid #008FED' : 'none',
                 }}
                 data-testid="tab-staff-reception"
               >
                 <span style={{
                   fontFamily: 'Pretendard',
                   fontSize: '14px',
-                  fontWeight: staffTab === 'reception' ? 600 : 400,
+                  fontWeight: activeTab === 'reception' ? 600 : 400,
                   lineHeight: '128%',
                   letterSpacing: '-0.01em',
-                  color: staffTab === 'reception' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+                  color: activeTab === 'reception' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
                 }}>
                   접수
                 </span>
               </button>
               <button 
-                onClick={() => setStaffTab('pending')}
+                onClick={() => setActiveTab('pending')}
                 className="flex items-center justify-center"
                 style={{
                   width: '69px',
                   height: '40px',
                   padding: '10px',
-                  borderBottom: staffTab === 'pending' ? '2px solid #008FED' : 'none',
+                  borderBottom: activeTab === 'pending' ? '2px solid #008FED' : 'none',
                 }}
                 data-testid="tab-staff-pending"
               >
                 <span style={{
                   fontFamily: 'Pretendard',
                   fontSize: '14px',
-                  fontWeight: staffTab === 'pending' ? 600 : 400,
+                  fontWeight: activeTab === 'pending' ? 600 : 400,
                   lineHeight: '128%',
                   letterSpacing: '-0.01em',
-                  color: staffTab === 'pending' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+                  color: activeTab === 'pending' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
                 }}>
                   미결
                 </span>
               </button>
               <button 
-                onClick={() => setStaffTab('insurance')}
+                onClick={() => setActiveTab('insurance')}
                 className="flex items-center justify-center"
                 style={{
                   width: '118px',
                   height: '40px',
                   padding: '10px',
                   flexGrow: 1,
-                  borderBottom: staffTab === 'insurance' ? '2px solid #008FED' : 'none',
+                  borderBottom: activeTab === 'insurance' ? '2px solid #008FED' : 'none',
                 }}
                 data-testid="tab-staff-insurance"
               >
                 <span style={{
                   fontFamily: 'Pretendard',
                   fontSize: '14px',
-                  fontWeight: staffTab === 'insurance' ? 600 : 400,
+                  fontWeight: activeTab === 'insurance' ? 600 : 400,
                   lineHeight: '128%',
                   letterSpacing: '-0.01em',
-                  color: staffTab === 'insurance' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+                  color: activeTab === 'insurance' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
                 }}>
                   보험사 미정산
                 </span>
               </button>
               <button 
-                onClick={() => setStaffTab('partner')}
+                onClick={() => setActiveTab('partner')}
                 className="flex items-center justify-center"
                 style={{
                   width: '118px',
                   height: '40px',
                   padding: '10px',
                   flexGrow: 1,
-                  borderBottom: staffTab === 'partner' ? '2px solid #008FED' : 'none',
+                  borderBottom: activeTab === 'partner' ? '2px solid #008FED' : 'none',
                 }}
                 data-testid="tab-staff-partner"
               >
                 <span style={{
                   fontFamily: 'Pretendard',
                   fontSize: '14px',
-                  fontWeight: staffTab === 'partner' ? 600 : 400,
+                  fontWeight: activeTab === 'partner' ? 600 : 400,
                   lineHeight: '128%',
                   letterSpacing: '-0.01em',
-                  color: staffTab === 'partner' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+                  color: activeTab === 'partner' ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
                 }}>
                   협력사 미정산
                 </span>
@@ -760,84 +797,96 @@ export default function Dashboard() {
                 borderRadius: '12px',
               }}
             >
-              {currentStaffData.map((staff, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center justify-between w-full"
-                  style={{
-                    padding: '0px 12px',
-                    height: '52px',
-                  }}
-                  data-testid={`staff-row-${index}`}
-                >
-                  <div className="flex items-center" style={{ gap: '8px' }}>
-                    <div 
-                      className="flex items-center justify-center"
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        background: 'rgba(0, 143, 237, 0.2)',
-                        borderRadius: '50px',
-                      }}
-                    >
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        color: '#008FED',
-                      }}>
-                        {staff.name.charAt(0)}
-                      </span>
+              {casesLoading ? (
+                <div className="flex items-center justify-center w-full py-8">
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    color: 'rgba(12, 12, 12, 0.5)',
+                  }}>
+                    로딩 중...
+                  </span>
+                </div>
+              ) : staffSummary.length === 0 ? (
+                <div className="flex items-center justify-center w-full py-8">
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 400,
+                    color: 'rgba(12, 12, 12, 0.5)',
+                  }}>
+                    해당 기간에 케이스가 없습니다.
+                  </span>
+                </div>
+              ) : (
+                staffSummary.map((staff, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center justify-between w-full"
+                    style={{
+                      padding: '0px 12px',
+                      height: '52px',
+                    }}
+                    data-testid={`staff-row-${index}`}
+                  >
+                    <div className="flex items-center" style={{ gap: '8px' }}>
+                      <div 
+                        className="flex items-center justify-center"
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          background: 'rgba(0, 143, 237, 0.2)',
+                          borderRadius: '50px',
+                        }}
+                      >
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: '#008FED',
+                        }}>
+                          {staff.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div className="flex items-center" style={{ gap: '3px' }}>
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '14px',
+                          fontWeight: 600,
+                          lineHeight: '128%',
+                          letterSpacing: '-0.01em',
+                          color: '#0C0C0C',
+                        }}>
+                          {staff.name}
+                        </span>
+                        <span style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '13px',
+                          fontWeight: 400,
+                          lineHeight: '128%',
+                          letterSpacing: '-0.01em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}>
+                          {staff.position}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center" style={{ gap: '3px' }}>
+                    <div className="flex items-center" style={{ gap: '8px' }}>
                       <span style={{
                         fontFamily: 'Pretendard',
                         fontSize: '14px',
-                        fontWeight: 600,
+                        fontWeight: 500,
                         lineHeight: '128%',
                         letterSpacing: '-0.01em',
                         color: '#0C0C0C',
                       }}>
-                        {staff.name}
-                      </span>
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '13px',
-                        fontWeight: 400,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}>
-                        {staff.position}
+                        {staff.count}건
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center" style={{ gap: '8px' }}>
-                    <span style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '14px',
-                      fontWeight: 500,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.01em',
-                      color: '#0C0C0C',
-                    }}>
-                      {staff.count}건
-                    </span>
-                    {(staffTab === 'insurance' || staffTab === 'partner') && 'amount' in staff && (
-                      <span style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '13px',
-                        fontWeight: 400,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.01em',
-                        color: 'rgba(12, 12, 12, 0.7)',
-                      }}>
-                        {staff.amount.toLocaleString('ko-KR')} 원
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -1475,87 +1524,103 @@ export default function Dashboard() {
 
                 {/* Table Body */}
                 <div className="flex flex-col gap-4">
-                  {[
-                    { name: '김블락', position: '사원', count: 30 },
-                    { name: '이블락', position: '주임', count: 25 },
-                    { name: '박블락', position: '대리', count: 28 },
-                    { name: '최블락', position: '과장', count: 22 },
-                    { name: '정블락', position: '차장', count: 27 },
-                    { name: '강블락', position: '부장', count: 24 },
-                    { name: '조블락', position: '사원', count: 21 },
-                  ].map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center"
-                      style={{ height: '39px' }}
-                      data-testid={`table-row-${index}`}
-                    >
+                  {casesLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '15px',
+                        fontWeight: 400,
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>
+                        로딩 중...
+                      </span>
+                    </div>
+                  ) : staffSummary.length === 0 ? (
+                    <div className="flex items-center justify-center py-8">
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '15px',
+                        fontWeight: 400,
+                        color: 'rgba(12, 12, 12, 0.5)',
+                      }}>
+                        해당 기간에 케이스가 없습니다.
+                      </span>
+                    </div>
+                  ) : (
+                    staffSummary.slice(0, 7).map((item, index) => (
                       <div
-                        className="flex items-center justify-center"
-                        style={{ width: '68px', padding: '0 8px' }}
+                        key={index}
+                        className="flex items-center"
+                        style={{ height: '39px' }}
+                        data-testid={`table-row-${index}`}
                       >
                         <div
-                          style={{
-                            width: '39px',
-                            height: '39px',
-                            background: 'rgba(0, 143, 237, 0.2)',
-                            borderRadius: '50px',
-                          }}
-                        />
-                      </div>
-                      <div
-                        className="flex items-center"
-                        style={{ width: '165px', padding: '0 8px' }}
-                      >
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 500,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
+                          className="flex items-center justify-center"
+                          style={{ width: '68px', padding: '0 8px' }}
                         >
-                          {item.name}
-                        </span>
-                      </div>
-                      <div
-                        className="flex items-center"
-                        style={{ width: '164px', padding: '0 8px' }}
-                      >
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 500,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
+                          <div
+                            style={{
+                              width: '39px',
+                              height: '39px',
+                              background: 'rgba(0, 143, 237, 0.2)',
+                              borderRadius: '50px',
+                            }}
+                          />
+                        </div>
+                        <div
+                          className="flex items-center"
+                          style={{ width: '165px', padding: '0 8px' }}
                         >
-                          {item.position}
-                        </span>
-                      </div>
-                      <div
-                        className="flex items-center flex-1"
-                        style={{ padding: '0 8px' }}
-                      >
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 500,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: 'rgba(12, 12, 12, 0.9)',
-                          }}
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '16px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.02em',
+                              color: 'rgba(12, 12, 12, 0.9)',
+                            }}
+                          >
+                            {item.name}
+                          </span>
+                        </div>
+                        <div
+                          className="flex items-center"
+                          style={{ width: '164px', padding: '0 8px' }}
                         >
-                          {item.count}
-                        </span>
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '16px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.02em',
+                              color: 'rgba(12, 12, 12, 0.9)',
+                            }}
+                          >
+                            {item.position}
+                          </span>
+                        </div>
+                        <div
+                          className="flex items-center flex-1"
+                          style={{ padding: '0 8px' }}
+                        >
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '16px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.02em',
+                              color: 'rgba(12, 12, 12, 0.9)',
+                            }}
+                          >
+                            {item.count}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
