@@ -42,6 +42,19 @@ export default function Dashboard() {
     queryKey: ["/api/user"],
   });
 
+  // Fetch dashboard statistics
+  const { data: stats, isLoading: statsLoading } = useQuery<{
+    receivedCases: number;
+    pendingCases: number;
+    insuranceUnsettledCases: number;
+    insuranceUnsettledAmount: number;
+    partnerUnsettledCases: number;
+    partnerUnsettledAmount: number;
+  }>({
+    queryKey: ["/api/dashboard/stats"],
+    enabled: !!user, // Only fetch stats when user is loaded
+  });
+
   const logoutMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest("POST", "/api/logout", {});
@@ -458,181 +471,143 @@ export default function Dashboard() {
 
           {/* Mobile Stats Cards - Simplified version */}
           <div className="lg:hidden flex flex-col items-center" style={{ gap: '12px', maxWidth: '335px', margin: '0 auto' }}>
-            {/* 접수건 */}
-            <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
-              <span style={{
-                fontFamily: 'Pretendard',
-                fontSize: '14px',
-                fontWeight: 500,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.5)',
-              }}>
-                접수건
-              </span>
-              <div className="flex justify-between items-center w-full">
-                <div className="flex items-center" style={{ gap: '8px' }}>
+            {statsLoading ? (
+              <div className="text-center py-4">로딩 중...</div>
+            ) : stats ? (
+              <>
+                {/* 접수건 */}
+                <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
                   <span style={{
                     fontFamily: 'Pretendard',
-                    fontSize: '26px',
-                    fontWeight: 600,
+                    fontSize: '14px',
+                    fontWeight: 500,
                     lineHeight: '128%',
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.9)',
+                    letterSpacing: '-0.01em',
+                    color: 'rgba(12, 12, 12, 0.5)',
                   }}>
-                    167건
+                    접수건
                   </span>
-                  <div className="flex items-center justify-center" style={{
-                    padding: '6px 10px',
-                    background: 'rgba(0, 143, 237, 0.2)',
-                    borderRadius: '4px',
+                  <div className="flex justify-between items-center w-full">
+                    <div className="flex items-center" style={{ gap: '8px' }}>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '26px',
+                        fontWeight: 600,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>
+                        {stats.receivedCases}건
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 미결건 */}
+                <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
+                  <span style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.01em',
+                    color: 'rgba(12, 12, 12, 0.5)',
                   }}>
+                    미결건
+                  </span>
+                  <div className="flex justify-between items-center w-full">
+                    <div className="flex items-center" style={{ gap: '8px' }}>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '26px',
+                        fontWeight: 600,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>
+                        {stats.pendingCases}건
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 보험사 미정산 - 심사사/조사사/보험사/관리자만 표시 */}
+                {user.role !== "협력사" && (
+                  <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
                     <span style={{
                       fontFamily: 'Pretendard',
-                      fontSize: '12px',
+                      fontSize: '14px',
                       fontWeight: 500,
                       lineHeight: '128%',
                       letterSpacing: '-0.01em',
-                      color: '#008FED',
+                      color: 'rgba(12, 12, 12, 0.5)',
                     }}>
-                      상승
+                      {user.role === "관리자" ? "보험사 미정산" : "미정산"}
                     </span>
+                    <div className="flex items-center" style={{ gap: '8px' }}>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '26px',
+                        fontWeight: 600,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>
+                        {stats.insuranceUnsettledCases}건
+                      </span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.7)',
+                      }}>
+                        {stats.insuranceUnsettledAmount.toLocaleString('ko-KR')}원
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-center w-full" style={{
-                padding: '12px 10px',
-                background: 'rgba(12, 12, 12, 0.05)',
-                borderRadius: '8px',
-              }}>
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 400,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.7)',
-                }}>
-                  접수건이 지난 달보다 12.4% 늘었어요
-                </span>
-              </div>
-            </div>
+                )}
 
-            {/* 미결건 */}
-            <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
-              <span style={{
-                fontFamily: 'Pretendard',
-                fontSize: '14px',
-                fontWeight: 500,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.5)',
-              }}>
-                미결건
-              </span>
-              <div className="flex justify-between items-center w-full">
-                <div className="flex items-center" style={{ gap: '8px' }}>
-                  <span style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '26px',
-                    fontWeight: 600,
-                    lineHeight: '128%',
-                    letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.9)',
-                  }}>
-                    167건
-                  </span>
-                  <div className="flex items-center justify-center" style={{
-                    padding: '6px 10px',
-                    background: 'rgba(208, 43, 32, 0.08)',
-                    borderRadius: '4px',
-                  }}>
+                {/* 협력사 미정산 - 협력사/관리자만 표시 */}
+                {(user.role === "협력사" || user.role === "관리자") && (
+                  <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
                     <span style={{
                       fontFamily: 'Pretendard',
-                      fontSize: '12px',
+                      fontSize: '14px',
                       fontWeight: 500,
                       lineHeight: '128%',
                       letterSpacing: '-0.01em',
-                      color: '#D02B20',
+                      color: 'rgba(12, 12, 12, 0.5)',
                     }}>
-                      감소
+                      {user.role === "협력사" ? "미정산" : "협력사 미정산"}
                     </span>
+                    <div className="flex items-center" style={{ gap: '8px' }}>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '26px',
+                        fontWeight: 600,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}>
+                        {stats.partnerUnsettledCases}건
+                      </span>
+                      <span style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.7)',
+                      }}>
+                        {stats.partnerUnsettledAmount.toLocaleString('ko-KR')}원
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 보험사 미정산 */}
-            <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
-              <span style={{
-                fontFamily: 'Pretendard',
-                fontSize: '14px',
-                fontWeight: 500,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.5)',
-              }}>
-                보험사 미정산
-              </span>
-              <div className="flex items-center" style={{ gap: '8px' }}>
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '26px',
-                  fontWeight: 600,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.9)',
-                }}>
-                  167건
-                </span>
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 400,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.7)',
-                }}>
-                  1,296,000원
-                </span>
-              </div>
-            </div>
-
-            {/* 협력사 미정산 */}
-            <div className="flex flex-col items-start" style={{ gap: '4px', width: '100%' }}>
-              <span style={{
-                fontFamily: 'Pretendard',
-                fontSize: '14px',
-                fontWeight: 500,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                color: 'rgba(12, 12, 12, 0.5)',
-              }}>
-                협력사 미정산
-              </span>
-              <div className="flex items-center" style={{ gap: '8px' }}>
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '26px',
-                  fontWeight: 600,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.9)',
-                }}>
-                  167건
-                </span>
-                <span style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '16px',
-                  fontWeight: 400,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(12, 12, 12, 0.7)',
-                }}>
-                  1,296,000원
-                </span>
-              </div>
-            </div>
+                )}
+              </>
+            ) : null}
           </div>
 
           {/* Separator for mobile */}
@@ -867,377 +842,353 @@ export default function Dashboard() {
           </div>
 
           {/* Desktop Stats Cards - Original version */}
-          <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-[18px]">
-            {/* 접수건 */}
-            <div
-              className="flex flex-col"
-              style={{
-                padding: '20px',
-                background: '#FFFFFF',
-                boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
-                gap: '12px',
-              }}
-              data-testid="card-stat-received"
-            >
-              <span
+          {statsLoading ? (
+            <div className="hidden lg:flex justify-center py-8">로딩 중...</div>
+          ) : stats ? (
+            <div className="hidden lg:grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-[18px]">
+              {/* 접수건 - 모든 역할에 표시 */}
+              <div
+                className="flex flex-col"
                 style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.9)',
+                  padding: '20px',
+                  background: '#FFFFFF',
+                  boxShadow: '0px 0px 20px #DBE9F5',
+                  borderRadius: '12px',
+                  gap: '12px',
                 }}
+                data-testid="card-stat-received"
               >
-                접수건
-              </span>
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col gap-[2px]">
-                  <div className="flex items-center gap-2">
-                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-                      <path d="M0 10L7 0L14 10H0Z" fill="#0C95F6"/>
-                    </svg>
+                <span
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.01em',
+                    color: 'rgba(12, 12, 12, 0.9)',
+                  }}
+                >
+                  접수건
+                </span>
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col gap-[2px]">
                     <div className="flex items-center gap-2">
-                      <span
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '38px',
-                          fontWeight: 700,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}
-                        data-testid="text-received-count"
-                      >
-                        167
-                      </span>
-                      <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
+                      <div className="flex items-center gap-2">
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '38px',
+                            fontWeight: 700,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="text-received-count"
+                        >
+                          {stats.receivedCases}
+                        </span>
+                        <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '18px',
+                              fontWeight: 400,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.02em',
+                              color: 'rgba(12, 12, 12, 0.6)',
+                            }}
+                          >
+                            건
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      background: 'rgba(0, 143, 237, 0.2)',
+                      borderRadius: '100px',
+                    }}
+                  >
+                    <CalendarPlus style={{ width: '26px', height: '26px', color: '#008FED' }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* 미결건 - 모든 역할에 표시 */}
+              <div
+                className="flex flex-col"
+                style={{
+                  padding: '20px',
+                  background: '#FFFFFF',
+                  boxShadow: '0px 0px 20px #DBE9F5',
+                  borderRadius: '12px',
+                  gap: '12px',
+                }}
+                data-testid="card-stat-pending"
+              >
+                <span
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.01em',
+                    color: 'rgba(12, 12, 12, 0.9)',
+                  }}
+                >
+                  미결건
+                </span>
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col gap-[2px]">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '38px',
+                            fontWeight: 700,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="text-pending-count"
+                        >
+                          {stats.pendingCases}
+                        </span>
+                        <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '18px',
+                              fontWeight: 400,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.02em',
+                              color: 'rgba(12, 12, 12, 0.6)',
+                            }}
+                          >
+                            건
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      background: 'rgba(0, 143, 237, 0.2)',
+                      borderRadius: '100px',
+                    }}
+                  >
+                    <AlertCircle style={{ width: '26px', height: '26px', color: '#008FED' }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* 보험사 미정산 - 심사사/조사사/보험사/관리자만 표시 */}
+              {user.role !== "협력사" && (
+                <div
+                  className="flex flex-col"
+                  style={{
+                    padding: '20px',
+                    background: '#FFFFFF',
+                    boxShadow: '0px 0px 20px #DBE9F5',
+                    borderRadius: '12px',
+                    gap: '12px',
+                  }}
+                  data-testid="card-stat-insurance-unsettled"
+                >
+                  <span
+                    style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.01em',
+                      color: 'rgba(12, 12, 12, 0.9)',
+                    }}
+                  >
+                    {user.role === "관리자" ? "보험사 미정산" : "미정산"}
+                  </span>
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col justify-center gap-[2px]">
+                      <div className="flex items-center gap-2">
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '38px',
+                            fontWeight: 700,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="text-insurance-count"
+                        >
+                          {stats.insuranceUnsettledCases}
+                        </span>
+                        <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '18px',
+                              fontWeight: 400,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.02em',
+                              color: 'rgba(12, 12, 12, 0.6)',
+                            }}
+                          >
+                            건
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
                         <span
                           style={{
                             fontFamily: 'Pretendard',
                             fontSize: '18px',
+                            fontWeight: 600,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.6)',
+                          }}
+                          data-testid="text-insurance-amount"
+                        >
+                          {stats.insuranceUnsettledAmount.toLocaleString('ko-KR')}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
                             fontWeight: 400,
                             lineHeight: '128%',
                             letterSpacing: '-0.02em',
                             color: 'rgba(12, 12, 12, 0.6)',
                           }}
                         >
-                          건
+                          원
                         </span>
                       </div>
                     </div>
+                    <div
+                      className="flex items-center justify-center"
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        background: 'rgba(0, 143, 237, 0.2)',
+                        borderRadius: '100px',
+                      }}
+                    >
+                      <Building2 style={{ width: '26px', height: '26px', color: '#008FED' }} />
+                    </div>
                   </div>
+                </div>
+              )}
+
+              {/* 협력사 미정산 - 협력사/관리자만 표시 */}
+              {(user.role === "협력사" || user.role === "관리자") && (
+                <div
+                  className="flex flex-col"
+                  style={{
+                    padding: '20px',
+                    background: '#FFFFFF',
+                    boxShadow: '0px 0px 20px #DBE9F5',
+                    borderRadius: '12px',
+                    gap: '12px',
+                  }}
+                  data-testid="card-stat-partner-unsettled"
+                >
                   <span
                     style={{
                       fontFamily: 'Pretendard',
-                      fontSize: '16px',
+                      fontSize: '14px',
                       fontWeight: 500,
                       lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: '#0C95F6',
+                      letterSpacing: '-0.01em',
+                      color: 'rgba(12, 12, 12, 0.9)',
                     }}
-                    data-testid="text-received-trend"
                   >
-                    전월 대비 +12.4% (18건)
+                    {user.role === "협력사" ? "미정산" : "협력사 미정산"}
                   </span>
-                </div>
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    width: '60px',
-                    height: '60px',
-                    background: 'rgba(0, 143, 237, 0.2)',
-                    borderRadius: '100px',
-                  }}
-                >
-                  <CalendarPlus style={{ width: '26px', height: '26px', color: '#008FED' }} />
-                </div>
-              </div>
-            </div>
-
-            {/* 미결건 */}
-            <div
-              className="flex flex-col"
-              style={{
-                padding: '20px',
-                background: '#FFFFFF',
-                boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
-                gap: '12px',
-              }}
-              data-testid="card-stat-pending"
-            >
-              <span
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.9)',
-                }}
-              >
-                미결건
-              </span>
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col gap-[2px]">
-                  <div className="flex items-center gap-2">
-                    <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-                      <path d="M14 0L7 10L0 0H14Z" fill="#D02B20"/>
-                    </svg>
-                    <div className="flex items-center gap-2">
-                      <span
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '38px',
-                          fontWeight: 700,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.9)',
-                        }}
-                        data-testid="text-pending-count"
-                      >
-                        167
-                      </span>
-                      <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex flex-col justify-center gap-[2px]">
+                      <div className="flex items-center gap-2">
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '38px',
+                            fontWeight: 700,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.9)',
+                          }}
+                          data-testid="text-partner-count"
+                        >
+                          {stats.partnerUnsettledCases}
+                        </span>
+                        <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '18px',
+                              fontWeight: 400,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.02em',
+                              color: 'rgba(12, 12, 12, 0.6)',
+                            }}
+                          >
+                            건
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
                         <span
                           style={{
                             fontFamily: 'Pretendard',
                             fontSize: '18px',
+                            fontWeight: 600,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.02em',
+                            color: 'rgba(12, 12, 12, 0.6)',
+                          }}
+                          data-testid="text-partner-amount"
+                        >
+                          {stats.partnerUnsettledAmount.toLocaleString('ko-KR')}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '16px',
                             fontWeight: 400,
                             lineHeight: '128%',
                             letterSpacing: '-0.02em',
                             color: 'rgba(12, 12, 12, 0.6)',
                           }}
                         >
-                          건
+                          원
                         </span>
                       </div>
                     </div>
-                  </div>
-                  <span
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontSize: '16px',
-                      fontWeight: 500,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.02em',
-                      color: '#D02B20',
-                    }}
-                    data-testid="text-pending-trend"
-                  >
-                    전월 대비 -12.4% (18건)
-                  </span>
-                </div>
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    width: '60px',
-                    height: '60px',
-                    background: 'rgba(0, 143, 237, 0.2)',
-                    borderRadius: '100px',
-                  }}
-                >
-                  <AlertCircle style={{ width: '26px', height: '26px', color: '#008FED' }} />
-                </div>
-              </div>
-            </div>
-
-            {/* 보험사 미정산 */}
-            <div
-              className="flex flex-col"
-              style={{
-                padding: '20px',
-                background: '#FFFFFF',
-                boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
-                gap: '12px',
-              }}
-              data-testid="card-stat-insurance-unsettled"
-            >
-              <span
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.9)',
-                }}
-              >
-                보험사 미정산
-              </span>
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col justify-center gap-[2px]">
-                  <div className="flex items-center gap-2">
-                    <span
+                    <div
+                      className="flex items-center justify-center"
                       style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '38px',
-                        fontWeight: 700,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
+                        width: '60px',
+                        height: '60px',
+                        background: 'rgba(0, 143, 237, 0.2)',
+                        borderRadius: '100px',
                       }}
-                      data-testid="text-insurance-count"
                     >
-                      167
-                    </span>
-                    <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
-                      <span
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '18px',
-                          fontWeight: 400,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.6)',
-                        }}
-                      >
-                        건
-                      </span>
+                      <Handshake style={{ width: '26px', height: '26px', color: '#008FED' }} />
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '18px',
-                        fontWeight: 600,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.6)',
-                      }}
-                      data-testid="text-insurance-amount"
-                    >
-                      15,181,650
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.6)',
-                      }}
-                    >
-                      원
-                    </span>
-                  </div>
                 </div>
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    width: '60px',
-                    height: '60px',
-                    background: 'rgba(0, 143, 237, 0.2)',
-                    borderRadius: '100px',
-                  }}
-                >
-                  <Building2 style={{ width: '26px', height: '26px', color: '#008FED' }} />
-                </div>
-              </div>
+              )}
             </div>
-
-            {/* 협력사 미정산 */}
-            <div
-              className="flex flex-col"
-              style={{
-                padding: '20px',
-                background: '#FFFFFF',
-                boxShadow: '0px 0px 20px #DBE9F5',
-                borderRadius: '12px',
-                gap: '12px',
-              }}
-              data-testid="card-stat-partner-unsettled"
-            >
-              <span
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '14px',
-                  fontWeight: 500,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  color: 'rgba(12, 12, 12, 0.9)',
-                }}
-              >
-                협력사 미정산
-              </span>
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col justify-center gap-[2px]">
-                  <div className="flex items-center gap-2">
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '38px',
-                        fontWeight: 700,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.9)',
-                      }}
-                      data-testid="text-partner-count"
-                    >
-                      167
-                    </span>
-                    <div className="flex flex-col justify-end" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
-                      <span
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '18px',
-                          fontWeight: 400,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.02em',
-                          color: 'rgba(12, 12, 12, 0.6)',
-                        }}
-                      >
-                        건
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '18px',
-                        fontWeight: 600,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.6)',
-                      }}
-                      data-testid="text-partner-amount"
-                    >
-                      15,181,650
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: 'rgba(12, 12, 12, 0.6)',
-                      }}
-                    >
-                      원
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    width: '60px',
-                    height: '60px',
-                    background: 'rgba(0, 143, 237, 0.2)',
-                    borderRadius: '100px',
-                  }}
-                >
-                  <Handshake style={{ width: '26px', height: '26px', color: '#008FED' }} />
-                </div>
-              </div>
-            </div>
-          </div>
+          ) : null}
 
           {/* Progress Summary and Case List Section - Desktop only */}
           <div className="hidden lg:flex flex-col lg:flex-row items-start gap-6 mt-6">

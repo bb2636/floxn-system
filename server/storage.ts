@@ -29,6 +29,12 @@ function getKSTTimestamp(): string {
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+09:00`;
 }
 
+// Check if user has team leader level authority (팀장, 부장, 차장, 과장)
+function isTeamLeader(position: string | null): boolean {
+  if (!position) return false;
+  return ["팀장", "부장", "차장", "과장"].includes(position);
+}
+
 export interface PartnerStats {
   partnerName: string;
   dailyCount: number; // 일배당건수
@@ -1089,9 +1095,9 @@ export class MemStorage implements IStorage {
           // 관리자는 모든 케이스 조회 가능
           break;
         case "협력사":
-          // 팀장은 자기 회사의 모든 케이스
+          // 팀장급(팀장, 부장, 차장, 과장)은 자기 회사의 모든 케이스
           // 일반 직원은 자기가 맡은 케이스만
-          if (user.position === "팀장") {
+          if (isTeamLeader(user.position)) {
             allCases = allCases.filter(c => c.assignedPartner === user.company);
           } else {
             allCases = allCases.filter(c => 
@@ -2059,9 +2065,9 @@ export class DbStorage implements IStorage {
           // 관리자는 모든 케이스 조회 가능
           break;
         case "협력사":
-          // 팀장은 자기 회사의 모든 케이스
+          // 팀장급(팀장, 부장, 차장, 과장)은 자기 회사의 모든 케이스
           // 일반 직원은 자기가 맡은 케이스만
-          if (user.position === "팀장") {
+          if (isTeamLeader(user.position)) {
             query = query.where(eq(cases.assignedPartner, user.company));
           } else {
             query = query.where(

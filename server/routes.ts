@@ -1952,6 +1952,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get dashboard statistics (권한별 필터링)
+  app.get("/api/dashboard/stats", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      // Get current user for permission-based filtering
+      const currentUser = await storage.getUser(req.session.userId);
+      
+      if (!currentUser) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+      
+      // Get cases filtered by user role and permissions
+      const filteredCases = await storage.getAllCases(currentUser);
+      
+      // Calculate statistics from filtered cases
+      const stats = {
+        // 접수건: 총 케이스 수
+        receivedCases: filteredCases.length,
+        
+        // 미결건: status가 "접수", "조사중", "견적중" 등 완료가 아닌 케이스
+        pendingCases: filteredCases.filter(c => c.status !== "완료").length,
+        
+        // 보험사 미정산: insuranceSettlementStatus가 "미정산"인 케이스
+        insuranceUnsettledCases: filteredCases.filter(c => c.insuranceSettlementStatus === "미정산").length,
+        insuranceUnsettledAmount: filteredCases
+          .filter(c => c.insuranceSettlementStatus === "미정산")
+          .reduce((sum, c) => sum + (c.insuranceSettlementAmount || 0), 0),
+        
+        // 협력사 미정산: partnerSettlementStatus가 "미정산"인 케이스
+        partnerUnsettledCases: filteredCases.filter(c => c.partnerSettlementStatus === "미정산").length,
+        partnerUnsettledAmount: filteredCases
+          .filter(c => c.partnerSettlementStatus === "미정산")
+          .reduce((sum, c) => sum + (c.partnerSettlementAmount || 0), 0),
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Get dashboard stats error:", error);
+      res.status(500).json({ error: "통계를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
