@@ -1580,14 +1580,24 @@ export default function ComprehensiveProgress() {
                     flexDirection: "column",
                     gap: "12px",
                   }}>
-                    <div style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 600,
-                      fontSize: "16px",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.9)",
-                    }}>
-                      특이사항
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      {selectedCase?.specialNotes && (
+                        <div style={{
+                          width: "6px",
+                          height: "6px",
+                          background: selectedCase.specialNotesConfirmedBy ? "#008FED" : "#ED1C00",
+                          borderRadius: "50%",
+                        }}></div>
+                      )}
+                      <div style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "16px",
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}>
+                        특이사항
+                      </div>
                     </div>
                     <div
                       style={{
@@ -1605,31 +1615,33 @@ export default function ComprehensiveProgress() {
                     </div>
                   </div>
 
-                  {/* 하단 버튼 */}
-                  <button
-                    onClick={handleOpenSpecialNotesDialog}
-                    style={{
-                      width: "100%",
-                      height: "52px",
-                      background: "#FFFFFF",
-                      border: "1px solid rgba(0, 143, 237, 0.3)",
-                      boxShadow: "2px 4px 30px #BDD1F0",
-                      borderRadius: "10px",
-                      padding: "10px",
-                      fontFamily: "Pretendard",
-                      fontWeight: 600,
-                      fontSize: "18px",
-                      letterSpacing: "-0.02em",
-                      color: "#0C95F6",
-                      cursor: "pointer",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                    data-testid="button-special-note-input"
-                  >
-                    특이사항 입력
-                  </button>
+                  {/* 하단 버튼 (협력사 전용) */}
+                  {user?.role === "협력사" && (
+                    <button
+                      onClick={handleOpenSpecialNotesDialog}
+                      style={{
+                        width: "100%",
+                        height: "52px",
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(0, 143, 237, 0.3)",
+                        boxShadow: "2px 4px 30px #BDD1F0",
+                        borderRadius: "10px",
+                        padding: "10px",
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "18px",
+                        letterSpacing: "-0.02em",
+                        color: "#0C95F6",
+                        cursor: "pointer",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                      data-testid="button-special-note-input"
+                    >
+                      특이사항 입력
+                    </button>
+                  )}
                 </>
               )}
 
