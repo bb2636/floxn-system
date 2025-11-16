@@ -28,18 +28,27 @@ export interface LaborCatalogItem {
 // 노무비 테이블 행
 export interface LaborCostRow {
   id: string;
-  공종: string; // select
-  공사명: string; // select (filtered by 공종)
-  세부공사: string; // select (filtered by 공사명)
-  세부항목: string; // select (filtered by 세부공사)
-  단위: string; // readonly
-  기준가_단위: number; // readonly (단가_인 for 노무비)
-  수량: number; // editable
-  적용면: '천장' | '벽체' | '바닥' | '길이' | ''; // checkbox selection (only one can be selected)
-  기준가_적용면: number; // readonly (단가_천장/벽체/바닥/길이)
-  피해면적: number; // editable
-  금액: number; // calculated
-  요청: string; // editable input with placeholder "-"
+  category: string; // 공종 - select
+  workName: string; // 공사명 - select (filtered by category)
+  detailWork: string; // 세부공사 - select (filtered by workName)
+  detailItem: string; // 세부항목 - select (filtered by detailWork)
+  priceStandard: string; // 단가 기준 - select (민/위/기/JV)
+  unit: string; // 단위 - readonly
+  standardPrice: number; // 기준가(단위) - readonly (단가_인 for 노무비)
+  quantity: number; // 수량 - editable
+  applicationRates: { // 적용률 - checkboxes (multiple can be selected)
+    ceiling: boolean; // 천장
+    wall: boolean; // 벽체
+    floor: boolean; // 바닥
+    molding: boolean; // 길이
+  };
+  salesMarkupRate: number; // 판매가 마진율 - editable
+  pricePerSqm: number; // 기준가(m²) - calculated
+  damageArea: number; // 피해면적 - editable
+  deduction: number; // 공제(원) - calculated
+  includeInEstimate: boolean; // 경비여부 - checkbox
+  request: string; // 요청 - editable input
+  amount: number; // 금액 - calculated
 }
 
 interface LaborCostSectionProps {
@@ -62,53 +71,64 @@ export function LaborCostSection({
   isLoading = false,
 }: LaborCostSectionProps) {
   // 캐스케이딩 옵션 생성
-  const 공종Options = useMemo(() => {
-    if (!catalog.length) return [];
+  const categoryOptions = useMemo(() => {
+    if (!catalog.length) return ["누수탐지비용"]; // 누수탐지비용은 항상 표시
     const unique = new Set(catalog.map(item => item.공종));
-    return Array.from(unique);
+    // 누수탐지비용을 catalog 옵션에 추가
+    return ["누수탐지비용", ...Array.from(unique)];
   }, [catalog]);
 
-  const get공사명Options = (공종: string) => {
-    if (!catalog.length || !공종) return [];
-    const filtered = catalog.filter(item => item.공종 === 공종);
+  const getWorkNameOptions = (category: string) => {
+    if (!category) return [];
+    // 누수탐지비용 특수 케이스
+    if (category === "누수탐지비용") {
+      return ["종합검사"];
+    }
+    if (!catalog.length) return [];
+    const filtered = catalog.filter(item => item.공종 === category);
     const unique = new Set(filtered.map(item => item.공사명));
     return Array.from(unique);
   };
 
-  const get세부공사Options = (공종: string, 공사명: string) => {
-    if (!catalog.length || !공종 || !공사명) return [];
+  const getDetailWorkOptions = (category: string, workName: string) => {
+    if (!category || !workName) return [];
+    // 누수탐지비용 특수 케이스
+    if (category === "누수탐지비용" && workName === "종합검사") {
+      return ["1회", "2회", "3회 이상"];
+    }
+    if (!catalog.length) return [];
     const filtered = catalog.filter(item => 
-      item.공종 === 공종 && item.공사명 === 공사명
+      item.공종 === category && item.공사명 === workName
     );
     const unique = new Set(filtered.map(item => item.세부공사));
     return Array.from(unique);
   };
 
-  const get세부항목Options = (공종: string, 공사명: string, 세부공사: string) => {
-    if (!catalog.length || !공종 || !공사명 || !세부공사) return [];
+  const getDetailItemOptions = (category: string, workName: string, detailWork: string) => {
+    if (!catalog.length || !category || !workName || !detailWork) return [];
     const filtered = catalog.filter(item => 
-      item.공종 === 공종 && 
-      item.공사명 === 공사명 && 
-      item.세부공사 === 세부공사
+      item.공종 === category && 
+      item.공사명 === workName && 
+      item.세부공사 === detailWork
     );
     return filtered.map(item => item.세부항목);
   };
 
-  const get적용면Options = (공종: string, 공사명: string, 세부공사: string, 세부항목: string) => {
-    if (!catalog.length || !공종 || !공사명 || !세부공사 || !세부항목) return [];
+  const getApplicationRateOptions = (category: string, workName: string, detailWork: string, detailItem: string) => {
+    if (!catalog.length || !category || !workName || !detailWork || !detailItem) return [];
     const item = catalog.find(i => 
-      i.공종 === 공종 && 
-      i.공사명 === 공사명 && 
-      i.세부공사 === 세부공사 && 
-      i.세부항목 === 세부항목
+      i.공종 === category && 
+      i.공사명 === workName && 
+      i.세부공사 === detailWork && 
+      i.세부항목 === detailItem
     );
     if (!item) return [];
     
-    const options: Array<'천장' | '벽체' | '바닥' | '길이'> = [];
-    if (item.단가_천장 !== null) options.push('천장');
-    if (item.단가_벽체 !== null) options.push('벽체');
-    if (item.단가_바닥 !== null) options.push('바닥');
-    if (item.단가_길이 !== null) options.push('길이');
+    const options: Array<'ceiling' | 'wall' | 'floor' | 'molding'> = [];
+    if (item.단가_천장 !== null) options.push('ceiling');
+    if (item.단가_벽체 !== null) options.push('wall');
+    if (item.단가_바닥 !== null) options.push('floor');
+    if (item.단가_길이 !== null) options.push('molding');
     return options;
   };
 
@@ -118,102 +138,130 @@ export function LaborCostSection({
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
 
-        // 공종 변경 시 하위 필드 리셋
-        if (field === '공종') {
-          updated.공사명 = '';
-          updated.세부공사 = '';
-          updated.세부항목 = '';
-          updated.단위 = '';
-          updated.기준가_단위 = 0;
-          updated.적용면 = '';
-          updated.기준가_적용면 = 0;
-        }
-
-        // 공사명 변경 시 하위 필드 리셋
-        if (field === '공사명') {
-          updated.세부공사 = '';
-          updated.세부항목 = '';
-          updated.단위 = '';
-          updated.기준가_단위 = 0;
-          updated.적용면 = '';
-          updated.기준가_적용면 = 0;
-        }
-
-        // 세부공사 변경 시 하위 필드 리셋
-        if (field === '세부공사') {
-          updated.세부항목 = '';
-          updated.단위 = '';
-          updated.기준가_단위 = 0;
-          updated.적용면 = '';
-          updated.기준가_적용면 = 0;
-        }
-
-        // 세부항목 변경 시 카탈로그에서 데이터 채우기
-        if (field === '세부항목') {
-          const catalogItem = catalog.find(item =>
-            item.공종 === updated.공종 &&
-            item.공사명 === updated.공사명 &&
-            item.세부공사 === updated.세부공사 &&
-            item.세부항목 === value
-          );
-          if (catalogItem) {
-            // 세부공사가 "노무비"인 경우: 단위 = '인', 기준가_단위 = 단가_인
-            if (updated.세부공사 === '노무비') {
-              updated.단위 = '인';
-              updated.기준가_단위 = catalogItem.단가_인 || 0;
-            } else {
-              // 일위대가인 경우: catalogItem.단위 사용
-              updated.단위 = catalogItem.단위 || '';
-              updated.기준가_단위 = catalogItem.단가_인 || 0;
-            }
-            
-            // 적용면 기본값 설정
-            if (catalogItem.단가_천장) updated.적용면 = '천장';
-            else if (catalogItem.단가_벽체) updated.적용면 = '벽체';
-            else if (catalogItem.단가_바닥) updated.적용면 = '바닥';
-            else if (catalogItem.단가_길이) updated.적용면 = '길이';
-            
-            // 기준가_적용면 설정
-            if (updated.적용면 === '천장') updated.기준가_적용면 = catalogItem.단가_천장 || 0;
-            else if (updated.적용면 === '벽체') updated.기준가_적용면 = catalogItem.단가_벽체 || 0;
-            else if (updated.적용면 === '바닥') updated.기준가_적용면 = catalogItem.단가_바닥 || 0;
-            else if (updated.적용면 === '길이') updated.기준가_적용면 = catalogItem.단가_길이 || 0;
+        // category 변경 시 하위 필드 리셋
+        if (field === 'category') {
+          // 누수탐지비용 선택 시 특수 처리
+          if (value === "누수탐지비용") {
+            updated.workName = "종합검사";
+            updated.detailWork = "";
+            updated.detailItem = '';
+            updated.unit = "회";
+            updated.standardPrice = 0;
+            updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+            updated.pricePerSqm = 0;
+          } else {
+            updated.workName = '';
+            updated.detailWork = '';
+            updated.detailItem = '';
+            updated.unit = '';
+            updated.standardPrice = 0;
+            updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+            updated.pricePerSqm = 0;
           }
         }
 
-        // 적용면 변경 시 기준가_적용면 업데이트
-        if (field === '적용면') {
-          if (value === '') {
-            // 적용면 선택 해제 시 기준가와 금액 리셋
-            updated.기준가_적용면 = 0;
+        // workName 변경 시 하위 필드 리셋
+        if (field === 'workName') {
+          updated.detailWork = '';
+          updated.detailItem = '';
+          updated.unit = '';
+          updated.standardPrice = 0;
+          updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+          updated.pricePerSqm = 0;
+        }
+
+        // detailWork 변경 시 하위 필드 리셋
+        if (field === 'detailWork') {
+          // 누수탐지비용인 경우 pricing 로직 적용
+          if (updated.category === "누수탐지비용") {
+            updated.detailItem = '';
+            // unit은 이미 "회"로 설정되어 있으므로 유지
+            // detailWork에 따라 standardPrice 설정
+            if (value === "1회") updated.standardPrice = 300000;
+            else if (value === "2회") updated.standardPrice = 400000;
+            else if (value === "3회 이상") updated.standardPrice = 500000;
+            else updated.standardPrice = 0;
+            updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+            updated.pricePerSqm = 0;
           } else {
-            const catalogItem = catalog.find(item =>
-              item.공종 === updated.공종 &&
-              item.공사명 === updated.공사명 &&
-              item.세부공사 === updated.세부공사 &&
-              item.세부항목 === updated.세부항목
-            );
-            if (catalogItem) {
-              if (value === '천장') updated.기준가_적용면 = catalogItem.단가_천장 || 0;
-              else if (value === '벽체') updated.기준가_적용면 = catalogItem.단가_벽체 || 0;
-              else if (value === '바닥') updated.기준가_적용면 = catalogItem.단가_바닥 || 0;
-              else if (value === '길이') updated.기준가_적용면 = catalogItem.단가_길이 || 0;
+            updated.detailItem = '';
+            updated.unit = '';
+            updated.standardPrice = 0;
+            updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+            updated.pricePerSqm = 0;
+          }
+        }
+
+        // detailItem 변경 시 카탈로그에서 데이터 채우기
+        if (field === 'detailItem') {
+          const catalogItem = catalog.find(item =>
+            item.공종 === updated.category &&
+            item.공사명 === updated.workName &&
+            item.세부공사 === updated.detailWork &&
+            item.세부항목 === value
+          );
+          if (catalogItem) {
+            // detailWork가 "노무비"인 경우: unit = '인', standardPrice = 단가_인
+            if (updated.detailWork === '노무비') {
+              updated.unit = '인';
+              updated.standardPrice = catalogItem.단가_인 || 0;
+            } else {
+              // 일위대가인 경우: catalogItem.단위 사용
+              updated.unit = catalogItem.단위 || '';
+              updated.standardPrice = catalogItem.단가_인 || 0;
             }
+            
+            // applicationRates 기본값 설정 (첫 번째 사용 가능한 옵션 선택)
+            updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+            if (catalogItem.단가_천장 !== null) {
+              updated.applicationRates.ceiling = true;
+              updated.pricePerSqm = catalogItem.단가_천장;
+            } else if (catalogItem.단가_벽체 !== null) {
+              updated.applicationRates.wall = true;
+              updated.pricePerSqm = catalogItem.단가_벽체;
+            } else if (catalogItem.단가_바닥 !== null) {
+              updated.applicationRates.floor = true;
+              updated.pricePerSqm = catalogItem.단가_바닥;
+            } else if (catalogItem.단가_길이 !== null) {
+              updated.applicationRates.molding = true;
+              updated.pricePerSqm = catalogItem.단가_길이;
+            }
+          }
+        }
+
+        // applicationRates 변경 시 pricePerSqm 업데이트
+        if (field === 'applicationRates') {
+          const catalogItem = catalog.find(item =>
+            item.공종 === updated.category &&
+            item.공사명 === updated.workName &&
+            item.세부공사 === updated.detailWork &&
+            item.세부항목 === updated.detailItem
+          );
+          if (catalogItem) {
+            // 선택된 첫 번째 applicationRate의 가격 사용
+            if (value.ceiling) updated.pricePerSqm = catalogItem.단가_천장 || 0;
+            else if (value.wall) updated.pricePerSqm = catalogItem.단가_벽체 || 0;
+            else if (value.floor) updated.pricePerSqm = catalogItem.단가_바닥 || 0;
+            else if (value.molding) updated.pricePerSqm = catalogItem.단가_길이 || 0;
+            else updated.pricePerSqm = 0;
           }
         }
 
         // 금액 계산 (타입을 명시적으로 number로 변환)
-        const 기준가_단위 = Number(updated.기준가_단위) || 0;
-        const 수량 = Number(updated.수량) || 0;
-        const 기준가_적용면 = Number(updated.기준가_적용면) || 0;
-        const 피해면적 = Number(updated.피해면적) || 0;
+        const standardPrice = Number(updated.standardPrice) || 0;
+        const quantity = Number(updated.quantity) || 0;
+        const pricePerSqm = Number(updated.pricePerSqm) || 0;
+        const damageArea = Number(updated.damageArea) || 0;
         
-        if (updated.세부공사 === '노무비') {
-          updated.금액 = Math.round(기준가_단위 * 수량);
-        } else if (updated.세부공사 === '일위대가') {
-          updated.금액 = Math.round(기준가_적용면 * 피해면적 * 수량);
+        // 누수탐지비용은 standardPrice * quantity로 계산
+        if (updated.category === '누수탐지비용') {
+          updated.amount = Math.round(standardPrice * quantity);
+        } else if (updated.detailWork === '노무비') {
+          updated.amount = Math.round(standardPrice * quantity);
+        } else if (updated.detailWork === '일위대가') {
+          updated.amount = Math.round(pricePerSqm * damageArea * quantity);
         } else {
-          updated.금액 = 0;
+          updated.amount = 0;
         }
 
         return updated;
@@ -290,18 +338,18 @@ export function LaborCostSection({
               {/* 공종 - Select */}
               <td style={{ padding: "0 8px" }}>
                 <Select 
-                  value={row.공종} 
-                  onValueChange={(value) => updateRow(row.id, '공종', value)}
+                  value={row.category} 
+                  onValueChange={(value) => updateRow(row.id, 'category', value)}
                 >
                   <SelectTrigger 
                     className="h-9 border-0" 
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    data-testid={`select-공종-${index}`}
+                    data-testid={`select-category-${index}`}
                   >
                     <SelectValue placeholder="선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    {공종Options.map(opt => (
+                    {categoryOptions.map(opt => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                     ))}
                   </SelectContent>
@@ -311,19 +359,19 @@ export function LaborCostSection({
               {/* 공사명 - Select */}
               <td style={{ padding: "0 8px" }}>
                 <Select 
-                  value={row.공사명} 
-                  onValueChange={(value) => updateRow(row.id, '공사명', value)}
-                  disabled={!row.공종}
+                  value={row.workName} 
+                  onValueChange={(value) => updateRow(row.id, 'workName', value)}
+                  disabled={!row.category}
                 >
                   <SelectTrigger 
                     className="h-9 border-0" 
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    data-testid={`select-공사명-${index}`}
+                    data-testid={`select-workName-${index}`}
                   >
                     <SelectValue placeholder="선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    {get공사명Options(row.공종).map(opt => (
+                    {getWorkNameOptions(row.category).map(opt => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                     ))}
                   </SelectContent>
@@ -333,19 +381,19 @@ export function LaborCostSection({
               {/* 세부공사 - Select */}
               <td style={{ padding: "0 8px" }}>
                 <Select 
-                  value={row.세부공사} 
-                  onValueChange={(value) => updateRow(row.id, '세부공사', value)}
-                  disabled={!row.공사명}
+                  value={row.detailWork} 
+                  onValueChange={(value) => updateRow(row.id, 'detailWork', value)}
+                  disabled={!row.workName}
                 >
                   <SelectTrigger 
                     className="h-9 border-0" 
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    data-testid={`select-세부공사-${index}`}
+                    data-testid={`select-detailWork-${index}`}
                   >
                     <SelectValue placeholder="선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    {get세부공사Options(row.공종, row.공사명).map(opt => (
+                    {getDetailWorkOptions(row.category, row.workName).map(opt => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                     ))}
                   </SelectContent>
@@ -355,19 +403,19 @@ export function LaborCostSection({
               {/* 세부항목 - Select */}
               <td style={{ padding: "0 8px" }}>
                 <Select 
-                  value={row.세부항목} 
-                  onValueChange={(value) => updateRow(row.id, '세부항목', value)}
-                  disabled={!row.세부공사}
+                  value={row.detailItem} 
+                  onValueChange={(value) => updateRow(row.id, 'detailItem', value)}
+                  disabled={!row.detailWork}
                 >
                   <SelectTrigger 
                     className="h-9 border-0" 
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    data-testid={`select-세부항목-${index}`}
+                    data-testid={`select-detailItem-${index}`}
                   >
                     <SelectValue placeholder="선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    {get세부항목Options(row.공종, row.공사명, row.세부공사).map(opt => (
+                    {getDetailItemOptions(row.category, row.workName, row.detailWork).map(opt => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                     ))}
                   </SelectContent>
@@ -376,44 +424,48 @@ export function LaborCostSection({
               
               {/* 단위 - Readonly */}
               <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.6)", textAlign: "left" }}>
-                {row.단위 || '-'}
+                {row.unit || '-'}
               </td>
               
               {/* 기준가(원/단위) - Readonly */}
               <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
-                {row.기준가_단위.toLocaleString()}
+                {(row.standardPrice ?? 0).toLocaleString()}
               </td>
               
               {/* 수량 - Editable Input */}
               <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
                 <Input
                   type="number"
-                  value={row.수량}
-                  onChange={(e) => updateRow(row.id, '수량', Number(e.target.value) || 0)}
+                  value={row.quantity}
+                  onChange={(e) => updateRow(row.id, 'quantity', Number(e.target.value) || 0)}
                   className="h-9 border-0 bg-transparent text-right"
                   style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                  data-testid={`input-수량-${index}`}
+                  data-testid={`input-quantity-${index}`}
                 />
               </td>
               
-              {/* 적용면 - Checkboxes (항상 4개 표시, 한 번에 하나만 선택 가능) */}
+              {/* 적용면 - Checkboxes (multiple can be selected) */}
               <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
                 <div className="flex gap-4">
-                  {(['천장', '벽체', '바닥', '길이'] as const).map(opt => {
-                    const checkboxId = `checkbox-${row.id}-${opt}`;
+                  {[
+                    { key: 'ceiling' as const, label: '천장' },
+                    { key: 'wall' as const, label: '벽체' },
+                    { key: 'floor' as const, label: '바닥' },
+                    { key: 'molding' as const, label: '길이' }
+                  ].map(({ key, label }) => {
+                    const checkboxId = `checkbox-${row.id}-${key}`;
                     return (
-                      <div key={opt} className="flex items-center gap-1">
+                      <div key={key} className="flex items-center gap-1">
                         <Checkbox
                           id={checkboxId}
-                          checked={row.적용면 === opt}
+                          checked={row.applicationRates[key]}
                           onCheckedChange={(checked) => {
-                            if (checked) {
-                              updateRow(row.id, '적용면', opt);
-                            } else {
-                              updateRow(row.id, '적용면', '');
-                            }
+                            updateRow(row.id, 'applicationRates', {
+                              ...row.applicationRates,
+                              [key]: checked
+                            });
                           }}
-                          data-testid={`checkbox-적용면-${opt}-${index}`}
+                          data-testid={`checkbox-applicationRate-${key}-${index}`}
                         />
                         <label 
                           htmlFor={checkboxId}
@@ -421,10 +473,10 @@ export function LaborCostSection({
                             fontFamily: "Pretendard", 
                             fontSize: "13px", 
                             cursor: "pointer",
-                            color: row.적용면 === opt ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)"
+                            color: row.applicationRates[key] ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)"
                           }}
                         >
-                          {opt}
+                          {label}
                         </label>
                       </div>
                     );
@@ -432,26 +484,26 @@ export function LaborCostSection({
                 </div>
               </td>
               
-              {/* 기준가(㎡/길이) - Readonly (항상 표시) */}
+              {/* 기준가(㎡/길이) - Readonly */}
               <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
-                {row.기준가_적용면.toLocaleString()}
+                {(row.pricePerSqm ?? 0).toLocaleString()}
               </td>
               
-              {/* 피해면적 - Editable Input (항상 표시) */}
+              {/* 피해면적 - Editable Input */}
               <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
                 <Input
                   type="number"
-                  value={row.피해면적}
-                  onChange={(e) => updateRow(row.id, '피해면적', Number(e.target.value) || 0)}
+                  value={row.damageArea}
+                  onChange={(e) => updateRow(row.id, 'damageArea', Number(e.target.value) || 0)}
                   className="h-9 border-0 bg-transparent text-right"
                   style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                  data-testid={`input-피해면적-${index}`}
+                  data-testid={`input-damageArea-${index}`}
                 />
               </td>
               
               {/* 금액(원) - Readonly Calculated */}
               <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "right", background: "rgba(12, 12, 12, 0.02)" }}>
-                {row.금액.toLocaleString()}
+                {(row.amount ?? 0).toLocaleString()}
               </td>
               
               {/* 복제 버튼 */}
@@ -470,12 +522,12 @@ export function LaborCostSection({
               {/* 요청 - Editable Input */}
               <td style={{ padding: "0 8px" }}>
                 <Input
-                  value={row.요청}
-                  onChange={(e) => updateRow(row.id, '요청', e.target.value)}
+                  value={row.request}
+                  onChange={(e) => updateRow(row.id, 'request', e.target.value)}
                   className="h-9 border-0 bg-transparent"
                   style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                   placeholder="-"
-                  data-testid={`input-요청-${index}`}
+                  data-testid={`input-request-${index}`}
                 />
               </td>
             </tr>
