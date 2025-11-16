@@ -1637,15 +1637,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let prevWorkName: string | null = null;
       let prevDetailWork: string | null = null;
 
-      for (let i = 1; i < excelData.data.length; i++) { // Skip header row
+      // Start from index 0 - NO header row in this data
+      for (let i = 0; i < excelData.data.length; i++) {
         const row = excelData.data[i];
         if (!row || row.length === 0) continue;
 
         // Extract and forward-fill merged cells
-        const category = row[0] || prevCategory;
-        const workName = row[1] || prevWorkName;
-        const detailWork = row[2] || prevDetailWork;
-        const detailItem = row[3] || '';
+        const category: string = row[0] || prevCategory;
+        const workName: string = row[1] || prevWorkName;
+        const detailWork: string = row[2] || prevDetailWork;
+        const detailItem: string = row[3] || '';
         
         // Parse price columns (remove commas, convert to number)
         const parsePrice = (val: any): number | null => {
