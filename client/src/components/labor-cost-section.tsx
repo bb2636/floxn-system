@@ -120,19 +120,34 @@ export function LaborCostSection({
 
   const getApplicationRateOptions = (category: string, workName: string, detailWork: string, detailItem: string) => {
     if (!catalog.length || !category || !workName || !detailWork || !detailItem) return [];
-    const item = catalog.find(i => 
+    // 동일한 세부항목이 여러 개 있을 수 있으므로 모든 항목 찾기
+    const items = catalog.filter(i => 
       i.공종 === category && 
       i.공사명 === workName && 
       i.세부공사 === detailWork && 
       i.세부항목 === detailItem
     );
-    if (!item) return [];
+    if (items.length === 0) return [];
     
     const options: Array<'ceiling' | 'wall' | 'floor' | 'molding'> = [];
-    if (item.단가_천장 !== null) options.push('ceiling');
-    if (item.단가_벽체 !== null) options.push('wall');
-    if (item.단가_바닥 !== null) options.push('floor');
-    if (item.단가_길이 !== null) options.push('molding');
+    // 모든 항목의 가격 정보를 합쳐서 적용면 옵션 생성
+    let hasCeiling = false;
+    let hasWall = false;
+    let hasFloor = false;
+    let hasMolding = false;
+    
+    items.forEach(item => {
+      if (item.단가_천장 !== null) hasCeiling = true;
+      if (item.단가_벽체 !== null) hasWall = true;
+      if (item.단가_바닥 !== null) hasFloor = true;
+      if (item.단가_길이 !== null) hasMolding = true;
+    });
+    
+    if (hasCeiling) options.push('ceiling');
+    if (hasWall) options.push('wall');
+    if (hasFloor) options.push('floor');
+    if (hasMolding) options.push('molding');
+    
     return options;
   };
 
