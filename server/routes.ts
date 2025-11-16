@@ -1708,11 +1708,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const row = excelData.data[i];
         if (!row || row.length === 0) continue;
 
-        // Extract and forward-fill merged cells
-        const category: string = row[0] || prevCategory;
-        const workName: string = row[1] || prevWorkName;
-        const detailWork: string = row[2] || prevDetailWork;
-        const detailItem: string = row[3] || '';
+        // Extract and forward-fill merged cells (handle both null and empty string)
+        const category: string = (row[0] && row[0].trim()) ? row[0].trim() : prevCategory;
+        const workName: string = (row[1] && row[1].trim()) ? row[1].trim() : prevWorkName;
+        const detailWork: string = (row[2] && row[2].trim()) ? row[2].trim() : prevDetailWork;
+        const detailItem: string = (row[3] && row[3].trim()) ? row[3].trim() : '';
         
         // Parse price columns (remove commas, convert to number)
         const parsePrice = (val: any): number | null => {

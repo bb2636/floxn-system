@@ -327,6 +327,13 @@ export default function FieldEstimate() {
     enabled: !!selectedCaseId,
   });
 
+  // 현재 작성중인 건 정보를 견적서에 자동 설정
+  useEffect(() => {
+    if (selectedCase && !estimateCase) {
+      setEstimateCase(selectedCase);
+    }
+  }, [selectedCase]);
+
   // 초기 빈 행 생성 또는 견적 불러오기
   useEffect(() => {
     if (latestEstimate?.rows && latestEstimate.rows.length > 0) {
