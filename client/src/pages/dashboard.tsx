@@ -1212,6 +1212,7 @@ export default function Dashboard() {
                   진행건 요약
                 </h2>
                 <button 
+                  onClick={() => setIsPeriodSheetOpen(true)}
                   className="flex items-center justify-between"
                   style={{
                     width: '128px',
@@ -1242,7 +1243,11 @@ export default function Dashboard() {
                         color: 'rgba(12, 12, 12, 0.9)',
                       }}
                     >
-                      이번 달
+                      {periodType === 'all' ? '전체' :
+                       periodType === 'today' ? '오늘' :
+                       periodType === 'thisMonth' ? '이번 달' :
+                       periodType === 'lastMonth' ? '지난 달' :
+                       '사용자 지정'}
                     </span>
                   </div>
                   <ChevronDown 
