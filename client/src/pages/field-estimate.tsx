@@ -2582,25 +2582,9 @@ export default function FieldEstimate() {
                             </Select>
                           </td>
                           
-                          {/* 단위 - Select */}
-                          <td style={{ padding: "0 8px" }}>
-                            <Select value={row.unit} onValueChange={(value) => {
-                              setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, unit: value } : r));
-                            }}>
-                              <SelectTrigger 
-                                className="h-9 border-0" 
-                                style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                                data-testid={`select-unit-${index}`}
-                              >
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="인">인</SelectItem>
-                                <SelectItem value="m²">m²</SelectItem>
-                                <SelectItem value="개">개</SelectItem>
-                                <SelectItem value="식">식</SelectItem>
-                              </SelectContent>
-                            </Select>
+                          {/* 단위 - Read-only */}
+                          <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }} data-testid={`text-unit-${index}`}>
+                            {row.unit || "-"}
                           </td>
                           
                           {/* 기준가(단위) - Read-only */}
