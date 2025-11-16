@@ -796,7 +796,7 @@ export default function ComprehensiveProgress() {
                     </DropdownMenu>
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    {caseItem.latestProgress?.progressStatus || "-"}
+                    {caseItem.latestProgress?.content || "-"}
                   </div>
                   <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                     {caseItem.specialNotes && (
