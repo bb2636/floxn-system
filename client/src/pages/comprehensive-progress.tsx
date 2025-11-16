@@ -53,6 +53,7 @@ export default function ComprehensiveProgress() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [showSpecialNotesDialog, setShowSpecialNotesDialog] = useState(false);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showDetailSheet, setShowDetailSheet] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -794,7 +795,10 @@ export default function ComprehensiveProgress() {
               return (
                 <div
                   key={caseItem.id}
-                  onClick={() => setSelectedCaseId(caseItem.id)}
+                  onClick={() => {
+                    setSelectedCaseId(caseItem.id);
+                    setShowDetailSheet(true);
+                  }}
                   style={{
                     display: "grid",
                     gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px",
@@ -1970,6 +1974,289 @@ export default function ComprehensiveProgress() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 진행건 상세보기 Sheet */}
+      <Sheet open={showDetailSheet} onOpenChange={setShowDetailSheet}>
+        <SheetContent 
+          side="right"
+          style={{
+            width: "609px",
+            background: "#FFFFFF",
+            padding: "0",
+            border: "none",
+          }}
+        >
+          <SheetHeader style={{ padding: "24px 24px 0 24px", borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
+            <SheetTitle style={{
+              fontFamily: "Pretendard",
+              fontWeight: 600,
+              fontSize: "18px",
+              color: "#0C0C0C",
+              paddingBottom: "16px",
+            }}>
+              진행건 상세보기
+            </SheetTitle>
+          </SheetHeader>
+
+          <ScrollArea style={{ height: "calc(100vh - 80px)" }}>
+            <div style={{ padding: "24px" }}>
+              {selectedCase && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+                  {/* 케이스 번호와 상태 */}
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "16px",
+                    background: "rgba(0, 143, 237, 0.05)",
+                    borderRadius: "12px",
+                  }}>
+                    <div>
+                      <div style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        color: "rgba(12, 12, 12, 0.6)",
+                        marginBottom: "4px",
+                      }}>
+                        사고번호
+                      </div>
+                      <div style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "#0C0C0C",
+                      }}>
+                        {selectedCase.insuranceAccidentNo || "-"}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        padding: "8px 16px",
+                        background: selectedCase.status === "승인" ? "rgba(0, 200, 83, 0.15)" : 
+                                   selectedCase.status === "반려" ? "rgba(244, 67, 54, 0.15)" : 
+                                   "rgba(0, 143, 237, 0.15)",
+                        borderRadius: "20px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: selectedCase.status === "승인" ? "#00C853" : 
+                               selectedCase.status === "반려" ? "#F44336" : 
+                               "#008FED",
+                      }}
+                      data-testid="detail-status"
+                    >
+                      {selectedCase.status || "대기중"}
+                    </div>
+                  </div>
+
+                  {/* 기본 정보 */}
+                  <div>
+                    <div style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0C0C0C",
+                      marginBottom: "12px",
+                      paddingBottom: "8px",
+                      borderBottom: "2px solid #008FED",
+                    }}>
+                      기본 정보
+                    </div>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "100px 1fr",
+                      gap: "12px",
+                      fontSize: "13px",
+                    }}>
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        접수번호
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.caseNumber || "-"}
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        보험사
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.insuranceCompany || "-"}
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        의뢰사
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.clientName || "-"}
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        담당자
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.assignedPartnerManager || "-"}
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        협력사
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.assignedPartner || "-"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 정산 정보 */}
+                  <div>
+                    <div style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0C0C0C",
+                      marginBottom: "12px",
+                      paddingBottom: "8px",
+                      borderBottom: "2px solid #008FED",
+                    }}>
+                      정산/분석
+                    </div>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "100px 1fr",
+                      gap: "12px",
+                      fontSize: "13px",
+                    }}>
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        단행사
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.status === "승인" ? "심사완료" : "-"}
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        입사 담당자
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.investigatorName || "-"}
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        협력사
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.assignedPartner || "-"}
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        당일차
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {calculateDays(selectedCase.createdAt)}
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        견적금액
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        -
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        승인금액
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        -
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 증권/분석 */}
+                  <div>
+                    <div style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0C0C0C",
+                      marginBottom: "12px",
+                      paddingBottom: "8px",
+                      borderBottom: "2px solid #008FED",
+                    }}>
+                      증권/분석
+                    </div>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "100px 1fr",
+                      gap: "12px",
+                      fontSize: "13px",
+                    }}>
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        증권번호
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        -
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        가입금액
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        -
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        Deol
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        -
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 심사 정보 */}
+                  <div>
+                    <div style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#0C0C0C",
+                      marginBottom: "12px",
+                      paddingBottom: "8px",
+                      borderBottom: "2px solid #008FED",
+                    }}>
+                      심사 정보
+                    </div>
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: "100px 1fr",
+                      gap: "12px",
+                      fontSize: "13px",
+                    }}>
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        심사사
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.insuranceCompany || "-"}
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        심사 담당자
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.investigatorName || "-"}
+                      </div>
+
+                      <div style={{ fontFamily: "Pretendard", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)" }}>
+                        협력사
+                      </div>
+                      <div style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.9)" }}>
+                        {selectedCase.assignedPartner || "-"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
 
     </div>
   );
