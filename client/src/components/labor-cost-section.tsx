@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Copy } from "lucide-react";
 
 // 노무비 카탈로그 항목 (from excel_data)
@@ -36,7 +37,7 @@ export interface LaborCostRow {
   unit: string; // 단위 - readonly
   standardPrice: number; // 기준가(단위) - readonly (단가_인 for 노무비)
   quantity: number; // 수량 - editable
-  applicationRates: { // 적용률 - checkboxes (multiple can be selected)
+  applicationRates: { // 적용면 - radio buttons (only one can be selected)
     ceiling: boolean; // 천장
     wall: boolean; // 벽체
     floor: boolean; // 바닥
@@ -463,36 +464,51 @@ export function LaborCostSection({
                 />
               </td>
               
-              {/* 적용면 - Checkboxes (multiple can be selected) */}
+              {/* 적용면 - Radio buttons (only one can be selected) */}
               <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
-                <div className="flex gap-4">
+                <RadioGroup
+                  value={
+                    row.applicationRates?.ceiling ? 'ceiling' :
+                    row.applicationRates?.wall ? 'wall' :
+                    row.applicationRates?.floor ? 'floor' :
+                    row.applicationRates?.molding ? 'molding' : ''
+                  }
+                  onValueChange={(value) => {
+                    updateRow(row.id, 'applicationRates', {
+                      ceiling: value === 'ceiling',
+                      wall: value === 'wall',
+                      floor: value === 'floor',
+                      molding: value === 'molding'
+                    });
+                  }}
+                  className="flex gap-4"
+                >
                   {[
                     { key: 'ceiling' as const, label: '천장' },
                     { key: 'wall' as const, label: '벽체' },
                     { key: 'floor' as const, label: '바닥' },
                     { key: 'molding' as const, label: '길이' }
                   ].map(({ key, label }) => {
-                    const checkboxId = `checkbox-${row.id}-${key}`;
+                    const isSelected = 
+                      (key === 'ceiling' && row.applicationRates?.ceiling) ||
+                      (key === 'wall' && row.applicationRates?.wall) ||
+                      (key === 'floor' && row.applicationRates?.floor) ||
+                      (key === 'molding' && row.applicationRates?.molding);
+                    const radioId = `radio-${row.id}-${key}`;
                     return (
                       <div key={key} className="flex items-center gap-1">
-                        <Checkbox
-                          id={checkboxId}
-                          checked={row.applicationRates?.[key] || false}
-                          onCheckedChange={(checked) => {
-                            updateRow(row.id, 'applicationRates', {
-                              ...(row.applicationRates || {}),
-                              [key]: checked
-                            });
-                          }}
-                          data-testid={`checkbox-applicationRate-${key}-${index}`}
+                        <RadioGroupItem
+                          id={radioId}
+                          value={key}
+                          data-testid={`radio-applicationRate-${key}-${index}`}
                         />
                         <label 
-                          htmlFor={checkboxId}
+                          htmlFor={radioId}
                           style={{ 
                             fontFamily: "Pretendard", 
                             fontSize: "13px", 
                             cursor: "pointer",
-                            color: row.applicationRates?.[key] ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)"
+                            color: isSelected ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)"
                           }}
                         >
                           {label}
@@ -500,7 +516,7 @@ export function LaborCostSection({
                       </div>
                     );
                   })}
-                </div>
+                </RadioGroup>
               </td>
               
               {/* 기준가(㎡/길이) - Readonly */}
