@@ -215,8 +215,9 @@ export function GlobalHeader() {
                 letterSpacing: '-0.01em',
                 color: 'rgba(12, 12, 12, 0.4)',
               }}
+              data-testid="user-position"
             >
-              관리자
+              {user.position || user.role || "사용자"}
             </span>
           </div>
         </div>
