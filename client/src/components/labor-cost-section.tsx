@@ -74,8 +74,12 @@ export function LaborCostSection({
   const categoryOptions = useMemo(() => {
     if (!catalog.length) return ["누수탐지비용"]; // 누수탐지비용은 항상 표시
     const unique = new Set(catalog.map(item => item.공종));
-    // 누수탐지비용을 catalog 옵션에 추가
-    return ["누수탐지비용", ...Array.from(unique)];
+    const categories = Array.from(unique);
+    // 누수탐지비용이 catalog에 없으면 추가
+    if (!categories.includes("누수탐지비용")) {
+      return ["누수탐지비용", ...categories];
+    }
+    return categories;
   }, [catalog]);
 
   const getWorkNameOptions = (category: string) => {
