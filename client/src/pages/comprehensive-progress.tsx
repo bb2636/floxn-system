@@ -522,7 +522,7 @@ export default function ComprehensiveProgress() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 60px 120px 100px",
+              gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px",
               padding: "14px 20px",
               background: "rgba(12, 12, 12, 0.04)",
               borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
@@ -552,16 +552,22 @@ export default function ComprehensiveProgress() {
               견적금액
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-              승인 금액
+              정산금액
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               경과일수
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              진행상태
+            </div>
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+              진행상황
+            </div>
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               특이사항
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-              진행상태
+              수정하기
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               요청
@@ -683,7 +689,7 @@ export default function ComprehensiveProgress() {
                   onClick={() => setSelectedCaseId(caseItem.id)}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 60px 120px 100px",
+                    gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px",
                     padding: "14px 20px",
                     borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                     overflowX: "auto",
@@ -712,26 +718,13 @@ export default function ComprehensiveProgress() {
                     {caseItem.assignedPartner || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    7,312,000원
+                    -
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    6,320,000원
+                    -
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     {calculateDays(caseItem.createdAt)}
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    {caseItem.specialNotes && (
-                      <div
-                        style={{
-                          width: "8px",
-                          height: "8px",
-                          borderRadius: "50%",
-                          background: "#008FED",
-                        }}
-                        data-testid={`special-notes-indicator-${caseItem.id}`}
-                      />
-                    )}
                   </div>
                   <div onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
@@ -802,6 +795,22 @@ export default function ComprehensiveProgress() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
+                    {caseItem.latestProgress?.progressStatus || "-"}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    {caseItem.specialNotes && (
+                      <div
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          background: "#008FED",
+                        }}
+                        data-testid={`special-notes-indicator-${caseItem.id}`}
+                      />
+                    )}
+                  </div>
                   <div>
                     <button
                       onClick={(e) => {
@@ -820,9 +829,32 @@ export default function ComprehensiveProgress() {
                         cursor: "pointer",
                         whiteSpace: "nowrap",
                       }}
-                      data-testid={`button-detail-${caseItem.id}`}
+                      data-testid={`button-edit-${caseItem.id}`}
                     >
-                      자세히 보기
+                      수정하기
+                    </button>
+                  </div>
+                  <div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // 요청 기능 구현 예정
+                      }}
+                      style={{
+                        padding: "6px 12px",
+                        background: "#008FED",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "#FFFFFF",
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                      data-testid={`button-request-${caseItem.id}`}
+                    >
+                      요청
                     </button>
                   </div>
                 </div>
