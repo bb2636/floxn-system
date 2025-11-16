@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Case, MasterData, LaborCost } from "@shared/schema";
+import { Case, MasterData, LaborCost, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Check } from "lucide-react";
+import { Plus, Trash2, Check, Search } from "lucide-react";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LaborCostSection, type LaborCatalogItem, type LaborCostRow } from "@/components/labor-cost-section";
 import { MaterialCostSection, type MaterialCatalogItem } from "@/components/material-cost-section";
 
@@ -96,6 +97,8 @@ export default function FieldEstimate() {
   const [materialRows, setMaterialRows] = useState<MaterialRow[]>([]);
   const [selectedMaterialRows, setSelectedMaterialRows] = useState<Set<string>>(new Set());
   const [vatIncluded, setVatIncluded] = useState(true); // VAT 포함 여부
+  const [estimateCase, setEstimateCase] = useState<Case | null>(null); // 견적서용 선택된 케이스
+  const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false); // 케이스 검색 모달
 
   // 빈 자재비 행 생성 함수
   const createBlankMaterialRow = (공종 = '', sourceLaborRowId?: string): MaterialRow => {
@@ -161,6 +164,25 @@ export default function FieldEstimate() {
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
 
   const { toast } = useToast();
+
+  // 현재 로그인한 사용자 정보
+  const { data: currentUser } = useQuery<User>({
+    queryKey: ['/api/user'],
+  });
+
+  // 배정된 케이스 목록 (견적서용 케이스 검색)
+  const [caseSearchQuery, setCaseSearchQuery] = useState('');
+  const { data: assignedCases = [] } = useQuery<Array<{
+    id: string;
+    caseNumber: string;
+    insuredName: string;
+    accidentLocation: string;
+    insuranceCompany: string;
+    status: string;
+  }>>({
+    queryKey: ['/api/cases/assigned', caseSearchQuery],
+    enabled: caseSearchModalOpen,
+  });
 
   // 마스터 데이터 조회
   const { data: masterDataList = [] } = useQuery<MasterData[]>({
@@ -1972,10 +1994,10 @@ export default function FieldEstimate() {
                     fontSize: "14px",
                     lineHeight: "128%",
                     letterSpacing: "-0.01em",
-                    color: "rgba(12, 12, 12, 0.6)",
+                    color: "#0C0C0C",
                   }}
                 >
-                  {selectedCase?.assignedPartnerManager || "담당자 성함"}
+                  {currentUser?.name || "-"}
                 </div>
               </div>
 
@@ -2012,10 +2034,10 @@ export default function FieldEstimate() {
                     fontSize: "14px",
                     lineHeight: "128%",
                     letterSpacing: "-0.01em",
-                    color: "rgba(12, 12, 12, 0.6)",
+                    color: "#0C0C0C",
                   }}
                 >
-                  {selectedCase?.assignedPartner || "협력사명"}
+                  {currentUser?.company || "-"}
                 </div>
               </div>
 
@@ -2051,10 +2073,10 @@ export default function FieldEstimate() {
                     fontSize: "14px",
                     lineHeight: "128%",
                     letterSpacing: "-0.01em",
-                    color: "rgba(12, 12, 12, 0.6)",
+                    color: "#0C0C0C",
                   }}
                 >
-                  {selectedCase?.assignedPartnerContact || "'-'빼고 입력"}
+                  {currentUser?.phoneNumber || "-"}
                 </div>
               </div>
             </div>
@@ -2079,74 +2101,45 @@ export default function FieldEstimate() {
                   padding: "20px",
                 }}
               >
-                <h3
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontWeight: 500,
-                    fontSize: "18px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "#0C0C0C",
-                    marginBottom: "20px",
-                  }}
-                >
-                  고객 정보
-                </h3>
-                
-                {/* 착수일 */}
-                <div style={{ marginBottom: "12px" }}>
-                  <label
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                  <h3
                     style={{
                       fontFamily: "Pretendard",
                       fontWeight: 500,
-                      fontSize: "14px",
+                      fontSize: "18px",
                       lineHeight: "128%",
-                      letterSpacing: "-0.01em",
-                      color: "#686A6E",
-                      display: "block",
-                      marginBottom: "8px",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                      margin: 0,
                     }}
                   >
-                    착수일
-                  </label>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <input
-                      type="date"
-                      style={{
-                        flex: 1,
-                        padding: "10px 20px",
-                        background: "rgba(12, 12, 12, 0.04)",
-                        borderRadius: "8px",
-                        border: "none",
-                        fontFamily: "Pretendard",
-                        fontWeight: 600,
-                        fontSize: "16px",
-                        lineHeight: "128%",
-                        letterSpacing: "-0.02em",
-                        color: "#0C0C0C",
-                      }}
-                      data-testid="input-start-date"
-                    />
-                    <button
-                      style={{
-                        padding: "10px 24px",
-                        background: "#008FED",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "6px",
-                        fontFamily: "Pretendard",
-                        fontWeight: 500,
-                        fontSize: "14px",
-                        cursor: "pointer",
-                      }}
-                      data-testid="button-set-date"
-                    >
-                      조회
-                    </button>
-                  </div>
+                    고객 정보
+                  </h3>
+                  <button
+                    onClick={() => setCaseSearchModalOpen(true)}
+                    className="hover-elevate active-elevate-2"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "8px 16px",
+                      background: "#008FED",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "6px",
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-search-case"
+                  >
+                    <Search className="w-4 h-4" />
+                    케이스 검색
+                  </button>
                 </div>
-
-                {/* 피보험자 */}
+                
+                {/* 접수번호 */}
                 <div style={{ marginBottom: "12px" }}>
                   <label
                     style={{
@@ -2160,11 +2153,9 @@ export default function FieldEstimate() {
                       marginBottom: "8px",
                     }}
                   >
-                    피보험자
+                    접수번호
                   </label>
-                  <input
-                    type="text"
-                    placeholder="입력값이 들어간 것으로 보임"
+                  <div
                     style={{
                       width: "100%",
                       padding: "10px 20px",
@@ -2178,8 +2169,10 @@ export default function FieldEstimate() {
                       letterSpacing: "-0.02em",
                       color: "#0C0C0C",
                     }}
-                    data-testid="input-insured"
-                  />
+                    data-testid="text-case-number"
+                  >
+                    {estimateCase?.caseNumber || "-"}
+                  </div>
                 </div>
 
                 {/* 피보험자명 */}
@@ -2198,9 +2191,7 @@ export default function FieldEstimate() {
                   >
                     피보험자명
                   </label>
-                  <input
-                    type="text"
-                    placeholder="피보험자명"
+                  <div
                     style={{
                       width: "100%",
                       padding: "10px 20px",
@@ -2214,8 +2205,10 @@ export default function FieldEstimate() {
                       letterSpacing: "-0.02em",
                       color: "#0C0C0C",
                     }}
-                    data-testid="input-insured-name"
-                  />
+                    data-testid="text-insured-name"
+                  >
+                    {estimateCase?.insuredName || "-"}
+                  </div>
                 </div>
 
                 {/* 주소 */}
@@ -2234,9 +2227,7 @@ export default function FieldEstimate() {
                   >
                     주소
                   </label>
-                  <input
-                    type="text"
-                    placeholder="주소"
+                  <div
                     style={{
                       width: "100%",
                       padding: "10px 20px",
@@ -2250,8 +2241,10 @@ export default function FieldEstimate() {
                       letterSpacing: "-0.02em",
                       color: "#0C0C0C",
                     }}
-                    data-testid="input-address"
-                  />
+                    data-testid="text-address"
+                  >
+                    {estimateCase?.insuredAddress || "-"}
+                  </div>
                 </div>
               </div>
             </div>
@@ -2933,6 +2926,181 @@ export default function FieldEstimate() {
 
         {/* 하단 버튼 - 자재비 */}
       </div>
+
+      {/* 케이스 검색 모달 */}
+      <Dialog open={caseSearchModalOpen} onOpenChange={setCaseSearchModalOpen}>
+        <DialogContent
+          style={{
+            maxWidth: "800px",
+            maxHeight: "80vh",
+            overflow: "auto",
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>케이스 검색</DialogTitle>
+          </DialogHeader>
+
+          {/* 검색 입력 */}
+          <div style={{ marginBottom: "20px" }}>
+            <Input
+              placeholder="케이스 번호, 피보험자명, 보험사로 검색"
+              value={caseSearchQuery}
+              onChange={(e) => setCaseSearchQuery(e.target.value)}
+              data-testid="input-case-search"
+            />
+          </div>
+
+          {/* 케이스 목록 테이블 */}
+          <div style={{ overflow: "auto" }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                fontFamily: "Pretendard",
+              }}
+            >
+              <thead>
+                <tr style={{ background: "rgba(12, 12, 12, 0.04)" }}>
+                  <th
+                    style={{
+                      padding: "12px",
+                      textAlign: "left",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                      borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                    }}
+                  >
+                    접수번호
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px",
+                      textAlign: "left",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                      borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                    }}
+                  >
+                    피보험자명
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px",
+                      textAlign: "left",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                      borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                    }}
+                  >
+                    사고지역
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px",
+                      textAlign: "left",
+                      fontWeight: 600,
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                      borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                    }}
+                  >
+                    보험사
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {assignedCases.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      style={{
+                        padding: "40px",
+                        textAlign: "center",
+                        color: "rgba(12, 12, 12, 0.4)",
+                        fontSize: "14px",
+                      }}
+                    >
+                      배정된 케이스가 없습니다
+                    </td>
+                  </tr>
+                ) : (
+                  assignedCases.map((caseItem) => (
+                    <tr
+                      key={caseItem.id}
+                      onClick={async () => {
+                        // 전체 케이스 정보를 가져오기
+                        try {
+                          const fullCase = await apiRequest<Case>(`/api/cases/${caseItem.id}`, {
+                            method: 'GET',
+                          });
+                          setEstimateCase(fullCase);
+                          setCaseSearchModalOpen(false);
+                          toast({
+                            title: "케이스 선택됨",
+                            description: `${caseItem.caseNumber} - ${caseItem.insuredName}`,
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "오류",
+                            description: "케이스 정보를 불러올 수 없습니다",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      className="hover-elevate"
+                      style={{
+                        cursor: "pointer",
+                        borderBottom: "1px solid rgba(12, 12, 12, 0.05)",
+                      }}
+                      data-testid={`row-case-${caseItem.id}`}
+                    >
+                      <td
+                        style={{
+                          padding: "12px",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        {caseItem.caseNumber}
+                      </td>
+                      <td
+                        style={{
+                          padding: "12px",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        {caseItem.insuredName}
+                      </td>
+                      <td
+                        style={{
+                          padding: "12px",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        {caseItem.accidentLocation}
+                      </td>
+                      <td
+                        style={{
+                          padding: "12px",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        {caseItem.insuranceCompany}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </FieldSurveyLayout>
   );
 }

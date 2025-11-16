@@ -2,7 +2,7 @@ import { type User, type InsertUser, users, type Case, type CaseWithLatestProgre
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { eq, asc, desc, and } from "drizzle-orm";
+import { eq, asc, desc, and, or, like } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
 
@@ -55,6 +55,7 @@ export interface IStorage {
   deleteAccount(username: string): Promise<User | null>;
   createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
   getCaseById(caseId: string): Promise<Case | null>;
+  getAssignedCasesForUser(user: User, search?: string): Promise<Case[]>;
   getAllCases(): Promise<CaseWithLatestProgress[]>;
   updateCaseStatus(caseId: string, status: string): Promise<Case | null>;
   updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null>;
@@ -974,6 +975,41 @@ export class MemStorage implements IStorage {
     return this.cases.get(caseId) || null;
   }
 
+  async getAssignedCasesForUser(user: User, search?: string): Promise<Case[]> {
+    const allCases = Array.from(this.cases.values());
+    
+    // Filter by role
+    let filtered = allCases;
+    switch (user.role) {
+      case "심사사":
+        filtered = allCases.filter(c => c.assessorId === user.id);
+        break;
+      case "협력사":
+        filtered = allCases.filter(c => c.assignedPartner === user.company);
+        break;
+      case "조사사":
+        filtered = allCases.filter(c => c.investigatorTeamName === user.company);
+        break;
+      case "관리자":
+        // Admins see all
+        break;
+      default:
+        return [];
+    }
+
+    // Apply search if provided
+    if (search && search.trim()) {
+      const searchLower = search.trim().toLowerCase();
+      filtered = filtered.filter(c =>
+        c.caseNumber?.toLowerCase().includes(searchLower) ||
+        c.insuredName?.toLowerCase().includes(searchLower) ||
+        c.insuranceCompany?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return filtered;
+  }
+
   async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
     const id = randomUUID();
     const currentDate = getKSTDate();
@@ -1854,6 +1890,48 @@ export class DbStorage implements IStorage {
   async getCaseById(caseId: string): Promise<Case | null> {
     const result = await db.select().from(cases).where(eq(cases.id, caseId)).limit(1);
     return result[0] || null;
+  }
+
+  async getAssignedCasesForUser(user: User, search?: string): Promise<Case[]> {
+    // Build filter based on user role
+    let query = db.select().from(cases);
+
+    // Role-based filtering
+    switch (user.role) {
+      case "심사사":
+        // Assessors see cases where they are assigned
+        query = query.where(eq(cases.assessorId, user.id));
+        break;
+      case "협력사":
+        // Partners see cases assigned to their company
+        query = query.where(eq(cases.assignedPartner, user.company));
+        break;
+      case "조사사":
+        // Investigators see cases where their team is assigned
+        query = query.where(eq(cases.investigatorTeamName, user.company));
+        break;
+      case "관리자":
+        // Admins see all cases
+        break;
+      default:
+        // Other roles see no cases
+        return [];
+    }
+
+    // Apply search filter if provided
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim()}%`;
+      query = query.where(
+        or(
+          like(cases.caseNumber, searchTerm),
+          like(cases.insuredName, searchTerm),
+          like(cases.insuranceCompany, searchTerm)
+        )
+      );
+    }
+
+    const results = await query;
+    return results;
   }
 
   async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {

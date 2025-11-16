@@ -1280,6 +1280,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cases endpoints
+  // Get assigned cases for current user
+  app.get("/api/cases/assigned", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { search } = req.query;
+      const currentUser = await storage.getUser(req.session.userId);
+      
+      if (!currentUser) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+
+      const cases = await storage.getAssignedCasesForUser(currentUser, search as string);
+      
+      // Return simplified case summary for picker
+      const caseSummaries = cases.map(c => ({
+        id: c.id,
+        caseNumber: c.caseNumber,
+        insuredName: c.insuredName,
+        accidentLocation: c.insuredAddress || c.victimAddress || '-',
+        insuranceCompany: c.insuranceCompany,
+        status: c.status,
+      }));
+
+      res.json(caseSummaries);
+    } catch (error) {
+      console.error("Get assigned cases error:", error);
+      res.status(500).json({ error: "배정된 케이스를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Estimate endpoints
   // Create new estimate version
   app.post("/api/estimates/:caseId", async (req, res) => {
