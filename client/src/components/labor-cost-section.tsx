@@ -424,25 +424,21 @@ export function LaborCostSection({
                 </div>
               </td>
               
-              {/* 기준가(㎡/길이) - Readonly */}
+              {/* 기준가(㎡/길이) - Readonly (항상 표시) */}
               <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
-                {row.세부공사 === '일위대가' ? row.기준가_적용면.toLocaleString() : '-'}
+                {row.기준가_적용면.toLocaleString()}
               </td>
               
-              {/* 피해면적 - Editable Input (only for 일위대가) */}
-              <td style={{ padding: "0 8px", background: row.세부공사 === '일위대가' ? "#EFF6FF" : "transparent" }}>
-                {row.세부공사 === '일위대가' ? (
-                  <Input
-                    type="number"
-                    value={row.피해면적}
-                    onChange={(e) => updateRow(row.id, '피해면적', Number(e.target.value) || 0)}
-                    className="h-9 border-0 bg-transparent text-right"
-                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    data-testid={`input-피해면적-${index}`}
-                  />
-                ) : (
-                  <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.4)", display: "block", textAlign: "right" }}>-</span>
-                )}
+              {/* 피해면적 - Editable Input (항상 표시) */}
+              <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                <Input
+                  type="number"
+                  value={row.피해면적}
+                  onChange={(e) => updateRow(row.id, '피해면적', Number(e.target.value) || 0)}
+                  className="h-9 border-0 bg-transparent text-right"
+                  style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                  data-testid={`input-피해면적-${index}`}
+                />
               </td>
               
               {/* 금액(원) - Readonly Calculated */}
