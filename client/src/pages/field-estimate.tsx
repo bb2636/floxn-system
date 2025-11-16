@@ -401,25 +401,37 @@ export default function FieldEstimate() {
 
   // 총 비용 계산 (견적서 탭용)
   const estimateSummary = useMemo(() => {
-    // 노무비 총합 (공제 필드 합계)
-    const laborTotal = laborCostRows.reduce((sum, row) => {
-      const deduction = parseFloat(row.deduction) || 0;
-      return sum + deduction;
+    // 노무비 총합 - 경비 여부에 따라 분리
+    const laborTotalWithExpense = laborCostRows.reduce((sum, row) => {
+      if (row.includeInEstimate) {
+        return sum + (parseFloat(row.deduction) || 0);
+      }
+      return sum;
+    }, 0);
+
+    const laborTotalWithoutExpense = laborCostRows.reduce((sum, row) => {
+      if (!row.includeInEstimate) {
+        return sum + (parseFloat(row.deduction) || 0);
+      }
+      return sum;
     }, 0);
 
     // 자재비 총합 (금액 필드 합계)
     const materialTotal = materialRows.reduce((sum, row) => {
-      return sum + (row.amount || 0);
+      return sum + (row.금액 || 0);
     }, 0);
 
-    // 소계
-    const subtotal = laborTotal + materialTotal;
+    // 소계 (전체)
+    const subtotal = laborTotalWithExpense + laborTotalWithoutExpense + materialTotal;
 
-    // 일반관리비 (6%)
-    const managementFee = Math.round(subtotal * 0.06);
+    // 일반관리비와 이윤 계산 대상 (경비 제외)
+    const baseForFees = laborTotalWithoutExpense + materialTotal;
 
-    // 이윤 (15%)
-    const profit = Math.round(subtotal * 0.15);
+    // 일반관리비 (6%) - 경비 제외 항목에만 적용
+    const managementFee = Math.round(baseForFees * 0.06);
+
+    // 이윤 (15%) - 경비 제외 항목에만 적용
+    const profit = Math.round(baseForFees * 0.15);
 
     // VAT 기준액 (소계 + 일반관리비 + 이윤)
     const vatBase = subtotal + managementFee + profit;
@@ -2266,6 +2278,242 @@ export default function FieldEstimate() {
                   </table>
                 </div>
               )}
+            </div>
+
+            {/* 합계 섹션 */}
+            <div
+              style={{
+                marginTop: "40px",
+                background: "#F7FBFF",
+                borderRadius: "12px",
+                padding: "24px 32px",
+              }}
+            >
+              {/* 소계 */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  소계
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                  data-testid="text-subtotal"
+                >
+                  {estimateSummary.subtotal.toLocaleString()}원
+                </span>
+              </div>
+
+              {/* 일반관리비 (6%) */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  일반관리비 (6%)
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                  data-testid="text-managementFee"
+                >
+                  {estimateSummary.managementFee.toLocaleString()}원
+                </span>
+              </div>
+
+              {/* 이윤 (15%) */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  이윤 (15%)
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                  data-testid="text-profit"
+                >
+                  {estimateSummary.profit.toLocaleString()}원
+                </span>
+              </div>
+
+              {/* VAT */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    VAT (10%)
+                  </span>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="vat"
+                        checked={vatIncluded}
+                        onChange={() => setVatIncluded(true)}
+                        style={{ cursor: "pointer" }}
+                        data-testid="radio-vat-included"
+                      />
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: vatIncluded ? "#008FED" : "#686A6E",
+                        }}
+                      >
+                        포함
+                      </span>
+                    </label>
+                    <label
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="vat"
+                        checked={!vatIncluded}
+                        onChange={() => setVatIncluded(false)}
+                        style={{ cursor: "pointer" }}
+                        data-testid="radio-vat-excluded"
+                      />
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: !vatIncluded ? "#008FED" : "#686A6E",
+                        }}
+                      >
+                        별도
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                  data-testid="text-vat"
+                >
+                  {estimateSummary.vat.toLocaleString()}원
+                </span>
+              </div>
+
+              {/* 구분선 */}
+              <div
+                style={{
+                  height: "1px",
+                  background: "rgba(12, 12, 12, 0.1)",
+                  margin: "20px 0",
+                }}
+              />
+
+              {/* 총 합계 */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  총 합계
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "24px",
+                    fontWeight: 700,
+                    color: "#008FED",
+                  }}
+                  data-testid="text-total"
+                >
+                  {estimateSummary.total.toLocaleString()}원
+                </span>
+              </div>
             </div>
           </div>
         )}

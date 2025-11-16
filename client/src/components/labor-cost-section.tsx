@@ -339,7 +339,7 @@ export function LaborCostSection({
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>기준가(㎡/길이)</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>피해면적</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>금액(원)</th>
-            <th style={{ width: "80px", padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>복제</th>
+            <th style={{ width: "80px", padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>경비 여부</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>요청</th>
           </tr>
         </thead>
@@ -541,29 +541,36 @@ export function LaborCostSection({
                 {(row.amount ?? 0).toLocaleString()}
               </td>
               
-              {/* 복제 버튼 */}
+              {/* 경비 여부 - Checkbox */}
               <td style={{ padding: "0 12px", textAlign: "center" }}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => duplicateRow(row)}
-                  className="h-8 w-8"
-                  data-testid={`button-duplicate-${index}`}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
+                <Checkbox
+                  checked={row.includeInEstimate}
+                  onCheckedChange={(checked) => updateRow(row.id, 'includeInEstimate', checked)}
+                  data-testid={`checkbox-includeInEstimate-${index}`}
+                />
               </td>
               
-              {/* 요청 - Editable Input */}
+              {/* 요청 - Editable Input with 복제 button */}
               <td style={{ padding: "0 8px" }}>
-                <Input
-                  value={row.request}
-                  onChange={(e) => updateRow(row.id, 'request', e.target.value)}
-                  className="h-9 border-0 bg-transparent"
-                  style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                  placeholder="-"
-                  data-testid={`input-request-${index}`}
-                />
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Input
+                    value={row.request}
+                    onChange={(e) => updateRow(row.id, 'request', e.target.value)}
+                    className="h-9 border-0 bg-transparent flex-1"
+                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                    placeholder="-"
+                    data-testid={`input-request-${index}`}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => duplicateRow(row)}
+                    className="h-8 w-8 flex-shrink-0"
+                    data-testid={`button-duplicate-${index}`}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}
