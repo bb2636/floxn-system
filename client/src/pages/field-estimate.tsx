@@ -2062,7 +2062,7 @@ export default function FieldEstimate() {
               />
             </div>
 
-            {/* 자재비 섹션 */}
+            {/* 자재비 섹션 - 자재비 탭과 동일 */}
             <div style={{ marginTop: "40px" }}>
               <div
                 style={{
@@ -2096,114 +2096,19 @@ export default function FieldEstimate() {
                     {getCurrentDate()}
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <button
-                    style={{
-                      padding: "6px 12px",
-                      background: "white",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                      borderRadius: "4px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      cursor: "pointer",
-                    }}
-                    data-testid="button-estimate-material-function"
-                  >
-                    함수기
-                  </button>
-                </div>
               </div>
-
-              {/* 자재비 테이블 */}
-              {materialRows.length > 0 && (
-                <div
-                  style={{
-                    background: "#FDFDFD",
-                    boxShadow: "0px 0px 20px #DBE9F5",
-                    borderRadius: "8px",
-                    overflow: "auto",
-                  }}
-                >
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      minWidth: "1200px",
-                    }}
-                  >
-                    <thead>
-                      <tr
-                        style={{
-                          background: "rgba(12, 12, 12, 0.04)",
-                          borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
-                        }}
-                      >
-                        <th style={{ width: "40px", padding: "12px" }}></th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공종</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>자재명</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>규격</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>단위</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준단가</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>수량</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>금액</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>비고</th>
-                        <th style={{ width: "100px", padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>작업</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {materialRows.map((row) => (
-                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
-                          <td style={{ padding: "8px", textAlign: "center" }}>
-                            <Checkbox
-                              checked={selectedMaterialRows.has(row.id)}
-                              onCheckedChange={() => toggleSelectMaterialRow(row.id)}
-                              data-testid={`checkbox-material-${row.id}`}
-                            />
-                          </td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.공종}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.자재}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.규격}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.단위}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.기준단가?.toLocaleString() || 0}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right" }}>{row.수량}</td>
-                          <td style={{ padding: "8px", fontSize: "14px", textAlign: "right", fontWeight: 600 }}>{row.금액?.toLocaleString() || 0}</td>
-                          <td style={{ padding: "8px", fontSize: "14px" }}>{row.비고}</td>
-                          <td style={{ padding: "8px" }}>
-                            <div style={{ display: "flex", gap: "4px" }}>
-                              <button
-                                style={{
-                                  padding: "4px 8px",
-                                  background: "white",
-                                  border: "1px solid rgba(12, 12, 12, 0.1)",
-                                  borderRadius: "4px",
-                                  fontSize: "12px",
-                                  cursor: "pointer",
-                                }}
-                                data-testid={`button-adjust-material-${row.id}`}
-                              >
-                                보정
-                              </button>
-                              <button
-                                style={{
-                                  padding: "4px 8px",
-                                  background: "white",
-                                  border: "1px solid rgba(12, 12, 12, 0.1)",
-                                  borderRadius: "4px",
-                                  fontSize: "12px",
-                                  cursor: "pointer",
-                                }}
-                                data-testid={`button-duplicate-material-${row.id}`}
-                              >
-                                복제
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              
+              {/* 자재비 테이블 - 자재비 탭과 동일한 MaterialCostSection 사용 */}
+              <MaterialCostSection
+                rows={materialRows}
+                onRowsChange={setMaterialRows}
+                catalog={materialCatalog}
+                laborCategories={laborCategories}
+                selectedRows={selectedMaterialRows}
+                onSelectRow={toggleSelectMaterialRow}
+                onSelectAll={toggleSelectAllMaterialRows}
+                isLoading={isLoadingMaterialCatalog}
+              />
             </div>
 
             {/* 합계 섹션 */}
