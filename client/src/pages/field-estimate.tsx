@@ -70,18 +70,18 @@ interface Material {
   standardPrice: number; // 단가 (숫자)
 }
 
+// 자재비 테이블 행 (새 UI 구조)
 interface MaterialRow {
   id: string;
-  category: string; // 공종 (드롭다운)
-  materialName: string; // 자재 (드롭다운)
-  specification: string; // 규격
-  unit: string; // 단위
-  areaUnit: string; // 단위² (m² 등)
-  standardPrice: number; // 기본단가
-  quantity: string; // 수량 (editable)
-  amount: number; // 금액 (계산값)
-  note: string; // 비고 (editable)
-  request: string; // 요청
+  공종: string; // 노무비에서 가져온 공종 (드롭다운)
+  자재: string; // 자재명 (드롭다운)
+  규격: string; // 규격 (드롭다운)
+  단위: string; // 단위 (읽기전용)
+  기준단가: number; // 기준단가 (읽기전용)
+  수량: number; // 수량 (입력)
+  금액: number; // 금액 (계산값)
+  비고: string; // 비고 (입력)
+  sourceLaborRowId?: string; // 노무비 행 ID 추적
 }
 
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
@@ -97,19 +97,18 @@ export default function FieldEstimate() {
   const [vatIncluded, setVatIncluded] = useState(true); // VAT 포함 여부
 
   // 빈 자재비 행 생성 함수
-  const createBlankMaterialRow = (): MaterialRow => {
+  const createBlankMaterialRow = (공종 = '', sourceLaborRowId?: string): MaterialRow => {
     return {
       id: `material-${Date.now()}-${Math.random()}`,
-      category: "",
-      materialName: "",
-      specification: "",
-      unit: "",
-      areaUnit: "m²",
-      standardPrice: 0,
-      quantity: "",
-      amount: 0,
-      note: "",
-      request: "",
+      공종,
+      자재: '',
+      규격: '',
+      단위: '',
+      기준단가: 0,
+      수량: 0,
+      금액: 0,
+      비고: '',
+      sourceLaborRowId,
     };
   };
 
@@ -220,8 +219,8 @@ export default function FieldEstimate() {
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
 
-        // 공종 변경 시 하위 필드 리셋
-        if (field === '공종') {
+        // 공종 변경 시 하위 필드 리셋 + 자재비 행 추가
+        if (field === '공종' && value) {
           updated.공사명 = '';
           updated.세부공사 = '';
           updated.세부항목 = '';
@@ -229,6 +228,20 @@ export default function FieldEstimate() {
           updated.기준가_단위 = 0;
           updated.적용면 = '';
           updated.기준가_적용면 = 0;
+          
+          // 자재비에 같은 공종으로 행 추가 (기존에 없을 경우만)
+          setMaterialRows(prevMaterial => {
+            const existingRow = prevMaterial.find(m => m.sourceLaborRowId === rowId);
+            if (!existingRow) {
+              // 새 자재비 행 추가
+              return [...prevMaterial, createBlankMaterialRow(value, rowId)];
+            } else {
+              // 기존 행의 공종 업데이트
+              return prevMaterial.map(m => 
+                m.sourceLaborRowId === rowId ? { ...m, 공종: value } : m
+              );
+            }
+          });
         }
 
         // 공사명 변경 시 하위 필드 리셋
