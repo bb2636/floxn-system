@@ -1459,136 +1459,60 @@ export default function ComprehensiveProgress() {
               {/* 진행상황 탭 */}
               {detailTab === "진행상황" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {/* 관리자 화면 - 진행상황 입력 */}
-                  {user?.role === "관리자" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      <div style={{
-                        fontFamily: "Pretendard",
-                        fontWeight: 600,
-                        fontSize: "16px",
-                        letterSpacing: "-0.02em",
-                        color: "rgba(12, 12, 12, 0.9)",
-                      }}>
-                        진행상황 입력
-                      </div>
-
-                      <div style={{ position: "relative" }}>
-                        <textarea
-                          value={specialNotesForm.watch("specialNotes")}
-                          onChange={(e) => specialNotesForm.setValue("specialNotes", e.target.value)}
-                          placeholder="사업 참여자 사전 확보·포상제도 안내했습니다."
-                          maxLength={1000}
-                          style={{
-                            width: "100%",
-                            minHeight: "200px",
-                            padding: "16px",
-                            background: "rgba(12, 12, 12, 0.04)",
-                            border: "1px solid rgba(12, 12, 12, 0.1)",
-                            borderRadius: "8px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            lineHeight: "1.6",
-                            color: "rgba(12, 12, 12, 0.9)",
-                            resize: "vertical",
-                          }}
-                          data-testid="textarea-progress-input"
-                        />
-                        <div style={{
-                          position: "absolute",
-                          bottom: "16px",
-                          right: "16px",
-                          fontFamily: "Pretendard",
-                          fontSize: "12px",
-                          color: "rgba(12, 12, 12, 0.5)",
-                        }}>
-                          {specialNotesForm.watch("specialNotes").length} / 1000
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-                        <button
-                          onClick={() => {
-                            specialNotesForm.reset({ specialNotes: "" });
-                          }}
-                          style={{
-                            padding: "10px 24px",
-                            background: "transparent",
-                            border: "1px solid rgba(12, 12, 12, 0.2)",
-                            borderRadius: "8px",
-                            fontFamily: "Pretendard",
-                            fontWeight: 500,
-                            fontSize: "14px",
-                            color: "rgba(12, 12, 12, 0.7)",
-                            cursor: "pointer",
-                          }}
-                          data-testid="button-reset-progress"
-                        >
-                          초기화
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (selectedCase.id) {
-                              specialNotesMutation.mutate({
-                                caseId: selectedCase.id,
-                                specialNotes: specialNotesForm.watch("specialNotes"),
-                              });
-                            }
-                          }}
-                          disabled={specialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim()}
-                          style={{
-                            padding: "10px 24px",
-                            background: "#008FED",
-                            border: "none",
-                            borderRadius: "8px",
-                            fontFamily: "Pretendard",
-                            fontWeight: 600,
-                            fontSize: "14px",
-                            color: "#FFFFFF",
-                            cursor: specialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim() ? "not-allowed" : "pointer",
-                            opacity: specialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim() ? 0.6 : 1,
-                          }}
-                          data-testid="button-save-progress"
-                        >
-                          {specialNotesMutation.isPending ? "저장 중..." : "저장"}
-                        </button>
-                      </div>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}>
+                    <div style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 600,
+                      fontSize: "16px",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.9)",
+                    }}>
+                      진행상황
                     </div>
-                  )}
-
-                  {/* 협력사 화면 - 진행상황 보기 (읽기 전용) */}
-                  {user?.role === "협력사" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                      <div style={{
-                        fontFamily: "Pretendard",
-                        fontWeight: 600,
-                        fontSize: "16px",
-                        letterSpacing: "-0.02em",
-                        color: "rgba(12, 12, 12, 0.9)",
-                      }}>
-                        진행상황
-                      </div>
-
-                      <div 
+                    {user?.role === "관리자" && (
+                      <button
+                        onClick={() => setShowProgressDialog(true)}
                         style={{
-                          width: "100%",
-                          minHeight: "200px",
-                          padding: "16px",
-                          background: "rgba(12, 12, 12, 0.04)",
-                          border: "1px solid rgba(12, 12, 12, 0.1)",
+                          padding: "8px 16px",
+                          background: "#008FED",
+                          border: "none",
                           borderRadius: "8px",
                           fontFamily: "Pretendard",
+                          fontWeight: 500,
                           fontSize: "14px",
-                          lineHeight: "1.6",
-                          color: selectedCase.specialNotes ? "rgba(12, 12, 12, 0.9)" : "rgba(12, 12, 12, 0.5)",
-                          whiteSpace: "pre-wrap",
-                          wordBreak: "break-word",
+                          color: "#FFFFFF",
+                          cursor: "pointer",
                         }}
-                        data-testid="text-progress-readonly"
+                        data-testid="button-add-progress"
                       >
-                        {selectedCase.specialNotes || "관리자가 입력한 진행상황이 없습니다."}
-                      </div>
-                    </div>
-                  )}
+                        + 진행상황 추가
+                      </button>
+                    )}
+                  </div>
+
+                  <div 
+                    style={{
+                      width: "100%",
+                      minHeight: "200px",
+                      padding: "16px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      borderRadius: "8px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      lineHeight: "1.6",
+                      color: selectedCase.latestProgress?.content ? "rgba(12, 12, 12, 0.9)" : "rgba(12, 12, 12, 0.5)",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                    data-testid="text-progress-display"
+                  >
+                    {selectedCase.latestProgress?.content || "관리자가 입력한 진행상황이 없습니다."}
+                  </div>
                 </div>
               )}
 
@@ -1673,13 +1597,13 @@ export default function ComprehensiveProgress() {
                         <button
                           onClick={() => {
                             if (selectedCase.id) {
-                              specialNotesMutation.mutate({
+                              updateSpecialNotesMutation.mutate({
                                 caseId: selectedCase.id,
                                 specialNotes: specialNotesForm.watch("specialNotes"),
                               });
                             }
                           }}
-                          disabled={specialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim()}
+                          disabled={updateSpecialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim()}
                           style={{
                             padding: "10px 24px",
                             background: "#008FED",
@@ -1689,12 +1613,12 @@ export default function ComprehensiveProgress() {
                             fontWeight: 600,
                             fontSize: "14px",
                             color: "#FFFFFF",
-                            cursor: specialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim() ? "not-allowed" : "pointer",
-                            opacity: specialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim() ? 0.6 : 1,
+                            cursor: updateSpecialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim() ? "not-allowed" : "pointer",
+                            opacity: updateSpecialNotesMutation.isPending || !specialNotesForm.watch("specialNotes").trim() ? 0.6 : 1,
                           }}
                           data-testid="button-save-special-notes"
                         >
-                          {specialNotesMutation.isPending ? "저장 중..." : "저장"}
+                          {updateSpecialNotesMutation.isPending ? "저장 중..." : "저장"}
                         </button>
                       </div>
                     </div>
