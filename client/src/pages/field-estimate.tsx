@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LaborCostSection, type LaborCatalogItem, type LaborCostRow } from "@/components/labor-cost-section";
+import { LaborCostSection, type LaborCatalogItem as ImportedLaborCatalogItem, type LaborCostRow as ImportedLaborCostRow } from "@/components/labor-cost-section";
 import { MaterialCostSection, type MaterialCatalogItem } from "@/components/material-cost-section";
 
 interface AreaCalculationRow {
@@ -50,18 +50,27 @@ interface LaborCatalogItem {
 // 노무비 테이블 행
 interface LaborCostRow {
   id: string;
-  공종: string; // select
-  공사명: string; // select (filtered by 공종)
-  세부공사: string; // select (filtered by 공사명)
-  세부항목: string; // select (filtered by 세부공사)
-  단위: string; // readonly
-  기준가_단위: number; // readonly (단가_인 for 노무비)
-  수량: number; // editable
-  적용면: '천장' | '벽체' | '바닥' | '길이' | ''; // radio selection
-  기준가_적용면: number; // readonly (단가_천장/벽체/바닥/길이)
-  피해면적: number; // editable
-  금액: number; // calculated
-  요청: string; // editable input with placeholder "-"
+  category: string; // 공종 - select
+  workName: string; // 공사명 - select (filtered by 공종)
+  detailWork: string; // 세부공사 - select (filtered by 공사명)
+  detailItem: string; // 세부항목 - select (filtered by 세부공사)
+  priceStandard: string; // 단가 기준 - select (민/위/기/JV)
+  unit: string; // 단위 - readonly
+  standardPrice: number; // 기준가(단위) - readonly (단가_인 for 노무비)
+  quantity: number; // 수량 - editable
+  applicationRates: { // 적용률 - checkboxes
+    ceiling: boolean;
+    wall: boolean;
+    floor: boolean;
+    molding: boolean;
+  };
+  salesMarkupRate: number; // 판매가 마진율 - editable
+  pricePerSqm: number; // 기준가(m²) - calculated
+  damageArea: number; // 피해면적 - editable
+  deduction: number; // 공제(원) - calculated
+  includeInEstimate: boolean; // 경비여부 - checkbox
+  request: string; // 요청 - editable input
+  amount: number; // 금액 - calculated
 }
 
 interface Material {
@@ -131,18 +140,27 @@ export default function FieldEstimate() {
     // 빈 행 생성 (사용자가 직접 선택하도록)
     return {
       id: `labor-${Date.now()}-${Math.random()}`,
-      공종: '',
-      공사명: '',
-      세부공사: '',
-      세부항목: '',
-      단위: '',
-      기준가_단위: 0,
-      수량: 0,
-      적용면: '',
-      기준가_적용면: 0,
-      피해면적: 0,
-      금액: 0,
-      요청: '',
+      category: '',
+      workName: '',
+      detailWork: '',
+      detailItem: '',
+      priceStandard: '',
+      unit: '',
+      standardPrice: 0,
+      quantity: 0,
+      applicationRates: {
+        ceiling: false,
+        wall: false,
+        floor: false,
+        molding: false,
+      },
+      salesMarkupRate: 0,
+      pricePerSqm: 0,
+      damageArea: 0,
+      deduction: 0,
+      includeInEstimate: false,
+      request: '',
+      amount: 0,
     };
   };
 
@@ -2938,20 +2956,37 @@ export default function FieldEstimate() {
                           {/* 공종 - Select */}
                           <td style={{ padding: "0 8px" }}>
                             <Select value={row.category} onValueChange={(value) => {
-                              setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, category: value } : r));
+                              setLaborCostRows(prev => prev.map(r => {
+                                if (r.id === row.id) {
+                                  // 누수탐지비용 선택 시 초기화
+                                  if (value === "누수탐지비용") {
+                                    return {
+                                      ...r,
+                                      category: value,
+                                      workName: "종합검사",
+                                      detailWork: "",
+                                      standardPrice: 0,
+                                      unit: "회"
+                                    };
+                                  }
+                                  return { ...r, category: value };
+                                }
+                                return r;
+                              }));
                             }}>
                               <SelectTrigger 
                                 className="h-9 border-0" 
                                 style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                                 data-testid={`select-category-${index}`}
                               >
-                                <SelectValue />
+                                <SelectValue placeholder="공종 선택" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="가구공사">가구공사</SelectItem>
                                 <SelectItem value="도배공사">도배공사</SelectItem>
                                 <SelectItem value="미장공사">미장공사</SelectItem>
                                 <SelectItem value="수장공사">수장공사</SelectItem>
+                                <SelectItem value="누수탐지비용">누수탐지비용</SelectItem>
                               </SelectContent>
                             </Select>
                           </td>
@@ -2961,9 +2996,48 @@ export default function FieldEstimate() {
                             {row.workName}
                           </td>
                           
-                          {/* 세부공사 - Read-only */}
-                          <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                            {row.detailWork}
+                          {/* 세부공사 - 누수탐지비용일 때만 Select, 나머지는 Read-only */}
+                          <td style={{ padding: row.category === "누수탐지비용" ? "0 8px" : "0 12px" }}>
+                            {row.category === "누수탐지비용" ? (
+                              <Select 
+                                value={row.detailWork} 
+                                onValueChange={(value) => {
+                                  setLaborCostRows(prev => prev.map(r => {
+                                    if (r.id === row.id) {
+                                      // 세부공사에 따라 기준가 설정
+                                      let price = 0;
+                                      if (value === "1회") price = 300000;
+                                      else if (value === "2회") price = 400000;
+                                      else if (value === "3회 이상") price = 500000;
+                                      
+                                      return {
+                                        ...r,
+                                        detailWork: value,
+                                        standardPrice: price
+                                      };
+                                    }
+                                    return r;
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger 
+                                  className="h-9 border-0" 
+                                  style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                                  data-testid={`select-detail-work-${index}`}
+                                >
+                                  <SelectValue placeholder="선택하세요" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="1회">1회</SelectItem>
+                                  <SelectItem value="2회">2회</SelectItem>
+                                  <SelectItem value="3회 이상">3회 이상</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
+                                {row.detailWork}
+                              </span>
+                            )}
                           </td>
                           
                           {/* 세부항목 - Read-only */}
@@ -3007,7 +3081,7 @@ export default function FieldEstimate() {
                             <Input
                               value={row.quantity}
                               onChange={(e) => {
-                                setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, quantity: e.target.value } : r));
+                                setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, quantity: Number(e.target.value) || 0 } : r));
                               }}
                               className="h-9 border-0 bg-transparent text-right"
                               style={{ fontFamily: "Pretendard", fontSize: "14px" }}
