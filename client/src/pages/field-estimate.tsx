@@ -1954,158 +1954,156 @@ export default function FieldEstimate() {
               견적서
             </div>
 
-            {/* 작성자 정보 */}
-            <div
-              style={{
-                background: "rgba(12, 12, 12, 0.02)",
-                borderRadius: "12px",
-                padding: "24px",
-              }}
-            >
-              <h3
-                style={{
-                  fontFamily: "Pretendard",
-                  fontWeight: 600,
-                  fontSize: "16px",
-                  lineHeight: "128%",
-                  letterSpacing: "-0.02em",
-                  color: "#0C0C0C",
-                  marginBottom: "20px",
-                }}
-              >
-                작성자 정보
-              </h3>
-
-              {/* 담당자 */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: "12px",
-                }}
-              >
-                <label
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontWeight: 400,
-                    fontSize: "14px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.01em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    width: "100px",
-                    flexShrink: 0,
-                  }}
-                >
-                  담당자
-                </label>
-                <div
-                  style={{
-                    flex: 1,
-                    padding: "12px 16px",
-                    background: "rgba(12, 12, 12, 0.04)",
-                    borderRadius: "8px",
-                    fontFamily: "Pretendard",
-                    fontWeight: 400,
-                    fontSize: "14px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.01em",
-                    color: "#0C0C0C",
-                  }}
-                >
-                  {currentUser?.name || "-"}
-                </div>
-              </div>
-
-              {/* 협력사명 */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: "12px",
-                }}
-              >
-                <label
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontWeight: 400,
-                    fontSize: "14px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.01em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    width: "100px",
-                    flexShrink: 0,
-                  }}
-                >
-                  협력사명
-                </label>
-                <div
-                  style={{
-                    flex: 1,
-                    padding: "12px 16px",
-                    background: "rgba(12, 12, 12, 0.04)",
-                    borderRadius: "8px",
-                    fontFamily: "Pretendard",
-                    fontWeight: 400,
-                    fontSize: "14px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.01em",
-                    color: "#0C0C0C",
-                  }}
-                >
-                  {currentUser?.company || "-"}
-                </div>
-              </div>
-
-              {/* 연락처 */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                }}
-              >
-                <label
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontWeight: 400,
-                    fontSize: "14px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.01em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    width: "100px",
-                    flexShrink: 0,
-                  }}
-                >
-                  연락처
-                </label>
-                <div
-                  style={{
-                    flex: 1,
-                    padding: "12px 16px",
-                    background: "rgba(12, 12, 12, 0.04)",
-                    borderRadius: "8px",
-                    fontFamily: "Pretendard",
-                    fontWeight: 400,
-                    fontSize: "14px",
-                    lineHeight: "128%",
-                    letterSpacing: "-0.01em",
-                    color: "#0C0C0C",
-                  }}
-                >
-                  {currentUser?.phone || "-"}
-                </div>
-              </div>
-            </div>
-
-            {/* 고객 정보 & 기타 섹션 */}
+            {/* 작성자 정보 & 고객 정보 섹션 */}
             <div
               style={{
                 display: "flex",
                 flexDirection: "row",
-                alignItems: "flex-start",
                 gap: "20px",
-                marginTop: "24px",
               }}
             >
+              {/* 작성자 정보 */}
+              <div
+                style={{
+                  flex: 1,
+                  background: "rgba(12, 12, 12, 0.02)",
+                  borderRadius: "12px",
+                  padding: "24px",
+                }}
+              >
+                <h3
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 600,
+                    fontSize: "16px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                    marginBottom: "20px",
+                  }}
+                >
+                  작성자 정보
+                </h3>
+
+                {/* 담당자 */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      width: "100px",
+                      flexShrink: 0,
+                    }}
+                  >
+                    담당자
+                  </label>
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: "12px 16px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {currentUser?.name || "-"}
+                  </div>
+                </div>
+
+                {/* 협력사명 */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      width: "100px",
+                      flexShrink: 0,
+                    }}
+                  >
+                    협력사명
+                  </label>
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: "12px 16px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {currentUser?.company || "-"}
+                  </div>
+                </div>
+
+                {/* 연락처 */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <label
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      width: "100px",
+                      flexShrink: 0,
+                    }}
+                  >
+                    연락처
+                  </label>
+                  <div
+                    style={{
+                      flex: 1,
+                      padding: "12px 16px",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      fontFamily: "Pretendard",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {currentUser?.phone || "-"}
+                  </div>
+                </div>
+              </div>
 
               {/* 고객 정보 */}
               <div
@@ -2113,7 +2111,7 @@ export default function FieldEstimate() {
                   flex: 1,
                   background: "rgba(12, 12, 12, 0.04)",
                   borderRadius: "12px",
-                  padding: "20px",
+                  padding: "24px",
                 }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
