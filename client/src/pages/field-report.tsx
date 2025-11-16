@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Drawing, CaseDocument as SchemaDocument } from "@shared/schema";
 
 interface Case {
@@ -56,13 +56,37 @@ interface Case {
 }
 
 
+interface LaborCostRow {
+  id?: string;
+  category: string;
+  workName: string;
+  detailWork: string;
+  detailItem?: string;
+  unit: string;
+  standardPrice: number;
+  quantity: number;
+  amount: number;
+}
+
+interface MaterialCostRow {
+  id?: string;
+  공종: string;
+  자재: string;
+  규격: string;
+  단위: string;
+  기준단가: number;
+  수량: number;
+  금액: number;
+  비고?: string;
+}
+
 interface Estimate {
   id: string;
   caseId: string;
   version: number;
   status: string;
-  laborCostData?: any;
-  materialCostData?: any;
+  laborCostData?: LaborCostRow[] | string | null;
+  materialCostData?: MaterialCostRow[] | string | null;
   createdAt?: string;
 }
 
@@ -97,6 +121,63 @@ interface ReportData {
     rows: EstimateRow[];
   };
   completionStatus: CompletionStatus;
+}
+
+// Safe parsing helpers with numeric field coercion and object validation
+function safeParseLaborCosts(data: LaborCostRow[] | string | null | undefined): LaborCostRow[] {
+  if (!data) return [];
+  
+  let rawData: any[];
+  if (Array.isArray(data)) {
+    rawData = data;
+  } else if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data);
+      rawData = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  } else {
+    return [];
+  }
+  
+  // Filter out non-object entries and coerce numeric fields to ensure type safety
+  return rawData
+    .filter((row) => row && typeof row === 'object' && !Array.isArray(row))
+    .map((row) => ({
+      ...row,
+      standardPrice: Number(row.standardPrice) || 0,
+      quantity: Number(row.quantity) || 0,
+      amount: Number(row.amount) || 0,
+    }));
+}
+
+function safeParseMaterialCosts(data: MaterialCostRow[] | string | null | undefined): MaterialCostRow[] {
+  if (!data) return [];
+  
+  let rawData: any[];
+  if (Array.isArray(data)) {
+    rawData = data;
+  } else if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data);
+      rawData = Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  } else {
+    return [];
+  }
+  
+  // Filter out non-object entries and coerce numeric fields to ensure type safety
+  return rawData
+    .filter((row) => row && typeof row === 'object' && !Array.isArray(row))
+    .map((row) => ({
+      ...row,
+      기준단가: Number(row.기준단가) || 0,
+      수량: Number(row.수량) || 0,
+      금액: Number(row.금액) || 0,
+    }));
 }
 
 export default function FieldReport() {
@@ -135,6 +216,15 @@ export default function FieldReport() {
       setAdditionalNotes(reportData.case.additionalNotes || '');
     }
   }, [reportData?.case.additionalNotes]);
+
+  // Parse and memoize labor cost and material cost data
+  const parsedLaborCosts = useMemo(() => {
+    return safeParseLaborCosts(reportData?.estimate?.estimate?.laborCostData);
+  }, [reportData?.estimate?.estimate?.laborCostData]);
+
+  const parsedMaterialCosts = useMemo(() => {
+    return safeParseMaterialCosts(reportData?.estimate?.estimate?.materialCostData);
+  }, [reportData?.estimate?.estimate?.materialCostData]);
 
   // 기타사항 저장 mutation
   const saveNotesMutation = useMutation({
@@ -1606,7 +1696,7 @@ export default function FieldReport() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {estimate.estimate.laborCostData && Array.isArray(estimate.estimate.laborCostData) && estimate.estimate.laborCostData.length > 0 ? (
+                    {parsedLaborCosts.length > 0 ? (
                       <div className="overflow-x-auto">
                         <table
                           style={{
@@ -1629,16 +1719,16 @@ export default function FieldReport() {
                             </tr>
                           </thead>
                           <tbody>
-                            {estimate.estimate.laborCostData.map((row: any, index: number) => (
-                              <tr key={row.id || index} style={{ borderBottom: index === estimate.estimate.laborCostData.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
+                            {parsedLaborCosts.map((row, index) => (
+                              <tr key={row.id || index} style={{ borderBottom: index === parsedLaborCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailWork || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailItem || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.unit || '-'}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "right" }}>{row.standardPrice ? row.standardPrice.toLocaleString() : '0'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.standardPrice || 0).toLocaleString()}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.quantity || 0}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{row.amount ? row.amount.toLocaleString() : '0'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{(row.amount || 0).toLocaleString()}</td>
                               </tr>
                             ))}
                           </tbody>
@@ -1675,7 +1765,7 @@ export default function FieldReport() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {estimate.estimate.materialCostData && Array.isArray(estimate.estimate.materialCostData) && estimate.estimate.materialCostData.length > 0 ? (
+                    {parsedMaterialCosts.length > 0 ? (
                       <div className="overflow-x-auto">
                         <table
                           style={{
@@ -1698,15 +1788,15 @@ export default function FieldReport() {
                             </tr>
                           </thead>
                           <tbody>
-                            {estimate.estimate.materialCostData.map((row: any, index: number) => (
-                              <tr key={row.id || index} style={{ borderBottom: index === estimate.estimate.materialCostData.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
+                            {parsedMaterialCosts.map((row, index) => (
+                              <tr key={row.id || index} style={{ borderBottom: index === parsedMaterialCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.공종 || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.자재 || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.규격 || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.단위 || '-'}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "right" }}>{row.기준단가 ? row.기준단가.toLocaleString() : '0'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.기준단가 || 0).toLocaleString()}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.수량 || 0}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{row.금액 ? row.금액.toLocaleString() : '0'}</td>
+                                <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{(row.금액 || 0).toLocaleString()}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.비고 || '-'}</td>
                               </tr>
                             ))}
