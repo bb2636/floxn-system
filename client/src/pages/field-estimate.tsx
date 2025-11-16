@@ -129,7 +129,7 @@ export default function FieldEstimate() {
       세부항목: '',
       단위: '',
       기준가_단위: 0,
-      수량: 1,
+      수량: 0,
       적용면: '',
       기준가_적용면: 0,
       피해면적: 0,
@@ -227,6 +227,7 @@ export default function FieldEstimate() {
           updated.세부항목 = '';
           updated.단위 = '';
           updated.기준가_단위 = 0;
+          updated.적용면 = '';
           updated.기준가_적용면 = 0;
         }
 
@@ -236,6 +237,7 @@ export default function FieldEstimate() {
           updated.세부항목 = '';
           updated.단위 = '';
           updated.기준가_단위 = 0;
+          updated.적용면 = '';
           updated.기준가_적용면 = 0;
         }
 
@@ -244,6 +246,7 @@ export default function FieldEstimate() {
           updated.세부항목 = '';
           updated.단위 = '';
           updated.기준가_단위 = 0;
+          updated.적용면 = '';
           updated.기준가_적용면 = 0;
         }
 
@@ -274,25 +277,37 @@ export default function FieldEstimate() {
 
         // 적용면 변경 시 기준가_적용면 업데이트
         if (field === '적용면') {
-          const catalogItem = laborCatalog.find(item =>
-            item.공종 === updated.공종 &&
-            item.공사명 === updated.공사명 &&
-            item.세부공사 === updated.세부공사 &&
-            item.세부항목 === updated.세부항목
-          );
-          if (catalogItem) {
-            if (value === '천장') updated.기준가_적용면 = catalogItem.단가_천장 || 0;
-            else if (value === '벽체') updated.기준가_적용면 = catalogItem.단가_벽체 || 0;
-            else if (value === '바닥') updated.기준가_적용면 = catalogItem.단가_바닥 || 0;
-            else if (value === '길이') updated.기준가_적용면 = catalogItem.단가_길이 || 0;
+          if (value === '') {
+            // 적용면 선택 해제 시 기준가와 금액 리셋
+            updated.기준가_적용면 = 0;
+          } else {
+            const catalogItem = laborCatalog.find(item =>
+              item.공종 === updated.공종 &&
+              item.공사명 === updated.공사명 &&
+              item.세부공사 === updated.세부공사 &&
+              item.세부항목 === updated.세부항목
+            );
+            if (catalogItem) {
+              if (value === '천장') updated.기준가_적용면 = catalogItem.단가_천장 || 0;
+              else if (value === '벽체') updated.기준가_적용면 = catalogItem.단가_벽체 || 0;
+              else if (value === '바닥') updated.기준가_적용면 = catalogItem.단가_바닥 || 0;
+              else if (value === '길이') updated.기준가_적용면 = catalogItem.단가_길이 || 0;
+            }
           }
         }
 
-        // 금액 계산
+        // 금액 계산 (타입을 명시적으로 number로 변환)
+        const 기준가_단위 = Number(updated.기준가_단위) || 0;
+        const 수량 = Number(updated.수량) || 0;
+        const 기준가_적용면 = Number(updated.기준가_적용면) || 0;
+        const 피해면적 = Number(updated.피해면적) || 0;
+        
         if (updated.세부공사 === '노무비') {
-          updated.금액 = updated.기준가_단위 * updated.수량;
+          updated.금액 = Math.round(기준가_단위 * 수량);
         } else if (updated.세부공사 === '일위대가') {
-          updated.금액 = updated.기준가_적용면 * updated.피해면적 * updated.수량;
+          updated.금액 = Math.round(기준가_적용면 * 피해면적 * 수량);
+        } else {
+          updated.금액 = 0;
         }
 
         return updated;
