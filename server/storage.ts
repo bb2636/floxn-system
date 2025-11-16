@@ -59,6 +59,7 @@ export interface IStorage {
   getAllCases(): Promise<CaseWithLatestProgress[]>;
   updateCaseStatus(caseId: string, status: string): Promise<Case | null>;
   updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null>;
+  confirmCaseSpecialNotes(caseId: string, confirmedBy: string): Promise<Case | null>;
   updateCaseAdditionalNotes(caseId: string, additionalNotes: string | null): Promise<Case | null>;
   submitFieldSurvey(caseId: string): Promise<Case | null>;
   reviewCase(caseId: string, decision: "승인" | "비승인", reviewComment: string | null, reviewedBy: string): Promise<Case | null>;
@@ -1130,6 +1131,23 @@ export class MemStorage implements IStorage {
     const updatedCase: Case = {
       ...caseItem,
       specialNotes,
+      specialNotesConfirmedBy: null, // Reset confirmation when notes are updated
+      updatedAt: getKSTDate(),
+    };
+    
+    this.cases.set(caseId, updatedCase);
+    return updatedCase;
+  }
+
+  async confirmCaseSpecialNotes(caseId: string, confirmedBy: string): Promise<Case | null> {
+    const caseItem = this.cases.get(caseId);
+    if (!caseItem) {
+      return null;
+    }
+    
+    const updatedCase: Case = {
+      ...caseItem,
+      specialNotesConfirmedBy: confirmedBy,
       updatedAt: getKSTDate(),
     };
     
@@ -2036,7 +2054,22 @@ export class DbStorage implements IStorage {
     const currentDate = getKSTDate();
     
     const result = await db.update(cases)
-      .set({ specialNotes, updatedAt: currentDate })
+      .set({ specialNotes, specialNotesConfirmedBy: null, updatedAt: currentDate }) // Reset confirmation when notes are updated
+      .where(eq(cases.id, caseId))
+      .returning();
+    
+    if (result.length === 0) {
+      return null;
+    }
+    
+    return result[0];
+  }
+
+  async confirmCaseSpecialNotes(caseId: string, confirmedBy: string): Promise<Case | null> {
+    const currentDate = getKSTDate();
+    
+    const result = await db.update(cases)
+      .set({ specialNotesConfirmedBy: confirmedBy, updatedAt: currentDate })
       .where(eq(cases.id, caseId))
       .returning();
     
