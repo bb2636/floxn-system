@@ -829,6 +829,28 @@ export default function FieldReport() {
                       color: "rgba(12, 12, 12, 0.6)",
                     }}
                   >
+                    출동 업장지
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {caseData.dispatchLocation || "-"}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span
+                    className="w-32"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
                     피보험자 주소
                   </span>
                   <span
@@ -859,6 +881,30 @@ export default function FieldReport() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="flex items-center">
+                  <span
+                    className="w-32"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    사고 발생일시
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    {caseData.accidentDate && caseData.accidentTime 
+                      ? `${caseData.accidentDate} ${caseData.accidentTime}` 
+                      : caseData.accidentDate || "-"}
+                  </span>
+                </div>
                 <div className="flex items-center">
                   <span
                     className="w-32"
@@ -937,6 +983,36 @@ export default function FieldReport() {
                   }}
                 >
                   {caseData.specialNotes || "이 안에는 특이사항이 적성됩니다."}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 특이사항 및 요청사항 (VOC) */}
+            <Card className="mb-6">
+              <CardHeader>
+                <CardTitle
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}
+                >
+                  특이사항 및 요청사항 (VOC)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div
+                  className="p-4 rounded"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: "#0C0C0C",
+                    background: "rgba(12, 12, 12, 0.03)",
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {caseData.specialRequests || "-"}
                 </div>
               </CardContent>
             </Card>
@@ -1061,55 +1137,85 @@ export default function FieldReport() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex items-center">
-                  <span
-                    className="w-32"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }}
-                  >
-                    처리 유형
-                  </span>
-                  <div className="flex gap-2">
-                    {(() => {
-                      let types: string[] = [];
-                      
-                      if (caseData.processingTypes && caseData.processingTypes.trim()) {
-                        try {
-                          const parsed = JSON.parse(caseData.processingTypes);
-                          if (Array.isArray(parsed)) {
-                            types = parsed;
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <span
+                      className="w-32"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.6)",
+                      }}
+                    >
+                      처리 유형
+                    </span>
+                    <div className="flex gap-2 flex-wrap">
+                      {(() => {
+                        let types: string[] = [];
+                        
+                        if (caseData.processingTypes && caseData.processingTypes.trim()) {
+                          try {
+                            const parsed = JSON.parse(caseData.processingTypes);
+                            if (Array.isArray(parsed)) {
+                              types = parsed;
+                            }
+                          } catch (e) {
+                            console.error("Error parsing processing types:", e);
                           }
-                        } catch (e) {
-                          console.error("Error parsing processing types:", e);
                         }
-                      }
-                      
-                      return types.length > 0 ? (
-                        types.map((type: string, index: number) => (
-                          <div
-                            key={index}
-                            className="px-3 py-1 rounded"
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              color: "#008FED",
-                              background: "rgba(0, 143, 237, 0.1)",
-                            }}
-                          >
-                            {type}
-                          </div>
-                        ))
-                      ) : (
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>
-                          -
-                        </span>
-                      );
-                    })()}
+                        
+                        return types.length > 0 ? (
+                          types.map((type: string, index: number) => (
+                            <div
+                              key={index}
+                              className="px-3 py-1 rounded"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                color: "#008FED",
+                                background: "rgba(0, 143, 237, 0.1)",
+                              }}
+                            >
+                              {type}
+                            </div>
+                          ))
+                        ) : (
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>
+                            -
+                          </span>
+                        );
+                      })()}
+                    </div>
                   </div>
+                  {/* 기타 처리 유형 상세 */}
+                  {caseData.processingTypeOther && (
+                    <div className="flex items-start">
+                      <span
+                        className="w-32 pt-1"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}
+                      >
+                        기타 상세
+                      </span>
+                      <div
+                        className="p-3 rounded flex-1"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                          background: "rgba(12, 12, 12, 0.03)",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {caseData.processingTypeOther}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center">
                   <span
