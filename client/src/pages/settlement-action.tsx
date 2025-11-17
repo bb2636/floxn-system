@@ -46,7 +46,7 @@ export default function SettlementAction() {
     caseNumber: caseItem.caseNumber,
     contractor: caseItem.policyHolderName || "-",
     assessor: caseItem.assessorId || "-",
-    assessmentDate: caseItem.reviewedAt || "-",
+    reviewManager: caseItem.reviewedBy || "-", // 심사 담당자
     partner: caseItem.assignedPartner || "-",
     refundAmount: caseItem.estimateAmount || "0",
     depositAmount: "0", // TODO: Add deposit tracking
@@ -487,7 +487,7 @@ export default function SettlementAction() {
                           textAlign: "center",
                         }}
                       >
-                        {row.assessmentDate}
+                        {row.reviewManager}
                       </td>
                       <td
                         style={{
