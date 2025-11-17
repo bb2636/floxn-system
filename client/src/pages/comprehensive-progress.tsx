@@ -44,14 +44,16 @@ const CASE_STATUSES = [
   "접수중",
   "접수완료",
   "현장방문",
-  "현장정보입력",
+  "현장정보 입력",
   "검토중",
   "반려",
-  "1차 승인",
-  "현장정보제출",
-  "2차 승인(복구요청)",
-  "직접복구-미복구",
+  "1차승인",
+  "발송",
+  "복구요청",
+  "직접복구",
+  "미복구",
   "청구자료제출",
+  "출동비 청구",
   "청구",
   "입금완료",
   "일부입금",
@@ -61,9 +63,10 @@ const CASE_STATUSES = [
 
 // 상태별 색상
 const getStatusColor = (status: string) => {
-  if (status === "1차 승인") return "#008FED"; // 파란색
-  if (status === "2차 승인(복구요청)") return "#00C853"; // 초록색
-  if (status === "접수취소") return "#ED1C00"; // 빨간색
+  if (status === "1차승인") return "#008FED"; // 파란색
+  if (status === "복구요청") return "#00C853"; // 초록색
+  if (status === "접수취소" || status === "반려") return "#ED1C00"; // 빨간색
+  if (status === "입금완료" || status === "정산완료") return "#4CAF50"; // 완료 초록색
   return "rgba(12, 12, 12, 0.7)"; // 기본 회색
 };
 
