@@ -302,6 +302,7 @@ export default function AdminSettings() {
   
   // Notice states
   const [showAddNoticeModal, setShowAddNoticeModal] = useState(false);
+  const [showNoticeConfirmModal, setShowNoticeConfirmModal] = useState(false);
   const [noticeTitle, setNoticeTitle] = useState("");
   const [noticeContent, setNoticeContent] = useState("");
   const [createAccountForm, setCreateAccountForm] = useState({
@@ -7087,10 +7088,101 @@ export default function AdminSettings() {
                     });
                     return;
                   }
+                  setShowNoticeConfirmModal(true);
+                }}
+                className="flex-1 py-3"
+                style={{
+                  background: "#008FED",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#FDFDFD",
+                }}
+                data-testid="button-submit-notice"
+              >
+                게시
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Notice Confirmation Modal */}
+      {showNoticeConfirmModal && (
+        <>
+          {/* Modal Overlay */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            onClick={() => setShowNoticeConfirmModal(false)}
+            data-testid="modal-overlay-confirm-notice"
+          />
+
+          {/* Modal Panel */}
+          <div
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
+            style={{
+              width: "480px",
+              background: "#FDFDFD",
+              borderRadius: "12px",
+              padding: "32px",
+            }}
+            data-testid="modal-confirm-notice"
+          >
+            {/* Title */}
+            <h2
+              className="mb-4"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "20px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+                textAlign: "center",
+              }}
+            >
+              공지를 게시하시겠습니까?
+            </h2>
+
+            {/* Message */}
+            <p
+              className="mb-8"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 400,
+                lineHeight: "1.6",
+                color: "#686A6E",
+                textAlign: "center",
+              }}
+            >
+              게시 후에는 즉시 노출됩니다. 내용과 대상을 다시 확인해주세요.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowNoticeConfirmModal(false)}
+                className="flex-1 py-3"
+                style={{
+                  background: "transparent",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#FF4444",
+                }}
+                data-testid="button-cancel-confirm-notice"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
                   createNoticeMutation.mutate({
                     title: noticeTitle.trim(),
                     content: noticeContent.trim(),
                   });
+                  setShowNoticeConfirmModal(false);
                 }}
                 disabled={createNoticeMutation.isPending}
                 className="flex-1 py-3"
@@ -7103,7 +7195,7 @@ export default function AdminSettings() {
                   color: "#FDFDFD",
                   cursor: createNoticeMutation.isPending ? "not-allowed" : "pointer",
                 }}
-                data-testid="button-submit-notice"
+                data-testid="button-confirm-submit-notice"
               >
                 {createNoticeMutation.isPending ? "등록 중..." : "게시"}
               </button>
