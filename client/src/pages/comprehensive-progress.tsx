@@ -684,7 +684,6 @@ export default function ComprehensiveProgress() {
               padding: "14px 20px",
               background: "rgba(12, 12, 12, 0.04)",
               borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-              overflowX: "auto",
               gap: "8px",
             }}
           >
@@ -831,7 +830,6 @@ export default function ComprehensiveProgress() {
                     gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px",
                     padding: "14px 20px",
                     borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    overflowX: "auto",
                     gap: "8px",
                     alignItems: "center",
                     cursor: "pointer",
