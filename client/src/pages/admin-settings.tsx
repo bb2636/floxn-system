@@ -303,6 +303,7 @@ export default function AdminSettings() {
   // Notice states
   const [showAddNoticeModal, setShowAddNoticeModal] = useState(false);
   const [showNoticeConfirmModal, setShowNoticeConfirmModal] = useState(false);
+  const [showNoticeCancelConfirmModal, setShowNoticeCancelConfirmModal] = useState(false);
   const [noticeTitle, setNoticeTitle] = useState("");
   const [noticeContent, setNoticeContent] = useState("");
   const [createAccountForm, setCreateAccountForm] = useState({
@@ -6946,9 +6947,13 @@ export default function AdminSettings() {
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40"
             onClick={() => {
-              setShowAddNoticeModal(false);
-              setNoticeTitle("");
-              setNoticeContent("");
+              if (noticeTitle.trim() || noticeContent.trim()) {
+                setShowNoticeCancelConfirmModal(true);
+              } else {
+                setShowAddNoticeModal(false);
+                setNoticeTitle("");
+                setNoticeContent("");
+              }
             }}
             data-testid="modal-overlay-add-notice"
           />
@@ -7061,9 +7066,13 @@ export default function AdminSettings() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => {
-                  setShowAddNoticeModal(false);
-                  setNoticeTitle("");
-                  setNoticeContent("");
+                  if (noticeTitle.trim() || noticeContent.trim()) {
+                    setShowNoticeCancelConfirmModal(true);
+                  } else {
+                    setShowAddNoticeModal(false);
+                    setNoticeTitle("");
+                    setNoticeContent("");
+                  }
                 }}
                 className="flex-1 py-3"
                 style={{
@@ -7198,6 +7207,99 @@ export default function AdminSettings() {
                 data-testid="button-confirm-submit-notice"
               >
                 {createNoticeMutation.isPending ? "등록 중..." : "게시"}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Notice Cancel Confirmation Modal */}
+      {showNoticeCancelConfirmModal && (
+        <>
+          {/* Modal Overlay */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            onClick={() => setShowNoticeCancelConfirmModal(false)}
+            data-testid="modal-overlay-cancel-confirm-notice"
+          />
+
+          {/* Modal Panel */}
+          <div
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
+            style={{
+              width: "480px",
+              background: "#FDFDFD",
+              borderRadius: "12px",
+              padding: "32px",
+            }}
+            data-testid="modal-cancel-confirm-notice"
+          >
+            {/* Title */}
+            <h2
+              className="mb-4"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "20px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+                textAlign: "center",
+              }}
+            >
+              작성을 중료하시겠습니까?
+            </h2>
+
+            {/* Message */}
+            <p
+              className="mb-8"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 400,
+                lineHeight: "1.6",
+                color: "#686A6E",
+                textAlign: "center",
+              }}
+            >
+              나가시게 되면 입력 내용이 사라집니다.
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowNoticeCancelConfirmModal(false)}
+                className="flex-1 py-3"
+                style={{
+                  background: "transparent",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#FF4444",
+                }}
+                data-testid="button-stay-writing"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  setShowNoticeCancelConfirmModal(false);
+                  setShowAddNoticeModal(false);
+                  setNoticeTitle("");
+                  setNoticeContent("");
+                }}
+                className="flex-1 py-3"
+                style={{
+                  background: "#008FED",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#FDFDFD",
+                }}
+                data-testid="button-leave-writing"
+              >
+                나가기
               </button>
             </div>
           </div>
