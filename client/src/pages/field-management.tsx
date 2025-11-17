@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case } from "@shared/schema";
 import { ChevronDown, ChevronRight, ChevronUp, Calendar as CalendarIcon, Clock, X, Plus, Check } from "lucide-react";
@@ -69,6 +69,11 @@ export default function FieldManagement() {
   const [processingTypes, setProcessingTypes] = useState<Set<string>>(new Set());
   const [processingTypeOther, setProcessingTypeOther] = useState("");
   const [recoveryMethodType, setRecoveryMethodType] = useState("부분수리");
+
+  // Refs for preventing scroll on focus
+  const caseSelectTriggerRef = useRef<HTMLButtonElement>(null);
+  const accidentDateTriggerRef = useRef<HTMLButtonElement>(null);
+  const visitDateTriggerRef = useRef<HTMLButtonElement>(null);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -411,6 +416,7 @@ export default function FieldManagement() {
                 onValueChange={handleCaseChange}
               >
                 <SelectTrigger 
+                  ref={caseSelectTriggerRef}
                   className="border-0 focus:ring-0"
                   style={{
                     width: "788px",
@@ -473,7 +479,18 @@ export default function FieldManagement() {
                     </span>
                   )}
                 </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4}>
+                <SelectContent 
+                  position="popper" 
+                  sideOffset={4}
+                  onOpenAutoFocus={(e) => {
+                    e.preventDefault();
+                    caseSelectTriggerRef.current?.focus({ preventScroll: true });
+                  }}
+                  onCloseAutoFocus={(e) => {
+                    e.preventDefault();
+                    caseSelectTriggerRef.current?.focus({ preventScroll: true });
+                  }}
+                >
                   {availableCases.map((caseItem) => (
                     <SelectItem 
                       key={caseItem.id} 
@@ -845,6 +862,7 @@ export default function FieldManagement() {
                 <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
                   <PopoverTrigger asChild>
                     <Button
+                      ref={accidentDateTriggerRef}
                       type="button"
                       variant="outline"
                       className={intakeButtonClass}
@@ -864,8 +882,14 @@ export default function FieldManagement() {
                   </PopoverTrigger>
                   <PopoverContent 
                     className="w-auto p-0"
-                    onOpenAutoFocus={(e) => e.preventDefault()}
-                    onCloseAutoFocus={(e) => e.preventDefault()}
+                    onOpenAutoFocus={(e) => {
+                      e.preventDefault();
+                      accidentDateTriggerRef.current?.focus({ preventScroll: true });
+                    }}
+                    onCloseAutoFocus={(e) => {
+                      e.preventDefault();
+                      accidentDateTriggerRef.current?.focus({ preventScroll: true });
+                    }}
                   >
                     <Calendar
                       mode="single"
@@ -935,6 +959,7 @@ export default function FieldManagement() {
                     <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen} modal={false}>
                       <PopoverTrigger asChild>
                         <Button
+                          ref={visitDateTriggerRef}
                           type="button"
                           variant="outline"
                           className={intakeButtonClass}
@@ -954,8 +979,14 @@ export default function FieldManagement() {
                       </PopoverTrigger>
                       <PopoverContent 
                         className="w-auto p-0"
-                        onOpenAutoFocus={(e) => e.preventDefault()}
-                        onCloseAutoFocus={(e) => e.preventDefault()}
+                        onOpenAutoFocus={(e) => {
+                          e.preventDefault();
+                          visitDateTriggerRef.current?.focus({ preventScroll: true });
+                        }}
+                        onCloseAutoFocus={(e) => {
+                          e.preventDefault();
+                          visitDateTriggerRef.current?.focus({ preventScroll: true });
+                        }}
                       >
                         <Calendar
                           mode="single"

@@ -125,11 +125,10 @@ export default function ComprehensiveProgress() {
     },
     onSuccess: (data, variables) => {
       // 백엔드에서 반환된 실제 데이터로 업데이트
-      const updatedCase = data?.case;
-      if (updatedCase) {
+      if (data && typeof data === 'object' && 'id' in data) {
         queryClient.setQueryData<CaseWithLatestProgress[]>(["/api/cases"], (old) => {
           if (!old) return old;
-          return old.map(c => c.id === updatedCase.id ? { ...c, ...updatedCase } : c);
+          return old.map(c => c.id === data.id ? { ...c, ...data } : c);
         });
       }
       
