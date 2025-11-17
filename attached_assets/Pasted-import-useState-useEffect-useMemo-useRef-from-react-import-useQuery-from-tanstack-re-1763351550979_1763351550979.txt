@@ -479,10 +479,17 @@ export default function FieldManagement() {
                     </span>
                   )}
                 </SelectTrigger>
-                {/* FIX: Select는 자체 포커스 관리가 있어 onOpenAutoFocus/onCloseAutoFocus 불필요 */}
                 <SelectContent 
                   position="popper" 
                   sideOffset={4}
+                  onOpenAutoFocus={(e) => {
+                    e.preventDefault();
+                    caseSelectTriggerRef.current?.focus({ preventScroll: true });
+                  }}
+                  onCloseAutoFocus={(e) => {
+                    e.preventDefault();
+                    caseSelectTriggerRef.current?.focus({ preventScroll: true });
+                  }}
                 >
                   {availableCases.map((caseItem) => (
                     <SelectItem 
@@ -873,14 +880,15 @@ export default function FieldManagement() {
                       {accidentDate ? format(accidentDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
                     </Button>
                   </PopoverTrigger>
-                  {/* FIX: focus() 호출 제거 - trigger 버튼 포커스 재지정 시 스크롤 위로 이동 문제 해결 */}
                   <PopoverContent 
                     className="w-auto p-0"
                     onOpenAutoFocus={(e) => {
                       e.preventDefault();
+                      accidentDateTriggerRef.current?.focus({ preventScroll: true });
                     }}
                     onCloseAutoFocus={(e) => {
                       e.preventDefault();
+                      accidentDateTriggerRef.current?.focus({ preventScroll: true });
                     }}
                   >
                     <Calendar
@@ -969,14 +977,15 @@ export default function FieldManagement() {
                           {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
                         </Button>
                       </PopoverTrigger>
-                      {/* FIX: focus() 호출 제거 - 현장조사 정보에서 날짜 선택 시 스크롤 위치 유지 */}
                       <PopoverContent 
                         className="w-auto p-0"
                         onOpenAutoFocus={(e) => {
                           e.preventDefault();
+                          visitDateTriggerRef.current?.focus({ preventScroll: true });
                         }}
                         onCloseAutoFocus={(e) => {
                           e.preventDefault();
+                          visitDateTriggerRef.current?.focus({ preventScroll: true });
                         }}
                       >
                         <Calendar
