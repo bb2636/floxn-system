@@ -653,6 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         processingTypeOther: z.string().nullable().optional(),
         recoveryMethodType: z.string().nullable().optional(),
         fieldSurveyStatus: z.string().nullable().optional(),
+        status: z.string().nullable().optional(), // 케이스 상태 자동 변경용
       });
       
       const fieldData = updateSchema.parse(req.body);

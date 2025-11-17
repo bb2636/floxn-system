@@ -2246,6 +2246,7 @@ export class DbStorage implements IStorage {
     processingTypeOther?: string | null;
     recoveryMethodType?: string | null;
     fieldSurveyStatus?: string | null;
+    status?: string | null; // 케이스 상태 자동 변경용
   }): Promise<Case | null> {
     const currentDate = getKSTDate();
     

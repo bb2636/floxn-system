@@ -1649,6 +1649,14 @@ export default function FieldManagement() {
                     if (!selectedCaseData?.id) return;
 
                     try {
+                      // 상태 자동 변경 로직
+                      let status = "현장방문"; // 기본값: 방문일시만 입력된 경우
+                      
+                      // 모든 필수 필드가 입력된 경우 → "현장정보 입력"
+                      if (visitDate && visitTime && accidentCategory && victimName) {
+                        status = "현장정보 입력";
+                      }
+
                       const payload = {
                         visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
                         visitTime,
@@ -1668,13 +1676,14 @@ export default function FieldManagement() {
                         processingTypeOther,
                         recoveryMethodType,
                         fieldSurveyStatus: "draft",
+                        status, // 자동 변경된 상태 추가
                       };
 
                       await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
 
                       toast({
                         title: "저장 완료",
-                        description: "현장조사 정보가 저장되었습니다.",
+                        description: `현장조사 정보가 저장되었습니다. (상태: ${status})`,
                       });
 
                       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
