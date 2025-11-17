@@ -40,7 +40,7 @@ export default function SettlementAction() {
   // Map real case data to settlement rows
   const settlements = claimCases.map((caseItem) => ({
     id: caseItem.id,
-    date: caseItem.claimDate || "-",
+    date: caseItem.createdAt ? format(new Date(caseItem.createdAt), "yyyy-MM-dd") : "-",
     insuranceCompany: caseItem.insuranceCompany || "-",
     insuranceAccidentNo: caseItem.insuranceAccidentNo || "-",
     caseNumber: caseItem.caseNumber,
