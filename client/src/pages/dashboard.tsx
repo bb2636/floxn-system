@@ -153,7 +153,7 @@ export default function Dashboard() {
     
     // Get cases assigned to current user, sorted by updatedAt (most recent first)
     return allCases
-      .filter(c => c.assignedTo === user.username)
+      .filter(c => c.assignedTo === user.id)
       .sort((a, b) => {
         const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
