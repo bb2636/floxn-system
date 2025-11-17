@@ -317,20 +317,6 @@ export default function SettlementAction() {
                       color: "rgba(12, 12, 12, 0.8)",
                       borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                       textAlign: "center",
-                      minWidth: "80px",
-                    }}
-                  >
-                    담당자
-                  </th>
-                  <th
-                    style={{
-                      padding: "12px 16px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      color: "rgba(12, 12, 12, 0.8)",
-                      borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                      textAlign: "center",
                       minWidth: "100px",
                     }}
                   >
@@ -369,7 +355,7 @@ export default function SettlementAction() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={11} style={{ padding: "40px", textAlign: "center" }}>
+                    <td colSpan={10} style={{ padding: "40px", textAlign: "center" }}>
                       <span
                         style={{
                           fontFamily: "Pretendard",
@@ -383,7 +369,7 @@ export default function SettlementAction() {
                   </tr>
                 ) : filteredSettlements.length === 0 ? (
                   <tr>
-                    <td colSpan={11} style={{ padding: "40px", textAlign: "center" }}>
+                    <td colSpan={10} style={{ padding: "40px", textAlign: "center" }}>
                       <span
                         style={{
                           fontFamily: "Pretendard",
@@ -488,18 +474,6 @@ export default function SettlementAction() {
                         }}
                       >
                         {row.reviewManager}
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px 16px",
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          color: "rgba(12, 12, 12, 0.8)",
-                          borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                          textAlign: "center",
-                        }}
-                      >
-                        {row.partner}
                       </td>
                       <td
                         style={{
