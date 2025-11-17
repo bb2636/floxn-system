@@ -2010,6 +2010,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User favorites endpoints
+  // Get user's favorites
+  app.get("/api/favorites", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const favorites = await storage.getUserFavorites(req.session.userId);
+      res.json(favorites);
+    } catch (error) {
+      console.error("Get favorites error:", error);
+      res.status(500).json({ error: "즐겨찾기를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Add favorite
+  app.post("/api/favorites", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { menuName } = req.body;
+
+      if (!menuName) {
+        return res.status(400).json({ error: "메뉴 이름이 필요합니다" });
+      }
+
+      const favorite = await storage.addFavorite({
+        userId: req.session.userId,
+        menuName,
+      });
+
+      res.json(favorite);
+    } catch (error) {
+      console.error("Add favorite error:", error);
+      
+      // Handle unique constraint violation (duplicate favorite)
+      if (error instanceof Error && error.message.includes("unique")) {
+        return res.status(409).json({ error: "이미 즐겨찾기에 추가된 메뉴입니다" });
+      }
+      
+      res.status(500).json({ error: "즐겨찾기를 추가하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Remove favorite
+  app.delete("/api/favorites/:menuName", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { menuName } = req.params;
+
+      await storage.removeFavorite(req.session.userId, menuName);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Remove favorite error:", error);
+      res.status(500).json({ error: "즐겨찾기를 삭제하는 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
