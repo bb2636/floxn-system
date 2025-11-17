@@ -87,6 +87,8 @@ export default function ComprehensiveProgress() {
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [showReportSheet, setShowReportSheet] = useState(false);
   const [showPdfOptionsDialog, setShowPdfOptionsDialog] = useState(false);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailAddress, setEmailAddress] = useState("");
   const [detailTab, setDetailTab] = useState("기본정보");
   const [, setLocation] = useLocation();
   
@@ -2011,28 +2013,48 @@ export default function ComprehensiveProgress() {
                   <span>사고자: {selectedCase.clientName || "-"}</span>
                   <span>민원자: {selectedCase.victimName || selectedCase.clientName || "-"}</span>
                 </div>
-                <button
-                  onClick={() => {
-                    toast({
-                      title: "준비 중",
-                      description: "수정요청 기능은 준비 중입니다.",
-                    });
-                  }}
-                  style={{
-                    padding: "8px 20px",
-                    background: "#008FED",
-                    borderRadius: "6px",
-                    border: "none",
-                    fontFamily: "Pretendard",
-                    fontWeight: 500,
-                    fontSize: "14px",
-                    color: "#FFFFFF",
-                    cursor: "pointer",
-                  }}
-                  data-testid="button-request-revision"
-                >
-                  수정요청
-                </button>
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={() => {
+                      toast({
+                        title: "준비 중",
+                        description: "수정요청 기능은 준비 중입니다.",
+                      });
+                    }}
+                    style={{
+                      padding: "8px 20px",
+                      background: "#008FED",
+                      borderRadius: "6px",
+                      border: "none",
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      color: "#FFFFFF",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-request-revision"
+                  >
+                    수정요청
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowEmailDialog(true)}
+                    style={{
+                      padding: "8px 20px",
+                      background: "rgba(12, 12, 12, 0.05)",
+                      borderRadius: "6px",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                      cursor: "pointer",
+                    }}
+                    data-testid="button-send-email"
+                  >
+                    메일전송 ▷
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -2698,6 +2720,125 @@ export default function ComprehensiveProgress() {
               data-testid="button-download-pdf"
             >
               다운 ↓
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* 이메일 전송 Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent
+          style={{
+            maxWidth: "457px",
+            background: "rgba(253, 253, 253, 0.95)",
+            backdropFilter: "blur(17px)",
+            border: "none",
+            borderRadius: "12px",
+            padding: "32px",
+          }}
+        >
+          {/* 제목 */}
+          <div style={{
+            fontFamily: "Pretendard",
+            fontWeight: 600,
+            fontSize: "18px",
+            color: "#0C0C0C",
+            textAlign: "center",
+            marginBottom: "24px",
+          }}>
+            메일전송
+          </div>
+          
+          {/* 이메일 입력 */}
+          <div style={{ marginBottom: "32px" }}>
+            <label style={{
+              display: "block",
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: 500,
+              color: "rgba(12, 12, 12, 0.6)",
+              marginBottom: "8px",
+            }}>
+              받는 이메일 주소
+            </label>
+            <input
+              type="email"
+              value={emailAddress}
+              onChange={(e) => setEmailAddress(e.target.value)}
+              placeholder="example@email.com"
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                borderRadius: "8px",
+                border: "1px solid rgba(12, 12, 12, 0.15)",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                color: "#0C0C0C",
+                outline: "none",
+              }}
+              data-testid="input-email"
+            />
+          </div>
+          
+          {/* 버튼 */}
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={() => {
+                setShowEmailDialog(false);
+                setEmailAddress("");
+              }}
+              style={{
+                flex: 1,
+                padding: "14px",
+                background: "rgba(12, 12, 12, 0.05)",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontWeight: 500,
+                fontSize: "14px",
+                color: "rgba(12, 12, 12, 0.6)",
+                cursor: "pointer",
+              }}
+              data-testid="button-cancel-email"
+            >
+              취소
+            </button>
+            <button
+              onClick={() => {
+                if (!emailAddress || !emailAddress.includes("@")) {
+                  toast({
+                    title: "입력 오류",
+                    description: "올바른 이메일 주소를 입력해주세요.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                
+                // 이메일 전송 로직 (API 호출)
+                toast({
+                  title: "전송 중",
+                  description: "보고서를 이메일로 전송하고 있습니다...",
+                });
+                
+                // TODO: 실제 API 호출 구현
+                setShowEmailDialog(false);
+                setEmailAddress("");
+              }}
+              style={{
+                flex: 1,
+                padding: "14px",
+                background: "#008FED",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "14px",
+                color: "#FFFFFF",
+                cursor: "pointer",
+              }}
+              data-testid="button-send-email-confirm"
+            >
+              전송
             </button>
           </div>
         </DialogContent>
