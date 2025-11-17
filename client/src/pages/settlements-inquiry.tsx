@@ -450,8 +450,11 @@ export default function SettlementsInquiry() {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "max-content", minWidth: "100%", borderCollapse: "collapse" }}>
             <thead>
+              {/* FIX: 2단 헤더 구조 수정 - 첫 번째 행 */}
               <tr style={{ background: "rgba(12, 12, 12, 0.06)" }}>
+                {/* 기본 컬럼들 - rowSpan=2로 두 줄 차지 */}
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -467,6 +470,7 @@ export default function SettlementsInquiry() {
                   <Checkbox data-testid="checkbox-select-all" />
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -482,6 +486,7 @@ export default function SettlementsInquiry() {
                   접수번호
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -497,6 +502,7 @@ export default function SettlementsInquiry() {
                   보험사
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -512,6 +518,7 @@ export default function SettlementsInquiry() {
                   담당자
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -527,6 +534,7 @@ export default function SettlementsInquiry() {
                   증권번호
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -542,6 +550,7 @@ export default function SettlementsInquiry() {
                   사고번호
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -557,6 +566,7 @@ export default function SettlementsInquiry() {
                   관리자
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -572,6 +582,7 @@ export default function SettlementsInquiry() {
                   종결일
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -586,7 +597,8 @@ export default function SettlementsInquiry() {
                 >
                   공사유무
                 </th>
-                {/* 손해방지비용 */}
+                {/* FIX: 상위 헤더 - colSpan으로 하위 컬럼들을 그룹화 */}
+                {/* 손해방지비용 - colSpan=4 (견적금액, 승인금액, 차액, 수정률) */}
                 <th
                   colSpan={4}
                   style={{
@@ -603,7 +615,7 @@ export default function SettlementsInquiry() {
                 >
                   손해방지비용
                 </th>
-                {/* 대물비용 */}
+                {/* 대물비용 - colSpan=4 (견적금액, 승인금액, 차액, 수정률) */}
                 <th
                   colSpan={4}
                   style={{
@@ -620,7 +632,9 @@ export default function SettlementsInquiry() {
                 >
                   대물비용
                 </th>
+                {/* 나머지 컬럼들 - rowSpan=2로 두 줄 차지 */}
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -635,7 +649,7 @@ export default function SettlementsInquiry() {
                 >
                   수수료
                 </th>
-                {/* 협력업체 */}
+                {/* 협력업체 - colSpan=2 (지급금액, 지급일) */}
                 <th
                   colSpan={2}
                   style={{
@@ -653,6 +667,7 @@ export default function SettlementsInquiry() {
                   협력업체
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -668,6 +683,7 @@ export default function SettlementsInquiry() {
                   사용료
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -683,6 +699,7 @@ export default function SettlementsInquiry() {
                   자기부담금
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -698,6 +715,7 @@ export default function SettlementsInquiry() {
                   청구액
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -713,6 +731,7 @@ export default function SettlementsInquiry() {
                   입금은행
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -728,6 +747,7 @@ export default function SettlementsInquiry() {
                   입금액
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -743,6 +763,7 @@ export default function SettlementsInquiry() {
                   입금일
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -758,6 +779,7 @@ export default function SettlementsInquiry() {
                   계산서
                 </th>
                 <th
+                  rowSpan={2}
                   style={{
                     padding: "16px",
                     fontFamily: "Pretendard",
@@ -772,10 +794,10 @@ export default function SettlementsInquiry() {
                   관리
                 </th>
               </tr>
-              {/* Sub-header row */}
+              
+              {/* FIX: 2단 헤더 구조 수정 - 두 번째 행 (하위 헤더만) */}
               <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
-                <th colSpan={9} style={{ display: "none" }}></th>
-                {/* 손해방지비용 sub-columns */}
+                {/* 손해방지비용 하위 컬럼 (견적금액, 승인금액, 차액, 수정률) */}
                 <th
                   style={{
                     padding: "12px 16px",
@@ -836,7 +858,7 @@ export default function SettlementsInquiry() {
                 >
                   수정률
                 </th>
-                {/* 대물비용 sub-columns */}
+                {/* 대물비용 하위 컬럼 (견적금액, 승인금액, 차액, 수정률) */}
                 <th
                   style={{
                     padding: "12px 16px",
@@ -897,8 +919,7 @@ export default function SettlementsInquiry() {
                 >
                   수정률
                 </th>
-                <th colSpan={1} style={{ display: "none" }}></th>
-                {/* 협력업체 sub-columns */}
+                {/* 협력업체 하위 컬럼 (지급금액, 지급일) */}
                 <th
                   style={{
                     padding: "12px 16px",
@@ -929,7 +950,6 @@ export default function SettlementsInquiry() {
                 >
                   지급일
                 </th>
-                <th colSpan={7} style={{ display: "none" }}></th>
               </tr>
             </thead>
             <tbody>
