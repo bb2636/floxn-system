@@ -2131,6 +2131,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notices routes
+  // Get all notices
+  app.get("/api/notices", async (req, res) => {
+    try {
+      const allNotices = await storage.getAllNotices();
+      res.json(allNotices);
+    } catch (error) {
+      console.error("Get notices error:", error);
+      res.status(500).json({ error: "공지사항을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Create notice (admin only)
+  app.post("/api/notices", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check if user is admin
+    const user = await storage.getUser(req.session.userId);
+    if (!user || user.role !== "관리자") {
+      return res.status(403).json({ error: "관리자만 공지사항을 작성할 수 있습니다" });
+    }
+
+    try {
+      const { title, content } = req.body;
+
+      if (!title || !content) {
+        return res.status(400).json({ error: "제목과 내용을 입력해주세요" });
+      }
+
+      const notice = await storage.createNotice({
+        title,
+        content,
+        authorId: req.session.userId,
+      });
+
+      res.json(notice);
+    } catch (error) {
+      console.error("Create notice error:", error);
+      res.status(500).json({ error: "공지사항을 등록하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Update notice (admin only)
+  app.patch("/api/notices/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check if user is admin
+    const user = await storage.getUser(req.session.userId);
+    if (!user || user.role !== "관리자") {
+      return res.status(403).json({ error: "관리자만 공지사항을 수정할 수 있습니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      const { title, content } = req.body;
+
+      if (!title || !content) {
+        return res.status(400).json({ error: "제목과 내용을 입력해주세요" });
+      }
+
+      const updated = await storage.updateNotice(id, { title, content });
+
+      if (!updated) {
+        return res.status(404).json({ error: "공지사항을 찾을 수 없습니다" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Update notice error:", error);
+      res.status(500).json({ error: "공지사항을 수정하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Delete notice (admin only)
+  app.delete("/api/notices/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check if user is admin
+    const user = await storage.getUser(req.session.userId);
+    if (!user || user.role !== "관리자") {
+      return res.status(403).json({ error: "관리자만 공지사항을 삭제할 수 있습니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      await storage.deleteNotice(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete notice error:", error);
+      res.status(500).json({ error: "공지사항을 삭제하는 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -5,7 +5,7 @@ import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer } from 
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { User, VALID_ROLES, type ExcelData, type Inquiry, type MasterData, type InsertMasterData } from "@shared/schema";
+import { User, VALID_ROLES, type ExcelData, type Inquiry, type MasterData, type InsertMasterData, type Notice } from "@shared/schema";
 import {
   Select,
   SelectContent,
@@ -299,6 +299,11 @@ export default function AdminSettings() {
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
   const [replyTitle, setReplyTitle] = useState("");
   const [replyContent, setReplyContent] = useState("");
+  
+  // Notice states
+  const [showAddNoticeModal, setShowAddNoticeModal] = useState(false);
+  const [noticeTitle, setNoticeTitle] = useState("");
+  const [noticeContent, setNoticeContent] = useState("");
   const [createAccountForm, setCreateAccountForm] = useState({
     role: "보험사",
     name: "",
@@ -542,6 +547,36 @@ export default function AdminSettings() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/inquiries"] });
+    },
+  });
+
+  // Fetch notices
+  const { data: notices = [], isLoading: noticesLoading } = useQuery<Notice[]>({
+    queryKey: ["/api/notices"],
+    enabled: !!user && activeMenu === "공지사항 관리",
+  });
+
+  // Notice mutations
+  const createNoticeMutation = useMutation({
+    mutationFn: async (data: { title: string; content: string }) => {
+      return await apiRequest("POST", "/api/notices", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/notices"] });
+      setShowAddNoticeModal(false);
+      setNoticeTitle("");
+      setNoticeContent("");
+      toast({
+        title: "공지사항 등록 완료",
+        description: "공지사항이 등록되었습니다.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "등록 실패",
+        description: error.message || "공지사항을 등록하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -1500,6 +1535,7 @@ export default function AdminSettings() {
                   </div>
                 </div>
                 <button
+                  onClick={() => setShowAddNoticeModal(true)}
                   className="px-6 py-3"
                   style={{
                     background: "#008FED",
@@ -1538,7 +1574,7 @@ export default function AdminSettings() {
                     color: "#008FED",
                   }}
                 >
-                  1000
+                  {notices.length}
                 </span>
               </div>
 
@@ -1633,93 +1669,124 @@ export default function AdminSettings() {
                     </tr>
                   </thead>
                   <tbody>
-                    {[...Array(7)].map((_, index) => (
-                      <tr
-                        key={index}
-                        className="hover:bg-gray-50 cursor-pointer"
-                        style={{
-                          borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                        data-testid={`row-notice-${index}`}
-                      >
-                        <td
-                          className="px-4 py-4"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#0C0C0C",
-                          }}
-                        >
-                          [긴급알림] 시스템 점검 결과 안내
-                        </td>
-                        <td
-                          className="px-4 py-4"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            fontWeight: 400,
-                            color: "#686A6E",
-                            maxWidth: "200px",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          이 곳에 내용이 들어갑니다
-                        </td>
-                        <td
-                          className="px-4 py-4"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            fontWeight: 400,
-                            color: "#0C0C0C",
-                          }}
-                        >
-                          2025-00-00
-                        </td>
-                        <td
-                          className="px-4 py-4"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            fontWeight: 400,
-                            color: "#686A6E",
-                          }}
-                        >
-                          -
-                        </td>
-                        <td
-                          className="px-4 py-4"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            fontWeight: 400,
-                            color: "#0C0C0C",
-                          }}
-                        >
-                          김현석
-                        </td>
-                        <td className="px-4 py-4">
-                          <button
-                            className="px-4 py-2"
-                            style={{
-                              background: "rgba(0, 143, 237, 0.1)",
-                              borderRadius: "6px",
-                              fontFamily: "Pretendard",
-                              fontSize: "13px",
-                              fontWeight: 500,
-                              letterSpacing: "-0.01em",
-                              color: "#008FED",
-                            }}
-                            data-testid={`button-notice-view-${index}`}
-                          >
-                            보기
-                          </button>
+                    {noticesLoading ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center">
+                          <div className="text-sm text-gray-500">로딩 중...</div>
                         </td>
                       </tr>
-                    ))}
+                    ) : notices.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-8 text-center">
+                          <div className="text-sm text-gray-500">등록된 공지사항이 없습니다</div>
+                        </td>
+                      </tr>
+                    ) : (
+                      notices.map((notice, index) => {
+                        const author = allUsers.find(u => u.id === notice.authorId);
+                        const createdDate = new Date(notice.createdAt).toLocaleDateString('ko-KR', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit'
+                        }).replace(/\. /g, '-').replace('.', '');
+                        
+                        const updatedDate = notice.updatedAt && new Date(notice.createdAt).getTime() !== new Date(notice.updatedAt).getTime()
+                          ? new Date(notice.updatedAt).toLocaleDateString('ko-KR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit'
+                            }).replace(/\. /g, '-').replace('.', '')
+                          : '-';
+
+                        return (
+                          <tr
+                            key={notice.id}
+                            className="hover:bg-gray-50 cursor-pointer"
+                            style={{
+                              borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                            }}
+                            data-testid={`row-notice-${index}`}
+                          >
+                            <td
+                              className="px-4 py-4"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 500,
+                                color: "#0C0C0C",
+                              }}
+                            >
+                              {notice.title}
+                            </td>
+                            <td
+                              className="px-4 py-4"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "#686A6E",
+                                maxWidth: "200px",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                              }}
+                            >
+                              {notice.content.substring(0, 30)}...
+                            </td>
+                            <td
+                              className="px-4 py-4"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "#0C0C0C",
+                              }}
+                            >
+                              {createdDate}
+                            </td>
+                            <td
+                              className="px-4 py-4"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "#686A6E",
+                              }}
+                            >
+                              {updatedDate}
+                            </td>
+                            <td
+                              className="px-4 py-4"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "#0C0C0C",
+                              }}
+                            >
+                              {author?.name || "-"}
+                            </td>
+                            <td className="px-4 py-4">
+                              <button
+                                className="px-4 py-2"
+                                style={{
+                                  background: "rgba(0, 143, 237, 0.1)",
+                                  borderRadius: "6px",
+                                  fontFamily: "Pretendard",
+                                  fontSize: "13px",
+                                  fontWeight: 500,
+                                  letterSpacing: "-0.01em",
+                                  color: "#008FED",
+                                }}
+                                data-testid={`button-notice-view-${index}`}
+                              >
+                                보기
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -6868,6 +6935,180 @@ export default function AdminSettings() {
           </div>
         </>
       )}
+        </>
+      )}
+
+      {/* Add Notice Modal */}
+      {showAddNoticeModal && (
+        <>
+          {/* Modal Overlay */}
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => {
+              setShowAddNoticeModal(false);
+              setNoticeTitle("");
+              setNoticeContent("");
+            }}
+            data-testid="modal-overlay-add-notice"
+          />
+
+          {/* Modal Panel */}
+          <div
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50"
+            style={{
+              width: "420px",
+              background: "#FDFDFD",
+              borderRadius: "12px",
+              padding: "24px",
+            }}
+            data-testid="modal-add-notice"
+          >
+            {/* Title */}
+            <h2
+              className="mb-6"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "20px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+              }}
+            >
+              공지사항 추가
+            </h2>
+
+            {/* Title Input */}
+            <div className="mb-4">
+              <label
+                className="block mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#0C0C0C",
+                }}
+              >
+                제목
+              </label>
+              <input
+                type="text"
+                value={noticeTitle}
+                onChange={(e) => setNoticeTitle(e.target.value)}
+                placeholder="제목을 작성하세요"
+                className="w-full px-4 py-3"
+                style={{
+                  background: "#FDFDFD",
+                  border: "2px solid rgba(12, 12, 12, 0.08)",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  color: "#0C0C0C",
+                }}
+                data-testid="input-notice-title"
+              />
+            </div>
+
+            {/* Content Input */}
+            <div className="mb-2">
+              <label
+                className="block mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#0C0C0C",
+                }}
+              >
+                내용
+              </label>
+              <div className="relative">
+                <textarea
+                  value={noticeContent}
+                  onChange={(e) => {
+                    if (e.target.value.length <= 1000) {
+                      setNoticeContent(e.target.value);
+                    }
+                  }}
+                  placeholder="내용을 작성하세요"
+                  rows={10}
+                  className="w-full px-4 py-3 resize-none"
+                  style={{
+                    background: "#FDFDFD",
+                    border: "2px solid rgba(12, 12, 12, 0.08)",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: "#0C0C0C",
+                  }}
+                  data-testid="textarea-notice-content"
+                />
+                <div
+                  className="absolute bottom-3 right-3"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "12px",
+                    fontWeight: 400,
+                    color: "#686A6E",
+                  }}
+                >
+                  {noticeContent.length}/1000
+                </div>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddNoticeModal(false);
+                  setNoticeTitle("");
+                  setNoticeContent("");
+                }}
+                className="flex-1 py-3"
+                style={{
+                  background: "#F5F5F5",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#686A6E",
+                }}
+                data-testid="button-cancel-notice"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  if (!noticeTitle.trim() || !noticeContent.trim()) {
+                    toast({
+                      title: "입력 오류",
+                      description: "제목과 내용을 입력해주세요.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  createNoticeMutation.mutate({
+                    title: noticeTitle.trim(),
+                    content: noticeContent.trim(),
+                  });
+                }}
+                disabled={createNoticeMutation.isPending}
+                className="flex-1 py-3"
+                style={{
+                  background: createNoticeMutation.isPending ? "#CCC" : "#008FED",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 600,
+                  color: "#FDFDFD",
+                  cursor: createNoticeMutation.isPending ? "not-allowed" : "pointer",
+                }}
+                data-testid="button-submit-notice"
+              >
+                {createNoticeMutation.isPending ? "등록 중..." : "게시"}
+              </button>
+            </div>
+          </div>
         </>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts, type UserFavorite, type InsertUserFavorite, userFavorites } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts, type UserFavorite, type InsertUserFavorite, userFavorites, type Notice, type InsertNotice, notices } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -123,6 +123,11 @@ export interface IStorage {
   getUserFavorites(userId: string): Promise<UserFavorite[]>;
   addFavorite(data: InsertUserFavorite): Promise<UserFavorite>;
   removeFavorite(userId: string, menuName: string): Promise<void>;
+  // Notice methods
+  getAllNotices(): Promise<Notice[]>;
+  createNotice(data: InsertNotice): Promise<Notice>;
+  updateNotice(id: string, data: { title: string; content: string }): Promise<Notice | null>;
+  deleteNotice(id: string): Promise<void>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -1683,6 +1688,22 @@ export class MemStorage implements IStorage {
   async removeFavorite(userId: string, menuName: string): Promise<void> {
     throw new Error("User favorites methods not implemented in MemStorage");
   }
+
+  async getAllNotices(): Promise<Notice[]> {
+    throw new Error("Notice methods not implemented in MemStorage");
+  }
+
+  async createNotice(data: InsertNotice): Promise<Notice> {
+    throw new Error("Notice methods not implemented in MemStorage");
+  }
+
+  async updateNotice(id: string, data: { title: string; content: string }): Promise<Notice | null> {
+    throw new Error("Notice methods not implemented in MemStorage");
+  }
+
+  async deleteNotice(id: string): Promise<void> {
+    throw new Error("Notice methods not implemented in MemStorage");
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -2881,6 +2902,40 @@ export class DbStorage implements IStorage {
           eq(userFavorites.menuName, menuName)
         )
       );
+  }
+
+  // Notice methods
+  async getAllNotices(): Promise<Notice[]> {
+    const allNotices = await db
+      .select()
+      .from(notices)
+      .orderBy(desc(notices.createdAt));
+    return allNotices;
+  }
+
+  async createNotice(data: InsertNotice): Promise<Notice> {
+    const [created] = await db
+      .insert(notices)
+      .values(data)
+      .returning();
+    return created;
+  }
+
+  async updateNotice(id: string, data: { title: string; content: string }): Promise<Notice | null> {
+    const [updated] = await db
+      .update(notices)
+      .set({
+        title: data.title,
+        content: data.content,
+        updatedAt: new Date(),
+      })
+      .where(eq(notices.id, id))
+      .returning();
+    return updated || null;
+  }
+
+  async deleteNotice(id: string): Promise<void> {
+    await db.delete(notices).where(eq(notices.id, id));
   }
 }
 
