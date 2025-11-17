@@ -1531,6 +1531,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get latest estimates for multiple cases (batch)
+  app.post("/api/estimates/batch/latest", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      // Validate input with Zod
+      const batchEstimatesSchema = z.object({
+        caseIds: z.array(z.string().min(1)).max(100), // Max 100 cases per request
+      });
+
+      const { caseIds } = batchEstimatesSchema.parse(req.body);
+
+      // Fetch estimates for all cases in parallel
+      const results = await Promise.all(
+        caseIds.map(async (caseId) => {
+          try {
+            const result = await storage.getLatestEstimate(caseId);
+            return {
+              caseId,
+              estimate: result?.estimate || null,
+              rows: result?.rows || [],
+            };
+          } catch (error) {
+            console.error(`Error fetching estimate for case ${caseId}:`, error);
+            return {
+              caseId,
+              estimate: null,
+              rows: [],
+              error: "견적 조회 실패",
+            };
+          }
+        })
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error("Batch get estimates error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "요청 데이터 형식이 올바르지 않습니다",
+          details: error.errors 
+        });
+      }
+      res.status(500).json({ error: "견적을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Get all estimate versions
   app.get("/api/estimates/:caseId/versions", async (req, res) => {
     if (!req.session?.userId) {

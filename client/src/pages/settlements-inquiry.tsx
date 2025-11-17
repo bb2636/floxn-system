@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { User, CaseWithLatestProgress } from "@shared/schema";
+import { User, CaseWithLatestProgress, Estimate } from "@shared/schema";
 import { Search, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,29 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+
+// 정산 테이블 행 타입
+interface SettlementRow {
+  id: string;
+  caseNumber: string;
+  insuranceCompany: string;
+  manager: string;
+  withdrawalNumber: string;
+  accidentNumber: string;
+  admin: string;
+  withdrawalDate: string;
+  constructionStatus: string;
+  // 손해방지비용
+  preventionEstimateAmount: number;
+  preventionApprovedAmount: number;
+  preventionDifference: number;
+  preventionAdjustmentRate: string;
+  // 대물비용
+  propertyEstimateAmount: number;
+  propertyApprovedAmount: number;
+  propertyDifference: number;
+  propertyAdjustmentRate: string;
+}
 
 export default function SettlementsInquiry() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,7 +48,7 @@ export default function SettlementsInquiry() {
     queryKey: ["/api/user"],
   });
 
-  const { data: cases = [], isLoading } = useQuery<CaseWithLatestProgress[]>({
+  const { data: cases = [], isLoading: casesLoading } = useQuery<CaseWithLatestProgress[]>({
     queryKey: ["/api/cases"],
   });
 
@@ -35,19 +58,145 @@ export default function SettlementsInquiry() {
 
   // Filter cases with status '청구' (claim)
   const claimCases = cases.filter(c => c.status === "청구");
+  const caseIds = claimCases.map(c => c.id);
 
-  // Map real data to table rows
-  const tableRows = claimCases.map((caseItem) => ({
-    id: caseItem.id,
-    caseNumber: caseItem.caseNumber,
-    insuranceCompany: caseItem.insuranceCompany || "-",
-    manager: caseItem.assessorId || "-", // 보험사/심사사 담당자
-    withdrawalNumber: caseItem.insurancePolicyNo || "-",
-    accidentNumber: caseItem.insuranceAccidentNo || "-",
-    admin: caseItem.assignedPartner || user.username, // 협력사 또는 관리자
-    withdrawalDate: caseItem.completionDate || caseItem.claimDate || "-",
-    constructionStatus: caseItem.recoveryType ? "유" : "무",
-  }));
+  // Fetch all estimates in a single batch request using react-query
+  const { data: estimatesData, isLoading: estimatesLoading } = useQuery({
+    queryKey: ["/api/estimates/batch/latest", caseIds],
+    queryFn: async () => {
+      if (caseIds.length === 0) return [];
+      
+      const response = await fetch("/api/estimates/batch/latest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseIds }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch estimates");
+      }
+      
+      return response.json();
+    },
+    enabled: caseIds.length > 0,
+    staleTime: 60000, // 1 minute cache
+  });
+
+  // Create a map for quick lookup
+  const estimatesMap = useMemo(() => {
+    const map = new Map();
+    if (estimatesData) {
+      for (const item of estimatesData) {
+        map.set(item.caseId, item);
+      }
+    }
+    return map;
+  }, [estimatesData]);
+
+  // Build table rows using useMemo to ensure proper reactivity
+  const tableRows = useMemo(() => {
+    if (!user) return [];
+    
+    return claimCases.map((caseItem) => {
+      const estimateData = estimatesMap.get(caseItem.id);
+      
+      // Calculate estimate total from labor and material costs
+      let estimateTotal = 0;
+      if (estimateData?.estimate?.laborCostData && estimateData?.estimate?.materialCostData) {
+        const laborData = estimateData.estimate.laborCostData as any[];
+        const materialData = estimateData.estimate.materialCostData as any[];
+        
+        const laborTotal = laborData.reduce((sum, row) => sum + (row.amount || 0), 0);
+        const materialTotal = materialData.reduce((sum, row) => sum + (row.금액 || 0), 0);
+        const baseForFees = laborTotal + materialTotal;
+        const managementFee = Math.round(baseForFees * 0.06);
+        const profit = Math.round(baseForFees * 0.15);
+        const vatBase = laborTotal + materialTotal + managementFee + profit;
+        const vat = Math.round(vatBase * 0.1);
+        estimateTotal = vatBase + vat;
+      } else {
+        // Fallback chain: try estimate's totalAmount, then case's estimateAmount
+        // Robust parsing that handles string (with commas), number, and null
+        const parseAmount = (value: string | number | null | undefined): number => {
+          if (value === null || value === undefined) return 0;
+          
+          // If already a number, return it directly (handle NaN case)
+          if (typeof value === 'number') {
+            return isNaN(value) ? 0 : value;
+          }
+          
+          // If string, remove commas and parse
+          const cleaned = String(value).replace(/,/g, '');
+          const parsed = Number(cleaned);
+          return isNaN(parsed) ? 0 : parsed;
+        };
+        
+        const storedTotal = parseAmount(estimateData?.estimate?.totalAmount);
+        const caseTotal = parseAmount(caseItem.estimateAmount);
+        estimateTotal = storedTotal > 0 ? storedTotal : caseTotal;
+      }
+
+      // Parse and validate processingTypes
+      let processingTypes: string[] = [];
+      try {
+        if (caseItem.processingTypes) {
+          const parsed = JSON.parse(caseItem.processingTypes);
+          // Validate that it's an array
+          if (Array.isArray(parsed)) {
+            // Filter to known processing types
+            processingTypes = parsed.filter(type => 
+              typeof type === 'string' && 
+              ["손해방지", "피해세대복구"].includes(type)
+            );
+          } else {
+            console.warn(`Invalid processingTypes format for case ${caseItem.id}:`, parsed);
+          }
+        }
+      } catch (error) {
+        console.error(`Error parsing processingTypes for case ${caseItem.id}:`, error);
+      }
+
+      const hasPreventionCost = processingTypes.includes("손해방지");
+      const hasPropertyCost = processingTypes.includes("피해세대복구");
+
+      // Only set amounts if we have a valid estimate total
+      const preventionEstimateAmount = (hasPreventionCost && estimateTotal > 0) ? estimateTotal : 0;
+      const preventionApprovedAmount = (hasPreventionCost && estimateTotal > 0) ? estimateTotal : 0; // TODO: Get actual approved amount
+      const preventionDifference = preventionApprovedAmount - preventionEstimateAmount;
+      const preventionAdjustmentRate = preventionEstimateAmount > 0 
+        ? ((preventionDifference / preventionEstimateAmount) * 100).toFixed(1) + "%"
+        : "-";
+
+      const propertyEstimateAmount = (hasPropertyCost && estimateTotal > 0) ? estimateTotal : 0;
+      const propertyApprovedAmount = (hasPropertyCost && estimateTotal > 0) ? estimateTotal : 0; // TODO: Get actual approved amount
+      const propertyDifference = propertyApprovedAmount - propertyEstimateAmount;
+      const propertyAdjustmentRate = propertyEstimateAmount > 0
+        ? ((propertyDifference / propertyEstimateAmount) * 100).toFixed(1) + "%"
+        : "-";
+
+      return {
+        id: caseItem.id,
+        caseNumber: caseItem.caseNumber,
+        insuranceCompany: caseItem.insuranceCompany || "-",
+        manager: caseItem.assessorId || "-",
+        withdrawalNumber: caseItem.insurancePolicyNo || "-",
+        accidentNumber: caseItem.insuranceAccidentNo || "-",
+        admin: caseItem.assignedPartner || user.username,
+        withdrawalDate: caseItem.completionDate || caseItem.claimDate || "-",
+        constructionStatus: caseItem.recoveryType ? "유" : "무",
+        preventionEstimateAmount,
+        preventionApprovedAmount,
+        preventionDifference,
+        preventionAdjustmentRate,
+        propertyEstimateAmount,
+        propertyApprovedAmount,
+        propertyDifference,
+        propertyAdjustmentRate,
+      };
+    });
+  }, [claimCases, estimatesMap, user]);
+
+  const isLoading = casesLoading || estimatesLoading;
 
   const handleReset = () => {
     setSearchQuery("");
@@ -1098,38 +1247,104 @@ export default function SettlementsInquiry() {
                   >
                     {row.constructionStatus}
                   </td>
-                  {/* 손해발생시점 data */}
-                  {[1, 2, 3, 4].map((i) => (
-                    <td
-                      key={`damage-${i}`}
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                      }}
-                    >
-                      -
-                    </td>
-                  ))}
-                  {/* 대물피해 data */}
-                  {[1, 2, 3, 4].map((i) => (
-                    <td
-                      key={`property-${i}`}
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                      }}
-                    >
-                      -
-                    </td>
-                  ))}
+                  {/* 손해방지비용 (견적금액, 승인금액, 차액, 수정률) */}
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: row.preventionEstimateAmount > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "right",
+                    }}
+                  >
+                    {row.preventionEstimateAmount > 0 ? row.preventionEstimateAmount.toLocaleString() + "원" : "-"}
+                  </td>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: row.preventionApprovedAmount > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "right",
+                    }}
+                  >
+                    {row.preventionApprovedAmount > 0 ? row.preventionApprovedAmount.toLocaleString() + "원" : "-"}
+                  </td>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: row.preventionEstimateAmount > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "right",
+                    }}
+                  >
+                    {row.preventionEstimateAmount > 0 ? row.preventionDifference.toLocaleString() + "원" : "-"}
+                  </td>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: row.preventionEstimateAmount > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    {row.preventionAdjustmentRate}
+                  </td>
+                  {/* 대물비용 (견적금액, 승인금액, 차액, 수정률) */}
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: row.propertyEstimateAmount > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "right",
+                    }}
+                  >
+                    {row.propertyEstimateAmount > 0 ? row.propertyEstimateAmount.toLocaleString() + "원" : "-"}
+                  </td>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: row.propertyApprovedAmount > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "right",
+                    }}
+                  >
+                    {row.propertyApprovedAmount > 0 ? row.propertyApprovedAmount.toLocaleString() + "원" : "-"}
+                  </td>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: row.propertyEstimateAmount > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "right",
+                    }}
+                  >
+                    {row.propertyEstimateAmount > 0 ? row.propertyDifference.toLocaleString() + "원" : "-"}
+                  </td>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: row.propertyEstimateAmount > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    {row.propertyAdjustmentRate}
+                  </td>
                   {/* 수수료 */}
                   <td
                     style={{
@@ -1143,22 +1358,31 @@ export default function SettlementsInquiry() {
                   >
                     -
                   </td>
-                  {/* 할인업체 data */}
-                  {[1, 2].map((i) => (
-                    <td
-                      key={`discount-${i}`}
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.5)",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                        textAlign: "center",
-                      }}
-                    >
-                      -
-                    </td>
-                  ))}
+                  {/* 협력업체 (지급금액, 지급일) */}
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    -
+                  </td>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    -
+                  </td>
                   {/* 서울본, 자기부담금, 환구액, 입금은행, 입금액, 입금일, 계산서, 관리 */}
                   {Array(7).fill(null).map((_, i) => (
                     <td
