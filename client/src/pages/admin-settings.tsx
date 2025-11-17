@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer } from "lucide-react";
+import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2 } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -569,8 +569,34 @@ export default function AdminSettings() {
       setNoticeTitle("");
       setNoticeContent("");
       toast({
-        title: "공지사항 등록 완료",
-        description: "공지사항이 등록되었습니다.",
+        description: (
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5" />
+            <span>공지사항이 등록되었습니다</span>
+          </div>
+        ),
+        action: (
+          <button
+            onClick={() => {}}
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "#FDFDFD",
+              padding: "0 8px",
+            }}
+          >
+            확인하기
+          </button>
+        ),
+        className: "border-none shadow-lg",
+        style: {
+          background: "#008FED",
+          color: "#FDFDFD",
+          fontFamily: "Pretendard",
+          fontSize: "14px",
+          fontWeight: 500,
+        } as React.CSSProperties,
       });
     },
     onError: (error: any) => {
