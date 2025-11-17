@@ -277,11 +277,14 @@ export default function Intake() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), caseNumber });
+      // 임시저장: 상태를 "접수중"으로 저장
+      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), caseNumber, status: "접수중" });
     },
     onSuccess: () => {
-      toast({ description: "접수가 저장되었습니다.", duration: 2000 });
+      toast({ description: "임시저장되었습니다. (상태: 접수중)", duration: 2000 });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      // 임시저장 성공 후 localStorage에서 임시 데이터 삭제
+      localStorage.removeItem('intakeFormDraft');
     },
     onError: (error: Error) => {
       toast({ description: error.message, variant: "destructive" });
@@ -290,14 +293,17 @@ export default function Intake() {
 
   const submitMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), caseNumber, status: "제출" });
+      // 접수완료: 상태를 "접수완료"로 저장
+      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), caseNumber, status: "접수완료" });
     },
     onSuccess: () => {
       toast({ 
-        description: "접수가 완료되었습니다.",
+        description: "접수가 완료되었습니다. (상태: 접수완료)",
         duration: 2000,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      // 접수완료 성공 후 localStorage에서 임시 데이터 삭제
+      localStorage.removeItem('intakeFormDraft');
       setTimeout(() => {
         setLocation("/dashboard");
       }, 1000);
@@ -347,29 +353,10 @@ export default function Intake() {
     });
   };
 
-  // 저장 - localStorage에 임시 저장
+  // 저장 - 서버에 "접수중" 상태로 저장
   const handleSave = () => {
-    try {
-      localStorage.setItem('intakeFormDraft', JSON.stringify({
-        formData,
-        caseNumber,
-        sameAsPolicyHolder,
-        damagePreventionCost,
-        victimIncidentAssistance,
-        selectedPartner,
-        additionalVictims,
-        timestamp: new Date().toISOString(),
-      }));
-      toast({
-        description: "입력한 내용이 저장되었습니다.",
-        duration: 2000,
-      });
-    } catch (error) {
-      toast({
-        description: "저장 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
-    }
+    // saveMutation을 호출하여 서버에 저장 (상태: 접수중)
+    saveMutation.mutate(formData);
   };
 
   // 초기화
