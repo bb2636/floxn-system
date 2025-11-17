@@ -292,7 +292,7 @@ export default function SettlementAction() {
                       minWidth: "80px",
                     }}
                   >
-                    심사
+                    심사사
                   </th>
                   <th
                     style={{
