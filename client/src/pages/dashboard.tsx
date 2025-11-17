@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User, Case } from "@shared/schema";
+import { User, Case, type UserFavorite } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -22,11 +22,6 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'reception' | 'pending' | 'insurance' | 'partner'>('reception');
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("홈");
-  const [favorites, setFavorites] = useState([
-    { name: "홈", icon: <Home className="w-4 h-4" /> },
-    { name: "종합진행관리", icon: <Star className="w-4 h-4" /> },
-    { name: "관리자 설정", icon: <Star className="w-4 h-4" /> },
-  ]);
   
   const [periodType, setPeriodType] = useState<PeriodType>('thisMonth');
   const [isPeriodSheetOpen, setIsPeriodSheetOpen] = useState(false);
@@ -57,6 +52,28 @@ export default function Dashboard() {
   const { data: allCases, isLoading: casesLoading } = useQuery<Case[]>({
     queryKey: ["/api/cases"],
     enabled: !!user,
+  });
+
+  // Fetch user favorites
+  const { data: userFavorites = [] } = useQuery<UserFavorite[]>({
+    queryKey: ["/api/favorites"],
+    enabled: !!user,
+  });
+
+  const removeFavoriteMutation = useMutation({
+    mutationFn: async (menuName: string) => {
+      await apiRequest("DELETE", `/api/favorites/${encodeURIComponent(menuName)}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+    },
+    onError: () => {
+      toast({
+        title: "즐겨찾기 해제 실패",
+        description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    },
   });
 
   const logoutMutation = useMutation({
@@ -247,12 +264,54 @@ export default function Dashboard() {
     { title: "서류 양식 요청", status: "답변완료" },
   ];
 
-  const handleRemoveFavorite = (favoriteName: string) => {
-    setFavorites(favorites.filter(fav => fav.name !== favoriteName));
+  const handleRemoveFavorite = (menuName: string) => {
+    removeFavoriteMutation.mutate(menuName);
     toast({
       title: "즐겨찾기 해제",
-      description: `"${favoriteName}"이(가) 즐겨찾기에서 제거되었습니다.`,
+      description: `"${menuName}"이(가) 즐겨찾기에서 제거되었습니다.`,
     });
+  };
+
+  const getMenuIcon = (menuName: string) => {
+    switch (menuName) {
+      case "홈":
+        return <Home className="w-4 h-4" />;
+      case "접수하기":
+        return <CalendarPlus className="w-4 h-4" />;
+      case "현장조사":
+        return <AlertCircle className="w-4 h-4" />;
+      case "종합진행관리":
+        return <Building2 className="w-4 h-4" />;
+      case "통계 및 정산":
+        return <TrendingUp className="w-4 h-4" />;
+      case "관리자 설정":
+        return <Star className="w-4 h-4" />;
+      default:
+        return <Star className="w-4 h-4" />;
+    }
+  };
+
+  const handleFavoriteClick = (menuName: string) => {
+    switch (menuName) {
+      case "홈":
+        setLocation("/dashboard");
+        break;
+      case "접수하기":
+        setLocation("/intake");
+        break;
+      case "현장조사":
+        setLocation("/field-survey/management");
+        break;
+      case "종합진행관리":
+        setLocation("/comprehensive-progress");
+        break;
+      case "통계 및 정산":
+        setLocation("/statistics");
+        break;
+      case "관리자 설정":
+        setLocation("/admin-settings");
+        break;
+    }
   };
 
 
@@ -2121,31 +2180,54 @@ export default function Dashboard() {
             </div>
             
             <div className="pb-4">
-              {favorites.map((item, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center justify-between px-5 py-3"
-                >
-                  <span 
+              {userFavorites.length === 0 ? (
+                <div className="px-5 py-8 text-center">
+                  <span
                     style={{
                       fontFamily: 'Pretendard',
-                      fontSize: '16px',
+                      fontSize: '14px',
                       fontWeight: 400,
                       letterSpacing: '-0.02em',
-                      color: 'rgba(12, 12, 12, 0.9)',
+                      color: 'rgba(12, 12, 12, 0.4)',
                     }}
                   >
-                    {item.name}
+                    즐겨찾기한 메뉴가 없습니다
                   </span>
-                  <button
-                    onClick={() => handleRemoveFavorite(item.name)}
-                    className="cursor-pointer transition-opacity hover:opacity-70"
-                    data-testid={`favorite-star-${item.name}`}
-                  >
-                    <Star className="w-[18px] h-[18px] fill-[#008FED] text-[#008FED]" />
-                  </button>
                 </div>
-              ))}
+              ) : (
+                userFavorites.map((item) => (
+                  <div 
+                    key={item.id}
+                    className="flex items-center justify-between px-5 py-3 cursor-pointer hover-elevate"
+                    onClick={() => handleFavoriteClick(item.menuName)}
+                  >
+                    <div className="flex items-center gap-3">
+                      {getMenuIcon(item.menuName)}
+                      <span 
+                        style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '16px',
+                          fontWeight: 400,
+                          letterSpacing: '-0.02em',
+                          color: 'rgba(12, 12, 12, 0.9)',
+                        }}
+                      >
+                        {item.menuName}
+                      </span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveFavorite(item.menuName);
+                      }}
+                      className="cursor-pointer transition-opacity hover:opacity-70"
+                      data-testid={`favorite-star-${item.menuName}`}
+                    >
+                      <Star className="w-[18px] h-[18px] fill-[#008FED] text-[#008FED]" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
