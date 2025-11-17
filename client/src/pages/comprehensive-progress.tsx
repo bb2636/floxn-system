@@ -868,7 +868,7 @@ export default function ComprehensiveProgress() {
                   <div onClick={(e) => e.stopPropagation()}>
                     {user?.role === "관리자" ? (
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger asChild disabled={updateStatusMutation.isPending}>
                           <div
                             style={{
                               padding: "6px 12px",
@@ -880,7 +880,8 @@ export default function ComprehensiveProgress() {
                               color: getStatusColor(caseItem.status),
                               textAlign: "center",
                               whiteSpace: "nowrap",
-                              cursor: "pointer",
+                              cursor: updateStatusMutation.isPending ? "not-allowed" : "pointer",
+                              opacity: updateStatusMutation.isPending ? 0.6 : 1,
                             }}
                             data-testid={`button-status-${caseItem.id}`}
                           >
