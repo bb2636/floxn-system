@@ -81,7 +81,7 @@ const progressFormSchema = z.object({
 
 export default function ComprehensiveProgress() {
   const [activeMenu, setActiveMenu] = useState("종합진행관리");
-  const [activeTab, setActiveTab] = useState("전체");
+  const [selectedStatus, setSelectedStatus] = useState("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
@@ -264,18 +264,18 @@ export default function ComprehensiveProgress() {
   ];
 
   // 탭 필터링
-  const filteredByTab = (cases || []).filter((caseItem) => {
-    if (activeTab === "전체") return true;
-    if (activeTab === "협력사 미배정") return !caseItem.assignedPartner;
-    if (activeTab === "심사대기") return caseItem.status === "심사대기";
-    if (activeTab === "반려") return caseItem.status === "반려";
-    if (activeTab === "2차 심사대기") return caseItem.status === "2차 심사대기";
-    if (activeTab === "승인") return caseItem.status === "승인";
+  const filteredByStatus = (cases || []).filter((caseItem) => {
+    if (selectedStatus === "전체") return true;
+    if (selectedStatus === "협력사 미배정") return !caseItem.assignedPartner;
+    if (selectedStatus === "심사대기") return caseItem.status === "심사대기";
+    if (selectedStatus === "반려") return caseItem.status === "반려";
+    if (selectedStatus === "2차 심사대기") return caseItem.status === "2차 심사대기";
+    if (selectedStatus === "승인") return caseItem.status === "승인";
     return true;
   });
 
   // 검색 필터링
-  const filteredData = filteredByTab.filter((caseItem) => {
+  const filteredData = filteredByStatus.filter((caseItem) => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     
     if (normalizedQuery === "") {
@@ -538,43 +538,31 @@ export default function ComprehensiveProgress() {
             검색
           </h2>
 
-          {/* Tabs */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "16px",
-              flexWrap: "wrap",
-            }}
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab.name}
-                onClick={() => setActiveTab(tab.name)}
+          {/* Status Filter Dropdown */}
+          <div style={{ marginBottom: "16px" }}>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger 
+                className="w-[180px] h-[44px]"
                 style={{
-                  padding: "10px 20px",
-                  background:
-                    activeTab === tab.name
-                      ? "#008FED"
-                      : "rgba(12, 12, 12, 0.04)",
-                  borderRadius: "6px",
-                  border: "none",
                   fontFamily: "Pretendard",
-                  fontWeight: activeTab === tab.name ? 600 : 500,
                   fontSize: "14px",
-                  lineHeight: "128%",
+                  fontWeight: 400,
                   letterSpacing: "-0.02em",
-                  color:
-                    activeTab === tab.name ? "#FFFFFF" : "rgba(12, 12, 12, 0.5)",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
+                  border: "1px solid rgba(12, 12, 12, 0.1)",
+                  borderRadius: "6px",
                 }}
-                data-testid={`tab-${tab.key}`}
+                data-testid="select-status-filter"
               >
-                {tab.name}
-              </button>
-            ))}
+                <SelectValue placeholder="진행상태 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {tabs.map((tab) => (
+                  <SelectItem key={tab.key} value={tab.name} data-testid={`option-${tab.key}`}>
+                    {tab.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Search Input */}
