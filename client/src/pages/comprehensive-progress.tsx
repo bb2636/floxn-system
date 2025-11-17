@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 // 진행상태 목록
 const CASE_STATUSES = [
@@ -84,6 +85,7 @@ export default function ComprehensiveProgress() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
+  const [showReportSheet, setShowReportSheet] = useState(false);
   const [detailTab, setDetailTab] = useState("기본정보");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -1428,14 +1430,9 @@ export default function ComprehensiveProgress() {
                           </div>
                         </div>
 
-                        {/* 보고서 생성 버튼 */}
+                        {/* 보고서 열람 버튼 */}
                         <button
-                          onClick={() => {
-                            toast({
-                              title: "준비 중",
-                              description: "보고서 생성 기능은 준비 중입니다.",
-                            });
-                          }}
+                          onClick={() => setShowReportSheet(true)}
                           style={{
                             width: "100%",
                             padding: "14px",
@@ -1449,9 +1446,9 @@ export default function ComprehensiveProgress() {
                             cursor: "pointer",
                             marginTop: "16px",
                           }}
-                          data-testid="button-generate-report"
+                          data-testid="button-view-report"
                         >
-                          보고서 생성
+                          보고서 열람
                         </button>
                       </>
                     )}
@@ -1879,6 +1876,505 @@ export default function ComprehensiveProgress() {
         </DialogContent>
       </Dialog>
 
+      {/* 현장출동 보고서 Sheet */}
+      <Sheet open={showReportSheet} onOpenChange={setShowReportSheet}>
+        <SheetContent
+          side="right"
+          style={{
+            width: "100%",
+            maxWidth: "900px",
+            background: "rgba(253, 253, 253, 0.9)",
+            backdropFilter: "blur(17px)",
+            border: "none",
+            boxShadow: "0px 0px 60px rgba(170, 177, 194, 0.3)",
+            padding: 0,
+          }}
+        >
+          {/* 커스텀 헤더 */}
+          <div style={{
+            padding: "24px 32px",
+            borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+          }}>
+            {/* 제목 */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: "20px",
+            }}>
+              <h2 style={{
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "18px",
+                color: "#0C0C0C",
+              }}>
+                종합진행관리
+              </h2>
+              <button
+                onClick={() => setShowReportSheet(false)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "24px",
+                  color: "rgba(12, 12, 12, 0.6)",
+                  padding: "4px",
+                }}
+                data-testid="button-close-report"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* 케이스 정보 */}
+            {selectedCase && (
+              <>
+                <div style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "20px",
+                  color: "#0C0C0C",
+                  marginBottom: "12px",
+                }}>
+                  {selectedCase.insuranceCompany || "보험사"} {selectedCase.caseNumber}
+                </div>
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  color: "rgba(12, 12, 12, 0.6)",
+                  marginBottom: "16px",
+                }}>
+                  <span>접수번호: {selectedCase.insuranceAccidentNo || "-"}</span>
+                  <span>사고자: {selectedCase.clientName || "-"}</span>
+                  <span>민원자: {selectedCase.victimName || selectedCase.clientName || "-"}</span>
+                </div>
+                <button
+                  onClick={() => {
+                    toast({
+                      title: "준비 중",
+                      description: "수정요청 기능은 준비 중입니다.",
+                    });
+                  }}
+                  style={{
+                    padding: "8px 20px",
+                    background: "#008FED",
+                    borderRadius: "6px",
+                    border: "none",
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    color: "#FFFFFF",
+                    cursor: "pointer",
+                  }}
+                  data-testid="button-request-revision"
+                >
+                  수정요청
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* 보고서 내용 */}
+          <ScrollArea className="h-[calc(100vh-200px)]">
+            <div style={{ padding: "32px" }}>
+              {selectedCase && (
+                <div className="space-y-6">
+                  {/* 현장정보 */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}>
+                        현장정보
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center">
+                        <span className="w-32" style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}>
+                          방문일시
+                        </span>
+                        <span style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.visitDate && selectedCase.visitTime 
+                            ? `${selectedCase.visitDate} ${selectedCase.visitTime}` 
+                            : selectedCase.visitDate || "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-32" style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}>
+                          현장 이동 거리
+                        </span>
+                        <span style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.travelDistance ? `${selectedCase.travelDistance}km` : "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-32" style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}>
+                          출동 담당자
+                        </span>
+                        <span style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.accompaniedPerson || "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-32" style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}>
+                          출동 업장지
+                        </span>
+                        <span style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.dispatchLocation || "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-32" style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}>
+                          피보험자 주소
+                        </span>
+                        <span style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.insuredAddress || "-"}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* 사고 원인(누수원천) */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}>
+                        사고 원인(누수원천)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center">
+                        <span className="w-32" style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}>
+                          사고 발생일시
+                        </span>
+                        <span style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.accidentDate && selectedCase.accidentTime 
+                            ? `${selectedCase.accidentDate} ${selectedCase.accidentTime}` 
+                            : selectedCase.accidentDate || "-"}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-32" style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}>
+                          카테고리
+                        </span>
+                        {selectedCase.accidentCategory ? (
+                          <div className="px-3 py-1 rounded" style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            color: "#008FED",
+                            background: "rgba(0, 143, 237, 0.1)",
+                          }}>
+                            {selectedCase.accidentCategory}
+                          </div>
+                        ) : (
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>-</span>
+                        )}
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-32" style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}>
+                          원인
+                        </span>
+                        <span style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                        }}>
+                          {selectedCase.accidentCause || "-"}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* 특이사항 및 요청사항(VOC) */}
+                  {selectedCase.specialRequests && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          color: "rgba(12, 12, 12, 0.8)",
+                        }}>
+                          특이사항 및 요청사항(VOC)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="p-3 rounded" style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#0C0C0C",
+                          background: "rgba(12, 12, 12, 0.03)",
+                          whiteSpace: "pre-wrap",
+                        }}>
+                          {selectedCase.specialRequests}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* 피해자 정보 */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}>
+                        피해자 정보
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {(() => {
+                        const victims = [];
+                        
+                        if (selectedCase.victimName) {
+                          victims.push({
+                            name: selectedCase.victimName,
+                            contact: selectedCase.victimContact || "",
+                            address: selectedCase.victimAddress || "",
+                          });
+                        }
+                        
+                        if (selectedCase.additionalVictims && selectedCase.additionalVictims.trim()) {
+                          try {
+                            const additional = JSON.parse(selectedCase.additionalVictims);
+                            if (Array.isArray(additional)) {
+                              victims.push(...additional);
+                            }
+                          } catch (e) {
+                            console.error("Error parsing additional victims:", e);
+                          }
+                        }
+                        
+                        return victims.length > 0 ? (
+                          victims.map((victim: any, index: number) => (
+                            <div 
+                              key={index}
+                              className="p-3 rounded flex items-center gap-3"
+                              style={{ background: "rgba(12, 12, 12, 0.03)" }}
+                            >
+                              <div className="w-1.5 h-1.5 rounded-full" style={{ background: "#008FED" }} />
+                              <span style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 600,
+                                color: "#0C0C0C",
+                              }}>
+                                {victim.name}
+                              </span>
+                              <span style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                color: "rgba(12, 12, 12, 0.6)",
+                              }}>
+                                {victim.contact}
+                              </span>
+                              <span style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                color: "rgba(12, 12, 12, 0.6)",
+                              }}>
+                                {victim.address}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <p style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>
+                            등록된 피해자가 없습니다.
+                          </p>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+
+                  {/* 처리 유형 및 복구 방식 */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}>
+                        처리 유형 및 복구 방식
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center">
+                          <span className="w-32" style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "rgba(12, 12, 12, 0.6)",
+                          }}>
+                            처리 유형
+                          </span>
+                          <div className="flex gap-2 flex-wrap">
+                            {(() => {
+                              let types: string[] = [];
+                              
+                              if (selectedCase.processingTypes && selectedCase.processingTypes.trim()) {
+                                try {
+                                  const parsed = JSON.parse(selectedCase.processingTypes);
+                                  if (Array.isArray(parsed)) {
+                                    types = parsed;
+                                  }
+                                } catch (e) {
+                                  console.error("Error parsing processing types:", e);
+                                }
+                              }
+                              
+                              return types.length > 0 ? (
+                                types.map((type: string, index: number) => (
+                                  <div
+                                    key={index}
+                                    className="px-3 py-1 rounded"
+                                    style={{
+                                      fontFamily: "Pretendard",
+                                      fontSize: "14px",
+                                      color: "#008FED",
+                                      background: "rgba(0, 143, 237, 0.1)",
+                                    }}
+                                  >
+                                    {type}
+                                  </div>
+                                ))
+                              ) : (
+                                <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>
+                                  -
+                                </span>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                        {selectedCase.processingTypeOther && (
+                          <div className="flex items-start">
+                            <span className="w-32 pt-1" style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 500,
+                              color: "rgba(12, 12, 12, 0.6)",
+                            }}>
+                              기타 상세
+                            </span>
+                            <div className="p-3 rounded flex-1" style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              color: "#0C0C0C",
+                              background: "rgba(12, 12, 12, 0.03)",
+                              whiteSpace: "pre-wrap",
+                            }}>
+                              {selectedCase.processingTypeOther}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center">
+                        <span className="w-32" style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.6)",
+                        }}>
+                          복구 방식
+                        </span>
+                        {selectedCase.recoveryMethodType ? (
+                          <div className="px-3 py-1 rounded" style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            color: "#008FED",
+                            background: "rgba(0, 143, 237, 0.1)",
+                          }}>
+                            {selectedCase.recoveryMethodType}
+                          </div>
+                        ) : (
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>-</span>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
 
     </div>
   );
