@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User, Case, type UserFavorite } from "@shared/schema";
+import { User, Case, type UserFavorite, type Notice } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -58,6 +58,12 @@ export default function Dashboard() {
   const { data: userFavorites = [] } = useQuery<UserFavorite[]>({
     queryKey: ["/api/favorites"],
     enabled: !!user,
+  });
+
+  // Fetch notices (only for 협력사)
+  const { data: notices = [] } = useQuery<Notice[]>({
+    queryKey: ["/api/notices"],
+    enabled: !!user && user.role === "협력사",
   });
 
   const removeFavoriteMutation = useMutation({
@@ -251,12 +257,6 @@ export default function Dashboard() {
     { name: "종합진행관리", active: false },
     { name: "통계 및 정산", active: false },
     { name: "관리자 설정", active: false },
-  ];
-
-  const prohibitions = [
-    "사고·개인정보 외부 전송 금지 (메일/메신저 포함)",
-    "승인 전 임의 공사 지시 금지",
-    "정산 데이터 수기 가공 금지 (검증 절차 필수)",
   ];
 
   const inquiries = [
@@ -2016,74 +2016,81 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Prohibitions Card */}
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid #FFFFFF',
-              boxShadow: '12px 12px 50px #DBE9F5',
-              backdropFilter: 'blur(7px)',
-            }}
-          >
-            <div className="flex items-center justify-between px-5 py-6">
-              <div className="flex items-center gap-2">
-                <h3 
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: 600,
-                    letterSpacing: '-0.02em',
-                    color: '#0C0C0C',
-                  }}
-                >
-                  금지사항
-                </h3>
-                <span 
+          {/* Notices Card - Only visible for 협력사 */}
+          {user.role === "협력사" && (
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: '1px solid #FFFFFF',
+                boxShadow: '12px 12px 50px #DBE9F5',
+                backdropFilter: 'blur(7px)',
+              }}
+            >
+              <div className="flex items-center justify-between px-5 py-6">
+                <div className="flex items-center gap-2">
+                  <h3 
+                    style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '18px',
+                      fontWeight: 600,
+                      letterSpacing: '-0.02em',
+                      color: '#0C0C0C',
+                    }}
+                  >
+                    공지사항
+                  </h3>
+                </div>
+                <button
+                  className="px-3 py-2 bg-white rounded-md"
                   style={{
                     fontFamily: 'Pretendard',
                     fontSize: '15px',
-                    fontWeight: 500,
-                    letterSpacing: '-0.01em',
-                    color: '#D02B20',
-                  }}
-                >
-                  필독
-                </span>
-              </div>
-              <button
-                className="px-3 py-2 bg-white rounded-md"
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.02em',
-                  color: 'rgba(0, 143, 237, 0.8)',
-                  boxShadow: '2px 4px 30px #BDD1F0',
-                }}
-              >
-                더보기
-              </button>
-            </div>
-            
-            <div className="pb-4">
-              {prohibitions.map((item, index) => (
-                <div 
-                  key={index}
-                  className="px-5 py-3"
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '16px',
-                    fontWeight: 400,
+                    fontWeight: 600,
                     letterSpacing: '-0.02em',
-                    color: 'rgba(12, 12, 12, 0.9)',
+                    color: 'rgba(0, 143, 237, 0.8)',
+                    boxShadow: '2px 4px 30px #BDD1F0',
                   }}
                 >
-                  {item}
-                </div>
-              ))}
+                  더보기
+                </button>
+              </div>
+              
+              <div className="pb-4">
+                {notices.length === 0 ? (
+                  <div 
+                    className="px-5 py-3"
+                    style={{
+                      fontFamily: 'Pretendard',
+                      fontSize: '16px',
+                      fontWeight: 400,
+                      letterSpacing: '-0.02em',
+                      color: 'rgba(12, 12, 12, 0.5)',
+                      textAlign: 'center',
+                    }}
+                  >
+                    등록된 공지사항이 없습니다.
+                  </div>
+                ) : (
+                  notices.slice(0, 3).map((notice) => (
+                    <div 
+                      key={notice.id}
+                      className="px-5 py-3"
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        letterSpacing: '-0.02em',
+                        color: 'rgba(12, 12, 12, 0.9)',
+                      }}
+                    >
+                      {notice.title}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* 1:1 Inquiry Card */}
           <div
