@@ -287,24 +287,23 @@ export default function ComprehensiveProgress() {
     { name: "관리자 설정" },
   ];
 
-  const tabs = [
+  // 진행상태 옵션 - CASE_STATUSES와 동일하게 + 전체 옵션
+  const statusOptions = [
     { name: "전체", key: "all" },
-    { name: "협력사 미배정", key: "unassigned" },
-    { name: "심사대기", key: "pending" },
-    { name: "반려", key: "rejected" },
-    { name: "2차 심사대기", key: "pending2" },
-    { name: "승인", key: "approved" },
+    ...CASE_STATUSES.map((status) => ({ name: status, key: status })),
   ];
 
-  // 탭 필터링
+  // 진행상태 필터링
   const filteredByStatus = (cases || []).filter((caseItem) => {
     if (selectedStatus === "전체") return true;
-    if (selectedStatus === "협력사 미배정") return !caseItem.assignedPartner;
-    if (selectedStatus === "심사대기") return caseItem.status === "심사대기";
-    if (selectedStatus === "반려") return caseItem.status === "반려";
-    if (selectedStatus === "2차 심사대기") return caseItem.status === "2차 심사대기";
-    if (selectedStatus === "승인") return caseItem.status === "승인";
-    return true;
+    // 미복구는 출동비 청구로 정규화되어 저장되므로 둘 다 매칭
+    if (selectedStatus === "미복구") {
+      return caseItem.status === "미복구" || caseItem.status === "출동비 청구";
+    }
+    if (selectedStatus === "출동비 청구") {
+      return caseItem.status === "출동비 청구" || caseItem.status === "미복구";
+    }
+    return caseItem.status === selectedStatus;
   });
 
   // 검색 필터링
@@ -607,9 +606,9 @@ export default function ComprehensiveProgress() {
                 <SelectValue placeholder="진행상태 선택" />
               </SelectTrigger>
               <SelectContent>
-                {tabs.map((tab) => (
-                  <SelectItem key={tab.key} value={tab.name} data-testid={`option-${tab.key}`}>
-                    {tab.name}
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.key} value={option.name} data-testid={`option-${option.key}`}>
+                    {option.name}
                   </SelectItem>
                 ))}
               </SelectContent>
