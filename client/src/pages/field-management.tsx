@@ -1640,9 +1640,9 @@ export default function FieldManagement() {
         >
           {/* 역할별 버튼 */}
           <div className="flex gap-3">
-            {isPartner ? (
+            {isPartner && (
               <>
-                {/* 협력사: 저장 버튼 */}
+                {/* 협력사만 저장 버튼 표시 - 관리자는 읽기만 가능 */}
                 <Button
                   type="button"
                   onClick={async () => {
@@ -1687,7 +1687,6 @@ export default function FieldManagement() {
                       });
                     }
                   }}
-                  disabled={isReadOnly}
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "16px",
@@ -1702,83 +1701,6 @@ export default function FieldManagement() {
                   data-testid="button-save"
                 >
                   저장
-                </Button>
-              </>
-            ) : (
-              <>
-                {/* 관리자: 반려 + 승인 */}
-                <Button
-                  type="button"
-                  onClick={async () => {
-                    if (!selectedCaseData?.id) return;
-
-                    try {
-                      // 반려 API 호출 (구현 예정)
-                      console.log("반려 처리");
-                      toast({
-                        title: "반려 완료",
-                        description: "현장조사가 반려되었습니다.",
-                      });
-                    } catch (error) {
-                      console.error("반려 에러:", error);
-                      toast({
-                        title: "반려 실패",
-                        description: "반려 처리 중 오류가 발생했습니다.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    height: "52px",
-                    padding: "12px 32px",
-                    background: "#FFFFFF",
-                    color: "#FF4D4F",
-                    border: "1px solid #FF4D4F",
-                    borderRadius: "8px",
-                  }}
-                  data-testid="button-reject"
-                >
-                  반려
-                </Button>
-
-                <Button
-                  type="button"
-                  onClick={async () => {
-                    if (!selectedCaseData?.id) return;
-
-                    try {
-                      // 승인 API 호출 (구현 예정)
-                      console.log("승인 처리");
-                      toast({
-                        title: "승인 완료",
-                        description: "현장조사가 승인되었습니다.",
-                      });
-                    } catch (error) {
-                      console.error("승인 에러:", error);
-                      toast({
-                        title: "승인 실패",
-                        description: "승인 처리 중 오류가 발생했습니다.",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    height: "52px",
-                    padding: "12px 32px",
-                    background: "#008FED",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "8px",
-                  }}
-                  data-testid="button-approve"
-                >
-                  승인
                 </Button>
               </>
             )}
