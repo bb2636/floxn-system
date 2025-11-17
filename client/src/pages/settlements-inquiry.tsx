@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { User } from "@shared/schema";
+import { User, CaseWithLatestProgress } from "@shared/schema";
 import { Search, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,21 +25,28 @@ export default function SettlementsInquiry() {
     queryKey: ["/api/user"],
   });
 
+  const { data: cases = [], isLoading } = useQuery<CaseWithLatestProgress[]>({
+    queryKey: ["/api/cases"],
+  });
+
   if (!user) {
     return null;
   }
 
-  // Mock data for table rows - will be replaced with real data later
-  const tableRows = Array(6).fill(null).map((_, index) => ({
-    id: index,
-    caseNumber: "0000",
-    insuranceCompany: "현대해상",
-    manager: "김팀장",
-    withdrawalNumber: "0000",
-    accidentNumber: "0000",
-    admin: "김팀장",
-    withdrawalDate: "2025-00-00",
-    constructionStatus: "미수리",
+  // Filter cases with status '청구' (claim)
+  const claimCases = cases.filter(c => c.status === "청구");
+
+  // Map real data to table rows
+  const tableRows = claimCases.map((caseItem) => ({
+    id: caseItem.id,
+    caseNumber: caseItem.caseNumber,
+    insuranceCompany: caseItem.insuranceCompany || "-",
+    manager: caseItem.assessorId || "-", // 보험사/심사사 담당자
+    withdrawalNumber: caseItem.insurancePolicyNo || "-",
+    accidentNumber: caseItem.insuranceAccidentNo || "-",
+    admin: caseItem.assignedPartner || user.username, // 협력사 또는 관리자
+    withdrawalDate: caseItem.completionDate || caseItem.claimDate || "-",
+    constructionStatus: caseItem.recoveryType ? "유" : "무",
   }));
 
   const handleReset = () => {
@@ -927,7 +934,37 @@ export default function SettlementsInquiry() {
               </tr>
             </thead>
             <tbody>
-              {tableRows.map((row, index) => (
+              {isLoading ? (
+                <tr>
+                  <td
+                    colSpan={21}
+                    style={{
+                      padding: "48px",
+                      textAlign: "center",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                    }}
+                  >
+                    데이터를 불러오는 중...
+                  </td>
+                </tr>
+              ) : tableRows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={21}
+                    style={{
+                      padding: "48px",
+                      textAlign: "center",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                    }}
+                  >
+                    진행상태가 '청구'인 접수건이 없습니다.
+                  </td>
+                </tr>
+              ) : tableRows.map((row, index) => (
                 <tr
                   key={row.id}
                   style={{
