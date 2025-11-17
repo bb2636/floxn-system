@@ -798,7 +798,7 @@ export default function SettlementsInquiry() {
                     minWidth: "100px",
                   }}
                 >
-                  금액
+                  승인금액
                 </th>
                 <th
                   style={{
