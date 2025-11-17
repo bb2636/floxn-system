@@ -2128,8 +2128,11 @@ export class DbStorage implements IStorage {
   async updateCaseStatus(caseId: string, status: string): Promise<Case | null> {
     const currentDate = getKSTDate();
     
+    // 미복구 선택 시 자동으로 출동비 청구로 정규화 (모든 경로에서 일관성 보장)
+    const normalizedStatus = status === "미복구" ? "출동비 청구" : status;
+    
     const result = await db.update(cases)
-      .set({ status, updatedAt: currentDate })
+      .set({ status: normalizedStatus, updatedAt: currentDate })
       .where(eq(cases.id, caseId))
       .returning();
     

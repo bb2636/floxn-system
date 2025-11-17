@@ -343,6 +343,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "상태 값이 필요합니다" });
       }
 
+      // 허용된 상태값 검증
+      const ALLOWED_STATUSES = [
+        "접수중", "접수완료", "현장방문", "현장정보 입력", "검토중", "반려",
+        "1차승인", "발송", "복구요청", "직접복구", "미복구", "청구자료제출",
+        "출동비 청구", "청구", "입금완료", "일부입금", "정산완료", "접수취소"
+      ];
+
+      if (!ALLOWED_STATUSES.includes(status)) {
+        return res.status(400).json({ error: `허용되지 않은 상태값입니다: ${status}` });
+      }
+
+      // storage.updateCaseStatus에서 미복구→출동비 청구 정규화 처리
       const updatedCase = await storage.updateCaseStatus(caseId, status);
       
       if (!updatedCase) {

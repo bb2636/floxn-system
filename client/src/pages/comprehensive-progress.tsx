@@ -98,14 +98,24 @@ export default function ComprehensiveProgress() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ caseId, status }: { caseId: string; status: string }) => {
+      // 백엔드에서 미복구→출동비 청구 전환 처리
       return await apiRequest("PATCH", `/api/cases/${caseId}/status`, { status });
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-      toast({
-        title: "상태 변경 완료",
-        description: "진행상태가 성공적으로 변경되었습니다.",
-      });
+      
+      // 미복구 선택 시 자동 전환 알림 (백엔드에서 출동비 청구로 변경됨)
+      if (variables.status === "미복구") {
+        toast({
+          title: "상태 자동 변경",
+          description: "미복구 선택으로 인해 상태가 '출동비 청구'로 자동 변경되었습니다.",
+        });
+      } else {
+        toast({
+          title: "상태 변경 완료",
+          description: "진행상태가 성공적으로 변경되었습니다.",
+        });
+      }
     },
     onError: () => {
       toast({
