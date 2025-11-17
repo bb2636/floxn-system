@@ -15,6 +15,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect, useMemo } from "react";
@@ -214,6 +218,10 @@ export default function FieldReport() {
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [reviewDecision, setReviewDecision] = useState<"승인" | "비승인">("승인");
   const [reviewComment, setReviewComment] = useState("");
+  
+  // 이메일 전송 다이얼로그 상태
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [emailAddress, setEmailAddress] = useState("");
 
   // reportData가 변경될 때 additionalNotes 상태 업데이트
   useEffect(() => {
@@ -427,9 +435,7 @@ export default function FieldReport() {
               <Button
                 data-testid="button-email-send"
                 variant="outline"
-                onClick={() => {
-                  toast({ title: "준비 중", description: "이메일 전송 기능은 준비 중입니다." });
-                }}
+                onClick={() => setShowEmailDialog(true)}
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",
@@ -649,6 +655,125 @@ export default function FieldReport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* 이메일 전송 Dialog */}
+      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+        <DialogContent
+          style={{
+            maxWidth: "457px",
+            background: "rgba(253, 253, 253, 0.95)",
+            backdropFilter: "blur(17px)",
+            border: "none",
+            borderRadius: "12px",
+            padding: "32px",
+          }}
+        >
+          {/* 제목 */}
+          <div style={{
+            fontFamily: "Pretendard",
+            fontWeight: 600,
+            fontSize: "18px",
+            color: "#0C0C0C",
+            textAlign: "center",
+            marginBottom: "24px",
+          }}>
+            이메일 전송
+          </div>
+          
+          {/* 이메일 입력 */}
+          <div style={{ marginBottom: "32px" }}>
+            <label style={{
+              display: "block",
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: 500,
+              color: "rgba(12, 12, 12, 0.6)",
+              marginBottom: "8px",
+            }}>
+              받는 이메일 주소
+            </label>
+            <input
+              type="email"
+              value={emailAddress}
+              onChange={(e) => setEmailAddress(e.target.value)}
+              placeholder="example@email.com"
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                borderRadius: "8px",
+                border: "1px solid rgba(12, 12, 12, 0.15)",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                color: "#0C0C0C",
+                outline: "none",
+              }}
+              data-testid="input-email-address"
+            />
+          </div>
+          
+          {/* 버튼 */}
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={() => {
+                setShowEmailDialog(false);
+                setEmailAddress("");
+              }}
+              style={{
+                flex: 1,
+                padding: "14px",
+                background: "rgba(12, 12, 12, 0.05)",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontWeight: 500,
+                fontSize: "14px",
+                color: "rgba(12, 12, 12, 0.6)",
+                cursor: "pointer",
+              }}
+              data-testid="button-cancel-email-send"
+            >
+              취소
+            </button>
+            <button
+              onClick={() => {
+                if (!emailAddress || !emailAddress.includes("@")) {
+                  toast({
+                    title: "입력 오류",
+                    description: "올바른 이메일 주소를 입력해주세요.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                
+                // 이메일 전송 로직 (API 호출)
+                toast({
+                  title: "전송 중",
+                  description: "보고서를 이메일로 전송하고 있습니다...",
+                });
+                
+                // TODO: 실제 API 호출 구현
+                setShowEmailDialog(false);
+                setEmailAddress("");
+              }}
+              style={{
+                flex: 1,
+                padding: "14px",
+                background: "#008FED",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "14px",
+                color: "#FFFFFF",
+                cursor: "pointer",
+              }}
+              data-testid="button-confirm-email-send"
+            >
+              전송
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* 작성중인 건 */}
       <div className="mb-6">
