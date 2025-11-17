@@ -37,6 +37,14 @@ export default function SettlementAction() {
   // Filter cases with status '청구' (claim)
   const claimCases = cases.filter((c) => c.status === "청구");
 
+  // Helper function to format number with commas
+  const formatNumberWithComma = (value: string | number | null | undefined): string => {
+    if (!value || value === "0") return "0";
+    const numValue = typeof value === "string" ? parseFloat(value.replace(/,/g, "")) : value;
+    if (isNaN(numValue)) return "0";
+    return numValue.toLocaleString("ko-KR");
+  };
+
   // Map real case data to settlement rows
   const settlements = claimCases.map((caseItem) => ({
     id: caseItem.id,
@@ -48,7 +56,7 @@ export default function SettlementAction() {
     assessor: caseItem.assessorId || "-",
     reviewManager: caseItem.reviewedBy || "-", // 심사 담당자
     partner: caseItem.assignedPartner || "-",
-    refundAmount: caseItem.estimateAmount || "0",
+    claimAmount: formatNumberWithComma(caseItem.estimateAmount), // 청구액 (천단위 콤마)
     depositAmount: "0", // TODO: Add deposit tracking
     caseData: caseItem,
   }));
@@ -320,7 +328,7 @@ export default function SettlementAction() {
                       minWidth: "100px",
                     }}
                   >
-                    환급액
+                    청구액
                   </th>
                   <th
                     style={{
@@ -485,7 +493,7 @@ export default function SettlementAction() {
                           textAlign: "center",
                         }}
                       >
-                        {row.refundAmount}
+                        {row.claimAmount}
                       </td>
                       <td
                         style={{
@@ -686,7 +694,7 @@ export default function SettlementAction() {
                     { label: "계약자", value: selectedCase.contractor },
                     { label: "접수 담당자", value: selectedCase.partner },
                     { label: "담당자", value: selectedCase.assessor },
-                    { label: "승인금액", value: selectedCase.refundAmount },
+                    { label: "승인금액", value: selectedCase.claimAmount },
                     { label: "비급액", value: selectedCase.depositAmount },
                   ].map((item, idx) => (
                     <div key={idx}>
