@@ -147,6 +147,59 @@ export default function Dashboard() {
     return Array.from(userCaseCounts.values()).sort((a, b) => b.count - a.count);
   }, [filteredCasesByTab, user]);
 
+  // Filter cases assigned to current user for "내 작업" section
+  const myTasks = useMemo(() => {
+    if (!allCases || !user) return [];
+    
+    // Get cases assigned to current user, sorted by updatedAt (most recent first)
+    return allCases
+      .filter(c => c.assignedTo === user.username)
+      .sort((a, b) => {
+        const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+        const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+        return dateB - dateA; // Most recent first
+      })
+      .slice(0, 4); // Show only 4 most recent tasks
+  }, [allCases, user]);
+
+  // Get status color based on case status
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case '작성중':
+        return '#0C95F6'; // Blue
+      case '제출':
+        return '#4CCBA0'; // Green
+      case '검토중':
+        return '#FFA500'; // Orange
+      case '1차승인':
+        return '#9C27B0'; // Purple
+      case '완료':
+        return '#4CAF50'; // Green
+      default:
+        return '#808080'; // Gray
+    }
+  };
+
+  // Calculate time ago from updatedAt
+  const getTimeAgo = (updatedAt: string | null) => {
+    if (!updatedAt) return '업데이트 시간 없음';
+    
+    const now = new Date();
+    const updated = new Date(updatedAt);
+    const diffMs = now.getTime() - updated.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 60) {
+      return `업데이트 ${diffMins}분 전`;
+    } else if (diffHours < 24) {
+      return `업데이트 ${diffHours}시간 전`;
+    } else {
+      return `업데이트 ${diffDays}일 전`;
+    }
+  };
+
   useEffect(() => {
     if (!isLoading && !user) {
       setLocation("/");
@@ -1654,125 +1707,141 @@ export default function Dashboard() {
                   borderRadius: '12px',
                   padding: '20px',
                   gap: '24px',
+                  overflowY: 'auto',
                 }}
                 data-testid="card-case-list"
               >
-                {[
-                  { status: '작성중', statusColor: '#0C95F6', title: 'CASE #CLM-1023 · 세대 누수 (욕실)', accidentNo: '000000000', updated: '업데이트 2시간 전' },
-                  { status: '제출', statusColor: '#4CCBA0', title: 'CASE #CLM-1042 · 상가 천장 누수', accidentNo: '000000000', updated: '업데이트 2시간 전' },
-                  { status: '작성중', statusColor: '#0C95F6', title: 'CASE #CLM-1055 · 주택 화재', accidentNo: '000000000', updated: '업데이트 3시간 전' },
-                  { status: '제출', statusColor: '#4CCBA0', title: 'CASE #CLM-1067 · 사무실 누수', accidentNo: '000000000', updated: '업데이트 5시간 전' },
-                ].map((caseItem, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col gap-3"
-                    data-testid={`case-item-${index}`}
-                  >
-                    {/* Status and Time */}
-                    <div className="flex items-center justify-between">
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: '8px 10px',
-                          background: '#FDFDFD',
-                          boxShadow: '0px 0px 20px #DBE9F5',
-                          borderRadius: '8px',
-                        }}
-                        data-testid={`status-badge-${index}`}
-                      >
-                        <span
+                {myTasks.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <span
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontSize: '15px',
+                        fontWeight: 400,
+                        color: 'rgba(12, 12, 12, 0.4)',
+                      }}
+                    >
+                      맡은 작업이 없습니다
+                    </span>
+                  </div>
+                ) : (
+                  myTasks.map((caseItem, index) => (
+                    <div
+                      key={caseItem.id}
+                      className="flex flex-col gap-3 cursor-pointer hover-elevate"
+                      data-testid={`case-item-${index}`}
+                      onClick={() => {
+                        // Navigate to field survey page with this case
+                        localStorage.setItem('selectedFieldSurveyCaseId', caseItem.id);
+                        setLocation('/field-survey/management');
+                      }}
+                    >
+                      {/* Status and Time */}
+                      <div className="flex items-center justify-between">
+                        <div
                           style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '15px',
-                            fontWeight: 600,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: caseItem.statusColor,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '8px 10px',
+                            background: '#FDFDFD',
+                            boxShadow: '0px 0px 20px #DBE9F5',
+                            borderRadius: '8px',
                           }}
+                          data-testid={`status-badge-${index}`}
                         >
-                          {caseItem.status}
-                        </span>
-                      </div>
-                      <span
-                        style={{
-                          fontFamily: 'Pretendard',
-                          fontSize: '13px',
-                          fontWeight: 400,
-                          lineHeight: '128%',
-                          letterSpacing: '-0.01em',
-                          color: 'rgba(12, 12, 12, 0.4)',
-                        }}
-                      >
-                        {caseItem.updated}
-                      </span>
-                    </div>
-
-                    {/* Title and Arrow */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col gap-1.5" style={{ padding: '0 4px' }}>
-                        <span
-                          style={{
-                            fontFamily: 'Pretendard',
-                            fontSize: '16px',
-                            fontWeight: 600,
-                            lineHeight: '128%',
-                            letterSpacing: '-0.02em',
-                            color: '#0C0C0C',
-                          }}
-                        >
-                          {caseItem.title}
-                        </span>
-                        <div className="flex items-center gap-1">
                           <span
                             style={{
                               fontFamily: 'Pretendard',
-                              fontSize: '14px',
-                              fontWeight: 400,
+                              fontSize: '15px',
+                              fontWeight: 600,
                               lineHeight: '128%',
-                              letterSpacing: '-0.01em',
-                              color: 'rgba(12, 12, 12, 0.6)',
+                              letterSpacing: '-0.02em',
+                              color: getStatusColor(caseItem.status || '작성중'),
                             }}
                           >
-                            사고번호
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '14px',
-                              fontWeight: 500,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.01em',
-                              color: 'rgba(12, 12, 12, 0.6)',
-                            }}
-                          >
-                            ·
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontSize: '14px',
-                              fontWeight: 400,
-                              lineHeight: '128%',
-                              letterSpacing: '-0.01em',
-                              color: 'rgba(12, 12, 12, 0.6)',
-                            }}
-                          >
-                            {caseItem.accidentNo}
+                            {caseItem.status || '작성중'}
                           </span>
                         </div>
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '13px',
+                            fontWeight: 400,
+                            lineHeight: '128%',
+                            letterSpacing: '-0.01em',
+                            color: 'rgba(12, 12, 12, 0.4)',
+                          }}
+                        >
+                          {getTimeAgo(caseItem.updatedAt)}
+                        </span>
                       </div>
-                      <ChevronRight
-                        style={{
-                          width: '18px',
-                          height: '18px',
-                          color: 'rgba(12, 12, 12, 0.4)',
-                        }}
-                      />
+
+                      {/* Title and Arrow */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col gap-1.5" style={{ padding: '0 4px' }}>
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '16px',
+                              fontWeight: 600,
+                              lineHeight: '128%',
+                              letterSpacing: '-0.02em',
+                              color: '#0C0C0C',
+                            }}
+                          >
+                            {caseItem.caseNumber} · {caseItem.accidentLocation || '위치 미정'}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <span
+                              style={{
+                                fontFamily: 'Pretendard',
+                                fontSize: '14px',
+                                fontWeight: 400,
+                                lineHeight: '128%',
+                                letterSpacing: '-0.01em',
+                                color: 'rgba(12, 12, 12, 0.6)',
+                              }}
+                            >
+                              사고번호
+                            </span>
+                            <span
+                              style={{
+                                fontFamily: 'Pretendard',
+                                fontSize: '14px',
+                                fontWeight: 500,
+                                lineHeight: '128%',
+                                letterSpacing: '-0.01em',
+                                color: 'rgba(12, 12, 12, 0.6)',
+                              }}
+                            >
+                              ·
+                            </span>
+                            <span
+                              style={{
+                                fontFamily: 'Pretendard',
+                                fontSize: '14px',
+                                fontWeight: 400,
+                                lineHeight: '128%',
+                                letterSpacing: '-0.01em',
+                                color: 'rgba(12, 12, 12, 0.6)',
+                              }}
+                            >
+                              {caseItem.insuranceAccidentNo || '미정'}
+                            </span>
+                          </div>
+                        </div>
+                        <ChevronRight
+                          style={{
+                            width: '18px',
+                            height: '18px',
+                            color: 'rgba(12, 12, 12, 0.4)',
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
