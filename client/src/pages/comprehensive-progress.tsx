@@ -669,7 +669,9 @@ export default function ComprehensiveProgress() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px",
+              gridTemplateColumns: user?.role === "협력사" 
+                ? "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px"
+                : "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px",
               padding: "14px 20px",
               background: "rgba(12, 12, 12, 0.04)",
               borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
@@ -712,9 +714,11 @@ export default function ComprehensiveProgress() {
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               특이사항
             </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-              수정하기
-            </div>
+            {user?.role === "협력사" && (
+              <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+                수정하기
+              </div>
+            )}
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               요청
             </div>
@@ -816,7 +820,9 @@ export default function ComprehensiveProgress() {
                   onClick={() => setSelectedCaseId(caseItem.id)}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px",
+                    gridTemplateColumns: user?.role === "협력사"
+                      ? "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px"
+                      : "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px",
                     padding: "14px 20px",
                     borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                     gap: "8px",
@@ -961,29 +967,31 @@ export default function ComprehensiveProgress() {
                       />
                     )}
                   </div>
-                  <div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedCaseId(caseItem.id);
-                      }}
-                      style={{
-                        padding: "6px 12px",
-                        background: "#FFFFFF",
-                        border: "1px solid rgba(12, 12, 12, 0.1)",
-                        borderRadius: "6px",
-                        fontFamily: "Pretendard",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.7)",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                      }}
-                      data-testid={`button-edit-${caseItem.id}`}
-                    >
-                      수정하기
-                    </button>
-                  </div>
+                  {user?.role === "협력사" && (
+                    <div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedCaseId(caseItem.id);
+                        }}
+                        style={{
+                          padding: "6px 12px",
+                          background: "#FFFFFF",
+                          border: "1px solid rgba(12, 12, 12, 0.1)",
+                          borderRadius: "6px",
+                          fontFamily: "Pretendard",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.7)",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                        data-testid={`button-edit-${caseItem.id}`}
+                      >
+                        수정하기
+                      </button>
+                    </div>
+                  )}
                   <div>
                     <button
                       onClick={(e) => {
