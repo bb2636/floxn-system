@@ -134,7 +134,7 @@ export default function SettlementAction() {
             color: "#0C0C0C",
           }}
         >
-          검색하기
+          조회하기
         </h2>
 
         <div className="flex gap-3">
