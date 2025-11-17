@@ -442,7 +442,6 @@ export default function SettlementsInquiry() {
       {/* Wide Table with Horizontal Scroll */}
       <div
         style={{
-          background: "#FFFFFF",
           borderRadius: "12px",
           border: "1px solid rgba(12, 12, 12, 0.08)",
           overflow: "hidden",
@@ -451,7 +450,7 @@ export default function SettlementsInquiry() {
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "max-content", minWidth: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
+              <tr style={{ background: "rgba(12, 12, 12, 0.06)" }}>
                 <th
                   style={{
                     padding: "16px",
