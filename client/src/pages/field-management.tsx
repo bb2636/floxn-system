@@ -79,20 +79,6 @@ export default function FieldManagement() {
     queryKey: ["/api/cases"],
   });
 
-  if (!user) {
-    return null;
-  }
-
-  // 협력사만 입력 가능, 단 검토중 상태에서는 협력사도 수정 불가
-  const isPartner = user.role === "협력사";
-  const isAdmin = user.role === "관리자";
-  const isReadOnly = !isPartner || (selectedCaseData?.status === "검토중");
-
-  // 협력사는 자신에게 배당된 케이스만, 관리자는 모든 케이스 표시
-  const availableCases = isPartner 
-    ? allCases?.filter(c => c.assignedPartner === user.company) || []
-    : allCases || [];
-
   // 백엔드 데이터에서 각 단계 완료 상태 확인
   // 도면 데이터 조회
   const { data: drawingData, isLoading: isLoadingDrawing } = useQuery({
@@ -111,6 +97,27 @@ export default function FieldManagement() {
     queryKey: ["/api/estimates", selectedCase, "latest"],
     enabled: !!selectedCase,
   });
+
+  if (!user) {
+    return null;
+  }
+
+  // 협력사만 입력 가능, 단 검토중 상태에서는 협력사도 수정 불가
+  const isPartner = user.role === "협력사";
+  const isAdmin = user.role === "관리자";
+
+  // 협력사는 자신에게 배당된 케이스만, 관리자는 모든 케이스 표시
+  const availableCases = isPartner 
+    ? allCases?.filter(c => c.assignedPartner === user.company) || []
+    : allCases || [];
+
+  // 선택한 케이스 데이터 가져오기
+  const selectedCaseData = useMemo(() => {
+    if (!selectedCase || !availableCases) return null;
+    return availableCases.find(c => c.id === selectedCase) || null;
+  }, [selectedCase, availableCases]);
+
+  const isReadOnly = !isPartner || (selectedCaseData?.status === "검토중");
 
   // 각 섹션 완료 상태 체크
   // 현장입력 완료: 필수 필드 입력 완료
@@ -136,12 +143,6 @@ export default function FieldManagement() {
   // 모든 섹션이 완료되어야 제출 가능 (로딩 중이 아닐 때만 판단)
   const isCompletionDataReady = !isLoadingDrawing && !isLoadingDocuments && !isLoadingEstimate;
   const canSubmit = isCompletionDataReady && isFieldInputComplete && isDrawingComplete && isDocumentsComplete && isEstimateComplete;
-
-  // 선택한 케이스 데이터 가져오기
-  const selectedCaseData = useMemo(() => {
-    if (!selectedCase || !availableCases) return null;
-    return availableCases.find(c => c.id === selectedCase) || null;
-  }, [selectedCase, availableCases]);
 
   // 케이스 선택 관리: 첫 번째 케이스 자동 선택 & 현재 선택된 케이스가 목록에 없으면 초기화
   useEffect(() => {
