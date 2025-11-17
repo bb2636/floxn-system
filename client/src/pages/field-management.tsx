@@ -83,9 +83,10 @@ export default function FieldManagement() {
     return null;
   }
 
-  // 협력사만 입력 가능
+  // 협력사만 입력 가능, 단 검토중 상태에서는 협력사도 수정 불가
   const isPartner = user.role === "협력사";
-  const isReadOnly = !isPartner;
+  const isAdmin = user.role === "관리자";
+  const isReadOnly = !isPartner || (selectedCaseData?.status === "검토중");
 
   // 협력사는 자신에게 배당된 케이스만, 관리자는 모든 케이스 표시
   const availableCases = isPartner 
@@ -137,6 +138,29 @@ export default function FieldManagement() {
     setSelectedCase(caseId);
     localStorage.setItem('selectedFieldSurveyCaseId', caseId);
   };
+
+  // 관리자가 "현장정보 입력" 상태의 케이스를 열면 "검토중"으로 자동 변경
+  useEffect(() => {
+    const autoUpdateToReview = async () => {
+      if (!selectedCaseData || !isAdmin) return;
+      
+      // 상태가 "현장정보 입력"일 때만 "검토중"으로 변경
+      if (selectedCaseData.status === "현장정보 입력") {
+        try {
+          await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, {
+            status: "검토중",
+          });
+          
+          // 케이스 목록 새로고침
+          queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+        } catch (error) {
+          console.error("상태 자동 변경 실패:", error);
+        }
+      }
+    };
+
+    autoUpdateToReview();
+  }, [selectedCaseData?.id, selectedCaseData?.status, isAdmin]);
 
   // 선택한 케이스의 데이터를 폼에 로드
   useEffect(() => {
