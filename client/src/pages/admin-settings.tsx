@@ -489,6 +489,7 @@ export default function AdminSettings() {
     { name: "사용자 계정 관리", active: true },
     { name: "접근 권한 관리", active: false },
     { name: "1:1 문의 관리", active: false },
+    { name: "공지사항 관리", active: false },
     { name: "DB 관리", active: false },
     { name: "기준정보 관리", active: false },
   ];
