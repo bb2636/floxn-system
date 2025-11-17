@@ -518,7 +518,7 @@ export default function SettlementsInquiry() {
                     minWidth: "120px",
                   }}
                 >
-                  출금번호
+                  증권번호
                 </th>
                 <th
                   style={{
@@ -563,7 +563,7 @@ export default function SettlementsInquiry() {
                     minWidth: "120px",
                   }}
                 >
-                  출금일
+                  종결일
                 </th>
                 <th
                   style={{
@@ -580,7 +580,7 @@ export default function SettlementsInquiry() {
                 >
                   공사유무
                 </th>
-                {/* 손해발생시점 */}
+                {/* 손해방지비용 */}
                 <th
                   colSpan={4}
                   style={{
@@ -595,9 +595,9 @@ export default function SettlementsInquiry() {
                     background: "rgba(0, 143, 237, 0.05)",
                   }}
                 >
-                  손해발생시점
+                  손해방지비용
                 </th>
-                {/* 대물피해 */}
+                {/* 대물비용 */}
                 <th
                   colSpan={4}
                   style={{
@@ -612,7 +612,7 @@ export default function SettlementsInquiry() {
                     background: "rgba(0, 143, 237, 0.05)",
                   }}
                 >
-                  대물피해
+                  대물비용
                 </th>
                 <th
                   style={{
@@ -629,7 +629,7 @@ export default function SettlementsInquiry() {
                 >
                   수수료
                 </th>
-                {/* 할인업체 */}
+                {/* 협력업체 */}
                 <th
                   colSpan={2}
                   style={{
@@ -644,7 +644,7 @@ export default function SettlementsInquiry() {
                     background: "rgba(0, 143, 237, 0.05)",
                   }}
                 >
-                  할인업체
+                  협력업체
                 </th>
                 <th
                   style={{
@@ -659,7 +659,7 @@ export default function SettlementsInquiry() {
                     minWidth: "120px",
                   }}
                 >
-                  서울본
+                  사용료
                 </th>
                 <th
                   style={{
@@ -689,7 +689,7 @@ export default function SettlementsInquiry() {
                     minWidth: "100px",
                   }}
                 >
-                  환구액
+                  청구액
                 </th>
                 <th
                   style={{
@@ -769,7 +769,7 @@ export default function SettlementsInquiry() {
               {/* Sub-header row */}
               <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
                 <th colSpan={9} style={{ display: "none" }}></th>
-                {/* 손해발생시점 sub-columns */}
+                {/* 손해방지비용 sub-columns */}
                 <th
                   style={{
                     padding: "12px 16px",
@@ -798,7 +798,7 @@ export default function SettlementsInquiry() {
                     minWidth: "100px",
                   }}
                 >
-                  승인금액
+                  금액
                 </th>
                 <th
                   style={{
@@ -830,7 +830,7 @@ export default function SettlementsInquiry() {
                 >
                   수정률
                 </th>
-                {/* 대물피해 sub-columns */}
+                {/* 대물비용 sub-columns */}
                 <th
                   style={{
                     padding: "12px 16px",
@@ -892,7 +892,7 @@ export default function SettlementsInquiry() {
                   수정률
                 </th>
                 <th colSpan={1} style={{ display: "none" }}></th>
-                {/* 할인업체 sub-columns */}
+                {/* 협력업체 sub-columns */}
                 <th
                   style={{
                     padding: "12px 16px",
