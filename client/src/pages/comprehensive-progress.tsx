@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User, CaseWithLatestProgress } from "@shared/schema";
-import { Search, Cloud } from "lucide-react";
+import { User, CaseWithLatestProgress, type UserFavorite } from "@shared/schema";
+import { Search, Cloud, Star } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -96,6 +96,39 @@ export default function ComprehensiveProgress() {
 
   const { data: cases, isLoading } = useQuery<CaseWithLatestProgress[]>({
     queryKey: ["/api/cases"],
+  });
+
+  const { data: favorites = [] } = useQuery<UserFavorite[]>({
+    queryKey: ["/api/favorites"],
+    enabled: !!user,
+  });
+
+  const isFavorite = favorites.some((f) => f.menuName === "종합진행관리");
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      if (isFavorite) {
+        await apiRequest("DELETE", `/api/favorites/${encodeURIComponent("종합진행관리")}`);
+      } else {
+        await apiRequest("POST", "/api/favorites", { menuName: "종합진행관리" });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+      toast({
+        title: isFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가",
+        description: isFavorite 
+          ? "종합진행관리가 즐겨찾기에서 제거되었습니다." 
+          : "종합진행관리가 즐겨찾기에 추가되었습니다.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "즐겨찾기 처리 실패",
+        description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    },
   });
 
   const updateStatusMutation = useMutation({
@@ -503,6 +536,24 @@ export default function ComprehensiveProgress() {
           >
             종합진행관리
           </h1>
+          <button
+            type="button"
+            onClick={() => toggleFavoriteMutation.mutate()}
+            className="flex items-center justify-center hover-elevate active-elevate-2 rounded transition-all"
+            style={{
+              width: "24px",
+              height: "24px",
+              padding: "4px",
+            }}
+            data-testid="favorite-종합진행관리"
+          >
+            <Star
+              size={16}
+              fill={isFavorite ? '#FFB800' : 'none'}
+              stroke={isFavorite ? '#FFB800' : 'rgba(12, 12, 12, 0.3)'}
+              strokeWidth={2}
+            />
+          </button>
           <div
             style={{
               width: "8px",

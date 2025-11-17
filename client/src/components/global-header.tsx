@@ -1,12 +1,10 @@
-import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User, type UserFavorite } from "@shared/schema";
+import { User } from "@shared/schema";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
-import { Star } from "lucide-react";
 
 export function GlobalHeader() {
   const [, setLocation] = useLocation();
@@ -16,33 +14,6 @@ export function GlobalHeader() {
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
-  });
-
-  const { data: favorites = [] } = useQuery<UserFavorite[]>({
-    queryKey: ["/api/favorites"],
-    enabled: !!user,
-  });
-
-  const favoriteMenuNames = favorites.map((f) => f.menuName);
-
-  const toggleFavoriteMutation = useMutation({
-    mutationFn: async ({ menuName, isFavorite }: { menuName: string; isFavorite: boolean }) => {
-      if (isFavorite) {
-        await apiRequest("DELETE", `/api/favorites/${encodeURIComponent(menuName)}`);
-      } else {
-        await apiRequest("POST", "/api/favorites", { menuName });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
-    },
-    onError: () => {
-      toast({
-        title: "즐겨찾기 처리 실패",
-        description: "다시 시도해주세요.",
-        variant: "destructive",
-      });
-    },
   });
 
   const logoutMutation = useMutation({
@@ -183,60 +154,37 @@ export function GlobalHeader() {
         {/* Navigation Menu */}
         <div className="flex items-center gap-6 flex-1 px-6">
           {menuItems.map((item) => {
-            const isFavorite = favoriteMenuNames.includes(item.name);
-            
             return (
-              <div key={item.name} className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (item.name === "홈") {
-                      setLocation("/dashboard");
-                    } else if (item.name === "접수하기") {
-                      setLocation("/intake");
-                    } else if (item.name === "현장조사") {
-                      setLocation("/field-survey/management");
-                    } else if (item.name === "종합진행관리") {
-                      setLocation("/comprehensive-progress");
-                    } else if (item.name === "관리자 설정") {
-                      setLocation("/admin-settings");
-                    } else if (item.name === "통계 및 정산") {
-                      setLocation("/statistics");
-                    }
-                  }}
-                  className="px-6 py-3 rounded-lg transition-colors"
-                  style={{
-                    fontFamily: 'Pretendard',
-                    fontSize: '18px',
-                    fontWeight: activeMenu === item.name ? 600 : 500,
-                    letterSpacing: '-0.02em',
-                    color: activeMenu === item.name ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
-                  }}
-                  data-testid={`menu-${item.name}`}
-                >
-                  {item.name}
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFavoriteMutation.mutate({ menuName: item.name, isFavorite });
-                  }}
-                  className="flex items-center justify-center hover-elevate active-elevate-2 rounded transition-all"
-                  style={{
-                    width: '24px',
-                    height: '24px',
-                  }}
-                  data-testid={`favorite-${item.name}`}
-                >
-                  <Star
-                    size={16}
-                    fill={isFavorite ? '#FFB800' : 'none'}
-                    stroke={isFavorite ? '#FFB800' : 'rgba(12, 12, 12, 0.3)'}
-                    strokeWidth={2}
-                  />
-                </button>
-              </div>
+              <button
+                key={item.name}
+                type="button"
+                onClick={() => {
+                  if (item.name === "홈") {
+                    setLocation("/dashboard");
+                  } else if (item.name === "접수하기") {
+                    setLocation("/intake");
+                  } else if (item.name === "현장조사") {
+                    setLocation("/field-survey/management");
+                  } else if (item.name === "종합진행관리") {
+                    setLocation("/comprehensive-progress");
+                  } else if (item.name === "관리자 설정") {
+                    setLocation("/admin-settings");
+                  } else if (item.name === "통계 및 정산") {
+                    setLocation("/statistics");
+                  }
+                }}
+                className="px-6 py-3 rounded-lg transition-colors"
+                style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '18px',
+                  fontWeight: activeMenu === item.name ? 600 : 500,
+                  letterSpacing: '-0.02em',
+                  color: activeMenu === item.name ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+                }}
+                data-testid={`menu-${item.name}`}
+              >
+                {item.name}
+              </button>
             );
           })}
         </div>
