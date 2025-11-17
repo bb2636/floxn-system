@@ -93,19 +93,49 @@ export default function FieldManagement() {
     ? allCases?.filter(c => c.assignedPartner === user.company) || []
     : allCases || [];
 
+  // 백엔드 데이터에서 각 단계 완료 상태 확인
+  // 도면 데이터 조회
+  const { data: drawingData, isLoading: isLoadingDrawing } = useQuery({
+    queryKey: ["/api/drawings", "case", selectedCase],
+    enabled: !!selectedCase,
+  });
+
+  // 문서 데이터 조회
+  const { data: documentsData, isLoading: isLoadingDocuments } = useQuery({
+    queryKey: ["/api/documents/case", selectedCase],
+    enabled: !!selectedCase,
+  });
+
+  // 견적 데이터 조회
+  const { data: estimateData, isLoading: isLoadingEstimate } = useQuery({
+    queryKey: ["/api/estimates", selectedCase, "latest"],
+    enabled: !!selectedCase,
+  });
+
   // 각 섹션 완료 상태 체크
   // 현장입력 완료: 필수 필드 입력 완료
   const isFieldInputComplete = useMemo(() => {
     return !!(visitDate && visitTime && accidentCategory && victimName);
   }, [visitDate, visitTime, accidentCategory, victimName]);
 
-  // 나머지 섹션은 일단 false (각 페이지에서 완료 처리 예정)
-  const isDrawingComplete = false; // 도면작성 완료
-  const isDocumentsComplete = false; // 증빙자료 업로드 완료
-  const isEstimateComplete = false; // 견적서 작성 완료
+  // 도면 완료: 도면이 저장되어 있으면 완료 (도면 객체에 id가 있으면 저장된 것으로 판단)
+  const isDrawingComplete = useMemo(() => {
+    return !isLoadingDrawing && !!drawingData && typeof drawingData === 'object' && 'id' in drawingData;
+  }, [drawingData, isLoadingDrawing]);
 
-  // 모든 섹션이 완료되어야 제출 가능
-  const canSubmit = isFieldInputComplete && isDrawingComplete && isDocumentsComplete && isEstimateComplete;
+  // 문서 완료: 파일이 1개 이상 업로드되어 있으면 완료
+  const isDocumentsComplete = useMemo(() => {
+    return !isLoadingDocuments && Array.isArray(documentsData) && documentsData.length > 0;
+  }, [documentsData, isLoadingDocuments]);
+
+  // 견적 완료: 견적이 저장되어 있으면 완료 (견적 객체에 id가 있으면 저장된 것으로 판단)
+  const isEstimateComplete = useMemo(() => {
+    return !isLoadingEstimate && !!estimateData && typeof estimateData === 'object' && 'id' in estimateData;
+  }, [estimateData, isLoadingEstimate]);
+
+  // 모든 섹션이 완료되어야 제출 가능 (로딩 중이 아닐 때만 판단)
+  const isCompletionDataReady = !isLoadingDrawing && !isLoadingDocuments && !isLoadingEstimate;
+  const canSubmit = isCompletionDataReady && isFieldInputComplete && isDrawingComplete && isDocumentsComplete && isEstimateComplete;
 
   // 선택한 케이스 데이터 가져오기
   const selectedCaseData = useMemo(() => {
@@ -1666,7 +1696,7 @@ export default function FieldManagement() {
           <div className="flex gap-3">
             {isPartner && (
               <>
-                {/* 협력사만 저장 버튼 표시 - 관리자는 읽기만 가능 */}
+                {/* 임시저장 버튼 */}
                 <Button
                   type="button"
                   onClick={async () => {
@@ -1706,16 +1736,16 @@ export default function FieldManagement() {
                       await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
 
                       toast({
-                        title: "저장 완료",
-                        description: `현장조사 정보가 저장되었습니다. (상태: ${status})`,
+                        title: "임시저장 완료",
+                        description: `현장조사 정보가 임시저장되었습니다. (상태: ${status})`,
                       });
 
                       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
                     } catch (error) {
-                      console.error("저장 에러:", error);
+                      console.error("임시저장 에러:", error);
                       toast({
-                        title: "저장 실패",
-                        description: "현장조사 정보 저장 중 오류가 발생했습니다.",
+                        title: "임시저장 실패",
+                        description: "현장조사 정보 임시저장 중 오류가 발생했습니다.",
                         variant: "destructive",
                       });
                     }
@@ -1726,14 +1756,78 @@ export default function FieldManagement() {
                     fontWeight: 600,
                     height: "52px",
                     padding: "12px 32px",
-                    background: "#008FED",
-                    color: "#FFFFFF",
-                    border: "none",
+                    background: "#FFFFFF",
+                    color: "rgba(12, 12, 12, 0.7)",
+                    border: "1px solid rgba(12, 12, 12, 0.2)",
                     borderRadius: "8px",
                   }}
-                  data-testid="button-save"
+                  data-testid="button-temp-save"
                 >
-                  저장
+                  임시저장
+                </Button>
+
+                {/* 제출 버튼 - 모든 필수 필드 입력 시 활성화 */}
+                <Button
+                  type="button"
+                  onClick={async () => {
+                    if (!selectedCaseData?.id) return;
+
+                    try {
+                      const payload = {
+                        visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
+                        visitTime,
+                        travelDistance,
+                        dispatchLocation,
+                        accompaniedPerson,
+                        accidentTime,
+                        accidentCategory,
+                        accidentCause,
+                        specialNotes,
+                        victimName,
+                        victimContact,
+                        victimAddress,
+                        additionalVictims: JSON.stringify(additionalVictims),
+                        specialRequests: voc,
+                        processingTypes: JSON.stringify(Array.from(processingTypes)),
+                        processingTypeOther,
+                        recoveryMethodType,
+                        fieldSurveyStatus: "submitted",
+                        status: "현장정보 입력", // 제출 시 상태 변경
+                      };
+
+                      await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
+
+                      toast({
+                        title: "제출 완료",
+                        description: "현장조사 보고서가 제출되었습니다.",
+                      });
+
+                      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                    } catch (error) {
+                      console.error("제출 에러:", error);
+                      toast({
+                        title: "제출 실패",
+                        description: "현장조사 보고서 제출 중 오류가 발생했습니다.",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={!canSubmit}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    height: "52px",
+                    padding: "12px 32px",
+                    background: canSubmit ? "#008FED" : "rgba(12, 12, 12, 0.1)",
+                    color: canSubmit ? "#FFFFFF" : "rgba(12, 12, 12, 0.3)",
+                    border: "none",
+                    borderRadius: "8px",
+                    cursor: canSubmit ? "pointer" : "not-allowed",
+                  }}
+                  data-testid="button-submit"
+                >
+                  제출
                 </Button>
               </>
             )}
