@@ -86,8 +86,18 @@ export default function ComprehensiveProgress() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [showReportSheet, setShowReportSheet] = useState(false);
+  const [showPdfOptionsDialog, setShowPdfOptionsDialog] = useState(false);
   const [detailTab, setDetailTab] = useState("기본정보");
   const [, setLocation] = useLocation();
+  
+  // PDF 포함 항목 상태
+  const [pdfOptions, setPdfOptions] = useState({
+    fieldInput: true,
+    drawing: false,
+    documents: false,
+    estimate: false,
+    notes: false,
+  });
   const { toast } = useToast();
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
@@ -161,9 +171,10 @@ export default function ComprehensiveProgress() {
     onSuccess: (data, variables) => {
       // 백엔드에서 반환된 실제 데이터로 업데이트
       if (data && typeof data === 'object' && 'id' in data) {
+        const updatedCase = data as unknown as CaseWithLatestProgress;
         queryClient.setQueryData<CaseWithLatestProgress[]>(["/api/cases"], (old) => {
           if (!old) return old;
-          return old.map(c => c.id === data.id ? { ...c, ...data } : c);
+          return old.map(c => c.id === updatedCase.id ? { ...c, ...updatedCase } : c);
         });
       }
       
@@ -2418,6 +2429,32 @@ export default function ComprehensiveProgress() {
                       </div>
                     </CardContent>
                   </Card>
+                  
+                  {/* PDF 다운로드 버튼 */}
+                  <div style={{ marginTop: "32px", paddingBottom: "32px" }}>
+                    <button
+                      onClick={() => setShowPdfOptionsDialog(true)}
+                      style={{
+                        width: "100%",
+                        padding: "16px",
+                        background: "#008FED",
+                        borderRadius: "8px",
+                        border: "none",
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "16px",
+                        color: "#FFFFFF",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "8px",
+                      }}
+                      data-testid="button-pdf-download"
+                    >
+                      PDF 다운로드
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -2425,6 +2462,246 @@ export default function ComprehensiveProgress() {
         </SheetContent>
         </Sheet>
       )}
+      
+      {/* PDF 다운로드 옵션 선택 Dialog */}
+      <Dialog open={showPdfOptionsDialog} onOpenChange={setShowPdfOptionsDialog}>
+        <DialogContent
+          style={{
+            maxWidth: "457px",
+            background: "rgba(253, 253, 253, 0.95)",
+            backdropFilter: "blur(17px)",
+            border: "none",
+            borderRadius: "12px",
+            padding: "32px",
+          }}
+        >
+          {/* 제목 */}
+          <div style={{
+            fontFamily: "Pretendard",
+            fontWeight: 600,
+            fontSize: "18px",
+            color: "#0C0C0C",
+            textAlign: "center",
+            marginBottom: "24px",
+          }}>
+            PDF 다운로드
+          </div>
+          
+          {/* 포함 내용 선택 */}
+          <div style={{
+            fontFamily: "Pretendard",
+            fontSize: "14px",
+            fontWeight: 500,
+            color: "rgba(12, 12, 12, 0.6)",
+            marginBottom: "12px",
+          }}>
+            포함 내용 선택
+          </div>
+          
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "32px" }}>
+            {/* 현장입력 */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                cursor: "pointer",
+                padding: "8px 0",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={pdfOptions.fieldInput}
+                onChange={(e) => setPdfOptions({ ...pdfOptions, fieldInput: e.target.checked })}
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  cursor: "pointer",
+                }}
+                data-testid="checkbox-field-input"
+              />
+              <span style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                color: "#0C0C0C",
+              }}>
+                현장입력
+              </span>
+            </label>
+            
+            {/* 도면 */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                cursor: "pointer",
+                padding: "8px 0",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={pdfOptions.drawing}
+                onChange={(e) => setPdfOptions({ ...pdfOptions, drawing: e.target.checked })}
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  cursor: "pointer",
+                }}
+                data-testid="checkbox-drawing"
+              />
+              <span style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                color: "#0C0C0C",
+              }}>
+                도면
+              </span>
+            </label>
+            
+            {/* 증빙자료 */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                cursor: "pointer",
+                padding: "8px 0",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={pdfOptions.documents}
+                onChange={(e) => setPdfOptions({ ...pdfOptions, documents: e.target.checked })}
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  cursor: "pointer",
+                }}
+                data-testid="checkbox-documents"
+              />
+              <span style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                color: "#0C0C0C",
+              }}>
+                증빙자료
+              </span>
+            </label>
+            
+            {/* 견적서 */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                cursor: "pointer",
+                padding: "8px 0",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={pdfOptions.estimate}
+                onChange={(e) => setPdfOptions({ ...pdfOptions, estimate: e.target.checked })}
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  cursor: "pointer",
+                }}
+                data-testid="checkbox-estimate"
+              />
+              <span style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                color: "#0C0C0C",
+              }}>
+                견적서
+              </span>
+            </label>
+            
+            {/* 기타사항 */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                cursor: "pointer",
+                padding: "8px 0",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={pdfOptions.notes}
+                onChange={(e) => setPdfOptions({ ...pdfOptions, notes: e.target.checked })}
+                style={{
+                  width: "18px",
+                  height: "18px",
+                  cursor: "pointer",
+                }}
+                data-testid="checkbox-notes"
+              />
+              <span style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                color: "#0C0C0C",
+              }}>
+                기타사항
+              </span>
+            </label>
+          </div>
+          
+          {/* 버튼 */}
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={() => setShowPdfOptionsDialog(false)}
+              style={{
+                flex: 1,
+                padding: "14px",
+                background: "rgba(12, 12, 12, 0.05)",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontWeight: 500,
+                fontSize: "14px",
+                color: "rgba(12, 12, 12, 0.6)",
+                cursor: "pointer",
+              }}
+              data-testid="button-cancel-pdf"
+            >
+              취소
+            </button>
+            <button
+              onClick={() => {
+                // PDF 다운로드 로직 (추후 구현)
+                toast({
+                  title: "PDF 생성 중",
+                  description: "선택한 항목으로 PDF를 생성하고 있습니다...",
+                });
+                setShowPdfOptionsDialog(false);
+              }}
+              style={{
+                flex: 1,
+                padding: "14px",
+                background: "#008FED",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "14px",
+                color: "#FFFFFF",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px",
+              }}
+              data-testid="button-download-pdf"
+            >
+              다운 ↓
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );
