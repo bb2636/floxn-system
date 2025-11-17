@@ -1477,25 +1477,27 @@ export default function ComprehensiveProgress() {
                         </div>
 
                         {/* 보고서 열람 버튼 */}
-                        <button
-                          onClick={() => setShowReportSheet(true)}
-                          style={{
-                            width: "100%",
-                            padding: "14px",
-                            background: "#008FED",
-                            borderRadius: "8px",
-                            border: "none",
-                            fontFamily: "Pretendard",
-                            fontWeight: 600,
-                            fontSize: "16px",
-                            color: "#FFFFFF",
-                            cursor: "pointer",
-                            marginTop: "16px",
-                          }}
-                          data-testid="button-view-report"
-                        >
-                          보고서 열람
-                        </button>
+                        {user?.role === "관리자" && (
+                          <button
+                            onClick={() => setShowReportSheet(true)}
+                            style={{
+                              width: "100%",
+                              padding: "14px",
+                              background: "#008FED",
+                              borderRadius: "8px",
+                              border: "none",
+                              fontFamily: "Pretendard",
+                              fontWeight: 600,
+                              fontSize: "16px",
+                              color: "#FFFFFF",
+                              cursor: "pointer",
+                              marginTop: "16px",
+                            }}
+                            data-testid="button-view-report"
+                          >
+                            보고서 열람
+                          </button>
+                        )}
                       </>
                     )}
 
@@ -1923,7 +1925,8 @@ export default function ComprehensiveProgress() {
       </Dialog>
 
       {/* 현장출동 보고서 Sheet */}
-      <Sheet open={showReportSheet} onOpenChange={setShowReportSheet}>
+      {user?.role === "관리자" && (
+        <Sheet open={showReportSheet} onOpenChange={setShowReportSheet}>
         <SheetContent
           side="right"
           style={{
@@ -2420,7 +2423,8 @@ export default function ComprehensiveProgress() {
             </div>
           </ScrollArea>
         </SheetContent>
-      </Sheet>
+        </Sheet>
+      )}
 
     </div>
   );
