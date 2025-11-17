@@ -22,6 +22,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect, useMemo } from "react";
+import { useLocation } from "wouter";
+import { ArrowLeft } from "lucide-react";
 import type { Drawing, CaseDocument as SchemaDocument } from "@shared/schema";
 
 interface Case {
@@ -191,8 +193,13 @@ function safeParseMaterialCosts(data: MaterialCostRow[] | string | null | undefi
 
 export default function FieldReport() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  
   // 현장입력에서 선택한 케이스 ID 가져오기
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
+  
+  // 종합진행관리에서 왔는지 확인
+  const returnToComprehensiveProgress = localStorage.getItem('returnToComprehensiveProgress') === 'true';
   
   // 현재 사용자 정보 가져오기
   const { data: currentUser, isLoading: isUserLoading } = useQuery<{ id: string; role: string }>({
@@ -361,26 +368,56 @@ export default function FieldReport() {
     <div className="relative p-8">
       {/* 페이지 타이틀 및 버튼 */}
       <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-2">
-          <h1
-            style={{
-              fontFamily: "Pretendard",
-              fontSize: "24px",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              color: "#0C0C0C",
-            }}
-          >
-            현장출동보고서
-          </h1>
-          <div
-            style={{
-              width: "8px",
-              height: "8px",
-              borderRadius: "50%",
-              background: "rgba(12, 12, 12, 0.2)",
-            }}
-          />
+        <div className="flex items-center gap-4">
+          {/* 뒤로 가기 버튼 (종합진행관리에서 온 경우만) */}
+          {returnToComprehensiveProgress && (
+            <button
+              onClick={() => {
+                localStorage.removeItem('returnToComprehensiveProgress');
+                setLocation('/comprehensive-progress');
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: "8px 12px",
+                background: "rgba(12, 12, 12, 0.05)",
+                borderRadius: "6px",
+                border: "1px solid rgba(12, 12, 12, 0.1)",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 500,
+                color: "rgba(12, 12, 12, 0.7)",
+                cursor: "pointer",
+              }}
+              data-testid="button-back-to-comprehensive"
+            >
+              <ArrowLeft size={16} />
+              종합진행관리
+            </button>
+          )}
+          
+          <div className="flex items-center gap-2">
+            <h1
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "24px",
+                fontWeight: 700,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+              }}
+            >
+              현장출동보고서
+            </h1>
+            <div
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                background: "rgba(12, 12, 12, 0.2)",
+              }}
+            />
+          </div>
         </div>
 
         {/* 역할별 버튼 */}
