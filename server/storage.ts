@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts, type UserFavorite, type InsertUserFavorite, userFavorites } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -119,6 +119,10 @@ export interface IStorage {
   }>;
   createLaborCost(data: InsertLaborCost): Promise<LaborCost>;
   deleteLaborCost(id: string): Promise<void>;
+  // User favorites methods
+  getUserFavorites(userId: string): Promise<UserFavorite[]>;
+  addFavorite(data: InsertUserFavorite): Promise<UserFavorite>;
+  removeFavorite(userId: string, menuName: string): Promise<void>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -1667,6 +1671,18 @@ export class MemStorage implements IStorage {
   async deleteLaborCost(id: string): Promise<void> {
     throw new Error("Labor cost methods not implemented in MemStorage");
   }
+
+  async getUserFavorites(userId: string): Promise<UserFavorite[]> {
+    throw new Error("User favorites methods not implemented in MemStorage");
+  }
+
+  async addFavorite(data: InsertUserFavorite): Promise<UserFavorite> {
+    throw new Error("User favorites methods not implemented in MemStorage");
+  }
+
+  async removeFavorite(userId: string, menuName: string): Promise<void> {
+    throw new Error("User favorites methods not implemented in MemStorage");
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -2836,6 +2852,35 @@ export class DbStorage implements IStorage {
 
   async deleteLaborCost(id: string): Promise<void> {
     await db.delete(laborCosts).where(eq(laborCosts.id, id));
+  }
+
+  // User favorites methods
+  async getUserFavorites(userId: string): Promise<UserFavorite[]> {
+    const favorites = await db
+      .select()
+      .from(userFavorites)
+      .where(eq(userFavorites.userId, userId))
+      .orderBy(asc(userFavorites.createdAt));
+    return favorites;
+  }
+
+  async addFavorite(data: InsertUserFavorite): Promise<UserFavorite> {
+    const [favorite] = await db
+      .insert(userFavorites)
+      .values(data)
+      .returning();
+    return favorite;
+  }
+
+  async removeFavorite(userId: string, menuName: string): Promise<void> {
+    await db
+      .delete(userFavorites)
+      .where(
+        and(
+          eq(userFavorites.userId, userId),
+          eq(userFavorites.menuName, menuName)
+        )
+      );
   }
 }
 

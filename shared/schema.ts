@@ -542,3 +542,26 @@ export const insertLaborCostSchema = createInsertSchema(laborCosts).omit({
 
 export type InsertLaborCost = z.infer<typeof insertLaborCostSchema>;
 export type LaborCost = typeof laborCosts.$inferSelect;
+
+// 사용자 즐겨찾기 테이블
+export const userFavorites = pgTable("user_favorites", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  menuName: text("menu_name").notNull(), // 메뉴 이름 (홈, 접수하기, 현장조사, 종합진행관리, 통계 및 정산, 관리자 설정)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  // 한 사용자가 같은 메뉴를 중복으로 즐겨찾기 할 수 없도록
+  unq: unique().on(table.userId, table.menuName),
+}));
+
+export const MENU_ITEMS = ["홈", "접수하기", "현장조사", "종합진행관리", "통계 및 정산", "관리자 설정"] as const;
+
+export const insertUserFavoriteSchema = createInsertSchema(userFavorites).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  menuName: z.enum(MENU_ITEMS),
+});
+
+export type UserFavorite = typeof userFavorites.$inferSelect;
+export type InsertUserFavorite = z.infer<typeof insertUserFavoriteSchema>;
