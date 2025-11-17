@@ -101,7 +101,39 @@ export default function ComprehensiveProgress() {
       // 백엔드에서 미복구→출동비 청구 전환 처리
       return await apiRequest("PATCH", `/api/cases/${caseId}/status`, { status });
     },
+    onMutate: async ({ caseId, status }) => {
+      // 진행 중인 refetch 취소
+      await queryClient.cancelQueries({ queryKey: ["/api/cases"] });
+      
+      // 이전 데이터 저장 (롤백용)
+      const previousCases = queryClient.getQueryData<CaseWithLatestProgress[]>(["/api/cases"]);
+      
+      // 미복구는 출동비 청구로 정규화 (백엔드와 동일한 로직)
+      const normalizedStatus = status === "미복구" ? "출동비 청구" : status;
+      
+      // Optimistic update: 즉시 UI 업데이트 (status만 변경, 나머지는 그대로 유지)
+      queryClient.setQueryData<CaseWithLatestProgress[]>(["/api/cases"], (old) => {
+        if (!old) return old;
+        return old.map(c => 
+          c.id === caseId 
+            ? { ...c, status: normalizedStatus }
+            : c
+        );
+      });
+      
+      return { previousCases };
+    },
     onSuccess: (data, variables) => {
+      // 백엔드에서 반환된 실제 데이터로 업데이트
+      const updatedCase = data?.case;
+      if (updatedCase) {
+        queryClient.setQueryData<CaseWithLatestProgress[]>(["/api/cases"], (old) => {
+          if (!old) return old;
+          return old.map(c => c.id === updatedCase.id ? { ...c, ...updatedCase } : c);
+        });
+      }
+      
+      // 백그라운드 refetch로 전체 데이터 동기화
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       
       // 미복구 선택 시 자동 전환 알림 (백엔드에서 출동비 청구로 변경됨)
@@ -117,7 +149,12 @@ export default function ComprehensiveProgress() {
         });
       }
     },
-    onError: () => {
+    onError: (error, variables, context) => {
+      // 롤백: 이전 데이터 복원
+      if (context?.previousCases) {
+        queryClient.setQueryData(["/api/cases"], context.previousCases);
+      }
+      
       toast({
         title: "상태 변경 실패",
         description: "상태 변경 중 오류가 발생했습니다.",
