@@ -151,6 +151,15 @@ export default function Dashboard() {
   const myTasks = useMemo(() => {
     if (!allCases || !user) return [];
     
+    console.log('내 작업 필터링:', {
+      userId: user.id,
+      username: user.username,
+      totalCases: allCases.length,
+      casesWithAssignedTo: allCases.filter(c => c.assignedTo).length,
+      myAssignedCases: allCases.filter(c => c.assignedTo === user.id).length,
+      allCasesAssignedTo: allCases.map(c => ({ caseNumber: c.caseNumber, assignedTo: c.assignedTo }))
+    });
+    
     // Get cases assigned to current user, sorted by updatedAt (most recent first)
     return allCases
       .filter(c => c.assignedTo === user.id)
