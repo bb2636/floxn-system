@@ -1432,56 +1432,64 @@ export default function Dashboard() {
                       미결
                     </span>
                   </button>
-                  <button
-                    onClick={() => setActiveTab('insurance')}
-                    className="flex items-center justify-center"
-                    style={{
-                      padding: '12px 16px',
-                      background: activeTab === 'insurance' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
-                      boxShadow: activeTab === 'insurance' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
-                      backdropFilter: activeTab === 'insurance' ? 'none' : 'blur(7px)',
-                      borderRadius: '6px',
-                    }}
-                    data-testid="tab-insurance"
-                  >
-                    <span
+                  
+                  {/* 보험사 미정산 - 협력사 사용자는 볼 수 없음 */}
+                  {user.role !== '협력사' && (
+                    <button
+                      onClick={() => setActiveTab('insurance')}
+                      className="flex items-center justify-center"
                       style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: activeTab === 'insurance' ? 600 : 500,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: activeTab === 'insurance' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
+                        padding: '12px 16px',
+                        background: activeTab === 'insurance' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
+                        boxShadow: activeTab === 'insurance' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
+                        backdropFilter: activeTab === 'insurance' ? 'none' : 'blur(7px)',
+                        borderRadius: '6px',
                       }}
+                      data-testid="tab-insurance"
                     >
-                      보험사 미정산
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('partner')}
-                    className="flex items-center justify-center"
-                    style={{
-                      padding: '12px 16px',
-                      background: activeTab === 'partner' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
-                      boxShadow: activeTab === 'partner' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
-                      backdropFilter: activeTab === 'partner' ? 'none' : 'blur(7px)',
-                      borderRadius: '6px',
-                    }}
-                    data-testid="tab-partner"
-                  >
-                    <span
+                      <span
+                        style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '16px',
+                          fontWeight: activeTab === 'insurance' ? 600 : 500,
+                          lineHeight: '128%',
+                          letterSpacing: '-0.02em',
+                          color: activeTab === 'insurance' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
+                        }}
+                      >
+                        보험사 미정산
+                      </span>
+                    </button>
+                  )}
+                  
+                  {/* 협력사 미정산 - 심사사/조사사/보험사는 볼 수 없음 */}
+                  {user.role !== '심사사' && user.role !== '조사사' && user.role !== '보험사' && (
+                    <button
+                      onClick={() => setActiveTab('partner')}
+                      className="flex items-center justify-center"
                       style={{
-                        fontFamily: 'Pretendard',
-                        fontSize: '16px',
-                        fontWeight: activeTab === 'partner' ? 600 : 500,
-                        lineHeight: '128%',
-                        letterSpacing: '-0.02em',
-                        color: activeTab === 'partner' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
+                        padding: '12px 16px',
+                        background: activeTab === 'partner' ? '#008FED' : 'rgba(255, 255, 255, 0.04)',
+                        boxShadow: activeTab === 'partner' ? '2px 4px 30px #BDD1F0' : 'inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)',
+                        backdropFilter: activeTab === 'partner' ? 'none' : 'blur(7px)',
+                        borderRadius: '6px',
                       }}
+                      data-testid="tab-partner"
                     >
-                      협력사 미정산
-                    </span>
-                  </button>
+                      <span
+                        style={{
+                          fontFamily: 'Pretendard',
+                          fontSize: '16px',
+                          fontWeight: activeTab === 'partner' ? 600 : 500,
+                          lineHeight: '128%',
+                          letterSpacing: '-0.02em',
+                          color: activeTab === 'partner' ? '#FDFDFD' : 'rgba(12, 12, 12, 0.4)',
+                        }}
+                      >
+                        협력사 미정산
+                      </span>
+                    </button>
+                  )}
                   </div>
                 </div>
               </div>
