@@ -262,7 +262,7 @@ export default function SettlementsInquiry() {
         </h2>
 
         {/* Search */}
-        <div className="mb-4">
+        <div className="mb-6">
           <label
             className="block mb-2"
             style={{
@@ -283,7 +283,7 @@ export default function SettlementsInquiry() {
               />
               <Input
                 type="text"
-                placeholder="검색어를 직접 입력"
+                placeholder="검색어를 직접 검색"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
@@ -316,10 +316,10 @@ export default function SettlementsInquiry() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-end gap-4 mb-4">
-          {/* 청산여부 */}
-          <div className="flex-1">
+        {/* Filters - All in one row */}
+        <div className="flex items-end gap-3">
+          {/* 정산여부 */}
+          <div style={{ flex: "0 0 auto", minWidth: "120px" }}>
             <label
               className="block mb-2"
               style={{
@@ -329,7 +329,7 @@ export default function SettlementsInquiry() {
                 color: "rgba(12, 12, 12, 0.7)",
               }}
             >
-              청산여부
+              정산여부
             </label>
             <Select value={settlementStatus} onValueChange={setSettlementStatus}>
               <SelectTrigger
@@ -354,7 +354,7 @@ export default function SettlementsInquiry() {
           </div>
 
           {/* 보험사 */}
-          <div className="flex-1">
+          <div style={{ flex: "0 0 auto", minWidth: "120px" }}>
             <label
               className="block mb-2"
               style={{
@@ -389,7 +389,7 @@ export default function SettlementsInquiry() {
           </div>
 
           {/* 심사사 */}
-          <div className="flex-1">
+          <div style={{ flex: "0 0 auto", minWidth: "120px" }}>
             <label
               className="block mb-2"
               style={{
@@ -423,7 +423,7 @@ export default function SettlementsInquiry() {
           </div>
 
           {/* 담당자 */}
-          <div className="flex-1">
+          <div style={{ flex: "0 0 auto", minWidth: "120px" }}>
             <label
               className="block mb-2"
               style={{
@@ -455,12 +455,11 @@ export default function SettlementsInquiry() {
               </SelectContent>
             </Select>
           </div>
-        </div>
 
-        {/* Date Range and Buttons */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          {/* 날짜 선택 */}
+          <div style={{ flex: "0 0 auto", minWidth: "120px" }}>
             <label
+              className="block mb-2"
               style={{
                 fontFamily: "Pretendard",
                 fontSize: "14px",
@@ -484,13 +483,14 @@ export default function SettlementsInquiry() {
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
+                    whiteSpace: "nowrap",
                   }}
                   data-testid="button-date-range"
                 >
                   <CalendarIcon size={16} style={{ color: "rgba(12, 12, 12, 0.5)" }} />
                   {startDate && endDate
                     ? `${format(startDate, "yyyy.MM.dd")} ~ ${format(endDate, "yyyy.MM.dd")}`
-                    : "기간조회"}
+                    : "기간설정"}
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-4" align="start">
@@ -530,7 +530,11 @@ export default function SettlementsInquiry() {
             </Popover>
           </div>
 
-          <div className="flex gap-2">
+          {/* Spacer */}
+          <div style={{ flex: "1 1 auto" }}></div>
+
+          {/* Buttons */}
+          <div className="flex gap-2" style={{ flex: "0 0 auto" }}>
             <Button
               variant="outline"
               onClick={handleReset}
@@ -555,6 +559,7 @@ export default function SettlementsInquiry() {
                 fontSize: "14px",
                 fontWeight: 600,
                 color: "#FFFFFF",
+                whiteSpace: "nowrap",
               }}
               data-testid="button-search-with-filters"
             >
