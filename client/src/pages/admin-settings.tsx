@@ -1471,6 +1471,259 @@ export default function AdminSettings() {
               );
             })()}
           </>
+          ) : activeMenu === "공지사항 관리" ? (
+            <>
+              {/* Title with info icon */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <h1
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "26px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    공지사항 관리
+                  </h1>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      background: "rgba(0, 143, 237, 0.1)",
+                      borderRadius: "50%",
+                    }}
+                  >
+                    <span style={{ fontSize: "12px", color: "#008FED" }}>ⓘ</span>
+                  </div>
+                </div>
+                <button
+                  className="px-6 py-3"
+                  style={{
+                    background: "#008FED",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.01em",
+                    color: "#FDFDFD",
+                  }}
+                  data-testid="button-add-notice"
+                >
+                  새 공지 추가
+                </button>
+              </div>
+
+              {/* Notice Count */}
+              <div className="flex items-center gap-2 mb-4">
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
+                  등록된 공지
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    letterSpacing: "-0.02em",
+                    color: "#008FED",
+                  }}
+                >
+                  1000
+                </span>
+              </div>
+
+              {/* Notice Table */}
+              <div
+                className="rounded-xl overflow-hidden"
+                style={{
+                  background: "#FFFFFF",
+                  boxShadow: "0px 0px 20px #DBE9F5",
+                }}
+              >
+                <table className="w-full">
+                  <thead>
+                    <tr
+                      style={{
+                        background: "#F8F9FA",
+                        borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
+                      }}
+                    >
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        제목
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        내용
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        게시일
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        수정일
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        작성자
+                      </th>
+                      <th
+                        className="px-4 py-4 text-left"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.01em",
+                          color: "#686A6E",
+                        }}
+                      >
+                        조회
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...Array(7)].map((_, index) => (
+                      <tr
+                        key={index}
+                        className="hover:bg-gray-50 cursor-pointer"
+                        style={{
+                          borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                        }}
+                        data-testid={`row-notice-${index}`}
+                      >
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          [긴급알림] 시스템 점검 결과 안내
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#686A6E",
+                            maxWidth: "200px",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          이 곳에 내용이 들어갑니다
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          2025-00-00
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#686A6E",
+                          }}
+                        >
+                          -
+                        </td>
+                        <td
+                          className="px-4 py-4"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          김현석
+                        </td>
+                        <td className="px-4 py-4">
+                          <button
+                            className="px-4 py-2"
+                            style={{
+                              background: "rgba(0, 143, 237, 0.1)",
+                              borderRadius: "6px",
+                              fontFamily: "Pretendard",
+                              fontSize: "13px",
+                              fontWeight: 500,
+                              letterSpacing: "-0.01em",
+                              color: "#008FED",
+                            }}
+                            data-testid={`button-notice-view-${index}`}
+                          >
+                            보기
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : activeMenu === "DB 관리" ? (
             <>
               {/* Title */}
