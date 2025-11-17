@@ -693,6 +693,7 @@ export default function FieldEstimate() {
         rows: apiRows,
         laborCostData,
         materialCostData: null, // TODO: 자재비 구현 시 추가
+        totalAmount: estimateSummary.total, // 견적 총액 전송
       });
     },
     onSuccess: () => {
@@ -703,6 +704,8 @@ export default function FieldEstimate() {
       // 견적 목록 및 최신 견적 갱신
       queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId] });
       queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId, "latest"] });
+      // 케이스 목록 갱신 (견적금액이 업데이트되었으므로)
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
     },
     onError: (error: any) => {
       toast({

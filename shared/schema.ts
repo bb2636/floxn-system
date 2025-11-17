@@ -197,6 +197,9 @@ export const cases = pgTable("cases", {
   reviewedAt: text("reviewed_at"), // 심사 일시
   reviewedBy: varchar("reviewed_by").references(() => users.id), // 심사자 ID
   
+  // 금액 관련 필드
+  estimateAmount: text("estimate_amount"), // 견적금액 (최종 총액)
+  
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),

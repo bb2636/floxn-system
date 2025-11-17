@@ -1418,7 +1418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      const { rows, laborCostData, materialCostData } = req.body;
+      const { rows, laborCostData, materialCostData, totalAmount } = req.body;
 
       if (!rows || !Array.isArray(rows)) {
         return res.status(400).json({ error: "견적 행 데이터가 필요합니다" });
@@ -1488,6 +1488,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         laborCostData || null,
         materialCostData || null
       );
+      
+      // 견적 총액을 케이스에 업데이트
+      if (totalAmount !== undefined && totalAmount !== null) {
+        await storage.updateCase(caseId, {
+          estimateAmount: totalAmount.toString(),
+        });
+      }
+      
       res.json(result);
     } catch (error) {
       console.error("Create estimate error:", error);

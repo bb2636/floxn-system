@@ -900,7 +900,7 @@ export default function ComprehensiveProgress() {
                     {caseItem.assignedPartner || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    -
+                    {caseItem.estimateAmount ? `₩${parseInt(caseItem.estimateAmount).toLocaleString()}` : "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     -
@@ -1285,7 +1285,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              -
+                              {selectedCase.estimateAmount ? `₩${parseInt(selectedCase.estimateAmount).toLocaleString()}` : "-"}
                             </div>
                           </div>
 
