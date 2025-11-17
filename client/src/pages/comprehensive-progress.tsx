@@ -1094,233 +1094,177 @@ export default function ComprehensiveProgress() {
                     {/* 기본정보 탭 */}
                     {detailTab === "기본정보" && (
                       <>
-                        {/* 기본 정보 섹션 */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                          {/* 섹션 제목 */}
+                        {/* 진행상태 섹션 */}
+                        <div style={{ 
+                          background: "rgba(12, 12, 12, 0.02)",
+                          borderRadius: "8px",
+                          padding: "16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "0px",
+                        }}>
+                          {/* 진행상태 */}
                           <div style={{
-                            padding: "9px 0px",
-                            fontFamily: "Pretendard",
-                            fontWeight: 700,
-                            fontSize: "18px",
-                            lineHeight: "128%",
-                            letterSpacing: "-0.02em",
-                            color: "#292929",
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
                           }}>
-                            기본 정보
+                            <div style={{
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
+                            }}>
+                              진행상태
+                            </div>
+                            <div style={{
+                              padding: "6px 16px",
+                              background: "#008FED",
+                              borderRadius: "4px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "#FFFFFF",
+                            }}>
+                              {selectedCase.status || "접수중"}
+                            </div>
                           </div>
 
-                          {/* 정보 리스트 */}
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            {/* 진행상태 */}
+                          {/* 입사 담당자 */}
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
+                          }}>
                             <div style={{
-                              display: "flex",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: "10px 0px",
-                              gap: "16px",
-                              minHeight: "60px",
-                              background: "#FFFFFF",
-                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
                             }}>
-                              <div style={{
-                                width: "120px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 600,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.9)",
-                              }}>
-                                진행상태
-                              </div>
-                              <div style={{
-                                padding: "8px 12px",
-                                background: "rgba(12, 149, 246, 0.2)",
-                                backdropFilter: "blur(7px)",
-                                borderRadius: "20px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 500,
-                                fontSize: "16px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.02em",
-                                color: "#0077D8",
-                              }}>
-                                {selectedCase.status || "접수중"}
-                              </div>
+                              입사 담당자
                             </div>
-
-                            {/* 당사 담당자 */}
                             <div style={{
-                              display: "flex",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: "10px 0px",
-                              gap: "16px",
-                              minHeight: "60px",
-                              background: "#FFFFFF",
-                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              <div style={{
-                                width: "120px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 600,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.9)",
-                              }}>
-                                당사 담당자
-                              </div>
-                              <div style={{
-                                flex: 1,
-                                fontFamily: "Pretendard",
-                                fontWeight: 500,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.01em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}>
-                                {selectedCase.assignedPartnerManager || "-"}
-                              </div>
+                              {selectedCase.assignedPartnerManager || "-"}
                             </div>
+                          </div>
 
-                            {/* 협력사 */}
+                          {/* 관리사 */}
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
+                          }}>
                             <div style={{
-                              display: "flex",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: "10px 0px",
-                              gap: "16px",
-                              minHeight: "60px",
-                              background: "#FFFFFF",
-                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
                             }}>
-                              <div style={{
-                                width: "120px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 600,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.9)",
-                              }}>
-                                협력사
-                              </div>
-                              <div style={{
-                                flex: 1,
-                                fontFamily: "Pretendard",
-                                fontWeight: 500,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.01em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}>
-                                {selectedCase.assignedPartner || "-"}
-                              </div>
+                              관리사
                             </div>
-
-                            {/* 경과일수 */}
                             <div style={{
-                              display: "flex",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: "10px 0px",
-                              gap: "16px",
-                              minHeight: "60px",
-                              background: "#FFFFFF",
-                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              <div style={{
-                                width: "120px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 600,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.9)",
-                              }}>
-                                경과일수
-                              </div>
-                              <div style={{
-                                flex: 1,
-                                fontFamily: "Pretendard",
-                                fontWeight: 500,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.01em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}>
-                                {calculateDays(selectedCase.createdAt)}
-                              </div>
+                              {selectedCase.assignedPartner || "-"}
                             </div>
+                          </div>
 
-                            {/* 견적금액 */}
+                          {/* 경과일수 */}
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
+                          }}>
                             <div style={{
-                              display: "flex",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: "10px 0px",
-                              gap: "16px",
-                              minHeight: "60px",
-                              background: "#FFFFFF",
-                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
                             }}>
-                              <div style={{
-                                width: "120px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 600,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.9)",
-                              }}>
-                                견적금액
-                              </div>
-                              <div style={{
-                                flex: 1,
-                                fontFamily: "Pretendard",
-                                fontWeight: 500,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.01em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}>
-                                -
-                              </div>
+                              경과일수
                             </div>
-
-                            {/* 승인금액 */}
                             <div style={{
-                              display: "flex",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: "10px 0px",
-                              gap: "16px",
-                              minHeight: "60px",
-                              background: "#FFFFFF",
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              <div style={{
-                                width: "120px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 600,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.9)",
-                              }}>
-                                승인금액
-                              </div>
-                              <div style={{
-                                flex: 1,
-                                fontFamily: "Pretendard",
-                                fontWeight: 500,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.01em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}>
-                                -
-                              </div>
+                              {calculateDays(selectedCase.createdAt)}
+                            </div>
+                          </div>
+
+                          {/* 견적금액 */}
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
+                          }}>
+                            <div style={{
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
+                            }}>
+                              견적금액
+                            </div>
+                            <div style={{
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}>
+                              -
+                            </div>
+                          </div>
+
+                          {/* 승인금액 */}
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
+                          }}>
+                            <div style={{
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
+                            }}>
+                              승인금액
+                            </div>
+                            <div style={{
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}>
+                              -
                             </div>
                           </div>
                         </div>
@@ -1328,132 +1272,187 @@ export default function ComprehensiveProgress() {
                         {/* 구분선 */}
                         <div style={{
                           width: "100%",
-                          height: "12px",
-                          background: "rgba(12, 12, 12, 0.06)",
+                          height: "1px",
+                          background: "rgba(12, 12, 12, 0.1)",
+                          margin: "8px 0",
                         }}></div>
 
-                        {/* 증권/보장 섹션 */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                          {/* 섹션 제목 */}
+                        {/* 증권/분쟁 섹션 */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0px" }}>
+                          {/* 증권번호 */}
                           <div style={{
-                            padding: "9px 0px",
-                            fontFamily: "Pretendard",
-                            fontWeight: 700,
-                            fontSize: "18px",
-                            lineHeight: "128%",
-                            letterSpacing: "-0.02em",
-                            color: "#292929",
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
                           }}>
-                            증권/보장
+                            <div style={{
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
+                            }}>
+                              증권번호
+                            </div>
+                            <div style={{
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}>
+                              {selectedCase.insurancePolicyNo || "-"}
+                            </div>
                           </div>
 
-                          {/* 정보 리스트 */}
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            {/* 증권번호 */}
+                          {/* 기감금액 */}
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
+                          }}>
                             <div style={{
-                              display: "flex",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: "10px 0px",
-                              gap: "16px",
-                              minHeight: "60px",
-                              background: "#FFFFFF",
-                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
                             }}>
-                              <div style={{
-                                width: "120px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 600,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.9)",
-                              }}>
-                                증권번호
-                              </div>
-                              <div style={{
-                                flex: 1,
-                                fontFamily: "Pretendard",
-                                fontWeight: 500,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.01em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}>
-                                {selectedCase.insurancePolicyNo || "-"}
-                              </div>
+                              기감금액
                             </div>
-
-                            {/* 보장종류 */}
                             <div style={{
-                              display: "flex",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: "10px 0px",
-                              gap: "16px",
-                              minHeight: "60px",
-                              background: "#FFFFFF",
-                              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              <div style={{
-                                width: "120px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 600,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.9)",
-                              }}>
-                                보장종류
-                              </div>
-                              <div style={{
-                                flex: 1,
-                                fontFamily: "Pretendard",
-                                fontWeight: 500,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.01em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}>
-                                -
-                              </div>
+                              -
                             </div>
+                          </div>
 
-                            {/* 보장명 */}
+                          {/* Ded */}
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
+                          }}>
                             <div style={{
-                              display: "flex",
-                              flexDirection: "row",
-                              alignItems: "center",
-                              padding: "10px 0px",
-                              gap: "16px",
-                              minHeight: "60px",
-                              background: "#FFFFFF",
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
                             }}>
-                              <div style={{
-                                width: "120px",
-                                fontFamily: "Pretendard",
-                                fontWeight: 600,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.02em",
-                                color: "rgba(12, 12, 12, 0.9)",
-                              }}>
-                                보장명
-                              </div>
-                              <div style={{
-                                flex: 1,
-                                fontFamily: "Pretendard",
-                                fontWeight: 500,
-                                fontSize: "15px",
-                                lineHeight: "128%",
-                                letterSpacing: "-0.01em",
-                                color: "rgba(12, 12, 12, 0.7)",
-                              }}>
-                                -
-                              </div>
+                              Ded
+                            </div>
+                            <div style={{
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}>
+                              -
                             </div>
                           </div>
                         </div>
+
+                        {/* 구분선 */}
+                        <div style={{
+                          width: "100%",
+                          height: "1px",
+                          background: "rgba(12, 12, 12, 0.1)",
+                          margin: "8px 0",
+                        }}></div>
+
+                        {/* 심사 정보 섹션 */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "0px" }}>
+                          {/* 심사사 */}
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
+                          }}>
+                            <div style={{
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
+                            }}>
+                              심사사
+                            </div>
+                            <div style={{
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}>
+                              {selectedCase.insuranceCompany || "-"}
+                            </div>
+                          </div>
+
+                          {/* 심사 담당자 */}
+                          <div style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            padding: "10px 0px",
+                            gap: "16px",
+                          }}>
+                            <div style={{
+                              width: "100px",
+                              fontFamily: "Pretendard",
+                              fontWeight: 500,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.6)",
+                            }}>
+                              심사 담당자
+                            </div>
+                            <div style={{
+                              fontFamily: "Pretendard",
+                              fontWeight: 400,
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.9)",
+                            }}>
+                              {selectedCase.assessorDepartment && selectedCase.assessorTeam 
+                                ? `${selectedCase.assessorDepartment} ${selectedCase.assessorTeam}`
+                                : selectedCase.assessorId || "-"}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 보고서 생성 버튼 */}
+                        <button
+                          onClick={() => {
+                            toast({
+                              title: "준비 중",
+                              description: "보고서 생성 기능은 준비 중입니다.",
+                            });
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "14px",
+                            background: "#008FED",
+                            borderRadius: "8px",
+                            border: "none",
+                            fontFamily: "Pretendard",
+                            fontWeight: 600,
+                            fontSize: "16px",
+                            color: "#FFFFFF",
+                            cursor: "pointer",
+                            marginTop: "16px",
+                          }}
+                          data-testid="button-generate-report"
+                        >
+                          보고서 생성
+                        </button>
                       </>
                     )}
 
