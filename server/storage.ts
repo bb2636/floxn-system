@@ -1756,11 +1756,107 @@ export class DbStorage implements IStorage {
     
     if (!admin01) return;
     
-    const testCases = [
+    const statuses = ["제출", "검토중", "1차승인", "완료", "청구", "정산완료"];
+    const insuranceCompanies = ["MG손해보험", "삼성화재", "현대해상", "DB손해보험", "KB손해보험"];
+    
+    const testCases = [];
+    
+    // 지난달 (2024년 10월) 케이스 - 145건
+    for (let i = 1; i <= 145; i++) {
+      const day = ((i % 28) + 1).toString().padStart(2, '0');
+      const status = statuses[i % statuses.length];
+      const insurance = insuranceCompanies[i % insuranceCompanies.length];
+      
+      testCases.push({
+        caseNumber: `CLM-2024100${i.toString().padStart(5, '0')}`,
+        status,
+        accidentDate: `2024-10-${day}`,
+        insuranceCompany: insurance,
+        insurancePolicyNo: `${insurance.substring(0, 2)}2024-${i.toString().padStart(5, '0')}`,
+        insuranceAccidentNo: `24100${i.toString().padStart(4, '0')}`,
+        clientResidence: "서울 강남구",
+        clientDepartment: "보상팀",
+        clientName: `고객${i}`,
+        clientContact: "010-0000-0000",
+        assessorId: (i % 2 === 0 ? assessor01?.id : assessor02?.id) || null,
+        assessorDepartment: "심사팀",
+        assessorTeam: (i % 2 === 0 ? "1팀" : "2팀"),
+        assessorContact: "010-4001-4001",
+        investigatorTeam: "조사1팀",
+        investigatorDepartment: "현장조사",
+        investigatorTeamName: "플록슨 조사팀",
+        investigatorContact: "02-5001-5001",
+        policyHolderName: `고객${i}`,
+        policyHolderIdNumber: "800101-1******",
+        policyHolderAddress: "서울 강남구",
+        insuredName: `고객${i}`,
+        insuredIdNumber: "800101-1******",
+        insuredContact: "010-0000-0000",
+        insuredAddress: "서울 강남구",
+        victimName: "이웃집",
+        victimContact: "010-9999-8888",
+        clientPhone: "010-0000-0000",
+        clientAddress: "서울 강남구",
+        accidentLocation: `서울 강남구 아파트 ${i}호`,
+        accidentDescription: "누수 피해",
+        assignedTo: (i % 2 === 0 ? partner01?.id : partner02?.id) || null,
+        createdBy: admin01.id,
+        createdAt: `2024-10-${day}`,
+        updatedAt: `2024-10-${day}`,
+      });
+    }
+    
+    // 이번달 (2024년 11월) 케이스 - 167건 (전월 대비 +15.2% 증가, 22건 증가)
+    for (let i = 1; i <= 167; i++) {
+      const day = ((i % 28) + 1).toString().padStart(2, '0');
+      const status = statuses[i % statuses.length];
+      const insurance = insuranceCompanies[i % insuranceCompanies.length];
+      
+      testCases.push({
+        caseNumber: `CLM-2024110${i.toString().padStart(5, '0')}`,
+        status,
+        accidentDate: `2024-11-${day}`,
+        insuranceCompany: insurance,
+        insurancePolicyNo: `${insurance.substring(0, 2)}2024-${i.toString().padStart(5, '0')}`,
+        insuranceAccidentNo: `24110${i.toString().padStart(4, '0')}`,
+        clientResidence: "서울 서초구",
+        clientDepartment: "보상팀",
+        clientName: `고객${i}`,
+        clientContact: "010-1111-1111",
+        assessorId: (i % 2 === 0 ? assessor01?.id : assessor02?.id) || null,
+        assessorDepartment: "심사팀",
+        assessorTeam: (i % 2 === 0 ? "1팀" : "2팀"),
+        assessorContact: "010-4001-4001",
+        investigatorTeam: "조사1팀",
+        investigatorDepartment: "현장조사",
+        investigatorTeamName: "플록슨 조사팀",
+        investigatorContact: "02-5001-5001",
+        policyHolderName: `고객${i}`,
+        policyHolderIdNumber: "800101-1******",
+        policyHolderAddress: "서울 서초구",
+        insuredName: `고객${i}`,
+        insuredIdNumber: "800101-1******",
+        insuredContact: "010-1111-1111",
+        insuredAddress: "서울 서초구",
+        victimName: "이웃집",
+        victimContact: "010-9999-8888",
+        clientPhone: "010-1111-1111",
+        clientAddress: "서울 서초구",
+        accidentLocation: `서울 서초구 아파트 ${i}호`,
+        accidentDescription: "누수 피해",
+        assignedTo: (i % 2 === 0 ? partner01?.id : partner02?.id) || null,
+        createdBy: admin01.id,
+        createdAt: `2024-11-${day}`,
+        updatedAt: `2024-11-${day}`,
+      });
+    }
+    
+    // 기존 샘플 케이스 3건 추가 (이번달)
+    testCases.push(
       {
         caseNumber: "CLM-25145136",
         status: "제출",
-        accidentDate: "2025-01-15",
+        accidentDate: "2024-11-15",
         insuranceCompany: "MG손해보험",
         insurancePolicyNo: "MG2024-12345",
         insuranceAccidentNo: "25219943",
@@ -1791,13 +1887,13 @@ export class DbStorage implements IStorage {
         accidentDescription: "화장실 배관 누수로 인한 천장 침수 피해",
         assignedTo: partner01?.id || null,
         createdBy: admin01.id,
-        createdAt: "2025-01-15",
-        updatedAt: "2025-01-15",
+        createdAt: "2024-11-15",
+        updatedAt: "2024-11-15",
       },
       {
         caseNumber: "CLM-25145135",
         status: "검토중",
-        accidentDate: "2025-01-14",
+        accidentDate: "2024-11-14",
         insuranceCompany: "삼성화재",
         insurancePolicyNo: "SS2024-67890",
         insuranceAccidentNo: "25219942",
@@ -1828,13 +1924,13 @@ export class DbStorage implements IStorage {
         accidentDescription: "싱크대 하수 배관 파손으로 인한 누수",
         assignedTo: partner02?.id || null,
         createdBy: admin01.id,
-        createdAt: "2025-01-14",
-        updatedAt: "2025-01-14",
+        createdAt: "2024-11-14",
+        updatedAt: "2024-11-14",
       },
       {
         caseNumber: "CLM-25145134",
         status: "작성중",
-        accidentDate: "2025-01-13",
+        accidentDate: "2024-11-13",
         insuranceCompany: "현대해상",
         insurancePolicyNo: "HD2024-11111",
         insuranceAccidentNo: "25219941",
@@ -1865,10 +1961,10 @@ export class DbStorage implements IStorage {
         accidentDescription: "보일러 배관 동파로 인한 누수 사고",
         assignedTo: partner01?.id || null,
         createdBy: admin01.id,
-        createdAt: "2025-01-13",
-        updatedAt: "2025-01-13",
+        createdAt: "2024-11-13",
+        updatedAt: "2024-11-13",
       },
-    ];
+    );
 
     await db.insert(cases).values(testCases);
   }

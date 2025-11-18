@@ -2037,13 +2037,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get cases filtered by user role and permissions
       const filteredCases = await storage.getAllCases(currentUser);
       
-      // Calculate statistics from filtered cases
+      // Helper function to parse date from case
+      const parseAccidentDate = (dateStr: string | null): Date | null => {
+        if (!dateStr) return null;
+        try {
+          return new Date(dateStr);
+        } catch {
+          return null;
+        }
+      };
+      
+      // Calculate current month (2024-11) and last month (2024-10) ranges
+      const now = new Date();
+      const currentMonth = 11; // November
+      const currentYear = 2024;
+      const lastMonth = 10; // October
+      const lastYear = 2024;
+      
+      // Filter cases for current month (2024-11)
+      const currentMonthCases = filteredCases.filter(c => {
+        const accidentDate = parseAccidentDate(c.accidentDate);
+        if (!accidentDate) return false;
+        return accidentDate.getFullYear() === currentYear && accidentDate.getMonth() + 1 === currentMonth;
+      });
+      
+      // Filter cases for last month (2024-10)
+      const lastMonthCases = filteredCases.filter(c => {
+        const accidentDate = parseAccidentDate(c.accidentDate);
+        if (!accidentDate) return false;
+        return accidentDate.getFullYear() === lastYear && accidentDate.getMonth() + 1 === lastMonth;
+      });
+      
+      // Calculate statistics
+      const receivedCases = currentMonthCases.length;
+      const lastMonthReceivedCases = lastMonthCases.length;
+      const pendingCases = currentMonthCases.filter(c => c.status === "제출" || c.status === "검토중" || c.status === "1차승인").length;
+      const lastMonthPendingCases = lastMonthCases.filter(c => c.status === "제출" || c.status === "검토중" || c.status === "1차승인").length;
+      
+      // Calculate changes
+      const receivedCasesChangeCount = receivedCases - lastMonthReceivedCases;
+      const receivedCasesChange = lastMonthReceivedCases > 0 
+        ? ((receivedCasesChangeCount / lastMonthReceivedCases) * 100)
+        : 0;
+      
+      const pendingCasesChangeCount = pendingCases - lastMonthPendingCases;
+      const pendingCasesChange = lastMonthPendingCases > 0
+        ? ((pendingCasesChangeCount / lastMonthPendingCases) * 100)
+        : 0;
+      
       const stats = {
-        // 접수건: 총 케이스 수
-        receivedCases: filteredCases.length,
+        // 접수건: 이번달 케이스 수
+        receivedCases,
+        lastMonthReceivedCases,
+        receivedCasesChange: Math.round(receivedCasesChange * 10) / 10, // 소수점 1자리
+        receivedCasesChangeCount,
         
-        // 미결건: status가 "접수", "조사중", "견적중" 등 완료가 아닌 케이스
-        pendingCases: filteredCases.filter(c => c.status !== "완료").length,
+        // 미결건: status가 "제출", "검토중", "1차승인"인 케이스
+        pendingCases,
+        lastMonthPendingCases,
+        pendingCasesChange: Math.round(pendingCasesChange * 10) / 10, // 소수점 1자리
+        pendingCasesChangeCount,
         
         // 보험사 미정산: insuranceSettlementStatus가 "미정산"인 케이스
         insuranceUnsettledCases: filteredCases.filter(c => c.insuranceSettlementStatus === "미정산").length,
