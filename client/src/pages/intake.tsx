@@ -1492,7 +1492,9 @@ export default function Intake() {
                               display: 'flex',
                               flexDirection: 'row',
                               alignItems: 'center',
+                              justifyContent: 'center',
                               gap: '12px',
+                              height: '68px',
                             }}
                           >
                             <div 
