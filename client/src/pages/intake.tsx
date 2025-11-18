@@ -1923,7 +1923,7 @@ export default function Intake() {
                             </label>
                             <input
                               type="text"
-                              placeholder="선택"
+                              placeholder="피해 내용 입력"
                               value={formData.damageDetails}
                               onChange={(e) => handleInputChange("damageDetails", e.target.value)}
                               style={{ height: '68px', padding: '10px 20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em', color: '#0C0C0C' }}
