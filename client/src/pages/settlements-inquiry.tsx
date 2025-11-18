@@ -100,43 +100,23 @@ export default function SettlementsInquiry() {
     if (!user) return [];
     
     return claimCases.map((caseItem) => {
-      const estimateData = estimatesMap.get(caseItem.id);
+      // Use cases.estimateAmount as the primary source of truth for estimate total
+      // This is set when the estimate is saved in field-estimate.tsx
+      const parseAmount = (value: string | number | null | undefined): number => {
+        if (value === null || value === undefined) return 0;
+        
+        // If already a number, return it directly (handle NaN case)
+        if (typeof value === 'number') {
+          return isNaN(value) ? 0 : value;
+        }
+        
+        // If string, remove commas and parse
+        const cleaned = String(value).replace(/,/g, '');
+        const parsed = Number(cleaned);
+        return isNaN(parsed) ? 0 : parsed;
+      };
       
-      // Calculate estimate total from labor and material costs
-      let estimateTotal = 0;
-      if (estimateData?.estimate?.laborCostData && estimateData?.estimate?.materialCostData) {
-        const laborData = estimateData.estimate.laborCostData as any[];
-        const materialData = estimateData.estimate.materialCostData as any[];
-        
-        const laborTotal = laborData.reduce((sum, row) => sum + (row.amount || 0), 0);
-        const materialTotal = materialData.reduce((sum, row) => sum + (row.금액 || 0), 0);
-        const baseForFees = laborTotal + materialTotal;
-        const managementFee = Math.round(baseForFees * 0.06);
-        const profit = Math.round(baseForFees * 0.15);
-        const vatBase = laborTotal + materialTotal + managementFee + profit;
-        const vat = Math.round(vatBase * 0.1);
-        estimateTotal = vatBase + vat;
-      } else {
-        // Fallback chain: try estimate's totalAmount, then case's estimateAmount
-        // Robust parsing that handles string (with commas), number, and null
-        const parseAmount = (value: string | number | null | undefined): number => {
-          if (value === null || value === undefined) return 0;
-          
-          // If already a number, return it directly (handle NaN case)
-          if (typeof value === 'number') {
-            return isNaN(value) ? 0 : value;
-          }
-          
-          // If string, remove commas and parse
-          const cleaned = String(value).replace(/,/g, '');
-          const parsed = Number(cleaned);
-          return isNaN(parsed) ? 0 : parsed;
-        };
-        
-        const storedTotal = parseAmount(estimateData?.estimate?.totalAmount);
-        const caseTotal = parseAmount(caseItem.estimateAmount);
-        estimateTotal = storedTotal > 0 ? storedTotal : caseTotal;
-      }
+      const estimateTotal = parseAmount(caseItem.estimateAmount);
 
       // Parse and validate processingTypes
       let processingTypes: string[] = [];
