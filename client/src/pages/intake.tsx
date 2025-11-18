@@ -385,9 +385,12 @@ export default function Intake() {
       setFormData((prev) => ({
         ...prev,
         insuredName: prev.policyHolderName,
+        insuredIdNumber: prev.policyHolderIdNumber,
+        insuredAddress: prev.policyHolderAddress,
+        // insuredContact는 보험계약자에 연락처 필드가 없으므로 복사하지 않음
       }));
     }
-  }, [sameAsPolicyHolder, formData.policyHolderName]);
+  }, [sameAsPolicyHolder, formData.policyHolderName, formData.policyHolderIdNumber, formData.policyHolderAddress]);
 
   const cleanFormData = (data: typeof formData) => {
     const cleaned: any = {};
