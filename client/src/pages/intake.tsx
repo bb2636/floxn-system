@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -55,9 +55,6 @@ export default function Intake() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("접수하기");
-  
-  // 초기 마운트 추적 (localStorage 불러오기 완료 전까지 자동 저장 방지)
-  const isInitialMount = useRef(true);
   
   // Collapsible states - 3 main sections
   const [basicInfoOpen, setBasicInfoOpen] = useState(true);
@@ -355,52 +352,6 @@ export default function Intake() {
       setLocation("/");
     }
   }, [user, userLoading, setLocation]);
-
-  // 페이지 로드 시 localStorage에서 저장된 데이터 불러오기
-  useEffect(() => {
-    try {
-      const savedDraft = localStorage.getItem('intakeFormDraft');
-      if (savedDraft) {
-        const { 
-          formData: savedFormData,
-          sameAsPolicyHolder: savedSameAsPolicyHolder,
-          selectedPartner: savedSelectedPartner,
-          additionalVictims: savedAdditionalVictims,
-        } = JSON.parse(savedDraft);
-        
-        setFormData(savedFormData);
-        if (savedSameAsPolicyHolder !== undefined) setSameAsPolicyHolder(savedSameAsPolicyHolder);
-        if (savedSelectedPartner) setSelectedPartner(savedSelectedPartner);
-        if (savedAdditionalVictims) setAdditionalVictims(savedAdditionalVictims);
-        
-        toast({
-          description: "이전에 저장한 내용을 불러왔습니다.",
-          duration: 2000,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to load saved draft:', error);
-    } finally {
-      // localStorage 불러오기 완료 후 자동 저장 활성화
-      isInitialMount.current = false;
-    }
-  }, []);
-
-  // formData 변경 시 자동으로 localStorage에 저장 (자동 임시저장)
-  useEffect(() => {
-    // 초기 마운트 시에는 저장하지 않음 (localStorage 불러오기 완료 후에만 저장)
-    if (isInitialMount.current) {
-      return;
-    }
-    
-    const draftData = {
-      formData,
-      sameAsPolicyHolder,
-      selectedPartner,
-      additionalVictims,
-    };
-    localStorage.setItem('intakeFormDraft', JSON.stringify(draftData));
-  }, [formData, sameAsPolicyHolder, selectedPartner, additionalVictims]);
 
   useEffect(() => {
     if (sameAsPolicyHolder) {
