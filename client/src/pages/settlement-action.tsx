@@ -136,6 +136,9 @@ export default function SettlementAction() {
       const assignedPartnerValue = caseItem.assignedPartner || "";
       const partnerUser = usersByIdMap.get(assignedPartnerValue) || usersByUsernameMap.get(assignedPartnerValue);
       
+      // Get review user (심사 담당자) - reviewedBy is user ID
+      const reviewUser = caseItem.reviewedBy ? usersByIdMap.get(caseItem.reviewedBy) : null;
+      
       return {
         id: caseItem.id,
         date: caseItem.createdAt ? format(new Date(caseItem.createdAt), "yyyy-MM-dd") : "-",
@@ -144,7 +147,8 @@ export default function SettlementAction() {
         caseNumber: caseItem.caseNumber,
         contractor: caseItem.policyHolderName || "-",
         assessor: caseItem.assessorId || "-",
-        reviewManager: caseItem.reviewedBy || "-", // 심사 담당자
+        reviewManager: reviewUser?.name || "-", // 심사 담당자 (reviewedBy user's name)
+        partnerManager: caseItem.assignedPartnerManager || "-", // 담당자 (협력사 담당자)
         partner: caseItem.assignedPartner || "-",
         partnerName: partnerUser?.name || caseItem.assignedPartner || "-", // 협력사 이름
         partnerUser: partnerUser, // 협력사 사용자 정보
@@ -420,6 +424,20 @@ export default function SettlementAction() {
                       color: "rgba(12, 12, 12, 0.8)",
                       borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                       textAlign: "center",
+                      minWidth: "80px",
+                    }}
+                  >
+                    담당자
+                  </th>
+                  <th
+                    style={{
+                      padding: "12px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "rgba(12, 12, 12, 0.8)",
+                      borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                      textAlign: "center",
                       minWidth: "100px",
                     }}
                   >
@@ -458,7 +476,7 @@ export default function SettlementAction() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={10} style={{ padding: "40px", textAlign: "center" }}>
+                    <td colSpan={11} style={{ padding: "40px", textAlign: "center" }}>
                       <span
                         style={{
                           fontFamily: "Pretendard",
@@ -472,7 +490,7 @@ export default function SettlementAction() {
                   </tr>
                 ) : filteredSettlements.length === 0 ? (
                   <tr>
-                    <td colSpan={10} style={{ padding: "40px", textAlign: "center" }}>
+                    <td colSpan={11} style={{ padding: "40px", textAlign: "center" }}>
                       <span
                         style={{
                           fontFamily: "Pretendard",
@@ -577,6 +595,18 @@ export default function SettlementAction() {
                         }}
                       >
                         {row.reviewManager}
+                      </td>
+                      <td
+                        style={{
+                          padding: "12px 16px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "rgba(12, 12, 12, 0.8)",
+                          borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                          textAlign: "center",
+                        }}
+                      >
+                        {row.partnerManager}
                       </td>
                       <td
                         style={{
