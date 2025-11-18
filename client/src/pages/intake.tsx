@@ -172,14 +172,6 @@ export default function Intake() {
     });
   }, [partners, partnerStats]);
 
-  // 검색어로 필터링된 협력사 목록
-  const filteredPartners = useMemo(() => {
-    if (!partnerSearchQuery) return [];
-    return partnersWithStats.filter(p => 
-      p.name.toLowerCase().includes(partnerSearchQuery.toLowerCase())
-    );
-  }, [partnerSearchQuery, partnersWithStats]);
-
   // 선택된 협력사의 담당자 목록
   const partnerManagers = useMemo(() => {
     if (!selectedPartner || !partners) return [];
@@ -261,6 +253,40 @@ export default function Intake() {
     urgency: "",
     specialRequests: "",
   });
+
+  // 피보험자 주소에서 시 단위 추출 (예: "서울특별시 강남구" -> "서울", "경기도 성남시" -> "성남")
+  const extractCityFromAddress = (address: string): string => {
+    if (!address) return "";
+    
+    // 광역시/특별시 패턴
+    const specialCityMatch = address.match(/(서울|부산|대구|인천|광주|대전|울산|세종)/);
+    if (specialCityMatch) return specialCityMatch[1];
+    
+    // 일반 시 패턴 (예: "경기도 성남시" -> "성남")
+    const cityMatch = address.match(/([가-힣]+)시/);
+    if (cityMatch) return cityMatch[1];
+    
+    return "";
+  };
+
+  // 검색어로 필터링된 협력사 목록
+  const filteredPartners = useMemo(() => {
+    // 검색어가 있으면 모든 협력사에서 검색
+    if (partnerSearchQuery) {
+      return partnersWithStats.filter(p => 
+        p.name.toLowerCase().includes(partnerSearchQuery.toLowerCase())
+      );
+    }
+    
+    // 검색어가 없으면 피보험자 주소 기반으로 지역 협력사만 표시
+    const city = extractCityFromAddress(formData.insuredAddress);
+    if (!city) return partnersWithStats; // 주소가 없으면 전체 표시
+    
+    return partnersWithStats.filter(p => {
+      // 협력사의 서비스 지역에 해당 시가 포함되어 있는지 확인
+      return p.region.includes(city);
+    });
+  }, [partnerSearchQuery, partnersWithStats, formData.insuredAddress]);
 
   // 선택된 의뢰사에 해당하는 직원 필터링
   const filteredClientEmployees = useMemo(() => {
@@ -2638,8 +2664,12 @@ export default function Intake() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '824px', marginTop: '60px' }}>
-                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', textAlign: 'center', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                        협력사를 검색해주세요
+                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', textAlign: 'center', letterSpacing: '-0.01em', color: '#686A6E', whiteSpace: 'pre-line' }}>
+                        {partnerSearchQuery 
+                          ? "검색 결과가 없습니다" 
+                          : formData.insuredAddress
+                            ? "해당 지역에 서비스 가능한 협력사가 없습니다.\n검색을 이용해주세요"
+                            : "피보험자 주소를 입력하면 해당 지역의 협력사를 볼 수 있습니다"}
                       </span>
                     </div>
                   </div>
