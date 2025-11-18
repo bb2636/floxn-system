@@ -882,10 +882,15 @@ export default function SettlementAction() {
                       fontFamily: "Pretendard",
                       fontSize: "18px",
                       fontWeight: 600,
-                      color: "#D02B20",
+                      color: selectedCase.caseData.status === "정산완료" || selectedCase.caseData.status === "입금완료"
+                        ? "#008FED"
+                        : "#D02B20",
                     }}
                   >
-                    {selectedCase.approvedAmount}원
+                    {selectedCase.caseData.status === "정산완료" || selectedCase.caseData.status === "입금완료"
+                      ? "0원"
+                      : `${selectedCase.approvedAmount}원`
+                    }
                   </div>
                 </div>
               </div>
