@@ -58,8 +58,9 @@ export default function SettlementsInquiry() {
     return null;
   }
 
-  // Filter cases with status '청구' (claim)
-  const claimCases = cases.filter(c => c.status === "청구");
+  // Filter cases with status '청구' and after (claim, payment, settlement)
+  const settlementStatuses = ["청구", "입금완료", "일부입금", "정산완료"];
+  const claimCases = cases.filter(c => settlementStatuses.includes(c.status));
   const caseIds = claimCases.map(c => c.id);
 
   // Fetch all estimates in a single batch request using react-query
@@ -1124,7 +1125,7 @@ export default function SettlementsInquiry() {
                       color: "rgba(12, 12, 12, 0.5)",
                     }}
                   >
-                    진행상태가 '청구'인 접수건이 없습니다.
+                    정산 조회 대상 접수건이 없습니다.
                   </td>
                 </tr>
               ) : tableRows.map((row, index) => (
