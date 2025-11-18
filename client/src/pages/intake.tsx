@@ -589,7 +589,7 @@ export default function Intake() {
       {/* Main Content */}
       <main className="relative flex items-center justify-center" style={{ padding: '0 0 40px 0' }}>
         {/* 1660px Centered Container */}
-        <div style={{ width: '1660px', marginTop: '89px' }}>
+        <div style={{ width: '1660px' }}>
           {/* Page Title */}
           <div 
             className="flex items-center gap-4"
