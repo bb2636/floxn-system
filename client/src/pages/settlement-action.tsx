@@ -150,7 +150,7 @@ export default function SettlementAction() {
         reviewManager: reviewUser?.name || "-", // 심사 담당자 (reviewedBy user's name)
         partnerManager: caseItem.assignedPartnerManager || "-", // 담당자 (협력사 담당자)
         partner: caseItem.assignedPartner || "-",
-        partnerName: partnerUser?.name || caseItem.assignedPartner || "-", // 협력사 이름
+        partnerName: partnerUser?.company || caseItem.assignedPartner || "-", // 협력사 회사명
         partnerUser: partnerUser, // 협력사 사용자 정보
         clientManager: caseItem.clientName || "-", // 당사 담당자
         approvedAmount: formatNumberWithComma(approvedAmount), // 승인금액
