@@ -2388,6 +2388,7 @@ export default function Intake() {
             
             <button
               onClick={handleSave}
+              disabled={saveMutation.isPending}
               style={{
                 height: '56px',
                 padding: '0 32px',
@@ -2396,15 +2397,16 @@ export default function Intake() {
                 fontSize: '16px',
                 lineHeight: '128%',
                 letterSpacing: '-0.01em',
-                background: 'rgba(12, 12, 12, 0.1)',
+                background: saveMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : 'rgba(12, 12, 12, 0.4)',
                 border: 'none',
                 borderRadius: '8px',
-                color: 'rgba(12, 12, 12, 0.7)',
-                cursor: 'pointer',
+                color: '#FFFFFF',
+                cursor: saveMutation.isPending ? 'not-allowed' : 'pointer',
+                opacity: saveMutation.isPending ? 0.5 : 1,
               }}
               data-testid="button-save"
             >
-              저장
+              {saveMutation.isPending ? '저장 중...' : '저장'}
             </button>
             
             <button
