@@ -20,6 +20,7 @@ interface SettlementRow {
   withdrawalNumber: string;
   accidentNumber: string;
   admin: string;
+  depositBank: string; // 입금은행
   withdrawalDate: string;
   constructionStatus: string;
   // 손해방지비용
@@ -54,9 +55,20 @@ export default function SettlementsInquiry() {
     queryKey: ["/api/cases"],
   });
 
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+  });
+
   if (!user) {
     return null;
   }
+
+  // Create a map for quick user lookup by username
+  const usersMap = useMemo(() => {
+    const map = new Map<string, User>();
+    allUsers.forEach(u => map.set(u.username, u));
+    return map;
+  }, [allUsers]);
 
   // Filter cases with status '청구' and after (claim, payment, settlement)
   const settlementStatuses = ["청구", "입금완료", "일부입금", "정산완료"];
@@ -178,6 +190,11 @@ export default function SettlementsInquiry() {
         ? ((propertyDifference / propertyEstimateAmount) * 100).toFixed(1) + "%"
         : "-";
 
+      // Get assigned partner's bank information
+      const assignedPartnerUsername = caseItem.assignedPartner || user.username;
+      const partnerUser = usersMap.get(assignedPartnerUsername);
+      const depositBank = partnerUser?.bankName || "-";
+
       return {
         id: caseItem.id,
         caseNumber: caseItem.caseNumber,
@@ -185,7 +202,8 @@ export default function SettlementsInquiry() {
         manager: caseItem.assessorId || "-",
         withdrawalNumber: caseItem.insurancePolicyNo || "-",
         accidentNumber: caseItem.insuranceAccidentNo || "-",
-        admin: caseItem.assignedPartner || user.username,
+        admin: assignedPartnerUsername,
+        depositBank,
         withdrawalDate: caseItem.completionDate || caseItem.claimDate || "-",
         constructionStatus: caseItem.recoveryType ? "유" : "무",
         preventionEstimateAmount,
@@ -199,9 +217,9 @@ export default function SettlementsInquiry() {
         claimAmount: estimateTotal,
       };
     });
-  }, [claimCases, estimatesMap, user]);
+  }, [claimCases, estimatesMap, user, usersMap]);
 
-  const isLoading = casesLoading || estimatesLoading;
+  const isLoading = casesLoading || estimatesLoading || usersLoading;
 
   const handleReset = () => {
     setSearchQuery("");
@@ -1438,12 +1456,12 @@ export default function SettlementsInquiry() {
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      color: row.depositBank !== "-" ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
                     }}
                   >
-                    ----
+                    {row.depositBank}
                   </td>
                   {/* 입금액 */}
                   <td
