@@ -507,6 +507,29 @@ export default function Intake() {
     });
   };
 
+  // 필수 필드 검증 함수 (현장접수의 선택사항 제외)
+  const isFormValid = useMemo(() => {
+    // 1. 기본 정보
+    if (!formData.accidentDate) return false;
+    if (!formData.insuranceCompany) return false;
+    if (!formData.insuranceAccidentNo && !formData.insurancePolicyNo) return false;
+    if (!formData.clientResidence) return false;
+    if (!formData.clientName) return false;
+    
+    // 2. 피보험자 및 피해자 정보
+    if (!formData.policyHolderName && !formData.insuredName) return false;
+    if (!formData.victimName) return false;
+    if (!formData.victimContact) return false;
+    if (!formData.victimAddress) return false;
+    
+    // 3. 사고 및 피해 현황
+    if (!formData.assignedPartner) return false;
+    if (!formData.assignedPartnerManager) return false;
+    if (formData.damageItems.length === 0) return false;
+    
+    return true;
+  }, [formData]);
+
   // 접수완료 - 필수 항목 검증 후 제출
   const handleSubmit = () => {
     // Validation: 접수일자 필수
@@ -536,6 +559,24 @@ export default function Intake() {
       return;
     }
     
+    // Validation: 의뢰사 필수
+    if (!formData.clientResidence) {
+      toast({
+        description: "의뢰사를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validation: 의뢰자 필수
+    if (!formData.clientName) {
+      toast({
+        description: "의뢰자를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Validation: 보험계약자 또는 피보험자 중 하나의 성명 필수
     if (!formData.policyHolderName && !formData.insuredName) {
       toast({
@@ -549,6 +590,51 @@ export default function Intake() {
     if (!formData.victimName) {
       toast({
         description: "피해자 성명을 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validation: 피해자 연락처 필수
+    if (!formData.victimContact) {
+      toast({
+        description: "피해자 연락처를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validation: 피해자 주소 필수
+    if (!formData.victimAddress) {
+      toast({
+        description: "피해자 주소를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validation: 협력사 필수
+    if (!formData.assignedPartner) {
+      toast({
+        description: "협력사를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validation: 협력사 담당자 필수
+    if (!formData.assignedPartnerManager) {
+      toast({
+        description: "협력사 담당자를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validation: 피해내용 최소 1개 필수
+    if (formData.damageItems.length === 0) {
+      toast({
+        description: "피해내용을 최소 1개 이상 입력해주세요.",
         variant: "destructive",
       });
       return;
@@ -2411,7 +2497,7 @@ export default function Intake() {
             
             <button
               onClick={handleSubmit}
-              disabled={submitMutation.isPending}
+              disabled={!isFormValid || submitMutation.isPending}
               style={{
                 height: '56px',
                 padding: '0 32px',
@@ -2420,16 +2506,16 @@ export default function Intake() {
                 fontSize: '16px',
                 lineHeight: '128%',
                 letterSpacing: '-0.01em',
-                background: 'rgba(12, 12, 12, 0.6)',
+                background: !isFormValid || submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : 'rgba(12, 12, 12, 0.6)',
                 border: 'none',
                 borderRadius: '8px',
                 color: '#FFFFFF',
-                cursor: submitMutation.isPending ? 'not-allowed' : 'pointer',
-                opacity: submitMutation.isPending ? 0.5 : 1,
+                cursor: !isFormValid || submitMutation.isPending ? 'not-allowed' : 'pointer',
+                opacity: !isFormValid || submitMutation.isPending ? 0.5 : 1,
               }}
               data-testid="button-submit"
             >
-              접수완료
+              {submitMutation.isPending ? '접수 중...' : '접수완료'}
             </button>
           </div>
         </div>
