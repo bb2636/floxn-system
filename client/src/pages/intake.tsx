@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Star, Minus, Calendar, HelpCircle, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Star, Minus, HelpCircle, ChevronDown, ChevronUp, X } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
+import calendarIcon from "@assets/calendar_month_1763445008806.png";
 import { GlobalHeader } from "@/components/global-header";
 
 export default function Intake() {
@@ -700,6 +701,7 @@ export default function Intake() {
                               width: '768px',
                               height: '68px',
                               padding: '10px 20px',
+                              paddingRight: '50px',
                               background: 'rgba(12, 12, 12, 0.04)',
                               borderRadius: '8px',
                               border: 'none',
@@ -709,11 +711,13 @@ export default function Intake() {
                               letterSpacing: '-0.02em',
                               color: '#0C0C0C',
                             }}
+                            className="[&::-webkit-calendar-picker-indicator]:opacity-0"
                             data-testid="input-accident-date"
                           />
-                          <Calendar 
-                            className="absolute right-5 top-1/2 -translate-y-1/2 w-[30px] h-[30px] pointer-events-none"
-                            style={{ color: 'rgba(12, 12, 12, 0.8)' }}
+                          <img 
+                            src={calendarIcon}
+                            alt="달력"
+                            className="absolute right-5 top-1/2 -translate-y-1/2 w-[24px] h-[24px] pointer-events-none"
                           />
                         </div>
                       </div>
