@@ -902,8 +902,19 @@ export default function Intake() {
                     {/* 조사자 정보 4-column */}
                     <div style={{ display: 'flex', gap: '20px', padding: '0 20px' }}>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>순서팀</label>
-                        <input type="text" placeholder="입력해주세요" value={formData.investigatorTeam} onChange={(e) => handleInputChange("investigatorTeam", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-team" />
+                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>손사명</label>
+                        <Select value={formData.investigatorTeam} onValueChange={(value) => handleInputChange("investigatorTeam", value)}>
+                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-investigator-team">
+                            <SelectValue placeholder="선택해주세요" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {investigators?.map((investigator) => (
+                              <SelectItem key={investigator.id} value={investigator.company || investigator.name} data-testid={`select-option-investigator-team-${investigator.id}`}>
+                                {investigator.company || investigator.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/부서</label>
