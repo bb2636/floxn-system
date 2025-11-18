@@ -1934,7 +1934,7 @@ export default function Intake() {
                         </div>
 
                         {/* 입력 Button */}
-                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '26px 0px 0px', gap: '10px', width: '73px', height: '94px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '26px 0px 0px', gap: '10px', width: '100px', height: '94px' }}>
                           <button
                             onClick={handleAddDamageItem}
                             disabled={!formData.damageItem || !formData.damageType || !formData.damageQuantity || !formData.damageDetails}
@@ -1944,7 +1944,7 @@ export default function Intake() {
                               justifyContent: 'center',
                               alignItems: 'center',
                               padding: '0px 24px',
-                              width: '73px',
+                              width: '100px',
                               height: '68px',
                               background: (formData.damageItem && formData.damageType && formData.damageQuantity && formData.damageDetails) 
                                 ? '#008FED' 
@@ -1954,6 +1954,7 @@ export default function Intake() {
                               cursor: (formData.damageItem && formData.damageType && formData.damageQuantity && formData.damageDetails) 
                                 ? 'pointer' 
                                 : 'not-allowed',
+                              whiteSpace: 'nowrap',
                             }}
                             data-testid="button-add-damage"
                           >
