@@ -2045,7 +2045,7 @@ export default function Intake() {
                         padding: '32px 20px',
                         gap: '32px',
                         width: '1556px',
-                        background: '#FFFFFF',
+                        background: '#f7f7f7',
                         borderRadius: '12px',
                       }}
                     >
