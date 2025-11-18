@@ -834,17 +834,30 @@ export default function SettlementAction() {
                       marginBottom: "8px",
                     }}
                   >
-                    청산 상태
+                    정산 상태
                   </div>
                   <div
                     style={{
                       fontFamily: "Pretendard",
                       fontSize: "18px",
                       fontWeight: 600,
-                      color: "rgba(12, 12, 12, 0.9)",
+                      color: selectedCase.caseData.status === "정산완료" 
+                        ? "#008FED" 
+                        : selectedCase.caseData.status === "입금완료"
+                        ? "#008FED"
+                        : "rgba(12, 12, 12, 0.9)",
                     }}
                   >
-                    미정산
+                    {selectedCase.caseData.status === "청구" 
+                      ? "미정산" 
+                      : selectedCase.caseData.status === "입금완료"
+                      ? "입금완료"
+                      : selectedCase.caseData.status === "일부입금"
+                      ? "일부입금"
+                      : selectedCase.caseData.status === "정산완료"
+                      ? "정산완료"
+                      : selectedCase.caseData.status
+                    }
                   </div>
                 </div>
                 <div
@@ -872,7 +885,7 @@ export default function SettlementAction() {
                       color: "#D02B20",
                     }}
                   >
-                    2,650,000원
+                    {selectedCase.approvedAmount}원
                   </div>
                 </div>
               </div>
