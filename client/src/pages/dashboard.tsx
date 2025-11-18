@@ -38,7 +38,13 @@ export default function Dashboard() {
   // Fetch dashboard statistics
   const { data: stats, isLoading: statsLoading } = useQuery<{
     receivedCases: number;
+    lastMonthReceivedCases: number;
+    receivedCasesChange: number;
+    receivedCasesChangeCount: number;
     pendingCases: number;
+    lastMonthPendingCases: number;
+    pendingCasesChange: number;
+    pendingCasesChangeCount: number;
     insuranceUnsettledCases: number;
     insuranceUnsettledAmount: number;
     partnerUnsettledCases: number;
@@ -645,7 +651,7 @@ export default function Dashboard() {
                   }}>
                     접수건
                   </span>
-                  <div className="flex justify-between items-center w-full">
+                  <div className="flex flex-col" style={{ gap: '4px', width: '100%' }}>
                     <div className="flex items-center" style={{ gap: '8px' }}>
                       <span style={{
                         fontFamily: 'Pretendard',
@@ -657,6 +663,52 @@ export default function Dashboard() {
                       }}>
                         {stats.receivedCases}건
                       </span>
+                    </div>
+                    {/* 전월 대비 변화 표시 */}
+                    <div className="flex items-center gap-1">
+                      {stats.receivedCasesChange > 0 ? (
+                        <>
+                          <TrendingUp style={{ width: '12px', height: '12px', color: '#007AFF' }} />
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '11px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              color: '#007AFF',
+                            }}
+                          >
+                            {stats.receivedCasesChange > 0 ? '+' : ''}{stats.receivedCasesChange.toFixed(1)}% ({stats.receivedCasesChangeCount > 0 ? '+' : ''}{stats.receivedCasesChangeCount}건)
+                          </span>
+                        </>
+                      ) : stats.receivedCasesChange < 0 ? (
+                        <>
+                          <TrendingDown style={{ width: '12px', height: '12px', color: '#FF3B30' }} />
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '11px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              color: '#FF3B30',
+                            }}
+                          >
+                            {stats.receivedCasesChange.toFixed(1)}% ({stats.receivedCasesChangeCount}건)
+                          </span>
+                        </>
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            lineHeight: '128%',
+                            color: 'rgba(12, 12, 12, 0.5)',
+                          }}
+                        >
+                          변화 없음
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -673,7 +725,7 @@ export default function Dashboard() {
                   }}>
                     미결건
                   </span>
-                  <div className="flex justify-between items-center w-full">
+                  <div className="flex flex-col" style={{ gap: '4px', width: '100%' }}>
                     <div className="flex items-center" style={{ gap: '8px' }}>
                       <span style={{
                         fontFamily: 'Pretendard',
@@ -685,6 +737,52 @@ export default function Dashboard() {
                       }}>
                         {stats.pendingCases}건
                       </span>
+                    </div>
+                    {/* 전월 대비 변화 표시 */}
+                    <div className="flex items-center gap-1">
+                      {stats.pendingCasesChange > 0 ? (
+                        <>
+                          <TrendingUp style={{ width: '12px', height: '12px', color: '#007AFF' }} />
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '11px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              color: '#007AFF',
+                            }}
+                          >
+                            {stats.pendingCasesChange > 0 ? '+' : ''}{stats.pendingCasesChange.toFixed(1)}% ({stats.pendingCasesChangeCount > 0 ? '+' : ''}{stats.pendingCasesChangeCount}건)
+                          </span>
+                        </>
+                      ) : stats.pendingCasesChange < 0 ? (
+                        <>
+                          <TrendingDown style={{ width: '12px', height: '12px', color: '#FF3B30' }} />
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '11px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              color: '#FF3B30',
+                            }}
+                          >
+                            {stats.pendingCasesChange.toFixed(1)}% ({stats.pendingCasesChangeCount}건)
+                          </span>
+                        </>
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            lineHeight: '128%',
+                            color: 'rgba(12, 12, 12, 0.5)',
+                          }}
+                        >
+                          변화 없음
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1073,6 +1171,55 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
+                    {/* 전월 대비 변화 표시 */}
+                    <div className="flex items-center gap-1" style={{ marginTop: '4px' }}>
+                      {stats.receivedCasesChange > 0 ? (
+                        <>
+                          <TrendingUp style={{ width: '14px', height: '14px', color: '#007AFF' }} />
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              color: '#007AFF',
+                            }}
+                            data-testid="text-received-change"
+                          >
+                            {stats.receivedCasesChange > 0 ? '+' : ''}{stats.receivedCasesChange.toFixed(1)}% ({stats.receivedCasesChangeCount > 0 ? '+' : ''}{stats.receivedCasesChangeCount}건)
+                          </span>
+                        </>
+                      ) : stats.receivedCasesChange < 0 ? (
+                        <>
+                          <TrendingDown style={{ width: '14px', height: '14px', color: '#FF3B30' }} />
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              color: '#FF3B30',
+                            }}
+                            data-testid="text-received-change"
+                          >
+                            {stats.receivedCasesChange.toFixed(1)}% ({stats.receivedCasesChangeCount}건)
+                          </span>
+                        </>
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            lineHeight: '128%',
+                            color: 'rgba(12, 12, 12, 0.5)',
+                          }}
+                          data-testid="text-received-change"
+                        >
+                          변화 없음
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div
                     className="flex items-center justify-center"
@@ -1144,6 +1291,55 @@ export default function Dashboard() {
                           </span>
                         </div>
                       </div>
+                    </div>
+                    {/* 전월 대비 변화 표시 */}
+                    <div className="flex items-center gap-1" style={{ marginTop: '4px' }}>
+                      {stats.pendingCasesChange > 0 ? (
+                        <>
+                          <TrendingUp style={{ width: '14px', height: '14px', color: '#007AFF' }} />
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              color: '#007AFF',
+                            }}
+                            data-testid="text-pending-change"
+                          >
+                            {stats.pendingCasesChange > 0 ? '+' : ''}{stats.pendingCasesChange.toFixed(1)}% ({stats.pendingCasesChangeCount > 0 ? '+' : ''}{stats.pendingCasesChangeCount}건)
+                          </span>
+                        </>
+                      ) : stats.pendingCasesChange < 0 ? (
+                        <>
+                          <TrendingDown style={{ width: '14px', height: '14px', color: '#FF3B30' }} />
+                          <span
+                            style={{
+                              fontFamily: 'Pretendard',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              lineHeight: '128%',
+                              color: '#FF3B30',
+                            }}
+                            data-testid="text-pending-change"
+                          >
+                            {stats.pendingCasesChange.toFixed(1)}% ({stats.pendingCasesChangeCount}건)
+                          </span>
+                        </>
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: 'Pretendard',
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            lineHeight: '128%',
+                            color: 'rgba(12, 12, 12, 0.5)',
+                          }}
+                          data-testid="text-pending-change"
+                        >
+                          변화 없음
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div
