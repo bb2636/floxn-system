@@ -161,16 +161,23 @@ export default function SettlementsInquiry() {
       const hasPreventionCost = processingTypes.includes("손해방지");
       const hasPropertyCost = processingTypes.includes("피해세대복구");
 
-      // Only set amounts if we have a valid estimate total
+      // Calculate estimate amounts
       const preventionEstimateAmount = (hasPreventionCost && estimateTotal > 0) ? estimateTotal : 0;
-      const preventionApprovedAmount = (hasPreventionCost && estimateTotal > 0) ? estimateTotal : 0; // TODO: Get actual approved amount
+      const propertyEstimateAmount = (hasPropertyCost && estimateTotal > 0) ? estimateTotal : 0;
+
+      // Calculate approved amounts
+      // If reviewDecision is "승인", approved amount equals estimate amount
+      // Otherwise, approved amount is 0
+      const isApproved = caseItem.reviewDecision === "승인";
+      const preventionApprovedAmount = (hasPreventionCost && estimateTotal > 0 && isApproved) ? estimateTotal : 0;
+      const propertyApprovedAmount = (hasPropertyCost && estimateTotal > 0 && isApproved) ? estimateTotal : 0;
+
+      // Calculate differences and adjustment rates
       const preventionDifference = preventionApprovedAmount - preventionEstimateAmount;
       const preventionAdjustmentRate = preventionEstimateAmount > 0 
         ? ((preventionDifference / preventionEstimateAmount) * 100).toFixed(1) + "%"
         : "-";
 
-      const propertyEstimateAmount = (hasPropertyCost && estimateTotal > 0) ? estimateTotal : 0;
-      const propertyApprovedAmount = (hasPropertyCost && estimateTotal > 0) ? estimateTotal : 0; // TODO: Get actual approved amount
       const propertyDifference = propertyApprovedAmount - propertyEstimateAmount;
       const propertyAdjustmentRate = propertyEstimateAmount > 0
         ? ((propertyDifference / propertyEstimateAmount) * 100).toFixed(1) + "%"
