@@ -1318,9 +1318,9 @@ export default function Intake() {
                             style={{
                               height: '68px',
                               padding: '10px 20px',
-                              background: 'rgba(12, 12, 12, 0.04)',
+                              background: '#FDFDFD',
+                              border: '2px solid rgba(12, 12, 12, 0.08)',
                               borderRadius: '8px',
-                              border: 'none',
                               fontFamily: 'Pretendard',
                               fontWeight: 600,
                               fontSize: '16px',
