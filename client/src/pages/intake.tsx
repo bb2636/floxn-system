@@ -18,6 +18,39 @@ import { ko } from "date-fns/locale";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { GlobalHeader } from "@/components/global-header";
 
+// 피보험자 주소에서 지역 키워드 추출
+const extractCityFromAddress = (address: string): string => {
+  if (!address) return "";
+  
+  // 1. 광역시/특별시 패턴
+  const specialCityMatch = address.match(/(서울|부산|대구|인천|광주|대전|울산|세종)/);
+  if (specialCityMatch) return specialCityMatch[1];
+  
+  // 2. XXX시 패턴 (예: "경기도 성남시" -> "성남")
+  const cityMatch = address.match(/([가-힣]+)시/);
+  if (cityMatch) return cityMatch[1];
+  
+  // 3. XXX구 패턴 (예: "강남구" -> "강남")
+  const guMatch = address.match(/([가-힣]+)구/);
+  if (guMatch) return guMatch[1];
+  
+  // 4. 공백이나 슬래시로 분리된 마지막 단어 (예: "경기 일산" -> "일산", "경기/분당" -> "분당")
+  const parts = address.trim().split(/[\s/]+/).filter(p => p.length > 0);
+  if (parts.length > 1) {
+    // "도"로 끝나는 단어는 제외 (예: "경기도" 제외)
+    const lastPart = parts[parts.length - 1];
+    if (!lastPart.endsWith("도")) {
+      return lastPart;
+    }
+    // 마지막에서 두 번째 단어 시도
+    if (parts.length > 2) {
+      return parts[parts.length - 2];
+    }
+  }
+  
+  return address.trim();
+};
+
 export default function Intake() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -254,21 +287,6 @@ export default function Intake() {
     specialRequests: "",
   });
 
-  // 피보험자 주소에서 시 단위 추출 (예: "서울특별시 강남구" -> "서울", "경기도 성남시" -> "성남")
-  const extractCityFromAddress = (address: string): string => {
-    if (!address) return "";
-    
-    // 광역시/특별시 패턴
-    const specialCityMatch = address.match(/(서울|부산|대구|인천|광주|대전|울산|세종)/);
-    if (specialCityMatch) return specialCityMatch[1];
-    
-    // 일반 시 패턴 (예: "경기도 성남시" -> "성남")
-    const cityMatch = address.match(/([가-힣]+)시/);
-    if (cityMatch) return cityMatch[1];
-    
-    return "";
-  };
-
   // 검색어로 필터링된 협력사 목록
   const filteredPartners = useMemo(() => {
     // 검색어가 있으면 모든 협력사에서 검색
@@ -280,10 +298,10 @@ export default function Intake() {
     
     // 검색어가 없으면 피보험자 주소 기반으로 지역 협력사만 표시
     const city = extractCityFromAddress(formData.insuredAddress);
-    if (!city) return partnersWithStats; // 주소가 없으면 전체 표시
+    if (!city) return []; // 주소가 없으면 빈 배열
     
     return partnersWithStats.filter(p => {
-      // 협력사의 서비스 지역에 해당 시가 포함되어 있는지 확인
+      // 협력사의 서비스 지역에 해당 키워드가 포함되어 있는지 확인
       return p.region.includes(city);
     });
   }, [partnerSearchQuery, partnersWithStats, formData.insuredAddress]);
