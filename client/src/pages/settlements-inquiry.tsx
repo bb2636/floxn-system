@@ -63,8 +63,14 @@ export default function SettlementsInquiry() {
     return null;
   }
 
-  // Create a map for quick user lookup by username
-  const usersMap = useMemo(() => {
+  // Create maps for quick user lookup by both ID and username
+  const usersByIdMap = useMemo(() => {
+    const map = new Map<string, User>();
+    allUsers.forEach(u => map.set(u.id, u));
+    return map;
+  }, [allUsers]);
+
+  const usersByUsernameMap = useMemo(() => {
     const map = new Map<string, User>();
     allUsers.forEach(u => map.set(u.username, u));
     return map;
@@ -191,8 +197,9 @@ export default function SettlementsInquiry() {
         : "-";
 
       // Get assigned partner's bank information
-      const assignedPartnerUsername = caseItem.assignedPartner || user.username;
-      const partnerUser = usersMap.get(assignedPartnerUsername);
+      // Try both ID and username lookup for backward compatibility
+      const assignedPartnerValue = caseItem.assignedPartner || user.username;
+      const partnerUser = usersByIdMap.get(assignedPartnerValue) || usersByUsernameMap.get(assignedPartnerValue);
       const depositBank = partnerUser?.bankName || "-";
 
       return {
@@ -202,7 +209,7 @@ export default function SettlementsInquiry() {
         manager: caseItem.assessorId || "-",
         withdrawalNumber: caseItem.insurancePolicyNo || "-",
         accidentNumber: caseItem.insuranceAccidentNo || "-",
-        admin: assignedPartnerUsername,
+        admin: assignedPartnerValue,
         depositBank,
         withdrawalDate: caseItem.completionDate || caseItem.claimDate || "-",
         constructionStatus: caseItem.recoveryType ? "유" : "무",
@@ -217,7 +224,7 @@ export default function SettlementsInquiry() {
         claimAmount: estimateTotal,
       };
     });
-  }, [claimCases, estimatesMap, user, usersMap]);
+  }, [claimCases, estimatesMap, user, usersByIdMap, usersByUsernameMap]);
 
   const isLoading = casesLoading || estimatesLoading || usersLoading;
 

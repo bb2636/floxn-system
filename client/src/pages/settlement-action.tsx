@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, CaseWithLatestProgress } from "@shared/schema";
 import { Search, X } from "lucide-react";
@@ -30,12 +30,63 @@ export default function SettlementAction() {
     queryKey: ["/api/cases"],
   });
 
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+  });
+
   if (!user) {
     return null;
   }
 
+  // Create maps for quick user lookup by both ID and username
+  const usersByIdMap = useMemo(() => {
+    const map = new Map<string, User>();
+    allUsers.forEach(u => map.set(u.id, u));
+    return map;
+  }, [allUsers]);
+
+  const usersByUsernameMap = useMemo(() => {
+    const map = new Map<string, User>();
+    allUsers.forEach(u => map.set(u.username, u));
+    return map;
+  }, [allUsers]);
+
   // Filter cases with status '청구' (claim)
   const claimCases = cases.filter((c) => c.status === "청구");
+  const caseIds = claimCases.map(c => c.id);
+
+  // Fetch all estimates in a single batch request
+  const { data: estimatesData, isLoading: estimatesLoading } = useQuery({
+    queryKey: ["/api/estimates/batch/latest", caseIds],
+    queryFn: async () => {
+      if (caseIds.length === 0) return [];
+      
+      const response = await fetch("/api/estimates/batch/latest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caseIds }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to fetch estimates");
+      }
+      
+      return response.json();
+    },
+    enabled: caseIds.length > 0,
+    staleTime: 60000, // 1 minute cache
+  });
+
+  // Create a map for quick estimate lookup
+  const estimatesMap = useMemo(() => {
+    const map = new Map();
+    if (estimatesData) {
+      for (const item of estimatesData) {
+        map.set(item.caseId, item);
+      }
+    }
+    return map;
+  }, [estimatesData]);
 
   // Helper function to format number with commas
   const formatNumberWithComma = (value: string | number | null | undefined): string => {
@@ -45,21 +96,64 @@ export default function SettlementAction() {
     return numValue.toLocaleString("ko-KR");
   };
 
+  // Helper function to calculate approved amount from labor cost data
+  const calculateApprovedAmount = (caseId: string, caseItem: CaseWithLatestProgress): number => {
+    const estimateData = estimatesMap.get(caseId);
+    
+    // Calculate from labor cost data (most accurate)
+    if (estimateData?.estimate?.laborCostData) {
+      const laborData = estimateData.estimate.laborCostData as any[];
+      const laborTotal = laborData.reduce((sum, row) => sum + (row.amount || 0), 0);
+      
+      const managementFee = Math.round(laborTotal * 0.06); // 일반관리비 6%
+      const profit = Math.round(laborTotal * 0.15); // 이윤 15%
+      const subtotalBeforeVAT = laborTotal + managementFee + profit;
+      const vat = Math.round(subtotalBeforeVAT * 0.1); // VAT 10%
+      
+      return subtotalBeforeVAT + vat;
+    }
+    
+    // Fallback to estimateAmount
+    const parseAmount = (value: string | number | null | undefined): number => {
+      if (value === null || value === undefined) return 0;
+      if (typeof value === 'number') return isNaN(value) ? 0 : value;
+      const cleaned = String(value).replace(/,/g, '');
+      const parsed = Number(cleaned);
+      return isNaN(parsed) ? 0 : parsed;
+    };
+    
+    return parseAmount(caseItem.estimateAmount);
+  };
+
   // Map real case data to settlement rows
-  const settlements = claimCases.map((caseItem) => ({
-    id: caseItem.id,
-    date: caseItem.createdAt ? format(new Date(caseItem.createdAt), "yyyy-MM-dd") : "-",
-    insuranceCompany: caseItem.insuranceCompany || "-",
-    insuranceAccidentNo: caseItem.insuranceAccidentNo || "-",
-    caseNumber: caseItem.caseNumber,
-    contractor: caseItem.policyHolderName || "-",
-    assessor: caseItem.assessorId || "-",
-    reviewManager: caseItem.reviewedBy || "-", // 심사 담당자
-    partner: caseItem.assignedPartner || "-",
-    claimAmount: formatNumberWithComma(caseItem.estimateAmount), // 청구액 (천단위 콤마)
-    depositAmount: "0", // TODO: Add deposit tracking
-    caseData: caseItem,
-  }));
+  // useMemo ensures recomputation when users or estimates data changes
+  const settlements = useMemo(() => {
+    return claimCases.map((caseItem) => {
+      const approvedAmount = calculateApprovedAmount(caseItem.id, caseItem);
+      
+      // Get partner user - try both ID and username lookup
+      const assignedPartnerValue = caseItem.assignedPartner || "";
+      const partnerUser = usersByIdMap.get(assignedPartnerValue) || usersByUsernameMap.get(assignedPartnerValue);
+      
+      return {
+        id: caseItem.id,
+        date: caseItem.createdAt ? format(new Date(caseItem.createdAt), "yyyy-MM-dd") : "-",
+        insuranceCompany: caseItem.insuranceCompany || "-",
+        insuranceAccidentNo: caseItem.insuranceAccidentNo || "-",
+        caseNumber: caseItem.caseNumber,
+        contractor: caseItem.policyHolderName || "-",
+        assessor: caseItem.assessorId || "-",
+        reviewManager: caseItem.reviewedBy || "-", // 심사 담당자
+        partner: caseItem.assignedPartner || "-",
+        partnerName: partnerUser?.name || caseItem.assignedPartner || "-", // 협력사 이름
+        clientManager: caseItem.clientName || "-", // 당사 담당자
+        approvedAmount: formatNumberWithComma(approvedAmount), // 승인금액
+        claimAmount: formatNumberWithComma(approvedAmount), // 청구액 (승인금액과 동일)
+        depositAmount: "0", // TODO: Add deposit tracking
+        caseData: caseItem,
+      };
+    });
+  }, [claimCases, usersByIdMap, usersByUsernameMap, estimatesMap]);
 
   // Filter settlements based on search query
   const filteredSettlements = searchQuery.trim()
@@ -648,7 +742,7 @@ export default function SettlementAction() {
                   color: "rgba(12, 12, 12, 0.5)",
                 }}
               >
-                담당자
+                협력사
               </span>
               <span
                 style={{
@@ -657,7 +751,7 @@ export default function SettlementAction() {
                   color: "rgba(12, 12, 12, 0.7)",
                 }}
               >
-                {selectedCase.partner}
+                {selectedCase.partnerName}
               </span>
             </div>
           </div>
@@ -692,10 +786,10 @@ export default function SettlementAction() {
                     { label: "사고번호", value: selectedCase.insuranceAccidentNo },
                     { label: "접수번호", value: selectedCase.caseNumber },
                     { label: "계약자", value: selectedCase.contractor },
-                    { label: "접수 담당자", value: selectedCase.partner },
-                    { label: "담당자", value: selectedCase.assessor },
-                    { label: "승인금액", value: selectedCase.claimAmount },
-                    { label: "비급액", value: selectedCase.depositAmount },
+                    { label: "당사 담당자", value: selectedCase.clientManager },
+                    { label: "협력사", value: selectedCase.partnerName },
+                    { label: "승인금액", value: selectedCase.approvedAmount },
+                    { label: "청구액", value: selectedCase.claimAmount },
                   ].map((item, idx) => (
                     <div key={idx}>
                       <div
