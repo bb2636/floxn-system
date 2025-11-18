@@ -2,7 +2,7 @@ import { type User, type InsertUser, users, type Case, type CaseWithLatestProgre
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { eq, asc, desc, and, or, like } from "drizzle-orm";
+import { eq, asc, desc, and, or, like, sql } from "drizzle-orm";
 
 const SALT_ROUNDS = 10;
 
@@ -1730,9 +1730,10 @@ export class DbStorage implements IStorage {
 
   private async initDatabase() {
     try {
-      // Check if we have any users and cases
+      // Check if we have any users, cases, and estimates
       const existingUsers = await db.select().from(users);
       const existingCases = await db.select().from(cases);
+      const existingEstimates = await db.select().from(estimates);
       
       // Seed users if no users exist
       if (existingUsers.length === 0) {
@@ -1742,6 +1743,11 @@ export class DbStorage implements IStorage {
       // Seed cases if no cases exist (regardless of users)
       if (existingCases.length === 0) {
         await this.seedTestCases();
+      }
+      
+      // Seed estimates if no estimates exist
+      if (existingEstimates.length === 0) {
+        await this.seedTestEstimates();
       }
     } catch (error) {
       console.error("Database initialization error:", error);
@@ -1972,6 +1978,86 @@ export class DbStorage implements IStorage {
     );
 
     await db.insert(cases).values(testCases);
+  }
+
+  private async seedTestEstimates() {
+    try {
+      // Get all cases with status "완료" or "청구"
+      const completedCases = await db
+        .select()
+        .from(cases)
+        .where(sql`${cases.status} IN ('완료', '청구')`);
+
+      if (completedCases.length === 0) {
+        console.log("No completed or billed cases found for estimate seeding");
+        return;
+      }
+
+      // Get admin user for createdBy
+      const adminUsers = await db.select().from(users).where(sql`${users.role} = '관리자'`);
+      const admin01 = adminUsers.find(u => u.username === "admin01");
+      
+      if (!admin01) {
+        console.log("No admin user found for estimate seeding");
+        return;
+      }
+
+      // Create sample estimate data for each completed case
+      const estimateRecords = completedCases.map((caseRecord, index) => {
+        // Generate varied labor cost data
+        const laborCostData = [
+          {
+            id: `labor-${index}-1`,
+            category: "도배공사",
+            workName: "도배",
+            detailWork: "벽지",
+            standardPrice: 15000,
+            quantity: 20,
+            amount: 300000,
+            includeInEstimate: false, // 경비 제외
+          },
+          {
+            id: `labor-${index}-2`,
+            category: "장판공사",
+            workName: "장판",
+            detailWork: "PVC 장판",
+            standardPrice: 12000,
+            quantity: 15,
+            amount: 180000,
+            includeInEstimate: false, // 경비 제외
+          },
+        ];
+
+        // Generate varied material cost data
+        const materialCostData = [
+          {
+            id: `material-${index}-1`,
+            materialName: "벽지",
+            specification: "폭 92cm",
+            unit: "m",
+            standardPrice: 8000,
+            quantity: 25,
+            금액: 200000,
+          },
+        ];
+
+        return {
+          caseId: caseRecord.id,
+          version: 1,
+          status: "submitted",
+          createdBy: admin01.id,
+          laborCostData: laborCostData as any,
+          materialCostData: materialCostData as any,
+        };
+      });
+
+      // Insert estimates
+      await db.insert(estimates).values(estimateRecords);
+      
+      console.log(`Seeded ${estimateRecords.length} estimates for completed/billed cases`);
+    } catch (error) {
+      console.error("Error seeding test estimates:", error);
+    }
   }
 
   private async seedTestUsers() {

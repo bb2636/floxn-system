@@ -3,6 +3,9 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, reviewCaseSchema } from "@shared/schema";
 import { z } from "zod";
+import { db } from "./db";
+import { estimates } from "@shared/schema";
+import { sql, inArray } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Login endpoint
@@ -2085,6 +2088,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? ((pendingCasesChangeCount / lastMonthPendingCases) * 100)
         : 0;
       
+      // Helper function to calculate estimate total from laborCostData and materialCostData
+      const calculateEstimateTotal = (laborCostData: any, materialCostData: any): number => {
+        let laborTotalWithExpense = 0;
+        let laborTotalWithoutExpense = 0;
+        let materialTotal = 0;
+
+        // Calculate labor costs
+        if (Array.isArray(laborCostData)) {
+          laborCostData.forEach((row: any) => {
+            const amount = row.amount || 0;
+            if (row.includeInEstimate) {
+              laborTotalWithExpense += amount;
+            } else {
+              laborTotalWithoutExpense += amount;
+            }
+          });
+        }
+
+        // Calculate material costs
+        if (Array.isArray(materialCostData)) {
+          materialCostData.forEach((row: any) => {
+            materialTotal += (row.금액 || 0);
+          });
+        }
+
+        // 소계 (전체)
+        const subtotal = laborTotalWithExpense + laborTotalWithoutExpense + materialTotal;
+
+        // 일반관리비와 이윤 계산 대상 (경비 제외)
+        const baseForFees = laborTotalWithoutExpense + materialTotal;
+
+        // 일반관리비 (6%) - 경비 제외 항목에만 적용
+        const managementFee = Math.round(baseForFees * 0.06);
+
+        // 이윤 (15%) - 경비 제외 항목에만 적용
+        const profit = Math.round(baseForFees * 0.15);
+
+        // VAT 기준액 (소계 + 일반관리비 + 이윤)
+        const vatBase = subtotal + managementFee + profit;
+
+        // VAT (10%)
+        const vat = Math.round(vatBase * 0.1);
+
+        // 총 합계 (VAT 포함)
+        const total = vatBase + vat;
+
+        return total;
+      };
+
+      // Get estimates for all cases to calculate unsettled amounts
+      const caseIds = filteredCases.map(c => c.id);
+      const allEstimates = caseIds.length > 0
+        ? await db
+            .select()
+            .from(estimates)
+            .where(inArray(estimates.caseId, caseIds))
+        : [];
+
+      // Get latest estimate for each case
+      const latestEstimatesByCaseId = new Map<string, any>();
+      allEstimates.forEach(est => {
+        const existing = latestEstimatesByCaseId.get(est.caseId);
+        if (!existing || est.version > existing.version) {
+          latestEstimatesByCaseId.set(est.caseId, est);
+        }
+      });
+
+      // Calculate insurance unsettled (청구 상태: 보험사에 청구했지만 아직 받지 못함)
+      const insuranceUnsettledCases = filteredCases.filter(c => c.status === "청구");
+      const insuranceUnsettledAmount = insuranceUnsettledCases.reduce((sum, c) => {
+        const estimate = latestEstimatesByCaseId.get(c.id);
+        if (estimate) {
+          const total = calculateEstimateTotal(estimate.laborCostData, estimate.materialCostData);
+          return sum + total;
+        }
+        return sum;
+      }, 0);
+
+      // Calculate partner unsettled (완료 또는 청구 상태: 협력사가 작업 완료했지만 아직 지급하지 않음)
+      const partnerUnsettledCases = filteredCases.filter(c => c.status === "완료" || c.status === "청구");
+      const partnerUnsettledAmount = partnerUnsettledCases.reduce((sum, c) => {
+        const estimate = latestEstimatesByCaseId.get(c.id);
+        if (estimate) {
+          const total = calculateEstimateTotal(estimate.laborCostData, estimate.materialCostData);
+          return sum + total;
+        }
+        return sum;
+      }, 0);
+      
       const stats = {
         // 접수건: 이번달 케이스 수
         receivedCases,
@@ -2098,17 +2190,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pendingCasesChange: Math.round(pendingCasesChange * 10) / 10, // 소수점 1자리
         pendingCasesChangeCount,
         
-        // 보험사 미정산: insuranceSettlementStatus가 "미정산"인 케이스
-        insuranceUnsettledCases: filteredCases.filter(c => c.insuranceSettlementStatus === "미정산").length,
-        insuranceUnsettledAmount: filteredCases
-          .filter(c => c.insuranceSettlementStatus === "미정산")
-          .reduce((sum, c) => sum + (c.insuranceSettlementAmount || 0), 0),
+        // 보험사 미정산: "청구" 상태인 케이스들의 견적 금액 합계
+        insuranceUnsettledCases: insuranceUnsettledCases.length,
+        insuranceUnsettledAmount: Math.round(insuranceUnsettledAmount),
         
-        // 협력사 미정산: partnerSettlementStatus가 "미정산"인 케이스
-        partnerUnsettledCases: filteredCases.filter(c => c.partnerSettlementStatus === "미정산").length,
-        partnerUnsettledAmount: filteredCases
-          .filter(c => c.partnerSettlementStatus === "미정산")
-          .reduce((sum, c) => sum + (c.partnerSettlementAmount || 0), 0),
+        // 협력사 미정산: "완료" 또는 "청구" 상태인 케이스들의 견적 금액 합계
+        partnerUnsettledCases: partnerUnsettledCases.length,
+        partnerUnsettledAmount: Math.round(partnerUnsettledAmount),
       };
       
       res.json(stats);
