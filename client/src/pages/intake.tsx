@@ -49,6 +49,65 @@ export default function Intake() {
     queryKey: ["/api/user"],
   });
 
+  // 즐겨찾기 목록 가져오기
+  const { data: favorites = [] } = useQuery<Array<{ id: string; userId: string; menuName: string }>>({
+    queryKey: ["/api/favorites"],
+  });
+
+  // 현재 페이지가 즐겨찾기에 있는지 확인
+  const isFavorite = favorites.some(f => f.menuName === "접수하기");
+
+  // 즐겨찾기 추가
+  const addFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/favorites", { menuName: "접수하기" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+      toast({
+        description: "즐겨찾기에 추가되었습니다.",
+        duration: 2000,
+      });
+    },
+    onError: () => {
+      toast({
+        description: "즐겨찾기 추가에 실패했습니다.",
+        variant: "destructive",
+        duration: 2000,
+      });
+    },
+  });
+
+  // 즐겨찾기 제거
+  const removeFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("DELETE", "/api/favorites/접수하기");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+      toast({
+        description: "즐겨찾기에서 제거되었습니다.",
+        duration: 2000,
+      });
+    },
+    onError: () => {
+      toast({
+        description: "즐겨찾기 제거에 실패했습니다.",
+        variant: "destructive",
+        duration: 2000,
+      });
+    },
+  });
+
+  // 즐겨찾기 토글
+  const handleToggleFavorite = () => {
+    if (isFavorite) {
+      removeFavoriteMutation.mutate();
+    } else {
+      addFavoriteMutation.mutate();
+    }
+  };
+
   const { data: assessors } = useQuery<User[]>({
     queryKey: ["/api/users"],
     select: (users) => users.filter(u => u.role === "심사사"),
@@ -610,7 +669,19 @@ export default function Intake() {
             >
               새로운 접수
             </h1>
-            <Star className="w-5 h-5" style={{ color: 'rgba(12, 12, 12, 0.24)' }} data-testid="button-favorite" />
+            <button
+              onClick={handleToggleFavorite}
+              className="hover:opacity-70 transition-opacity cursor-pointer"
+              data-testid="button-favorite"
+            >
+              <Star 
+                className="w-5 h-5" 
+                style={{ 
+                  color: isFavorite ? '#FFD700' : 'rgba(12, 12, 12, 0.24)',
+                  fill: isFavorite ? '#FFD700' : 'none',
+                }} 
+              />
+            </button>
           </div>
 
           {/* Form Sections Container */}
