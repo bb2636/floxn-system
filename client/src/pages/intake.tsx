@@ -26,8 +26,6 @@ export default function Intake() {
   const [accidentDamageInfoOpen, setAccidentDamageInfoOpen] = useState(true);
   
   const [sameAsPolicyHolder, setSameAsPolicyHolder] = useState(false);
-  const [damagePreventionCost, setDamagePreventionCost] = useState(false);
-  const [victimIncidentAssistance, setVictimIncidentAssistance] = useState(false);
   const [additionalVictims, setAdditionalVictims] = useState<Array<{name: string, phone: string, address: string}>>([]);
   
   // 협력사 검색 팝업 상태
@@ -180,6 +178,8 @@ export default function Intake() {
       quantity: string;
       details: string;
     }>,
+    damagePreventionCost: false,
+    victimIncidentAssistance: false,
     assignedPartner: "",
     assignedPartnerManager: "",
     assignedPartnerContact: "",
@@ -242,16 +242,12 @@ export default function Intake() {
         const { 
           formData: savedFormData,
           sameAsPolicyHolder: savedSameAsPolicyHolder,
-          damagePreventionCost: savedDamagePreventionCost,
-          victimIncidentAssistance: savedVictimIncidentAssistance,
           selectedPartner: savedSelectedPartner,
           additionalVictims: savedAdditionalVictims,
         } = JSON.parse(savedDraft);
         
         setFormData(savedFormData);
         if (savedSameAsPolicyHolder !== undefined) setSameAsPolicyHolder(savedSameAsPolicyHolder);
-        if (savedDamagePreventionCost !== undefined) setDamagePreventionCost(savedDamagePreventionCost);
-        if (savedVictimIncidentAssistance !== undefined) setVictimIncidentAssistance(savedVictimIncidentAssistance);
         if (savedSelectedPartner) setSelectedPartner(savedSelectedPartner);
         if (savedAdditionalVictims) setAdditionalVictims(savedAdditionalVictims);
         
@@ -283,7 +279,12 @@ export default function Intake() {
           if (Array.isArray(value) && value.length > 0) {
             cleaned[key] = JSON.stringify(value);
           }
-        } else {
+        } 
+        // boolean 값을 "true"/"false" 문자열로 변환
+        else if (key === "damagePreventionCost" || key === "victimIncidentAssistance") {
+          cleaned[key] = value ? "true" : "false";
+        } 
+        else {
           cleaned[key] = value;
         }
       }
@@ -335,7 +336,7 @@ export default function Intake() {
     },
   });
 
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
       
@@ -426,6 +427,8 @@ export default function Intake() {
         quantity: string;
         details: string;
       }>,
+      damagePreventionCost: false,
+      victimIncidentAssistance: false,
       assignedPartner: "",
       assignedPartnerManager: "",
       assignedPartnerContact: "",
@@ -436,8 +439,6 @@ export default function Intake() {
     setFormData(initialFormData);
     setSelectedPartner(null);
     setSameAsPolicyHolder(false);
-    setDamagePreventionCost(false);
-    setVictimIncidentAssistance(false);
     setAdditionalVictims([]);
     localStorage.removeItem('intakeFormDraft');
     
@@ -1506,8 +1507,8 @@ export default function Intake() {
                               }}
                             >
                               <Checkbox
-                                checked={damagePreventionCost}
-                                onCheckedChange={(checked) => setDamagePreventionCost(checked as boolean)}
+                                checked={formData.damagePreventionCost}
+                                onCheckedChange={(checked) => handleInputChange("damagePreventionCost", checked as boolean)}
                                 className="w-6 h-6"
                                 data-testid="checkbox-damage-prevention"
                               />
@@ -1518,7 +1519,7 @@ export default function Intake() {
                                   fontSize: '14px',
                                   lineHeight: '128%',
                                   letterSpacing: '-0.01em',
-                                  color: damagePreventionCost ? '#008FED' : '#686A6E',
+                                  color: formData.damagePreventionCost ? '#008FED' : '#686A6E',
                                 }}
                               >
                                 손해방지
@@ -1533,8 +1534,8 @@ export default function Intake() {
                               }}
                             >
                               <Checkbox
-                                checked={victimIncidentAssistance}
-                                onCheckedChange={(checked) => setVictimIncidentAssistance(checked as boolean)}
+                                checked={formData.victimIncidentAssistance}
+                                onCheckedChange={(checked) => handleInputChange("victimIncidentAssistance", checked as boolean)}
                                 className="w-6 h-6"
                                 data-testid="checkbox-victim-incident"
                               />
@@ -1545,7 +1546,7 @@ export default function Intake() {
                                   fontSize: '14px',
                                   lineHeight: '128%',
                                   letterSpacing: '-0.01em',
-                                  color: victimIncidentAssistance ? '#008FED' : '#686A6E',
+                                  color: formData.victimIncidentAssistance ? '#008FED' : '#686A6E',
                                 }}
                               >
                                 피해세대복구

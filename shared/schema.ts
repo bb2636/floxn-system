@@ -157,6 +157,10 @@ export const cases = pgTable("cases", {
   // 피해 사항 (JSON으로 저장)
   damageItems: text("damage_items"), // JSON string of damage items array
   
+  // 손방 및 대물 선택
+  damagePreventionCost: text("damage_prevention_cost"), // "true" | "false" | null (손해방지 체크)
+  victimIncidentAssistance: text("victim_incident_assistance"), // "true" | "false" | null (피해세대복구 체크)
+  
   // 배당사항
   assignedPartner: text("assigned_partner"), // 협력사명
   assignedPartnerManager: text("assigned_partner_manager"), // 담당자명
