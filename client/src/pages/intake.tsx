@@ -1385,7 +1385,7 @@ export default function Intake() {
                       flexDirection: 'column',
                       justifyContent: 'center',
                       alignItems: 'center',
-                      padding: '0px',
+                      padding: '0px 0px 32px 0px',
                       gap: '32px',
                       width: '1596px',
                       height: 'auto',
