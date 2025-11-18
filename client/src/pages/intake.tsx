@@ -890,16 +890,17 @@ export default function Intake() {
                               height: '68px',
                               padding: '10px 20px',
                               paddingRight: '50px',
-                              background: 'rgba(12, 12, 12, 0.04)',
+                              background: '#FDFDFD',
+                              border: '2px solid rgba(12, 12, 12, 0.08)',
                               borderRadius: '8px',
-                              border: 'none',
                               fontFamily: 'Pretendard',
                               fontWeight: 600,
                               fontSize: '16px',
                               letterSpacing: '-0.02em',
                               color: '#0C0C0C',
+                              cursor: 'pointer',
                             }}
-                            className="[&::-webkit-calendar-picker-indicator]:opacity-0"
+                            className="[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-5 [&::-webkit-calendar-picker-indicator]:w-6 [&::-webkit-calendar-picker-indicator]:h-6 [&::-webkit-calendar-picker-indicator]:opacity-0"
                             data-testid="input-accident-date"
                           />
                           <img 
