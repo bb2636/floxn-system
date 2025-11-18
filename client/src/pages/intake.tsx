@@ -380,6 +380,17 @@ export default function Intake() {
     }
   }, []);
 
+  // formData 변경 시 자동으로 localStorage에 저장 (자동 임시저장)
+  useEffect(() => {
+    const draftData = {
+      formData,
+      sameAsPolicyHolder,
+      selectedPartner,
+      additionalVictims,
+    };
+    localStorage.setItem('intakeFormDraft', JSON.stringify(draftData));
+  }, [formData, sameAsPolicyHolder, selectedPartner, additionalVictims]);
+
   useEffect(() => {
     if (sameAsPolicyHolder) {
       setFormData((prev) => ({
