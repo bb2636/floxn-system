@@ -1936,6 +1936,7 @@ export default function Intake() {
                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '26px 0px 0px', gap: '10px', width: '73px', height: '94px' }}>
                           <button
                             onClick={handleAddDamageItem}
+                            disabled={!formData.damageItem || !formData.damageType || !formData.damageQuantity || !formData.damageDetails}
                             style={{
                               display: 'flex',
                               flexDirection: 'row',
@@ -1944,14 +1945,27 @@ export default function Intake() {
                               padding: '0px 24px',
                               width: '73px',
                               height: '68px',
-                              background: '#008FED',
+                              background: (formData.damageItem && formData.damageType && formData.damageQuantity && formData.damageDetails) 
+                                ? '#008FED' 
+                                : 'rgba(12, 12, 12, 0.08)',
                               borderRadius: '6px',
                               border: 'none',
-                              cursor: 'pointer',
+                              cursor: (formData.damageItem && formData.damageType && formData.damageQuantity && formData.damageDetails) 
+                                ? 'pointer' 
+                                : 'not-allowed',
                             }}
                             data-testid="button-add-damage"
                           >
-                            <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                            <span style={{ 
+                              fontFamily: 'Pretendard', 
+                              fontWeight: 600, 
+                              fontSize: '15px', 
+                              lineHeight: '128%', 
+                              letterSpacing: '-0.02em', 
+                              color: (formData.damageItem && formData.damageType && formData.damageQuantity && formData.damageDetails) 
+                                ? '#FDFDFD' 
+                                : 'rgba(12, 12, 12, 0.4)'
+                            }}>
                               입력
                             </span>
                           </button>
