@@ -76,6 +76,16 @@ function Router() {
         )}
       </Route>
       
+      <Route path="/statistics/settlements-inquiry">
+        {() => (
+          <ProtectedRoute category="통계 및 정산">
+            <StatisticsLayout>
+              <SettlementsInquiry />
+            </StatisticsLayout>
+          </ProtectedRoute>
+        )}
+      </Route>
+      
       <Route path="/statistics/settlement-action">
         {() => (
           <ProtectedRoute category="통계 및 정산">

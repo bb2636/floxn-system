@@ -32,6 +32,8 @@ interface SettlementRow {
   propertyApprovedAmount: number;
   propertyDifference: number;
   propertyAdjustmentRate: string;
+  // 청구액
+  claimAmount: number;
 }
 
 export default function SettlementsInquiry() {
@@ -192,6 +194,7 @@ export default function SettlementsInquiry() {
         propertyApprovedAmount,
         propertyDifference,
         propertyAdjustmentRate,
+        claimAmount: estimateTotal,
       };
     });
   }, [claimCases, estimatesMap, user]);
@@ -1388,22 +1391,97 @@ export default function SettlementsInquiry() {
                   >
                     -
                   </td>
-                  {/* 서울본, 자기부담금, 환구액, 입금은행, 입금액, 입금일, 계산서, 관리 */}
-                  {Array(7).fill(null).map((_, i) => (
-                    <td
-                      key={`misc-${i}`}
-                      style={{
-                        padding: "14px 16px",
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.5)",
-                        borderRight: i < 6 ? "1px solid rgba(12, 12, 12, 0.05)" : "none",
-                        textAlign: "center",
-                      }}
-                    >
-                      {i === 5 ? "----" : i === 6 ? "2025-00-00" : "-"}
-                    </td>
-                  ))}
+                  {/* 서울본 */}
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    -
+                  </td>
+                  {/* 자기부담금 */}
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    -
+                  </td>
+                  {/* 청구액 */}
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: row.claimAmount > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "right",
+                    }}
+                  >
+                    {row.claimAmount > 0 ? row.claimAmount.toLocaleString() + "원" : "-"}
+                  </td>
+                  {/* 입금은행 */}
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    ----
+                  </td>
+                  {/* 입금액 */}
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    2025-00-00
+                  </td>
+                  {/* 입금일 */}
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    -
+                  </td>
+                  {/* 계산서 */}
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    -
+                  </td>
                   {/* 관리 */}
                   <td
                     style={{
