@@ -172,7 +172,7 @@ export default function Intake() {
     accidentDescription: "",
     damageItem: "",
     damageType: "",
-    damageQuantity: "",
+    damageQuantity: "1",
     damageDetails: "",
     damageItems: [] as Array<{
       item: string;
