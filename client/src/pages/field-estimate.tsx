@@ -2359,25 +2359,23 @@ export default function FieldEstimate() {
               }}
             >
               <button
-                onClick={() => {
-                  // TODO: 저장 기능 구현
-                  console.log('견적서 저장');
-                }}
+                onClick={handleSave}
+                disabled={saveMutation.isPending}
                 style={{
                   padding: "12px 32px",
-                  background: "#008FED",
+                  background: saveMutation.isPending ? "#ccc" : "#008FED",
                   border: "none",
                   borderRadius: "8px",
                   fontFamily: "Pretendard",
                   fontSize: "16px",
                   fontWeight: 600,
                   color: "white",
-                  cursor: "pointer",
+                  cursor: saveMutation.isPending ? "not-allowed" : "pointer",
                   boxShadow: "0px 2px 8px rgba(0, 143, 237, 0.3)",
                 }}
                 data-testid="button-save-estimate"
               >
-                저장
+                {saveMutation.isPending ? "저장 중..." : "저장"}
               </button>
             </div>
           </div>

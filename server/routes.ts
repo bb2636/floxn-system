@@ -1491,9 +1491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 견적 총액을 케이스에 업데이트
       if (totalAmount !== undefined && totalAmount !== null) {
-        await storage.updateCase(caseId, {
-          estimateAmount: totalAmount.toString(),
-        });
+        await storage.updateCaseEstimateAmount(caseId, totalAmount.toString());
       }
       
       res.json(result);
