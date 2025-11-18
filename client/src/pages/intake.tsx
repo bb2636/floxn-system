@@ -1077,7 +1077,7 @@ export default function Intake() {
                           checked={sameAsPolicyHolder}
                           onCheckedChange={(checked) => setSameAsPolicyHolder(checked as boolean)}
                           data-testid="checkbox-same-as-policy-holder"
-                          style={{ width: '24px', height: '24px' }}
+                          className="w-6 h-6"
                         />
                         <label 
                           htmlFor="same-as-policy-holder"
@@ -1435,7 +1435,7 @@ export default function Intake() {
                           }}
                         >
                           <Checkbox
-                            style={{ width: '24px', height: '24px' }}
+                            className="w-6 h-6"
                             data-testid="checkbox-insurer-equals-insured"
                           />
                           <span 
@@ -1506,7 +1506,7 @@ export default function Intake() {
                               <Checkbox
                                 checked={damagePreventionCost}
                                 onCheckedChange={(checked) => setDamagePreventionCost(checked as boolean)}
-                                style={{ width: '24px', height: '24px' }}
+                                className="w-6 h-6"
                                 data-testid="checkbox-damage-prevention"
                               />
                               <span 
@@ -1533,7 +1533,7 @@ export default function Intake() {
                               <Checkbox
                                 checked={victimIncidentAssistance}
                                 onCheckedChange={(checked) => setVictimIncidentAssistance(checked as boolean)}
-                                style={{ width: '24px', height: '24px' }}
+                                className="w-6 h-6"
                                 data-testid="checkbox-victim-incident"
                               />
                               <span 
