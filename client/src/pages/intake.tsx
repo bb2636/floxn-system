@@ -207,6 +207,27 @@ export default function Intake() {
     );
   }, [formData.assessorId, assessors]);
 
+  // 선택된 손사명(조사사)에 해당하는 조사자 필터링
+  const filteredInvestigatorEmployees = useMemo(() => {
+    if (!formData.investigatorTeam || !investigators) {
+      return [];
+    }
+    return investigators.filter(
+      emp => (emp.company === formData.investigatorTeam)
+    );
+  }, [formData.investigatorTeam, investigators]);
+
+  // 조사사 회사명 목록 (중복 제거)
+  const investigatorCompanies = useMemo(() => {
+    if (!investigators) {
+      return [];
+    }
+    const companies = investigators
+      .map(inv => inv.company)
+      .filter((company): company is string => !!company);
+    return Array.from(new Set(companies));
+  }, [investigators]);
+
   useEffect(() => {
     if (!userLoading && !user) {
       setLocation("/");
@@ -336,7 +357,7 @@ export default function Intake() {
       
       // 조사자를 선택하면 해당 조사자의 연락처를 자동으로 설정
       if (field === "investigatorTeamName" && value) {
-        const selectedInvestigator = investigators?.find(inv => inv.name === value);
+        const selectedInvestigator = filteredInvestigatorEmployees.find(inv => inv.name === value);
         if (selectedInvestigator) {
           updated.investigatorContact = selectedInvestigator.phone || "";
         }
@@ -908,9 +929,9 @@ export default function Intake() {
                             <SelectValue placeholder="선택해주세요" />
                           </SelectTrigger>
                           <SelectContent>
-                            {investigators?.map((investigator) => (
-                              <SelectItem key={investigator.id} value={investigator.company || investigator.name} data-testid={`select-option-investigator-team-${investigator.id}`}>
-                                {investigator.company || investigator.name}
+                            {investigatorCompanies.map((company) => (
+                              <SelectItem key={company} value={company} data-testid={`select-option-investigator-team-${company}`}>
+                                {company}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -922,14 +943,26 @@ export default function Intake() {
                       </div>
                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자</label>
-                        <Select value={formData.investigatorTeamName} onValueChange={(value) => handleInputChange("investigatorTeamName", value)}>
+                        <Select 
+                          value={formData.investigatorTeamName} 
+                          onValueChange={(value) => handleInputChange("investigatorTeamName", value)}
+                          disabled={!formData.investigatorTeam}
+                        >
                           <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-investigator">
-                            <SelectValue placeholder="선택해주세요" />
+                            <SelectValue placeholder={formData.investigatorTeam ? "조사자 선택" : "손사명을 먼저 선택해주세요"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {investigators?.map((investigator) => (
-                              <SelectItem key={investigator.id} value={investigator.name} data-testid={`select-option-investigator-${investigator.id}`}>{investigator.name}</SelectItem>
-                            ))}
+                            {filteredInvestigatorEmployees.length > 0 ? (
+                              filteredInvestigatorEmployees.map((investigator) => (
+                                <SelectItem key={investigator.id} value={investigator.name} data-testid={`select-option-investigator-${investigator.id}`}>
+                                  {investigator.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-investigators" disabled data-testid="select-option-no-investigators">
+                                해당 손사명에 등록된 조사자가 없습니다
+                              </SelectItem>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
