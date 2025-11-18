@@ -10,9 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Star, Minus, HelpCircle, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Star, Minus, HelpCircle, ChevronDown, ChevronUp, X, Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
-import calendarIcon from "@assets/calendar_month_1763445008806.png";
 import { GlobalHeader } from "@/components/global-header";
 
 export default function Intake() {
@@ -27,6 +30,10 @@ export default function Intake() {
   
   const [sameAsPolicyHolder, setSameAsPolicyHolder] = useState(false);
   const [additionalVictims, setAdditionalVictims] = useState<Array<{name: string, phone: string, address: string}>>([]);
+  
+  // 접수일자 캘린더 관련 상태
+  const [accidentDate, setAccidentDate] = useState<Date | undefined>(() => new Date());
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   
   // 협력사 검색 팝업 상태
   const [isPartnerSearchOpen, setIsPartnerSearchOpen] = useState(false);
@@ -505,6 +512,7 @@ export default function Intake() {
     };
     
     setFormData(initialFormData);
+    setAccidentDate(new Date());
     setSelectedPartner(null);
     setSameAsPolicyHolder(false);
     setAdditionalVictims([]);
@@ -880,35 +888,56 @@ export default function Intake() {
                         >
                           접수일자
                         </label>
-                        <div className="relative">
-                          <input
-                            type="date"
-                            value={formData.accidentDate}
-                            onChange={(e) => handleInputChange("accidentDate", e.target.value)}
-                            style={{
-                              width: '768px',
-                              height: '68px',
-                              padding: '10px 20px',
-                              paddingRight: '50px',
-                              background: '#FDFDFD',
-                              border: '2px solid rgba(12, 12, 12, 0.08)',
-                              borderRadius: '8px',
-                              fontFamily: 'Pretendard',
-                              fontWeight: 600,
-                              fontSize: '16px',
-                              letterSpacing: '-0.02em',
-                              color: '#0C0C0C',
-                              cursor: 'pointer',
+                        <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              style={{
+                                width: '768px',
+                                height: '68px',
+                                padding: '10px 20px',
+                                justifyContent: 'flex-start',
+                                background: '#FDFDFD',
+                                border: '2px solid rgba(12, 12, 12, 0.08)',
+                                borderRadius: '8px',
+                                fontFamily: 'Pretendard',
+                                fontWeight: 600,
+                                fontSize: '16px',
+                                letterSpacing: '-0.02em',
+                                color: '#0C0C0C',
+                              }}
+                              data-testid="button-accident-date"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {accidentDate ? format(accidentDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent 
+                            className="w-auto p-0"
+                            onOpenAutoFocus={(e) => {
+                              e.preventDefault();
                             }}
-                            className="[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-5 [&::-webkit-calendar-picker-indicator]:w-6 [&::-webkit-calendar-picker-indicator]:h-6 [&::-webkit-calendar-picker-indicator]:opacity-0"
-                            data-testid="input-accident-date"
-                          />
-                          <img 
-                            src={calendarIcon}
-                            alt="달력"
-                            className="absolute right-5 top-1/2 -translate-y-1/2 w-[24px] h-[24px] pointer-events-none"
-                          />
-                        </div>
+                            onCloseAutoFocus={(e) => {
+                              e.preventDefault();
+                            }}
+                          >
+                            <Calendar
+                              mode="single"
+                              selected={accidentDate}
+                              onSelect={(date) => {
+                                setAccidentDate(date);
+                                if (date) {
+                                  const year = date.getFullYear();
+                                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                                  const day = String(date.getDate()).padStart(2, '0');
+                                  handleInputChange("accidentDate", `${year}-${month}-${day}`);
+                                }
+                                setDatePickerOpen(false);
+                              }}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
 
