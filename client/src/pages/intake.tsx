@@ -192,9 +192,18 @@ export default function Intake() {
     return `CLM-${year}${month}${day}${hours}${minutes}${seconds}${milliseconds}`;
   };
 
+  // 오늘 날짜를 YYYY-MM-DD 형식으로 반환
+  const getTodayDate = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [caseNumber] = useState(() => generateCaseNumber());
   const [formData, setFormData] = useState({
-    accidentDate: "",
+    accidentDate: getTodayDate(),
     insuranceCompany: "",
     insurancePolicyNo: "",
     insuranceAccidentNo: "",
@@ -444,7 +453,7 @@ export default function Intake() {
   // 초기화
   const handleReset = () => {
     const initialFormData = {
-      accidentDate: "",
+      accidentDate: getTodayDate(),
       insuranceCompany: "",
       insurancePolicyNo: "",
       insuranceAccidentNo: "",
