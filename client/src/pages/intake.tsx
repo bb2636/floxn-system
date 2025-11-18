@@ -2483,12 +2483,12 @@ export default function Intake() {
                 fontSize: '16px',
                 lineHeight: '128%',
                 letterSpacing: '-0.01em',
-                background: saveMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : 'rgba(12, 12, 12, 0.4)',
+                background: saveMutation.isPending ? 'rgba(0, 143, 237, 0.5)' : '#008FED',
                 border: 'none',
                 borderRadius: '8px',
                 color: '#FFFFFF',
                 cursor: saveMutation.isPending ? 'not-allowed' : 'pointer',
-                opacity: saveMutation.isPending ? 0.5 : 1,
+                opacity: saveMutation.isPending ? 0.6 : 1,
               }}
               data-testid="button-save"
             >
