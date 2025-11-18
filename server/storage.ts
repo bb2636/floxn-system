@@ -1730,12 +1730,17 @@ export class DbStorage implements IStorage {
 
   private async initDatabase() {
     try {
-      // Check if we have any users
+      // Check if we have any users and cases
       const existingUsers = await db.select().from(users);
+      const existingCases = await db.select().from(cases);
       
-      // Only seed if database is empty
+      // Seed users if no users exist
       if (existingUsers.length === 0) {
         await this.seedTestUsers();
+      }
+      
+      // Seed cases if no cases exist (regardless of users)
+      if (existingCases.length === 0) {
         await this.seedTestCases();
       }
     } catch (error) {
