@@ -1002,7 +1002,11 @@ export class MemStorage implements IStorage {
         filtered = allCases.filter(c => c.assessorId === user.id);
         break;
       case "협력사":
-        filtered = allCases.filter(c => c.assignedPartner === user.company);
+        // 협력사는 "접수완료" 상태 이상의 건만 볼 수 있음 (접수중 상태는 제외)
+        filtered = allCases.filter(c => 
+          c.assignedPartner === user.company && 
+          c.status !== "접수중"
+        );
         break;
       case "조사사":
         filtered = allCases.filter(c => c.investigatorTeamName === user.company);
@@ -1028,11 +1032,10 @@ export class MemStorage implements IStorage {
   }
 
   async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
-    const id = randomUUID();
     const currentDate = getKSTDate();
     
-    const newCase: Case = {
-      id,
+    // Insert into database and get the created case
+    const [newCase] = await db.insert(cases).values({
       caseNumber: caseData.caseNumber,
       status: caseData.status || "작성중",
       accidentDate: caseData.accidentDate || null,
@@ -1058,16 +1061,22 @@ export class MemStorage implements IStorage {
       insuredIdNumber: caseData.insuredIdNumber || null,
       insuredContact: caseData.insuredContact || null,
       insuredAddress: caseData.insuredAddress || null,
+      sameAsPolicyHolder: caseData.sameAsPolicyHolder || null,
       victimName: caseData.victimName || null,
       victimContact: caseData.victimContact || null,
+      victimAddress: caseData.victimAddress || null,
+      additionalVictims: caseData.additionalVictims || null,
       clientPhone: caseData.clientPhone || null,
       clientAddress: caseData.clientAddress || null,
       accidentLocation: caseData.accidentLocation || null,
       accidentDescription: caseData.accidentDescription || null,
       accidentType: caseData.accidentType || null,
       accidentCause: caseData.accidentCause || null,
+      recoveryType: caseData.recoveryType || null,
       restorationMethod: caseData.restorationMethod || null,
       otherVendorEstimate: caseData.otherVendorEstimate || null,
+      damagePreventionCost: caseData.damagePreventionCost || null,
+      victimIncidentAssistance: caseData.victimIncidentAssistance || null,
       damageItems: caseData.damageItems || null,
       assignedPartner: caseData.assignedPartner || null,
       assignedPartnerManager: caseData.assignedPartnerManager || null,
@@ -1089,14 +1098,14 @@ export class MemStorage implements IStorage {
       createdBy: caseData.createdBy,
       createdAt: currentDate,
       updatedAt: currentDate,
-    };
+    }).returning();
     
-    this.cases.set(id, newCase);
     return newCase;
   }
 
   async getAllCases(user?: User): Promise<CaseWithLatestProgress[]> {
-    let allCases = Array.from(this.cases.values());
+    // Fetch all cases from database instead of memory
+    let allCases = await db.select().from(cases);
     
     // 권한별 필터링
     if (user) {
