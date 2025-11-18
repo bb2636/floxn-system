@@ -1223,7 +1223,7 @@ export default function Intake() {
                         </label>
                         <input
                           type="text"
-                          placeholder="피보험자 주소 입력"
+                          placeholder="도로명 주소, 동/호 포함"
                           value={formData.insuredAddress}
                           onChange={(e) => handleInputChange("insuredAddress", e.target.value)}
                           style={{
