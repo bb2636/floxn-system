@@ -1,24 +1,25 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, CaseWithLatestProgress } from "@shared/schema";
-import { Search, X } from "lucide-react";
+import { Search, X, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 export default function SettlementAction() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [settlementAmount, setSettlementAmount] = useState("");
-  const [settlementRate, setSettlementRate] = useState("50");
+  const [settlementDate, setSettlementDate] = useState<Date | undefined>(undefined);
   const [commission, setCommission] = useState("0");
   const [discount, setDiscount] = useState("0");
   const [deductible, setDeductible] = useState("0");
   const [invoiceDate, setInvoiceDate] = useState("");
-  const [useTodaySettlement, setUseTodaySettlement] = useState(false);
   const [useTodayInvoice, setUseTodayInvoice] = useState(false);
   const [settlementMemo, setSettlementMemo] = useState("");
 
@@ -146,6 +147,7 @@ export default function SettlementAction() {
         reviewManager: caseItem.reviewedBy || "-", // 심사 담당자
         partner: caseItem.assignedPartner || "-",
         partnerName: partnerUser?.name || caseItem.assignedPartner || "-", // 협력사 이름
+        partnerUser: partnerUser, // 협력사 사용자 정보
         clientManager: caseItem.clientName || "-", // 당사 담당자
         approvedAmount: formatNumberWithComma(approvedAmount), // 승인금액
         claimAmount: formatNumberWithComma(approvedAmount), // 청구액 (승인금액과 동일)
@@ -181,13 +183,12 @@ export default function SettlementAction() {
     const settlementData = {
       caseId: selectedCase.id,
       caseNumber: selectedCase.caseNumber,
-      settlementRate: parseFloat(settlementRate) || 0,
       settlementAmount: parseFloat(settlementAmount.replace(/,/g, "")) || 0,
+      settlementDate: settlementDate ? format(settlementDate, "yyyy-MM-dd") : "",
       commission: parseFloat(commission) || 0,
       discount: parseFloat(discount) || 0,
       deductible: parseFloat(deductible) || 0,
       invoiceDate,
-      useTodaySettlement,
       useTodayInvoice,
       settlementMemo,
     };
@@ -914,7 +915,7 @@ export default function SettlementAction() {
                   marginBottom: "16px",
                 }}
               >
-                현장사 계좌 정보
+                협력사 계좌 정보
               </h4>
               <div className="space-y-4">
                 <div>
@@ -927,7 +928,7 @@ export default function SettlementAction() {
                       marginBottom: "8px",
                     }}
                   >
-                    국민은행
+                    {selectedCase.partnerUser?.bankName || "-"}
                   </div>
                   <div
                     style={{
@@ -937,7 +938,7 @@ export default function SettlementAction() {
                       color: "rgba(12, 12, 12, 0.9)",
                     }}
                   >
-                    123456-78-987654
+                    {selectedCase.partnerUser?.accountNumber || "-"}
                   </div>
                 </div>
                 <div>
@@ -950,7 +951,7 @@ export default function SettlementAction() {
                       marginBottom: "4px",
                     }}
                   >
-                    김블락
+                    {selectedCase.partnerUser?.accountHolder || "-"}
                   </div>
                   <div
                     style={{
@@ -983,7 +984,7 @@ export default function SettlementAction() {
                   color: "rgba(12, 12, 12, 0.9)",
                 }}
               >
-                협력사 이름
+                {selectedCase.partnerName}
               </h4>
               <span
                 style={{
@@ -1001,7 +1002,7 @@ export default function SettlementAction() {
             </div>
 
             {/* Settlement Amount and Date */}
-            <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-2 gap-6 mb-4">
               <div>
                 <label
                   style={{
@@ -1015,12 +1016,12 @@ export default function SettlementAction() {
                 >
                   정산금액
                 </label>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                   <Input
                     type="text"
                     value={settlementAmount}
                     onChange={(e) => setSettlementAmount(e.target.value)}
-                    placeholder="2,650,000"
+                    placeholder="0"
                     style={{
                       flex: 1,
                       height: "44px",
@@ -1045,6 +1046,46 @@ export default function SettlementAction() {
                     원
                   </span>
                 </div>
+                {/* Amount Buttons */}
+                <div className="flex items-center gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const rawAmount = selectedCase.caseData.status === "정산완료" || selectedCase.caseData.status === "입금완료"
+                        ? "0"
+                        : selectedCase.approvedAmount.replace(/,/g, "");
+                      setSettlementAmount(rawAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+                    }}
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "13px",
+                      height: "32px",
+                    }}
+                    data-testid="button-full-amount"
+                  >
+                    전액
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const rawAmount = selectedCase.caseData.status === "정산완료" || selectedCase.caseData.status === "입금완료"
+                        ? "0"
+                        : selectedCase.approvedAmount.replace(/,/g, "");
+                      const halfAmount = Math.floor(parseInt(rawAmount) * 0.5);
+                      setSettlementAmount(halfAmount.toLocaleString());
+                    }}
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "13px",
+                      height: "32px",
+                    }}
+                    data-testid="button-half-amount"
+                  >
+                    50%
+                  </Button>
+                </div>
               </div>
               <div>
                 <label
@@ -1060,71 +1101,59 @@ export default function SettlementAction() {
                   정산일자
                 </label>
                 <div className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    placeholder="날짜 선택"
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        style={{
+                          flex: 1,
+                          height: "44px",
+                          background: "#FAFAFA",
+                          border: "1px solid rgba(12, 12, 12, 0.1)",
+                          borderRadius: "8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          justifyContent: "space-between",
+                          fontWeight: settlementDate ? 500 : 400,
+                          color: settlementDate ? "rgba(12, 12, 12, 0.9)" : "rgba(12, 12, 12, 0.5)",
+                        }}
+                        data-testid="button-settlement-date"
+                      >
+                        <span>{settlementDate ? format(settlementDate, "yyyy년 MM월 dd일", { locale: ko }) : "날짜 선택"}</span>
+                        <CalendarIcon className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={settlementDate}
+                        onSelect={setSettlementDate}
+                        locale={ko}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSettlementDate(new Date())}
                     style={{
-                      flex: 1,
-                      height: "44px",
-                      background: "#FAFAFA",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                      borderRadius: "8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
+                      fontSize: "13px",
+                      height: "44px",
+                      whiteSpace: "nowrap",
+                      paddingLeft: "12px",
+                      paddingRight: "12px",
                     }}
-                    data-testid="input-settlement-date"
-                  />
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={useTodaySettlement}
-                      onCheckedChange={(checked) => setUseTodaySettlement(checked === true)}
-                      data-testid="checkbox-use-today-settlement"
-                    />
-                    <label
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        color: "rgba(12, 12, 12, 0.7)",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      오늘로 설정
-                    </label>
-                  </div>
+                    data-testid="button-set-today"
+                  >
+                    오늘로 설정
+                  </Button>
                 </div>
               </div>
             </div>
 
-            {/* Rate Display */}
+            {/* Unsettled Amount Display */}
             <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <label
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                  }}
-                >
-                  정률
-                </label>
-                <Input
-                  type="text"
-                  value={settlementRate}
-                  onChange={(e) => setSettlementRate(e.target.value)}
-                  style={{
-                    width: "80px",
-                    height: "32px",
-                    background: "#FAFAFA",
-                    border: "1px solid rgba(12, 12, 12, 0.1)",
-                    borderRadius: "6px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    textAlign: "center",
-                  }}
-                  data-testid="input-settlement-rate"
-                />
-              </div>
               <div
                 style={{
                   fontFamily: "Pretendard",
@@ -1133,7 +1162,10 @@ export default function SettlementAction() {
                   color: "#008FED",
                 }}
               >
-                미정산액 2,650,000원
+                미정산액 {selectedCase.caseData.status === "정산완료" || selectedCase.caseData.status === "입금완료"
+                  ? "0원"
+                  : `${selectedCase.approvedAmount}원`
+                }
               </div>
             </div>
 
