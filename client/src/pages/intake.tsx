@@ -1603,7 +1603,6 @@ export default function Intake() {
                         style={{
                           display: 'flex',
                           flexDirection: 'row',
-                          justifyContent: 'space-between',
                           alignItems: 'center',
                           padding: '24px 10px',
                           gap: '10px',
@@ -1623,31 +1622,6 @@ export default function Intake() {
                         >
                           사고 원인 · 규모
                         </h3>
-                        <div 
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: '4px',
-                          }}
-                        >
-                          <Checkbox
-                            className="w-6 h-6"
-                            data-testid="checkbox-insurer-equals-insured"
-                          />
-                          <span 
-                            style={{
-                              fontFamily: 'Pretendard',
-                              fontWeight: 500,
-                              fontSize: '14px',
-                              lineHeight: '128%',
-                              letterSpacing: '-0.01em',
-                              color: '#686A6E',
-                            }}
-                          >
-                            보험계약자 = 피보험자
-                          </span>
-                        </div>
                       </div>
 
                       {/* Content */}
