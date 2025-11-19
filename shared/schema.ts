@@ -26,7 +26,7 @@ export const users = pgTable("users", {
   createdAt: text("created_at").notNull(),
 });
 
-export const VALID_ROLES = ["심사사", "조사사", "보험사", "협력사", "의뢰사", "관리자"] as const;
+export const VALID_ROLES = ["심사사", "조사사", "보험사", "협력사", "관리자"] as const;
 export type UserRole = typeof VALID_ROLES[number];
 
 export const insertUserSchema = createInsertSchema(users).omit({
