@@ -769,9 +769,9 @@ export default function Intake() {
       <GlobalHeader />
 
       {/* Main Content */}
-      <main className="relative flex items-center justify-center" style={{ padding: '0 0 40px 0' }}>
-        {/* 1660px Centered Container */}
-        <div style={{ width: '1660px' }}>
+      <main className="relative flex items-center justify-center px-4 sm:px-6 lg:px-8" style={{ padding: '0 16px 40px 16px' }}>
+        {/* Responsive Container */}
+        <div className="w-full max-w-[1660px]">
           {/* Page Title */}
           <div 
             className="flex items-center gap-4"
@@ -808,7 +808,7 @@ export default function Intake() {
           </div>
 
           {/* Form Sections Container */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', width: '1596px', margin: '0 32px' }}>
+          <div className="flex flex-col gap-8 w-full px-4 sm:px-6 lg:px-8">
             
             {/* 1. 기본 정보 */}
             <div 
@@ -2476,13 +2476,7 @@ export default function Intake() {
 
           {/* Bottom Action Buttons */}
           <div 
-            className="flex items-center justify-end"
-            style={{ 
-              width: '1596px', 
-              margin: '32px 32px 0 32px',
-              padding: '0 20px',
-              gap: '12px',
-            }}
+            className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end w-full px-4 sm:px-6 lg:px-8 mt-8 gap-3"
           >
             <button
               onClick={handleReset}
@@ -2568,11 +2562,13 @@ export default function Intake() {
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
+            padding: '16px',
           }}
           onClick={() => setIsPartnerSearchOpen(false)}
         >
           <div 
             onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[864px] max-h-[90vh] overflow-y-auto"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -2580,15 +2576,13 @@ export default function Intake() {
               padding: '0px 0px 20px',
               gap: '10px',
               isolation: 'isolate',
-              width: '864px',
-              height: '696px',
               background: '#FFFFFF',
               boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
               borderRadius: '12px',
             }}
           >
             {/* Header */}
-            <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: '0px 0px 0px 20px', gap: '321px', width: '864px', height: '60px' }}>
+            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
               <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#0C0C0C' }}>
                 협력사 검색
               </h2>
@@ -2602,27 +2596,28 @@ export default function Intake() {
             </div>
 
             {/* Content */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '16px', width: '864px', height: '676px' }}>
+            <div className="flex flex-col items-center w-full px-5 gap-4">
               {/* Search Input */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px', gap: '8px', width: '824px', height: '84px' }}>
+              <div className="flex flex-col items-start w-full gap-2">
                 <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                   협력사 검색
                 </label>
-                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', width: '824px', height: '58px' }}>
+                <div className="flex flex-row items-center w-full h-[58px]">
                   <input
                     type="text"
                     placeholder="성함을 입력해주세요."
                     value={partnerSearchQuery}
                     onChange={(e) => setPartnerSearchQuery(e.target.value)}
-                    style={{ boxSizing: 'border-box', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '723.25px', height: '58px', background: '#FDFDFD', border: '1px solid rgba(12, 12, 12, 0.08)', borderRadius: '6px 0px 0px 6px', fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#0C0C0C' }}
+                    className="flex-1"
+                    style={{ boxSizing: 'border-box', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', height: '58px', background: '#FDFDFD', border: '1px solid rgba(12, 12, 12, 0.08)', borderRadius: '6px 0px 0px 6px', fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#0C0C0C' }}
                     data-testid="input-partner-search"
                   />
                   <button
                     onClick={() => {}}
-                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: '0px', gap: '10px', width: '100.75px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer' }}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px 16px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer', flexShrink: 0 }}
                     data-testid="button-partner-search"
                   >
-                    <span style={{ margin: '0 auto', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
                       검색
                     </span>
                   </button>
@@ -2630,11 +2625,11 @@ export default function Intake() {
               </div>
 
               {/* Results */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px', gap: '24px', width: '824px', height: '500px' }}>
+              <div className="flex flex-col items-start w-full gap-6 overflow-x-auto" style={{ maxHeight: '500px' }}>
                 {filteredPartners.length === 0 ? (
                   /* Empty State */
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px 0px 58px', gap: '128px', width: '824px', height: '367px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', width: '824px', height: '39px', background: '#F5F5F5' }}>
+                  <div className="flex flex-col items-center w-full pb-14 gap-32">
+                    <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5', minWidth: '700px' }}>
                       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '155px', height: '39px' }}>
                         <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>업체명</span>
                       </div>
@@ -2657,7 +2652,7 @@ export default function Intake() {
                         <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '824px', marginTop: '60px' }}>
+                    <div className="flex items-center justify-center w-full mt-15">
                       <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', textAlign: 'center', letterSpacing: '-0.01em', color: '#686A6E', whiteSpace: 'pre-line' }}>
                         {partnerSearchQuery 
                           ? "검색 결과가 없습니다" 
@@ -2669,9 +2664,9 @@ export default function Intake() {
                   </div>
                 ) : (
                   /* Table with Data */
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px', width: '824px', height: '373px' }}>
+                  <div className="flex flex-col items-start w-full" style={{ maxHeight: '373px', minWidth: '700px' }}>
                     {/* Header */}
-                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', width: '824px', height: '39px', background: '#F5F5F5' }}>
+                    <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
                       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '155px', height: '39px' }}>
                         <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>업체명</span>
                       </div>
@@ -2696,9 +2691,9 @@ export default function Intake() {
                     </div>
                     
                     {/* Data Rows */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '0px', width: '824px', height: '334px' }}>
+                    <div className="flex flex-col items-start w-full overflow-y-auto" style={{ maxHeight: '334px' }}>
                       {filteredPartners.map((partner) => (
-                        <div key={partner.name} style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', width: '824px', height: '61px' }}>
+                        <div key={partner.name} className="flex flex-row items-center w-full h-[61px]">
                           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '155px', height: '39px' }}>
                             <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               {partner.name}
