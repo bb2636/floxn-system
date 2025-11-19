@@ -165,10 +165,9 @@ export default function Intake() {
     select: (users) => users.filter(u => u.role === "보험사"),
   });
 
-  // 의뢰사 직원 목록 가져오기
-  const { data: clientEmployees } = useQuery<User[]>({
+  // 모든 사용자 가져오기 (의뢰사 회사 목록 추출용)
+  const { data: allUsers } = useQuery<User[]>({
     queryKey: ["/api/users"],
-    select: (users) => users.filter(u => u.role === "의뢰사"),
   });
 
   // 협력사 목록 가져오기 (회사별로 그룹화)
@@ -306,15 +305,22 @@ export default function Intake() {
     });
   }, [partnerSearchQuery, partnersWithStats, formData.insuredAddress]);
 
+  // 모든 회사 목록 (중복 제거)
+  const allCompanies = useMemo(() => {
+    if (!allUsers) return [];
+    const companies = new Set(allUsers.map(u => u.company));
+    return Array.from(companies).sort();
+  }, [allUsers]);
+
   // 선택된 의뢰사에 해당하는 직원 필터링
   const filteredClientEmployees = useMemo(() => {
-    if (!formData.clientResidence || !clientEmployees) {
+    if (!formData.clientResidence || !allUsers) {
       return [];
     }
-    return clientEmployees.filter(
+    return allUsers.filter(
       emp => emp.company === formData.clientResidence
     );
-  }, [formData.clientResidence, clientEmployees]);
+  }, [formData.clientResidence, allUsers]);
 
   // 선택된 심사사에 해당하는 심사자(직원) 필터링
   const filteredAssessorEmployees = useMemo(() => {
@@ -1029,11 +1035,11 @@ export default function Intake() {
                             <SelectValue placeholder="의뢰사 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="대한건설" data-testid="select-option-client-daehan">대한건설</SelectItem>
-                            <SelectItem value="한국종합건설" data-testid="select-option-client-korea">한국종합건설</SelectItem>
-                            <SelectItem value="서울건설" data-testid="select-option-client-seoul">서울건설</SelectItem>
-                            <SelectItem value="코리아부동산관리" data-testid="select-option-client-realestate">코리아부동산관리</SelectItem>
-                            <SelectItem value="글로벌시설관리" data-testid="select-option-client-global">글로벌시설관리</SelectItem>
+                            {allCompanies.map((company) => (
+                              <SelectItem key={company} value={company} data-testid={`select-option-client-${company}`}>
+                                {company}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
