@@ -1227,12 +1227,7 @@ export default function FieldEstimate() {
                           <SelectContent>
                             {roomCategories.map(cat => (
                               <SelectItem key={cat} value={cat}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{cat}</span>
-                                  {row.category === cat && (
-                                    <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
-                                  )}
-                                </div>
+                                {cat}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1262,12 +1257,7 @@ export default function FieldEstimate() {
                           <SelectContent>
                             {locations.map(loc => (
                               <SelectItem key={loc} value={loc}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{loc}</span>
-                                  {row.location === loc && (
-                                    <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
-                                  )}
-                                </div>
+                                {loc}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1297,12 +1287,7 @@ export default function FieldEstimate() {
                           <SelectContent>
                             {workNames.map(work => (
                               <SelectItem key={work} value={work}>
-                                <div className="flex items-center justify-between w-full">
-                                  <span>{work}</span>
-                                  {row.workName === work && (
-                                    <Check className="w-4 h-4 ml-2" style={{ color: "#008FED" }} />
-                                  )}
-                                </div>
+                                {work}
                               </SelectItem>
                             ))}
                           </SelectContent>
