@@ -6,6 +6,7 @@ import { useMemo } from "react";
 
 // MaterialCatalogItem matches excel_data 자재비 response
 export interface MaterialCatalogItem {
+  workType: string; // 공종명
   materialName: string;
   specification: string;
   unit: string;
@@ -46,16 +47,21 @@ export function MaterialCostSection({
   onSelectAll,
   isLoading = false,
 }: MaterialCostSectionProps) {
-  // 전체 자재명 옵션 (공종 필터링 제거)
-  const getMaterialNames = useMemo(() => {
-    const names = new Set(catalog.map(item => item.materialName));
+  // 공종별로 필터링된 자재명 옵션
+  const getMaterialNamesForWorkType = (workType: string) => {
+    if (!workType) return [];
+    const names = new Set(
+      catalog
+        .filter(item => item.workType === workType)
+        .map(item => item.materialName)
+    );
     return Array.from(names).sort();
-  }, [catalog]);
+  };
 
-  // 선택된 자재명에 따른 규격 옵션
-  const getSpecificationsForMaterial = (materialName: string) => {
+  // 선택된 공종과 자재명에 따른 규격 옵션
+  const getSpecificationsForMaterial = (workType: string, materialName: string) => {
     return catalog
-      .filter(item => item.materialName === materialName)
+      .filter(item => item.workType === workType && item.materialName === materialName)
       .map(item => ({
         spec: item.specification,
         unit: item.unit,
@@ -79,6 +85,7 @@ export function MaterialCostSection({
         // 규격 변경 시 카탈로그에서 단위와 가격 가져오기
         if (field === '규격') {
           const catalogItem = catalog.find(item =>
+            item.workType === updated.공종 &&
             item.materialName === updated.자재 && 
             item.specification === value
           );
@@ -153,7 +160,8 @@ export function MaterialCostSection({
         </thead>
         <tbody>
           {rows.map((row, index) => {
-            const specOptions = row.자재 ? getSpecificationsForMaterial(row.자재) : [];
+            const materialNamesForRow = getMaterialNamesForWorkType(row.공종);
+            const specOptions = (row.공종 && row.자재) ? getSpecificationsForMaterial(row.공종, row.자재) : [];
             
             return (
               <tr key={row.id} style={{ height: "56px", borderBottom: "1px solid #E5E7EB" }}>
@@ -188,21 +196,22 @@ export function MaterialCostSection({
                   </Select>
                 </td>
                 
-                {/* 자재 - Select (전체 자재 리스트 표시) */}
+                {/* 자재 - Select (공종 선택 후 활성화되며, 공종별로 필터링됨) */}
                 <td style={{ padding: "0 8px" }}>
                   <Select 
                     value={row.자재} 
                     onValueChange={(value) => updateRow(row.id, '자재', value)}
+                    disabled={!row.공종}
                   >
                     <SelectTrigger 
                       className="h-9 border-0" 
                       style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                       data-testid={`select-자재-${index}`}
                     >
-                      <SelectValue placeholder="선택" />
+                      <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {getMaterialNames.map(name => (
+                      {materialNamesForRow.map(name => (
                         <SelectItem key={name} value={name}>{name}</SelectItem>
                       ))}
                     </SelectContent>

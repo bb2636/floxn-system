@@ -126,6 +126,7 @@ export interface IStorage {
   deleteMaterial(id: string): Promise<void>;
   // Excel-based materials catalog
   getMaterialsCatalog(): Promise<Array<{
+    workType: string; // 공종명
     materialName: string;
     specification: string;
     unit: string;
@@ -1727,6 +1728,7 @@ export class MemStorage implements IStorage {
   }
 
   async getMaterialsCatalog(): Promise<Array<{
+    workType: string;
     materialName: string;
     specification: string;
     unit: string;
@@ -3167,42 +3169,47 @@ export class DbStorage implements IStorage {
   }
 
   async getMaterialsCatalog(): Promise<Array<{
+    workType: string;
     materialName: string;
     specification: string;
     unit: string;
     standardPrice: number | string;
   }>> {
-    // Get 자재비 data from excel_data table
+    // Get 자재비 data from excel_data table, sorted by upload date (최신 데이터 먼저)
     const excelRows = await db
       .select()
       .from(excelData)
-      .where(eq(excelData.type, "자재비"));
+      .where(eq(excelData.type, "자재비"))
+      .orderBy(sql`${excelData.uploadedAt} DESC`);
     
     if (excelRows.length === 0) {
       return [];
     }
     
-    // Take the first (or most recent) upload
+    // Take the most recent upload (first in DESC order)
     const latestExcelData = excelRows[0];
     const headers = latestExcelData.headers as string[];
     const data = latestExcelData.data as any[][];
     
     // Find column indices
+    const workTypeIdx = headers.findIndex(h => h === "공종명");
     const materialNameIdx = headers.findIndex(h => h === "자재명");
     const specIdx = headers.findIndex(h => h === "규격");
     const unitIdx = headers.findIndex(h => h === "단위");
     const priceIdx = headers.findIndex(h => h === "단가");
     
-    if (materialNameIdx === -1 || specIdx === -1 || unitIdx === -1 || priceIdx === -1) {
+    if (materialNameIdx === -1 || unitIdx === -1 || priceIdx === -1) {
       console.error("Missing required columns in excel_data 자재비");
       return [];
     }
     
     // Forward-fill processing
+    let lastWorkType = "";
     let lastMaterialName = "";
     let lastSpecification = "";
     
     const catalog: Array<{
+      workType: string;
       materialName: string;
       specification: string;
       unit: string;
@@ -3214,17 +3221,19 @@ export class DbStorage implements IStorage {
       if (!row || row.length === 0) continue;
       
       // Get values with forward-fill
+      const workType = (workTypeIdx !== -1 && row[workTypeIdx]) ? row[workTypeIdx] : lastWorkType;
       const materialName = row[materialNameIdx] ?? lastMaterialName;
       const specification = row[specIdx] ?? lastSpecification;
       const unit = row[unitIdx];
       const price = row[priceIdx];
       
       // Skip if essential fields are missing
-      if (!materialName || !unit || price === undefined || price === null) {
+      if (!workType || !materialName || !unit || price === undefined || price === null) {
         continue;
       }
       
       // Update last values for forward-fill
+      if (workTypeIdx !== -1 && row[workTypeIdx]) lastWorkType = workType;
       if (row[materialNameIdx]) lastMaterialName = materialName;
       if (row[specIdx] !== null && row[specIdx] !== undefined) lastSpecification = specification;
       
@@ -3238,6 +3247,7 @@ export class DbStorage implements IStorage {
       }
       
       catalog.push({
+        workType,
         materialName,
         specification: specification || "-",
         unit,
