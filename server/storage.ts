@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts, type UserFavorite, type InsertUserFavorite, userFavorites, type Notice, type InsertNotice, notices } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts, type Material, type InsertMaterial, materials, type UserFavorite, type InsertUserFavorite, userFavorites, type Notice, type InsertNotice, notices } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -120,6 +120,10 @@ export interface IStorage {
   }>;
   createLaborCost(data: InsertLaborCost): Promise<LaborCost>;
   deleteLaborCost(id: string): Promise<void>;
+  // Material methods
+  listMaterials(workType?: string): Promise<Material[]>;
+  createMaterial(data: InsertMaterial): Promise<Material>;
+  deleteMaterial(id: string): Promise<void>;
   // User favorites methods
   getUserFavorites(userId: string): Promise<UserFavorite[]>;
   addFavorite(data: InsertUserFavorite): Promise<UserFavorite>;
@@ -1703,6 +1707,18 @@ export class MemStorage implements IStorage {
     throw new Error("Labor cost methods not implemented in MemStorage");
   }
 
+  async listMaterials(workType?: string): Promise<Material[]> {
+    throw new Error("Material methods not implemented in MemStorage");
+  }
+
+  async createMaterial(data: InsertMaterial): Promise<Material> {
+    throw new Error("Material methods not implemented in MemStorage");
+  }
+
+  async deleteMaterial(id: string): Promise<void> {
+    throw new Error("Material methods not implemented in MemStorage");
+  }
+
   async getUserFavorites(userId: string): Promise<UserFavorite[]> {
     throw new Error("User favorites methods not implemented in MemStorage");
   }
@@ -3100,7 +3116,38 @@ export class DbStorage implements IStorage {
   }
 
   async deleteLaborCost(id: string): Promise<void> {
-    await db.delete(laborCosts).where(eq(laborCosts.id, id));
+    await db.delete(laborCosts).where(eq(laborCosts.id, Number(id)));
+  }
+
+  // Material methods
+  async listMaterials(workType?: string): Promise<Material[]> {
+    let query = db
+      .select()
+      .from(materials);
+    
+    if (workType) {
+      query = query.where(and(
+        eq(materials.isActive, "true"),
+        eq(materials.workType, workType)
+      ));
+    } else {
+      query = query.where(eq(materials.isActive, "true"));
+    }
+
+    return query.orderBy(
+      asc(materials.workType),
+      asc(materials.materialName),
+      asc(materials.specification)
+    );
+  }
+
+  async createMaterial(data: InsertMaterial): Promise<Material> {
+    const [created] = await db.insert(materials).values(data).returning();
+    return created;
+  }
+
+  async deleteMaterial(id: string): Promise<void> {
+    await db.delete(materials).where(eq(materials.id, Number(id)));
   }
 
   // User favorites methods

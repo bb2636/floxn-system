@@ -36,11 +36,15 @@ interface AreaCalculationRow {
 // Import LaborCatalogItem and LaborCostRow from labor-cost-section.tsx (removed duplicates)
 
 interface Material {
-  id: string; // 고유 ID (materialName-spec-unit)
+  id: number; // DB ID
+  workType: string; // 공종: 방수공사, 도배공사 등
   materialName: string; // 자재명
   specification: string; // 규격
   unit: string; // 단위
   standardPrice: number; // 단가 (숫자)
+  isActive: string; // "true" | "false"
+  createdAt: string; // ISO timestamp string from API
+  updatedAt: string; // ISO timestamp string from API
 }
 
 // 자재비 테이블 행 (새 UI 구조)

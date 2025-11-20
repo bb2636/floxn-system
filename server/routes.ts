@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, reviewCaseSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
 import { estimates } from "@shared/schema";
@@ -1857,67 +1857,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Materials (자재비) endpoints
-  // Get parsed materials data from excel_data (all authenticated users)
+  // Get materials from database (all authenticated users)
   app.get("/api/materials", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     try {
-      // Get latest 자재비 data from excel_data table
-      const excelData = await storage.getExcelData('자재비');
-      
-      if (!excelData || !excelData.data) {
-        return res.json([]);
-      }
-
-      // Parse excel data into structured material list
-      const materials: any[] = [];
-      let currentMaterialName: string | null = null;
-
-      for (const row of excelData.data as any[][]) {
-        const [materialName, specification, unit, price] = row;
-        
-        // Skip empty rows or info messages
-        if (!specification && !unit && !price) continue;
-        
-        // New material starts when materialName is not null
-        if (materialName !== null && materialName !== undefined && materialName !== '') {
-          currentMaterialName = materialName;
-        }
-        
-        // Add material row
-        if (currentMaterialName && specification && unit) {
-          // Normalize standardPrice to number
-          let normalizedPrice: number;
-          if (typeof price === 'string') {
-            // Strip commas and whitespace before parsing
-            const cleanedPrice = price.replace(/,/g, '').trim();
-            
-            // Check if it's "입력" or other non-numeric string
-            if (cleanedPrice === '입력' || isNaN(Number(cleanedPrice))) {
-              normalizedPrice = 0; // Default to 0 for manual input fields
-            } else {
-              normalizedPrice = Number(cleanedPrice);
-            }
-          } else {
-            normalizedPrice = price || 0;
-          }
-          
-          materials.push({
-            id: `${currentMaterialName}-${specification}-${unit}`,
-            materialName: currentMaterialName,
-            specification: specification,
-            unit: unit,
-            standardPrice: normalizedPrice,
-          });
-        }
-      }
-
+      const { workType } = req.query;
+      const materials = await storage.listMaterials(workType as string | undefined);
       res.json(materials);
     } catch (error) {
       console.error("Get materials error:", error);
       res.status(500).json({ error: "자재비를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Create new material (admin only)
+  app.post("/api/materials", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const userRole = req.session.userRole;
+    if (userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자만 자재를 추가할 수 있습니다" });
+    }
+
+    try {
+      const validated = insertMaterialSchema.parse(req.body);
+      const created = await storage.createMaterial(validated);
+      res.json(created);
+    } catch (error) {
+      console.error("Create material error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          error: "입력 데이터 형식이 올바르지 않습니다",
+          details: error.errors 
+        });
+      }
+      res.status(500).json({ error: "자재를 추가하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Delete material (admin only)
+  app.delete("/api/materials/:id", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const userRole = req.session.userRole;
+    if (userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자만 자재를 삭제할 수 있습니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      await storage.deleteMaterial(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete material error:", error);
+      res.status(500).json({ error: "자재를 삭제하는 중 오류가 발생했습니다" });
     }
   });
 

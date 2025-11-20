@@ -550,6 +550,31 @@ export const insertLaborCostSchema = createInsertSchema(laborCosts).omit({
 export type InsertLaborCost = z.infer<typeof insertLaborCostSchema>;
 export type LaborCost = typeof laborCosts.$inferSelect;
 
+// 자재비 마스터 테이블 (공종별 자재 관리)
+export const materials = pgTable("materials", {
+  id: serial("id").primaryKey(),
+  workType: text("work_type").notNull(), // 공종: 방수공사, 도배공사, 장판공사 등
+  materialName: text("material_name").notNull(), // 자재명: 우레탄, 실리콘, 합지 등
+  specification: text("specification").notNull().default(""), // 규격: 빈 문자열 허용
+  unit: text("unit").notNull(), // 단위: EA, ㎡, 롤 등
+  standardPrice: integer("standard_price").notNull(), // 기준단가(원)
+  isActive: text("is_active").notNull().default("true"), // "true" | "false"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // unique constraint: 같은 공종에서 같은 자재명+규격 중복 방지
+  unq: unique().on(table.workType, table.materialName, table.specification),
+}));
+
+export const insertMaterialSchema = createInsertSchema(materials).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMaterial = z.infer<typeof insertMaterialSchema>;
+export type Material = typeof materials.$inferSelect;
+
 // 사용자 즐겨찾기 테이블
 export const userFavorites = pgTable("user_favorites", {
   id: serial("id").primaryKey(),
