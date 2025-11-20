@@ -30,6 +30,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/forbidden" component={Forbidden} />
       
+      <Route path="/home" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       
       <Route path="/admin-settings">

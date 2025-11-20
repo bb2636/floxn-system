@@ -77,6 +77,33 @@ export default function FieldEstimate() {
   const [vatIncluded, setVatIncluded] = useState(true); // VAT 포함 여부
   const [estimateCase, setEstimateCase] = useState<Case | null>(null); // 견적서용 선택된 케이스
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false); // 케이스 검색 모달
+  const [selectedCaseId, setSelectedCaseId] = useState(() => 
+    localStorage.getItem('selectedFieldSurveyCaseId') || ''
+  );
+
+  // localStorage 변경 감지 (현장입력에서 케이스 선택 시)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const newCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
+      setSelectedCaseId(prevId => {
+        if (newCaseId !== prevId) {
+          return newCaseId;
+        }
+        return prevId;
+      });
+    };
+
+    // storage event (다른 탭/창에서의 변경)
+    window.addEventListener('storage', handleStorageChange);
+    
+    // 같은 페이지 내에서의 변경 감지 (interval)
+    const intervalId = setInterval(handleStorageChange, 500);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(intervalId);
+    };
+  }, []); // dependency 제거 (한 번만 설정)
 
   // 빈 자재비 행 생성 함수
   const createBlankMaterialRow = (공종 = '', sourceLaborRowId?: string): MaterialRow => {
@@ -191,8 +218,25 @@ export default function FieldEstimate() {
     });
   }, [laborCostRows]);
 
-  // 현장입력에서 선택한 케이스 ID 가져오기
-  const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
+  // selectedCaseId 변경 시 hydration guard 및 상태 초기화
+  useEffect(() => {
+    if (!selectedCaseId) return; // Empty caseId, skip
+    
+    // Hydration guard reset
+    isHydratedRef.current = false;
+    
+    // 이전 케이스 데이터 초기화
+    setRows([]);
+    setLaborCostRows([]);
+    setMaterialRows([]);
+    setSelectedRows(new Set());
+    setSelectedLaborRows(new Set());
+    setSelectedMaterialRows(new Set());
+    
+    // Query 캐시 무효화 (새 케이스 데이터 강제 로드)
+    queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId, "latest"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/cases", selectedCaseId] });
+  }, [selectedCaseId]);
 
   const { toast } = useToast();
 
@@ -354,22 +398,36 @@ export default function FieldEstimate() {
 
   // 초기 빈 행 생성 또는 견적 불러오기
   useEffect(() => {
-    if (latestEstimate?.rows && latestEstimate.rows.length > 0) {
-      // 기존 견적이 있으면 불러오기 (복구면적 산출표)
-      const loadedRows = latestEstimate.rows.map((row: any) => ({
-        id: `row-${row.id}`,
-        category: row.category || (roomCategories[0] || ""),
-        location: row.location || (locations[0] || ""),
-        workName: row.workName || (workNames[0] || ""),
-        damageWidth: row.damageWidth?.toString() || "0000",
-        damageHeight: row.damageHeight?.toString() || "0000",
-        damageArea: row.damageArea ? (row.damageArea / 1000000).toFixed(2) : "0000",
-        repairWidth: row.repairWidth?.toString() || "0000",
-        repairHeight: row.repairHeight?.toString() || "0000",
-        repairArea: row.repairArea ? (row.repairArea / 1000000).toFixed(2) : "0000",
-        note: row.note || "",
-      }));
-      setRows(loadedRows);
+    // Query가 resolve될 때까지 대기 (undefined 상태 skip)
+    if (latestEstimate === undefined) return;
+    
+    // Hydration이 이미 완료되었거나, 케이스가 선택되지 않았으면 skip
+    if (isHydratedRef.current || !selectedCaseId) return;
+    
+    // 마스터 데이터가 로드될 때까지 대기
+    if (masterDataList.length === 0) return;
+    
+    if (latestEstimate) {
+      // 복구면적 산출표 데이터 불러오기
+      if (latestEstimate.rows && latestEstimate.rows.length > 0) {
+        const loadedRows = latestEstimate.rows.map((row: any) => ({
+          id: `row-${row.id}`,
+          category: row.category || (roomCategories[0] || ""),
+          location: row.location || (locations[0] || ""),
+          workName: row.workName || (workNames[0] || ""),
+          damageWidth: row.damageWidth?.toString() || "0000",
+          damageHeight: row.damageHeight?.toString() || "0000",
+          damageArea: row.damageArea ? (row.damageArea / 1000000).toFixed(2) : "0000",
+          repairWidth: row.repairWidth?.toString() || "0000",
+          repairHeight: row.repairHeight?.toString() || "0000",
+          repairArea: row.repairArea ? (row.repairArea / 1000000).toFixed(2) : "0000",
+          note: row.note || "",
+        }));
+        setRows(loadedRows);
+      } else {
+        // 복구면적 데이터가 없으면 빈 행 생성
+        addRow();
+      }
       
       // 노무비 데이터 불러오기
       if (latestEstimate.estimate?.laborCostData && Array.isArray(latestEstimate.estimate.laborCostData)) {
@@ -380,7 +438,7 @@ export default function FieldEstimate() {
         setLaborCostRows(loadedLaborRows);
       }
 
-      // 자재비 데이터 불러오기 (중복 방지를 위한 hydration)
+      // 자재비 데이터 불러오기
       if (latestEstimate.estimate?.materialCostData && Array.isArray(latestEstimate.estimate.materialCostData)) {
         const loadedMaterialRows = latestEstimate.estimate.materialCostData.map((row: any) => ({
           id: `material-${Date.now()}-${Math.random()}`,
@@ -391,13 +449,12 @@ export default function FieldEstimate() {
 
       // Hydration 완료 표시 (노무비-자재비 동기화 활성화)
       isHydratedRef.current = true;
-    } else if (rows.length === 0 && masterDataList.length > 0) {
-      // 견적이 없고 마스터 데이터가 로드되었으면 빈 행 생성
+    } else {
+      // 견적 데이터가 아예 없으면 빈 행만 생성
       addRow();
-      // 새 견적이므로 hydration 완료 표시
       isHydratedRef.current = true;
     }
-  }, [latestEstimate, masterDataList]);
+  }, [latestEstimate, masterDataList, selectedCaseId]);
 
   // 빈 행 생성 함수
   const createBlankRow = (): AreaCalculationRow => ({
