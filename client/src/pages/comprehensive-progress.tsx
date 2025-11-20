@@ -766,7 +766,7 @@ export default function ComprehensiveProgress() {
               </div>
             )}
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-              요청
+              상세보기
             </div>
           </div>
 
@@ -1038,23 +1038,23 @@ export default function ComprehensiveProgress() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        // 요청 기능 구현 예정
+                        setSelectedCaseId(caseItem.id);
                       }}
                       style={{
                         padding: "6px 12px",
-                        background: "#008FED",
-                        border: "none",
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(12, 12, 12, 0.2)",
                         borderRadius: "6px",
                         fontFamily: "Pretendard",
                         fontSize: "12px",
                         fontWeight: 500,
-                        color: "#FFFFFF",
+                        color: "rgba(12, 12, 12, 0.7)",
                         cursor: "pointer",
                         whiteSpace: "nowrap",
                       }}
-                      data-testid={`button-request-${caseItem.id}`}
+                      data-testid={`button-detail-${caseItem.id}`}
                     >
-                      요청
+                      재해 보기
                     </button>
                   </div>
                 </div>
