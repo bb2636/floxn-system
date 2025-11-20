@@ -1021,8 +1021,23 @@ export default function ComprehensiveProgress() {
                   </div>
                   {user?.role === "협력사" && (
                     <>
-                      <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                        -
+                      <div 
+                        style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "13px", 
+                          color: "#008FED",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          localStorage.setItem('selectedFieldSurveyCaseId', caseItem.id);
+                          setLocation('/field-survey/management');
+                        }}
+                        data-testid={`button-field-survey-${caseItem.id}`}
+                      >
+                        현장조사 입력
                       </div>
                       <div>
                         <button
