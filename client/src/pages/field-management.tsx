@@ -81,6 +81,9 @@ export default function FieldManagement() {
   // 접수건 목록 가져오기
   const { data: allCases, isLoading: casesLoading } = useQuery<Case[]>({
     queryKey: ["/api/cases"],
+    refetchOnWindowFocus: false, // 윈도우 포커스 시 refetch 방지
+    refetchOnMount: false, // 마운트 시 refetch 방지
+    staleTime: 5 * 60 * 1000, // 5분간 fresh 상태 유지
   });
 
   // 백엔드 데이터에서 각 단계 완료 상태 확인
@@ -88,18 +91,27 @@ export default function FieldManagement() {
   const { data: drawingData, isLoading: isLoadingDrawing } = useQuery({
     queryKey: ["/api/drawings", "case", selectedCase],
     enabled: !!selectedCase,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   // 문서 데이터 조회
   const { data: documentsData, isLoading: isLoadingDocuments } = useQuery({
     queryKey: ["/api/documents/case", selectedCase],
     enabled: !!selectedCase,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   // 견적 데이터 조회
   const { data: estimateData, isLoading: isLoadingEstimate } = useQuery({
     queryKey: ["/api/estimates", selectedCase, "latest"],
     enabled: !!selectedCase,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000,
   });
 
   if (!user) {
