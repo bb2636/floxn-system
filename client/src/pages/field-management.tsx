@@ -126,9 +126,12 @@ export default function FieldManagement() {
   const isAdmin = user.role === "관리자";
 
   // 협력사는 자신에게 배당된 케이스만, 관리자는 모든 케이스 표시
-  const availableCases = isPartner 
-    ? allCases?.filter(c => c.assignedPartner === user.company) || []
-    : allCases || [];
+  // useMemo로 감싸서 불필요한 재계산 방지
+  const availableCases = useMemo(() => {
+    return isPartner 
+      ? allCases?.filter(c => c.assignedPartner === user.company) || []
+      : allCases || [];
+  }, [isPartner, allCases, user.company]);
 
   // 선택한 케이스 데이터 가져오기
   const selectedCaseData = useMemo(() => {
@@ -164,11 +167,18 @@ export default function FieldManagement() {
   const canSubmit = isCompletionDataReady && isFieldInputComplete && isDrawingComplete && isDocumentsComplete && isEstimateComplete;
 
   // 케이스 선택 관리: 첫 번째 케이스 자동 선택 & 현재 선택된 케이스가 목록에 없으면 초기화
+  // 케이스 ID 목록만 추적하여 불필요한 재실행 방지
+  const availableCaseIds = useMemo(() => {
+    return availableCases.map(c => c.id).join(',');
+  }, [availableCases]);
+
   useEffect(() => {
     if (availableCases.length === 0) {
       // 케이스가 없으면 선택 해제
-      setSelectedCase("");
-      localStorage.removeItem('selectedFieldSurveyCaseId');
+      if (selectedCase) {
+        setSelectedCase("");
+        localStorage.removeItem('selectedFieldSurveyCaseId');
+      }
       return;
     }
 
@@ -181,7 +191,7 @@ export default function FieldManagement() {
       setSelectedCase(newCaseId);
       localStorage.setItem('selectedFieldSurveyCaseId', newCaseId);
     }
-  }, [availableCases, selectedCase]);
+  }, [availableCaseIds, selectedCase]); // availableCases 대신 availableCaseIds 사용
 
   // 케이스 선택 변경 시 localStorage에 저장
   const handleCaseChange = (caseId: string) => {
@@ -227,6 +237,12 @@ export default function FieldManagement() {
 
   // 선택한 케이스의 데이터를 폼에 로드 - 실제로 케이스 ID가 바뀔 때만 실행
   useEffect(() => {
+    // 사용자가 현재 입력 중이면 데이터 로드 안 함 (스크롤 점프 방지)
+    const activeElement = document.activeElement;
+    if (activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA') {
+      return;
+    }
+
     // 선택된 케이스 ID가 없으면 초기화
     if (!selectedCase) {
       lastLoadedCaseIdRef.current = null;
