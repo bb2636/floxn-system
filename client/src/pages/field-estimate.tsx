@@ -140,6 +140,36 @@ export default function FieldEstimate() {
     }
   }, []);
 
+  // 노무비 행 변화 감지 및 자재비 행 동기화
+  useEffect(() => {
+    setMaterialRows(prev => {
+      // 이미 연결된 노무비 행 ID 목록
+      const existingSourceIds = new Set(prev.map(row => row.sourceLaborRowId).filter(Boolean));
+      
+      // 자재비 행이 없는 노무비 행 찾기
+      const laborRowsNeedingMaterial = laborCostRows.filter(laborRow => 
+        laborRow.id && !existingSourceIds.has(laborRow.id)
+      );
+      
+      // 기존 행 업데이트 + 새 행 추가 (한 번에 처리)
+      const updatedRows = prev.map(matRow => {
+        if (!matRow.sourceLaborRowId) return matRow;
+        const linkedLaborRow = laborCostRows.find(lr => lr.id === matRow.sourceLaborRowId);
+        if (linkedLaborRow && linkedLaborRow.category !== matRow.공종) {
+          return { ...matRow, 공종: linkedLaborRow.category };
+        }
+        return matRow;
+      });
+      
+      // 새로운 자재비 행 추가
+      const newRows = laborRowsNeedingMaterial.map(laborRow => 
+        createBlankMaterialRow(laborRow.category, laborRow.id)
+      );
+      
+      return [...updatedRows, ...newRows];
+    });
+  }, [laborCostRows]);
+
   // 현장입력에서 선택한 케이스 ID 가져오기
   const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
 
@@ -209,8 +239,6 @@ export default function FieldEstimate() {
   const addLaborRow = () => {
     const newLaborRow = createBlankLaborRow();
     setLaborCostRows(prev => [...prev, newLaborRow]);
-    // 자재비 행도 자동으로 추가 (빈 상태, 노무비 행 ID로 연결)
-    setMaterialRows(prev => [...prev, createBlankMaterialRow('', newLaborRow.id)]);
   };
 
   // 선택된 노무비 행 삭제
@@ -218,37 +246,6 @@ export default function FieldEstimate() {
     if (selectedLaborRows.size === 0) return;
     setLaborCostRows(prev => prev.filter(row => !selectedLaborRows.has(row.id)));
     setSelectedLaborRows(new Set());
-  };
-
-  // 노무비 행 복제
-  const duplicateLaborRow = (row: LaborCostRow) => {
-    const newRow = { ...row, id: `labor-${Date.now()}-${Math.random()}` };
-    setLaborCostRows(prev => [...prev, newRow]);
-  };
-
-  // 노무비 행 변경 핸들러 (자재비 행과 연동)
-  const handleLaborRowsChange = (newLaborRows: LaborCostRow[]) => {
-    // 이전 값과 비교하여 category가 변경된 행 찾기 (ID 기반)
-    const oldRowsMap = new Map(laborCostRows.map(row => [row.id, row]));
-    const changedRows = newLaborRows.filter(newRow => {
-      const oldRow = oldRowsMap.get(newRow.id);
-      return oldRow && oldRow.category !== newRow.category;
-    });
-
-    // category가 변경된 행이 있으면 연결된 자재비 행의 공종도 업데이트
-    if (changedRows.length > 0) {
-      setMaterialRows(prev => 
-        prev.map(matRow => {
-          const changedLaborRow = changedRows.find(lr => lr.id === matRow.sourceLaborRowId);
-          if (changedLaborRow) {
-            return { ...matRow, 공종: changedLaborRow.category };
-          }
-          return matRow;
-        })
-      );
-    }
-
-    setLaborCostRows(newLaborRows);
   };
 
   // 자재비 행 추가
@@ -2035,7 +2032,7 @@ export default function FieldEstimate() {
               {/* 노무비 테이블 - 노무비 탭과 동일한 LaborCostSection 사용 */}
               <LaborCostSection
                 rows={laborCostRows}
-                onRowsChange={handleLaborRowsChange}
+                onRowsChange={setLaborCostRows}
                 catalog={laborCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
@@ -2430,7 +2427,7 @@ export default function FieldEstimate() {
               {/* 노무비 테이블 컴포넌트 - 새로운 프롬프트 기반 UI */}
               <LaborCostSection
                 rows={laborCostRows}
-                onRowsChange={handleLaborRowsChange}
+                onRowsChange={setLaborCostRows}
                 catalog={laborCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
