@@ -190,15 +190,28 @@ export default function FieldManagement() {
   };
 
   // 관리자가 "현장정보 입력" 상태의 케이스를 열면 "검토중"으로 자동 변경
+  // selectedCase ID만 감시하여 불필요한 재실행 방지
+  const [autoReviewUpdated, setAutoReviewUpdated] = useState<Set<string>>(new Set());
+  
   useEffect(() => {
     const autoUpdateToReview = async () => {
-      if (!selectedCaseData || !isAdmin) return;
+      if (!selectedCaseData || !isAdmin || !selectedCase) return;
+      
+      // 이미 업데이트한 케이스면 스킵
+      if (autoReviewUpdated.has(selectedCase)) return;
       
       // 상태가 "현장정보 입력"일 때만 "검토중"으로 변경
       if (selectedCaseData.status === "현장정보 입력") {
         try {
           await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, {
             status: "검토중",
+          });
+          
+          // 이 케이스를 업데이트 완료로 기록
+          setAutoReviewUpdated(prev => {
+            const updated = new Set(Array.from(prev));
+            updated.add(selectedCase);
+            return updated;
           });
           
           // 케이스 목록 새로고침
@@ -210,7 +223,7 @@ export default function FieldManagement() {
     };
 
     autoUpdateToReview();
-  }, [selectedCaseData?.id, selectedCaseData?.status, isAdmin]);
+  }, [selectedCase, isAdmin]); // selectedCase ID만 감시
 
   // 선택한 케이스의 데이터를 폼에 로드 - 실제로 케이스 ID가 바뀔 때만 실행
   useEffect(() => {
@@ -316,7 +329,7 @@ export default function FieldManagement() {
     // VOC 정보
     setVoc(selectedCaseData.specialRequests || "");
 
-  }, [selectedCase, selectedCaseData]); // selectedCase ID를 직접 감지, ref로 중복 로드 방지
+  }, [selectedCase]); // selectedCase ID만 감지 - selectedCaseData는 제외하여 불필요한 재로드 방지
 
   // intake.tsx 스타일 입력 필드 클래스
   const intakeFieldClass = "h-[68px] px-5 py-2.5 bg-[#FDFDFD] border-2 border-[rgba(12,12,12,0.08)] rounded-lg";
