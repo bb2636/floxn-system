@@ -73,6 +73,9 @@ export default function FieldManagement() {
   const caseSelectTriggerRef = useRef<HTMLButtonElement>(null);
   const accidentDateTriggerRef = useRef<HTMLButtonElement>(null);
   const visitDateTriggerRef = useRef<HTMLButtonElement>(null);
+  
+  // Ref to track the last loaded case ID - prevents unnecessary reloads
+  const lastLoadedCaseIdRef = useRef<string | null>(null);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -209,10 +212,11 @@ export default function FieldManagement() {
     autoUpdateToReview();
   }, [selectedCaseData?.id, selectedCaseData?.status, isAdmin]);
 
-  // 선택한 케이스의 데이터를 폼에 로드
+  // 선택한 케이스의 데이터를 폼에 로드 - 실제로 케이스 ID가 바뀔 때만 실행
   useEffect(() => {
-    if (!selectedCaseData) {
-      // 케이스가 없으면 모든 state 초기화
+    // 선택된 케이스 ID가 없으면 초기화
+    if (!selectedCase) {
+      lastLoadedCaseIdRef.current = null;
       setAccidentDate(undefined);
       setAccidentTime("");
       setVisitDate(undefined);
@@ -232,6 +236,19 @@ export default function FieldManagement() {
       setRecoveryMethodType("부분수리");
       return;
     }
+
+    // 이미 로드한 케이스면 스킵 (입력 중인 데이터 보호)
+    if (lastLoadedCaseIdRef.current === selectedCase) {
+      return;
+    }
+
+    // 데이터가 로드되지 않았으면 대기
+    if (!selectedCaseData) {
+      return;
+    }
+
+    // 새 케이스 로드
+    lastLoadedCaseIdRef.current = selectedCase;
 
     // 사고 발생일시
     if (selectedCaseData.accidentDate) {
@@ -299,7 +316,7 @@ export default function FieldManagement() {
     // VOC 정보
     setVoc(selectedCaseData.specialRequests || "");
 
-  }, [selectedCaseData?.id]); // 케이스 ID가 변경될 때만 실행
+  }, [selectedCase, selectedCaseData]); // selectedCase ID를 직접 감지, ref로 중복 로드 방지
 
   // intake.tsx 스타일 입력 필드 클래스
   const intakeFieldClass = "h-[68px] px-5 py-2.5 bg-[#FDFDFD] border-2 border-[rgba(12,12,12,0.08)] rounded-lg";
