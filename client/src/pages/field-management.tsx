@@ -70,7 +70,8 @@ export default function FieldManagement() {
   const [recoveryMethodType, setRecoveryMethodType] = useState("부분수리");
 
   // 입력 중 상태 추적 (스크롤 점프 방지)
-  const [isUserTyping, setIsUserTyping] = useState(false);
+  // ref 사용: state 변경 시 re-render 방지 (포커스 유지)
+  const isUserTypingRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Refs for preventing scroll on focus
@@ -239,23 +240,23 @@ export default function FieldManagement() {
     autoUpdateToReview();
   }, [selectedCase, isAdmin]); // selectedCase ID만 감시
 
-  // 입력 중 상태 추적 헬퍼
+  // 입력 중 상태 추적 헬퍼 (ref 사용으로 re-render 없음)
   const handleUserInput = () => {
-    setIsUserTyping(true);
+    isUserTypingRef.current = true;
     
     // 타이핑 멈춘 후 2초 뒤에 상태 해제
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
     typingTimeoutRef.current = setTimeout(() => {
-      setIsUserTyping(false);
+      isUserTypingRef.current = false;
     }, 2000);
   };
 
   // 선택한 케이스의 데이터를 폼에 로드 - 실제로 케이스 ID가 바뀔 때만 실행
   useEffect(() => {
-    // 🛡️ 사용자가 입력 중이면 데이터 로드 안 함 (스크롤 점프 방지)
-    if (isUserTyping) {
+    // 🛡️ 사용자가 입력 중이면 데이터 로드 안 함 (스크롤 점프 & 포커스 손실 방지)
+    if (isUserTypingRef.current) {
       console.log('⏸️ 사용자 입력 중 - form reset 스킵');
       return;
     }
@@ -362,7 +363,7 @@ export default function FieldManagement() {
     // VOC 정보
     setVoc(selectedCaseData.specialRequests || "");
 
-  }, [selectedCase, isUserTyping]); // isUserTyping으로 입력 중 보호
+  }, [selectedCase]); // selectedCase ID만 감지 - ref로 입력 보호
 
   // intake.tsx 스타일 입력 필드 클래스
   const intakeFieldClass = "h-[68px] px-5 py-2.5 bg-[#FDFDFD] border-2 border-[rgba(12,12,12,0.08)] rounded-lg";
