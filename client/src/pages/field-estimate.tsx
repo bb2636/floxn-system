@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Case, MasterData, LaborCost, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,9 @@ interface MaterialRow {
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
 
 export default function FieldEstimate() {
+  // Hydration guard: 기존 견적 복원 완료 추적 (중복 행 방지)
+  const isHydratedRef = useRef(false);
+
   const [selectedCategory, setSelectedCategory] = useState("복구면적 산출표");
   const [rows, setRows] = useState<AreaCalculationRow[]>([]);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
@@ -146,6 +149,11 @@ export default function FieldEstimate() {
 
   // 노무비 행 변화 감지 및 자재비 행 동기화
   useEffect(() => {
+    // Hydration 완료 전에는 동기화 건너뛰기 (중복 행 방지)
+    if (!isHydratedRef.current) {
+      return;
+    }
+
     setMaterialRows(prev => {
       // 이미 연결된 노무비 행 ID 목록
       const existingSourceIds = new Set(prev.map(row => row.sourceLaborRowId).filter(Boolean));
@@ -371,9 +379,23 @@ export default function FieldEstimate() {
         }));
         setLaborCostRows(loadedLaborRows);
       }
+
+      // 자재비 데이터 불러오기 (중복 방지를 위한 hydration)
+      if (latestEstimate.estimate?.materialCostData && Array.isArray(latestEstimate.estimate.materialCostData)) {
+        const loadedMaterialRows = latestEstimate.estimate.materialCostData.map((row: any) => ({
+          id: `material-${Date.now()}-${Math.random()}`,
+          ...row,
+        }));
+        setMaterialRows(loadedMaterialRows);
+      }
+
+      // Hydration 완료 표시 (노무비-자재비 동기화 활성화)
+      isHydratedRef.current = true;
     } else if (rows.length === 0 && masterDataList.length > 0) {
       // 견적이 없고 마스터 데이터가 로드되었으면 빈 행 생성
       addRow();
+      // 새 견적이므로 hydration 완료 표시
+      isHydratedRef.current = true;
     }
   }, [latestEstimate, masterDataList]);
 
