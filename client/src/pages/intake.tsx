@@ -417,13 +417,49 @@ export default function Intake() {
 
   const submitMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // 접수완료: 상태를 "접수완료"로 저장
-      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), caseNumber, status: "접수완료" });
+      const cleanedData = cleanFormData(data);
+      
+      // 손해방지와 피해세대복구 둘 다 선택된 경우: 2개의 케이스 생성
+      if (data.damagePreventionCost && data.victimIncidentAssistance) {
+        // 첫 번째 케이스: 손해방지 (접수번호-1)
+        const case1 = {
+          ...cleanedData,
+          caseNumber: `${caseNumber}-1`,
+          damagePreventionCost: "true",
+          victimIncidentAssistance: "false",
+          status: "접수완료"
+        };
+        
+        // 두 번째 케이스: 피해세대복구 (접수번호-2)
+        const case2 = {
+          ...cleanedData,
+          caseNumber: `${caseNumber}-2`,
+          damagePreventionCost: "false",
+          victimIncidentAssistance: "true",
+          status: "접수완료"
+        };
+        
+        // 두 케이스 모두 생성
+        await apiRequest("POST", "/api/cases", case1);
+        await apiRequest("POST", "/api/cases", case2);
+        
+        return { count: 2 };
+      } else {
+        // 하나만 선택되거나 둘 다 선택 안 된 경우: 1개의 케이스만 생성 (suffix 없음)
+        return await apiRequest("POST", "/api/cases", { 
+          ...cleanedData, 
+          caseNumber, 
+          status: "접수완료" 
+        });
+      }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const count = (result && typeof result === 'object' && 'count' in result) ? result.count : 1;
       toast({ 
-        description: "접수가 완료되었습니다. (상태: 접수완료)",
-        duration: 2000,
+        description: count === 2 
+          ? `접수가 완료되었습니다. (2건 생성: ${caseNumber}-1, ${caseNumber}-2)` 
+          : "접수가 완료되었습니다. (상태: 접수완료)",
+        duration: 3000,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       // 접수완료 성공 후 localStorage에서 임시 데이터 삭제
