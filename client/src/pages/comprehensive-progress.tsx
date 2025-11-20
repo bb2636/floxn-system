@@ -715,7 +715,7 @@ export default function ComprehensiveProgress() {
               style={{
                 display: "grid",
                 gridTemplateColumns: user?.role === "협력사" 
-                  ? "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px 100px"
+                  ? "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px"
                   : "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px",
                 padding: "14px 20px",
                 background: "rgba(12, 12, 12, 0.04)",
@@ -761,14 +761,9 @@ export default function ComprehensiveProgress() {
               특이사항
             </div>
             {user?.role === "협력사" && (
-              <>
-                <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-                  동작
-                </div>
-                <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-                  수정하기
-                </div>
-              </>
+              <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
+                동작
+              </div>
             )}
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               요청
@@ -872,7 +867,7 @@ export default function ComprehensiveProgress() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: user?.role === "협력사"
-                      ? "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px 100px"
+                      ? "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px"
                       : "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px",
                     padding: "14px 20px",
                     borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
@@ -1020,49 +1015,24 @@ export default function ComprehensiveProgress() {
                     )}
                   </div>
                   {user?.role === "협력사" && (
-                    <>
-                      <div 
-                        style={{ 
-                          fontFamily: "Pretendard", 
-                          fontSize: "13px", 
-                          color: "#008FED",
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          textDecoration: "underline",
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          localStorage.setItem('selectedFieldSurveyCaseId', caseItem.id);
-                          setLocation('/field-survey/management');
-                        }}
-                        data-testid={`button-field-survey-${caseItem.id}`}
-                      >
-                        현장조사 입력
-                      </div>
-                      <div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedCaseId(caseItem.id);
-                          }}
-                          style={{
-                            padding: "6px 12px",
-                            background: "#FFFFFF",
-                            border: "1px solid rgba(12, 12, 12, 0.1)",
-                            borderRadius: "6px",
-                            fontFamily: "Pretendard",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            color: "rgba(12, 12, 12, 0.7)",
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                          }}
-                          data-testid={`button-edit-${caseItem.id}`}
-                        >
-                          수정하기
-                        </button>
-                      </div>
-                    </>
+                    <div 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "13px", 
+                        color: "#008FED",
+                        fontWeight: 500,
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        localStorage.setItem('selectedFieldSurveyCaseId', caseItem.id);
+                        setLocation('/field-survey/management');
+                      }}
+                      data-testid={`button-field-survey-${caseItem.id}`}
+                    >
+                      현장조사 입력
+                    </div>
                   )}
                   <div>
                     <button
