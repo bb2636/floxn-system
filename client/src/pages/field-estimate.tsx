@@ -1793,6 +1793,7 @@ export default function FieldEstimate() {
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
                   <button
+                    onClick={addRow}
                     style={{
                       padding: "6px 12px",
                       background: "white",
@@ -1804,9 +1805,10 @@ export default function FieldEstimate() {
                     }}
                     data-testid="button-add-row-area"
                   >
-                    월 추가
+                    행 추가
                   </button>
                   <button
+                    onClick={deleteSelectedRows}
                     style={{
                       padding: "6px 12px",
                       background: "white",
@@ -1864,7 +1866,12 @@ export default function FieldEstimate() {
                       {rows.map((row, index) => (
                         <tr key={index} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
                           <td style={{ padding: "8px", textAlign: "center" }}>
-                            <input type="checkbox" />
+                            <input
+                              type="checkbox"
+                              checked={selectedRows.has(row.id)}
+                              onChange={() => toggleRowSelection(row.id)}
+                              data-testid={`checkbox-area-row-${index}`}
+                            />
                           </td>
                           <td style={{ padding: "8px" }}>
                             <select
