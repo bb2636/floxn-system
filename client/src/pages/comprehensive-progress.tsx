@@ -709,19 +709,21 @@ export default function ComprehensiveProgress() {
             overflow: "hidden",
           }}
         >
-          {/* Table Header */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: user?.role === "협력사" 
-                ? "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px 100px"
-                : "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px",
-              padding: "14px 20px",
-              background: "rgba(12, 12, 12, 0.04)",
-              borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-              gap: "8px",
-            }}
-          >
+          <div style={{ overflowX: "auto" }}>
+            {/* Table Header */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: user?.role === "협력사" 
+                  ? "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px 100px"
+                  : "110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px",
+                padding: "14px 20px",
+                background: "rgba(12, 12, 12, 0.04)",
+                borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                gap: "8px",
+                minWidth: "max-content",
+              }}
+            >
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               사고번호
             </div>
@@ -1073,6 +1075,7 @@ export default function ComprehensiveProgress() {
               );
             })
           )}
+          </div>
         </div>
       </div>
 
