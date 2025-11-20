@@ -81,8 +81,8 @@ export type CreateAccountInput = z.infer<typeof createAccountSchema>;
 export const cases = pgTable("cases", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   caseNumber: text("case_number").notNull().unique(),
-  status: text("status").notNull().default("접수중"),
-  recoveryType: text("recovery_type"), // 복구 타입: "직접복구" | "미복구" | null
+  status: text("status").notNull().default("배당대기"),
+  recoveryType: text("recovery_type"), // 복구 타입: "직접복구" | "선견적요청" | null
   
   // 기본 정보
   accidentDate: text("accident_date"),
@@ -211,28 +211,28 @@ export const cases = pgTable("cases", {
 });
 
 export const CASE_STATUSES = [
-  "접수중",        // 관리자가 현장 접수를 임시저장한 상태
-  "접수완료",      // 관리자가 현장 접수를 완전히 완료한 상태
-  "현장방문",      // 협력사가 방문일시만 입력하고 저장한 상태
-  "현장정보 입력", // 협력사가 현장조사의 모든 항목을 완료한 상태
-  "검토중",        // 현장정보가 제출된 후 플록슨 담당자가 페이지를 열어본 상태
-  "반려",          // 재입력 요구 상태
-  "1차승인",       // 플록슨 담당자 승인
-  "발송",          // 심사자/조사자에게 발송
-  "복구요청",      // 심사자/조사자가 복구 요청
-  "직접복구",      // 복구 진행 선택
-  "미복구",        // 선견적만 제출하고 종결
-  "청구자료제출",  // 직접복구 후 청구증빙자료 제출
-  "출동비 청구",   // 미복구 시 자동 전환
-  "청구",          // 인보이스 발송
-  "입금완료",      // 전액 입금
-  "일부입금",      // 일부 입금
-  "정산완료",      // 세금계산서 발행 완료
-  "접수취소",      // 접수 취소 (언제든지 가능)
+  "배당대기",      // 관리자가 접수하기에서 접수정보를 입력했으나, 배당협력사 정보를 입력하지 않은 상태
+  "접수완료",      // 관리자가 배당협력사 정보와 접수하기에 있는 정보를 모두 입력하고 '접수완료'를 눌러 접수를 완료한 상태
+  "현장방문",      // 배당받은 협력사가 현장정보를 입력할때 방문일시를 입력한 상태
+  "현장정보입력",  // 협력업체가 의뢰된 사고에 대해 현장조사 후 현장조사입력을 마친 상태
+  "검토중",        // 현장정보입력이 제출 된 후, 플록슨 담당자가 페이지를 열어본 상태
+  "반려",          // 현장정보 입력이 미흡해 재입력을 요구한 상태
+  "1차승인",       // 협력업체가 입력한 현장 정보에 문제가 없어 플록슨 담당자가 승인한 경우
+  "현장정보제출",  // 승인된 현장 정보를 플록슨 담당자가 심사자 또는 조사자에게 발송
+  "복구요청(2차승인)", // 심사자 또는 조사자가 현장 정보를 확인하고, 플록슨 또는 협력업체에 복구를 요청
+  "직접복구",      // 플록슨 담당자 또는 협력업체가 해당 사고건의 복구가 진행되는 경우
+  "선견적요청",    // 관리자가 접수하기에서 복구방식을 '선견적 요청'으로 했을경우 선견적만 제출하고 종결되는 경우
+  "(직접복구인 경우) 청구자료제출", // 현장복구를 완료 한 후 청구증빙자료를 제출한 상태
+  "(선견적요청인 경우) 출동비 청구", // 선견적요청 상태 선택시 자동으로 청구 상태 변환
+  "청구",          // 복구 완료 자료(복구 or 선견적요청 인보이스 포함)를 심사자 및 조사자에게 발송
+  "입금완료",      // 청구한 인보이스 금액이 모두 입금된 상태 (자부담 제외)
+  "일부입금",      // 청구한 인보이스 금액중 비례보상에 따른 일부 금액이 입금된 상태
+  "정산완료",      // 입금이 완료되어 수수료에 대한 세금계산서가 발행 완료된 상태
+  "접수취소",      // 플록슨에 사고가 의뢰 되었으나, 어떠한 사유로 인해 접수가 취소된 상태
 ] as const;
 export type CaseStatus = typeof CASE_STATUSES[number];
 
-export const RECOVERY_TYPES = ["직접복구", "미복구"] as const;
+export const RECOVERY_TYPES = ["직접복구", "선견적요청"] as const;
 export type RecoveryType = typeof RECOVERY_TYPES[number];
 
 export const insertCaseSchema = createInsertSchema(cases).omit({
@@ -241,7 +241,7 @@ export const insertCaseSchema = createInsertSchema(cases).omit({
   createdAt: true,
   updatedAt: true,
 }).extend({
-  status: z.enum(CASE_STATUSES).default("접수중"),
+  status: z.enum(CASE_STATUSES).default("배당대기"),
   recoveryType: z.enum(RECOVERY_TYPES).optional().nullable(),
 });
 

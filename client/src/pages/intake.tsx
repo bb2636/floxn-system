@@ -401,11 +401,11 @@ export default function Intake() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // 임시저장: 상태를 "접수중"으로 저장
-      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), caseNumber, status: "접수중" });
+      // 임시저장: 상태를 "배당대기"로 저장
+      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), caseNumber, status: "배당대기" });
     },
     onSuccess: () => {
-      toast({ description: "임시저장되었습니다. (상태: 접수중)", duration: 2000 });
+      toast({ description: "임시저장되었습니다. (상태: 배당대기)", duration: 2000 });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       // 임시저장 성공 후 localStorage에서 임시 데이터 삭제
       localStorage.removeItem('intakeFormDraft');
@@ -513,9 +513,9 @@ export default function Intake() {
     });
   };
 
-  // 저장 - 서버에 "접수중" 상태로 저장
+  // 저장 - 서버에 "배당대기" 상태로 저장
   const handleSave = () => {
-    // saveMutation을 호출하여 서버에 저장 (상태: 접수중)
+    // saveMutation을 호출하여 서버에 저장 (상태: 배당대기)
     saveMutation.mutate(formData);
   };
 

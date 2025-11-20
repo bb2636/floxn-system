@@ -1002,10 +1002,10 @@ export class MemStorage implements IStorage {
         filtered = allCases.filter(c => c.assessorId === user.id);
         break;
       case "협력사":
-        // 협력사는 "접수완료" 상태 이상의 건만 볼 수 있음 (접수중 상태는 제외)
+        // 협력사는 "접수완료" 상태 이상의 건만 볼 수 있음 (배당대기 상태는 제외)
         filtered = allCases.filter(c => 
           c.assignedPartner === user.company && 
-          c.status !== "접수중"
+          c.status !== "배당대기"
         );
         break;
       case "조사사":

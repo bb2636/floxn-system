@@ -36,19 +36,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 // 진행상태 목록
 const CASE_STATUSES = [
-  "접수중",
+  "배당대기",
   "접수완료",
   "현장방문",
-  "현장정보 입력",
+  "현장정보입력",
   "검토중",
   "반려",
   "1차승인",
-  "발송",
-  "복구요청",
+  "현장정보제출",
+  "복구요청(2차승인)",
   "직접복구",
-  "미복구",
-  "청구자료제출",
-  "출동비 청구",
+  "선견적요청",
+  "(직접복구인 경우) 청구자료제출",
+  "(선견적요청인 경우) 출동비 청구",
   "청구",
   "입금완료",
   "일부입금",
@@ -59,7 +59,7 @@ const CASE_STATUSES = [
 // 상태별 색상
 const getStatusColor = (status: string) => {
   if (status === "1차승인") return "#008FED"; // 파란색
-  if (status === "복구요청") return "#00C853"; // 초록색
+  if (status === "복구요청(2차승인)") return "#00C853"; // 초록색
   if (status === "접수취소" || status === "반려") return "#ED1C00"; // 빨간색
   if (status === "입금완료" || status === "정산완료") return "#4CAF50"; // 완료 초록색
   return "rgba(12, 12, 12, 0.7)"; // 기본 회색
@@ -929,7 +929,7 @@ export default function ComprehensiveProgress() {
                             }}
                             data-testid={`button-status-${caseItem.id}`}
                           >
-                            {caseItem.status || "접수중"}
+                            {caseItem.status || "배당대기"}
                           </div>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
@@ -983,7 +983,7 @@ export default function ComprehensiveProgress() {
                         }}
                         data-testid={`text-status-${caseItem.id}`}
                       >
-                        {caseItem.status || "접수중"}
+                        {caseItem.status || "배당대기"}
                       </div>
                     )}
                   </div>
@@ -1184,7 +1184,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "#FFFFFF",
                             }}>
-                              {selectedCase.status || "접수중"}
+                              {selectedCase.status || "배당대기"}
                             </div>
                           </div>
 
