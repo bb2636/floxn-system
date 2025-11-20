@@ -156,11 +156,20 @@ export default function FieldEstimate() {
       );
       
       // 기존 행 업데이트 + 새 행 추가 (한 번에 처리)
-      const updatedRows = prev.map(matRow => {
-        if (!matRow.sourceLaborRowId) return matRow;
-        const linkedLaborRow = laborCostRows.find(lr => lr.id === matRow.sourceLaborRowId);
-        if (linkedLaborRow && linkedLaborRow.category !== matRow.공종) {
-          return { ...matRow, 공종: linkedLaborRow.category };
+      const updatedRows = prev.map((matRow, index) => {
+        // sourceLaborRowId가 있으면 해당 노무비 행과 동기화
+        if (matRow.sourceLaborRowId) {
+          const linkedLaborRow = laborCostRows.find(lr => lr.id === matRow.sourceLaborRowId);
+          if (linkedLaborRow && linkedLaborRow.category !== matRow.공종) {
+            return { ...matRow, 공종: linkedLaborRow.category };
+          }
+          return matRow;
+        }
+        
+        // sourceLaborRowId가 없으면 같은 인덱스의 노무비 행과 동기화
+        const correspondingLaborRow = laborCostRows[index];
+        if (correspondingLaborRow && correspondingLaborRow.category !== matRow.공종) {
+          return { ...matRow, 공종: correspondingLaborRow.category };
         }
         return matRow;
       });
@@ -541,7 +550,7 @@ export default function FieldEstimate() {
       return;
     }
 
-    const selectedMaterial = materialsData.find(m => m.id === selectedMaterialSpec);
+    const selectedMaterial = materialsData.find(m => m.id === Number(selectedMaterialSpec));
 
     if (!selectedMaterial) {
       toast({
