@@ -879,6 +879,7 @@ export default function ComprehensiveProgress() {
                     gap: "8px",
                     alignItems: "center",
                     cursor: "pointer",
+                    minWidth: "max-content",
                   }}
                   data-testid={`case-row-${caseItem.id}`}
                 >
