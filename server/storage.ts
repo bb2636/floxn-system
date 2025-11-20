@@ -124,6 +124,13 @@ export interface IStorage {
   listMaterials(workType?: string): Promise<Material[]>;
   createMaterial(data: InsertMaterial): Promise<Material>;
   deleteMaterial(id: string): Promise<void>;
+  // Excel-based materials catalog
+  getMaterialsCatalog(): Promise<Array<{
+    materialName: string;
+    specification: string;
+    unit: string;
+    standardPrice: number | string; // can be "입력" or number
+  }>>;
   // User favorites methods
   getUserFavorites(userId: string): Promise<UserFavorite[]>;
   addFavorite(data: InsertUserFavorite): Promise<UserFavorite>;
@@ -1719,6 +1726,15 @@ export class MemStorage implements IStorage {
     throw new Error("Material methods not implemented in MemStorage");
   }
 
+  async getMaterialsCatalog(): Promise<Array<{
+    materialName: string;
+    specification: string;
+    unit: string;
+    standardPrice: number | string;
+  }>> {
+    throw new Error("Materials catalog not implemented in MemStorage");
+  }
+
   async getUserFavorites(userId: string): Promise<UserFavorite[]> {
     throw new Error("User favorites methods not implemented in MemStorage");
   }
@@ -3148,6 +3164,88 @@ export class DbStorage implements IStorage {
 
   async deleteMaterial(id: string): Promise<void> {
     await db.delete(materials).where(eq(materials.id, Number(id)));
+  }
+
+  async getMaterialsCatalog(): Promise<Array<{
+    materialName: string;
+    specification: string;
+    unit: string;
+    standardPrice: number | string;
+  }>> {
+    // Get 자재비 data from excel_data table
+    const excelRows = await db
+      .select()
+      .from(excelData)
+      .where(eq(excelData.type, "자재비"));
+    
+    if (excelRows.length === 0) {
+      return [];
+    }
+    
+    // Take the first (or most recent) upload
+    const latestExcelData = excelRows[0];
+    const headers = latestExcelData.headers as string[];
+    const data = latestExcelData.data as any[][];
+    
+    // Find column indices
+    const materialNameIdx = headers.findIndex(h => h === "자재명");
+    const specIdx = headers.findIndex(h => h === "규격");
+    const unitIdx = headers.findIndex(h => h === "단위");
+    const priceIdx = headers.findIndex(h => h === "단가");
+    
+    if (materialNameIdx === -1 || specIdx === -1 || unitIdx === -1 || priceIdx === -1) {
+      console.error("Missing required columns in excel_data 자재비");
+      return [];
+    }
+    
+    // Forward-fill processing
+    let lastMaterialName = "";
+    let lastSpecification = "";
+    
+    const catalog: Array<{
+      materialName: string;
+      specification: string;
+      unit: string;
+      standardPrice: number | string;
+    }> = [];
+    
+    for (const row of data) {
+      // Skip empty rows or rows with invalid structure
+      if (!row || row.length === 0) continue;
+      
+      // Get values with forward-fill
+      const materialName = row[materialNameIdx] ?? lastMaterialName;
+      const specification = row[specIdx] ?? lastSpecification;
+      const unit = row[unitIdx];
+      const price = row[priceIdx];
+      
+      // Skip if essential fields are missing
+      if (!materialName || !unit || price === undefined || price === null) {
+        continue;
+      }
+      
+      // Update last values for forward-fill
+      if (row[materialNameIdx]) lastMaterialName = materialName;
+      if (row[specIdx] !== null && row[specIdx] !== undefined) lastSpecification = specification;
+      
+      // Parse price: if it's "입력", keep as string; otherwise convert to number
+      let standardPrice: number | string = price;
+      if (typeof price === "string") {
+        // Remove commas and try to parse
+        const cleaned = price.replace(/,/g, "");
+        const parsed = parseFloat(cleaned);
+        standardPrice = isNaN(parsed) ? price : parsed;
+      }
+      
+      catalog.push({
+        materialName,
+        specification: specification || "-",
+        unit,
+        standardPrice,
+      });
+    }
+    
+    return catalog;
   }
 
   // User favorites methods

@@ -1857,19 +1857,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Materials (자재비) endpoints
-  // Get materials from database (all authenticated users)
+  // Get materials catalog from excel_data (all authenticated users)
   app.get("/api/materials", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     try {
-      const { workType } = req.query;
-      const materials = await storage.listMaterials(workType as string | undefined);
-      res.json(materials);
+      const catalog = await storage.getMaterialsCatalog();
+      res.json(catalog);
     } catch (error) {
-      console.error("Get materials error:", error);
-      res.status(500).json({ error: "자재비를 조회하는 중 오류가 발생했습니다" });
+      console.error("Get materials catalog error:", error);
+      res.status(500).json({ error: "자재비 카탈로그를 조회하는 중 오류가 발생했습니다" });
     }
   });
 

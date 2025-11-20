@@ -4,17 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Trash2 } from "lucide-react";
 import { useMemo } from "react";
 
-// MaterialCatalogItem matches Material from API response
+// MaterialCatalogItem matches excel_data 자재비 response
 export interface MaterialCatalogItem {
-  id: number;
-  workType: string; // 공종: 방수공사, 도배공사 등
   materialName: string;
   specification: string;
   unit: string;
-  standardPrice: number;
-  isActive: string;
-  createdAt: string; // ISO timestamp string from API
-  updatedAt: string; // ISO timestamp string from API
+  standardPrice: number | string; // number or "입력"
 }
 
 export interface MaterialRow {
@@ -51,23 +46,17 @@ export function MaterialCostSection({
   onSelectAll,
   isLoading = false,
 }: MaterialCostSectionProps) {
-  // 공종별로 필터링된 자재명 옵션 (각 행의 공종에 따라)
-  const getMaterialNamesForWorkType = (workType: string) => {
-    if (!workType) return [];
-    const names = new Set(
-      catalog
-        .filter(item => item.workType === workType)
-        .map(item => item.materialName)
-    );
+  // 전체 자재명 옵션 (공종 필터링 제거)
+  const getMaterialNames = useMemo(() => {
+    const names = new Set(catalog.map(item => item.materialName));
     return Array.from(names).sort();
-  };
+  }, [catalog]);
 
-  // 선택된 자재명과 공종에 따른 규격 옵션
-  const getSpecificationsForMaterial = (workType: string, materialName: string) => {
+  // 선택된 자재명에 따른 규격 옵션
+  const getSpecificationsForMaterial = (materialName: string) => {
     return catalog
-      .filter(item => item.workType === workType && item.materialName === materialName)
+      .filter(item => item.materialName === materialName)
       .map(item => ({
-        id: item.id,
         spec: item.specification,
         unit: item.unit,
         price: item.standardPrice,
@@ -90,17 +79,17 @@ export function MaterialCostSection({
         // 규격 변경 시 카탈로그에서 단위와 가격 가져오기
         if (field === '규격') {
           const catalogItem = catalog.find(item =>
-            item.workType === updated.공종 &&
             item.materialName === updated.자재 && 
             item.specification === value
           );
           if (catalogItem) {
             updated.단위 = catalogItem.unit;
-            updated.기준단가 = catalogItem.standardPrice;
+            // standardPrice가 "입력"이면 0, 아니면 숫자 값
+            updated.기준단가 = typeof catalogItem.standardPrice === 'string' ? 0 : catalogItem.standardPrice;
           }
         }
 
-        // 공종 변경 시 자재/규격 리셋
+        // 공종 변경 시 자재/규격 리셋 (공종 정보는 노무비에서만 사용)
         if (field === '공종') {
           updated.자재 = '';
           updated.규격 = '';
@@ -164,8 +153,7 @@ export function MaterialCostSection({
         </thead>
         <tbody>
           {rows.map((row, index) => {
-            const materialNamesForRow = getMaterialNamesForWorkType(row.공종);
-            const specOptions = (row.공종 && row.자재) ? getSpecificationsForMaterial(row.공종, row.자재) : [];
+            const specOptions = row.자재 ? getSpecificationsForMaterial(row.자재) : [];
             
             return (
               <tr key={row.id} style={{ height: "56px", borderBottom: "1px solid #E5E7EB" }}>
@@ -200,22 +188,21 @@ export function MaterialCostSection({
                   </Select>
                 </td>
                 
-                {/* 자재 - Select (공종 선택 후 활성화되며, 공종별로 필터링됨) */}
+                {/* 자재 - Select (전체 자재 리스트 표시) */}
                 <td style={{ padding: "0 8px" }}>
                   <Select 
                     value={row.자재} 
                     onValueChange={(value) => updateRow(row.id, '자재', value)}
-                    disabled={!row.공종}
                   >
                     <SelectTrigger 
                       className="h-9 border-0" 
                       style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                       data-testid={`select-자재-${index}`}
                     >
-                      <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
+                      <SelectValue placeholder="선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      {materialNamesForRow.map(name => (
+                      {getMaterialNames.map(name => (
                         <SelectItem key={name} value={name}>{name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -237,8 +224,8 @@ export function MaterialCostSection({
                       <SelectValue placeholder="선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      {specOptions.map(opt => (
-                        <SelectItem key={opt.id} value={opt.spec}>
+                      {specOptions.map((opt, idx) => (
+                        <SelectItem key={`${opt.spec}-${idx}`} value={opt.spec}>
                           {opt.spec}
                         </SelectItem>
                       ))}
