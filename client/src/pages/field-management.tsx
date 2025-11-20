@@ -69,6 +69,10 @@ export default function FieldManagement() {
   const [processingTypeOther, setProcessingTypeOther] = useState("");
   const [recoveryMethodType, setRecoveryMethodType] = useState("부분수리");
 
+  // 입력 중 상태 추적 (스크롤 점프 방지)
+  const [isUserTyping, setIsUserTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout>();
+
   // Refs for preventing scroll on focus
   const caseSelectTriggerRef = useRef<HTMLButtonElement>(null);
   const accidentDateTriggerRef = useRef<HTMLButtonElement>(null);
@@ -235,11 +239,24 @@ export default function FieldManagement() {
     autoUpdateToReview();
   }, [selectedCase, isAdmin]); // selectedCase ID만 감시
 
+  // 입력 중 상태 추적 헬퍼
+  const handleUserInput = () => {
+    setIsUserTyping(true);
+    
+    // 타이핑 멈춘 후 2초 뒤에 상태 해제
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsUserTyping(false);
+    }, 2000);
+  };
+
   // 선택한 케이스의 데이터를 폼에 로드 - 실제로 케이스 ID가 바뀔 때만 실행
   useEffect(() => {
-    // 사용자가 현재 입력 중이면 데이터 로드 안 함 (스크롤 점프 방지)
-    const activeElement = document.activeElement;
-    if (activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA') {
+    // 🛡️ 사용자가 입력 중이면 데이터 로드 안 함 (스크롤 점프 방지)
+    if (isUserTyping) {
+      console.log('⏸️ 사용자 입력 중 - form reset 스킵');
       return;
     }
 
@@ -345,7 +362,7 @@ export default function FieldManagement() {
     // VOC 정보
     setVoc(selectedCaseData.specialRequests || "");
 
-  }, [selectedCase]); // selectedCase ID만 감지 - selectedCaseData는 제외하여 불필요한 재로드 방지
+  }, [selectedCase, isUserTyping]); // isUserTyping으로 입력 중 보호
 
   // intake.tsx 스타일 입력 필드 클래스
   const intakeFieldClass = "h-[68px] px-5 py-2.5 bg-[#FDFDFD] border-2 border-[rgba(12,12,12,0.08)] rounded-lg";
@@ -866,7 +883,7 @@ export default function FieldManagement() {
                 <Input
                   type="time"
                   value={accidentTime}
-                  onChange={(e) => setAccidentTime(e.target.value)}
+                  onChange={(e) => { handleUserInput(); setAccidentTime(e.target.value); }}
                   className={intakeFieldClass}
                   style={{
                     ...intakeFieldStyle,
@@ -962,7 +979,7 @@ export default function FieldManagement() {
                     <Input
                       type="time"
                       value={visitTime}
-                      onChange={(e) => setVisitTime(e.target.value)}
+                      onChange={(e) => { handleUserInput(); setVisitTime(e.target.value); }}
                       className={intakeFieldClass}
                       style={{
                         ...intakeFieldStyle,
@@ -1086,7 +1103,7 @@ export default function FieldManagement() {
                   <Textarea
                     id="accident-cause-detail"
                     value={accidentCause}
-                    onChange={(e) => setAccidentCause(e.target.value)}
+                    onChange={(e) => { handleUserInput(); setAccidentCause(e.target.value); }}
                     placeholder="누수원인, 누수지점 등 기타 특이사항을 입력해주세요."
                     className="min-h-[200px]"
                     style={{
@@ -1130,7 +1147,7 @@ export default function FieldManagement() {
                   <Textarea
                     id="special-notes"
                     value={specialNotes}
-                    onChange={(e) => setSpecialNotes(e.target.value)}
+                    onChange={(e) => { handleUserInput(); setSpecialNotes(e.target.value); }}
                     placeholder="특이사항 입력"
                     className="min-h-[120px]"
                     style={{
@@ -1342,7 +1359,7 @@ export default function FieldManagement() {
                     <div className="flex-1 space-y-2">
                       <Input
                         value={newVictimName}
-                        onChange={(e) => setNewVictimName(e.target.value)}
+                        onChange={(e) => { handleUserInput(); setNewVictimName(e.target.value); }}
                         placeholder="성함을 입력해주세요"
                         className={intakeFieldClass}
                         style={intakeFieldStyle}
@@ -1350,7 +1367,7 @@ export default function FieldManagement() {
                       />
                       <Input
                         value={newVictimContact}
-                        onChange={(e) => setNewVictimContact(e.target.value)}
+                        onChange={(e) => { handleUserInput(); setNewVictimContact(e.target.value); }}
                         placeholder="연락처를 입력해주세요"
                         className={intakeFieldClass}
                         style={intakeFieldStyle}
@@ -1359,7 +1376,7 @@ export default function FieldManagement() {
                       <div className="flex items-center gap-2">
                         <Input
                           value={newVictimAddress}
-                          onChange={(e) => setNewVictimAddress(e.target.value)}
+                          onChange={(e) => { handleUserInput(); setNewVictimAddress(e.target.value); }}
                           placeholder="상세주소"
                           className={intakeFieldClass}
                           style={{
@@ -1461,7 +1478,7 @@ export default function FieldManagement() {
                 <Textarea
                   id="voc"
                   value={voc}
-                  onChange={(e) => setVoc(e.target.value)}
+                  onChange={(e) => { handleUserInput(); setVoc(e.target.value); }}
                   placeholder="내용을 적어주세요"
                   className="min-h-[120px]"
                   style={{
@@ -1555,7 +1572,7 @@ export default function FieldManagement() {
                 ))}
                 <Input
                   value={processingTypeOther}
-                  onChange={(e) => setProcessingTypeOther(e.target.value)}
+                  onChange={(e) => { handleUserInput(); setProcessingTypeOther(e.target.value); }}
                   placeholder="기타사항을 입력해주세요"
                   className="h-[52px] flex-1"
                   style={{
