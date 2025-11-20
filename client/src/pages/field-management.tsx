@@ -287,7 +287,7 @@ export default function FieldManagement() {
     // VOC 정보
     setVoc(selectedCaseData.specialRequests || "");
 
-  }, [selectedCaseData]);
+  }, [selectedCaseData?.id]); // 케이스 ID가 변경될 때만 실행
 
   // intake.tsx 스타일 입력 필드 클래스
   const intakeFieldClass = "h-[68px] px-5 py-2.5 bg-[#FDFDFD] border-2 border-[rgba(12,12,12,0.08)] rounded-lg";
