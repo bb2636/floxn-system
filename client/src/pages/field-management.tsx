@@ -47,7 +47,6 @@ export default function FieldManagement() {
   const [visitDate, setVisitDate] = useState<Date | undefined>(undefined);
   const [visitTime, setVisitTime] = useState("");
   const [visitDatePickerOpen, setVisitDatePickerOpen] = useState(false);
-  const [travelDistance, setTravelDistance] = useState("");
   const [dispatchLocation, setDispatchLocation] = useState("");
   const [accompaniedPerson, setAccompaniedPerson] = useState("");
   const [accidentCategory, setAccidentCategory] = useState("배관");
@@ -206,7 +205,6 @@ export default function FieldManagement() {
       setAccidentTime("");
       setVisitDate(undefined);
       setVisitTime("");
-      setTravelDistance("");
       setDispatchLocation("");
       setAccompaniedPerson("");
       setAccidentCategory("배관");
@@ -261,7 +259,6 @@ export default function FieldManagement() {
 
     // 출동담당자 및 현장 정보
     setAccompaniedPerson(selectedCaseData.accompaniedPerson || "");
-    setTravelDistance(selectedCaseData.travelDistance || "");
     setDispatchLocation(selectedCaseData.dispatchLocation || "");
 
     // 사고 정보
@@ -847,7 +844,7 @@ export default function FieldManagement() {
               >
                 현장정보
               </h3>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 {/* 방문 일시 */}
                 <div>
                   <Label 
@@ -916,54 +913,6 @@ export default function FieldManagement() {
                       disabled={isReadOnly}
                       data-testid="input-visit-time"
                     />
-                  </div>
-                </div>
-
-                {/* 현장 이동 거리 */}
-                <div>
-                  <Label 
-                    htmlFor="travel-distance"
-                    className="mb-3"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    현장 이동 거리
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="travel-distance"
-                      type="text"
-                      value={travelDistance}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        // 숫자만 입력 가능 (빈 문자열 허용)
-                        if (value === '' || /^\d+$/.test(value)) {
-                          setTravelDistance(value);
-                        }
-                      }}
-                      className={intakeFieldClass}
-                      style={{
-                        ...intakeFieldStyle,
-                        flex: 1,
-                      }}
-                      disabled={isReadOnly}
-                      placeholder="0"
-                      data-testid="input-travel-distance"
-                    />
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        fontWeight: 600,
-                        color: "#0C0C0C",
-                      }}
-                    >
-                      km
-                    </span>
                   </div>
                 </div>
 
@@ -1652,7 +1601,6 @@ export default function FieldManagement() {
                       const payload = {
                         visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
                         visitTime,
-                        travelDistance,
                         dispatchLocation,
                         accompaniedPerson,
                         accidentTime,
@@ -1714,7 +1662,6 @@ export default function FieldManagement() {
                       const payload = {
                         visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
                         visitTime,
-                        travelDistance,
                         dispatchLocation,
                         accompaniedPerson,
                         accidentTime,
