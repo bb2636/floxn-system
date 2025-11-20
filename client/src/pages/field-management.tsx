@@ -1027,7 +1027,7 @@ export default function FieldManagement() {
                     카테고리
                   </Label>
                   <div className="flex gap-2">
-                    {["배관", "교체", "방수", "기타"].map((category) => (
+                    {["배관", "코킹", "방수", "기타"].map((category) => (
                       <Button
                         key={category}
                         type="button"
