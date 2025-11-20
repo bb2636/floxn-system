@@ -690,10 +690,13 @@ export default function FieldEstimate() {
       // 노무비 데이터 (id 제외)
       const laborCostData = laborCostRows.map(({ id, ...rest }) => rest);
 
+      // 자재비 데이터 (id 제외)
+      const materialCostData = materialRows.map(({ id, ...rest }) => rest);
+
       return await apiRequest("POST", `/api/estimates/${selectedCaseId}`, { 
         rows: apiRows,
         laborCostData,
-        materialCostData: null, // TODO: 자재비 구현 시 추가
+        materialCostData,
         totalAmount: estimateSummary.total, // 견적 총액 전송
       });
     },
