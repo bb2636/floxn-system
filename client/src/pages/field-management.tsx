@@ -4,7 +4,6 @@ import { User, Case } from "@shared/schema";
 import { ChevronDown, ChevronRight, ChevronUp, Calendar as CalendarIcon, Clock, X, Plus, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -1101,12 +1100,12 @@ export default function FieldManagement() {
                   >
                     사고원인
                   </Label>
-                  <Textarea
+                  <textarea
                     id="accident-cause-detail"
                     value={accidentCause}
                     onChange={(e) => { handleUserInput(); setAccidentCause(e.target.value); }}
                     placeholder="누수원인, 누수지점 등 기타 특이사항을 입력해주세요."
-                    className="min-h-[200px]"
+                    maxLength={800}
                     style={{
                       fontFamily: "Pretendard",
                       fontSize: "16px",
@@ -1115,6 +1114,8 @@ export default function FieldManagement() {
                       border: "2px solid rgba(12,12,12,0.08)",
                       borderRadius: "8px",
                       resize: "none",
+                      minHeight: "200px",
+                      width: "100%",
                     }}
                     disabled={isReadOnly}
                     data-testid="textarea-accident-cause"
@@ -1145,12 +1146,11 @@ export default function FieldManagement() {
                   >
                     특이사항
                   </Label>
-                  <Textarea
+                  <textarea
                     id="special-notes"
                     value={specialNotes}
                     onChange={(e) => { handleUserInput(); setSpecialNotes(e.target.value); }}
                     placeholder="특이사항 입력"
-                    className="min-h-[120px]"
                     style={{
                       fontFamily: "Pretendard",
                       fontSize: "16px",
@@ -1159,6 +1159,8 @@ export default function FieldManagement() {
                       border: "2px solid rgba(12,12,12,0.08)",
                       borderRadius: "8px",
                       resize: "none",
+                      minHeight: "120px",
+                      width: "100%",
                     }}
                     disabled={isReadOnly}
                     data-testid="textarea-special-notes"
@@ -1476,12 +1478,12 @@ export default function FieldManagement() {
                 VOC(고객의 소리)
               </h3>
               <div>
-                <Textarea
+                <textarea
                   id="voc"
                   value={voc}
                   onChange={(e) => { handleUserInput(); setVoc(e.target.value); }}
                   placeholder="내용을 적어주세요"
-                  className="min-h-[120px]"
+                  maxLength={800}
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "16px",
@@ -1490,6 +1492,8 @@ export default function FieldManagement() {
                     border: "2px solid rgba(12,12,12,0.08)",
                     borderRadius: "8px",
                     resize: "none",
+                    minHeight: "120px",
+                    width: "100%",
                   }}
                   disabled={isReadOnly}
                   data-testid="textarea-voc"
