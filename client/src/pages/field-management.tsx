@@ -389,150 +389,65 @@ export default function FieldManagement() {
         onToggle={() => setScheduleOpen(!scheduleOpen)}
       >
         <div>
-          <p 
-            className="mb-3"
-            style={{
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "rgba(12, 12, 12, 0.7)",
-            }}
-          >
-            접수건 선택
-          </p>
-            
-            {/* 접수건 드롭다운 */}
+            {/* 선택된 접수건 정보 표시 */}
             {casesLoading ? (
               <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
                 접수건을 불러오는 중...
               </div>
-            ) : availableCases.length === 0 ? (
+            ) : !selectedCaseData ? (
               <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
-                {isPartner ? "배당된 접수건이 없습니다." : "등록된 접수건이 없습니다."}
+                {isPartner ? "배당된 접수건이 없습니다." : "선택된 접수건이 없습니다."}
               </div>
             ) : (
-              <Select
-                value={selectedCase}
-                onValueChange={handleCaseChange}
+              <div
+                style={{
+                  width: "788px",
+                  padding: "20px 24px",
+                  background: "rgba(12, 12, 12, 0.03)",
+                  borderRadius: "12px",
+                }}
+                data-testid="selected-case-info"
               >
-                <SelectTrigger 
-                  ref={caseSelectTriggerRef}
-                  className="border-0 focus:ring-0"
-                  style={{
-                    width: "788px",
-                    height: "auto",
-                    padding: "20px 24px",
-                    background: "rgba(12, 12, 12, 0.03)",
-                    borderRadius: "12px",
-                  }}
-                  data-testid="select-case"
-                >
-                  {selectedCaseData ? (
-                    <div className="flex flex-col gap-2 w-full">
-                      {/* 첫 번째 줄: 파란 점 + 보험사명 + 케이스 번호 */}
-                      <div className="flex items-center gap-2">
-                        <span 
-                          className="rounded-full"
-                          style={{
-                            width: "8px",
-                            height: "8px",
-                            background: "#008FED",
-                            flexShrink: 0,
-                          }}
-                        />
-                        <span
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "18px",
-                            fontWeight: 600,
-                            letterSpacing: "-0.02em",
-                            color: "#0C0C0C",
-                          }}
-                        >
-                          {selectedCaseData.insuranceCompany || "보험사 미지정"} {selectedCaseData.caseNumber || ""}
-                        </span>
-                      </div>
-                      {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
-                      <div 
-                        className="flex items-center gap-4"
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          fontWeight: 500,
-                          color: "rgba(12, 12, 12, 0.6)",
-                        }}
-                      >
-                        <span>접수번호 {selectedCaseData.insuranceAccidentNo || "-"}</span>
-                        <span>계약자 {selectedCaseData.policyHolderName || "-"}</span>
-                        <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
-                      </div>
-                    </div>
-                  ) : (
+                <div className="flex flex-col gap-2">
+                  {/* 첫 번째 줄: 파란 점 + 보험사명 + 케이스 번호 */}
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className="rounded-full"
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        background: "#008FED",
+                        flexShrink: 0,
+                      }}
+                    />
                     <span
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "16px",
-                        color: "rgba(12, 12, 12, 0.5)",
+                        fontSize: "18px",
+                        fontWeight: 600,
+                        letterSpacing: "-0.02em",
+                        color: "#0C0C0C",
                       }}
                     >
-                      접수건을 선택하세요
+                      {selectedCaseData.insuranceCompany || "보험사 미지정"} {selectedCaseData.caseNumber || ""}
                     </span>
-                  )}
-                </SelectTrigger>
-                {/* FIX: Select는 자체 포커스 관리가 있어 onOpenAutoFocus/onCloseAutoFocus 불필요 */}
-                <SelectContent 
-                  position="popper" 
-                  sideOffset={4}
-                >
-                  {availableCases.map((caseItem) => (
-                    <SelectItem 
-                      key={caseItem.id} 
-                      value={caseItem.id}
-                      data-testid={`case-option-${caseItem.id}`}
-                    >
-                      <div className="flex flex-col gap-1 py-1">
-                        {/* 첫 번째 줄: 파란 점 + 보험사명 + 케이스 번호 */}
-                        <div className="flex items-center gap-2">
-                          <span 
-                            className="rounded-full"
-                            style={{
-                              width: "6px",
-                              height: "6px",
-                              background: "#008FED",
-                              flexShrink: 0,
-                            }}
-                          />
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "16px",
-                              fontWeight: 600,
-                              letterSpacing: "-0.02em",
-                              color: "#0C0C0C",
-                            }}
-                          >
-                            {caseItem.insuranceCompany || "보험사 미지정"} {caseItem.caseNumber || ""}
-                          </span>
-                        </div>
-                        {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
-                        <div 
-                          className="flex items-center gap-3 pl-4"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "12px",
-                            fontWeight: 500,
-                            color: "rgba(12, 12, 12, 0.6)",
-                          }}
-                        >
-                          <span>접수번호 {caseItem.insuranceAccidentNo || "-"}</span>
-                          <span>계약자 {caseItem.policyHolderName || "-"}</span>
-                          <span>담당자 {caseItem.assignedPartnerManager || "-"}</span>
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  </div>
+                  {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+                  <div 
+                    className="flex items-center gap-4"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                  >
+                    <span>접수번호 {selectedCaseData.insuranceAccidentNo || "-"}</span>
+                    <span>계약자 {selectedCaseData.policyHolderName || "-"}</span>
+                    <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </SectionCard>
