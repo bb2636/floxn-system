@@ -7,7 +7,7 @@ interface FieldSurveyLayoutProps {
 }
 
 export function FieldSurveyLayout({ children }: FieldSurveyLayoutProps) {
-  // 모바일 viewport 높이를 CSS 변수로 설정 (키보드 열림/닫힘 대응)
+  // 모바일 viewport 높이를 CSS 변수로 설정 (초기 설정만)
   useEffect(() => {
     const setVh = () => {
       // 실제 viewport 높이를 계산하여 CSS 변수로 설정
@@ -15,22 +15,28 @@ export function FieldSurveyLayout({ children }: FieldSurveyLayoutProps) {
       document.documentElement.style.setProperty('--vh', `${vh}px`);
     };
 
-    // 초기 설정
+    // 초기 설정만 수행 (키보드 입력 중 재계산 방지)
     setVh();
 
-    // 리사이즈 시 업데이트 (키보드 열림/닫힘 포함)
-    window.addEventListener('resize', setVh);
-    
-    // iOS에서 visual viewport API 지원 시 사용
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', setVh);
-    }
+    // 화면 회전 등의 경우에만 업데이트 (키보드는 제외)
+    let resizeTimeout: NodeJS.Timeout;
+    const handleResize = () => {
+      // 입력 필드가 포커스된 상태에서는 재계산 안 함
+      const activeElement = document.activeElement;
+      if (activeElement?.tagName === 'INPUT' || activeElement?.tagName === 'TEXTAREA') {
+        return;
+      }
+      
+      // Throttle: 300ms 이내 연속 호출 방지
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(setVh, 300);
+    };
+
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      window.removeEventListener('resize', setVh);
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', setVh);
-      }
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimeout);
     };
   }, []);
 
