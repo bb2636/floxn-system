@@ -2684,7 +2684,7 @@ export default function Intake() {
                 fontWeight: 600,
                 lineHeight: '128%',
                 letterSpacing: '-0.01em',
-                background: !isFormValid || submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : 'rgba(12, 12, 12, 0.6)',
+                background: !isFormValid || submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : '#008FED',
                 border: 'none',
                 color: '#FFFFFF',
                 cursor: !isFormValid || submitMutation.isPending ? 'not-allowed' : 'pointer',
