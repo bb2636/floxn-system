@@ -1902,17 +1902,9 @@ export default function Intake() {
                         </div>
 
                         {/* Row 2: 4-column Dropdowns */}
-                        <div 
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: '20px',
-                            width: '1556px',
-                          }}
-                        >
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 w-full">
                           {/* Column 1 */}
-                          <div style={{ width: '374px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div className="flex flex-col gap-2">
                             <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               사고 유형
                             </label>
@@ -1946,7 +1938,7 @@ export default function Intake() {
                           </div>
 
                           {/* Column 2 */}
-                          <div style={{ width: '374px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div className="flex flex-col gap-2">
                             <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               사고 원인
                             </label>
@@ -1981,7 +1973,7 @@ export default function Intake() {
                           </div>
 
                           {/* Column 3 */}
-                          <div style={{ width: '374px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div className="flex flex-col gap-2">
                             <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               복구 방식
                             </label>
@@ -2014,7 +2006,7 @@ export default function Intake() {
                           </div>
 
                           {/* Column 4 */}
-                          <div style={{ width: '374px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <div className="flex flex-col gap-2">
                             <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               타업체 견적 여부
                             </label>
@@ -2047,7 +2039,7 @@ export default function Intake() {
                         </div>
 
                         {/* Row 3: 사고내용 Textarea */}
-                        <div style={{ width: '1556px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="flex flex-col gap-2 w-full">
                           <label 
                             style={{
                               fontFamily: 'Pretendard',
