@@ -363,13 +363,19 @@ export default function Intake() {
   // 임시 저장 건 불러오기
   useEffect(() => {
     const storedEditCaseId = localStorage.getItem('editCaseId');
+    console.log("🔍 Checking for draft case, editCaseId:", storedEditCaseId);
+    
     if (storedEditCaseId) {
       // editCaseId 상태 설정
       setEditCaseId(storedEditCaseId);
       
+      console.log("📥 Loading draft case:", storedEditCaseId);
+      
       // 케이스 데이터 불러오기
       apiRequest("GET", `/api/cases/${storedEditCaseId}`)
         .then((caseData: any) => {
+          console.log("✅ Draft case loaded successfully:", caseData);
+          
           // 폼 데이터 채우기
           setFormData({
             accidentDate: caseData.accidentDate || getTodayDate(),
@@ -420,16 +426,23 @@ export default function Intake() {
 
           // sameAsPolicyHolder 상태 설정
           if (caseData.sameAsPolicyHolder === "true") {
+            console.log("✓ Setting sameAsPolicyHolder to true");
             setSameAsPolicyHolder(true);
           }
 
           // additionalVictims 설정
           if (caseData.additionalVictims) {
-            setAdditionalVictims(JSON.parse(caseData.additionalVictims));
+            console.log("✓ Setting additionalVictims:", caseData.additionalVictims);
+            try {
+              setAdditionalVictims(JSON.parse(caseData.additionalVictims));
+            } catch (e) {
+              console.error("Failed to parse additionalVictims:", e);
+            }
           }
 
           // 협력사 정보가 있으면 설정
           if (caseData.assignedPartner) {
+            console.log("✓ Setting selectedPartner:", caseData.assignedPartner);
             setSelectedPartner({
               name: caseData.assignedPartner,
               dailyCount: 0,
@@ -444,7 +457,9 @@ export default function Intake() {
           if (caseData.accidentDate) {
             const dateParts = caseData.accidentDate.split('-');
             if (dateParts.length === 3) {
-              setAccidentDate(new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2])));
+              const parsedDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+              console.log("✓ Setting accidentDate:", parsedDate);
+              setAccidentDate(parsedDate);
             }
           }
 
@@ -453,16 +468,18 @@ export default function Intake() {
             duration: 3000,
           });
 
-          // localStorage에서 editCaseId 제거
+          // localStorage에서 editCaseId 제거 (성공 시에만)
+          console.log("🧹 Removing editCaseId from localStorage");
           localStorage.removeItem('editCaseId');
         })
         .catch((error) => {
-          console.error("Failed to load draft case:", error);
+          console.error("❌ Failed to load draft case:", error);
           toast({
-            description: "임시 저장 건을 불러오는 데 실패했습니다.",
+            description: `임시 저장 건을 불러오는 데 실패했습니다: ${error.message}`,
             variant: "destructive",
-            duration: 3000,
+            duration: 5000,
           });
+          // 에러 시에도 제거하여 무한 재시도 방지
           localStorage.removeItem('editCaseId');
         });
     }
