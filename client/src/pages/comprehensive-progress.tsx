@@ -287,8 +287,16 @@ export default function ComprehensiveProgress() {
     ...CASE_STATUSES.map((status) => ({ name: status, key: status })),
   ];
 
-  // 진행상태 필터링
+  // 진행상태 필터링 + 협력사 필터링
   const filteredByStatus = (cases || []).filter((caseItem) => {
+    // 협력사인 경우: 자신에게 배정된 "접수완료" 상태 케이스만 표시
+    if (user?.role === "협력사") {
+      const isAssignedToMe = caseItem.assignedPartner === user.company;
+      const isCompleted = caseItem.status === "접수완료";
+      return isAssignedToMe && isCompleted;
+    }
+    
+    // 다른 역할은 기존 필터링 로직 유지
     if (selectedStatus === "전체") return true;
     // 미복구는 출동비 청구로 정규화되어 저장되므로 둘 다 매칭
     if (selectedStatus === "미복구") {
