@@ -766,7 +766,7 @@ export default function ComprehensiveProgress() {
               </div>
             )}
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-              상세보기
+              요청
             </div>
           </div>
 
