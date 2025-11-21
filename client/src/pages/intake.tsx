@@ -373,6 +373,7 @@ export default function Intake() {
       
       // 케이스 데이터 불러오기
       apiRequest("GET", `/api/cases/${storedEditCaseId}`)
+        .then((res) => res.json())
         .then((caseData: any) => {
           console.log("✅ Draft case loaded successfully:", caseData);
           
