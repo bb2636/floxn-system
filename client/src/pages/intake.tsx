@@ -940,22 +940,18 @@ export default function Intake() {
       <GlobalHeader />
 
       {/* Main Content */}
-      <main className="relative flex items-center justify-center px-4 sm:px-6 lg:px-8" style={{ padding: '0 16px 40px 16px' }}>
+      <main className="relative flex items-center justify-center px-4 md:px-6 lg:px-8 pb-10">
         {/* Responsive Container */}
         <div className="w-full max-w-[1660px]">
           {/* Page Title */}
           <div 
-            className="flex items-center gap-4"
-            style={{
-              padding: '36px 32px',
-              height: '82px',
-            }}
+            className="flex items-center gap-3 md:gap-4 px-4 md:px-8 py-6 md:py-9"
           >
             <h1 
+              className="text-xl md:text-2xl lg:text-[26px]"
               style={{
                 fontFamily: 'Pretendard',
                 fontWeight: 600,
-                fontSize: '26px',
                 lineHeight: '128%',
                 letterSpacing: '-0.02em',
                 color: '#0C0C0C',
@@ -979,7 +975,7 @@ export default function Intake() {
           </div>
 
           {/* Form Sections Container */}
-          <div className="flex flex-col gap-8 w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-6 md:gap-8 w-full px-0 md:px-4 lg:px-8">
             
             {/* 1. 기본 정보 */}
             <div 
@@ -992,18 +988,16 @@ export default function Intake() {
             >
               <Collapsible open={basicInfoOpen} onOpenChange={setBasicInfoOpen}>
                 <div 
-                  className="flex items-center justify-between"
+                  className="flex items-center justify-between px-4 md:px-6 py-5 md:py-6 border-b-2"
                   style={{
-                    padding: '24px',
-                    height: '82px',
-                    borderBottom: '2px solid rgba(12, 12, 12, 0.1)',
+                    borderBottomColor: 'rgba(12, 12, 12, 0.1)',
                   }}
                 >
                   <h2 
+                    className="text-lg md:text-xl lg:text-2xl"
                     style={{
                       fontFamily: 'Pretendard',
                       fontWeight: 600,
-                      fontSize: '24px',
                       lineHeight: '128%',
                       letterSpacing: '-0.02em',
                       color: '#0C0C0C',
@@ -1022,16 +1016,16 @@ export default function Intake() {
                 </div>
                 
                 <CollapsibleContent>
-                  <div style={{ padding: '16px 0 32px 0' }}>
-                    {/* Row 1: 접수번호, 접수일자 (2-column) */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '32px' }}>
+                  <div className="py-4 md:py-6 lg:py-8">
+                    {/* Row 1: 접수번호, 접수일자 (2-column on desktop, 1-column on mobile) */}
+                    <div className="flex flex-col md:flex-row gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
                       {/* Column 1 - 접수번호 */}
-                      <div style={{ width: '768px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div className="flex-1 flex flex-col gap-2">
                         <label 
+                          className="text-sm"
                           style={{
                             fontFamily: 'Pretendard',
                             fontWeight: 500,
-                            fontSize: '14px',
                             lineHeight: '128%',
                             letterSpacing: '-0.01em',
                             color: '#686A6E',
@@ -1040,20 +1034,16 @@ export default function Intake() {
                           접수번호
                         </label>
                         <div 
+                          className="flex items-center px-4 md:px-5 h-14 md:h-[68px] rounded-lg"
                           style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '10px 20px',
-                            height: '68px',
                             background: 'rgba(12, 12, 12, 0.04)',
-                            borderRadius: '8px',
                           }}
                         >
                           <span 
+                            className="text-sm md:text-base"
                             style={{
                               fontFamily: 'Pretendard',
                               fontWeight: 600,
-                              fontSize: '16px',
                               lineHeight: '128%',
                               letterSpacing: '-0.02em',
                               color: '#0C0C0C',
@@ -1066,12 +1056,12 @@ export default function Intake() {
                       </div>
 
                       {/* Column 2 - 접수일자 */}
-                      <div style={{ width: '768px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div className="flex-1 flex flex-col gap-2">
                         <label 
+                          className="text-sm"
                           style={{
                             fontFamily: 'Pretendard',
                             fontWeight: 500,
-                            fontSize: '14px',
                             lineHeight: '128%',
                             letterSpacing: '-0.01em',
                             color: '#686A6E',
@@ -1084,17 +1074,13 @@ export default function Intake() {
                             <Button
                               type="button"
                               variant="outline"
+                              className="w-full h-14 md:h-[68px] px-4 md:px-5 text-sm md:text-base rounded-lg"
                               style={{
-                                width: '768px',
-                                height: '68px',
-                                padding: '10px 20px',
                                 justifyContent: 'flex-start',
                                 background: '#FDFDFD',
                                 border: '2px solid rgba(12, 12, 12, 0.08)',
-                                borderRadius: '8px',
                                 fontFamily: 'Pretendard',
                                 fontWeight: 600,
-                                fontSize: '16px',
                                 letterSpacing: '-0.02em',
                                 color: '#0C0C0C',
                               }}
@@ -1133,25 +1119,24 @@ export default function Intake() {
                     </div>
 
                     {/* Subsection: 보험 정보 */}
-                    <div style={{ padding: '24px 20px' }}>
+                    <div className="px-4 md:px-5 py-4 md:py-6">
                       <h3 
+                        className="text-lg md:text-xl mb-2"
                         style={{
                           fontFamily: 'Pretendard',
                           fontWeight: 600,
-                          fontSize: '20px',
                           lineHeight: '128%',
                           letterSpacing: '-0.02em',
                           color: 'rgba(12, 12, 12, 0.8)',
-                          marginBottom: '8px',
                         }}
                       >
                         보험 정보
                       </h3>
                       <p 
+                        className="text-sm"
                         style={{
                           fontFamily: 'Pretendard',
                           fontWeight: 500,
-                          fontSize: '14px',
                           lineHeight: '128%',
                           letterSpacing: '-0.01em',
                           color: 'rgba(12, 12, 12, 0.5)',
@@ -1161,12 +1146,12 @@ export default function Intake() {
                       </p>
                     </div>
 
-                    {/* 보험 정보 3-column */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '32px' }}>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사</label>
+                    {/* 보험 정보 3-column on desktop, 1-column on mobile */}
+                    <div className="flex flex-col md:flex-row gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                      <div className="flex-1 flex flex-col gap-2">
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사</label>
                         <Select value={formData.insuranceCompany} onValueChange={(value) => handleInputChange("insuranceCompany", value)}>
-                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-insurance-company">
+                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-insurance-company">
                             <SelectValue placeholder="보험사 선택" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1176,27 +1161,27 @@ export default function Intake() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 증권번호</label>
-                        <input type="text" placeholder="증권번호 입력" value={formData.insurancePolicyNo} onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-policy-no" />
+                      <div className="flex-1 flex flex-col gap-2">
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 증권번호</label>
+                        <input type="text" placeholder="증권번호 입력" value={formData.insurancePolicyNo} onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-policy-no" />
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 사고번호</label>
-                        <input type="text" placeholder="사고번호 입력" value={formData.insuranceAccidentNo} onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-accident-no" />
+                      <div className="flex-1 flex flex-col gap-2">
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 사고번호</label>
+                        <input type="text" placeholder="사고번호 입력" value={formData.insuranceAccidentNo} onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-accident-no" />
                       </div>
                     </div>
 
                     {/* Subsection: 의뢰자 정보 */}
-                    <div style={{ padding: '24px 20px 12px 20px' }}>
-                      <h3 style={{fontFamily: 'Pretendard',fontWeight: 600,fontSize: '20px',lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>의뢰자 정보</h3>
+                    <div className="px-4 md:px-5 py-4 md:py-6 pb-3">
+                      <h3 className="text-lg md:text-xl" style={{fontFamily: 'Pretendard',fontWeight: 600,lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>의뢰자 정보</h3>
                     </div>
 
-                    {/* 의뢰자 정보 4-column */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '32px' }}>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰사</label>
+                    {/* 의뢰자 정보 - responsive grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰사</label>
                         <Select value={formData.clientResidence} onValueChange={(value) => handleInputChange("clientResidence", value)}>
-                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-client-company">
+                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-client-company">
                             <SelectValue placeholder="의뢰사 선택" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1208,18 +1193,18 @@ export default function Intake() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/시설</label>
-                        <input type="text" placeholder="소속/시설" value={formData.clientDepartment} onChange={(e) => handleInputChange("clientDepartment", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-department" />
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/시설</label>
+                        <input type="text" placeholder="소속/시설" value={formData.clientDepartment} onChange={(e) => handleInputChange("clientDepartment", e.target.value)} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-department" />
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자</label>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자</label>
                         <Select 
                           value={formData.clientName} 
                           onValueChange={(value) => handleInputChange("clientName", value)}
                           disabled={!formData.clientResidence}
                         >
-                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-client-name">
+                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-client-name">
                             <SelectValue placeholder={formData.clientResidence ? "담당자 선택" : "의뢰사를 먼저 선택해주세요"} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1237,23 +1222,23 @@ export default function Intake() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자 담당자 연락처</label>
-                        <input type="text" placeholder="의뢰자를 선택하면 자동으로 입력됩니다" value={formData.clientContact} readOnly style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-contact" />
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자 담당자 연락처</label>
+                        <input type="text" placeholder="의뢰자를 선택하면 자동으로 입력됩니다" value={formData.clientContact} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-contact" />
                       </div>
                     </div>
 
                     {/* Subsection: 심사자 정보 */}
-                    <div style={{ padding: '24px 20px 12px 20px' }}>
-                      <h3 style={{fontFamily: 'Pretendard',fontWeight: 600,fontSize: '20px',lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>심사자 정보</h3>
+                    <div className="px-4 md:px-5 py-4 md:py-6 pb-3">
+                      <h3 className="text-lg md:text-xl" style={{fontFamily: 'Pretendard',fontWeight: 600,lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>심사자 정보</h3>
                     </div>
 
-                    {/* 심사자 정보 4-column */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px', marginBottom: '32px' }}>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사사</label>
+                    {/* 심사자 정보 - responsive grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사사</label>
                         <Select value={formData.assessorId} onValueChange={(value) => handleInputChange("assessorId", value)}>
-                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-assessor-company">
+                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-assessor-company">
                             <SelectValue placeholder="심사사 선택" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1268,18 +1253,18 @@ export default function Intake() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/시설</label>
-                        <input type="text" placeholder="입력해주세요" value={formData.assessorDepartment} onChange={(e) => handleInputChange("assessorDepartment", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-department" />
+                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/시설</label>
+                        <input type="text" placeholder="입력해주세요" value={formData.assessorDepartment} onChange={(e) => handleInputChange("assessorDepartment", e.target.value)} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-department" />
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자</label>
+                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자</label>
                         <Select 
                           value={formData.assessorTeam} 
                           onValueChange={(value) => handleInputChange("assessorTeam", value)}
                           disabled={!formData.assessorId}
                         >
-                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-assessor-name">
+                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-assessor-name">
                             <SelectValue placeholder={formData.assessorId ? "심사자 선택" : "심사사를 먼저 선택해주세요"} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1297,23 +1282,23 @@ export default function Intake() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자 연락처</label>
-                        <input type="text" placeholder="심사자를 선택하면 자동으로 입력됩니다" value={formData.assessorContact} readOnly style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-contact" />
+                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자 연락처</label>
+                        <input type="text" placeholder="심사자를 선택하면 자동으로 입력됩니다" value={formData.assessorContact} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-contact" />
                       </div>
                     </div>
 
                     {/* Subsection: 조사자 정보 */}
-                    <div style={{ padding: '24px 20px 12px 20px' }}>
-                      <h3 style={{fontFamily: 'Pretendard',fontWeight: 600,fontSize: '20px',lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>조사자 정보</h3>
+                    <div className="px-4 md:px-5 py-4 md:py-6 pb-3">
+                      <h3 className="text-lg md:text-xl" style={{fontFamily: 'Pretendard',fontWeight: 600,lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>조사자 정보</h3>
                     </div>
 
                     {/* 조사자 정보 4-column */}
-                    <div style={{ display: 'flex', gap: '20px', padding: '0 20px' }}>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>손사명</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>손사명</label>
                         <Select value={formData.investigatorTeam} onValueChange={(value) => handleInputChange("investigatorTeam", value)}>
-                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-investigator-team">
+                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-investigator-team">
                             <SelectValue placeholder="선택해주세요" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1325,18 +1310,18 @@ export default function Intake() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/부서</label>
-                        <input type="text" placeholder="입력해주세요" value={formData.investigatorDepartment} onChange={(e) => handleInputChange("investigatorDepartment", e.target.value)} style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-department" />
+                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/부서</label>
+                        <input type="text" placeholder="입력해주세요" value={formData.investigatorDepartment} onChange={(e) => handleInputChange("investigatorDepartment", e.target.value)} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-department" />
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자</label>
+                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자</label>
                         <Select 
                           value={formData.investigatorTeamName} 
                           onValueChange={(value) => handleInputChange("investigatorTeamName", value)}
                           disabled={!formData.investigatorTeam}
                         >
-                          <SelectTrigger style={{height: '68px',padding: '10px 20px',background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',borderRadius: '8px',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em'}} data-testid="select-investigator">
+                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-investigator">
                             <SelectValue placeholder={formData.investigatorTeam ? "조사자 선택" : "손사명을 먼저 선택해주세요"} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1354,9 +1339,9 @@ export default function Intake() {
                           </SelectContent>
                         </Select>
                       </div>
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{fontFamily: 'Pretendard',fontWeight: 500,fontSize: '14px',lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자 연락처</label>
-                        <input type="text" placeholder="조사자를 선택하면 자동으로 입력됩니다" value={formData.investigatorContact} readOnly style={{height: '68px',padding: '10px 20px',background: 'rgba(12, 12, 12, 0.04)',borderRadius: '8px',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,fontSize: '16px',letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-contact" />
+                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자 연락처</label>
+                        <input type="text" placeholder="조사자를 선택하면 자동으로 입력됩니다" value={formData.investigatorContact} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-contact" />
                       </div>
                     </div>
                   </div>
@@ -1488,7 +1473,7 @@ export default function Intake() {
                     <div style={{ padding: '0 20px', marginBottom: '20px' }}>
                       <div style={{ display: 'flex', gap: '20px' }}>
                         {/* Column 1: 보험계약자 */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                           <label 
                             style={{
                               fontFamily: 'Pretendard',
@@ -1523,7 +1508,7 @@ export default function Intake() {
                         </div>
 
                         {/* Column 2: 피보험자 */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                           <label 
                             style={{
                               fontFamily: 'Pretendard',
@@ -1558,7 +1543,7 @@ export default function Intake() {
                         </div>
 
                         {/* Column 3: 피보험자 연락처 (필수) */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                           <label 
                             style={{
                               fontFamily: 'Pretendard',
@@ -1632,7 +1617,7 @@ export default function Intake() {
                     </div>
 
                     {/* Fourth Section: 피해자 정보 */}
-                    <div style={{ padding: '24px 20px 12px 20px' }}>
+                    <div className="px-4 md:px-5 py-4 md:py-6 pb-3">
                       <h3 
                         style={{
                           fontFamily: 'Pretendard',
@@ -1650,7 +1635,7 @@ export default function Intake() {
                     {/* Fifth Row: 2-column - 피해자, 피해자 연락처 */}
                     <div style={{ padding: '0 20px' }}>
                       <div style={{ display: 'flex', gap: '20px' }}>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                           <label 
                             style={{
                               fontFamily: 'Pretendard',
@@ -1685,7 +1670,7 @@ export default function Intake() {
                         </div>
 
                         {/* Column 2: 피해자 연락처 */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                           <label 
                             style={{
                               fontFamily: 'Pretendard',
@@ -2647,21 +2632,18 @@ export default function Intake() {
 
           {/* Bottom Action Buttons */}
           <div 
-            className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end w-full px-4 sm:px-6 lg:px-8 mt-8 gap-3"
+            className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end w-full px-4 md:px-6 lg:px-8 mt-6 md:mt-8 gap-3"
           >
             <button
               onClick={handleReset}
+              className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
               style={{
-                height: '56px',
-                padding: '0 32px',
                 fontFamily: 'Pretendard',
                 fontWeight: 600,
-                fontSize: '16px',
                 lineHeight: '128%',
                 letterSpacing: '-0.01em',
                 background: 'transparent',
                 border: 'none',
-                borderRadius: '8px',
                 color: '#EF4444',
                 cursor: 'pointer',
               }}
@@ -2673,17 +2655,14 @@ export default function Intake() {
             <button
               onClick={handleSave}
               disabled={saveMutation.isPending}
+              className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
               style={{
-                height: '56px',
-                padding: '0 32px',
                 fontFamily: 'Pretendard',
                 fontWeight: 600,
-                fontSize: '16px',
                 lineHeight: '128%',
                 letterSpacing: '-0.01em',
                 background: saveMutation.isPending ? 'rgba(0, 143, 237, 0.5)' : '#008FED',
                 border: 'none',
-                borderRadius: '8px',
                 color: '#FFFFFF',
                 cursor: saveMutation.isPending ? 'not-allowed' : 'pointer',
                 opacity: saveMutation.isPending ? 0.6 : 1,
@@ -2696,17 +2675,14 @@ export default function Intake() {
             <button
               onClick={handleSubmit}
               disabled={!isFormValid || submitMutation.isPending}
+              className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
               style={{
-                height: '56px',
-                padding: '0 32px',
                 fontFamily: 'Pretendard',
                 fontWeight: 600,
-                fontSize: '16px',
                 lineHeight: '128%',
                 letterSpacing: '-0.01em',
                 background: !isFormValid || submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : 'rgba(12, 12, 12, 0.6)',
                 border: 'none',
-                borderRadius: '8px',
                 color: '#FFFFFF',
                 cursor: !isFormValid || submitMutation.isPending ? 'not-allowed' : 'pointer',
                 opacity: !isFormValid || submitMutation.isPending ? 0.5 : 1,
