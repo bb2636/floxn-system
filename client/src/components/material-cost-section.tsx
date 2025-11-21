@@ -298,7 +298,7 @@ export function MaterialCostSection({
                     onChange={(e) => updateRow(row.id, '비고', e.target.value)}
                     className="h-9 border-0 bg-transparent"
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    placeholder="현장 변동에 따라 변동"
+                    placeholder="현장 상황에 따라 변동"
                     data-testid={`input-비고-${index}`}
                   />
                 </td>
