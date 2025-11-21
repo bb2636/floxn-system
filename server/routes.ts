@@ -2101,11 +2101,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return accidentDate.getFullYear() === lastYear && accidentDate.getMonth() + 1 === lastMonth;
       });
       
-      // Calculate statistics
-      const receivedCases = currentMonthCases.length;
-      const lastMonthReceivedCases = lastMonthCases.length;
-      const pendingCases = currentMonthCases.filter(c => c.status === "제출" || c.status === "검토중" || c.status === "1차승인").length;
-      const lastMonthPendingCases = lastMonthCases.filter(c => c.status === "제출" || c.status === "검토중" || c.status === "1차승인").length;
+      // Calculate statistics (협력사는 다른 기준 사용)
+      let receivedCases, lastMonthReceivedCases, pendingCases, lastMonthPendingCases;
+      
+      if (currentUser.role === "협력사") {
+        // 협력사: 접수건 = "접수완료" 상태 케이스
+        receivedCases = currentMonthCases.filter(c => c.status === "접수완료").length;
+        lastMonthReceivedCases = lastMonthCases.filter(c => c.status === "접수완료").length;
+        
+        // 협력사: 미완건 = 작업 진행 중인 케이스 (접수완료, 현장방문, 현장정보입력, 검토중 등)
+        pendingCases = currentMonthCases.filter(c => 
+          c.status !== "정산완료" && c.status !== "접수취소" && c.status !== "입금완료"
+        ).length;
+        lastMonthPendingCases = lastMonthCases.filter(c => 
+          c.status !== "정산완료" && c.status !== "접수취소" && c.status !== "입금완료"
+        ).length;
+      } else {
+        // 다른 역할: 기존 로직 유지
+        receivedCases = currentMonthCases.length;
+        lastMonthReceivedCases = lastMonthCases.length;
+        pendingCases = currentMonthCases.filter(c => c.status === "제출" || c.status === "검토중" || c.status === "1차승인").length;
+        lastMonthPendingCases = lastMonthCases.filter(c => c.status === "제출" || c.status === "검토중" || c.status === "1차승인").length;
+      }
       
       // Calculate changes
       const receivedCasesChangeCount = receivedCases - lastMonthReceivedCases;
