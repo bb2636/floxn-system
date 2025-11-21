@@ -746,7 +746,7 @@ export default function Intake() {
     if (!formData.policyHolderName && !formData.insuredName) return false;
     if (!formData.victimName) return false;
     if (!formData.victimContact) return false;
-    if (!formData.victimAddress) return false;
+    // victimAddress는 입력 필드가 없으므로 필수 체크에서 제외
     
     // 3. 사고 및 피해 현황
     if (!formData.assignedPartner) return false;
@@ -830,14 +830,7 @@ export default function Intake() {
       return;
     }
     
-    // Validation: 피해자 주소 필수
-    if (!formData.victimAddress) {
-      toast({
-        description: "피해자 주소를 입력해주세요.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // victimAddress는 입력 필드가 없으므로 검증 제외
     
     // Validation: 협력사 필수
     if (!formData.assignedPartner) {
