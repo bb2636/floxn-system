@@ -2421,10 +2421,10 @@ export default function Intake() {
                           배당 협력사 정보
                         </h4>
                         
-                        {/* 협력사, 담당자명, 담당자 연락처를 한 줄에 배치 */}
-                        <div style={{ display: 'flex', flexDirection: 'row', gap: '12px', width: '100%' }}>
+                        {/* 협력사, 담당자명, 담당자 연락처 - 반응형 그리드 */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 w-full">
                           {/* Column 1: 협력사 with 검색 button */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                          <div className="md:col-span-2 lg:col-span-1" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               협력사
                             </label>
@@ -2481,7 +2481,7 @@ export default function Intake() {
                           </div>
 
                           {/* Column 2: 담당자명 */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               담당자명
                             </label>
@@ -2518,7 +2518,7 @@ export default function Intake() {
                           </div>
 
                           {/* Column 3: 담당자 연락처 */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                          <div className="md:col-span-2 lg:col-span-1" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               담당자 연락처
                             </label>
