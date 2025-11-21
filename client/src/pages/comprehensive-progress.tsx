@@ -1054,7 +1054,7 @@ export default function ComprehensiveProgress() {
                       }}
                       data-testid={`button-detail-${caseItem.id}`}
                     >
-                      재해 보기
+                      자세히 보기
                     </button>
                   </div>
                 </div>
