@@ -233,6 +233,7 @@ export default function Intake() {
   };
 
   const [caseNumber] = useState(() => generateCaseNumber());
+  const [editCaseId, setEditCaseId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     accidentDate: getTodayDate(),
     insuranceCompany: "",
@@ -359,6 +360,114 @@ export default function Intake() {
     }
   }, [user, userLoading, setLocation]);
 
+  // 임시 저장 건 불러오기
+  useEffect(() => {
+    const storedEditCaseId = localStorage.getItem('editCaseId');
+    if (storedEditCaseId) {
+      // editCaseId 상태 설정
+      setEditCaseId(storedEditCaseId);
+      
+      // 케이스 데이터 불러오기
+      apiRequest("GET", `/api/cases/${storedEditCaseId}`)
+        .then((caseData: any) => {
+          // 폼 데이터 채우기
+          setFormData({
+            accidentDate: caseData.accidentDate || getTodayDate(),
+            insuranceCompany: caseData.insuranceCompany || "",
+            insurancePolicyNo: caseData.insurancePolicyNo || "",
+            insuranceAccidentNo: caseData.insuranceAccidentNo || "",
+            clientResidence: caseData.clientResidence || "",
+            clientDepartment: caseData.clientDepartment || "",
+            clientName: caseData.clientName || "",
+            clientContact: caseData.clientContact || "",
+            assessorId: caseData.assessorId || "",
+            assessorDepartment: caseData.assessorDepartment || "",
+            assessorTeam: caseData.assessorTeam || "",
+            assessorContact: caseData.assessorContact || "",
+            investigatorTeam: caseData.investigatorTeam || "",
+            investigatorDepartment: caseData.investigatorDepartment || "",
+            investigatorTeamName: caseData.investigatorTeamName || "",
+            investigatorContact: caseData.investigatorContact || "",
+            policyHolderName: caseData.policyHolderName || "",
+            policyHolderIdNumber: caseData.policyHolderIdNumber || "",
+            policyHolderAddress: caseData.policyHolderAddress || "",
+            insuredName: caseData.insuredName || "",
+            insuredIdNumber: caseData.insuredIdNumber || "",
+            insuredContact: caseData.insuredContact || "",
+            insuredAddress: caseData.insuredAddress || "",
+            victimName: caseData.victimName || "",
+            victimContact: caseData.victimContact || "",
+            victimAddress: caseData.victimAddress || "",
+            accompaniedPerson: caseData.accompaniedPerson || "",
+            accidentType: caseData.accidentType || "",
+            accidentCause: caseData.accidentCause || "",
+            restorationMethod: caseData.restorationMethod || "",
+            otherVendorEstimate: caseData.otherVendorEstimate || "",
+            accidentDescription: caseData.accidentDescription || "",
+            damageItem: "",
+            damageType: "",
+            damageQuantity: "1",
+            damageDetails: "",
+            damageItems: caseData.damageItems ? JSON.parse(caseData.damageItems) : [],
+            damagePreventionCost: caseData.damagePreventionCost === "true",
+            victimIncidentAssistance: caseData.victimIncidentAssistance === "true",
+            assignedPartner: caseData.assignedPartner || "",
+            assignedPartnerManager: caseData.assignedPartnerManager || "",
+            assignedPartnerContact: caseData.assignedPartnerContact || "",
+            urgency: caseData.urgency || "",
+            specialRequests: caseData.specialRequests || "",
+          });
+
+          // sameAsPolicyHolder 상태 설정
+          if (caseData.sameAsPolicyHolder === "true") {
+            setSameAsPolicyHolder(true);
+          }
+
+          // additionalVictims 설정
+          if (caseData.additionalVictims) {
+            setAdditionalVictims(JSON.parse(caseData.additionalVictims));
+          }
+
+          // 협력사 정보가 있으면 설정
+          if (caseData.assignedPartner) {
+            setSelectedPartner({
+              name: caseData.assignedPartner,
+              dailyCount: 0,
+              monthlyCount: 0,
+              inProgressCount: 0,
+              pendingCount: 0,
+              region: "",
+            });
+          }
+
+          // accidentDate 설정
+          if (caseData.accidentDate) {
+            const dateParts = caseData.accidentDate.split('-');
+            if (dateParts.length === 3) {
+              setAccidentDate(new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2])));
+            }
+          }
+
+          toast({
+            description: "임시 저장 건을 불러왔습니다. 이어서 작성해주세요.",
+            duration: 3000,
+          });
+
+          // localStorage에서 editCaseId 제거
+          localStorage.removeItem('editCaseId');
+        })
+        .catch((error) => {
+          console.error("Failed to load draft case:", error);
+          toast({
+            description: "임시 저장 건을 불러오는 데 실패했습니다.",
+            variant: "destructive",
+            duration: 3000,
+          });
+          localStorage.removeItem('editCaseId');
+        });
+    }
+  }, []);
+
   useEffect(() => {
     if (sameAsPolicyHolder) {
       setFormData((prev) => ({
@@ -401,8 +510,19 @@ export default function Intake() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // 임시저장: 상태를 "배당대기"로 저장
-      return await apiRequest("POST", "/api/cases", { ...cleanFormData(data), caseNumber, status: "배당대기" });
+      const cleanedData = { ...cleanFormData(data), caseNumber, status: "배당대기" };
+      
+      // 임시저장: 기존 케이스가 있으면 업데이트, 없으면 생성
+      if (editCaseId) {
+        return await apiRequest("PATCH", `/api/cases/${editCaseId}`, cleanedData);
+      } else {
+        const result = await apiRequest("POST", "/api/cases", cleanedData);
+        // 새로 생성한 경우 editCaseId 설정
+        if (result && typeof result === 'object' && 'case' in result) {
+          setEditCaseId((result as any).case.id);
+        }
+        return result;
+      }
     },
     onSuccess: () => {
       toast({ description: "임시저장되었습니다. (상태: 배당대기)", duration: 2000 });
@@ -418,6 +538,15 @@ export default function Intake() {
   const submitMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const cleanedData = cleanFormData(data);
+      
+      // 기존 임시 저장 건을 수정하는 경우
+      if (editCaseId) {
+        // 기존 케이스를 접수완료 상태로 업데이트
+        return await apiRequest("PATCH", `/api/cases/${editCaseId}`, {
+          ...cleanedData,
+          status: "접수완료"
+        });
+      }
       
       // 손해방지와 피해세대복구 둘 다 선택된 경우: 2개의 케이스 생성
       if (data.damagePreventionCost && data.victimIncidentAssistance) {

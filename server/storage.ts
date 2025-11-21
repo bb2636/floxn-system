@@ -63,6 +63,7 @@ export interface IStorage {
   getCaseById(caseId: string): Promise<Case | null>;
   getAssignedCasesForUser(user: User, search?: string): Promise<Case[]>;
   getAllCases(user?: User): Promise<CaseWithLatestProgress[]>;
+  updateCase(caseId: string, caseData: Partial<InsertCase>): Promise<Case | null>;
   updateCaseStatus(caseId: string, status: string): Promise<Case | null>;
   updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null>;
   confirmCaseSpecialNotes(caseId: string, confirmedBy: string): Promise<Case | null>;
@@ -1182,6 +1183,23 @@ export class MemStorage implements IStorage {
     });
     
     return casesWithProgress;
+  }
+
+  async updateCase(caseId: string, caseData: Partial<InsertCase>): Promise<Case | null> {
+    const caseItem = this.cases.get(caseId);
+    if (!caseItem) {
+      return null;
+    }
+    
+    const currentDate = getKSTDate();
+    const updatedCase: Case = {
+      ...caseItem,
+      ...caseData,
+      updatedAt: currentDate,
+    };
+    
+    this.cases.set(caseId, updatedCase);
+    return updatedCase;
   }
 
   async updateCaseStatus(caseId: string, status: string): Promise<Case | null> {
@@ -2407,6 +2425,21 @@ export class DbStorage implements IStorage {
     });
     
     return casesWithProgress;
+  }
+
+  async updateCase(caseId: string, caseData: Partial<InsertCase>): Promise<Case | null> {
+    const currentDate = getKSTDate();
+    
+    const result = await db.update(cases)
+      .set({ ...caseData, updatedAt: currentDate })
+      .where(eq(cases.id, caseId))
+      .returning();
+    
+    if (result.length === 0) {
+      return null;
+    }
+    
+    return result[0];
   }
 
   async updateCaseStatus(caseId: string, status: string): Promise<Case | null> {

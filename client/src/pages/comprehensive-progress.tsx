@@ -1038,23 +1038,30 @@ export default function ComprehensiveProgress() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedCaseId(caseItem.id);
+                        if (caseItem.status === "배당대기") {
+                          // 임시 저장 건 - 접수 페이지로 이동
+                          localStorage.setItem('editCaseId', caseItem.id);
+                          setLocation('/intake');
+                        } else {
+                          // 완료 건 - 상세보기 Sheet 열기
+                          setSelectedCaseId(caseItem.id);
+                        }
                       }}
                       style={{
                         padding: "6px 12px",
-                        background: "#FFFFFF",
-                        border: "1px solid rgba(12, 12, 12, 0.2)",
+                        background: caseItem.status === "배당대기" ? "#EFF6FF" : "#FFFFFF",
+                        border: caseItem.status === "배당대기" ? "1px solid #008FED" : "1px solid rgba(12, 12, 12, 0.2)",
                         borderRadius: "6px",
                         fontFamily: "Pretendard",
                         fontSize: "12px",
                         fontWeight: 500,
-                        color: "rgba(12, 12, 12, 0.7)",
+                        color: caseItem.status === "배당대기" ? "#008FED" : "rgba(12, 12, 12, 0.7)",
                         cursor: "pointer",
                         whiteSpace: "nowrap",
                       }}
                       data-testid={`button-detail-${caseItem.id}`}
                     >
-                      자세히 보기
+                      {caseItem.status === "배당대기" ? "이어서 작성하기" : "자세히 보기"}
                     </button>
                   </div>
                 </div>

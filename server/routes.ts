@@ -326,6 +326,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update case endpoint
+  app.patch("/api/cases/:id", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+
+      // 케이스 존재 여부 확인
+      const existingCase = await storage.getCaseById(id);
+      if (!existingCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 케이스 업데이트
+      const updatedCase = await storage.updateCase(id, updateData);
+      
+      if (!updatedCase) {
+        return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+      }
+
+      res.json({ success: true, case: updatedCase });
+    } catch (error) {
+      console.error("Update case error:", error);
+      res.status(500).json({ error: "케이스 업데이트 중 오류가 발생했습니다" });
+    }
+  });
+
   // Update case status endpoint (admin only)
   app.patch("/api/cases/:caseId/status", async (req, res) => {
     // Check authentication
