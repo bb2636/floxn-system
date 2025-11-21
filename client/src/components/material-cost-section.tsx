@@ -104,7 +104,7 @@ export function MaterialCostSection({
           updated.기준단가 = 0;
         }
 
-        // 수량 변경 시 금액 재계산
+        // 기준단가, 수량, 규격 변경 시 금액 재계산
         const qty = Number(updated.수량) || 0;
         const price = Number(updated.기준단가) || 0;
         updated.금액 = Math.round(qty * price);
@@ -162,6 +162,14 @@ export function MaterialCostSection({
           {rows.map((row, index) => {
             const materialNamesForRow = getMaterialNamesForWorkType(row.공종);
             const specOptions = (row.공종 && row.자재) ? getSpecificationsForMaterial(row.공종, row.자재) : [];
+            
+            // 규격이 "입력"인지 확인 (기준단가가 수동 입력 가능한지)
+            const catalogItem = catalog.find(item =>
+              item.workType === row.공종 &&
+              item.materialName === row.자재 && 
+              item.specification === row.규격
+            );
+            const isManualPriceInput = catalogItem && typeof catalogItem.standardPrice === 'string';
             
             return (
               <tr key={row.id} style={{ height: "56px", borderBottom: "1px solid #E5E7EB" }}>
@@ -247,9 +255,23 @@ export function MaterialCostSection({
                   {row.단위 || '-'}
                 </td>
                 
-                {/* 기준단가 - Readonly */}
-                <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
-                  {row.기준단가.toLocaleString()}
+                {/* 기준단가 - 규격이 "입력"이면 수동 입력 가능, 아니면 Readonly */}
+                <td style={{ padding: "0 8px", background: isManualPriceInput ? "#EFF6FF" : "transparent" }}>
+                  {isManualPriceInput ? (
+                    <Input
+                      type="number"
+                      value={Number.isFinite(row.기준단가) ? row.기준단가 : ''}
+                      onChange={(e) => updateRow(row.id, '기준단가', Number(e.target.value) || 0)}
+                      className="h-9 border-0 bg-transparent text-right"
+                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                      placeholder="입력"
+                      data-testid={`input-기준단가-${index}`}
+                    />
+                  ) : (
+                    <div style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
+                      {row.기준단가.toLocaleString()}
+                    </div>
+                  )}
                 </td>
                 
                 {/* 수량 - Editable Input (파란색 배경) */}
