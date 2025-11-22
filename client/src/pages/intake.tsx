@@ -528,7 +528,18 @@ export default function Intake() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const cleanedData = { ...cleanFormData(data), caseNumber, status: "배당대기" };
+      // 배당사항이 입력되었는지 확인
+      const hasAssignment = data.assignedPartner && data.assignedPartnerManager;
+      const status = hasAssignment ? "접수중" : "배당대기";
+      
+      console.log("💾 저장 상태 결정:", {
+        assignedPartner: data.assignedPartner,
+        assignedPartnerManager: data.assignedPartnerManager,
+        hasAssignment,
+        status
+      });
+      
+      const cleanedData = { ...cleanFormData(data), caseNumber, status };
       
       // 임시저장: 기존 케이스가 있으면 업데이트, 없으면 생성
       if (editCaseId) {
@@ -542,8 +553,13 @@ export default function Intake() {
         return result;
       }
     },
-    onSuccess: () => {
-      toast({ description: "임시저장되었습니다. (상태: 배당대기)", duration: 2000 });
+    onSuccess: (_, variables) => {
+      const hasAssignment = variables.assignedPartner && variables.assignedPartnerManager;
+      const status = hasAssignment ? "접수중" : "배당대기";
+      toast({ 
+        description: `임시저장되었습니다. (상태: ${status})`, 
+        duration: 2000 
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       // 임시저장 성공 후 localStorage에서 임시 데이터 삭제
       localStorage.removeItem('intakeFormDraft');
