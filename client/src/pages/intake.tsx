@@ -557,8 +557,16 @@ export default function Intake() {
     mutationFn: async (data: typeof formData) => {
       const cleanedData = cleanFormData(data);
       
+      console.log("📋 접수 데이터:", {
+        damagePreventionCost: data.damagePreventionCost,
+        victimIncidentAssistance: data.victimIncidentAssistance,
+        caseNumber: caseNumber,
+        editCaseId: editCaseId
+      });
+      
       // 기존 임시 저장 건을 수정하는 경우
       if (editCaseId) {
+        console.log("✏️ 임시 저장 건 수정 모드");
         // 기존 케이스를 접수완료 상태로 업데이트
         return await apiRequest("PATCH", `/api/cases/${editCaseId}`, {
           ...cleanedData,
@@ -568,6 +576,8 @@ export default function Intake() {
       
       // 손해방지와 피해세대복구 둘 다 선택된 경우: 2개의 케이스 생성
       if (data.damagePreventionCost && data.victimIncidentAssistance) {
+        console.log("🔵 손해방지 + 피해세대복구 → 2건 생성 모드");
+        
         // 첫 번째 케이스: 손해방지 (접수번호-1)
         const case1 = {
           ...cleanedData,
@@ -586,12 +596,18 @@ export default function Intake() {
           status: "접수완료"
         };
         
+        console.log("📌 케이스 1 (손해방지):", case1.caseNumber);
+        console.log("📌 케이스 2 (피해세대복구):", case2.caseNumber);
+        
         // 두 케이스 모두 생성
         await apiRequest("POST", "/api/cases", case1);
+        console.log("✅ 케이스 1 생성 완료");
         await apiRequest("POST", "/api/cases", case2);
+        console.log("✅ 케이스 2 생성 완료");
         
         return { count: 2 };
       } else {
+        console.log("🟢 일반 모드 → 1건 생성");
         // 하나만 선택되거나 둘 다 선택 안 된 경우: 1개의 케이스만 생성 (suffix 없음)
         return await apiRequest("POST", "/api/cases", { 
           ...cleanedData, 
