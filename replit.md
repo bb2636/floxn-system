@@ -153,6 +153,7 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - Added DELETE /api/cases/:id endpoint (only allows deleting "배당대기" status cases)
 - Added date tracking fields: firstApprovalDate (1차 승인일), secondApprovalDate (2차 승인일)
 - Updated comprehensive progress "일자" tab with 8 date fields
+- **Damage Details Optional**: 피해사항 섹션을 선택사항으로 변경 - 피해내용 입력 없이도 접수완료 가능
 
 ## External Dependencies
 

@@ -761,7 +761,7 @@ export default function Intake() {
     });
   };
 
-  // 필수 필드 검증 함수 (현장접수의 선택사항 제외)
+  // 필수 필드 검증 함수 (피해사항은 선택사항)
   const isFormValid = useMemo(() => {
     // 1. 기본 정보
     if (!formData.accidentDate) return false;
@@ -779,7 +779,7 @@ export default function Intake() {
     // 3. 사고 및 피해 현황
     if (!formData.assignedPartner) return false;
     if (!formData.assignedPartnerManager) return false;
-    if (formData.damageItems.length === 0) return false;
+    // 피해사항은 선택사항이므로 체크 제외
     
     return true;
   }, [formData]);
