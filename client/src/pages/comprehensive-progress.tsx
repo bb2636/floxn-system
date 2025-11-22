@@ -289,11 +289,22 @@ export default function ComprehensiveProgress() {
 
   // 진행상태 필터링 + 협력사 필터링
   const filteredByStatus = (cases || []).filter((caseItem) => {
-    // 협력사인 경우: 자신에게 배정된 "접수완료" 상태 케이스만 표시
+    // 협력사인 경우: 자신에게 배정된 모든 케이스 표시 (배당대기 제외)
     if (user?.role === "협력사") {
       const isAssignedToMe = caseItem.assignedPartner === user.company;
-      const isCompleted = caseItem.status === "접수완료";
-      return isAssignedToMe && isCompleted;
+      const isNotPending = caseItem.status !== "배당대기";
+      
+      // 협력사도 진행상태 필터를 선택할 수 있음
+      if (selectedStatus === "전체") {
+        return isAssignedToMe && isNotPending;
+      }
+      if (selectedStatus === "미복구") {
+        return isAssignedToMe && (caseItem.status === "미복구" || caseItem.status === "출동비 청구");
+      }
+      if (selectedStatus === "출동비 청구") {
+        return isAssignedToMe && (caseItem.status === "출동비 청구" || caseItem.status === "미복구");
+      }
+      return isAssignedToMe && caseItem.status === selectedStatus;
     }
     
     // 다른 역할은 기존 필터링 로직 유지
