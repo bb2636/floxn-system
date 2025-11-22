@@ -546,7 +546,10 @@ export default function Intake() {
         const result = await apiRequest("POST", "/api/cases", cleanedData);
         // 새로 생성한 경우 editCaseId 설정
         if (result && typeof result === 'object' && 'case' in result) {
-          setEditCaseId((result as any).case.id);
+          const newCaseId = (result as any).case.id;
+          setEditCaseId(newCaseId);
+          // localStorage에도 저장하여 "이어서 작성하기" 가능하도록
+          localStorage.setItem('editCaseId', newCaseId);
         }
         return result;
       }
@@ -636,8 +639,9 @@ export default function Intake() {
         duration: 3000,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-      // 접수완료 성공 후 localStorage에서 임시 데이터 삭제 및 editCaseId 초기화
+      // 접수완료 성공 후 localStorage에서 임시 데이터 및 editCaseId 삭제
       localStorage.removeItem('intakeFormDraft');
+      localStorage.removeItem('editCaseId');
       setEditCaseId(null);
       setTimeout(() => {
         setLocation("/dashboard");
@@ -754,6 +758,8 @@ export default function Intake() {
     setSameAsPolicyHolder(false);
     setAdditionalVictims([]);
     localStorage.removeItem('intakeFormDraft');
+    localStorage.removeItem('editCaseId');
+    setEditCaseId(null);
     
     toast({
       description: "입력 내용이 초기화되었습니다.",
@@ -880,9 +886,7 @@ export default function Intake() {
     
     // 피해사항은 선택사항이므로 필수 검증에서 제외
     
-    // 접수 성공 시 localStorage에서 임시 저장 데이터 삭제
     submitMutation.mutate(formData);
-    localStorage.removeItem('intakeFormDraft');
   };
 
   const handleAddDamageItem = () => {
