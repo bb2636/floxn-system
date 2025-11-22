@@ -878,14 +878,7 @@ export default function Intake() {
       return;
     }
     
-    // Validation: 피해내용 최소 1개 필수
-    if (formData.damageItems.length === 0) {
-      toast({
-        description: "피해내용을 최소 1개 이상 입력해주세요.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // 피해사항은 선택사항이므로 필수 검증에서 제외
     
     // 접수 성공 시 localStorage에서 임시 저장 데이터 삭제
     submitMutation.mutate(formData);
@@ -2314,7 +2307,7 @@ export default function Intake() {
                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '26px 0px 0px', gap: '10px', width: '100px', height: '94px' }}>
                           <button
                             onClick={handleAddDamageItem}
-                            disabled={!formData.damageItem || !formData.damageType || !formData.damageQuantity || !formData.damageDetails}
+                            disabled={!formData.damageItem || !formData.damageType || !formData.damageQuantity}
                             style={{
                               display: 'flex',
                               flexDirection: 'row',
@@ -2323,12 +2316,12 @@ export default function Intake() {
                               padding: '0px 24px',
                               width: '100px',
                               height: '68px',
-                              background: (formData.damageItem && formData.damageType && formData.damageQuantity && formData.damageDetails) 
+                              background: (formData.damageItem && formData.damageType && formData.damageQuantity) 
                                 ? '#008FED' 
                                 : 'rgba(12, 12, 12, 0.08)',
                               borderRadius: '6px',
                               border: 'none',
-                              cursor: (formData.damageItem && formData.damageType && formData.damageQuantity && formData.damageDetails) 
+                              cursor: (formData.damageItem && formData.damageType && formData.damageQuantity) 
                                 ? 'pointer' 
                                 : 'not-allowed',
                               whiteSpace: 'nowrap',
@@ -2341,7 +2334,7 @@ export default function Intake() {
                               fontSize: '15px', 
                               lineHeight: '128%', 
                               letterSpacing: '-0.02em', 
-                              color: (formData.damageItem && formData.damageType && formData.damageQuantity && formData.damageDetails) 
+                              color: (formData.damageItem && formData.damageType && formData.damageQuantity) 
                                 ? '#FDFDFD' 
                                 : 'rgba(12, 12, 12, 0.4)'
                             }}>
