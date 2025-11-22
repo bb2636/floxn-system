@@ -2042,7 +2042,7 @@ export default function Intake() {
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="없음">없음</SelectItem>
-                                <SelectItem value="플랫폼 복구">플랫폼 복구</SelectItem>
+                                <SelectItem value="직접복구">직접복구</SelectItem>
                                 <SelectItem value="선견적요청">선견적요청</SelectItem>
                               </SelectContent>
                             </Select>
