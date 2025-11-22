@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-type DocumentCategory = "전체" | "현장" | "수리중" | "복구완료" | "청구" | "개인정보";
+type DocumentCategory = "전체" | "현장" | "수리중" | "복구완료" | "청구";
 
 interface UploadingFile {
   id: string;
@@ -145,7 +145,7 @@ export default function FieldDocuments() {
     );
   }
 
-  const categories: DocumentCategory[] = ["전체", "현장", "수리중", "복구완료", "청구", "개인정보"];
+  const categories: DocumentCategory[] = ["전체", "현장", "수리중", "복구완료", "청구"];
 
   // 파일 선택 핸들러
   const handleFileSelect = async (files: FileList | null) => {
