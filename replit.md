@@ -138,6 +138,22 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Backend**: Express.js, bcrypt, express-session, memorystore, and Zod for API validation.
 - **Database**: PostgreSQL (Neon-backed) with Drizzle ORM for persistent data storage and automatic schema management.
 
+## Recent Changes
+
+**November 22, 2025 - Automatic Date Recording & 2-Case Creation Fix**
+- **Automatic Date Recording**: Status changes now auto-populate corresponding date fields:
+  - "접수완료" → receptionDate + assignmentDate
+  - "1차승인" → firstApprovalDate
+  - "복구요청(2차승인)" → secondApprovalDate
+  - "청구" → claimDate
+- **2-Case Creation Fix**: When both 손해방지 and 피해세대복구 are checked:
+  - Draft case is properly deleted before creating 2 new cases
+  - Creates CLM-{timestamp}-1 (손해방지) and CLM-{timestamp}-2 (피해세대복구)
+  - Works correctly even when resuming from draft ("이어서 작성하기")
+- Added DELETE /api/cases/:id endpoint (only allows deleting "배당대기" status cases)
+- Added date tracking fields: firstApprovalDate (1차 승인일), secondApprovalDate (2차 승인일)
+- Updated comprehensive progress "일자" tab with 8 date fields
+
 ## External Dependencies
 
 - **Frontend Libraries**: React, TypeScript, Wouter, TanStack Query, React Hook Form, Zod, Shadcn UI, Tailwind CSS, Lucide React.

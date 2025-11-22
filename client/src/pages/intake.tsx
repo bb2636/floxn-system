@@ -576,14 +576,10 @@ export default function Intake() {
         editCaseId: editCaseId
       });
       
-      // 기존 임시 저장 건을 수정하는 경우
+      // 기존 임시 저장 건이 있으면 삭제 (2건 생성할 수도 있으므로)
       if (editCaseId) {
-        console.log("✏️ 임시 저장 건 수정 모드");
-        // 기존 케이스를 접수완료 상태로 업데이트
-        return await apiRequest("PATCH", `/api/cases/${editCaseId}`, {
-          ...cleanedData,
-          status: "접수완료"
-        });
+        console.log("🗑️ 기존 임시 저장 건 삭제:", editCaseId);
+        await apiRequest("DELETE", `/api/cases/${editCaseId}`);
       }
       
       // 손해방지와 피해세대복구 둘 다 선택된 경우: 2개의 케이스 생성
@@ -617,7 +613,7 @@ export default function Intake() {
         await apiRequest("POST", "/api/cases", case2);
         console.log("✅ 케이스 2 생성 완료");
         
-        return { count: 2 };
+        return { count: 2, caseNumber1: case1.caseNumber, caseNumber2: case2.caseNumber };
       } else {
         console.log("🟢 일반 모드 → 1건 생성");
         // 하나만 선택되거나 둘 다 선택 안 된 경우: 1개의 케이스만 생성 (suffix 없음)
@@ -630,15 +626,19 @@ export default function Intake() {
     },
     onSuccess: (result) => {
       const count = (result && typeof result === 'object' && 'count' in result) ? result.count : 1;
+      const case1 = (result && typeof result === 'object' && 'caseNumber1' in result) ? result.caseNumber1 : null;
+      const case2 = (result && typeof result === 'object' && 'caseNumber2' in result) ? result.caseNumber2 : null;
+      
       toast({ 
-        description: count === 2 
-          ? `접수가 완료되었습니다. (2건 생성: ${caseNumber}-1, ${caseNumber}-2)` 
+        description: count === 2 && case1 && case2
+          ? `접수가 완료되었습니다. (2건 생성: ${case1}, ${case2})` 
           : "접수가 완료되었습니다. (상태: 접수완료)",
         duration: 3000,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-      // 접수완료 성공 후 localStorage에서 임시 데이터 삭제
+      // 접수완료 성공 후 localStorage에서 임시 데이터 삭제 및 editCaseId 초기화
       localStorage.removeItem('intakeFormDraft');
+      setEditCaseId(null);
       setTimeout(() => {
         setLocation("/dashboard");
       }, 1000);

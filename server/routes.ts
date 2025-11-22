@@ -357,6 +357,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete case endpoint
+  app.delete("/api/cases/:id", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { id } = req.params;
+
+      // 케이스 존재 여부 확인
+      const existingCase = await storage.getCaseById(id);
+      if (!existingCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 임시저장 건("배당대기" 상태)만 삭제 가능
+      if (existingCase.status !== "배당대기") {
+        return res.status(403).json({ error: "임시저장 건(배당대기 상태)만 삭제할 수 있습니다" });
+      }
+
+      // 케이스 삭제
+      await storage.deleteCase(id);
+
+      res.json({ success: true, message: "케이스가 삭제되었습니다" });
+    } catch (error) {
+      console.error("Delete case error:", error);
+      res.status(500).json({ error: "케이스 삭제 중 오류가 발생했습니다" });
+    }
+  });
+
   // Update case status endpoint (admin only)
   app.patch("/api/cases/:caseId/status", async (req, res) => {
     // Check authentication

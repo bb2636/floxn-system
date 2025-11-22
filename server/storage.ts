@@ -64,6 +64,7 @@ export interface IStorage {
   getAssignedCasesForUser(user: User, search?: string): Promise<Case[]>;
   getAllCases(user?: User): Promise<CaseWithLatestProgress[]>;
   updateCase(caseId: string, caseData: Partial<InsertCase>): Promise<Case | null>;
+  deleteCase(caseId: string): Promise<void>;
   updateCaseStatus(caseId: string, status: string): Promise<Case | null>;
   updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null>;
   confirmCaseSpecialNotes(caseId: string, confirmedBy: string): Promise<Case | null>;
@@ -1200,6 +1201,10 @@ export class MemStorage implements IStorage {
     
     this.cases.set(caseId, updatedCase);
     return updatedCase;
+  }
+
+  async deleteCase(caseId: string): Promise<void> {
+    this.cases.delete(caseId);
   }
 
   async updateCaseStatus(caseId: string, status: string): Promise<Case | null> {
@@ -2470,6 +2475,10 @@ export class DbStorage implements IStorage {
     }
     
     return result[0];
+  }
+
+  async deleteCase(caseId: string): Promise<void> {
+    await db.delete(cases).where(eq(cases.id, caseId));
   }
 
   async updateCaseStatus(caseId: string, status: string): Promise<Case | null> {
