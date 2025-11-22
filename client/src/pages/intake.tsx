@@ -528,14 +528,12 @@ export default function Intake() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // 배당사항이 입력되었는지 확인
-      const hasAssignment = data.assignedPartner && data.assignedPartnerManager;
-      const status = hasAssignment ? "접수중" : "배당대기";
+      // 저장 버튼은 항상 "배당대기" 상태로 저장
+      const status = "배당대기";
       
       console.log("💾 저장 상태 결정:", {
         assignedPartner: data.assignedPartner,
         assignedPartnerManager: data.assignedPartnerManager,
-        hasAssignment,
         status
       });
       
@@ -553,11 +551,9 @@ export default function Intake() {
         return result;
       }
     },
-    onSuccess: (_, variables) => {
-      const hasAssignment = variables.assignedPartner && variables.assignedPartnerManager;
-      const status = hasAssignment ? "접수중" : "배당대기";
+    onSuccess: () => {
       toast({ 
-        description: `임시저장되었습니다. (상태: ${status})`, 
+        description: `임시저장되었습니다. (상태: 배당대기)`, 
         duration: 2000 
       });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
