@@ -175,25 +175,27 @@ export const cases = pgTable("cases", {
   additionalNotes: text("additional_notes"), // 협력사 기타사항 (800자 제한)
   
   // 일정 관련 필드
-  receptionDate: text("reception_date"), // 접수일
+  receptionDate: text("reception_date"), // 접수일 (접수완료 된 날짜)
   inspectionDate: text("inspection_date"), // 검수일
-  assignmentDate: text("assignment_date"), // 배당일
-  siteVisitDate: text("site_visit_date"), // 현장방문일
+  assignmentDate: text("assignment_date"), // 배당일 (접수완료되고 협력사가 배당 받은 날짜)
+  siteVisitDate: text("site_visit_date"), // 현장방문일 (협력사가 현장 방문일자를 입력한 날짜)
   fieldSurveyDate: text("field_survey_date"), // 현장조사당일 배당
-  siteInvestigationSubmitDate: text("site_investigation_submit_date"), // 현장조사 제출일
+  siteInvestigationSubmitDate: text("site_investigation_submit_date"), // 현장자료 제출일 (협력사가 현장출동 보고서를 제출한 날짜)
   firstInspectionDate: text("first_inspection_date"), // 1차 실사일 (심사)
+  firstApprovalDate: text("first_approval_date"), // 1차 승인일(내부) - 플록슨 관리자가 1차 승인 한 날짜
+  secondApprovalDate: text("second_approval_date"), // 2차 승인일(복구 요청일) - 플록슨 관리자가 2차 승인으로 변경한 날짜
   firstInvoiceDate: text("first_invoice_date"), // 1차 송장일 (내부)
   approvalRequestDate: text("approval_request_date"), // 승인요청일
   approvalDate: text("approval_date"), // 승인일(공사 시작일)
   approvalCompletionDate: text("approval_completion_date"), // 승인완성일정
   constructionStartDate: text("construction_start_date"), // 공사시작일
-  constructionCompletionDate: text("construction_completion_date"), // 공사완료일
+  constructionCompletionDate: text("construction_completion_date"), // 복구완료일 (협력사가 증빙자료 제출에 청구자료를 업로드 한 날짜)
   constructionReportSubmitDate: text("construction_report_submit_date"), // 공사완료보고 제출일
   totalWorkDate: text("total_work_date"), // 총공일
   contractorReportDate: text("contractor_report_date"), // 공사업체보고 배당
   contractorRepairDate: text("contractor_repair_date"), // 공사업체보수 배당
   completionDate: text("completion_date"), // 완공일
-  claimDate: text("claim_date"), // 청구일
+  claimDate: text("claim_date"), // 청구일 (청구 상태로 변경된 날짜)
   
   // 심사 관련 필드
   reviewDecision: text("review_decision"), // 심사결과: "승인" | "비승인" | null

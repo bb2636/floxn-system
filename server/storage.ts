@@ -1208,9 +1208,39 @@ export class MemStorage implements IStorage {
       return null;
     }
     
+    const currentDate = getKSTDate();
+    
+    // 미복구 선택 시 자동으로 출동비 청구로 정규화
+    const normalizedStatus = status === "미복구" ? "출동비 청구" : status;
+    
+    // 상태에 따라 자동으로 날짜 기록
+    const dateUpdates: Partial<Case> = {};
+    
+    switch (normalizedStatus) {
+      case "접수완료":
+        // 접수일과 배당일 자동 기록
+        dateUpdates.receptionDate = currentDate;
+        dateUpdates.assignmentDate = currentDate;
+        break;
+      case "1차승인":
+        // 1차 승인일(내부) 자동 기록
+        dateUpdates.firstApprovalDate = currentDate;
+        break;
+      case "복구요청(2차승인)":
+        // 2차 승인일(복구 요청일) 자동 기록
+        dateUpdates.secondApprovalDate = currentDate;
+        break;
+      case "청구":
+        // 청구일 자동 기록
+        dateUpdates.claimDate = currentDate;
+        break;
+    }
+    
     const updatedCase: Case = {
       ...caseItem,
-      status,
+      status: normalizedStatus,
+      updatedAt: currentDate,
+      ...dateUpdates,
     };
     
     this.cases.set(caseId, updatedCase);
@@ -2448,8 +2478,35 @@ export class DbStorage implements IStorage {
     // 미복구 선택 시 자동으로 출동비 청구로 정규화 (모든 경로에서 일관성 보장)
     const normalizedStatus = status === "미복구" ? "출동비 청구" : status;
     
+    // 상태에 따라 자동으로 날짜 기록
+    const dateUpdates: Partial<typeof cases.$inferInsert> = {};
+    
+    switch (normalizedStatus) {
+      case "접수완료":
+        // 접수일과 배당일 자동 기록
+        dateUpdates.receptionDate = currentDate;
+        dateUpdates.assignmentDate = currentDate;
+        break;
+      case "1차승인":
+        // 1차 승인일(내부) 자동 기록
+        dateUpdates.firstApprovalDate = currentDate;
+        break;
+      case "복구요청(2차승인)":
+        // 2차 승인일(복구 요청일) 자동 기록
+        dateUpdates.secondApprovalDate = currentDate;
+        break;
+      case "청구":
+        // 청구일 자동 기록
+        dateUpdates.claimDate = currentDate;
+        break;
+    }
+    
     const result = await db.update(cases)
-      .set({ status: normalizedStatus, updatedAt: currentDate })
+      .set({ 
+        status: normalizedStatus, 
+        updatedAt: currentDate,
+        ...dateUpdates
+      })
       .where(eq(cases.id, caseId))
       .returning();
     

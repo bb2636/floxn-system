@@ -1529,17 +1529,13 @@ export default function ComprehensiveProgress() {
               {detailTab === "일자" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {[
-                    { label: "접수", value: selectedCase?.receptionDate },
-                    { label: "검수일", value: selectedCase?.inspectionDate },
+                    { label: "접수일", value: selectedCase?.receptionDate },
                     { label: "배당일", value: selectedCase?.assignmentDate },
                     { label: "현장방문일", value: selectedCase?.siteVisitDate },
-                    { label: "현장조사 제출일", value: selectedCase?.siteInvestigationSubmitDate },
-                    { label: "1차 송장일 (내부)", value: selectedCase?.firstInvoiceDate },
-                    { label: "승인요청일", value: selectedCase?.approvalRequestDate },
-                    { label: "승인일(공사 시작일)", value: selectedCase?.approvalDate },
-                    { label: "공사시작일", value: selectedCase?.constructionStartDate },
-                    { label: "공사완료일", value: selectedCase?.constructionCompletionDate },
-                    { label: "공사완료보고 제출일", value: selectedCase?.constructionReportSubmitDate },
+                    { label: "현장자료 제출일", value: selectedCase?.siteInvestigationSubmitDate },
+                    { label: "1차 승인일(내부)", value: selectedCase?.firstApprovalDate },
+                    { label: "2차 승인일(복구 요청일)", value: selectedCase?.secondApprovalDate },
+                    { label: "복구완료일", value: selectedCase?.constructionCompletionDate },
                     { label: "청구일", value: selectedCase?.claimDate },
                   ].map((item) => (
                     <div key={item.label} style={{
@@ -1565,7 +1561,7 @@ export default function ComprehensiveProgress() {
                         letterSpacing: "-0.02em",
                         color: "rgba(12, 12, 12, 0.7)",
                       }}>
-                        {item.value || "-"}
+                        {formatDate(item.value)}
                       </span>
                     </div>
                   ))}
