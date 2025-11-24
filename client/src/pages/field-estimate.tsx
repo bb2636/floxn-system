@@ -235,7 +235,7 @@ export default function FieldEstimate() {
     
     // Query 캐시 무효화 (새 케이스 데이터 강제 로드)
     queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId, "latest"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/cases", selectedCaseId] });
+    queryClient.invalidateQueries({ queryKey: [`/api/cases/${selectedCaseId}`] });
   }, [selectedCaseId]);
 
   const { toast } = useToast();
@@ -260,19 +260,45 @@ export default function FieldEstimate() {
     return `${year}-${month}-${day}`;
   };
 
-  // 배정된 케이스 목록 (견적서용 케이스 검색)
+  // 케이스 검색
   const [caseSearchQuery, setCaseSearchQuery] = useState('');
-  const { data: assignedCases = [] } = useQuery<Array<{
-    id: string;
-    caseNumber: string;
-    insuredName: string;
-    accidentLocation: string;
-    insuranceCompany: string;
-    status: string;
-  }>>({
-    queryKey: ['/api/cases/assigned', caseSearchQuery],
+  
+  // 모든 케이스 조회 (검색용)
+  const { data: allCases = [] } = useQuery<Case[]>({
+    queryKey: ['/api/cases'],
     enabled: caseSearchModalOpen,
   });
+
+  // 케이스 필터링 (검색어 기준) - 안전한 null 처리
+  const filteredCases = allCases.filter(c => {
+    if (!caseSearchQuery) return true;
+    const query = caseSearchQuery.toLowerCase();
+    const caseNumber = c.caseNumber?.toLowerCase() ?? '';
+    const insuranceCompany = c.insuranceCompany?.toLowerCase() ?? '';
+    const insuranceAccidentNo = c.insuranceAccidentNo?.toLowerCase() ?? '';
+    const policyHolderName = c.policyHolderName?.toLowerCase() ?? '';
+    const victimName = c.victimName?.toLowerCase() ?? '';
+    
+    return (
+      caseNumber.includes(query) ||
+      insuranceCompany.includes(query) ||
+      insuranceAccidentNo.includes(query) ||
+      policyHolderName.includes(query) ||
+      victimName.includes(query)
+    );
+  });
+
+  // 케이스 선택 핸들러
+  const handleCaseSelect = (caseId: string) => {
+    setSelectedCaseId(caseId);
+    localStorage.setItem('selectedFieldSurveyCaseId', caseId);
+    setCaseSearchModalOpen(false);
+    setCaseSearchQuery("");
+    toast({
+      title: "케이스가 선택되었습니다",
+      description: "선택한 케이스의 견적서를 작성할 수 있습니다.",
+    });
+  };
 
   // 마스터 데이터 조회
   const { data: masterDataList = [] } = useQuery<MasterData[]>({
@@ -379,7 +405,7 @@ export default function FieldEstimate() {
 
   // 선택된 케이스 데이터 가져오기
   const { data: selectedCase, isLoading: isLoadingSelectedCase } = useQuery<Case>({
-    queryKey: ["/api/cases", selectedCaseId],
+    queryKey: [`/api/cases/${selectedCaseId}`],
     enabled: !!selectedCaseId,
   });
 
@@ -873,16 +899,33 @@ export default function FieldEstimate() {
         {/* 작성중인 건 */}
         <div className="mb-6">
           <div
+            className="flex items-center justify-between mb-2"
             style={{
               fontFamily: "Pretendard",
               fontSize: "14px",
               fontWeight: 400,
               letterSpacing: "-0.02em",
               color: "rgba(12, 12, 12, 0.5)",
-              marginBottom: "8px",
             }}
           >
-            작성중인 건
+            <span>작성중인 건</span>
+            <button
+              type="button"
+              onClick={() => setCaseSearchModalOpen(true)}
+              className="px-3 py-1.5 rounded-lg hover-elevate active-elevate-2"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "13px",
+                fontWeight: 500,
+                letterSpacing: "-0.02em",
+                color: "#008FED",
+                background: "rgba(0, 143, 237, 0.08)",
+                border: "1px solid rgba(0, 143, 237, 0.2)",
+              }}
+              data-testid="button-select-other-case"
+            >
+              다른 건 선택
+            </button>
           </div>
           
           <div 
@@ -2961,177 +3004,116 @@ export default function FieldEstimate() {
         {/* 하단 버튼 - 자재비 */}
       </div>
 
-      {/* 케이스 검색 모달 */}
+      {/* 케이스 선택 모달 */}
       <Dialog open={caseSearchModalOpen} onOpenChange={setCaseSearchModalOpen}>
-        <DialogContent
-          style={{
-            maxWidth: "800px",
-            maxHeight: "80vh",
-            overflow: "auto",
-          }}
-        >
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>케이스 검색</DialogTitle>
+            <DialogTitle
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "20px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+              }}
+            >
+              케이스 선택
+            </DialogTitle>
           </DialogHeader>
 
           {/* 검색 입력 */}
-          <div style={{ marginBottom: "20px" }}>
+          <div className="mb-4">
             <Input
-              placeholder="케이스 번호, 피보험자명, 보험사로 검색"
+              placeholder="접수번호, 보험사, 사고번호, 계약자명, 피해자명 검색..."
               value={caseSearchQuery}
               onChange={(e) => setCaseSearchQuery(e.target.value)}
+              className="w-full"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
               data-testid="input-case-search"
             />
           </div>
 
-          {/* 케이스 목록 테이블 */}
-          <div style={{ overflow: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontFamily: "Pretendard",
-              }}
-            >
-              <thead>
-                <tr style={{ background: "rgba(12, 12, 12, 0.04)" }}>
-                  <th
-                    style={{
-                      padding: "12px",
-                      textAlign: "left",
-                      fontWeight: 600,
-                      fontSize: "14px",
-                      color: "#0C0C0C",
-                      borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
-                    }}
-                  >
-                    접수번호
-                  </th>
-                  <th
-                    style={{
-                      padding: "12px",
-                      textAlign: "left",
-                      fontWeight: 600,
-                      fontSize: "14px",
-                      color: "#0C0C0C",
-                      borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
-                    }}
-                  >
-                    피보험자명
-                  </th>
-                  <th
-                    style={{
-                      padding: "12px",
-                      textAlign: "left",
-                      fontWeight: 600,
-                      fontSize: "14px",
-                      color: "#0C0C0C",
-                      borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
-                    }}
-                  >
-                    사고지역
-                  </th>
-                  <th
-                    style={{
-                      padding: "12px",
-                      textAlign: "left",
-                      fontWeight: 600,
-                      fontSize: "14px",
-                      color: "#0C0C0C",
-                      borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
-                    }}
-                  >
-                    보험사
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {assignedCases.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={4}
+          {/* 케이스 목록 */}
+          <div className="space-y-2">
+            {filteredCases.map((caseItem) => (
+              <div
+                key={caseItem.id}
+                onClick={() => handleCaseSelect(caseItem.id!)}
+                className={`p-4 rounded-lg cursor-pointer transition-all hover-elevate ${
+                  selectedCaseId === caseItem.id ? 'ring-2 ring-blue-500' : ''
+                }`}
+                style={{
+                  background: selectedCaseId === caseItem.id ? "rgba(0, 143, 237, 0.05)" : "rgba(12, 12, 12, 0.02)",
+                  border: "1px solid rgba(12, 12, 12, 0.08)",
+                }}
+                data-testid={`case-item-${caseItem.id}`}
+              >
+                <div className="flex items-center gap-3">
+                  {/* 선택 표시 */}
+                  {selectedCaseId === caseItem.id && (
+                    <div className="flex-shrink-0">
+                      <Check className="w-5 h-5" style={{ color: "#008FED" }} />
+                    </div>
+                  )}
+                  
+                  <div className="flex-1">
+                    {/* 첫 번째 줄: 보험사 + 사고번호 */}
+                    <div
+                      className="mb-1"
                       style={{
-                        padding: "40px",
-                        textAlign: "center",
-                        color: "rgba(12, 12, 12, 0.4)",
-                        fontSize: "14px",
+                        fontFamily: "Pretendard",
+                        fontSize: "15px",
+                        fontWeight: 600,
+                        letterSpacing: "-0.02em",
+                        color: "#0C0C0C",
                       }}
                     >
-                      배정된 케이스가 없습니다
-                    </td>
-                  </tr>
-                ) : (
-                  assignedCases.map((caseItem) => (
-                    <tr
-                      key={caseItem.id}
-                      onClick={async () => {
-                        // 전체 케이스 정보를 가져오기
-                        try {
-                          const response = await fetch(`/api/cases/${caseItem.id}`);
-                          if (!response.ok) throw new Error('Failed to fetch case');
-                          const fullCase: Case = await response.json();
-                          setEstimateCase(fullCase);
-                          setCaseSearchModalOpen(false);
-                          toast({
-                            title: "케이스 선택됨",
-                            description: `${caseItem.caseNumber} - ${caseItem.insuredName}`,
-                          });
-                        } catch (error) {
-                          toast({
-                            title: "오류",
-                            description: "케이스 정보를 불러올 수 없습니다",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                      className="hover-elevate"
+                      {caseItem.insuranceCompany || "보험사 미정"} {caseItem.insuranceAccidentNo || ""}
+                    </div>
+
+                    {/* 두 번째 줄: 접수번호, 계약자, 피해자, 상태 */}
+                    <div
+                      className="flex items-center gap-3 flex-wrap"
                       style={{
-                        cursor: "pointer",
-                        borderBottom: "1px solid rgba(12, 12, 12, 0.05)",
+                        fontFamily: "Pretendard",
+                        fontSize: "13px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.6)",
                       }}
-                      data-testid={`row-case-${caseItem.id}`}
                     >
-                      <td
-                        style={{
-                          padding: "12px",
-                          fontSize: "14px",
-                          color: "#0C0C0C",
-                        }}
-                      >
-                        {caseItem.caseNumber}
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px",
-                          fontSize: "14px",
-                          color: "#0C0C0C",
-                        }}
-                      >
-                        {caseItem.insuredName}
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px",
-                          fontSize: "14px",
-                          color: "#0C0C0C",
-                        }}
-                      >
-                        {caseItem.accidentLocation}
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px",
-                          fontSize: "14px",
-                          color: "#0C0C0C",
-                        }}
-                      >
-                        {caseItem.insuranceCompany}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                      <span>접수번호: {caseItem.caseNumber}</span>
+                      <span>계약자: {caseItem.policyHolderName || caseItem.clientName || "미정"}</span>
+                      <span>피해자: {caseItem.victimName || "미정"}</span>
+                      <span className="px-2 py-0.5 rounded" style={{
+                        background: "rgba(0, 143, 237, 0.1)",
+                        color: "#008FED",
+                        fontSize: "12px",
+                      }}>
+                        {caseItem.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {filteredCases.length === 0 && (
+              <div
+                className="text-center py-12"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 400,
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+              >
+                검색 결과가 없습니다
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

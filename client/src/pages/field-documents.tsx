@@ -1,10 +1,13 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Case, CaseDocument } from "@shared/schema";
-import { Upload, X, Check, Download } from "lucide-react";
+import { Upload, X, Check, Download, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 type DocumentCategory = "전체" | "현장" | "수리중" | "복구완료" | "청구";
@@ -60,19 +63,60 @@ export default function FieldDocuments() {
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("전체");
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false);
+  const [caseSearchQuery, setCaseSearchQuery] = useState("");
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
-  // 현장입력에서 선택한 케이스 ID 가져오기
-  const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
+  // 선택된 케이스 ID (초기값: localStorage)
+  const [selectedCaseId, setSelectedCaseId] = useState(() => 
+    localStorage.getItem('selectedFieldSurveyCaseId') || ''
+  );
+
+  // 모든 케이스 목록 조회 (검색용)
+  const { data: allCases = [] } = useQuery<Case[]>({
+    queryKey: ["/api/cases"],
+    enabled: caseSearchModalOpen,
+  });
+
+  // 케이스 필터링 (검색어 기준) - 안전한 null 처리
+  const filteredCases = allCases.filter(c => {
+    if (!caseSearchQuery) return true;
+    const query = caseSearchQuery.toLowerCase();
+    const caseNumber = c.caseNumber?.toLowerCase() ?? '';
+    const insuranceCompany = c.insuranceCompany?.toLowerCase() ?? '';
+    const insuranceAccidentNo = c.insuranceAccidentNo?.toLowerCase() ?? '';
+    const policyHolderName = c.policyHolderName?.toLowerCase() ?? '';
+    const victimName = c.victimName?.toLowerCase() ?? '';
+    
+    return (
+      caseNumber.includes(query) ||
+      insuranceCompany.includes(query) ||
+      insuranceAccidentNo.includes(query) ||
+      policyHolderName.includes(query) ||
+      victimName.includes(query)
+    );
+  });
 
   // 선택된 케이스 데이터 가져오기
-  const { data: selectedCase } = useQuery<Case>({
-    queryKey: ["/api/cases", selectedCaseId],
+  const { data: selectedCase, isLoading: isLoadingCase } = useQuery<Case>({
+    queryKey: [`/api/cases/${selectedCaseId}`],
     enabled: !!selectedCaseId,
   });
+
+  // 케이스 선택 핸들러
+  const handleCaseSelect = (caseId: string) => {
+    setSelectedCaseId(caseId);
+    localStorage.setItem('selectedFieldSurveyCaseId', caseId);
+    setCaseSearchModalOpen(false);
+    setCaseSearchQuery("");
+    toast({
+      title: "케이스가 선택되었습니다",
+      description: "선택한 케이스의 증빙자료를 관리할 수 있습니다.",
+    });
+  };
 
   // 문서 목록 조회
   const { data: documents = [], isLoading } = useQuery<CaseDocument[]>({
@@ -128,7 +172,7 @@ export default function FieldDocuments() {
     },
   });
 
-  if (!user || !selectedCaseId) {
+  if (!user) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F5F7FA]">
         <div
@@ -139,9 +183,87 @@ export default function FieldDocuments() {
             color: "rgba(12, 12, 12, 0.5)",
           }}
         >
-          케이스를 선택해주세요
+          로그인이 필요합니다
         </div>
       </div>
+    );
+  }
+
+  // 케이스가 선택되지 않은 경우 케이스 선택 UI 표시
+  if (!selectedCaseId) {
+    return (
+      <FieldSurveyLayout selectedCaseId={selectedCaseId}>
+        <div className="flex-1 flex flex-col items-center justify-center bg-[#F5F7FA] p-6">
+          <div
+            className="mb-6"
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "16px",
+              fontWeight: 500,
+              color: "rgba(12, 12, 12, 0.5)",
+            }}
+          >
+            케이스를 선택해주세요
+          </div>
+          <button
+            type="button"
+            onClick={() => setCaseSearchModalOpen(true)}
+            className="px-6 py-3 rounded-lg hover-elevate active-elevate-2"
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "15px",
+              fontWeight: 600,
+              letterSpacing: "-0.02em",
+              color: "#FFFFFF",
+              background: "#008FED",
+              border: "none",
+            }}
+            data-testid="button-select-case-empty"
+          >
+            케이스 선택
+          </button>
+        </div>
+      </FieldSurveyLayout>
+    );
+  }
+
+  // 케이스 데이터 로딩 중일 때
+  if (isLoadingCase) {
+    return (
+      <FieldSurveyLayout selectedCaseId={selectedCaseId}>
+        <div className="flex-1 flex items-center justify-center bg-[#F5F7FA]">
+          <div
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "16px",
+              fontWeight: 500,
+              color: "rgba(12, 12, 12, 0.5)",
+            }}
+          >
+            케이스 정보를 불러오는 중...
+          </div>
+        </div>
+      </FieldSurveyLayout>
+    );
+  }
+
+  // 케이스 데이터가 없는 경우 (로딩 완료 후에도 없을 때)
+  if (!selectedCase) {
+    return (
+      <FieldSurveyLayout selectedCaseId={selectedCaseId}>
+        <div className="flex-1 flex items-center justify-center bg-[#F5F7FA]">
+          <div
+            style={{
+              fontFamily: "Pretendard",
+              fontSize: "16px",
+              fontWeight: 500,
+              color: "rgba(12, 12, 12, 0.5)",
+            }}
+          >
+            케이스 정보를 찾을 수 없습니다
+          </div>
+        </div>
+      </FieldSurveyLayout>
     );
   }
 
@@ -317,17 +439,35 @@ export default function FieldDocuments() {
       {/* 작성중인 건 */}
       {selectedCase && (
         <div className="mb-6">
-          <div
-            style={{
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: 400,
-              letterSpacing: "-0.02em",
-              color: "rgba(12, 12, 12, 0.5)",
-              marginBottom: "8px",
-            }}
-          >
-            작성중인 건
+          <div className="flex items-center justify-between mb-2">
+            <div
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 400,
+                letterSpacing: "-0.02em",
+                color: "rgba(12, 12, 12, 0.5)",
+              }}
+            >
+              작성중인 건
+            </div>
+            
+            {/* 다른 건 선택 버튼 */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCaseSearchModalOpen(true)}
+              className="h-8"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "13px",
+                fontWeight: 500,
+              }}
+              data-testid="button-select-other-case"
+            >
+              <Search className="w-3.5 h-3.5 mr-1.5" />
+              다른 건 선택
+            </Button>
           </div>
           
           <div 
@@ -737,6 +877,120 @@ export default function FieldDocuments() {
           })}
         </div>
       )}
+
+      {/* 케이스 선택 모달 */}
+      <Dialog open={caseSearchModalOpen} onOpenChange={setCaseSearchModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "20px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+              }}
+            >
+              케이스 선택
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* 검색 입력 */}
+          <div className="mb-4">
+            <Input
+              placeholder="접수번호, 보험사, 사고번호, 계약자명, 피해자명 검색..."
+              value={caseSearchQuery}
+              onChange={(e) => setCaseSearchQuery(e.target.value)}
+              className="w-full"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+              data-testid="input-case-search"
+            />
+          </div>
+
+          {/* 케이스 목록 */}
+          <div className="space-y-2">
+            {filteredCases.map((caseItem) => (
+              <div
+                key={caseItem.id}
+                onClick={() => handleCaseSelect(caseItem.id!)}
+                className={`p-4 rounded-lg cursor-pointer transition-all hover-elevate ${
+                  selectedCaseId === caseItem.id ? 'ring-2 ring-blue-500' : ''
+                }`}
+                style={{
+                  background: selectedCaseId === caseItem.id ? "rgba(0, 143, 237, 0.05)" : "rgba(12, 12, 12, 0.02)",
+                  border: "1px solid rgba(12, 12, 12, 0.08)",
+                }}
+                data-testid={`case-item-${caseItem.id}`}
+              >
+                <div className="flex items-center gap-3">
+                  {/* 선택 표시 */}
+                  {selectedCaseId === caseItem.id && (
+                    <div className="flex-shrink-0">
+                      <Check className="w-5 h-5" style={{ color: "#008FED" }} />
+                    </div>
+                  )}
+                  
+                  <div className="flex-1">
+                    {/* 첫 번째 줄: 보험사 + 사고번호 */}
+                    <div
+                      className="mb-1"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "15px",
+                        fontWeight: 600,
+                        letterSpacing: "-0.02em",
+                        color: "#0C0C0C",
+                      }}
+                    >
+                      {caseItem.insuranceCompany || "보험사 미정"} {caseItem.insuranceAccidentNo || ""}
+                    </div>
+
+                    {/* 두 번째 줄: 접수번호, 계약자, 피해자, 상태 */}
+                    <div
+                      className="flex items-center gap-3 flex-wrap"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "13px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.6)",
+                      }}
+                    >
+                      <span>접수번호: {caseItem.caseNumber}</span>
+                      <span>계약자: {caseItem.policyHolderName || caseItem.clientName || "미정"}</span>
+                      <span>피해자: {caseItem.victimName || "미정"}</span>
+                      <span className="px-2 py-0.5 rounded" style={{
+                        background: "rgba(0, 143, 237, 0.1)",
+                        color: "#008FED",
+                        fontSize: "12px",
+                      }}>
+                        {caseItem.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {filteredCases.length === 0 && (
+              <div
+                className="text-center py-12"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 400,
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+              >
+                검색 결과가 없습니다
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
