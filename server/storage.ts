@@ -1208,16 +1208,8 @@ export class MemStorage implements IStorage {
           // 관리자는 모든 케이스 조회 가능
           break;
         case "협력사":
-          // 팀장급(팀장, 부장, 차장, 과장)은 자기 회사의 모든 케이스
-          // 일반 직원은 자기가 맡은 케이스만
-          if (isTeamLeader(user.position)) {
-            allCases = allCases.filter(c => c.assignedPartner === user.company);
-          } else {
-            allCases = allCases.filter(c => 
-              c.assignedPartner === user.company && 
-              c.assignedPartnerManager === user.name
-            );
-          }
+          // 협력사는 직급 상관없이 자기 회사의 모든 케이스
+          allCases = allCases.filter(c => c.assignedPartner === user.company);
           break;
         case "보험사":
           // 보험사는 자기 회사 케이스만
@@ -2582,18 +2574,8 @@ export class DbStorage implements IStorage {
           // 관리자는 모든 케이스 조회 가능
           break;
         case "협력사":
-          // 팀장급(팀장, 부장, 차장, 과장)은 자기 회사의 모든 케이스
-          // 일반 직원은 자기가 맡은 케이스만
-          if (isTeamLeader(user.position)) {
-            query = query.where(eq(cases.assignedPartner, user.company));
-          } else {
-            query = query.where(
-              and(
-                eq(cases.assignedPartner, user.company),
-                eq(cases.assignedPartnerManager, user.name)
-              )
-            );
-          }
+          // 협력사는 직급 상관없이 자기 회사의 모든 케이스
+          query = query.where(eq(cases.assignedPartner, user.company));
           break;
         case "보험사":
           // 보험사는 자기 회사 케이스만
