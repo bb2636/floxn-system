@@ -143,6 +143,14 @@ export default function FieldManagement() {
     return availableCases.find(c => c.id === selectedCase) || null;
   }, [selectedCase, availableCases]);
 
+  // 같은 사고번호를 가진 케이스들 (추가 피해자 표시용)
+  const relatedCases = useMemo(() => {
+    if (!selectedCaseData?.insuranceAccidentNo || !availableCases) return [];
+    return availableCases
+      .filter(c => c.insuranceAccidentNo === selectedCaseData.insuranceAccidentNo)
+      .sort((a, b) => (a.caseNumber || "").localeCompare(b.caseNumber || ""));
+  }, [selectedCaseData, availableCases]);
+
   const isReadOnly = !isPartner || (selectedCaseData?.status === "검토중");
 
   // 각 섹션 완료 상태 체크
@@ -1169,7 +1177,7 @@ export default function FieldManagement() {
               </div>
             </div>
 
-            {/* 피해자 정보 서브섹션 */}
+            {/* 같은 사고의 케이스들 */}
             <div>
               <h3
                 className="mb-4"
@@ -1181,20 +1189,25 @@ export default function FieldManagement() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                총 {1 + additionalVictims.length}명의 피해자
+                같은 사고의 케이스들 (총 {relatedCases.length}건)
               </h3>
               
               <div className="space-y-3">
-                {/* 기본 피해자 (접수건에서 로드) */}
-                {victimName && (
+                {relatedCases.map((caseItem) => (
                   <div
+                    key={caseItem.id}
                     style={{
-                      background: "rgba(12, 12, 12, 0.04)",
+                      background: caseItem.id === selectedCase 
+                        ? "rgba(0, 143, 237, 0.08)" 
+                        : "rgba(12, 12, 12, 0.04)",
                       borderRadius: "8px",
                       padding: "16px 20px",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
+                      border: caseItem.id === selectedCase 
+                        ? "2px solid rgba(0, 143, 237, 0.3)" 
+                        : "none",
                     }}
                   >
                     <div className="flex items-center gap-3">
@@ -1203,10 +1216,21 @@ export default function FieldManagement() {
                           width: "6px",
                           height: "6px",
                           borderRadius: "50%",
-                          background: "#008FED",
+                          background: caseItem.id === selectedCase ? "#008FED" : "#686A6E",
                           flexShrink: 0,
                         }}
                       />
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#008FED",
+                          minWidth: "120px",
+                        }}
+                      >
+                        {caseItem.caseNumber}
+                      </span>
                       <span
                         style={{
                           fontFamily: "Pretendard",
@@ -1215,7 +1239,7 @@ export default function FieldManagement() {
                           color: "rgba(12, 12, 12, 0.8)",
                         }}
                       >
-                        {victimName}
+                        {caseItem.victimName || "-"}
                       </span>
                       <span
                         style={{
@@ -1225,7 +1249,7 @@ export default function FieldManagement() {
                           color: "rgba(12, 12, 12, 0.6)",
                         }}
                       >
-                        {victimContact}
+                        {caseItem.victimContact || "-"}
                       </span>
                       <span
                         style={{
@@ -1235,111 +1259,9 @@ export default function FieldManagement() {
                           color: "rgba(12, 12, 12, 0.6)",
                         }}
                       >
-                        {victimAddress}
+                        {caseItem.victimAddress || "-"}
                       </span>
                     </div>
-                    {!isReadOnly && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setVictimName("");
-                          setVictimContact("");
-                          setVictimAddress("");
-                        }}
-                        style={{
-                          width: "32px",
-                          height: "32px",
-                          borderRadius: "50%",
-                          background: "rgba(12, 12, 12, 0.1)",
-                        }}
-                        data-testid="button-remove-primary-victim"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
-                      </Button>
-                    )}
-                  </div>
-                )}
-
-                {/* 추가 피해자 목록 */}
-                {additionalVictims.map((victim, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRadius: "8px",
-                      padding: "16px 20px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        style={{
-                          width: "6px",
-                          height: "6px",
-                          borderRadius: "50%",
-                          background: "#008FED",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 600,
-                          color: "rgba(12, 12, 12, 0.8)",
-                        }}
-                      >
-                        {victim.name}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 500,
-                          color: "rgba(12, 12, 12, 0.6)",
-                        }}
-                      >
-                        {victim.phone}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 500,
-                          color: "rgba(12, 12, 12, 0.6)",
-                        }}
-                      >
-                        {victim.address}
-                      </span>
-                    </div>
-                    {!isReadOnly && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          const updated = additionalVictims.filter((_, i) => i !== index);
-                          setAdditionalVictims(updated);
-                        }}
-                        style={{
-                          width: "32px",
-                          height: "32px",
-                          borderRadius: "50%",
-                          background: "rgba(12, 12, 12, 0.1)",
-                        }}
-                        data-testid={`button-remove-victim-${index}`}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                          <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
-                      </Button>
-                    )}
                   </div>
                 ))}
               </div>
@@ -1422,23 +1344,87 @@ export default function FieldManagement() {
                     
                     <Button
                       type="button"
-                      onClick={() => {
-                        if (newVictimName && newVictimContact && newVictimAddress) {
-                          setAdditionalVictims([
-                            ...additionalVictims,
-                            {
-                              name: newVictimName,
-                              phone: newVictimContact,
-                              address: newVictimAddress,
-                            },
-                          ]);
-                          setNewVictimName("");
-                          setNewVictimContact("");
-                          setNewVictimAddress("");
-                          setSameAsInsured(false);
+                      onClick={async () => {
+                        if (newVictimName && newVictimContact && newVictimAddress && selectedCaseData) {
+                          try {
+                            // 새 피해세대 케이스 생성 (현재 케이스의 모든 정보 복사 후 필요한 필드만 교체)
+                            const newCasePayload = {
+                              // 모든 케이스 데이터 복사 (caseGroupId는 백엔드에서 insuranceAccidentNo로 자동 설정)
+                              ...selectedCaseData,
+                              
+                              // 백엔드에서 자동 생성되는 필드들 제거
+                              id: undefined,
+                              caseNumber: undefined,
+                              createdAt: undefined,
+                              updatedAt: undefined,
+                              createdBy: undefined,
+                              
+                              // 새 피해자 정보로 교체
+                              victimName: newVictimName,
+                              victimContact: newVictimContact,
+                              victimAddress: newVictimAddress,
+                              
+                              // 처리 유형: 피해세대복구지원만 (중요: processingTypes도 재설정!)
+                              processingTypes: JSON.stringify(["피해세대복구"]),
+                              victimIncidentAssistance: "true",
+                              damagePreventionCost: "false",
+                              
+                              // 워크플로우 필드 초기화 (새 케이스는 처음부터 시작)
+                              progressStatus: null,
+                              reviewDecision: null,
+                              reviewComment: null,
+                              reviewedAt: null,
+                              
+                              // 날짜 필드 초기화 (접수일과 배당일은 유지, 나머지는 초기화)
+                              inspectionDate: null,
+                              siteVisitDate: null,
+                              fieldSurveyDate: null,
+                              siteInvestigationSubmitDate: null,
+                              firstInspectionDate: null,
+                              firstApprovalDate: null,
+                              secondApprovalDate: null,
+                              firstInvoiceDate: null,
+                              approvalRequestDate: null,
+                              approvalDate: null,
+                              approvalCompletionDate: null,
+                              constructionStartDate: null,
+                              constructionCompletionDate: null,
+                              constructionReportSubmitDate: null,
+                              totalWorkDate: null,
+                              contractorReportDate: null,
+                              contractorRepairDate: null,
+                              completionDate: null,
+                              claimDate: null,
+                              
+                              // 상태는 접수완료로 설정
+                              status: "접수완료",
+                            };
+                            
+                            await apiRequest("/api/cases", "POST", newCasePayload);
+                            
+                            toast({
+                              title: "추가 피해자 등록 완료",
+                              description: `${newVictimName} 님의 케이스가 생성되었습니다.`,
+                            });
+                            
+                            // 입력 필드 초기화
+                            setNewVictimName("");
+                            setNewVictimContact("");
+                            setNewVictimAddress("");
+                            setSameAsInsured(false);
+                            
+                            // 케이스 목록 새로고침
+                            queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                          } catch (error) {
+                            toast({
+                              title: "케이스 생성 실패",
+                              description: error instanceof Error ? error.message : "케이스 생성 중 오류가 발생했습니다.",
+                              variant: "destructive",
+                            });
+                          }
                         }
                       }}
-                      disabled={!newVictimName || !newVictimContact || !newVictimAddress}
+                      disabled={!newVictimName || !newVictimContact || !newVictimAddress || !selectedCaseData}
                       style={{
                         fontFamily: "Pretendard",
                         fontSize: "16px",
@@ -1456,7 +1442,7 @@ export default function FieldManagement() {
                       }}
                       data-testid="button-add-new-victim"
                     >
-                      입력
+                      등록
                     </Button>
                   </div>
                 </div>
