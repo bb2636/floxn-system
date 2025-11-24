@@ -1347,35 +1347,120 @@ export default function FieldManagement() {
                       onClick={async () => {
                         if (newVictimName && newVictimContact && newVictimAddress && selectedCaseData) {
                           try {
-                            // 새 피해세대 케이스 생성 (현재 케이스의 모든 정보 복사 후 필요한 필드만 교체)
+                            // 새 피해세대 케이스 생성 (spread 사용 안 함 - 필요한 필드만 명시적으로 복사)
                             const newCasePayload = {
-                              // 모든 케이스 데이터 복사 (caseGroupId는 백엔드에서 insuranceAccidentNo로 자동 설정)
-                              ...selectedCaseData,
+                              // 기본 정보 (복사)
+                              receptionDate: selectedCaseData.receptionDate,
+                              accidentDate: selectedCaseData.accidentDate,
                               
-                              // 백엔드에서 자동 생성되는 필드들 제거
-                              id: undefined,
-                              caseNumber: undefined,
-                              createdAt: undefined,
-                              updatedAt: undefined,
-                              createdBy: undefined,
+                              // 보험 정보 (복사)
+                              insuranceCompany: selectedCaseData.insuranceCompany,
+                              insurancePolicyNo: selectedCaseData.insurancePolicyNo,
+                              insuranceAccidentNo: selectedCaseData.insuranceAccidentNo,
                               
-                              // 새 피해자 정보로 교체
+                              // 의뢰사 정보 (복사)
+                              clientResidence: selectedCaseData.clientResidence,
+                              clientDepartment: selectedCaseData.clientDepartment,
+                              clientName: selectedCaseData.clientName,
+                              clientContact: selectedCaseData.clientContact,
+                              
+                              // 심사사 정보 (복사)
+                              assessorId: selectedCaseData.assessorId,
+                              assessorDepartment: selectedCaseData.assessorDepartment,
+                              assessorTeam: selectedCaseData.assessorTeam,
+                              assessorContact: selectedCaseData.assessorContact,
+                              
+                              // 조사사 정보 (복사)
+                              investigatorTeam: selectedCaseData.investigatorTeam,
+                              investigatorDepartment: selectedCaseData.investigatorDepartment,
+                              investigatorTeamName: selectedCaseData.investigatorTeamName,
+                              investigatorContact: selectedCaseData.investigatorContact,
+                              
+                              // 보험계약자 정보 (복사)
+                              policyHolderName: selectedCaseData.policyHolderName,
+                              policyHolderIdNumber: selectedCaseData.policyHolderIdNumber,
+                              policyHolderAddress: selectedCaseData.policyHolderAddress,
+                              
+                              // 피보험자 정보 (복사)
+                              insuredName: selectedCaseData.insuredName,
+                              insuredIdNumber: selectedCaseData.insuredIdNumber,
+                              insuredContact: selectedCaseData.insuredContact,
+                              insuredAddress: selectedCaseData.insuredAddress,
+                              sameAsPolicyHolder: selectedCaseData.sameAsPolicyHolder,
+                              
+                              // 새 피해자 정보 (신규 입력)
                               victimName: newVictimName,
                               victimContact: newVictimContact,
                               victimAddress: newVictimAddress,
                               
-                              // 처리 유형: 피해세대복구지원만 (중요: processingTypes도 재설정!)
-                              processingTypes: JSON.stringify(["피해세대복구"]),
-                              victimIncidentAssistance: "true",
-                              damagePreventionCost: "false",
+                              // 피해사항 정보 (빈 배열로 초기화 - 새 피해자는 자신의 피해사항 입력)
+                              damageItems: "[]",
                               
-                              // 워크플로우 필드 초기화 (새 케이스는 처음부터 시작)
+                              // 처리 유형: 피해세대복구지원만 (JSON string으로 전송 - schema가 text 타입)
+                              processingTypes: JSON.stringify(["피해세대복구"]),
+                              victimIncidentAssistance: "true",  // schema는 text 타입 ("true" | "false" | null)
+                              damagePreventionCost: "false",     // schema는 text 타입 ("true" | "false" | null)
+                              
+                              // 배당 정보 (복사 - 같은 업체에 배당)
+                              assignedPartner: selectedCaseData.assignedPartner,
+                              assignmentDate: selectedCaseData.assignmentDate,
+                              
+                              // 복구 타입 (복사)
+                              recoveryType: selectedCaseData.recoveryType,
+                              
+                              // 상태: 접수완료 (워크플로우 시작점)
+                              status: "접수완료",
+                              
+                              // 워크플로우 필드: 모두 null/초기값 (새 케이스는 처음부터 시작)
                               progressStatus: null,
                               reviewDecision: null,
                               reviewComment: null,
                               reviewedAt: null,
+                              reviewedBy: null,
+                              visitDate: null,
+                              visitTime: null,
+                              fieldSurveyStatus: "draft",               // 현장조사 상태 (초기값: draft)
                               
-                              // 날짜 필드 초기화 (접수일과 배당일은 유지, 나머지는 초기화)
+                              // 현장조사 관련 필드: 모두 null (새 케이스는 입력 전 상태)
+                              accompaniedPerson: null,
+                              travelDistance: null,
+                              dispatchLocation: null,
+                              accidentTime: null,
+                              accidentCategory: null,
+                              processingTypeOther: null,
+                              recoveryMethodType: null,
+                              
+                              // 기타 필드: 모두 null
+                              clientPhone: null,
+                              clientAddress: null,
+                              accidentLocation: null,
+                              accidentDescription: null,
+                              accidentType: null,
+                              accidentCause: null,
+                              restorationMethod: null,
+                              otherVendorEstimate: null,
+                              
+                              // 추가 피해자: 빈 배열 (JSON string)
+                              additionalVictims: "[]",
+                              
+                              // 배당사항 추가 필드: null
+                              assignedPartnerManager: null,
+                              assignedPartnerContact: null,
+                              urgency: null,
+                              specialRequests: null,
+                              
+                              // 진행상황 메모: null
+                              specialNotes: null,
+                              specialNotesConfirmedBy: null,
+                              additionalNotes: null,
+                              
+                              // 금액: null
+                              estimateAmount: null,
+                              
+                              // 기타 연관 필드: null
+                              assignedTo: null,
+                              
+                              // 날짜 필드: 모두 null (접수일/배당일 제외)
                               inspectionDate: null,
                               siteVisitDate: null,
                               fieldSurveyDate: null,
@@ -1395,9 +1480,6 @@ export default function FieldManagement() {
                               contractorRepairDate: null,
                               completionDate: null,
                               claimDate: null,
-                              
-                              // 상태는 접수완료로 설정
-                              status: "접수완료",
                             };
                             
                             await apiRequest("/api/cases", "POST", newCasePayload);
