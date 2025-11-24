@@ -248,6 +248,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get next case sequence number for a specific date
+  app.get("/api/cases/next-sequence", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const date = req.query.date as string;
+      
+      if (!date) {
+        return res.status(400).json({ error: "날짜가 필요합니다" });
+      }
+
+      // Get next sequence number for the given date
+      const nextSequence = await storage.getNextCaseSequence(date);
+      
+      res.json({ sequence: nextSequence });
+    } catch (error) {
+      console.error("Get next sequence error:", error);
+      res.status(500).json({ error: "순번 조회 중 오류가 발생했습니다" });
+    }
+  });
+
   // Create case endpoint
   app.post("/api/cases", async (req, res) => {
     // Check authentication
@@ -259,9 +283,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate request body with Zod (without createdBy)
       const validatedData = insertCaseRequestSchema.parse(req.body);
       
-      // Generate case number
-      const timestamp = Date.now();
-      const caseNumber = `CLM-${timestamp}`;
+      // Use provided case number or generate temporary one for drafts
+      const caseNumber = validatedData.caseNumber || `DRAFT-${Date.now()}`;
 
       // Create new case with createdBy from session
       const newCase = await storage.createCase({

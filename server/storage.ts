@@ -59,6 +59,7 @@ export interface IStorage {
   verifyPassword(username: string, password: string): Promise<User | null>;
   updatePassword(username: string, newPassword: string): Promise<User | null>;
   deleteAccount(username: string): Promise<User | null>;
+  getNextCaseSequence(date: string): Promise<number>;
   createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
   getCaseById(caseId: string): Promise<Case | null>;
   getAssignedCasesForUser(user: User, search?: string): Promise<Case[]>;
@@ -1043,6 +1044,33 @@ export class MemStorage implements IStorage {
     }
 
     return filtered;
+  }
+
+  async getNextCaseSequence(date: string): Promise<number> {
+    // Convert YYYY-MM-DD to YYYYMMDD
+    const datePrefix = date.replace(/-/g, '');
+    
+    // Query database for cases with case numbers starting with datePrefix
+    const allCases = await db
+      .select({ caseNumber: cases.caseNumber })
+      .from(cases)
+      .where(sql`${cases.caseNumber} LIKE ${datePrefix + '%'}`);
+    
+    let maxSequence = 0;
+    for (const c of allCases) {
+      if (c.caseNumber && c.caseNumber.startsWith(datePrefix)) {
+        const parts = c.caseNumber.split('-');
+        if (parts.length >= 1) {
+          const sequencePart = parts[0].substring(8); // Extract XXX from YYYYMMDDXXX
+          const seq = parseInt(sequencePart, 10);
+          if (!isNaN(seq) && seq > maxSequence) {
+            maxSequence = seq;
+          }
+        }
+      }
+    }
+    
+    return maxSequence + 1;
   }
 
   async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
@@ -2333,6 +2361,29 @@ export class DbStorage implements IStorage {
 
     const results = await query;
     return results;
+  }
+
+  async getNextCaseSequence(date: string): Promise<number> {
+    // Simple implementation for MemStorage (deprecated)
+    // Count cases with same date prefix in caseNumber
+    const allCases = Array.from(this.cases.values());
+    const datePrefix = date.replace(/-/g, ''); // Convert YYYY-MM-DD to YYYYMMDD
+    
+    let maxSequence = 0;
+    for (const c of allCases) {
+      if (c.caseNumber && c.caseNumber.startsWith(datePrefix)) {
+        const parts = c.caseNumber.split('-');
+        if (parts.length >= 1) {
+          const sequencePart = parts[0].substring(8); // Extract XXX from YYYYMMDDXXX
+          const seq = parseInt(sequencePart, 10);
+          if (!isNaN(seq) && seq > maxSequence) {
+            maxSequence = seq;
+          }
+        }
+      }
+    }
+    
+    return maxSequence + 1;
   }
 
   async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {

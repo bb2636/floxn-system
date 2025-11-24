@@ -249,6 +249,8 @@ export const insertCaseSchema = createInsertSchema(cases).omit({
 
 export const insertCaseRequestSchema = insertCaseSchema.omit({
   createdBy: true,
+}).extend({
+  caseNumber: z.string().optional(),
 });
 
 export type InsertCase = z.infer<typeof insertCaseSchema>;
