@@ -457,19 +457,44 @@ export default function FieldEstimate() {
       
       // 노무비 데이터 불러오기
       if (latestEstimate.estimate?.laborCostData && Array.isArray(latestEstimate.estimate.laborCostData)) {
-        const loadedLaborRows = latestEstimate.estimate.laborCostData.map((row: any) => ({
-          id: `labor-${Date.now()}-${Math.random()}`,
-          ...row,
-        }));
+        const loadedLaborRows = latestEstimate.estimate.laborCostData.map((row: any) => {
+          const { rowIndex, ...rest } = row; // rowIndex 제거
+          return {
+            id: `labor-${Date.now()}-${Math.random()}`,
+            ...rest,
+          };
+        });
         setLaborCostRows(loadedLaborRows);
-      }
-
-      // 자재비 데이터 불러오기
-      if (latestEstimate.estimate?.materialCostData && Array.isArray(latestEstimate.estimate.materialCostData)) {
-        const loadedMaterialRows = latestEstimate.estimate.materialCostData.map((row: any) => ({
-          id: `material-${Date.now()}-${Math.random()}`,
-          ...row,
-        }));
+        
+        // 자재비 데이터 불러오기 (노무비 ID 매핑 후)
+        if (latestEstimate.estimate?.materialCostData && Array.isArray(latestEstimate.estimate.materialCostData)) {
+          const loadedMaterialRows = latestEstimate.estimate.materialCostData.map((row: any) => {
+            const { sourceLaborRowIndex, ...rest } = row; // sourceLaborRowIndex 제거
+            
+            // sourceLaborRowIndex를 사용하여 새로운 laborRow의 ID로 매핑
+            const sourceLaborRowId = 
+              typeof sourceLaborRowIndex === 'number' && sourceLaborRowIndex >= 0 
+                ? loadedLaborRows[sourceLaborRowIndex]?.id 
+                : undefined;
+            
+            return {
+              id: `material-${Date.now()}-${Math.random()}`,
+              ...rest,
+              sourceLaborRowId,
+            };
+          });
+          setMaterialRows(loadedMaterialRows);
+        }
+      } else if (latestEstimate.estimate?.materialCostData && Array.isArray(latestEstimate.estimate.materialCostData)) {
+        // 노무비 데이터는 없지만 자재비 데이터만 있는 경우 (일반적으로 발생하지 않음)
+        const loadedMaterialRows = latestEstimate.estimate.materialCostData.map((row: any) => {
+          const { sourceLaborRowIndex, ...rest } = row;
+          return {
+            id: `material-${Date.now()}-${Math.random()}`,
+            ...rest,
+            sourceLaborRowId: undefined,
+          };
+        });
         setMaterialRows(loadedMaterialRows);
       }
 
@@ -801,11 +826,21 @@ export default function FieldEstimate() {
         note: row.note,
       }));
 
-      // 노무비 데이터 (id 제외)
-      const laborCostData = laborCostRows.map(({ id, ...rest }) => rest);
+      // 노무비 데이터 (id 제외, rowIndex 추가)
+      const laborCostData = laborCostRows.map(({ id, ...rest }, index) => ({
+        ...rest,
+        rowIndex: index,
+      }));
 
-      // 자재비 데이터 (id 제외)
-      const materialCostData = materialRows.map(({ id, ...rest }) => rest);
+      // 자재비 데이터 (id 제외, sourceLaborRowIndex 추가)
+      const materialCostData = materialRows.map(({ id, sourceLaborRowId, ...rest }) => {
+        // sourceLaborRowId를 인덱스로 변환
+        const laborIndex = laborCostRows.findIndex(lr => lr.id === sourceLaborRowId);
+        return {
+          ...rest,
+          sourceLaborRowIndex: laborIndex >= 0 ? laborIndex : null,
+        };
+      });
 
       return await apiRequest("POST", `/api/estimates/${selectedCaseId}`, { 
         rows: apiRows,
