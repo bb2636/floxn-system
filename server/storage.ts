@@ -2447,20 +2447,22 @@ export class DbStorage implements IStorage {
   }
 
   async getNextCaseSequence(date: string, insuranceAccidentNo?: string): Promise<{ prefix: string; suffix: number }> {
-    // Simple implementation for MemStorage (deprecated)
-    const allCases = Array.from(this.cases.values());
-    
     // Step 1: Check if there are existing cases with the same insurance accident number
     if (insuranceAccidentNo) {
-      const existingCases = allCases.filter(c => c.insuranceAccidentNo === insuranceAccidentNo);
+      const existingCases = await db
+        .select({ caseNumber: cases.caseNumber })
+        .from(cases)
+        .where(eq(cases.insuranceAccidentNo, insuranceAccidentNo));
       
       if (existingCases.length > 0) {
+        // Extract prefix from first existing case (yyMMddxxx part)
         const firstCaseNumber = existingCases[0].caseNumber;
         if (firstCaseNumber) {
           const parts = firstCaseNumber.split('-');
           if (parts.length >= 2) {
-            const prefix = parts[0];
+            const prefix = parts[0]; // "251124001"
             
+            // Find max suffix for this prefix
             let maxSuffix = -1;
             for (const c of existingCases) {
               if (c.caseNumber && c.caseNumber.startsWith(prefix + '-')) {
@@ -2478,8 +2480,19 @@ export class DbStorage implements IStorage {
       }
     }
     
-    // Step 2: Generate new prefix
-    const datePrefix = date.replace(/-/g, '').substring(2); // Convert YYYY-MM-DD to yyMMdd
+    // Step 2: No existing cases with same accident number - generate new prefix
+    // Convert YYYY-MM-DD to yyMMdd (6 digits)
+    const dateParts = date.split('-');
+    const year = dateParts[0].substring(2); // YY (last 2 digits)
+    const month = dateParts[1]; // MM
+    const day = dateParts[2]; // dd
+    const datePrefix = year + month + day; // yyMMdd
+    
+    // Query database for cases with case numbers starting with datePrefix
+    const allCases = await db
+      .select({ caseNumber: cases.caseNumber })
+      .from(cases)
+      .where(sql`${cases.caseNumber} LIKE ${datePrefix + '%'}`);
     
     let maxSequence = 0;
     for (const c of allCases) {
@@ -2497,7 +2510,7 @@ export class DbStorage implements IStorage {
     
     const nextSequence = maxSequence + 1;
     const seqStr = String(nextSequence).padStart(3, '0');
-    const prefix = `${datePrefix}${seqStr}`;
+    const prefix = `${datePrefix}${seqStr}`; // e.g., "251124001"
     
     return { prefix, suffix: 0 };
   }

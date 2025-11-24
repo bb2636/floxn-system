@@ -68,6 +68,10 @@ export default function Intake() {
   const [accidentDate, setAccidentDate] = useState<Date | undefined>(() => new Date());
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   
+  // 접수번호 예측을 위한 상태
+  const [predictedPrefix, setPredictedPrefix] = useState<string>("");
+  const [predictedSuffix, setPredictedSuffix] = useState<number>(0);
+  
   // 협력사 검색 팝업 상태
   const [isPartnerSearchOpen, setIsPartnerSearchOpen] = useState(false);
   const [partnerSearchQuery, setPartnerSearchQuery] = useState("");
@@ -339,11 +343,69 @@ export default function Intake() {
     return Array.from(new Set(companies));
   }, [investigators]);
 
+  // 예상 접수번호 계산
+  const predictedCaseNumber = useMemo(() => {
+    if (!predictedPrefix) {
+      return "입력 정보를 채우면 표시됩니다";
+    }
+
+    const hasDamagePrevention = formData.damagePreventionCost;
+    const hasVictimRecovery = formData.victimIncidentAssistance;
+
+    // 둘 다 선택
+    if (hasDamagePrevention && hasVictimRecovery) {
+      if (predictedSuffix === 0) {
+        return `${predictedPrefix}-0, ${predictedPrefix}-1`;
+      } else {
+        return `기존 사고에는 손해방지를 추가할 수 없습니다`;
+      }
+    }
+    
+    // 손해방지만 선택
+    if (hasDamagePrevention && !hasVictimRecovery) {
+      if (predictedSuffix === 0) {
+        // 새 사고: -0 사용
+        return `${predictedPrefix}-0`;
+      } else {
+        // 기존 사고: 손해방지 추가 불가
+        return `기존 사고에는 손해방지를 추가할 수 없습니다`;
+      }
+    }
+    
+    // 피해세대복구만 또는 둘 다 선택 안함 (기본값)
+    const suffix = predictedSuffix === 0 ? 1 : predictedSuffix;
+    return `${predictedPrefix}-${suffix}`;
+  }, [predictedPrefix, predictedSuffix, formData.damagePreventionCost, formData.victimIncidentAssistance]);
+
   useEffect(() => {
     if (!userLoading && !user) {
       setLocation("/");
     }
   }, [user, userLoading, setLocation]);
+
+  // 접수번호 예측 - 날짜 또는 보험사고번호 변경 시
+  useEffect(() => {
+    const fetchPredictedCaseNumber = async () => {
+      if (!formData.accidentDate) return;
+
+      try {
+        const params = new URLSearchParams({ date: formData.accidentDate });
+        if (formData.insuranceAccidentNo) {
+          params.append('insuranceAccidentNo', formData.insuranceAccidentNo);
+        }
+        
+        const response = await apiRequest("GET", `/api/cases/next-sequence?${params.toString()}`);
+        const data = await response.json();
+        
+        setPredictedPrefix(data.prefix);
+        setPredictedSuffix(data.suffix);
+      } catch (error) {
+        console.error("Failed to fetch predicted case number:", error);
+      }
+    };
+
+    fetchPredictedCaseNumber();
+  }, [formData.accidentDate, formData.insuranceAccidentNo]);
 
   // 임시 저장 건 불러오기
   useEffect(() => {
@@ -1044,11 +1106,11 @@ export default function Intake() {
                               fontWeight: 600,
                               lineHeight: '128%',
                               letterSpacing: '-0.02em',
-                              color: '#686A6E',
+                              color: predictedCaseNumber.includes("입력 정보") || predictedCaseNumber.includes("기존 사고") ? '#DC2626' : '#0C0C0C',
                             }}
                             data-testid="text-case-number"
                           >
-                            접수 후 자동생성
+                            {predictedCaseNumber}
                           </span>
                         </div>
                       </div>
