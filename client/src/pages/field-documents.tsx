@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { FieldSurveyLayout } from "@/components/field-survey-layout";
 
 type DocumentCategory = "전체" | "현장" | "수리중" | "복구완료" | "청구";
 
@@ -192,7 +193,7 @@ export default function FieldDocuments() {
   // 케이스가 선택되지 않은 경우 케이스 선택 UI 표시
   if (!selectedCaseId) {
     return (
-      <FieldSurveyLayout selectedCaseId={selectedCaseId}>
+      <FieldSurveyLayout>
         <div className="flex-1 flex flex-col items-center justify-center bg-[#F5F7FA] p-6">
           <div
             className="mb-6"
@@ -230,7 +231,7 @@ export default function FieldDocuments() {
   // 케이스 데이터 로딩 중일 때
   if (isLoadingCase) {
     return (
-      <FieldSurveyLayout selectedCaseId={selectedCaseId}>
+      <FieldSurveyLayout>
         <div className="flex-1 flex items-center justify-center bg-[#F5F7FA]">
           <div
             style={{
@@ -250,7 +251,7 @@ export default function FieldDocuments() {
   // 케이스 데이터가 없는 경우 (로딩 완료 후에도 없을 때)
   if (!selectedCase) {
     return (
-      <FieldSurveyLayout selectedCaseId={selectedCaseId}>
+      <FieldSurveyLayout>
         <div className="flex-1 flex items-center justify-center bg-[#F5F7FA]">
           <div
             style={{
