@@ -1775,6 +1775,7 @@ export default function FieldManagement() {
                       });
 
                       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseData.id, "report"] });
                     } catch (error) {
                       console.error("임시저장 에러:", error);
                       toast({
@@ -1836,6 +1837,7 @@ export default function FieldManagement() {
                       });
 
                       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseData.id, "report"] });
                     } catch (error) {
                       console.error("제출 에러:", error);
                       toast({
