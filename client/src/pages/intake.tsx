@@ -210,19 +210,6 @@ export default function Intake() {
     return partners.filter(p => p.company === selectedPartner.name);
   }, [selectedPartner, partners]);
 
-  // 접수번호 자동 생성 함수
-  const generateCaseNumber = () => {
-    const now = new Date();
-    const year = now.getFullYear().toString().slice(-2);
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
-    return `CLM-${year}${month}${day}${hours}${minutes}${seconds}${milliseconds}`;
-  };
-
   // 오늘 날짜를 YYYY-MM-DD 형식으로 반환
   const getTodayDate = () => {
     const now = new Date();
@@ -231,8 +218,6 @@ export default function Intake() {
     const day = String(now.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
-
-  const [caseNumber] = useState(() => generateCaseNumber());
   const [editCaseId, setEditCaseId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     accidentDate: getTodayDate(),
@@ -537,7 +522,8 @@ export default function Intake() {
         status
       });
       
-      const cleanedData = { ...cleanFormData(data), caseNumber, status };
+      // 임시저장 시: caseNumber 없이 전송 (서버에서 DRAFT-{timestamp} 자동 생성)
+      const cleanedData = { ...cleanFormData(data), status };
       
       // 임시저장: 기존 케이스가 있으면 업데이트, 없으면 생성
       if (editCaseId) {
@@ -572,36 +558,56 @@ export default function Intake() {
     mutationFn: async (data: typeof formData) => {
       const cleanedData = cleanFormData(data);
       
+      // 1. 접수일자 가져오기 (formData에서 또는 오늘 날짜)
+      const receptionDate = data.accidentDate || getTodayDate();
+      
+      // 2. API로 다음 순번 조회
+      const sequenceResponse = await apiRequest("GET", `/api/cases/next-sequence?date=${receptionDate}`);
+      const sequenceData = await sequenceResponse.json();
+      const sequence = sequenceData.sequence as number;
+      
+      // 3. 기본 접수번호 생성: yyyymmddxxx
+      const datePrefix = receptionDate.replace(/-/g, ''); // YYYYMMDD
+      const sequenceStr = String(sequence).padStart(3, '0'); // 001, 002, ...
+      const baseCaseNumber = `${datePrefix}${sequenceStr}`;
+      
       console.log("📋 접수 데이터:", {
+        receptionDate,
+        sequence,
+        baseCaseNumber,
         damagePreventionCost: data.damagePreventionCost,
         victimIncidentAssistance: data.victimIncidentAssistance,
-        caseNumber: caseNumber,
         editCaseId: editCaseId
       });
       
-      // 기존 임시 저장 건이 있으면 삭제 (2건 생성할 수도 있으므로)
+      // 4. 기존 임시 저장 건 삭제
       if (editCaseId) {
-        console.log("🗑️ 기존 임시 저장 건 삭제:", editCaseId);
-        await apiRequest("DELETE", `/api/cases/${editCaseId}`);
+        try {
+          console.log("🗑️ 기존 임시 저장 건 삭제:", editCaseId);
+          await apiRequest("DELETE", `/api/cases/${editCaseId}`);
+          console.log("✅ 임시 저장 건 삭제 완료");
+        } catch (error) {
+          console.error("❌ 임시 저장 건 삭제 실패:", error);
+          // 삭제 실패해도 계속 진행
+        }
       }
       
-      // 손해방지와 피해세대복구 둘 다 선택된 경우: 2개의 케이스 생성
+      // 5. Suffix 규칙에 따라 케이스 생성
       if (data.damagePreventionCost && data.victimIncidentAssistance) {
+        // 둘 다 선택: -0 (손해방지) + -1 (피해세대복구) 2건 생성
         console.log("🔵 손해방지 + 피해세대복구 → 2건 생성 모드");
         
-        // 첫 번째 케이스: 손해방지 (접수번호-1)
         const case1 = {
           ...cleanedData,
-          caseNumber: `${caseNumber}-1`,
+          caseNumber: `${baseCaseNumber}-0`,
           damagePreventionCost: "true",
           victimIncidentAssistance: "false",
           status: "접수완료"
         };
         
-        // 두 번째 케이스: 피해세대복구 (접수번호-2)
         const case2 = {
           ...cleanedData,
-          caseNumber: `${caseNumber}-2`,
+          caseNumber: `${baseCaseNumber}-1`,
           damagePreventionCost: "false",
           victimIncidentAssistance: "true",
           status: "접수완료"
@@ -610,21 +616,30 @@ export default function Intake() {
         console.log("📌 케이스 1 (손해방지):", case1.caseNumber);
         console.log("📌 케이스 2 (피해세대복구):", case2.caseNumber);
         
-        // 두 케이스 모두 생성
         await apiRequest("POST", "/api/cases", case1);
         console.log("✅ 케이스 1 생성 완료");
         await apiRequest("POST", "/api/cases", case2);
         console.log("✅ 케이스 2 생성 완료");
         
         return { count: 2, caseNumber1: case1.caseNumber, caseNumber2: case2.caseNumber };
+      } else if (data.damagePreventionCost) {
+        // 손해방지만: -0
+        console.log("🟡 손해방지만 → 1건 생성 (-0)");
+        const singleCase = {
+          ...cleanedData,
+          caseNumber: `${baseCaseNumber}-0`,
+          status: "접수완료"
+        };
+        return await apiRequest("POST", "/api/cases", singleCase);
       } else {
-        console.log("🟢 일반 모드 → 1건 생성");
-        // 하나만 선택되거나 둘 다 선택 안 된 경우: 1개의 케이스만 생성 (suffix 없음)
-        return await apiRequest("POST", "/api/cases", { 
-          ...cleanedData, 
-          caseNumber, 
-          status: "접수완료" 
-        });
+        // 피해세대복구만 또는 둘 다 선택 안 됨: -1
+        console.log("🟢 피해세대복구 → 1건 생성 (-1)");
+        const singleCase = {
+          ...cleanedData,
+          caseNumber: `${baseCaseNumber}-1`,
+          status: "접수완료"
+        };
+        return await apiRequest("POST", "/api/cases", singleCase);
       }
     },
     onSuccess: (result) => {
