@@ -59,7 +59,7 @@ export interface IStorage {
   verifyPassword(username: string, password: string): Promise<User | null>;
   updatePassword(username: string, newPassword: string): Promise<User | null>;
   deleteAccount(username: string): Promise<User | null>;
-  getNextCaseSequence(date: string): Promise<number>;
+  getNextCaseSequence(date: string, insuranceAccidentNo?: string): Promise<{ prefix: string; suffix: number }>;
   createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
   getCaseById(caseId: string): Promise<Case | null>;
   getAssignedCasesForUser(user: User, search?: string): Promise<Case[]>;
@@ -1056,7 +1056,41 @@ export class MemStorage implements IStorage {
     return filtered;
   }
 
-  async getNextCaseSequence(date: string): Promise<number> {
+  async getNextCaseSequence(date: string, insuranceAccidentNo?: string): Promise<{ prefix: string; suffix: number }> {
+    // Step 1: Check if there are existing cases with the same insurance accident number
+    if (insuranceAccidentNo) {
+      const existingCases = await db
+        .select({ caseNumber: cases.caseNumber })
+        .from(cases)
+        .where(eq(cases.insuranceAccidentNo, insuranceAccidentNo));
+      
+      if (existingCases.length > 0) {
+        // Extract prefix from first existing case (yyMMddxxx part)
+        const firstCaseNumber = existingCases[0].caseNumber;
+        if (firstCaseNumber) {
+          const parts = firstCaseNumber.split('-');
+          if (parts.length >= 2) {
+            const prefix = parts[0]; // "251124001"
+            
+            // Find max suffix for this prefix
+            let maxSuffix = -1;
+            for (const c of existingCases) {
+              if (c.caseNumber && c.caseNumber.startsWith(prefix + '-')) {
+                const suffixStr = c.caseNumber.split('-')[1];
+                const suffix = parseInt(suffixStr, 10);
+                if (!isNaN(suffix) && suffix > maxSuffix) {
+                  maxSuffix = suffix;
+                }
+              }
+            }
+            
+            return { prefix, suffix: maxSuffix + 1 };
+          }
+        }
+      }
+    }
+    
+    // Step 2: No existing cases with same accident number - generate new prefix
     // Convert YYYY-MM-DD to yyMMdd (6 digits)
     const dateParts = date.split('-');
     const year = dateParts[0].substring(2); // YY (last 2 digits)
@@ -1084,7 +1118,11 @@ export class MemStorage implements IStorage {
       }
     }
     
-    return maxSequence + 1;
+    const nextSequence = maxSequence + 1;
+    const seqStr = String(nextSequence).padStart(3, '0');
+    const prefix = `${datePrefix}${seqStr}`; // e.g., "251124001"
+    
+    return { prefix, suffix: 0 };
   }
 
   async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
@@ -2408,18 +2446,47 @@ export class DbStorage implements IStorage {
     return results;
   }
 
-  async getNextCaseSequence(date: string): Promise<number> {
+  async getNextCaseSequence(date: string, insuranceAccidentNo?: string): Promise<{ prefix: string; suffix: number }> {
     // Simple implementation for MemStorage (deprecated)
-    // Count cases with same date prefix in caseNumber
     const allCases = Array.from(this.cases.values());
-    const datePrefix = date.replace(/-/g, ''); // Convert YYYY-MM-DD to YYYYMMDD
+    
+    // Step 1: Check if there are existing cases with the same insurance accident number
+    if (insuranceAccidentNo) {
+      const existingCases = allCases.filter(c => c.insuranceAccidentNo === insuranceAccidentNo);
+      
+      if (existingCases.length > 0) {
+        const firstCaseNumber = existingCases[0].caseNumber;
+        if (firstCaseNumber) {
+          const parts = firstCaseNumber.split('-');
+          if (parts.length >= 2) {
+            const prefix = parts[0];
+            
+            let maxSuffix = -1;
+            for (const c of existingCases) {
+              if (c.caseNumber && c.caseNumber.startsWith(prefix + '-')) {
+                const suffixStr = c.caseNumber.split('-')[1];
+                const suffix = parseInt(suffixStr, 10);
+                if (!isNaN(suffix) && suffix > maxSuffix) {
+                  maxSuffix = suffix;
+                }
+              }
+            }
+            
+            return { prefix, suffix: maxSuffix + 1 };
+          }
+        }
+      }
+    }
+    
+    // Step 2: Generate new prefix
+    const datePrefix = date.replace(/-/g, '').substring(2); // Convert YYYY-MM-DD to yyMMdd
     
     let maxSequence = 0;
     for (const c of allCases) {
       if (c.caseNumber && c.caseNumber.startsWith(datePrefix)) {
         const parts = c.caseNumber.split('-');
         if (parts.length >= 1) {
-          const sequencePart = parts[0].substring(8); // Extract XXX from YYYYMMDDXXX
+          const sequencePart = parts[0].substring(6); // Extract XXX from yyMMddxxx
           const seq = parseInt(sequencePart, 10);
           if (!isNaN(seq) && seq > maxSequence) {
             maxSequence = seq;
@@ -2428,7 +2495,11 @@ export class DbStorage implements IStorage {
       }
     }
     
-    return maxSequence + 1;
+    const nextSequence = maxSequence + 1;
+    const seqStr = String(nextSequence).padStart(3, '0');
+    const prefix = `${datePrefix}${seqStr}`;
+    
+    return { prefix, suffix: 0 };
   }
 
   async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {

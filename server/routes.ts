@@ -262,10 +262,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "날짜가 필요합니다" });
       }
 
-      // Get next sequence number for the given date
-      const nextSequence = await storage.getNextCaseSequence(date);
+      // Get next sequence info for the given date
+      const insuranceAccidentNo = req.query.insuranceAccidentNo as string | undefined;
+      const result = await storage.getNextCaseSequence(date, insuranceAccidentNo);
       
-      res.json({ sequence: nextSequence });
+      res.json(result);
     } catch (error) {
       console.error("Get next sequence error:", error);
       res.status(500).json({ error: "순번 조회 중 오류가 발생했습니다" });
@@ -374,55 +375,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Parse date (format: YYYY-MM-DD or KST timestamp)
         const fullDate = receptionDate.split('T')[0]; // "2025-11-24"
         
-        // ⚠️ CRITICAL: Fetch sequence ONCE with full date (YYYY-MM-DD format)
-        const nextSeq = await storage.getNextCaseSequence(fullDate);
-        const seqStr = String(nextSeq).padStart(3, '0');
-        
-        // Convert to yyMMdd for case number
-        const dateStr = fullDate.replace(/-/g, '').substring(2); // "251124"
-        const baseCaseNumber = `${dateStr}${seqStr}`; // e.g., "251124001"
+        // ⚠️ CRITICAL: Get case prefix and suffix based on insurance accident number
+        // If same accident number exists, reuses the same prefix (B 방식)
+        const { prefix, suffix } = await storage.getNextCaseSequence(
+          fullDate, 
+          validatedData.insuranceAccidentNo || undefined
+        );
+        // prefix: e.g., "251124001" (yyMMddxxx)
+        // suffix: 0 for new accident, incremented for existing accident
         
         const createdCases: any[] = [];
         
         if (hasDamagePrevention && !hasVictimRecovery) {
-          // Only damage prevention: yyMMddxxx-0
+          // Only damage prevention
+          // For new accident (suffix=0), use 0; for existing, use returned suffix
+          const caseNumber = `${prefix}-${suffix === 0 ? 0 : suffix}`;
           const newCase = await storage.createCase({
             ...validatedData,
-            caseNumber: `${baseCaseNumber}-0`,
+            caseNumber,
             caseGroupId,
             createdBy: req.session.userId,
           });
           createdCases.push(newCase);
         } else if (!hasDamagePrevention && hasVictimRecovery) {
-          // Only victim recovery: yyMMddxxx-1
+          // Only victim recovery
+          // For new accident (suffix=0), use 1; for existing, use returned suffix
+          const caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
           const newCase = await storage.createCase({
             ...validatedData,
-            caseNumber: `${baseCaseNumber}-1`,
+            caseNumber,
             caseGroupId,
             createdBy: req.session.userId,
           });
           createdCases.push(newCase);
         } else if (hasDamagePrevention && hasVictimRecovery) {
-          // Both types: yyMMddxxx-0 (prevention) + yyMMddxxx-1 (recovery)
-          // ⚠️ Same base number for both cases!
-          const preventionCase = await storage.createCase({
-            ...validatedData,
-            caseNumber: `${baseCaseNumber}-0`,
-            caseGroupId,
-            createdBy: req.session.userId,
-          });
-          const recoveryCase = await storage.createCase({
-            ...validatedData,
-            caseNumber: `${baseCaseNumber}-1`,
-            caseGroupId,
-            createdBy: req.session.userId,
-          });
-          createdCases.push(preventionCase, recoveryCase);
+          // Both types selected
+          if (suffix === 0) {
+            // New accident: create -0 (prevention) and -1 (recovery)
+            const preventionCase = await storage.createCase({
+              ...validatedData,
+              caseNumber: `${prefix}-0`,
+              caseGroupId,
+              createdBy: req.session.userId,
+            });
+            const recoveryCase = await storage.createCase({
+              ...validatedData,
+              caseNumber: `${prefix}-1`,
+              caseGroupId,
+              createdBy: req.session.userId,
+            });
+            createdCases.push(preventionCase, recoveryCase);
+          } else {
+            // Existing accident: cannot add damage prevention again!
+            // (손해방지는 사고당 1번만 발생, 추가 피해자는 현장조사 화면에서 등록)
+            return res.status(400).json({ 
+              error: "이미 접수된 사고에는 손해방지를 추가할 수 없습니다. 피해세대복구만 선택해주세요." 
+            });
+          }
         } else {
-          // No processing type - create single case with -1 suffix
+          // No processing type - create single case with -1 suffix (default victim recovery)
+          const caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
           const newCase = await storage.createCase({
             ...validatedData,
-            caseNumber: `${baseCaseNumber}-1`,
+            caseNumber,
             caseGroupId,
             createdBy: req.session.userId,
           });
