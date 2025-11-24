@@ -1057,8 +1057,12 @@ export class MemStorage implements IStorage {
   }
 
   async getNextCaseSequence(date: string): Promise<number> {
-    // Convert YYYY-MM-DD to YYYYMMDD
-    const datePrefix = date.replace(/-/g, '');
+    // Convert YYYY-MM-DD to yyMMdd (6 digits)
+    const dateParts = date.split('-');
+    const year = dateParts[0].substring(2); // YY (last 2 digits)
+    const month = dateParts[1]; // MM
+    const day = dateParts[2]; // dd
+    const datePrefix = year + month + day; // yyMMdd
     
     // Query database for cases with case numbers starting with datePrefix
     const allCases = await db
@@ -1071,7 +1075,7 @@ export class MemStorage implements IStorage {
       if (c.caseNumber && c.caseNumber.startsWith(datePrefix)) {
         const parts = c.caseNumber.split('-');
         if (parts.length >= 1) {
-          const sequencePart = parts[0].substring(8); // Extract XXX from YYYYMMDDXXX
+          const sequencePart = parts[0].substring(6); // Extract XXX from yyMMddxxx
           const seq = parseInt(sequencePart, 10);
           if (!isNaN(seq) && seq > maxSequence) {
             maxSequence = seq;
