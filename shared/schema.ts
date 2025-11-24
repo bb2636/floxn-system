@@ -252,6 +252,7 @@ export const insertCaseRequestSchema = insertCaseSchema.omit({
   createdBy: true,
 }).extend({
   caseNumber: z.string().optional(),
+  id: z.string().optional(), // For draft resume and deletion
 });
 
 export type InsertCase = z.infer<typeof insertCaseSchema>;

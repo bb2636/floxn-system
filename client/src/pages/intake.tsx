@@ -523,19 +523,27 @@ export default function Intake() {
       });
       
       // 임시저장 시: caseNumber 없이 전송 (서버에서 DRAFT-{timestamp} 자동 생성)
-      const cleanedData = { ...cleanFormData(data), status };
+      const cleanedData = { 
+        ...cleanFormData(data), 
+        status,
+        // editCaseId를 포함하여 백엔드에서 draft 삭제 가능하도록
+        ...(editCaseId ? { id: editCaseId } : {})
+      };
       
       // 임시저장: 기존 케이스가 있으면 업데이트, 없으면 생성
       if (editCaseId) {
         return await apiRequest("PATCH", `/api/cases/${editCaseId}`, cleanedData);
       } else {
         const result = await apiRequest("POST", "/api/cases", cleanedData);
-        // 새로 생성한 경우 editCaseId 설정
-        if (result && typeof result === 'object' && 'case' in result) {
-          const newCaseId = (result as any).case.id;
-          setEditCaseId(newCaseId);
-          // localStorage에도 저장하여 "이어서 작성하기" 가능하도록
-          localStorage.setItem('editCaseId', newCaseId);
+        // 새로 생성한 경우 editCaseId 설정 (응답 형식: { success: true, cases: [...] })
+        if (result && typeof result === 'object' && 'cases' in result) {
+          const cases = (result as any).cases;
+          if (cases && cases.length > 0) {
+            const newCaseId = cases[0].id;
+            setEditCaseId(newCaseId);
+            // localStorage에도 저장하여 "이어서 작성하기" 가능하도록
+            localStorage.setItem('editCaseId', newCaseId);
+          }
         }
         return result;
       }
@@ -558,99 +566,38 @@ export default function Intake() {
     mutationFn: async (data: typeof formData) => {
       const cleanedData = cleanFormData(data);
       
-      // 1. 접수일자 가져오기 (formData에서 또는 오늘 날짜)
-      const receptionDate = data.accidentDate || getTodayDate();
-      
-      // 2. API로 다음 순번 조회
-      const sequenceResponse = await apiRequest("GET", `/api/cases/next-sequence?date=${receptionDate}`);
-      const sequenceData = await sequenceResponse.json();
-      const sequence = sequenceData.sequence as number;
-      
-      // 3. 기본 접수번호 생성: yyyymmddxxx
-      const datePrefix = receptionDate.replace(/-/g, ''); // YYYYMMDD
-      const sequenceStr = String(sequence).padStart(3, '0'); // 001, 002, ...
-      const baseCaseNumber = `${datePrefix}${sequenceStr}`;
-      
       console.log("📋 접수 데이터:", {
-        receptionDate,
-        sequence,
-        baseCaseNumber,
+        receptionDate: data.accidentDate || getTodayDate(),
         damagePreventionCost: data.damagePreventionCost,
         victimIncidentAssistance: data.victimIncidentAssistance,
         editCaseId: editCaseId
       });
       
-      // 4. 기존 임시 저장 건 삭제
-      if (editCaseId) {
-        try {
-          console.log("🗑️ 기존 임시 저장 건 삭제:", editCaseId);
-          await apiRequest("DELETE", `/api/cases/${editCaseId}`);
-          console.log("✅ 임시 저장 건 삭제 완료");
-        } catch (error) {
-          console.error("❌ 임시 저장 건 삭제 실패:", error);
-          // 삭제 실패해도 계속 진행
-        }
-      }
+      // 백엔드가 자동으로 다중 케이스 생성 및 접수번호 생성 처리
+      // editCaseId를 포함하여 백엔드에서 draft 삭제 가능하도록
+      const payload = {
+        ...cleanedData,
+        status: "접수완료",
+        receptionDate: data.accidentDate || getTodayDate(),
+        ...(editCaseId ? { id: editCaseId } : {})
+      };
       
-      // 5. Suffix 규칙에 따라 케이스 생성
-      if (data.damagePreventionCost && data.victimIncidentAssistance) {
-        // 둘 다 선택: -0 (손해방지) + -1 (피해세대복구) 2건 생성
-        console.log("🔵 손해방지 + 피해세대복구 → 2건 생성 모드");
-        
-        const case1 = {
-          ...cleanedData,
-          caseNumber: `${baseCaseNumber}-0`,
-          damagePreventionCost: "true",
-          victimIncidentAssistance: "false",
-          status: "접수완료"
-        };
-        
-        const case2 = {
-          ...cleanedData,
-          caseNumber: `${baseCaseNumber}-1`,
-          damagePreventionCost: "false",
-          victimIncidentAssistance: "true",
-          status: "접수완료"
-        };
-        
-        console.log("📌 케이스 1 (손해방지):", case1.caseNumber);
-        console.log("📌 케이스 2 (피해세대복구):", case2.caseNumber);
-        
-        await apiRequest("POST", "/api/cases", case1);
-        console.log("✅ 케이스 1 생성 완료");
-        await apiRequest("POST", "/api/cases", case2);
-        console.log("✅ 케이스 2 생성 완료");
-        
-        return { count: 2, caseNumber1: case1.caseNumber, caseNumber2: case2.caseNumber };
-      } else if (data.damagePreventionCost) {
-        // 손해방지만: -0
-        console.log("🟡 손해방지만 → 1건 생성 (-0)");
-        const singleCase = {
-          ...cleanedData,
-          caseNumber: `${baseCaseNumber}-0`,
-          status: "접수완료"
-        };
-        return await apiRequest("POST", "/api/cases", singleCase);
-      } else {
-        // 피해세대복구만 또는 둘 다 선택 안 됨: -1
-        console.log("🟢 피해세대복구 → 1건 생성 (-1)");
-        const singleCase = {
-          ...cleanedData,
-          caseNumber: `${baseCaseNumber}-1`,
-          status: "접수완료"
-        };
-        return await apiRequest("POST", "/api/cases", singleCase);
-      }
+      const result = await apiRequest("POST", "/api/cases", payload);
+      return result;
     },
     onSuccess: (result) => {
-      const count = (result && typeof result === 'object' && 'count' in result) ? result.count : 1;
-      const case1 = (result && typeof result === 'object' && 'caseNumber1' in result) ? result.caseNumber1 : null;
-      const case2 = (result && typeof result === 'object' && 'caseNumber2' in result) ? result.caseNumber2 : null;
+      // 응답 형식: { success: true, cases: [...] }
+      const cases = (result && typeof result === 'object' && 'cases' in result) 
+        ? (result as any).cases 
+        : [];
+      
+      const count = cases.length;
+      const caseNumbers = cases.map((c: any) => c.caseNumber).join(', ');
       
       toast({ 
-        description: count === 2 && case1 && case2
-          ? `접수가 완료되었습니다. (2건 생성: ${case1}, ${case2})` 
-          : "접수가 완료되었습니다. (상태: 접수완료)",
+        description: count > 1
+          ? `접수가 완료되었습니다. (${count}건 생성: ${caseNumbers})` 
+          : `접수가 완료되었습니다. (${caseNumbers})`,
         duration: 3000,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });

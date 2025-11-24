@@ -272,7 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create case endpoint
+  // Create case endpoint (supports multi-case creation)
   app.post("/api/cases", async (req, res) => {
     // Check authentication
     if (!req.session?.userId) {
@@ -280,20 +280,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Validate request body with Zod (without createdBy)
+      // Validate request body with Zod
       const validatedData = insertCaseRequestSchema.parse(req.body);
       
-      // Use provided case number or generate temporary one for drafts
+      // Determine case types based on processingTypes (stored as JSON string)
+      const processingTypesStr = validatedData.processingTypes || "[]";
+      const processingTypes = typeof processingTypesStr === 'string' 
+        ? JSON.parse(processingTypesStr) 
+        : processingTypesStr;
+      const hasDamagePrevention = Array.isArray(processingTypes) && processingTypes.includes("손해방지");
+      const hasVictimRecovery = Array.isArray(processingTypes) && processingTypes.includes("피해세대복구");
+      
+      // Generate caseGroupId (use insuranceAccidentNo or generate unique ID)
+      const caseGroupId = validatedData.insuranceAccidentNo || `GROUP-${Date.now()}`;
+      
+      // Handle draft cases (배당대기 status)
+      if (validatedData.status === "배당대기") {
+        // Delete existing draft if resuming (only delete if it's still a draft)
+        if (validatedData.id) {
+          const existingCase = await storage.getCaseById(validatedData.id);
+          if (existingCase && existingCase.status === "배당대기") {
+            await storage.deleteCase(validatedData.id);
+          }
+        }
+        
+        // Create draft based on processing types
+        const createdCases: any[] = [];
+        
+        if (hasDamagePrevention && !hasVictimRecovery) {
+          // Only damage prevention: create single draft
+          const draftCase = await storage.createCase({
+            ...validatedData,
+            caseNumber: `DRAFT-${Date.now()}`,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          createdCases.push(draftCase);
+        } else if (!hasDamagePrevention && hasVictimRecovery) {
+          // Only victim recovery: create single draft
+          const draftCase = await storage.createCase({
+            ...validatedData,
+            caseNumber: `DRAFT-${Date.now()}`,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          createdCases.push(draftCase);
+        } else if (hasDamagePrevention && hasVictimRecovery) {
+          // Both types - create 2 drafts
+          const timestamp = Date.now();
+          const preventionDraft = await storage.createCase({
+            ...validatedData,
+            caseNumber: `DRAFT-${timestamp}-1`,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          const recoveryDraft = await storage.createCase({
+            ...validatedData,
+            caseNumber: `DRAFT-${timestamp}-2`,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          createdCases.push(preventionDraft, recoveryDraft);
+        } else {
+          // No processing type selected - create single draft
+          const draftCase = await storage.createCase({
+            ...validatedData,
+            caseNumber: `DRAFT-${Date.now()}`,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          createdCases.push(draftCase);
+        }
+        
+        return res.status(201).json({ success: true, cases: createdCases });
+      }
+      
+      // Handle case completion (접수완료 status)
+      if (validatedData.status === "접수완료") {
+        // Delete existing draft if resuming (only delete if it's still a draft)
+        if (validatedData.id) {
+          const existingCase = await storage.getCaseById(validatedData.id);
+          if (existingCase && existingCase.status === "배당대기") {
+            await storage.deleteCase(validatedData.id);
+          }
+        }
+        
+        // Generate case number based on reception date
+        const receptionDate = validatedData.receptionDate;
+        if (!receptionDate) {
+          return res.status(400).json({ error: "접수일이 필요합니다" });
+        }
+        
+        // Parse date (format: YYYY-MM-DD or KST timestamp)
+        const fullDate = receptionDate.split('T')[0]; // "2025-11-24"
+        
+        // ⚠️ CRITICAL: Fetch sequence ONCE with full date (YYYY-MM-DD format)
+        const nextSeq = await storage.getNextCaseSequence(fullDate);
+        const seqStr = String(nextSeq).padStart(3, '0');
+        
+        // Convert to yyMMdd for case number
+        const dateStr = fullDate.replace(/-/g, '').substring(2); // "251124"
+        const baseCaseNumber = `${dateStr}${seqStr}`; // e.g., "251124001"
+        
+        const createdCases: any[] = [];
+        
+        if (hasDamagePrevention && !hasVictimRecovery) {
+          // Only damage prevention: yyMMddxxx-0
+          const newCase = await storage.createCase({
+            ...validatedData,
+            caseNumber: `${baseCaseNumber}-0`,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          createdCases.push(newCase);
+        } else if (!hasDamagePrevention && hasVictimRecovery) {
+          // Only victim recovery: yyMMddxxx-1
+          const newCase = await storage.createCase({
+            ...validatedData,
+            caseNumber: `${baseCaseNumber}-1`,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          createdCases.push(newCase);
+        } else if (hasDamagePrevention && hasVictimRecovery) {
+          // Both types: yyMMddxxx-0 (prevention) + yyMMddxxx-1 (recovery)
+          // ⚠️ Same base number for both cases!
+          const preventionCase = await storage.createCase({
+            ...validatedData,
+            caseNumber: `${baseCaseNumber}-0`,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          const recoveryCase = await storage.createCase({
+            ...validatedData,
+            caseNumber: `${baseCaseNumber}-1`,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          createdCases.push(preventionCase, recoveryCase);
+        } else {
+          // No processing type - create single case with -1 suffix
+          const newCase = await storage.createCase({
+            ...validatedData,
+            caseNumber: `${baseCaseNumber}-1`,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          createdCases.push(newCase);
+        }
+        
+        return res.status(201).json({ success: true, cases: createdCases });
+      }
+      
+      // Fallback: single case creation for other statuses
       const caseNumber = validatedData.caseNumber || `DRAFT-${Date.now()}`;
-
-      // Create new case with createdBy from session
       const newCase = await storage.createCase({
         ...validatedData,
         caseNumber,
+        caseGroupId,
         createdBy: req.session.userId,
       });
 
-      res.status(201).json({ success: true, case: newCase });
+      res.status(201).json({ success: true, cases: [newCase] });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
