@@ -947,28 +947,6 @@ export default function FieldReport() {
                       color: "rgba(12, 12, 12, 0.6)",
                     }}
                   >
-                    현장 이동 거리
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "#0C0C0C",
-                    }}
-                  >
-                    {caseData.travelDistance ? `${caseData.travelDistance}km` : "-"}
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <span
-                    className="w-32"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.6)",
-                    }}
-                  >
                     출동 담당자
                   </span>
                   <span
