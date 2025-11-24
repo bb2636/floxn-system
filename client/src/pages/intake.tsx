@@ -1097,11 +1097,11 @@ export default function Intake() {
                               fontWeight: 600,
                               lineHeight: '128%',
                               letterSpacing: '-0.02em',
-                              color: '#0C0C0C',
+                              color: '#686A6E',
                             }}
                             data-testid="text-case-number"
                           >
-                            {caseNumber}
+                            접수 후 자동생성
                           </span>
                         </div>
                       </div>

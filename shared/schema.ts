@@ -80,7 +80,7 @@ export type CreateAccountInput = z.infer<typeof createAccountSchema>;
 
 export const cases = pgTable("cases", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  caseNumber: text("case_number").notNull().unique(),
+  caseNumber: text("case_number").unique(),
   status: text("status").notNull().default("배당대기"),
   recoveryType: text("recovery_type"), // 복구 타입: "직접복구" | "선견적요청" | null
   
