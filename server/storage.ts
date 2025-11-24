@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts, type Material, type InsertMaterial, materials, type UserFavorite, type InsertUserFavorite, userFavorites, type Notice, type InsertNotice, notices } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type SharedDrawing, type InsertSharedDrawing, sharedDrawings, type FieldSurveyData, type InsertFieldSurveyData, fieldSurveyData, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts, type Material, type InsertMaterial, materials, type UserFavorite, type InsertUserFavorite, userFavorites, type Notice, type InsertNotice, notices } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -91,11 +91,21 @@ export interface IStorage {
   getAllInquiries(): Promise<Inquiry[]>;
   getInquiriesByUserId(userId: string): Promise<Inquiry[]>;
   updateInquiry(id: string, data: Partial<UpdateInquiry>): Promise<Inquiry | null>;
-  // Drawing methods
+  // Field Survey Data methods (shared by case group)
+  getFieldSurveyData(caseGroupId: string): Promise<FieldSurveyData | null>;
+  saveFieldSurveyData(data: InsertFieldSurveyData): Promise<FieldSurveyData>;
+  updateFieldSurveyData(caseGroupId: string, data: Partial<InsertFieldSurveyData>): Promise<FieldSurveyData | null>;
+  // Shared Drawing methods (shared by case group)
+  getSharedDrawing(caseGroupId: string): Promise<SharedDrawing | null>;
+  saveSharedDrawing(data: InsertSharedDrawing): Promise<SharedDrawing>;
+  updateSharedDrawing(caseGroupId: string, data: Partial<InsertSharedDrawing>): Promise<SharedDrawing | null>;
+  // Individual Drawing methods (case-specific leak markers)
   saveDrawing(data: InsertDrawing): Promise<Drawing>;
   getDrawing(id: string): Promise<Drawing | null>;
   getDrawingByCaseId(caseId: string): Promise<Drawing | null>;
   updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null>;
+  // Case group methods
+  getCasesByGroupId(caseGroupId: string): Promise<Case[]>;
   // Case helper for drawing persistence
   getOrCreateActiveCase(userId: string): Promise<Case>;
   // Document methods

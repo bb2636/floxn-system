@@ -81,6 +81,7 @@ export type CreateAccountInput = z.infer<typeof createAccountSchema>;
 export const cases = pgTable("cases", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   caseNumber: text("case_number").unique(),
+  caseGroupId: text("case_group_id"), // 케이스 그룹 식별자 (동일 보험사고번호 내 케이스들)
   status: text("status").notNull().default("배당대기"),
   recoveryType: text("recovery_type"), // 복구 타입: "직접복구" | "선견적요청" | null
   
@@ -129,18 +130,7 @@ export const cases = pgTable("cases", {
   victimAddress: text("victim_address"),
   additionalVictims: text("additional_victims"), // JSON string of additional victims array
   
-  // 현장조사 정보
-  visitDate: text("visit_date"), // 방문 일시 (날짜)
-  visitTime: text("visit_time"), // 방문 일시 (시간)
-  accompaniedPerson: text("accompanied_person"), // 출동담당자
-  travelDistance: text("travel_distance"), // 현장 이동 거리
-  dispatchLocation: text("dispatch_location"), // 출동 업장지
-  accidentTime: text("accident_time"), // 사고 발생 시각
-  accidentCategory: text("accident_category"), // 사고 원인 카테고리 (배관, 교체, 방수, 기타)
-  processingTypes: text("processing_types"), // 처리 유형 (JSON array)
-  processingTypeOther: text("processing_type_other"), // 기타 처리 유형
-  recoveryMethodType: text("recovery_method_type"), // 복구 방식 (부분수리, 전체수리)
-  fieldSurveyStatus: text("field_survey_status").default("draft"), // 현장조사 상태 (draft/submitted)
+  // 현장조사 정보 - 별도 테이블로 분리됨 (fieldSurveyData 참조)
   
   // 기타 (기존 필드)
   clientPhone: text("client_phone"),
@@ -379,10 +369,42 @@ export type UpdateInquiry = z.infer<typeof updateInquirySchema>;
 export type RespondInquiry = z.infer<typeof respondInquirySchema>;
 export type Inquiry = typeof inquiries.$inferSelect;
 
-// 도면 저장 테이블
-export const drawings = pgTable("drawings", {
+// 현장조사 데이터 공유 테이블 (같은 보험사고번호의 모든 케이스가 공유)
+export const fieldSurveyData = pgTable("field_survey_data", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  caseId: varchar("case_id").notNull(), // required: drawing must be linked to case
+  caseGroupId: text("case_group_id").notNull().unique(), // 케이스 그룹 식별자 (보험사고번호 기반)
+  
+  // 현장조사 정보
+  visitDate: text("visit_date"), // 방문 일시 (날짜)
+  visitTime: text("visit_time"), // 방문 일시 (시간)
+  accompaniedPerson: text("accompanied_person"), // 출동담당자
+  travelDistance: text("travel_distance"), // 현장 이동 거리
+  dispatchLocation: text("dispatch_location"), // 출동 업장지
+  accidentTime: text("accident_time"), // 사고 발생 시각
+  accidentCategory: text("accident_category"), // 사고 원인 카테고리 (배관, 교체, 방수, 기타)
+  processingTypes: text("processing_types"), // 처리 유형 (JSON array)
+  processingTypeOther: text("processing_type_other"), // 기타 처리 유형
+  recoveryMethodType: text("recovery_method_type"), // 복구 방식 (부분수리, 전체수리)
+  fieldSurveyStatus: text("field_survey_status").default("draft"), // 현장조사 상태 (draft/submitted)
+  
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertFieldSurveyDataSchema = createInsertSchema(fieldSurveyData).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertFieldSurveyData = z.infer<typeof insertFieldSurveyDataSchema>;
+export type FieldSurveyData = typeof fieldSurveyData.$inferSelect;
+
+// 공유 도면 테이블 (같은 보험사고번호의 모든 케이스가 공유)
+export const sharedDrawings = pgTable("shared_drawings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseGroupId: text("case_group_id").notNull().unique(), // 케이스 그룹 식별자
   uploadedImages: json("uploaded_images").$type<{
     id: string;
     src: string;
@@ -409,6 +431,24 @@ export const drawings = pgTable("drawings", {
     height: number;
     locked: boolean;
   }[]>().notNull().default(sql`'[]'`),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSharedDrawingSchema = createInsertSchema(sharedDrawings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertSharedDrawing = z.infer<typeof insertSharedDrawingSchema>;
+export type SharedDrawing = typeof sharedDrawings.$inferSelect;
+
+// 개별 도면 테이블 (케이스별 피해지점만 저장)
+export const drawings = pgTable("drawings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseId: varchar("case_id").notNull().unique(), // 케이스당 하나의 도면만 존재
   leakMarkers: json("leak_markers").$type<{
     id: string;
     x: number;
