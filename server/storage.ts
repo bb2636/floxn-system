@@ -1859,6 +1859,37 @@ export class MemStorage implements IStorage {
   async deleteNotice(id: string): Promise<void> {
     throw new Error("Notice methods not implemented in MemStorage");
   }
+
+  // Field Survey Data methods (stub)
+  async getFieldSurveyData(caseGroupId: string): Promise<FieldSurveyData | null> {
+    throw new Error("Field survey data methods not implemented in MemStorage");
+  }
+
+  async saveFieldSurveyData(data: InsertFieldSurveyData): Promise<FieldSurveyData> {
+    throw new Error("Field survey data methods not implemented in MemStorage");
+  }
+
+  async updateFieldSurveyData(caseGroupId: string, data: Partial<InsertFieldSurveyData>): Promise<FieldSurveyData | null> {
+    throw new Error("Field survey data methods not implemented in MemStorage");
+  }
+
+  // Shared Drawing methods (stub)
+  async getSharedDrawing(caseGroupId: string): Promise<SharedDrawing | null> {
+    throw new Error("Shared drawing methods not implemented in MemStorage");
+  }
+
+  async saveSharedDrawing(data: InsertSharedDrawing): Promise<SharedDrawing> {
+    throw new Error("Shared drawing methods not implemented in MemStorage");
+  }
+
+  async updateSharedDrawing(caseGroupId: string, data: Partial<InsertSharedDrawing>): Promise<SharedDrawing | null> {
+    throw new Error("Shared drawing methods not implemented in MemStorage");
+  }
+
+  // Case group methods (stub)
+  async getCasesByGroupId(caseGroupId: string): Promise<Case[]> {
+    throw new Error("Case group methods not implemented in MemStorage");
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -3483,6 +3514,76 @@ export class DbStorage implements IStorage {
 
   async deleteNotice(id: string): Promise<void> {
     await db.delete(notices).where(eq(notices.id, id));
+  }
+
+  // Field Survey Data methods
+  async getFieldSurveyData(caseGroupId: string): Promise<FieldSurveyData | null> {
+    const [result] = await db
+      .select()
+      .from(fieldSurveyData)
+      .where(eq(fieldSurveyData.caseGroupId, caseGroupId))
+      .limit(1);
+    return result || null;
+  }
+
+  async saveFieldSurveyData(data: InsertFieldSurveyData): Promise<FieldSurveyData> {
+    const [created] = await db
+      .insert(fieldSurveyData)
+      .values(data)
+      .returning();
+    return created;
+  }
+
+  async updateFieldSurveyData(caseGroupId: string, data: Partial<InsertFieldSurveyData>): Promise<FieldSurveyData | null> {
+    const [updated] = await db
+      .update(fieldSurveyData)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(fieldSurveyData.caseGroupId, caseGroupId))
+      .returning();
+    return updated || null;
+  }
+
+  // Shared Drawing methods
+  async getSharedDrawing(caseGroupId: string): Promise<SharedDrawing | null> {
+    const [result] = await db
+      .select()
+      .from(sharedDrawings)
+      .where(eq(sharedDrawings.caseGroupId, caseGroupId))
+      .limit(1);
+    return result || null;
+  }
+
+  async saveSharedDrawing(data: InsertSharedDrawing): Promise<SharedDrawing> {
+    const [created] = await db
+      .insert(sharedDrawings)
+      .values(data)
+      .returning();
+    return created;
+  }
+
+  async updateSharedDrawing(caseGroupId: string, data: Partial<InsertSharedDrawing>): Promise<SharedDrawing | null> {
+    const [updated] = await db
+      .update(sharedDrawings)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(sharedDrawings.caseGroupId, caseGroupId))
+      .returning();
+    return updated || null;
+  }
+
+  // Case group methods
+  async getCasesByGroupId(caseGroupId: string): Promise<Case[]> {
+    const result = await db
+      .select()
+      .from(cases)
+      .where(eq(cases.caseGroupId, caseGroupId))
+      .orderBy(asc(cases.caseNumber));
+    return result;
   }
 }
 

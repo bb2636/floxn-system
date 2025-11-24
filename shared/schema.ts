@@ -130,7 +130,18 @@ export const cases = pgTable("cases", {
   victimAddress: text("victim_address"),
   additionalVictims: text("additional_victims"), // JSON string of additional victims array
   
-  // 현장조사 정보 - 별도 테이블로 분리됨 (fieldSurveyData 참조)
+  // 현장조사 정보 (향후 fieldSurveyData 테이블로 이동 예정, 현재는 호환성 유지)
+  visitDate: text("visit_date"), // 방문 일시 (날짜)
+  visitTime: text("visit_time"), // 방문 일시 (시간)
+  accompaniedPerson: text("accompanied_person"), // 출동담당자
+  travelDistance: text("travel_distance"), // 현장 이동 거리
+  dispatchLocation: text("dispatch_location"), // 출동 업장지
+  accidentTime: text("accident_time"), // 사고 발생 시각
+  accidentCategory: text("accident_category"), // 사고 원인 카테고리 (배관, 교체, 방수, 기타)
+  processingTypes: text("processing_types"), // 처리 유형 (JSON array)
+  processingTypeOther: text("processing_type_other"), // 기타 처리 유형
+  recoveryMethodType: text("recovery_method_type"), // 복구 방식 (부분수리, 전체수리)
+  fieldSurveyStatus: text("field_survey_status").default("draft"), // 현장조사 상태 (draft/submitted)
   
   // 기타 (기존 필드)
   clientPhone: text("client_phone"),
@@ -445,10 +456,36 @@ export const insertSharedDrawingSchema = createInsertSchema(sharedDrawings).omit
 export type InsertSharedDrawing = z.infer<typeof insertSharedDrawingSchema>;
 export type SharedDrawing = typeof sharedDrawings.$inferSelect;
 
-// 개별 도면 테이블 (케이스별 피해지점만 저장)
+// 개별 도면 테이블 (케이스별 독립 수정 가능)
 export const drawings = pgTable("drawings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   caseId: varchar("case_id").notNull().unique(), // 케이스당 하나의 도면만 존재
+  uploadedImages: json("uploaded_images").$type<{
+    id: string;
+    src: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    locked: boolean;
+  }[]>().notNull().default(sql`'[]'`),
+  rectangles: json("rectangles").$type<{
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    text: string;
+    locked: boolean;
+  }[]>().notNull().default(sql`'[]'`),
+  accidentAreas: json("accident_areas").$type<{
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    locked: boolean;
+  }[]>().notNull().default(sql`'[]'`),
   leakMarkers: json("leak_markers").$type<{
     id: string;
     x: number;
