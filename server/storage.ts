@@ -2676,6 +2676,15 @@ export class DbStorage implements IStorage {
         dateUpdates.receptionDate = currentDate;
         dateUpdates.assignmentDate = currentDate;
         break;
+      case "현장방문":
+        // 현장방문일 자동 기록
+        dateUpdates.siteVisitDate = currentDate;
+        break;
+      case "현장정보입력":
+      case "현장정보제출":
+        // 현장자료 제출일 자동 기록
+        dateUpdates.siteInvestigationSubmitDate = currentDate;
+        break;
       case "1차승인":
         // 1차 승인일(내부) 자동 기록
         dateUpdates.firstApprovalDate = currentDate;
@@ -2683,6 +2692,11 @@ export class DbStorage implements IStorage {
       case "복구요청(2차승인)":
         // 2차 승인일(복구 요청일) 자동 기록
         dateUpdates.secondApprovalDate = currentDate;
+        break;
+      case "(직접복구인 경우) 청구자료제출":
+      case "(선견적요청인 경우) 출동비 청구":
+        // 복구완료일 자동 기록
+        dateUpdates.constructionCompletionDate = currentDate;
         break;
       case "청구":
         // 청구일 자동 기록
