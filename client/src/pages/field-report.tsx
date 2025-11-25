@@ -1792,7 +1792,7 @@ export default function FieldReport() {
 
         {/* 견적서 탭 */}
         <TabsContent value="견적서">
-          <div>
+          <div className="min-w-0">
             {estimate.estimate && estimate.rows && estimate.rows.length > 0 ? (
               <>
                 {/* 헤더 */}
@@ -1864,7 +1864,7 @@ export default function FieldReport() {
                 </div>
 
                 {/* 복구면적 산출표 */}
-                <Card className="mb-6">
+                <Card className="mb-6 min-w-0">
                   <CardHeader>
                     <CardTitle
                       style={{
@@ -1881,6 +1881,7 @@ export default function FieldReport() {
                     <div className="overflow-x-auto">
                       <table
                         style={{
+                          minWidth: "1000px",
                           width: "100%",
                           borderCollapse: "collapse",
                           fontFamily: "Pretendard",
@@ -1933,7 +1934,7 @@ export default function FieldReport() {
                 </Card>
 
                 {/* 노무비 */}
-                <Card className="mb-6">
+                <Card className="mb-6 min-w-0">
                   <CardHeader>
                     <CardTitle
                       style={{
@@ -2003,7 +2004,7 @@ export default function FieldReport() {
                 </Card>
 
                 {/* 자재비 */}
-                <Card className="mb-6">
+                <Card className="mb-6 min-w-0">
                   <CardHeader>
                     <CardTitle
                       style={{
