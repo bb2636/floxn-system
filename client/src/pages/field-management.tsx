@@ -1015,13 +1015,13 @@ export default function FieldManagement() {
                   </Label>
                   <Input
                     id="dispatch-manager"
-                    value={selectedCaseData?.accompaniedPerson || ""}
+                    value={selectedCaseData?.assignedPartnerManager || ""}
                     readOnly
                     className={intakeFieldClass}
                     style={{
                       ...intakeFieldStyle,
                       background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.4)",
+                      color: "rgba(12, 12, 12, 0.6)",
                     }}
                     placeholder="출동 담당자 성명"
                     data-testid="input-dispatch-manager"
