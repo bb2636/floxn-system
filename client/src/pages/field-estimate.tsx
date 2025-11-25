@@ -885,6 +885,8 @@ export default function FieldEstimate() {
       queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId, "latest"] });
       // 케이스 목록 갱신 (견적금액이 업데이트되었으므로)
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      // 보고서 데이터 갱신 (견적서 탭에서 실시간 반영)
+      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
     },
     onError: (error: any) => {
       toast({
