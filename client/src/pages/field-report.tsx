@@ -238,6 +238,11 @@ export default function FieldReport() {
   // 이메일 전송 다이얼로그 상태
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
+  
+  // 테이블 체크박스 상태 관리
+  const [areaChecked, setAreaChecked] = useState<Record<number, boolean>>({});
+  const [laborChecked, setLaborChecked] = useState<Record<number, boolean>>({});
+  const [materialChecked, setMaterialChecked] = useState<Record<number, boolean>>({});
 
   // reportData가 변경될 때 additionalNotes 상태 업데이트
   useEffect(() => {
@@ -321,6 +326,37 @@ export default function FieldReport() {
       vatIncluded,
     };
   }, [parsedLaborCosts, parsedMaterialCosts, vatIncluded]);
+
+  // 데이터 로드 시 체크박스 초기화 (모두 체크된 상태로)
+  useEffect(() => {
+    if (reportData?.estimate?.rows) {
+      const initial: Record<number, boolean> = {};
+      reportData.estimate.rows.forEach((_, index) => {
+        initial[index] = true;
+      });
+      setAreaChecked(initial);
+    }
+  }, [reportData?.estimate?.rows]);
+
+  useEffect(() => {
+    if (parsedLaborCosts.length > 0) {
+      const initial: Record<number, boolean> = {};
+      parsedLaborCosts.forEach((_, index) => {
+        initial[index] = true;
+      });
+      setLaborChecked(initial);
+    }
+  }, [parsedLaborCosts]);
+
+  useEffect(() => {
+    if (parsedMaterialCosts.length > 0) {
+      const initial: Record<number, boolean> = {};
+      parsedMaterialCosts.forEach((_, index) => {
+        initial[index] = true;
+      });
+      setMaterialChecked(initial);
+    }
+  }, [parsedMaterialCosts]);
 
   // 기타사항 저장 mutation
   const saveNotesMutation = useMutation({
@@ -1990,7 +2026,12 @@ export default function FieldReport() {
                           {estimate.rows.map((row, index) => (
                             <tr key={row.id} style={{ borderBottom: index === estimate.rows.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
                               <td style={{ padding: "8px", textAlign: "center" }}>
-                                <input type="checkbox" checked disabled style={{ cursor: "default" }} />
+                                <input
+                                  type="checkbox"
+                                  checked={areaChecked[index] ?? true}
+                                  onChange={(e) => setAreaChecked(prev => ({ ...prev, [index]: e.target.checked }))}
+                                  style={{ cursor: "pointer", accentColor: "#008FED", width: "16px", height: "16px" }}
+                                />
                               </td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.location || '-'}</td>
@@ -2068,7 +2109,12 @@ export default function FieldReport() {
                               return (
                                 <tr key={row.id || index} style={{ borderBottom: index === parsedLaborCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
                                   <td style={{ padding: "8px", textAlign: "center" }}>
-                                    <input type="checkbox" checked disabled style={{ cursor: "default" }} />
+                                    <input
+                                      type="checkbox"
+                                      checked={laborChecked[index] ?? true}
+                                      onChange={(e) => setLaborChecked(prev => ({ ...prev, [index]: e.target.checked }))}
+                                      style={{ cursor: "pointer", accentColor: "#008FED", width: "16px", height: "16px" }}
+                                    />
                                   </td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
@@ -2083,7 +2129,12 @@ export default function FieldReport() {
                                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.damageArea || 0).toLocaleString()}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{(row.amount || 0).toLocaleString()}</td>
                                   <td style={{ padding: "8px", textAlign: "center" }}>
-                                    <input type="checkbox" checked={row.includeInEstimate === false} disabled style={{ cursor: "default" }} />
+                                    <input
+                                      type="checkbox"
+                                      checked={row.includeInEstimate === false}
+                                      readOnly
+                                      style={{ cursor: "default", accentColor: "#008FED", width: "16px", height: "16px" }}
+                                    />
                                   </td>
                                 </tr>
                               );
@@ -2150,7 +2201,12 @@ export default function FieldReport() {
                             {parsedMaterialCosts.map((row, index) => (
                               <tr key={row.id || index} style={{ borderBottom: index === parsedMaterialCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
                                 <td style={{ padding: "8px", textAlign: "center" }}>
-                                  <input type="checkbox" checked disabled style={{ cursor: "default" }} />
+                                  <input
+                                    type="checkbox"
+                                    checked={materialChecked[index] ?? true}
+                                    onChange={(e) => setMaterialChecked(prev => ({ ...prev, [index]: e.target.checked }))}
+                                    style={{ cursor: "pointer", accentColor: "#008FED", width: "16px", height: "16px" }}
+                                  />
                                 </td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.공종 || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.자재 || '-'}</td>
