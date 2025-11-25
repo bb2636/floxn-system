@@ -1942,7 +1942,7 @@ export default function FieldReport() {
                     <div className="overflow-x-auto">
                       <table
                         style={{
-                          minWidth: "1000px",
+                          minWidth: "1100px",
                           width: "100%",
                           borderCollapse: "collapse",
                           fontFamily: "Pretendard",
@@ -1951,6 +1951,7 @@ export default function FieldReport() {
                       >
                         <thead>
                           <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
+                            <th style={{ width: "40px", padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                             <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>장소</th>
                             <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>위치</th>
                             <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>공사내용</th>
@@ -1959,6 +1960,7 @@ export default function FieldReport() {
                             <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>비고</th>
                           </tr>
                           <tr style={{ background: "rgba(12, 12, 12, 0.02)" }}>
+                            <th style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                             <th colSpan={3} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                             <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>가로(mm)</th>
                             <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>세로(mm)</th>
@@ -1972,6 +1974,9 @@ export default function FieldReport() {
                         <tbody>
                           {estimate.rows.map((row, index) => (
                             <tr key={row.id} style={{ borderBottom: index === estimate.rows.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
+                              <td style={{ padding: "8px", textAlign: "center" }}>
+                                <input type="checkbox" checked disabled style={{ cursor: "default" }} />
+                              </td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.location || '-'}</td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
@@ -2013,7 +2018,7 @@ export default function FieldReport() {
                       <div className="overflow-x-auto">
                         <table
                           style={{
-                            minWidth: "1400px",
+                            minWidth: "1500px",
                             width: "100%",
                             borderCollapse: "collapse",
                             fontFamily: "Pretendard",
@@ -2022,15 +2027,17 @@ export default function FieldReport() {
                         >
                           <thead>
                             <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
+                              <th style={{ width: "40px", padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>공종</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>공사명</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>세부공사</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "120px" }}>세부항목</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>공사명</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>세부공사</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>세부항목</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "70px" }}>단가 기준</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "50px" }}>단위</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "90px" }}>기준가(단위)</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>기준가(원/단위)</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "50px" }}>수량</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>적용면</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>기준가(㎡/길이)</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "70px" }}>적용면</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "90px" }}>기준가(m²)</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>피해면적</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>금액(원)</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "70px" }}>경비여부</th>
@@ -2045,10 +2052,14 @@ export default function FieldReport() {
                                                      rates?.molding ? '길이' : '-';
                               return (
                                 <tr key={row.id || index} style={{ borderBottom: index === parsedLaborCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
+                                  <td style={{ padding: "8px", textAlign: "center" }}>
+                                    <input type="checkbox" checked disabled style={{ cursor: "default" }} />
+                                  </td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailWork || '-'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailItem || '-'}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.priceStandard || '-'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.unit || '-'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.standardPrice || 0).toLocaleString()}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.quantity || 0}</td>
@@ -2056,7 +2067,9 @@ export default function FieldReport() {
                                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.pricePerSqm || 0).toLocaleString()}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.damageArea || 0).toLocaleString()}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{(row.amount || 0).toLocaleString()}</td>
-                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.includeInEstimate ? 'O' : 'X'}</td>
+                                  <td style={{ padding: "8px", textAlign: "center" }}>
+                                    <input type="checkbox" checked={row.includeInEstimate === true} disabled style={{ cursor: "default" }} />
+                                  </td>
                                 </tr>
                               );
                             })}
@@ -2098,7 +2111,7 @@ export default function FieldReport() {
                       <div className="overflow-x-auto">
                         <table
                           style={{
-                            minWidth: "900px",
+                            minWidth: "950px",
                             width: "100%",
                             borderCollapse: "collapse",
                             fontFamily: "Pretendard",
@@ -2107,19 +2120,23 @@ export default function FieldReport() {
                         >
                           <thead>
                             <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
+                              <th style={{ width: "40px", padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>공종</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "120px" }}>자재</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "120px" }}>규격</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "120px" }}>자재명</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>규격</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "60px" }}>단위</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>기준단가</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "60px" }}>수량</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>금액</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>비고</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "120px" }}>비고</th>
                             </tr>
                           </thead>
                           <tbody>
                             {parsedMaterialCosts.map((row, index) => (
                               <tr key={row.id || index} style={{ borderBottom: index === parsedMaterialCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
+                                <td style={{ padding: "8px", textAlign: "center" }}>
+                                  <input type="checkbox" checked disabled style={{ cursor: "default" }} />
+                                </td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.공종 || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.자재 || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.규격 || '-'}</td>
@@ -2152,36 +2169,38 @@ export default function FieldReport() {
                 {/* 합계 섹션 */}
                 <Card>
                   <CardContent className="p-6">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>소계</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.subtotal.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>일반관리비 (6%)</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.managementFee.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>이윤 (15%)</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.profit.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>VAT (10%)</span>
-                        <div className="flex items-center gap-2">
-                          <label className="flex items-center gap-1">
-                            <input type="radio" name="vat" checked disabled />
-                            <span style={{ fontFamily: "Pretendard", fontSize: "13px" }}>포함</span>
-                          </label>
-                          <label className="flex items-center gap-1">
-                            <input type="radio" name="vat" disabled />
-                            <span style={{ fontFamily: "Pretendard", fontSize: "13px" }}>별도</span>
-                          </label>
-                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, marginLeft: "8px" }}>{calculateTotals.vat.toLocaleString()}</span>
+                    <div style={{ maxWidth: "400px", marginLeft: "auto" }}>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center py-2">
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>소계</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.subtotal.toLocaleString()}</span>
                         </div>
-                      </div>
-                      <div className="flex justify-between items-center py-3 border-t-2">
-                        <span style={{ fontFamily: "Pretendard", fontSize: "16px", fontWeight: 700, color: "#008FED" }}>총 합계</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 700, color: "#008FED" }}>{calculateTotals.total.toLocaleString()}</span>
+                        <div className="flex justify-between items-center py-2">
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>일반관리비 (6%)</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.managementFee.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2">
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>이윤 (15%)</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.profit.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2">
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>VAT</span>
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-1">
+                              <input type="radio" name="vat" checked disabled style={{ accentColor: "#008FED" }} />
+                              <span style={{ fontFamily: "Pretendard", fontSize: "13px" }}>포함</span>
+                            </label>
+                            <label className="flex items-center gap-1">
+                              <input type="radio" name="vat" disabled />
+                              <span style={{ fontFamily: "Pretendard", fontSize: "13px" }}>별도</span>
+                            </label>
+                            <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.vat.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-between items-center py-3 border-t" style={{ borderTopWidth: "2px" }}>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "16px", fontWeight: 700, color: "#008FED" }}>총 합계</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 700, color: "#008FED" }}>{calculateTotals.total.toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
