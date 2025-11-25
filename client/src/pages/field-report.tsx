@@ -570,46 +570,18 @@ export default function FieldReport() {
           )}
           
           {!isUserLoading && isAdmin && (
-            <>
-              <Button
-                data-testid="button-pdf-download"
-                variant="outline"
-                onClick={() => {
-                  toast({ title: "준비 중", description: "PDF 저장 기능은 준비 중입니다." });
-                }}
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                PDF 저장
-              </Button>
-              <Button
-                data-testid="button-email-send"
-                variant="outline"
-                onClick={() => setShowEmailDialog(true)}
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                이메일 전송
-              </Button>
-              <Button
-                data-testid="button-review"
-                onClick={() => setShowReviewDialog(true)}
-                disabled={caseData.fieldSurveyStatus !== "submitted" || reviewMutation.isPending}
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                {reviewMutation.isPending ? "심사 중..." : "심사"}
-              </Button>
-            </>
+            <Button
+              data-testid="button-review"
+              onClick={() => setShowReviewDialog(true)}
+              disabled={caseData.fieldSurveyStatus !== "submitted" || reviewMutation.isPending}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              {reviewMutation.isPending ? "심사 중..." : "심사"}
+            </Button>
           )}
         </div>
       </div>
