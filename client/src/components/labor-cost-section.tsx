@@ -541,11 +541,11 @@ export function LaborCostSection({
                 {(row.amount ?? 0).toLocaleString()}
               </td>
               
-              {/* 경비 여부 - Checkbox */}
+              {/* 경비 여부 - Checkbox (체크됨 = 경비, 체크안됨 = 경비아님) */}
               <td style={{ padding: "0 12px", textAlign: "center" }}>
                 <Checkbox
-                  checked={row.includeInEstimate}
-                  onCheckedChange={(checked) => updateRow(row.id, 'includeInEstimate', checked)}
+                  checked={!row.includeInEstimate}
+                  onCheckedChange={(checked) => updateRow(row.id, 'includeInEstimate', !checked)}
                   data-testid={`checkbox-includeInEstimate-${index}`}
                 />
               </td>
