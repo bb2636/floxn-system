@@ -77,6 +77,15 @@ interface LaborCostRow {
   standardPrice: number;
   quantity: number;
   amount: number;
+  applicationRates?: {
+    ceiling: boolean;
+    wall: boolean;
+    floor: boolean;
+    molding: boolean;
+  };
+  pricePerSqm?: number;
+  damageArea?: number;
+  includeInEstimate?: boolean;
 }
 
 interface MaterialCostRow {
@@ -1952,7 +1961,7 @@ export default function FieldReport() {
                       <div className="overflow-x-auto">
                         <table
                           style={{
-                            minWidth: "900px",
+                            minWidth: "1400px",
                             width: "100%",
                             borderCollapse: "collapse",
                             fontFamily: "Pretendard",
@@ -1962,28 +1971,43 @@ export default function FieldReport() {
                           <thead>
                             <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>공종</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "120px" }}>공사명</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "120px" }}>세부공사</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "150px" }}>세부항목</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "60px" }}>단위</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>기준가(단위)</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "60px" }}>수량</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>금액</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>공사명</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>세부공사</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "120px" }}>세부항목</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "50px" }}>단위</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "90px" }}>기준가(단위)</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "50px" }}>수량</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>적용면</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>기준가(㎡/길이)</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>피해면적</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>금액(원)</th>
+                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "70px" }}>경비여부</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {parsedLaborCosts.map((row, index) => (
-                              <tr key={row.id || index} style={{ borderBottom: index === parsedLaborCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
-                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailWork || '-'}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailItem || '-'}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.unit || '-'}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.standardPrice || 0).toLocaleString()}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.quantity || 0}</td>
-                                <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{(row.amount || 0).toLocaleString()}</td>
-                              </tr>
-                            ))}
+                            {parsedLaborCosts.map((row, index) => {
+                              const rates = row.applicationRates;
+                              const appliedSurface = rates?.ceiling ? '천장' : 
+                                                     rates?.wall ? '벽체' : 
+                                                     rates?.floor ? '바닥' : 
+                                                     rates?.molding ? '길이' : '-';
+                              return (
+                                <tr key={row.id || index} style={{ borderBottom: index === parsedLaborCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
+                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailWork || '-'}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailItem || '-'}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.unit || '-'}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.standardPrice || 0).toLocaleString()}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.quantity || 0}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{appliedSurface}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.pricePerSqm || 0).toLocaleString()}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.damageArea || 0).toLocaleString()}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{(row.amount || 0).toLocaleString()}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.includeInEstimate ? 'O' : 'X'}</td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
