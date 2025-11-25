@@ -151,7 +151,9 @@ export default function FieldManagement() {
       .sort((a, b) => (a.caseNumber || "").localeCompare(b.caseNumber || ""));
   }, [selectedCaseData, availableCases]);
 
-  const isReadOnly = !isPartner || (selectedCaseData?.status === "검토중");
+  // 협력사 또는 관리자만 입력 가능, 단 검토중 상태에서는 수정 불가
+  const canEdit = isPartner || isAdmin;
+  const isReadOnly = !canEdit || (selectedCaseData?.status === "검토중");
 
   // 각 섹션 완료 상태 체크
   // 현장입력 완료: 필수 필드 입력 완료
@@ -1727,9 +1729,9 @@ export default function FieldManagement() {
             alignItems: "center",
           }}
         >
-          {/* 역할별 버튼 */}
+          {/* 역할별 버튼 - 협력사 또는 관리자일 때 저장 버튼 표시 */}
           <div className="flex gap-3">
-            {isPartner && (
+            {canEdit && (
               <>
                 {/* 임시저장 버튼 */}
                 <Button
