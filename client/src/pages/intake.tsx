@@ -4,6 +4,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { User } from "@shared/schema";
+import { formatCaseNumber } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -343,7 +344,7 @@ export default function Intake() {
     return Array.from(new Set(companies));
   }, [investigators]);
 
-  // 예상 접수번호 계산
+  // 예상 접수번호 계산 (B-style: 손해방지는 접미사 없이, 피해세대복구는 -N 형식)
   const predictedCaseNumber = useMemo(() => {
     if (!predictedPrefix) {
       return "입력 정보를 채우면 표시됩니다";
@@ -355,7 +356,8 @@ export default function Intake() {
     // 둘 다 선택
     if (hasDamagePrevention && hasVictimRecovery) {
       if (predictedSuffix === 0) {
-        return `${predictedPrefix}-0, ${predictedPrefix}-1`;
+        // 손해방지: prefix만, 피해세대복구: prefix-1
+        return `${predictedPrefix}, ${predictedPrefix}-1`;
       } else {
         return `기존 사고에는 손해방지를 추가할 수 없습니다`;
       }
@@ -364,8 +366,8 @@ export default function Intake() {
     // 손해방지만 선택
     if (hasDamagePrevention && !hasVictimRecovery) {
       if (predictedSuffix === 0) {
-        // 새 사고: -0 사용
-        return `${predictedPrefix}-0`;
+        // 새 사고: 손해방지는 prefix만 (접미사 없음)
+        return `${predictedPrefix}`;
       } else {
         // 기존 사고: 손해방지 추가 불가
         return `기존 사고에는 손해방지를 추가할 수 없습니다`;
@@ -654,7 +656,7 @@ export default function Intake() {
         : [];
       
       const count = cases.length;
-      const caseNumbers = cases.map((c: any) => c.caseNumber).join(', ');
+      const caseNumbers = cases.map((c: any) => formatCaseNumber(c.caseNumber)).join(', ');
       
       toast({ 
         description: count > 1
