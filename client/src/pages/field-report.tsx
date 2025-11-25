@@ -25,6 +25,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import type { Drawing, CaseDocument as SchemaDocument } from "@shared/schema";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 interface Case {
   id: string;
@@ -73,6 +75,7 @@ interface LaborCostRow {
   workName: string;
   detailWork: string;
   detailItem?: string;
+  priceStandard?: string;
   unit: string;
   standardPrice: number;
   quantity: number;
@@ -1923,7 +1926,174 @@ export default function FieldReport() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        // TODO: 다운로드 기능 구현
+                        // PDF 다운로드 - 체크된 항목만 포함
+                        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                        const dateStr = estimate.estimate?.createdAt ? new Date(estimate.estimate.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                        
+                        // 한글 폰트 설정 (기본 폰트로 대체)
+                        doc.setFont('helvetica');
+                        
+                        let yPos = 15;
+                        
+                        // 제목
+                        doc.setFontSize(16);
+                        doc.text(`견적서 ${dateStr}`, 14, yPos);
+                        yPos += 10;
+                        
+                        // 1. 복구면적 산출표 (체크된 항목만)
+                        const checkedAreaRows = estimate.rows.filter((_, idx) => areaChecked[idx] !== false);
+                        if (checkedAreaRows.length > 0) {
+                          doc.setFontSize(12);
+                          doc.text(`복구면적 산출표 ${dateStr}`, 14, yPos);
+                          yPos += 5;
+                          
+                          const areaTableData = checkedAreaRows.map(row => [
+                            row.category || '-',
+                            row.location || '-',
+                            row.workName || '-',
+                            row.damageWidth || '0',
+                            row.damageHeight || '0',
+                            row.damageArea ? (row.damageArea / 1_000_000).toFixed(2) : '0',
+                            row.repairWidth || '0',
+                            row.repairHeight || '0',
+                            row.repairArea ? (row.repairArea / 1_000_000).toFixed(2) : '0',
+                            row.note || '-'
+                          ]);
+                          
+                          (doc as any).autoTable({
+                            startY: yPos,
+                            head: [['장소', '위치', '공사내용', '가로(mm)', '세로(mm)', '면적(㎡)', '가로(mm)', '세로(mm)', '면적(㎡)', '비고']],
+                            body: areaTableData,
+                            theme: 'grid',
+                            styles: { fontSize: 8, cellPadding: 2 },
+                            headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+                            margin: { left: 14, right: 14 }
+                          });
+                          
+                          yPos = (doc as any).lastAutoTable.finalY + 10;
+                        }
+                        
+                        // 2. 노무비 (체크된 항목만)
+                        const checkedLaborRows = parsedLaborCosts.filter((_, idx) => laborChecked[idx] !== false);
+                        if (checkedLaborRows.length > 0) {
+                          // 페이지 넘침 체크
+                          if (yPos > 170) {
+                            doc.addPage();
+                            yPos = 15;
+                          }
+                          
+                          doc.setFontSize(12);
+                          doc.text(`노무비 ${dateStr}`, 14, yPos);
+                          yPos += 5;
+                          
+                          const laborTableData = checkedLaborRows.map(row => {
+                            const rates = row.applicationRates;
+                            const appliedSurface = rates?.ceiling ? '천장' : rates?.wall ? '벽체' : rates?.floor ? '바닥' : rates?.molding ? '길이' : '-';
+                            return [
+                              row.category || '-',
+                              row.workName || '-',
+                              row.detailWork || '-',
+                              row.detailItem || '-',
+                              row.priceStandard || '-',
+                              row.unit || '-',
+                              (row.standardPrice || 0).toLocaleString(),
+                              row.quantity || 0,
+                              appliedSurface,
+                              (row.pricePerSqm || 0).toLocaleString(),
+                              (row.damageArea || 0).toLocaleString(),
+                              (row.amount || 0).toLocaleString(),
+                              row.includeInEstimate === false ? 'O' : '-'
+                            ];
+                          });
+                          
+                          (doc as any).autoTable({
+                            startY: yPos,
+                            head: [['공종', '공사명', '세부공사', '세부항목', '단가기준', '단위', '기준가', '수량', '적용면', '기준가(㎡)', '피해면적', '금액', '경비']],
+                            body: laborTableData,
+                            theme: 'grid',
+                            styles: { fontSize: 7, cellPadding: 1.5 },
+                            headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+                            margin: { left: 14, right: 14 }
+                          });
+                          
+                          yPos = (doc as any).lastAutoTable.finalY + 10;
+                        }
+                        
+                        // 3. 자재비 (체크된 항목만)
+                        const checkedMaterialRows = parsedMaterialCosts.filter((_, idx) => materialChecked[idx] !== false);
+                        if (checkedMaterialRows.length > 0) {
+                          // 페이지 넘침 체크
+                          if (yPos > 170) {
+                            doc.addPage();
+                            yPos = 15;
+                          }
+                          
+                          doc.setFontSize(12);
+                          doc.text(`자재비 ${dateStr}`, 14, yPos);
+                          yPos += 5;
+                          
+                          const materialTableData = checkedMaterialRows.map(row => [
+                            row.공종 || '-',
+                            row.자재 || '-',
+                            row.규격 || '-',
+                            row.단위 || '-',
+                            (row.기준단가 || 0).toLocaleString(),
+                            row.수량 || 0,
+                            (row.금액 || 0).toLocaleString(),
+                            row.비고 || '-'
+                          ]);
+                          
+                          (doc as any).autoTable({
+                            startY: yPos,
+                            head: [['공종', '자재명', '규격', '단위', '기준단가', '수량', '금액', '비고']],
+                            body: materialTableData,
+                            theme: 'grid',
+                            styles: { fontSize: 8, cellPadding: 2 },
+                            headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+                            margin: { left: 14, right: 14 }
+                          });
+                          
+                          yPos = (doc as any).lastAutoTable.finalY + 10;
+                        }
+                        
+                        // 4. 합계 정보
+                        if (yPos > 170) {
+                          doc.addPage();
+                          yPos = 15;
+                        }
+                        
+                        doc.setFontSize(12);
+                        doc.text('합계', 14, yPos);
+                        yPos += 5;
+                        
+                        const summaryData = [
+                          ['소계', calculateTotals.subtotal.toLocaleString() + ' 원'],
+                          ['일반관리비 (6%)', calculateTotals.managementFee.toLocaleString() + ' 원'],
+                          ['이윤 (15%)', calculateTotals.profit.toLocaleString() + ' 원'],
+                          ['VAT (10%)', calculateTotals.vat.toLocaleString() + ' 원'],
+                          ['총계', calculateTotals.total.toLocaleString() + ' 원']
+                        ];
+                        
+                        (doc as any).autoTable({
+                          startY: yPos,
+                          body: summaryData,
+                          theme: 'grid',
+                          styles: { fontSize: 10, cellPadding: 3 },
+                          columnStyles: {
+                            0: { cellWidth: 60, fontStyle: 'bold' },
+                            1: { cellWidth: 80, halign: 'right' }
+                          },
+                          margin: { left: 14, right: 14 }
+                        });
+                        
+                        // 파일 저장
+                        const caseNo = caseData?.caseNumber || 'estimate';
+                        doc.save(`견적서_${caseNo}_${dateStr}.pdf`);
+                        
+                        toast({
+                          title: "PDF 다운로드 완료",
+                          description: "체크된 항목만 포함된 견적서가 다운로드되었습니다.",
+                        });
                       }}
                       className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
                       style={{
