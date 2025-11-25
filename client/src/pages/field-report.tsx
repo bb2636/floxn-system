@@ -255,6 +255,58 @@ export default function FieldReport() {
     return safeParseMaterialCosts(reportData?.estimate?.estimate?.materialCostData);
   }, [reportData?.estimate?.estimate?.materialCostData]);
 
+  // 견적 합계 계산
+  const calculateTotals = useMemo(() => {
+    // 노무비 총합 - 경비 여부에 따라 분리
+    const laborTotalWithExpense = parsedLaborCosts.reduce((sum, row) => {
+      if (row.includeInEstimate) {
+        return sum + (row.amount || 0);
+      }
+      return sum;
+    }, 0);
+
+    const laborTotalWithoutExpense = parsedLaborCosts.reduce((sum, row) => {
+      if (!row.includeInEstimate) {
+        return sum + (row.amount || 0);
+      }
+      return sum;
+    }, 0);
+
+    // 자재비 총합
+    const materialTotal = parsedMaterialCosts.reduce((sum, row) => {
+      return sum + (row.금액 || 0);
+    }, 0);
+
+    // 소계 (전체)
+    const subtotal = laborTotalWithExpense + laborTotalWithoutExpense + materialTotal;
+
+    // 일반관리비와 이윤 계산 대상 (경비 제외)
+    const baseForFees = laborTotalWithoutExpense + materialTotal;
+
+    // 일반관리비 (6%) - 경비 제외 항목에만 적용
+    const managementFee = Math.round(baseForFees * 0.06);
+
+    // 이윤 (15%) - 경비 제외 항목에만 적용
+    const profit = Math.round(baseForFees * 0.15);
+
+    // VAT 기준액 (소계 + 일반관리비 + 이윤)
+    const vatBase = subtotal + managementFee + profit;
+
+    // VAT (10%)
+    const vat = Math.round(vatBase * 0.1);
+
+    // 총 합계 (VAT 포함)
+    const total = vatBase + vat;
+
+    return {
+      subtotal,
+      managementFee,
+      profit,
+      vat,
+      total,
+    };
+  }, [parsedLaborCosts, parsedMaterialCosts]);
+
   // 기타사항 저장 mutation
   const saveNotesMutation = useMutation({
     mutationFn: async (notes: string) => {
@@ -2103,18 +2155,18 @@ export default function FieldReport() {
                     <div className="space-y-3">
                       <div className="flex justify-between items-center py-2 border-b">
                         <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>소계</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>0</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.subtotal.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
                         <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>일반관리비 (6%)</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>0</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.managementFee.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
                         <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>이윤 (15%)</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>0</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.profit.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center py-2 border-b">
-                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>VAT</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>VAT (10%)</span>
                         <div className="flex items-center gap-2">
                           <label className="flex items-center gap-1">
                             <input type="radio" name="vat" checked disabled />
@@ -2124,12 +2176,12 @@ export default function FieldReport() {
                             <input type="radio" name="vat" disabled />
                             <span style={{ fontFamily: "Pretendard", fontSize: "13px" }}>별도</span>
                           </label>
-                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, marginLeft: "8px" }}>0</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, marginLeft: "8px" }}>{calculateTotals.vat.toLocaleString()}</span>
                         </div>
                       </div>
                       <div className="flex justify-between items-center py-3 border-t-2">
                         <span style={{ fontFamily: "Pretendard", fontSize: "16px", fontWeight: 700, color: "#008FED" }}>총 합계</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 700, color: "#008FED" }}>0</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 700, color: "#008FED" }}>{calculateTotals.total.toLocaleString()}</span>
                       </div>
                     </div>
                   </CardContent>
