@@ -1669,7 +1669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
-      const { rows, laborCostData, materialCostData, totalAmount } = req.body;
+      const { rows, laborCostData, materialCostData, totalAmount, vatIncluded } = req.body;
 
       if (!rows || !Array.isArray(rows)) {
         return res.status(400).json({ error: "견적 행 데이터가 필요합니다" });
@@ -1737,7 +1737,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.userId, 
         dbRows,
         laborCostData || null,
-        materialCostData || null
+        materialCostData || null,
+        vatIncluded ?? true // VAT 포함/별도 옵션
       );
       
       // 견적 총액을 케이스에 업데이트

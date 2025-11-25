@@ -467,8 +467,14 @@ export default function FieldEstimate() {
         setLaborCostRows(loadedLaborRows);
         
         // 자재비 데이터 불러오기 (노무비 ID 매핑 후)
-        if (latestEstimate.estimate?.materialCostData && Array.isArray(latestEstimate.estimate.materialCostData)) {
-          const loadedMaterialRows = latestEstimate.estimate.materialCostData.map((row: any) => {
+        // materialCostData가 객체(새 형식: {rows, vatIncluded}) 또는 배열(기존 형식)일 수 있음
+        const materialData = latestEstimate.estimate?.materialCostData;
+        const materialRowsData = Array.isArray(materialData) 
+          ? materialData 
+          : (materialData?.rows || []);
+        
+        if (materialRowsData.length > 0) {
+          const loadedMaterialRows = materialRowsData.map((row: any) => {
             const { sourceLaborRowIndex, ...rest } = row; // sourceLaborRowIndex 제거
             
             // sourceLaborRowIndex를 사용하여 새로운 laborRow의 ID로 매핑
@@ -485,17 +491,34 @@ export default function FieldEstimate() {
           });
           setMaterialRows(loadedMaterialRows);
         }
-      } else if (latestEstimate.estimate?.materialCostData && Array.isArray(latestEstimate.estimate.materialCostData)) {
-        // 노무비 데이터는 없지만 자재비 데이터만 있는 경우 (일반적으로 발생하지 않음)
-        const loadedMaterialRows = latestEstimate.estimate.materialCostData.map((row: any) => {
-          const { sourceLaborRowIndex, ...rest } = row;
-          return {
-            id: `material-${Date.now()}-${Math.random()}`,
-            ...rest,
-            sourceLaborRowId: undefined,
-          };
-        });
-        setMaterialRows(loadedMaterialRows);
+
+        // VAT 포함/별도 옵션 복원 (새 형식에서는 materialCostData.vatIncluded에 저장)
+        if (materialData?.vatIncluded !== undefined) {
+          setVatIncluded(materialData.vatIncluded);
+        }
+      } else if (latestEstimate.estimate?.materialCostData) {
+        // 노무비 데이터는 없지만 자재비 데이터만 있는 경우
+        const materialData = latestEstimate.estimate.materialCostData;
+        const materialRowsData = Array.isArray(materialData) 
+          ? materialData 
+          : (materialData?.rows || []);
+        
+        if (materialRowsData.length > 0) {
+          const loadedMaterialRows = materialRowsData.map((row: any) => {
+            const { sourceLaborRowIndex, ...rest } = row;
+            return {
+              id: `material-${Date.now()}-${Math.random()}`,
+              ...rest,
+              sourceLaborRowId: undefined,
+            };
+          });
+          setMaterialRows(loadedMaterialRows);
+        }
+
+        // VAT 포함/별도 옵션 복원
+        if (materialData?.vatIncluded !== undefined) {
+          setVatIncluded(materialData.vatIncluded);
+        }
       }
 
       // Hydration 완료 표시 (노무비-자재비 동기화 활성화)
@@ -847,6 +870,7 @@ export default function FieldEstimate() {
         laborCostData,
         materialCostData,
         totalAmount: estimateSummary.total, // 견적 총액 전송
+        vatIncluded, // VAT 포함/별도 옵션
       });
     },
     onSuccess: () => {
