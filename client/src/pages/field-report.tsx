@@ -26,7 +26,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import type { Drawing, CaseDocument as SchemaDocument } from "@shared/schema";
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 interface Case {
   id: string;
@@ -1960,7 +1960,7 @@ export default function FieldReport() {
                             row.note || '-'
                           ]);
                           
-                          (doc as any).autoTable({
+                          autoTable(doc, {
                             startY: yPos,
                             head: [['장소', '위치', '공사내용', '가로(mm)', '세로(mm)', '면적(㎡)', '가로(mm)', '세로(mm)', '면적(㎡)', '비고']],
                             body: areaTableData,
@@ -2006,7 +2006,7 @@ export default function FieldReport() {
                             ];
                           });
                           
-                          (doc as any).autoTable({
+                          autoTable(doc, {
                             startY: yPos,
                             head: [['공종', '공사명', '세부공사', '세부항목', '단가기준', '단위', '기준가', '수량', '적용면', '기준가(㎡)', '피해면적', '금액', '경비']],
                             body: laborTableData,
@@ -2043,7 +2043,7 @@ export default function FieldReport() {
                             row.비고 || '-'
                           ]);
                           
-                          (doc as any).autoTable({
+                          autoTable(doc, {
                             startY: yPos,
                             head: [['공종', '자재명', '규격', '단위', '기준단가', '수량', '금액', '비고']],
                             body: materialTableData,
@@ -2074,7 +2074,7 @@ export default function FieldReport() {
                           ['총계', calculateTotals.total.toLocaleString() + ' 원']
                         ];
                         
-                        (doc as any).autoTable({
+                        autoTable(doc, {
                           startY: yPos,
                           body: summaryData,
                           theme: 'grid',
