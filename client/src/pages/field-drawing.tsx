@@ -6,6 +6,7 @@ import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus } from "l
 import { useToast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatCaseNumber } from "@/lib/utils";
 
 interface UploadedImage {
   id: string;
@@ -930,7 +931,7 @@ export default function FieldDrawing() {
                     color: "rgba(12, 12, 12, 0.5)",
                   }}
                 >
-                  {selectedCase.caseNumber}
+                  {formatCaseNumber(selectedCase.caseNumber)}
                 </span>
               </>
             ) : selectedCaseId ? (
@@ -1037,7 +1038,7 @@ export default function FieldDrawing() {
                     color: "rgba(12, 12, 12, 0.5)",
                   }}
                 >
-                  {selectedCase.caseNumber}
+                  {formatCaseNumber(selectedCase.caseNumber)}
                 </span>
               </div>
             </div>

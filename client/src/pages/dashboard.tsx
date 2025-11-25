@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, Case, type UserFavorite, type Notice } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatCaseNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown, ChevronRight, X } from "lucide-react";
@@ -2062,7 +2063,7 @@ export default function Dashboard() {
                               color: '#0C0C0C',
                             }}
                           >
-                            {caseItem.caseNumber} · {caseItem.accidentLocation || '위치 미정'}
+                            {formatCaseNumber(caseItem.caseNumber)} · {caseItem.accidentLocation || '위치 미정'}
                           </span>
                           <div className="flex items-center gap-1">
                             <span

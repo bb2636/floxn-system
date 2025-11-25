@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Check, Search } from "lucide-react";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import {
   Select,
@@ -1028,7 +1029,7 @@ export default function FieldEstimate() {
                 paddingLeft: "12px",
               }}
             >
-              <span>접수번호 {selectedCase.caseNumber}</span>
+              <span>접수번호 {formatCaseNumber(selectedCase.caseNumber)}</span>
               <span>계약자 {selectedCase.policyHolderName || selectedCase.clientName || "미정"}</span>
               <span>담당자 {selectedCase.assignedPartnerManager || "미정"}</span>
             </div>
@@ -1880,7 +1881,7 @@ export default function FieldEstimate() {
                     }}
                     data-testid="text-case-number"
                   >
-                    {estimateCase?.caseNumber || "-"}
+                    {formatCaseNumber(estimateCase?.caseNumber) || "-"}
                   </div>
                 </div>
 
@@ -3148,7 +3149,7 @@ export default function FieldEstimate() {
                         color: "rgba(12, 12, 12, 0.6)",
                       }}
                     >
-                      <span>접수번호: {caseItem.caseNumber}</span>
+                      <span>접수번호: {formatCaseNumber(caseItem.caseNumber)}</span>
                       <span>계약자: {caseItem.policyHolderName || caseItem.clientName || "미정"}</span>
                       <span>피해자: {caseItem.victimName || "미정"}</span>
                       <span className="px-2 py-0.5 rounded" style={{

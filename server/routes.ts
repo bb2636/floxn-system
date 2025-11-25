@@ -388,8 +388,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (hasDamagePrevention && !hasVictimRecovery) {
           // Only damage prevention
-          // For new accident (suffix=0), use 0; for existing, use returned suffix
-          const caseNumber = `${prefix}-${suffix === 0 ? 0 : suffix}`;
+          // Damage prevention cases display without suffix (just prefix like 251124001)
+          const caseNumber = prefix;
           const newCase = await storage.createCase({
             ...validatedData,
             caseNumber,
@@ -411,10 +411,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else if (hasDamagePrevention && hasVictimRecovery) {
           // Both types selected
           if (suffix === 0) {
-            // New accident: create -0 (prevention) and -1 (recovery)
+            // New accident: create prevention (no suffix) and -1 (recovery)
             const preventionCase = await storage.createCase({
               ...validatedData,
-              caseNumber: `${prefix}-0`,
+              caseNumber: prefix,  // Damage prevention without suffix
               caseGroupId,
               createdBy: req.session.userId,
             });

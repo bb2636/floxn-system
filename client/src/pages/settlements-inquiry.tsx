@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { formatCaseNumber } from "@/lib/utils";
 
 // 정산 테이블 행 타입
 interface SettlementRow {
@@ -1196,7 +1197,7 @@ export default function SettlementsInquiry() {
                       textAlign: "center",
                     }}
                   >
-                    {row.caseNumber}
+                    {formatCaseNumber(row.caseNumber)}
                   </td>
                   <td
                     style={{

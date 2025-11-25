@@ -5,6 +5,7 @@ import { User, CaseWithLatestProgress, type UserFavorite } from "@shared/schema"
 import { Search, Cloud, Star } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { GlobalHeader } from "@/components/global-header";
 import { useForm } from "react-hook-form";
@@ -901,7 +902,7 @@ export default function ComprehensiveProgress() {
                     {caseItem.insuranceAccidentNo || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    {caseItem.caseNumber || "-"}
+                    {formatCaseNumber(caseItem.caseNumber) || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     {caseItem.insuranceCompany || "-"}
@@ -1865,7 +1866,7 @@ export default function ComprehensiveProgress() {
                   fontWeight: 400,
                   color: "rgba(12, 12, 12, 0.8)",
                 }}>
-                  {selectedCase?.caseNumber || "-"}
+                  {formatCaseNumber(selectedCase?.caseNumber) || "-"}
                 </span>
 
                 <span style={{

@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { formatCaseNumber } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -952,7 +953,7 @@ export default function FieldReport() {
               paddingLeft: "12px",
             }}
           >
-            <span>접수번호 {caseData.caseNumber}</span>
+            <span>접수번호 {formatCaseNumber(caseData.caseNumber)}</span>
             <span>계약자 {caseData.policyHolderName || caseData.clientName || "미정"}</span>
             <span>담당자 {caseData.assignedPartnerManager || "미정"}</span>
           </div>

@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 // Helper function to normalize boolean values from string/boolean storage
@@ -511,7 +512,7 @@ export default function FieldManagement() {
                         color: "#0C0C0C",
                       }}
                     >
-                      {selectedCaseData.insuranceCompany || "보험사 미지정"} {selectedCaseData.caseNumber || ""}
+                      {selectedCaseData.insuranceCompany || "보험사 미지정"} {formatCaseNumber(selectedCaseData.caseNumber) || ""}
                     </span>
                   </div>
                   {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
@@ -1231,7 +1232,7 @@ export default function FieldManagement() {
                           minWidth: "120px",
                         }}
                       >
-                        {caseItem.caseNumber}
+                        {formatCaseNumber(caseItem.caseNumber)}
                       </span>
                       <span
                         style={{

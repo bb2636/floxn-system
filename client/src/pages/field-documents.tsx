@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
+import { formatCaseNumber } from "@/lib/utils";
 
 type DocumentCategory = "전체" | "현장" | "수리중" | "복구완료" | "청구";
 
@@ -508,7 +509,7 @@ export default function FieldDocuments() {
                 paddingLeft: "12px",
               }}
             >
-              <span>접수번호 {selectedCase.caseNumber}</span>
+              <span>접수번호 {formatCaseNumber(selectedCase.caseNumber)}</span>
               <span>계약자 {selectedCase.policyHolderName || selectedCase.clientName || "미정"}</span>
               <span>담당자 {selectedCase.assignedPartnerManager || "미정"}</span>
             </div>
@@ -960,7 +961,7 @@ export default function FieldDocuments() {
                         color: "rgba(12, 12, 12, 0.6)",
                       }}
                     >
-                      <span>접수번호: {caseItem.caseNumber}</span>
+                      <span>접수번호: {formatCaseNumber(caseItem.caseNumber)}</span>
                       <span>계약자: {caseItem.policyHolderName || caseItem.clientName || "미정"}</span>
                       <span>피해자: {caseItem.victimName || "미정"}</span>
                       <span className="px-2 py-0.5 rounded" style={{

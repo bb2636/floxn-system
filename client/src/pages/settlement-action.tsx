@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { formatCaseNumber } from "@/lib/utils";
 
 export default function SettlementAction() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -558,7 +559,7 @@ export default function SettlementAction() {
                           textAlign: "center",
                         }}
                       >
-                        {row.caseNumber}
+                        {formatCaseNumber(row.caseNumber)}
                       </td>
                       <td
                         style={{
@@ -742,7 +743,7 @@ export default function SettlementAction() {
                   color: "rgba(12, 12, 12, 0.7)",
                 }}
               >
-                {selectedCase.caseNumber}
+                {formatCaseNumber(selectedCase.caseNumber)}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -815,7 +816,7 @@ export default function SettlementAction() {
                   {[
                     { label: "보험사", value: selectedCase.insuranceCompany },
                     { label: "사고번호", value: selectedCase.insuranceAccidentNo },
-                    { label: "접수번호", value: selectedCase.caseNumber },
+                    { label: "접수번호", value: formatCaseNumber(selectedCase.caseNumber) },
                     { label: "계약자", value: selectedCase.contractor },
                     { label: "당사 담당자", value: selectedCase.clientManager },
                     { label: "협력사", value: selectedCase.partnerName },
