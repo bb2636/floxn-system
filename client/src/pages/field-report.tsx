@@ -1988,32 +1988,45 @@ export default function FieldReport() {
                         if (checkedLaborRows.length > 0) {
                           html += `
                             <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">노무비 ${dateStr}</h2>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 30px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 30px;">
                               <thead>
                                 <tr style="background: rgba(12,12,12,0.03);">
-                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공종</th>
-                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사명</th>
-                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세부공사</th>
-                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">단위</th>
-                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">기준가</th>
-                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">수량</th>
-                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">금액</th>
-                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">경비</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공종</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사명</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세부공사</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세부항목</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">단가기준</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">단위</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">기준가(원/단위)</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">수량</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">적용면</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">기준가(㎡)</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">피해면적</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">금액</th>
+                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">경비</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                ${checkedLaborRows.map(row => `
+                                ${checkedLaborRows.map(row => {
+                                  const rates = row.applicationRates;
+                                  const appliedSurface = rates?.ceiling ? '천장' : rates?.wall ? '벽체' : rates?.floor ? '바닥' : rates?.molding ? '길이' : '-';
+                                  return `
                                   <tr>
-                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.category || '-'}</td>
-                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.workName || '-'}</td>
-                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.detailWork || '-'}</td>
-                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.unit || '-'}</td>
-                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.standardPrice || 0).toLocaleString()}</td>
-                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.quantity || 0}</td>
-                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.amount || 0).toLocaleString()}</td>
-                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.includeInEstimate === false ? 'O' : '-'}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.category || '-'}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.workName || '-'}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.detailWork || '-'}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.detailItem || '-'}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.priceStandard || '-'}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.unit || '-'}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.standardPrice || 0).toLocaleString()}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.quantity || 0}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${appliedSurface}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.pricePerSqm || 0).toLocaleString()}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.damageArea || 0).toLocaleString()}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.amount || 0).toLocaleString()}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.includeInEstimate === false ? 'O' : '-'}</td>
                                   </tr>
-                                `).join('')}
+                                `}).join('')}
                               </tbody>
                             </table>
                           `;
