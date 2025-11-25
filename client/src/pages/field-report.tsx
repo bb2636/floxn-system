@@ -1924,6 +1924,8 @@ export default function FieldReport() {
                   >
                     견적서 {estimate.estimate.createdAt ? new Date(estimate.estimate.createdAt).toISOString().split('T')[0] : ''}
                   </h2>
+                  {/* 관리자만 다운로드/이메일 버튼 표시 */}
+                  {isAdmin && (
                   <div className="flex gap-2">
                     <button
                       onClick={async () => {
@@ -2177,6 +2179,7 @@ export default function FieldReport() {
                       </span>
                     </button>
                   </div>
+                  )}
                 </div>
 
                 {/* 복구면적 산출표 */}
