@@ -251,21 +251,35 @@ export default function FieldReport() {
     return safeParseLaborCosts(reportData?.estimate?.estimate?.laborCostData);
   }, [reportData?.estimate?.estimate?.laborCostData]);
 
-  const parsedMaterialCosts = useMemo(() => {
-    return safeParseMaterialCosts(reportData?.estimate?.estimate?.materialCostData);
+  // materialCostData에서 자재비 배열과 VAT 옵션 추출
+  const { materialRows: parsedMaterialCosts, vatIncluded } = useMemo(() => {
+    const materialData = reportData?.estimate?.estimate?.materialCostData as any;
+    // 새 형식 (객체: {rows, vatIncluded}) 또는 기존 형식 (배열)
+    if (materialData && !Array.isArray(materialData) && materialData.rows) {
+      return {
+        materialRows: safeParseMaterialCosts(materialData.rows),
+        vatIncluded: materialData.vatIncluded ?? true,
+      };
+    }
+    return {
+      materialRows: safeParseMaterialCosts(materialData),
+      vatIncluded: true,
+    };
   }, [reportData?.estimate?.estimate?.materialCostData]);
 
   // 견적 합계 계산
   const calculateTotals = useMemo(() => {
     // 노무비 총합 - 경비 여부에 따라 분리
-    const laborTotalWithExpense = parsedLaborCosts.reduce((sum, row) => {
+    // includeInEstimate === true → 경비가 아닌 항목 (관리비/이윤에 포함)
+    // includeInEstimate === false → 경비 항목 (관리비/이윤에서 제외)
+    const laborTotalNonExpense = parsedLaborCosts.reduce((sum, row) => {
       if (row.includeInEstimate) {
         return sum + (row.amount || 0);
       }
       return sum;
     }, 0);
 
-    const laborTotalWithoutExpense = parsedLaborCosts.reduce((sum, row) => {
+    const laborTotalExpense = parsedLaborCosts.reduce((sum, row) => {
       if (!row.includeInEstimate) {
         return sum + (row.amount || 0);
       }
@@ -278,10 +292,10 @@ export default function FieldReport() {
     }, 0);
 
     // 소계 (전체)
-    const subtotal = laborTotalWithExpense + laborTotalWithoutExpense + materialTotal;
+    const subtotal = laborTotalNonExpense + laborTotalExpense + materialTotal;
 
-    // 일반관리비와 이윤 계산 대상 (경비 제외)
-    const baseForFees = laborTotalWithoutExpense + materialTotal;
+    // 일반관리비와 이윤 계산 대상 (경비가 아닌 항목 + 자재비)
+    const baseForFees = laborTotalNonExpense + materialTotal;
 
     // 일반관리비 (6%) - 경비 제외 항목에만 적용
     const managementFee = Math.round(baseForFees * 0.06);
@@ -295,8 +309,8 @@ export default function FieldReport() {
     // VAT (10%)
     const vat = Math.round(vatBase * 0.1);
 
-    // 총 합계 (VAT 포함)
-    const total = vatBase + vat;
+    // 총 합계 (VAT 포함 여부에 따라)
+    const total = vatIncluded ? vatBase + vat : vatBase;
 
     return {
       subtotal,
@@ -304,8 +318,9 @@ export default function FieldReport() {
       profit,
       vat,
       total,
+      vatIncluded,
     };
-  }, [parsedLaborCosts, parsedMaterialCosts]);
+  }, [parsedLaborCosts, parsedMaterialCosts, vatIncluded]);
 
   // 기타사항 저장 mutation
   const saveNotesMutation = useMutation({
@@ -2184,17 +2199,17 @@ export default function FieldReport() {
                           <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.profit.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center py-2">
-                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>VAT</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>VAT (10%)</span>
                           <div className="flex items-center gap-3">
                             <label className="flex items-center gap-1">
-                              <input type="radio" name="vat" checked disabled style={{ accentColor: "#008FED" }} />
-                              <span style={{ fontFamily: "Pretendard", fontSize: "13px" }}>포함</span>
+                              <input type="radio" name="vat" checked={calculateTotals.vatIncluded} disabled style={{ accentColor: "#008FED" }} />
+                              <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: calculateTotals.vatIncluded ? "#008FED" : "#686A6E" }}>포함</span>
                             </label>
                             <label className="flex items-center gap-1">
-                              <input type="radio" name="vat" disabled />
-                              <span style={{ fontFamily: "Pretendard", fontSize: "13px" }}>별도</span>
+                              <input type="radio" name="vat" checked={!calculateTotals.vatIncluded} disabled style={{ accentColor: "#008FED" }} />
+                              <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: !calculateTotals.vatIncluded ? "#008FED" : "#686A6E" }}>별도</span>
                             </label>
-                            <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.vat.toLocaleString()}</span>
+                            <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.vat.toLocaleString()}원</span>
                           </div>
                         </div>
                         <div className="flex justify-between items-center py-3 border-t" style={{ borderTopWidth: "2px" }}>

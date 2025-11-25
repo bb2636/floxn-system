@@ -600,14 +600,16 @@ export default function FieldEstimate() {
   // 총 비용 계산 (견적서 탭용)
   const estimateSummary = useMemo(() => {
     // 노무비 총합 - 경비 여부에 따라 분리
-    const laborTotalWithExpense = laborCostRows.reduce((sum, row) => {
+    // includeInEstimate === true → 경비가 아닌 항목 (관리비/이윤에 포함)
+    // includeInEstimate === false → 경비 항목 (관리비/이윤에서 제외)
+    const laborTotalNonExpense = laborCostRows.reduce((sum, row) => {
       if (row.includeInEstimate) {
         return sum + (row.amount || 0);
       }
       return sum;
     }, 0);
 
-    const laborTotalWithoutExpense = laborCostRows.reduce((sum, row) => {
+    const laborTotalExpense = laborCostRows.reduce((sum, row) => {
       if (!row.includeInEstimate) {
         return sum + (row.amount || 0);
       }
@@ -620,10 +622,10 @@ export default function FieldEstimate() {
     }, 0);
 
     // 소계 (전체)
-    const subtotal = laborTotalWithExpense + laborTotalWithoutExpense + materialTotal;
+    const subtotal = laborTotalNonExpense + laborTotalExpense + materialTotal;
 
-    // 일반관리비와 이윤 계산 대상 (경비 제외)
-    const baseForFees = laborTotalWithoutExpense + materialTotal;
+    // 일반관리비와 이윤 계산 대상 (경비가 아닌 항목 + 자재비)
+    const baseForFees = laborTotalNonExpense + materialTotal;
 
     // 일반관리비 (6%) - 경비 제외 항목에만 적용
     const managementFee = Math.round(baseForFees * 0.06);
