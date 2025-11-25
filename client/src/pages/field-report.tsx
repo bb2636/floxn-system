@@ -27,6 +27,7 @@ import { ArrowLeft } from "lucide-react";
 import type { Drawing, CaseDocument as SchemaDocument } from "@shared/schema";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 
 interface Case {
   id: string;
@@ -1925,175 +1926,196 @@ export default function FieldReport() {
                   </h2>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => {
-                        // PDF 다운로드 - 체크된 항목만 포함
-                        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                      onClick={async () => {
+                        // PDF 다운로드 - 체크된 항목만 포함 (html2canvas 사용)
                         const dateStr = estimate.estimate?.createdAt ? new Date(estimate.estimate.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-                        
-                        // 한글 폰트 설정 (기본 폰트로 대체)
-                        doc.setFont('helvetica');
-                        
-                        let yPos = 15;
-                        
-                        // 제목
-                        doc.setFontSize(16);
-                        doc.text(`견적서 ${dateStr}`, 14, yPos);
-                        yPos += 10;
-                        
-                        // 1. 복구면적 산출표 (체크된 항목만)
-                        const checkedAreaRows = estimate.rows.filter((_, idx) => areaChecked[idx] !== false);
-                        if (checkedAreaRows.length > 0) {
-                          doc.setFontSize(12);
-                          doc.text(`복구면적 산출표 ${dateStr}`, 14, yPos);
-                          yPos += 5;
-                          
-                          const areaTableData = checkedAreaRows.map(row => [
-                            row.category || '-',
-                            row.location || '-',
-                            row.workName || '-',
-                            row.damageWidth || '0',
-                            row.damageHeight || '0',
-                            row.damageArea ? (row.damageArea / 1_000_000).toFixed(2) : '0',
-                            row.repairWidth || '0',
-                            row.repairHeight || '0',
-                            row.repairArea ? (row.repairArea / 1_000_000).toFixed(2) : '0',
-                            row.note || '-'
-                          ]);
-                          
-                          autoTable(doc, {
-                            startY: yPos,
-                            head: [['장소', '위치', '공사내용', '가로(mm)', '세로(mm)', '면적(㎡)', '가로(mm)', '세로(mm)', '면적(㎡)', '비고']],
-                            body: areaTableData,
-                            theme: 'grid',
-                            styles: { fontSize: 8, cellPadding: 2 },
-                            headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-                            margin: { left: 14, right: 14 }
-                          });
-                          
-                          yPos = (doc as any).lastAutoTable.finalY + 10;
-                        }
-                        
-                        // 2. 노무비 (체크된 항목만)
-                        const checkedLaborRows = parsedLaborCosts.filter((_, idx) => laborChecked[idx] !== false);
-                        if (checkedLaborRows.length > 0) {
-                          // 페이지 넘침 체크
-                          if (yPos > 170) {
-                            doc.addPage();
-                            yPos = 15;
-                          }
-                          
-                          doc.setFontSize(12);
-                          doc.text(`노무비 ${dateStr}`, 14, yPos);
-                          yPos += 5;
-                          
-                          const laborTableData = checkedLaborRows.map(row => {
-                            const rates = row.applicationRates;
-                            const appliedSurface = rates?.ceiling ? '천장' : rates?.wall ? '벽체' : rates?.floor ? '바닥' : rates?.molding ? '길이' : '-';
-                            return [
-                              row.category || '-',
-                              row.workName || '-',
-                              row.detailWork || '-',
-                              row.detailItem || '-',
-                              row.priceStandard || '-',
-                              row.unit || '-',
-                              (row.standardPrice || 0).toLocaleString(),
-                              row.quantity || 0,
-                              appliedSurface,
-                              (row.pricePerSqm || 0).toLocaleString(),
-                              (row.damageArea || 0).toLocaleString(),
-                              (row.amount || 0).toLocaleString(),
-                              row.includeInEstimate === false ? 'O' : '-'
-                            ];
-                          });
-                          
-                          autoTable(doc, {
-                            startY: yPos,
-                            head: [['공종', '공사명', '세부공사', '세부항목', '단가기준', '단위', '기준가', '수량', '적용면', '기준가(㎡)', '피해면적', '금액', '경비']],
-                            body: laborTableData,
-                            theme: 'grid',
-                            styles: { fontSize: 7, cellPadding: 1.5 },
-                            headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-                            margin: { left: 14, right: 14 }
-                          });
-                          
-                          yPos = (doc as any).lastAutoTable.finalY + 10;
-                        }
-                        
-                        // 3. 자재비 (체크된 항목만)
-                        const checkedMaterialRows = parsedMaterialCosts.filter((_, idx) => materialChecked[idx] !== false);
-                        if (checkedMaterialRows.length > 0) {
-                          // 페이지 넘침 체크
-                          if (yPos > 170) {
-                            doc.addPage();
-                            yPos = 15;
-                          }
-                          
-                          doc.setFontSize(12);
-                          doc.text(`자재비 ${dateStr}`, 14, yPos);
-                          yPos += 5;
-                          
-                          const materialTableData = checkedMaterialRows.map(row => [
-                            row.공종 || '-',
-                            row.자재 || '-',
-                            row.규격 || '-',
-                            row.단위 || '-',
-                            (row.기준단가 || 0).toLocaleString(),
-                            row.수량 || 0,
-                            (row.금액 || 0).toLocaleString(),
-                            row.비고 || '-'
-                          ]);
-                          
-                          autoTable(doc, {
-                            startY: yPos,
-                            head: [['공종', '자재명', '규격', '단위', '기준단가', '수량', '금액', '비고']],
-                            body: materialTableData,
-                            theme: 'grid',
-                            styles: { fontSize: 8, cellPadding: 2 },
-                            headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-                            margin: { left: 14, right: 14 }
-                          });
-                          
-                          yPos = (doc as any).lastAutoTable.finalY + 10;
-                        }
-                        
-                        // 4. 합계 정보
-                        if (yPos > 170) {
-                          doc.addPage();
-                          yPos = 15;
-                        }
-                        
-                        doc.setFontSize(12);
-                        doc.text('합계', 14, yPos);
-                        yPos += 5;
-                        
-                        const summaryData = [
-                          ['소계', calculateTotals.subtotal.toLocaleString() + ' 원'],
-                          ['일반관리비 (6%)', calculateTotals.managementFee.toLocaleString() + ' 원'],
-                          ['이윤 (15%)', calculateTotals.profit.toLocaleString() + ' 원'],
-                          ['VAT (10%)', calculateTotals.vat.toLocaleString() + ' 원'],
-                          ['총계', calculateTotals.total.toLocaleString() + ' 원']
-                        ];
-                        
-                        autoTable(doc, {
-                          startY: yPos,
-                          body: summaryData,
-                          theme: 'grid',
-                          styles: { fontSize: 10, cellPadding: 3 },
-                          columnStyles: {
-                            0: { cellWidth: 60, fontStyle: 'bold' },
-                            1: { cellWidth: 80, halign: 'right' }
-                          },
-                          margin: { left: 14, right: 14 }
-                        });
-                        
-                        // 파일 저장
                         const caseNo = caseData?.caseNumber || 'estimate';
-                        doc.save(`견적서_${caseNo}_${dateStr}.pdf`);
                         
-                        toast({
-                          title: "PDF 다운로드 완료",
-                          description: "체크된 항목만 포함된 견적서가 다운로드되었습니다.",
-                        });
+                        // 체크된 항목 필터링
+                        const checkedAreaRows = estimate.rows.filter((_, idx) => areaChecked[idx] !== false);
+                        const checkedLaborRows = parsedLaborCosts.filter((_, idx) => laborChecked[idx] !== false);
+                        const checkedMaterialRows = parsedMaterialCosts.filter((_, idx) => materialChecked[idx] !== false);
+                        
+                        // 임시 HTML 컨테이너 생성
+                        const container = document.createElement('div');
+                        container.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 1100px; background: white; padding: 40px; font-family: Pretendard, sans-serif;';
+                        
+                        // HTML 내용 생성
+                        let html = `
+                          <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 30px; color: #0C0C0C;">견적서 ${dateStr}</h1>
+                        `;
+                        
+                        // 복구면적 산출표
+                        if (checkedAreaRows.length > 0) {
+                          html += `
+                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">복구면적 산출표 ${dateStr}</h2>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 30px;">
+                              <thead>
+                                <tr style="background: rgba(12,12,12,0.03);">
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">장소</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">위치</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사내용</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">가로(mm)</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세로(mm)</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">면적(㎡)</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">가로(mm)</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세로(mm)</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">면적(㎡)</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">비고</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                ${checkedAreaRows.map(row => `
+                                  <tr>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.category || '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.location || '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.workName || '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageWidth || '0'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageHeight || '0'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageArea ? (row.damageArea / 1_000_000).toFixed(2) : '0'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairWidth || '0'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairHeight || '0'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairArea ? (row.repairArea / 1_000_000).toFixed(2) : '0'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.note || '-'}</td>
+                                  </tr>
+                                `).join('')}
+                              </tbody>
+                            </table>
+                          `;
+                        }
+                        
+                        // 노무비
+                        if (checkedLaborRows.length > 0) {
+                          html += `
+                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">노무비 ${dateStr}</h2>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 30px;">
+                              <thead>
+                                <tr style="background: rgba(12,12,12,0.03);">
+                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공종</th>
+                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사명</th>
+                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세부공사</th>
+                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">단위</th>
+                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">기준가</th>
+                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">수량</th>
+                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">금액</th>
+                                  <th style="padding: 8px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">경비</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                ${checkedLaborRows.map(row => `
+                                  <tr>
+                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.category || '-'}</td>
+                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.workName || '-'}</td>
+                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.detailWork || '-'}</td>
+                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.unit || '-'}</td>
+                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.standardPrice || 0).toLocaleString()}</td>
+                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.quantity || 0}</td>
+                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.amount || 0).toLocaleString()}</td>
+                                    <td style="padding: 6px 4px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.includeInEstimate === false ? 'O' : '-'}</td>
+                                  </tr>
+                                `).join('')}
+                              </tbody>
+                            </table>
+                          `;
+                        }
+                        
+                        // 자재비
+                        if (checkedMaterialRows.length > 0) {
+                          html += `
+                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">자재비 ${dateStr}</h2>
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 30px;">
+                              <thead>
+                                <tr style="background: rgba(12,12,12,0.03);">
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공종</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">자재명</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">규격</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">단위</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">기준단가</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">수량</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">금액</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">비고</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                ${checkedMaterialRows.map(row => `
+                                  <tr>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.공종 || '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.자재 || '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.규격 || '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.단위 || '-'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.기준단가 || 0).toLocaleString()}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.수량 || 0}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.금액 || 0).toLocaleString()}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.비고 || '-'}</td>
+                                  </tr>
+                                `).join('')}
+                              </tbody>
+                            </table>
+                          `;
+                        }
+                        
+                        // 합계
+                        html += `
+                          <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">합계</h2>
+                          <table style="width: 300px; border-collapse: collapse; font-size: 14px; margin-left: auto;">
+                            <tbody>
+                              <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">소계</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.subtotal.toLocaleString()} 원</td></tr>
+                              <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">일반관리비 (6%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.managementFee.toLocaleString()} 원</td></tr>
+                              <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">이윤 (15%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.profit.toLocaleString()} 원</td></tr>
+                              <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">VAT (10%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.vat.toLocaleString()} 원</td></tr>
+                              <tr style="background: rgba(0,143,237,0.05);"><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 700; font-size: 16px;">총계</td><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 700; font-size: 16px; color: #008FED;">${calculateTotals.total.toLocaleString()} 원</td></tr>
+                            </tbody>
+                          </table>
+                        `;
+                        
+                        container.innerHTML = html;
+                        document.body.appendChild(container);
+                        
+                        try {
+                          // html2canvas로 캡처
+                          const canvas = await html2canvas(container, {
+                            scale: 2,
+                            useCORS: true,
+                            logging: false,
+                            backgroundColor: '#ffffff'
+                          });
+                          
+                          // PDF 생성
+                          const imgWidth = 277; // A4 가로 (landscape)
+                          const pageHeight = 190; // A4 세로
+                          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                          let heightLeft = imgHeight;
+                          let position = 10;
+                          
+                          const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                          const imgData = canvas.toDataURL('image/png');
+                          
+                          doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                          heightLeft -= pageHeight;
+                          
+                          while (heightLeft > 0) {
+                            position = heightLeft - imgHeight + 10;
+                            doc.addPage();
+                            doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+                            heightLeft -= pageHeight;
+                          }
+                          
+                          doc.save(`견적서_${caseNo}_${dateStr}.pdf`);
+                          
+                          toast({
+                            title: "PDF 다운로드 완료",
+                            description: "체크된 항목만 포함된 견적서가 다운로드되었습니다.",
+                          });
+                        } catch (error) {
+                          console.error('PDF 생성 오류:', error);
+                          toast({
+                            title: "PDF 생성 실패",
+                            description: "PDF 파일 생성 중 오류가 발생했습니다.",
+                            variant: "destructive",
+                          });
+                        } finally {
+                          document.body.removeChild(container);
+                        }
                       }}
                       className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
                       style={{
