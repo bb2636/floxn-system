@@ -2068,7 +2068,7 @@ export default function FieldReport() {
                                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.damageArea || 0).toLocaleString()}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{(row.amount || 0).toLocaleString()}</td>
                                   <td style={{ padding: "8px", textAlign: "center" }}>
-                                    <input type="checkbox" checked={row.includeInEstimate === true} disabled style={{ cursor: "default" }} />
+                                    <input type="checkbox" checked={row.includeInEstimate === false} disabled style={{ cursor: "default" }} />
                                   </td>
                                 </tr>
                               );
