@@ -281,8 +281,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
+      // Debug: log incoming sameAsPolicyHolder with type
+      console.log("📥 Incoming sameAsPolicyHolder:", req.body.sameAsPolicyHolder, "type:", typeof req.body.sameAsPolicyHolder);
+      
       // Validate request body with Zod
       const validatedData = insertCaseRequestSchema.parse(req.body);
+      
+      // Debug: log validated sameAsPolicyHolder with type
+      console.log("✅ Validated sameAsPolicyHolder:", validatedData.sameAsPolicyHolder, "type:", typeof validatedData.sameAsPolicyHolder);
       
       // Determine case types based on processingTypes (stored as JSON string)
       const processingTypesStr = validatedData.processingTypes || "[]";

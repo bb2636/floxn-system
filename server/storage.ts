@@ -1155,7 +1155,9 @@ export class MemStorage implements IStorage {
       insuredIdNumber: caseData.insuredIdNumber || null,
       insuredContact: caseData.insuredContact || null,
       insuredAddress: caseData.insuredAddress || null,
-      sameAsPolicyHolder: caseData.sameAsPolicyHolder || null,
+      sameAsPolicyHolder: caseData.sameAsPolicyHolder != null 
+        ? String(caseData.sameAsPolicyHolder) 
+        : null,
       victimName: caseData.victimName || null,
       victimContact: caseData.victimContact || null,
       victimAddress: caseData.victimAddress || null,

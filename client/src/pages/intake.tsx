@@ -566,8 +566,10 @@ export default function Intake() {
         }
       }
     });
-    // sameAsPolicyHolder 체크박스 상태 추가
-    cleaned.sameAsPolicyHolder = sameAsPolicyHolder ? "true" : "false";
+    // sameAsPolicyHolder 체크박스 상태 추가 (명시적 문자열 변환)
+    const sameAsPolicyHolderValue = sameAsPolicyHolder === true ? "true" : "false";
+    cleaned.sameAsPolicyHolder = sameAsPolicyHolderValue;
+    console.log("📌 cleanFormData - sameAsPolicyHolder state:", sameAsPolicyHolder, "(type:", typeof sameAsPolicyHolder, ") -> cleaned value:", sameAsPolicyHolderValue, "(type:", typeof sameAsPolicyHolderValue, ")");
     // additionalVictims 배열을 JSON 문자열로 변환
     if (additionalVictims.length > 0) {
       cleaned.additionalVictims = JSON.stringify(additionalVictims);
@@ -576,14 +578,16 @@ export default function Intake() {
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (variables: { data: typeof formData; sameAsPolicyHolderValue: boolean }) => {
+      const { data, sameAsPolicyHolderValue } = variables;
       // 저장 버튼은 항상 "배당대기" 상태로 저장
       const status = "배당대기";
       
       console.log("💾 저장 상태 결정:", {
         assignedPartner: data.assignedPartner,
         assignedPartnerManager: data.assignedPartnerManager,
-        status
+        status,
+        sameAsPolicyHolder: sameAsPolicyHolderValue
       });
       
       // 임시저장 시: caseNumber 없이 전송 (서버에서 DRAFT-{timestamp} 자동 생성)
@@ -593,6 +597,9 @@ export default function Intake() {
         // editCaseId를 포함하여 백엔드에서 draft 삭제 가능하도록
         ...(editCaseId ? { id: editCaseId } : {})
       };
+      
+      // sameAsPolicyHolder를 명시적으로 설정 (클로저 문제 해결)
+      cleanedData.sameAsPolicyHolder = sameAsPolicyHolderValue ? "true" : "false";
       
       // 임시저장: 기존 케이스가 있으면 업데이트, 없으면 생성
       if (editCaseId) {
@@ -627,14 +634,20 @@ export default function Intake() {
   });
 
   const submitMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (variables: { data: typeof formData; sameAsPolicyHolderValue: boolean }) => {
+      const { data, sameAsPolicyHolderValue } = variables;
       const cleanedData = cleanFormData(data);
+      
+      // sameAsPolicyHolder를 명시적으로 설정 (클로저 문제 해결)
+      cleanedData.sameAsPolicyHolder = sameAsPolicyHolderValue ? "true" : "false";
+      console.log("📋 submitMutation - sameAsPolicyHolder:", sameAsPolicyHolderValue, "-> cleanedData:", cleanedData.sameAsPolicyHolder);
       
       console.log("📋 접수 데이터:", {
         receptionDate: data.accidentDate || getTodayDate(),
         damagePreventionCost: data.damagePreventionCost,
         victimIncidentAssistance: data.victimIncidentAssistance,
-        editCaseId: editCaseId
+        editCaseId: editCaseId,
+        sameAsPolicyHolder: cleanedData.sameAsPolicyHolder
       });
       
       // 백엔드가 자동으로 다중 케이스 생성 및 접수번호 생성 처리
@@ -721,7 +734,8 @@ export default function Intake() {
   // 저장 - 서버에 "배당대기" 상태로 저장
   const handleSave = () => {
     // saveMutation을 호출하여 서버에 저장 (상태: 배당대기)
-    saveMutation.mutate(formData);
+    // sameAsPolicyHolder 값을 명시적으로 전달 (클로저 문제 해결)
+    saveMutation.mutate({ data: formData, sameAsPolicyHolderValue: sameAsPolicyHolder });
   };
 
   // 초기화
@@ -912,7 +926,8 @@ export default function Intake() {
     
     // 피해사항은 선택사항이므로 필수 검증에서 제외
     
-    submitMutation.mutate(formData);
+    // sameAsPolicyHolder 값을 명시적으로 전달 (클로저 문제 해결)
+    submitMutation.mutate({ data: formData, sameAsPolicyHolderValue: sameAsPolicyHolder });
   };
 
   const handleAddDamageItem = () => {
