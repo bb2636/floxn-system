@@ -2067,18 +2067,20 @@ export default function FieldReport() {
                           `;
                         }
                         
-                        // 합계
+                        // 합계 (page-break-inside: avoid로 페이지 분할 방지)
                         html += `
-                          <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">합계</h2>
-                          <table style="width: 300px; border-collapse: collapse; font-size: 14px; margin-left: auto;">
-                            <tbody>
-                              <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">소계</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.subtotal.toLocaleString()} 원</td></tr>
-                              <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">일반관리비 (6%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.managementFee.toLocaleString()} 원</td></tr>
-                              <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">이윤 (15%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.profit.toLocaleString()} 원</td></tr>
-                              <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">VAT (10%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.vat.toLocaleString()} 원</td></tr>
-                              <tr style="background: rgba(0,143,237,0.05);"><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 700; font-size: 16px;">총계</td><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 700; font-size: 16px; color: #008FED;">${calculateTotals.total.toLocaleString()} 원</td></tr>
-                            </tbody>
-                          </table>
+                          <div style="page-break-inside: avoid;">
+                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">합계</h2>
+                            <table style="width: 320px; border-collapse: collapse; font-size: 14px; margin-left: auto;">
+                              <tbody>
+                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">소계</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.subtotal.toLocaleString()} 원</td></tr>
+                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">일반관리비 (6%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.managementFee.toLocaleString()} 원</td></tr>
+                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">이윤 (15%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.profit.toLocaleString()} 원</td></tr>
+                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">VAT (10%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.vat.toLocaleString()} 원</td></tr>
+                                <tr style="background: rgba(0,143,237,0.05);"><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 700; font-size: 16px;">총계 (VAT 포함)</td><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 700; font-size: 16px; color: #008FED;">${calculateTotals.total.toLocaleString()} 원</td></tr>
+                              </tbody>
+                            </table>
+                          </div>
                         `;
                         
                         container.innerHTML = html;
@@ -2093,25 +2095,22 @@ export default function FieldReport() {
                             backgroundColor: '#ffffff'
                           });
                           
-                          // PDF 생성
+                          // PDF 생성 - 내용 길이에 따라 페이지 크기 자동 조절
                           const imgWidth = 277; // A4 가로 (landscape)
-                          const pageHeight = 190; // A4 세로
                           const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                          let heightLeft = imgHeight;
-                          let position = 10;
                           
-                          const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                          // 페이지 높이를 내용에 맞게 설정 (단일 페이지)
+                          const pageWidth = 297; // A4 가로
+                          const pageHeight = Math.max(210, imgHeight + 20); // 최소 A4 세로 or 내용 높이
+                          
+                          const doc = new jsPDF({ 
+                            orientation: 'landscape', 
+                            unit: 'mm', 
+                            format: [pageWidth, pageHeight] 
+                          });
                           const imgData = canvas.toDataURL('image/png');
                           
-                          doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                          heightLeft -= pageHeight;
-                          
-                          while (heightLeft > 0) {
-                            position = heightLeft - imgHeight + 10;
-                            doc.addPage();
-                            doc.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                            heightLeft -= pageHeight;
-                          }
+                          doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
                           
                           doc.save(`견적서_${caseNo}_${dateStr}.pdf`);
                           
