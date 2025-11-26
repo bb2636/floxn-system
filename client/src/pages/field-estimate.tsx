@@ -293,6 +293,13 @@ export default function FieldEstimate() {
   const handleCaseSelect = (caseId: string) => {
     setSelectedCaseId(caseId);
     localStorage.setItem('selectedFieldSurveyCaseId', caseId);
+    
+    // 선택한 케이스를 estimateCase로 직접 설정 (고객정보 즉시 업데이트)
+    const selected = allCases?.find((c: Case) => c.id === caseId);
+    if (selected) {
+      setEstimateCase(selected);
+    }
+    
     setCaseSearchModalOpen(false);
     setCaseSearchQuery("");
     toast({
@@ -417,8 +424,9 @@ export default function FieldEstimate() {
   });
 
   // 현재 작성중인 건 정보를 견적서에 자동 설정
+  // selectedCase가 변경되면 estimateCase도 항상 업데이트 (고객정보 즉시 반영)
   useEffect(() => {
-    if (selectedCase && !estimateCase) {
+    if (selectedCase) {
       setEstimateCase(selectedCase);
     }
   }, [selectedCase]);
