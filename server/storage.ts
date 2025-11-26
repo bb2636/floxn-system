@@ -1939,6 +1939,9 @@ export class DbStorage implements IStorage {
       // Seed users if no users exist
       if (existingUsers.length === 0) {
         await this.seedTestUsers();
+      } else {
+        // Always ensure essential accounts exist (admin01, partner01)
+        await this.ensureEssentialAccounts();
       }
       
       // Seed cases if no cases exist (regardless of users)
@@ -1952,6 +1955,59 @@ export class DbStorage implements IStorage {
       }
     } catch (error) {
       console.error("Database initialization error:", error);
+    }
+  }
+
+  private async ensureEssentialAccounts() {
+    const currentDate = getKSTDate();
+    const hashedPassword = await bcrypt.hash("1234", SALT_ROUNDS);
+    
+    // Check if admin01 exists
+    const admin01 = await db.select().from(users).where(eq(users.username, "admin01"));
+    if (admin01.length === 0) {
+      await db.insert(users).values({
+        id: randomUUID(),
+        username: "admin01",
+        password: hashedPassword,
+        role: "관리자",
+        name: "김블락",
+        company: "플록슨",
+        department: "개발팀",
+        position: "팀장",
+        email: "admin01@floxn.com",
+        phone: "010-1001-1001",
+        office: "02-1001-1001",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      });
+      console.log("Created essential account: admin01");
+    }
+    
+    // Check if partner01 exists
+    const partner01 = await db.select().from(users).where(eq(users.username, "partner01"));
+    if (partner01.length === 0) {
+      await db.insert(users).values({
+        id: randomUUID(),
+        username: "partner01",
+        password: hashedPassword,
+        role: "협력사",
+        name: "최진우",
+        company: "우리수리",
+        department: "현장팀",
+        position: "팀장",
+        email: "partner01@woori.com",
+        phone: "010-3001-3001",
+        office: "02-3001-3001",
+        address: "서울 마포구",
+        bankName: "국민은행",
+        accountNumber: "123-456-789",
+        accountHolder: "우리수리",
+        serviceRegions: ["서울", "경기"],
+        status: "active",
+        createdAt: currentDate,
+      });
+      console.log("Created essential account: partner01");
     }
   }
 
