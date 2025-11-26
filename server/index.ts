@@ -22,6 +22,11 @@ declare module 'express-session' {
 
 const MemoryStore = createMemoryStore(session);
 
+// Trust proxy for production (Replit uses reverse proxy)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'insurance-system-secret-key-change-in-production',
   resave: false,
