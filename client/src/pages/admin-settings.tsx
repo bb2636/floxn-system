@@ -2510,7 +2510,7 @@ export default function AdminSettings() {
                                 color: "#008FED",
                               }}
                             >
-                              공통
+                              복구면적 산출표
                             </span>
                           </div>
                         </button>
@@ -2561,7 +2561,7 @@ export default function AdminSettings() {
                         color: "#008FED",
                       }}
                     >
-                      공통
+                      복구면적 산출표
                     </span>
                     <span
                       style={{
