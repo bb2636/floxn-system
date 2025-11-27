@@ -341,25 +341,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           createdCases.push(draftCase);
         } else if (hasDamagePrevention && hasVictimRecovery) {
-          // Both types - create 2 drafts with same data (deep copy to prevent mutation issues)
-          const baseData = JSON.parse(JSON.stringify(validatedData));
-          
-          const preventionDraft = await storage.createCase({
-            ...baseData,
-            caseNumber: prefix,  // Damage prevention without suffix
-            caseGroupId,
-            createdBy: req.session.userId,
-          });
-          
-          // Deep copy again for second case to ensure data integrity
-          const baseData2 = JSON.parse(JSON.stringify(validatedData));
-          const recoveryDraft = await storage.createCase({
-            ...baseData2,
-            caseNumber: `${prefix}-1`,  // First victim recovery
-            caseGroupId,
-            createdBy: req.session.userId,
-          });
-          createdCases.push(preventionDraft, recoveryDraft);
+          // Both types selected - check if this is a new accident
+          if (suffix === 0) {
+            // New accident: create 2 drafts with same data (deep copy to prevent mutation issues)
+            const baseData = JSON.parse(JSON.stringify(validatedData));
+            
+            const preventionDraft = await storage.createCase({
+              ...baseData,
+              caseNumber: prefix,  // Damage prevention without suffix
+              caseGroupId,
+              createdBy: req.session.userId,
+            });
+            
+            // Deep copy again for second case to ensure data integrity
+            const baseData2 = JSON.parse(JSON.stringify(validatedData));
+            const recoveryDraft = await storage.createCase({
+              ...baseData2,
+              caseNumber: `${prefix}-1`,  // First victim recovery
+              caseGroupId,
+              createdBy: req.session.userId,
+            });
+            createdCases.push(preventionDraft, recoveryDraft);
+          } else {
+            // Existing accident: cannot add damage prevention again
+            return res.status(400).json({ 
+              error: "이미 접수된 사고에는 손해방지를 추가할 수 없습니다. 피해세대복구만 선택해주세요." 
+            });
+          }
         } else {
           // No processing type selected - create single draft with -1 suffix (default victim recovery)
           const caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
