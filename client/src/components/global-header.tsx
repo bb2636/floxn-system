@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User } from "@shared/schema";
@@ -5,12 +6,14 @@ import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/use-permissions";
+import { MyPageDialog } from "./my-page-dialog";
 
 export function GlobalHeader() {
   const [, setLocation] = useLocation();
   const [location] = useLocation();
   const { toast } = useToast();
   const { hasCategory, isLoading: permissionsLoading } = usePermissions();
+  const [myPageOpen, setMyPageOpen] = useState(false);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -185,12 +188,18 @@ export function GlobalHeader() {
           })}
         </div>
 
-        {/* User Profile */}
-        <div className="flex items-center gap-3">
+        {/* User Profile - Clickable */}
+        <button
+          onClick={() => setMyPageOpen(true)}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100/50 transition-colors cursor-pointer"
+          data-testid="button-open-mypage"
+        >
           <div 
-            className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(0, 143, 237, 0.3)' }}
-          />
+            className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-[#008FED]"
+            style={{ background: 'rgba(0, 143, 237, 0.2)' }}
+          >
+            {user.name ? user.name.charAt(0) : "U"}
+          </div>
           <div className="flex items-center gap-2">
             <span 
               style={{
@@ -217,8 +226,15 @@ export function GlobalHeader() {
               {user.position || user.role || "사용자"}
             </span>
           </div>
-        </div>
+        </button>
       </header>
+
+      {/* My Page Dialog */}
+      <MyPageDialog
+        open={myPageOpen}
+        onOpenChange={setMyPageOpen}
+        user={user}
+      />
     </>
   );
 }
