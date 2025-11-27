@@ -1759,10 +1759,9 @@ export default function FieldManagement() {
                         status, // 자동 변경된 상태 추가
                       };
 
-                      const response = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
-                      const data = await response.json();
+                      const data = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
 
-                      const syncedCases = data?.syncedCases || 0;
+                      const syncedCases = (data as any)?.syncedCases || 0;
                       const syncMessage = syncedCases > 0 
                         ? ` (${syncedCases}건의 연관 케이스에도 동기화됨)`
                         : "";
@@ -1827,10 +1826,9 @@ export default function FieldManagement() {
                         status: "현장정보 입력", // 제출 시 상태 변경
                       };
 
-                      const response = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
-                      const data = await response.json();
+                      const data = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
 
-                      const syncedCases = data?.syncedCases || 0;
+                      const syncedCases = (data as any)?.syncedCases || 0;
                       const syncMessage = syncedCases > 0 
                         ? ` (${syncedCases}건의 연관 케이스에도 동기화됨)`
                         : "";
