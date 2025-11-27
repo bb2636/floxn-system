@@ -106,6 +106,9 @@ export interface IStorage {
   updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null>;
   // Case group methods
   getCasesByGroupId(caseGroupId: string): Promise<Case[]>;
+  // Case number helpers
+  getPreventionCaseByPrefix(prefix: string): Promise<Case | null>;
+  getNextVictimSuffix(prefix: string): Promise<number>;
   // Case helper for drawing persistence
   getOrCreateActiveCase(userId: string): Promise<Case>;
   // Document methods
@@ -1922,6 +1925,15 @@ export class MemStorage implements IStorage {
   async getCasesByGroupId(caseGroupId: string): Promise<Case[]> {
     throw new Error("Case group methods not implemented in MemStorage");
   }
+
+  // Case number helpers (stub)
+  async getPreventionCaseByPrefix(prefix: string): Promise<Case | null> {
+    throw new Error("Case number helper methods not implemented in MemStorage");
+  }
+
+  async getNextVictimSuffix(prefix: string): Promise<number> {
+    throw new Error("Case number helper methods not implemented in MemStorage");
+  }
 }
 
 export class DbStorage implements IStorage {
@@ -3720,6 +3732,40 @@ export class DbStorage implements IStorage {
       .where(eq(cases.caseGroupId, caseGroupId))
       .orderBy(asc(cases.caseNumber));
     return result;
+  }
+
+  // Case number helpers
+  // 손해방지 케이스 확인 (prefix만 있는 케이스 = 손해방지)
+  async getPreventionCaseByPrefix(prefix: string): Promise<Case | null> {
+    const result = await db
+      .select()
+      .from(cases)
+      .where(eq(cases.caseNumber, prefix))
+      .limit(1);
+    return result[0] || null;
+  }
+
+  // 피해세대복구 다음 suffix 계산
+  async getNextVictimSuffix(prefix: string): Promise<number> {
+    // Find all cases with this prefix (including prefix itself and prefix-N)
+    const allCases = await db
+      .select({ caseNumber: cases.caseNumber })
+      .from(cases)
+      .where(sql`${cases.caseNumber} LIKE ${prefix + '%'}`);
+    
+    // Find the maximum suffix used
+    let maxSuffix = 0;
+    for (const c of allCases) {
+      if (c.caseNumber && c.caseNumber.startsWith(prefix + '-')) {
+        const suffixStr = c.caseNumber.split('-')[1];
+        const suffix = parseInt(suffixStr, 10);
+        if (!isNaN(suffix) && suffix > maxSuffix) {
+          maxSuffix = suffix;
+        }
+      }
+    }
+    
+    return maxSuffix + 1;
   }
 }
 
