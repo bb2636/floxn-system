@@ -1049,6 +1049,118 @@ export default function FieldManagement() {
               </div>
             </div>
 
+            {/* 사고 원인(누수소견서) 서브섹션 */}
+            <div>
+              <h3
+                className="mb-4"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  color: "rgba(12, 12, 12, 0.8)",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                사고 원인(누수소견서)
+              </h3>
+              <div className="space-y-4">
+                {/* 카테고리 */}
+                <div>
+                  <Label 
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    카테고리
+                  </Label>
+                  <div className="flex gap-2">
+                    {["배관", "코킹", "방수", "기타"].map((category) => (
+                      <Button
+                        key={category}
+                        type="button"
+                        onClick={() => setAccidentCategory(category)}
+                        disabled={isReadOnly}
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          height: "52px",
+                          padding: "12px 16px",
+                          borderRadius: "6px",
+                          border: accidentCategory === category 
+                            ? "2px solid rgba(255, 255, 255, 0.04)" 
+                            : "1px solid rgba(12, 12, 12, 0.3)",
+                          background: accidentCategory === category 
+                            ? "rgba(0, 143, 237, 0.1)" 
+                            : "#FDFDFD",
+                          color: accidentCategory === category 
+                            ? "#008FED" 
+                            : "rgba(12, 12, 12, 0.9)",
+                          boxShadow: accidentCategory === category 
+                            ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
+                            : "none",
+                          backdropFilter: accidentCategory === category ? "blur(7px)" : "none",
+                        }}
+                        data-testid={`button-category-${category}`}
+                      >
+                        {category}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 사고원인 */}
+                <div>
+                  <Label 
+                    htmlFor="accident-cause-detail"
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    사고원인
+                  </Label>
+                  <textarea
+                    id="accident-cause-detail"
+                    value={accidentCause}
+                    onChange={(e) => { handleUserInput(); setAccidentCause(e.target.value); }}
+                    placeholder="누수원인, 누수지점 등 기타 특이사항을 자유롭게 입력해주세요"
+                    maxLength={800}
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      padding: "16px 20px",
+                      background: "#FDFDFD",
+                      border: "2px solid rgba(12,12,12,0.08)",
+                      borderRadius: "8px",
+                      resize: "none",
+                      minHeight: "120px",
+                      width: "100%",
+                    }}
+                    disabled={isReadOnly}
+                    data-testid="textarea-accident-cause"
+                  />
+                  <div 
+                    className="text-right mt-1"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "12px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                    }}
+                  >
+                    {accidentCause.length}/800
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* 같은 사고의 케이스들 */}
             <div>
               <h3
