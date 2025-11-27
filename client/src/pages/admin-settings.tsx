@@ -549,8 +549,9 @@ export default function AdminSettings() {
     enabled: !!user,
   });
 
-  // Check if 1:1 문의 관리 is a favorite
+  // Check if pages are favorites
   const isInquiryManagementFavorite = favorites.some(fav => fav.menuName === "1:1 문의 관리");
+  const isNoticeManagementFavorite = favorites.some(fav => fav.menuName === "공지사항 관리");
 
   // Filter inquiries based on status
   const filteredInquiries = inquiries.filter((inquiry) => {
@@ -1593,17 +1594,19 @@ export default function AdminSettings() {
                   >
                     공지사항 관리
                   </h1>
-                  <div
-                    className="flex items-center justify-center"
-                    style={{
-                      width: "24px",
-                      height: "24px",
-                      background: "rgba(0, 143, 237, 0.1)",
-                      borderRadius: "50%",
-                    }}
+                  <button
+                    onClick={() => toggleFavoriteMutation.mutate("공지사항 관리")}
+                    className="hover:opacity-70 transition-opacity cursor-pointer"
+                    data-testid="button-toggle-notice-favorite"
                   >
-                    <span style={{ fontSize: "12px", color: "#008FED" }}>ⓘ</span>
-                  </div>
+                    <Star 
+                      className="w-5 h-5" 
+                      style={{ 
+                        color: isNoticeManagementFavorite ? '#FFD700' : 'rgba(12, 12, 12, 0.24)',
+                        fill: isNoticeManagementFavorite ? '#FFD700' : 'none',
+                      }} 
+                    />
+                  </button>
                 </div>
                 <button
                   onClick={() => setShowAddNoticeModal(true)}
