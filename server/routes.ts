@@ -341,15 +341,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           createdCases.push(draftCase);
         } else if (hasDamagePrevention && hasVictimRecovery) {
-          // Both types - create 2 drafts
+          // Both types - create 2 drafts with same data (deep copy to prevent mutation issues)
+          const baseData = JSON.parse(JSON.stringify(validatedData));
+          
           const preventionDraft = await storage.createCase({
-            ...validatedData,
+            ...baseData,
             caseNumber: prefix,  // Damage prevention without suffix
             caseGroupId,
             createdBy: req.session.userId,
           });
+          
+          // Deep copy again for second case to ensure data integrity
+          const baseData2 = JSON.parse(JSON.stringify(validatedData));
           const recoveryDraft = await storage.createCase({
-            ...validatedData,
+            ...baseData2,
             caseNumber: `${prefix}-1`,  // First victim recovery
             caseGroupId,
             createdBy: req.session.userId,
@@ -426,14 +431,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Both types selected
           if (suffix === 0) {
             // New accident: create prevention (no suffix) and -1 (recovery)
+            // Deep copy to prevent mutation issues
+            const baseData = JSON.parse(JSON.stringify(validatedData));
             const preventionCase = await storage.createCase({
-              ...validatedData,
+              ...baseData,
               caseNumber: prefix,  // Damage prevention without suffix
               caseGroupId,
               createdBy: req.session.userId,
             });
+            
+            const baseData2 = JSON.parse(JSON.stringify(validatedData));
             const recoveryCase = await storage.createCase({
-              ...validatedData,
+              ...baseData2,
               caseNumber: `${prefix}-1`,
               caseGroupId,
               createdBy: req.session.userId,
@@ -557,6 +566,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+      }
+
+      // 연결된 케이스들도 함께 업데이트 (같은 caseGroupId를 가진 케이스들)
+      // 접수번호(caseNumber)와 id는 유지하고 나머지 데이터만 동기화
+      if (existingCase.caseGroupId) {
+        const linkedCases = await storage.getCasesByGroupId(existingCase.caseGroupId);
+        const { caseNumber, id: _, ...syncData } = updateData; // 접수번호와 id는 제외
+        
+        for (const linkedCase of linkedCases) {
+          if (linkedCase.id !== id) {
+            await storage.updateCase(linkedCase.id, syncData);
+            console.log(`🔗 Synced linked case: ${linkedCase.caseNumber}`);
+          }
+        }
       }
 
       res.json({ success: true, case: updatedCase });
