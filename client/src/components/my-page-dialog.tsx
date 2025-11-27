@@ -72,6 +72,18 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
     },
   });
 
+  // Add favorite mutation
+  const addFavoriteMutation = useMutation({
+    mutationFn: (menuName: string) => apiRequest("POST", "/api/favorites", { menuName }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/favorites"] });
+      toast({
+        title: "즐겨찾기 추가",
+        description: "즐겨찾기에 추가되었습니다.",
+      });
+    },
+  });
+
   // Remove favorite mutation
   const removeFavoriteMutation = useMutation({
     mutationFn: (menuName: string) => apiRequest("DELETE", `/api/favorites/${encodeURIComponent(menuName)}`, {}),
@@ -83,6 +95,55 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
       });
     },
   });
+
+  // Menu structure for favorites
+  const menuStructure = [
+    { category: "홈", items: [] },
+    { category: "새로운 접수", items: [] },
+    { category: "진행상황", items: [] },
+    { 
+      category: "현장조사", 
+      items: ["현장입력", "도면 작성", "증빙자료 업로드", "견적서 작성", "보고서 작성"] 
+    },
+    { category: "종합진행관리", items: [] },
+    { 
+      category: "통계 및 정산", 
+      items: ["통계", "정산조회", "정산하기"] 
+    },
+    { 
+      category: "관리자 설정", 
+      items: ["계정 관리", "DB관리", "1:1 문의 관리", "기준정보 관리", "알림 메시지 전송", "접근권한관리"] 
+    },
+  ];
+
+  const isFavorite = (menuName: string) => {
+    return favorites.some(f => f.menuName === menuName);
+  };
+
+  const toggleFavorite = (menuName: string) => {
+    if (isFavorite(menuName)) {
+      removeFavoriteMutation.mutate(menuName);
+    } else {
+      addFavoriteMutation.mutate(menuName);
+    }
+  };
+
+  const handleResetFavorites = () => {
+    favorites.forEach(fav => {
+      removeFavoriteMutation.mutate(fav.menuName);
+    });
+  };
+
+  const handleSelectAll = () => {
+    const allMenus = menuStructure.flatMap(m => 
+      m.items.length > 0 ? [m.category, ...m.items] : [m.category]
+    );
+    allMenus.forEach(menuName => {
+      if (!isFavorite(menuName)) {
+        addFavoriteMutation.mutate(menuName);
+      }
+    });
+  };
 
   const updateProfileMutation = useMutation({
     mutationFn: (data: Partial<User>) =>
@@ -493,65 +554,84 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
 
             {activeTab === "favorites" && (
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">즐겨찾기 목록</h3>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">즐겨찾기 목록</h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  자주 쓰는 화면을 고정해 빠르게 접근하세요. 불필요한 항목은 수시로 정리해 주세요.
+                </p>
+
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={handleSelectAll}
+                    className="text-sm text-[#008FED] hover:underline font-medium"
+                    data-testid="button-select-all-favorites"
+                  >
+                    전체 선택
+                  </button>
+                  <button
+                    onClick={handleResetFavorites}
+                    className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
+                    data-testid="button-reset-favorites"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    초기화
+                  </button>
+                </div>
+
                 {favoritesLoading ? (
                   <div className="text-center py-12 text-gray-500">로딩 중...</div>
-                ) : favorites.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    즐겨찾기한 항목이 없습니다.
-                  </div>
                 ) : (
-                  <div className="space-y-2">
-                    {favorites.map((fav) => {
-                      const getMenuIcon = (menuName: string) => {
-                        switch (menuName) {
-                          case "홈": return <Home className="w-4 h-4" />;
-                          case "접수하기": return <CalendarPlus className="w-4 h-4" />;
-                          case "현장조사": return <AlertCircle className="w-4 h-4" />;
-                          case "종합진행관리": return <Building2 className="w-4 h-4" />;
-                          case "통계 및 정산": return <TrendingUp className="w-4 h-4" />;
-                          case "관리자 설정": return <Settings className="w-4 h-4" />;
-                          default: return <Star className="w-4 h-4" />;
-                        }
-                      };
-
-                      const handleClick = () => {
-                        onOpenChange(false);
-                        switch (fav.menuName) {
-                          case "홈": setLocation("/dashboard"); break;
-                          case "접수하기": setLocation("/intake"); break;
-                          case "현장조사": setLocation("/field-survey/management"); break;
-                          case "종합진행관리": setLocation("/comprehensive-progress"); break;
-                          case "통계 및 정산": setLocation("/statistics"); break;
-                          case "관리자 설정": setLocation("/admin-settings"); break;
-                        }
-                      };
-
-                      return (
-                        <div
-                          key={fav.id}
-                          className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:bg-gray-50 transition-colors"
-                        >
-                          <button
-                            onClick={handleClick}
-                            className="flex items-center gap-3 flex-1"
-                            data-testid={`favorite-item-${fav.menuName}`}
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-[#008FED]/10 flex items-center justify-center text-[#008FED]">
-                              {getMenuIcon(fav.menuName)}
-                            </div>
-                            <span className="text-sm font-medium text-gray-900">{fav.menuName}</span>
-                          </button>
-                          <button
-                            onClick={() => removeFavoriteMutation.mutate(fav.menuName)}
-                            className="p-1.5 hover:bg-gray-100 rounded"
-                            data-testid={`remove-favorite-${fav.menuName}`}
-                          >
-                            <X className="w-4 h-4 text-gray-400" />
-                          </button>
+                  <div className="space-y-1">
+                    {menuStructure.map((menu, menuIndex) => (
+                      <div key={menu.category}>
+                        {/* Category Header */}
+                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => toggleFavorite(menu.category)}
+                              className="flex-shrink-0"
+                              data-testid={`toggle-favorite-${menu.category}`}
+                            >
+                              <Star 
+                                className={`w-5 h-5 ${
+                                  isFavorite(menu.category) 
+                                    ? "fill-[#008FED] text-[#008FED]" 
+                                    : "text-gray-300"
+                                }`} 
+                              />
+                            </button>
+                            <span className="font-semibold text-gray-900">{menu.category}</span>
+                          </div>
+                          {menu.items.length > 0 && (
+                            <span className="text-gray-400">—</span>
+                          )}
                         </div>
-                      );
-                    })}
+
+                        {/* Sub Items */}
+                        {menu.items.length > 0 && (
+                          <div className="flex flex-wrap gap-x-6 gap-y-2 py-3 pl-8">
+                            {menu.items.map((item) => (
+                              <button
+                                key={item}
+                                onClick={() => toggleFavorite(item)}
+                                className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+                                data-testid={`toggle-favorite-${item}`}
+                              >
+                                <Star 
+                                  className={`w-4 h-4 ${
+                                    isFavorite(item) 
+                                      ? "fill-[#008FED] text-[#008FED]" 
+                                      : "text-gray-300"
+                                  }`} 
+                                />
+                                <span>{item}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
