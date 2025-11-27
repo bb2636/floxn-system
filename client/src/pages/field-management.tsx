@@ -962,6 +962,9 @@ export default function FieldManagement() {
                             flex: 1,
                           }}
                           disabled={isReadOnly}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
                           data-testid="button-visit-date"
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -991,7 +994,14 @@ export default function FieldManagement() {
                     <Input
                       type="time"
                       value={visitTime}
-                      onChange={(e) => { handleUserInput(); setVisitTime(e.target.value); }}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleUserInput();
+                        setVisitTime(e.target.value);
+                      }}
+                      onFocus={(e) => {
+                        e.stopPropagation();
+                      }}
                       className={intakeFieldClass}
                       style={{
                         ...intakeFieldStyle,
@@ -1064,10 +1074,14 @@ export default function FieldManagement() {
                   </Label>
                   <div className="flex gap-2">
                     {["배관", "코킹", "방수", "기타"].map((category) => (
-                      <Button
+                      <button
                         key={category}
                         type="button"
-                        onClick={() => setAccidentCategory(category)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setAccidentCategory(category);
+                        }}
                         disabled={isReadOnly}
                         style={{
                           fontFamily: "Pretendard",
@@ -1089,11 +1103,13 @@ export default function FieldManagement() {
                             ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
                             : "none",
                           backdropFilter: accidentCategory === category ? "blur(7px)" : "none",
+                          cursor: isReadOnly ? "not-allowed" : "pointer",
+                          opacity: isReadOnly ? 0.5 : 1,
                         }}
                         data-testid={`button-category-${category}`}
                       >
                         {category}
-                      </Button>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -1115,7 +1131,14 @@ export default function FieldManagement() {
                   <textarea
                     id="accident-cause-detail"
                     value={accidentCause}
-                    onChange={(e) => { handleUserInput(); setAccidentCause(e.target.value); }}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handleUserInput();
+                      setAccidentCause(e.target.value);
+                    }}
+                    onFocus={(e) => {
+                      e.stopPropagation();
+                    }}
                     placeholder="누수원인, 누수지점 등 기타 특이사항을 자유롭게 입력해주세요"
                     maxLength={800}
                     style={{
