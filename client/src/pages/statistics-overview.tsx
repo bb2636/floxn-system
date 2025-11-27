@@ -355,9 +355,7 @@ export default function StatisticsOverview() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                   }}
-                >
-                  직접방문
-                </th>
+                >직접복구</th>
                 <th
                   style={{
                     padding: "12px 16px",
