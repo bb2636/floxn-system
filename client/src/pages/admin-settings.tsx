@@ -807,7 +807,7 @@ export default function AdminSettings() {
                       color: "#008FED",
                     }}
                   >
-                    1000
+                    {inquiries.length}
                   </span>
                 </div>
                 <Select defaultValue="전체">
