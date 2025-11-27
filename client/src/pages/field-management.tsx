@@ -1786,11 +1786,17 @@ export default function FieldManagement() {
                         status, // 자동 변경된 상태 추가
                       };
 
-                      await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
+                      const response = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
+                      const data = await response.json();
+
+                      const syncedCases = data?.syncedCases || 0;
+                      const syncMessage = syncedCases > 0 
+                        ? ` (${syncedCases}건의 연관 케이스에도 동기화됨)`
+                        : "";
 
                       toast({
                         title: "임시저장 완료",
-                        description: `현장조사 정보가 임시저장되었습니다. (상태: ${status})`,
+                        description: `현장조사 정보가 임시저장되었습니다. (상태: ${status})${syncMessage}`,
                       });
 
                       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
@@ -1848,11 +1854,17 @@ export default function FieldManagement() {
                         status: "현장정보 입력", // 제출 시 상태 변경
                       };
 
-                      await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
+                      const response = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
+                      const data = await response.json();
+
+                      const syncedCases = data?.syncedCases || 0;
+                      const syncMessage = syncedCases > 0 
+                        ? ` (${syncedCases}건의 연관 케이스에도 동기화됨)`
+                        : "";
 
                       toast({
                         title: "제출 완료",
-                        description: "현장조사 보고서가 제출되었습니다.",
+                        description: `현장조사 보고서가 제출되었습니다.${syncMessage}`,
                       });
 
                       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });

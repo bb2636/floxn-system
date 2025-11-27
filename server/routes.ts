@@ -980,12 +980,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Sync field survey data to related cases (same accident number, different receipt)
-      // Exclude status field from sync - each case manages its own status
-      const syncData = { ...fieldData };
-      delete syncData.status;
-      delete syncData.fieldSurveyStatus;
+      // Create a new object excluding status fields - each case manages its own status
+      const { status, fieldSurveyStatus, ...syncData } = fieldData;
       
-      const syncedCount = await storage.syncFieldSurveyToRelatedCases(caseId, syncData);
+      let syncedCount = 0;
+      try {
+        syncedCount = await storage.syncFieldSurveyToRelatedCases(caseId, syncData);
+      } catch (syncError) {
+        console.error("Sync to related cases failed:", syncError);
+        // Don't fail the request if sync fails
+      }
       
       res.json({ 
         success: true, 
