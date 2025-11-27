@@ -266,10 +266,7 @@ export default function Dashboard() {
     { name: "관리자 설정", active: false },
   ];
 
-  const inquiries = [
-    { title: "정산 반영 지연 문의", status: "처리중" },
-    { title: "서류 양식 요청", status: "답변완료" },
-  ];
+  const inquiries: { title: string; status: string }[] = [];
 
   const handleRemoveFavorite = (menuName: string) => {
     removeFavoriteMutation.mutate(menuName);
