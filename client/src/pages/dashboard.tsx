@@ -73,6 +73,12 @@ export default function Dashboard() {
     enabled: !!user && user.role === "협력사",
   });
 
+  // Fetch all users for staff summary (관리자 only)
+  const { data: allUsers = [] } = useQuery<Omit<User, "password">[]>({
+    queryKey: ["/api/users"],
+    enabled: !!user && user.role === "관리자",
+  });
+
   const removeFavoriteMutation = useMutation({
     mutationFn: async (menuName: string) => {
       await apiRequest("DELETE", `/api/favorites/${encodeURIComponent(menuName)}`);
@@ -157,25 +163,29 @@ export default function Dashboard() {
   const staffSummary = useMemo(() => {
     if (!filteredCasesByTab || !user) return [];
 
-    const userCaseCounts = new Map<string, { name: string; position: string; count: number }>();
+    const userCaseCounts = new Map<string, { name: string; position: string; count: number; userId: string }>();
 
     filteredCasesByTab.forEach(c => {
-      const assignedTo = c.assignedTo || '미배정';
+      const assignedToId = c.assignedTo || 'unassigned';
 
-      const existing = userCaseCounts.get(assignedTo);
+      const existing = userCaseCounts.get(assignedToId);
       if (existing) {
         existing.count++;
       } else {
-        userCaseCounts.set(assignedTo, {
-          name: assignedTo,
-          position: '직원',
+        // Find user info from allUsers list
+        const assignedUser = allUsers.find(u => u.id === assignedToId);
+        
+        userCaseCounts.set(assignedToId, {
+          name: assignedUser ? assignedUser.name : '미배정',
+          position: assignedUser ? (assignedUser.role || '직원') : '직원',
           count: 1,
+          userId: assignedToId,
         });
       }
     });
 
     return Array.from(userCaseCounts.values()).sort((a, b) => b.count - a.count);
-  }, [filteredCasesByTab, user]);
+  }, [filteredCasesByTab, user, allUsers]);
 
   // Filter cases assigned to current user for "내 작업" section
   const myTasks = useMemo(() => {
