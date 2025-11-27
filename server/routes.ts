@@ -933,21 +933,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update case field survey endpoint (협력사 및 관리자)
+  // Update case field survey endpoint (협력사: 언제든지, 관리자: 제출 후에만)
   app.patch("/api/cases/:caseId/field-survey", async (req, res) => {
     // Check authentication
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
-    // Check authorization (협력사 또는 관리자만 가능)
-    if (req.session.userRole !== "협력사" && req.session.userRole !== "관리자") {
+    const userRole = req.session.userRole;
+    const { caseId } = req.params;
+
+    // 협력사: 언제든지 수정 가능
+    // 관리자: 협력사가 제출(submitted) 후에만 수정 가능
+    if (userRole !== "협력사" && userRole !== "관리자") {
       return res.status(403).json({ error: "협력사 또는 관리자 권한이 필요합니다" });
     }
 
+    // 관리자인 경우, 케이스가 제출된 상태인지 확인
+    if (userRole === "관리자") {
+      const existingCase = await storage.getCaseById(caseId);
+      if (!existingCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+      if (existingCase.fieldSurveyStatus !== "submitted") {
+        return res.status(403).json({ error: "협력사가 보고서를 제출한 후에만 수정할 수 있습니다" });
+      }
+    }
+
     try {
-      const { caseId } = req.params;
-      
       // Validate field data with Zod
       const updateSchema = z.object({
         visitDate: z.string().nullable().optional(),
