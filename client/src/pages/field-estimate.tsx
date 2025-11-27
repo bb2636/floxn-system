@@ -467,7 +467,7 @@ export default function FieldEstimate() {
     onError: (error: Error) => {
       toast({
         title: "견적서 복제 실패",
-        description: error.message,
+        description: error.message || "알 수 없는 오류가 발생했습니다.",
         variant: "destructive",
       });
     },

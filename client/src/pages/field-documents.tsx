@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Case, CaseDocument } from "@shared/schema";
-import { Upload, X, Check, Download, Search } from "lucide-react";
+import { Upload, X, Check, Download, Search, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,6 +11,17 @@ import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { formatCaseNumber } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type DocumentCategory = "전체" | "현장" | "수리중" | "복구완료" | "청구";
 
@@ -124,6 +135,46 @@ export default function FieldDocuments() {
   const { data: documents = [], isLoading } = useQuery<CaseDocument[]>({
     queryKey: ["/api/documents/case", selectedCaseId],
     enabled: !!selectedCaseId,
+  });
+
+  // 관련 케이스 문서 확인 (같은 사고번호의 다른 케이스에 문서가 있는지)
+  const { data: relatedDocumentsInfo } = useQuery<{
+    hasRelatedDocuments: boolean;
+    sourceCaseId?: string;
+    sourceCaseNumber?: string;
+    documentCount?: number;
+  }>({
+    queryKey: ["/api/cases", selectedCaseId, "related-documents"],
+    enabled: !!selectedCaseId && documents.length === 0 && !isLoading,
+  });
+
+  // 문서 복제 mutation
+  const cloneDocumentsMutation = useMutation({
+    mutationFn: async (sourceCaseId: string) => {
+      const response = await apiRequest("POST", `/api/cases/${selectedCaseId}/clone-documents`, {
+        sourceCaseId,
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "문서 복제 실패");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cases", selectedCaseId, "related-documents"] });
+      toast({
+        title: "문서 복제 완료",
+        description: "관련 케이스의 문서들이 복제되었습니다.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "문서 복제 실패",
+        description: error.message || "알 수 없는 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
   });
 
   // 문서 업로드 mutation
@@ -557,6 +608,58 @@ export default function FieldDocuments() {
           </button>
         ))}
       </div>
+
+      {/* 관련 케이스에서 문서 복제 버튼 */}
+      {relatedDocumentsInfo?.hasRelatedDocuments && documents.length === 0 && (
+        <div className="mb-4">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                disabled={cloneDocumentsMutation.isPending}
+                className="w-full px-6 py-4 rounded-xl font-medium transition-all hover-elevate active-elevate-2 flex items-center justify-center gap-3"
+                style={{
+                  background: cloneDocumentsMutation.isPending ? "#ccc" : "#F59E0B",
+                  color: "white",
+                  border: "none",
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: 500,
+                  cursor: cloneDocumentsMutation.isPending ? "not-allowed" : "pointer",
+                }}
+                data-testid="button-clone-documents"
+              >
+                <Copy className="w-5 h-5" />
+                {cloneDocumentsMutation.isPending 
+                  ? "복제 중..." 
+                  : `관련 케이스에서 문서 가져오기 (${relatedDocumentsInfo.documentCount || 0}개)`}
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>관련 케이스에서 문서 복제</AlertDialogTitle>
+                <AlertDialogDescription>
+                  <span className="font-semibold">{formatCaseNumber(relatedDocumentsInfo.sourceCaseNumber)}</span> 케이스의 문서 {relatedDocumentsInfo.documentCount || 0}개를 복제하시겠습니까?
+                  <br />
+                  복제 후에도 개별적으로 수정/삭제할 수 있습니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    if (relatedDocumentsInfo.sourceCaseId) {
+                      cloneDocumentsMutation.mutate(relatedDocumentsInfo.sourceCaseId);
+                    }
+                  }}
+                  data-testid="button-confirm-clone-documents"
+                >
+                  복제하기
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
 
       {/* 파일 업로드 영역 */}
       <div

@@ -144,6 +144,7 @@ export default function FieldDrawing() {
         setLeakMarkers(data.drawing.leakMarkers || []);
       }
       queryClient.invalidateQueries({ queryKey: ["/api/drawings", "case", selectedCaseId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cases", selectedCaseId, "related-drawing"] });
       toast({
         title: "도면 복제 완료",
         description: "관련 케이스의 도면이 복제되었습니다.",
@@ -152,7 +153,7 @@ export default function FieldDrawing() {
     onError: (error: Error) => {
       toast({
         title: "도면 복제 실패",
-        description: error.message,
+        description: error.message || "알 수 없는 오류가 발생했습니다.",
         variant: "destructive",
       });
     },
