@@ -27,9 +27,15 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
   const [inquiryTitle, setInquiryTitle] = useState("");
   const [inquiryContent, setInquiryContent] = useState("");
   const [expandedInquiry, setExpandedInquiry] = useState<string | null>(null);
+  const [respondingInquiryId, setRespondingInquiryId] = useState<string | null>(null);
+  const [responseTitle, setResponseTitle] = useState("");
+  const [responseContent, setResponseContent] = useState("");
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, setLocation] = useLocation();
+  
+  // Check if user is admin
+  const isAdmin = user.role === "관리자";
 
   // Fetch favorites
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery<UserFavorite[]>({
@@ -66,6 +72,32 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
     onError: () => {
       toast({
         title: "문의 등록 실패",
+        description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Respond to inquiry mutation (admin only)
+  const respondInquiryMutation = useMutation({
+    mutationFn: (data: { id: string; responseTitle: string; response: string }) =>
+      apiRequest("PATCH", `/api/inquiries/${data.id}`, {
+        responseTitle: data.responseTitle,
+        response: data.response,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/inquiries"] });
+      toast({
+        title: "답변 등록 완료",
+        description: "답변이 성공적으로 등록되었습니다.",
+      });
+      setRespondingInquiryId(null);
+      setResponseTitle("");
+      setResponseContent("");
+    },
+    onError: () => {
+      toast({
+        title: "답변 등록 실패",
         description: "다시 시도해주세요.",
         variant: "destructive",
       });
@@ -401,8 +433,11 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
             {activeTab === "inquiries" && (
               <div>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900">1:1 문의</h3>
-                  {!showInquiryForm && (
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {isAdmin ? "1:1 문의 관리" : "1:1 문의"}
+                  </h3>
+                  {/* 관리자는 문의하기 버튼 숨김 */}
+                  {!isAdmin && !showInquiryForm && (
                     <Button
                       onClick={() => setShowInquiryForm(true)}
                       size="sm"
@@ -415,7 +450,8 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
                   )}
                 </div>
 
-                {showInquiryForm ? (
+                {/* 관리자가 아닌 경우에만 문의 작성 폼 표시 */}
+                {!isAdmin && showInquiryForm ? (
                   <div className="space-y-4 p-4 bg-gray-50 rounded-xl mb-6">
                     <h4 className="font-medium text-gray-900">새 문의 작성</h4>
                     <Input
@@ -540,6 +576,70 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
                                     <p className="font-medium text-gray-900 mb-1">{inquiry.responseTitle}</p>
                                   )}
                                   <p className="text-sm text-gray-600 whitespace-pre-wrap">{inquiry.response}</p>
+                                </div>
+                              )}
+
+                              {/* 관리자용 답변하기 버튼 및 폼 */}
+                              {isAdmin && inquiry.status !== "완료" && (
+                                <div className="mt-4">
+                                  {respondingInquiryId === inquiry.id ? (
+                                    <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                      <h5 className="font-medium text-[#008FED]">답변 작성</h5>
+                                      <Input
+                                        placeholder="답변 제목을 입력하세요"
+                                        value={responseTitle}
+                                        onChange={(e) => setResponseTitle(e.target.value)}
+                                        data-testid="input-response-title"
+                                      />
+                                      <Textarea
+                                        placeholder="답변 내용을 입력하세요"
+                                        value={responseContent}
+                                        onChange={(e) => setResponseContent(e.target.value)}
+                                        rows={4}
+                                        data-testid="input-response-content"
+                                      />
+                                      <div className="flex gap-2 justify-end">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            setRespondingInquiryId(null);
+                                            setResponseTitle("");
+                                            setResponseContent("");
+                                          }}
+                                          data-testid="button-cancel-response"
+                                        >
+                                          취소
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            if (responseTitle.trim() && responseContent.trim()) {
+                                              respondInquiryMutation.mutate({
+                                                id: inquiry.id,
+                                                responseTitle: responseTitle,
+                                                response: responseContent,
+                                              });
+                                            }
+                                          }}
+                                          disabled={!responseTitle.trim() || !responseContent.trim() || respondInquiryMutation.isPending}
+                                          className="bg-[#008FED] hover:bg-[#0070BE]"
+                                          data-testid="button-submit-response"
+                                        >
+                                          {respondInquiryMutation.isPending ? "등록 중..." : "답변 등록"}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => setRespondingInquiryId(inquiry.id)}
+                                      className="bg-[#008FED] hover:bg-[#0070BE]"
+                                      data-testid={`button-respond-${inquiry.id}`}
+                                    >
+                                      답변하기
+                                    </Button>
+                                  )}
                                 </div>
                               )}
                             </div>
