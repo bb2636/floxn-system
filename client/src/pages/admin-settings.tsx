@@ -2509,7 +2509,7 @@ export default function AdminSettings() {
                                 color: "#008FED",
                               }}
                             >
-                              복구면적 산출표
+                              {["사고 유형", "사고 원인", "복구 유형", "타업체 견적 여부", "피해품목", "피해유형"].includes(category) ? "현장입력" : "복구면적 산출표"}
                             </span>
                           </div>
                         </button>
@@ -2560,7 +2560,7 @@ export default function AdminSettings() {
                         color: "#008FED",
                       }}
                     >
-                      복구면적 산출표
+                      {["사고 유형", "사고 원인", "복구 유형", "타업체 견적 여부", "피해품목", "피해유형"].includes(selectedCategory) ? "현장입력" : "복구면적 산출표"}
                     </span>
                     <span
                       style={{
