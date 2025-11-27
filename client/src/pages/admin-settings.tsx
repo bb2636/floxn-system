@@ -282,9 +282,6 @@ export default function AdminSettings() {
   // 기준정보 관리 states
   const [selectedCategory, setSelectedCategory] = useState("장소");
   const [categoryItems, setCategoryItems] = useState<Record<string, string[]>>({
-    "보험사": ["보험사 1", "보험사 2", "보험사 3"],
-    "협력사": ["협력사 1", "협력사 2"],
-    "손해사정사": [],
     "차디유형": [],
     "사고 유형": [],
     "사고 원인": [],
