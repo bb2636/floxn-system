@@ -106,6 +106,9 @@ export interface IStorage {
   updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null>;
   // Case group methods
   getCasesByGroupId(caseGroupId: string): Promise<Case[]>;
+  // Same accident number methods (for field survey sync)
+  getCasesByAccidentNo(accidentNo: string, excludeCaseId?: string): Promise<Case[]>;
+  syncFieldSurveyToRelatedCases(sourceCaseId: string, fieldData: Partial<InsertCase>): Promise<number>;
   // Case number helpers
   getPreventionCaseByPrefix(prefix: string): Promise<Case | null>;
   getNextVictimSuffix(prefix: string): Promise<number>;
@@ -1926,6 +1929,15 @@ export class MemStorage implements IStorage {
     throw new Error("Case group methods not implemented in MemStorage");
   }
 
+  // Same accident number methods (stub)
+  async getCasesByAccidentNo(accidentNo: string, excludeCaseId?: string): Promise<Case[]> {
+    throw new Error("Same accident number methods not implemented in MemStorage");
+  }
+
+  async syncFieldSurveyToRelatedCases(sourceCaseId: string, fieldData: Partial<InsertCase>): Promise<number> {
+    throw new Error("Same accident number methods not implemented in MemStorage");
+  }
+
   // Case number helpers (stub)
   async getPreventionCaseByPrefix(prefix: string): Promise<Case | null> {
     throw new Error("Case number helper methods not implemented in MemStorage");
@@ -3737,6 +3749,56 @@ export class DbStorage implements IStorage {
       .where(eq(cases.caseGroupId, caseGroupId))
       .orderBy(asc(cases.caseNumber));
     return result;
+  }
+
+  // Same accident number methods (for field survey sync)
+  async getCasesByAccidentNo(accidentNo: string, excludeCaseId?: string): Promise<Case[]> {
+    if (!accidentNo) return [];
+    
+    const conditions = [eq(cases.insuranceAccidentNo, accidentNo)];
+    
+    const result = await db
+      .select()
+      .from(cases)
+      .where(and(...conditions))
+      .orderBy(asc(cases.caseNumber));
+    
+    // Filter out the excluded case if provided
+    if (excludeCaseId) {
+      return result.filter(c => c.id !== excludeCaseId);
+    }
+    return result;
+  }
+
+  async syncFieldSurveyToRelatedCases(sourceCaseId: string, fieldData: Partial<InsertCase>): Promise<number> {
+    // Get source case to find its accident number
+    const sourceCase = await this.getCaseById(sourceCaseId);
+    if (!sourceCase || !sourceCase.insuranceAccidentNo) {
+      return 0;
+    }
+
+    // Get all related cases (same accident number, different receipt)
+    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, sourceCaseId);
+    
+    if (relatedCases.length === 0) {
+      return 0;
+    }
+
+    // Update all related cases with the field survey data
+    let updatedCount = 0;
+    for (const relatedCase of relatedCases) {
+      try {
+        await db
+          .update(cases)
+          .set(fieldData)
+          .where(eq(cases.id, relatedCase.id));
+        updatedCount++;
+      } catch (error) {
+        console.error(`Failed to sync field survey to case ${relatedCase.id}:`, error);
+      }
+    }
+
+    return updatedCount;
   }
 
   // Case number helpers
