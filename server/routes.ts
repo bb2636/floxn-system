@@ -979,7 +979,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      res.json({ success: true, case: updatedCase });
+      // Sync field survey data to related cases (same accident number, different receipt)
+      // Exclude status field from sync - each case manages its own status
+      const syncData = { ...fieldData };
+      delete syncData.status;
+      delete syncData.fieldSurveyStatus;
+      
+      const syncedCount = await storage.syncFieldSurveyToRelatedCases(caseId, syncData);
+      
+      res.json({ 
+        success: true, 
+        case: updatedCase,
+        syncedCases: syncedCount 
+      });
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
