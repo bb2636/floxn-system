@@ -216,9 +216,7 @@ export default function StatisticsOverview() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                   }}
-                >
-                  수령
-                </th>
+                >수임임</th>
                 <th
                   colSpan={4}
                   style={{
