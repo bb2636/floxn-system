@@ -177,7 +177,7 @@ export default function Dashboard() {
         
         userCaseCounts.set(assignedToId, {
           name: assignedUser ? assignedUser.name : '미배정',
-          position: assignedUser ? (assignedUser.role || '직원') : '직원',
+          position: assignedUser ? (assignedUser.role || '-') : '-',
           count: 1,
           userId: assignedToId,
         });
