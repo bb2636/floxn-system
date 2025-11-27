@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case } from "@shared/schema";
 import { ChevronDown, ChevronRight, ChevronUp, Calendar as CalendarIcon, Clock, X, Plus, Check } from "lucide-react";
@@ -73,6 +73,10 @@ export default function FieldManagement() {
   // ref 사용: state 변경 시 re-render 방지 (포커스 유지)
   const isUserTypingRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  
+  // 스크롤 위치 저장용 ref (스크롤 점프 방지)
+  const scrollPositionRef = useRef<number>(0);
+  const shouldRestoreScrollRef = useRef(false);
 
   // Refs for preventing scroll on focus
   const caseSelectTriggerRef = useRef<HTMLButtonElement>(null);
@@ -254,14 +258,26 @@ export default function FieldManagement() {
   const handleUserInput = () => {
     isUserTypingRef.current = true;
     
+    // 스크롤 위치 저장 (리렌더링 후 복원을 위해)
+    scrollPositionRef.current = window.scrollY;
+    shouldRestoreScrollRef.current = true;
+    
     // 타이핑 멈춘 후 2초 뒤에 상태 해제
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
     typingTimeoutRef.current = setTimeout(() => {
       isUserTypingRef.current = false;
+      shouldRestoreScrollRef.current = false;
     }, 2000);
   };
+  
+  // 스크롤 위치 복원 (리렌더링 후 즉시 실행)
+  useLayoutEffect(() => {
+    if (shouldRestoreScrollRef.current && scrollPositionRef.current > 0) {
+      window.scrollTo(0, scrollPositionRef.current);
+    }
+  });
 
   // 선택한 케이스의 데이터를 폼에 로드 - 실제로 케이스 ID가 바뀔 때만 실행
   useEffect(() => {
