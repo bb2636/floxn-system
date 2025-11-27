@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2 } from "lucide-react";
+import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckCircle2, Star } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -542,6 +542,33 @@ export default function AdminSettings() {
     enabled: !!user && activeMenu === "1:1 문의 관리",
   });
 
+  // Fetch favorites for admin
+  const { data: favorites = [] } = useQuery<{ id: string; menuName: string }[]>({
+    queryKey: ["/api/favorites"],
+    enabled: !!user,
+  });
+
+  // Check if 1:1 문의 관리 is a favorite
+  const isInquiryManagementFavorite = favorites.some(fav => fav.menuName === "1:1 문의 관리");
+
+  // Toggle favorite mutation
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async (menuName: string) => {
+      const isFavorite = favorites.some(fav => fav.menuName === menuName);
+      if (isFavorite) {
+        return await apiRequest("DELETE", `/api/favorites/${encodeURIComponent(menuName)}`);
+      } else {
+        return await apiRequest("POST", "/api/favorites", { menuName });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/favorites"] });
+      toast({
+        description: isInquiryManagementFavorite ? "즐겨찾기에서 해제되었습니다" : "즐겨찾기에 추가되었습니다",
+      });
+    },
+  });
+
   // Inquiry mutations
   const updateInquiryMutation = useMutation({
     mutationFn: async ({ id, responseTitle, response }: { id: string; responseTitle: string; response: string }) => {
@@ -770,17 +797,24 @@ export default function AdminSettings() {
                   >
                     1:1 문의 관리
                   </h1>
-                  <div
-                    className="flex items-center justify-center"
+                  <button
+                    onClick={() => toggleFavoriteMutation.mutate("1:1 문의 관리")}
+                    className="flex items-center justify-center hover:scale-110 transition-transform"
                     style={{
-                      width: "24px",
-                      height: "24px",
-                      background: "rgba(0, 143, 237, 0.1)",
+                      width: "28px",
+                      height: "28px",
+                      background: isInquiryManagementFavorite ? "rgba(255, 193, 7, 0.15)" : "rgba(0, 143, 237, 0.1)",
                       borderRadius: "50%",
+                      border: "none",
+                      cursor: "pointer",
                     }}
+                    data-testid="button-toggle-inquiry-favorite"
+                    title={isInquiryManagementFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
                   >
-                    <span style={{ fontSize: "12px", color: "#008FED" }}>🔔</span>
-                  </div>
+                    <Star
+                      className={`w-4 h-4 ${isInquiryManagementFavorite ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`}
+                    />
+                  </button>
                 </div>
               </div>
 
