@@ -4,17 +4,10 @@ import { User } from "@shared/schema";
 import { Search, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function StatisticsOverview() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [transactionNumberChecked, setTransactionNumberChecked] = useState(false);
-  const [receiptChecked, setReceiptChecked] = useState(false);
-  const [exemplaryChecked, setExemplaryChecked] = useState(false);
-  const [autoNoticeChecked, setAutoNoticeChecked] = useState(false);
-  const [outputDateRange, setOutputDateRange] = useState("전체");
-  const [businessPlace, setBusinessPlace] = useState("전체");
+  const [activeTab, setActiveTab] = useState("수임");
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -96,150 +89,64 @@ export default function StatisticsOverview() {
       </div>
       {/* Filter Section */}
       <div className="mb-6">
-        <div className="flex items-center gap-6 flex-wrap">
-          {/* 거래번호 */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox
-              checked={transactionNumberChecked}
-              onCheckedChange={(checked) => setTransactionNumberChecked(checked === true)}
-              style={{
-                width: "18px",
-                height: "18px",
-              }}
-              data-testid="checkbox-transaction-number"
-            />
-            <span
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: transactionNumberChecked ? "#008FED" : "rgba(12, 12, 12, 0.7)",
-              }}
-            >
-              거래번호
-            </span>
-          </label>
+        <div className="flex items-center gap-4">
+          {/* 기간추가 Button */}
+          <Button
+            variant="outline"
+            style={{
+              height: "40px",
+              padding: "0 16px",
+              background: "#FFFFFF",
+              border: "1px solid rgba(12, 12, 12, 0.2)",
+              borderRadius: "8px",
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: 500,
+              color: "rgba(12, 12, 12, 0.7)",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+            data-testid="button-add-period"
+          >
+            <CalendarIcon size={16} style={{ color: "rgba(12, 12, 12, 0.5)" }} />
+            기간추가
+          </Button>
 
-          {/* 수령 */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox
-              checked={receiptChecked}
-              onCheckedChange={(checked) => setReceiptChecked(checked === true)}
-              style={{
-                width: "18px",
-                height: "18px",
-              }}
-              data-testid="checkbox-receipt"
-            />
-            <span
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: receiptChecked ? "#008FED" : "rgba(12, 12, 12, 0.7)",
-              }}
-            >
-              수령
-            </span>
-          </label>
+          {/* Vertical Divider */}
+          <div
+            style={{
+              width: "1px",
+              height: "24px",
+              background: "rgba(12, 12, 12, 0.1)",
+            }}
+          />
 
-          {/* 모범 */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox
-              checked={exemplaryChecked}
-              onCheckedChange={(checked) => setExemplaryChecked(checked === true)}
-              style={{
-                width: "18px",
-                height: "18px",
-              }}
-              data-testid="checkbox-exemplary"
-            />
-            <span
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: exemplaryChecked ? "#008FED" : "rgba(12, 12, 12, 0.7)",
-              }}
-            >
-              모범
-            </span>
-          </label>
-
-          {/* 자동공고 */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <Checkbox
-              checked={autoNoticeChecked}
-              onCheckedChange={(checked) => setAutoNoticeChecked(checked === true)}
-              style={{
-                width: "18px",
-                height: "18px",
-              }}
-              data-testid="checkbox-auto-notice"
-            />
-            <span
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-                color: autoNoticeChecked ? "#008FED" : "rgba(12, 12, 12, 0.7)",
-              }}
-            >
-              자동공고
-            </span>
-          </label>
-
-          {/* 출력일 범위 */}
-          <Select value={outputDateRange} onValueChange={setOutputDateRange}>
-            <SelectTrigger
-              style={{
-                width: "160px",
-                height: "40px",
-                background: "#F5F5F5",
-                border: "1px solid rgba(12, 12, 12, 0.1)",
-                borderRadius: "8px",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-              }}
-              data-testid="select-output-date-range"
-            >
-              <div className="flex items-center gap-2">
-                <CalendarIcon size={16} style={{ color: "rgba(12, 12, 12, 0.5)" }} />
-                <SelectValue placeholder="출력일 범위" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="전체">전체</SelectItem>
-              <SelectItem value="오늘">오늘</SelectItem>
-              <SelectItem value="이번주">이번주</SelectItem>
-              <SelectItem value="이번달">이번달</SelectItem>
-              <SelectItem value="직접입력">직접입력</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* 사업장 */}
-          <Select value={businessPlace} onValueChange={setBusinessPlace}>
-            <SelectTrigger
-              style={{
-                width: "160px",
-                height: "40px",
-                background: "#F5F5F5",
-                border: "1px solid rgba(12, 12, 12, 0.1)",
-                borderRadius: "8px",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-              }}
-              data-testid="select-business-place"
-            >
-              <SelectValue placeholder="사업장" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="전체">전체</SelectItem>
-              <SelectItem value="본사">본사</SelectItem>
-              <SelectItem value="지점1">지점1</SelectItem>
-              <SelectItem value="지점2">지점2</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Tab Buttons */}
+          <div className="flex items-center gap-2">
+            {["수임", "미결", "직접복구", "출동비 청구", "사고확인"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  height: "40px",
+                  padding: "0 20px",
+                  background: "transparent",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: activeTab === tab ? "#008FED" : "rgba(12, 12, 12, 0.5)",
+                  cursor: "pointer",
+                  transition: "color 0.2s",
+                }}
+                data-testid={`tab-${tab}`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       {/* Results label */}
@@ -396,9 +303,7 @@ export default function StatisticsOverview() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                   }}
-                >
-                  직접방문
-                </th>
+                >직접복구</th>
                 <th
                   style={{
                     padding: "12px 16px",
