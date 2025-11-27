@@ -2608,6 +2608,8 @@ export class DbStorage implements IStorage {
       restorationMethod: caseData.restorationMethod || null,
       otherVendorEstimate: caseData.otherVendorEstimate || null,
       damageItems: caseData.damageItems || null,
+      damagePreventionCost: caseData.damagePreventionCost || null,
+      victimIncidentAssistance: caseData.victimIncidentAssistance || null,
       assignedPartner: caseData.assignedPartner || null,
       assignedPartnerManager: caseData.assignedPartnerManager || null,
       assignedPartnerContact: caseData.assignedPartnerContact || null,

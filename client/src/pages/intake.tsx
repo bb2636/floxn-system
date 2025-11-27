@@ -465,8 +465,11 @@ export default function Intake() {
             damageQuantity: "1",
             damageDetails: "",
             damageItems: caseData.damageItems ? JSON.parse(caseData.damageItems) : [],
-            damagePreventionCost: caseData.damagePreventionCost === "true",
-            victimIncidentAssistance: caseData.victimIncidentAssistance === "true",
+            // 처리구분: DB 값이 있으면 사용, 없으면 케이스 번호로 추론
+            damagePreventionCost: caseData.damagePreventionCost === "true" || 
+              (!caseData.damagePreventionCost && caseData.caseNumber && !caseData.caseNumber.includes('-')),
+            victimIncidentAssistance: caseData.victimIncidentAssistance === "true" || 
+              (!caseData.victimIncidentAssistance && caseData.caseNumber && caseData.caseNumber.includes('-')),
             assignedPartner: caseData.assignedPartner || "",
             assignedPartnerManager: caseData.assignedPartnerManager || "",
             assignedPartnerContact: caseData.assignedPartnerContact || "",
