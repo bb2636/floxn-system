@@ -1931,10 +1931,8 @@ export class DbStorage implements IStorage {
 
   private async initDatabase() {
     try {
-      // Check if we have any users, cases, and estimates
+      // Check if we have any users
       const existingUsers = await db.select().from(users);
-      const existingCases = await db.select().from(cases);
-      const existingEstimates = await db.select().from(estimates);
       
       // Seed users if no users exist
       if (existingUsers.length === 0) {
@@ -1944,15 +1942,8 @@ export class DbStorage implements IStorage {
         await this.ensureEssentialAccounts();
       }
       
-      // Seed cases if no cases exist (regardless of users)
-      if (existingCases.length === 0) {
-        await this.seedTestCases();
-      }
-      
-      // Seed estimates if no estimates exist
-      if (existingEstimates.length === 0) {
-        await this.seedTestEstimates();
-      }
+      // NOTE: 더 이상 케이스/견적 더미 데이터를 자동 생성하지 않음
+      // 사용자가 직접 데이터를 생성해야 함
     } catch (error) {
       console.error("Database initialization error:", error);
     }
