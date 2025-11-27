@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@shared/schema";
+import { User, MasterData } from "@shared/schema";
 import { formatCaseNumber } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -96,6 +96,19 @@ export default function Intake() {
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user"],
   });
+
+  // 마스터 데이터 조회 (드롭다운 연동용)
+  const { data: masterDataList = [] } = useQuery<MasterData[]>({
+    queryKey: ["/api/master-data"],
+  });
+
+  // 마스터 데이터에서 카테고리별 항목 추출 함수
+  const getMasterDataOptions = (category: string) => {
+    return masterDataList
+      .filter(item => item.category === category && item.isActive === "true")
+      .sort((a, b) => a.displayOrder - b.displayOrder)
+      .map(item => item.value);
+  };
 
   // 즐겨찾기 목록 가져오기
   const { data: favorites = [] } = useQuery<Array<{ id: string; userId: string; menuName: string }>>({
@@ -2024,10 +2037,18 @@ export default function Intake() {
                                 <SelectValue placeholder="사고 유형 선택" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="누수">누수</SelectItem>
-                                <SelectItem value="급배수">급배수</SelectItem>
-                                <SelectItem value="화재">화재</SelectItem>
-                                <SelectItem value="기타">기타</SelectItem>
+                                {getMasterDataOptions("accident_type").length > 0 ? (
+                                  getMasterDataOptions("accident_type").map((option) => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))
+                                ) : (
+                                  <>
+                                    <SelectItem value="누수">누수</SelectItem>
+                                    <SelectItem value="급배수">급배수</SelectItem>
+                                    <SelectItem value="화재">화재</SelectItem>
+                                    <SelectItem value="기타">기타</SelectItem>
+                                  </>
+                                )}
                               </SelectContent>
                             </Select>
                           </div>
@@ -2058,11 +2079,19 @@ export default function Intake() {
                                 <SelectValue placeholder="사고 원인 선택" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="배관">배관</SelectItem>
-                                <SelectItem value="방수">방수</SelectItem>
-                                <SelectItem value="코킹">코킹</SelectItem>
-                                <SelectItem value="공용부">공용부</SelectItem>
-                                <SelectItem value="복합">복합</SelectItem>
+                                {getMasterDataOptions("accident_cause").length > 0 ? (
+                                  getMasterDataOptions("accident_cause").map((option) => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))
+                                ) : (
+                                  <>
+                                    <SelectItem value="배관">배관</SelectItem>
+                                    <SelectItem value="방수">방수</SelectItem>
+                                    <SelectItem value="코킹">코킹</SelectItem>
+                                    <SelectItem value="공용부">공용부</SelectItem>
+                                    <SelectItem value="복합">복합</SelectItem>
+                                  </>
+                                )}
                               </SelectContent>
                             </Select>
                           </div>
@@ -2093,9 +2122,17 @@ export default function Intake() {
                                 <SelectValue placeholder="복구 유형 선택" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="없음">없음</SelectItem>
-                                <SelectItem value="직접복구">직접복구</SelectItem>
-                                <SelectItem value="선견적요청">선견적요청</SelectItem>
+                                {getMasterDataOptions("recovery_type").length > 0 ? (
+                                  getMasterDataOptions("recovery_type").map((option) => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))
+                                ) : (
+                                  <>
+                                    <SelectItem value="없음">없음</SelectItem>
+                                    <SelectItem value="직접복구">직접복구</SelectItem>
+                                    <SelectItem value="선견적요청">선견적요청</SelectItem>
+                                  </>
+                                )}
                               </SelectContent>
                             </Select>
                           </div>
@@ -2126,8 +2163,16 @@ export default function Intake() {
                                 <SelectValue placeholder="타업체 견적 여부 선택" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="유">유</SelectItem>
-                                <SelectItem value="무">무</SelectItem>
+                                {getMasterDataOptions("other_company_estimate").length > 0 ? (
+                                  getMasterDataOptions("other_company_estimate").map((option) => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))
+                                ) : (
+                                  <>
+                                    <SelectItem value="유">유</SelectItem>
+                                    <SelectItem value="무">무</SelectItem>
+                                  </>
+                                )}
                               </SelectContent>
                             </Select>
                           </div>
@@ -2259,11 +2304,19 @@ export default function Intake() {
                                 <SelectValue placeholder="선택" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="장판">장판</SelectItem>
-                                <SelectItem value="벽지">벽지</SelectItem>
-                                <SelectItem value="가구">가구</SelectItem>
-                                <SelectItem value="전자제품">전자제품</SelectItem>
-                                <SelectItem value="기타">기타</SelectItem>
+                                {getMasterDataOptions("damage_item").length > 0 ? (
+                                  getMasterDataOptions("damage_item").map((option) => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))
+                                ) : (
+                                  <>
+                                    <SelectItem value="장판">장판</SelectItem>
+                                    <SelectItem value="벽지">벽지</SelectItem>
+                                    <SelectItem value="가구">가구</SelectItem>
+                                    <SelectItem value="전자제품">전자제품</SelectItem>
+                                    <SelectItem value="기타">기타</SelectItem>
+                                  </>
+                                )}
                               </SelectContent>
                             </Select>
                           </div>
@@ -2281,9 +2334,17 @@ export default function Intake() {
                                 <SelectValue placeholder="선택" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="교체">교체</SelectItem>
-                                <SelectItem value="수리">수리</SelectItem>
-                                <SelectItem value="청소">청소</SelectItem>
+                                {getMasterDataOptions("damage_type").length > 0 ? (
+                                  getMasterDataOptions("damage_type").map((option) => (
+                                    <SelectItem key={option} value={option}>{option}</SelectItem>
+                                  ))
+                                ) : (
+                                  <>
+                                    <SelectItem value="교체">교체</SelectItem>
+                                    <SelectItem value="수리">수리</SelectItem>
+                                    <SelectItem value="청소">청소</SelectItem>
+                                  </>
+                                )}
                               </SelectContent>
                             </Select>
                           </div>

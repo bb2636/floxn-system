@@ -281,10 +281,7 @@ export default function AdminSettings() {
   
   // 기준정보 관리 states
   const [selectedCategory, setSelectedCategory] = useState("장소");
-  const [categoryItems, setCategoryItems] = useState<Record<string, string[]>>({
-    "사고 유형": [],
-    "사고 원인": [],
-  });
+  const [categoryItems, setCategoryItems] = useState<Record<string, string[]>>({});
   const [newItemInput, setNewItemInput] = useState("");
   const [masterDataSearchQuery, setMasterDataSearchQuery] = useState("");
   const [selectedMasterDataIds, setSelectedMasterDataIds] = useState<Set<string>>(new Set());
@@ -339,6 +336,12 @@ export default function AdminSettings() {
     "장소": "room_category",
     "위치": "location",
     "공사내용": "work_name",
+    "사고 유형": "accident_type",
+    "사고 원인": "accident_cause",
+    "복구 유형": "recovery_type",
+    "타업체 견적 여부": "other_company_estimate",
+    "피해품목": "damage_item",
+    "피해유형": "damage_type",
   };
 
   // DB 연동 마스터 데이터 조회
