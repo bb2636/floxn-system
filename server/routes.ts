@@ -311,48 +311,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // 임시저장 시에도 실제 접수번호 형식 사용 (접수하기 페이지와 일치)
+        // 사고일자를 기준으로 접수번호 생성
+        const draftDate = validatedData.accidentDate || new Date().toISOString().split('T')[0];
+        const { prefix, suffix } = await storage.getNextCaseSequence(
+          draftDate,
+          validatedData.insuranceAccidentNo || undefined
+        );
+        
         // Create draft based on processing types
         const createdCases: any[] = [];
         
         if (hasDamagePrevention && !hasVictimRecovery) {
-          // Only damage prevention: create single draft
+          // Only damage prevention: create single draft (no suffix)
           const draftCase = await storage.createCase({
             ...validatedData,
-            caseNumber: `DRAFT-${Date.now()}`,
+            caseNumber: prefix,
             caseGroupId,
             createdBy: req.session.userId,
           });
           createdCases.push(draftCase);
         } else if (!hasDamagePrevention && hasVictimRecovery) {
-          // Only victim recovery: create single draft
+          // Only victim recovery: create single draft with -N suffix
+          const caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
           const draftCase = await storage.createCase({
             ...validatedData,
-            caseNumber: `DRAFT-${Date.now()}`,
+            caseNumber,
             caseGroupId,
             createdBy: req.session.userId,
           });
           createdCases.push(draftCase);
         } else if (hasDamagePrevention && hasVictimRecovery) {
           // Both types - create 2 drafts
-          const timestamp = Date.now();
           const preventionDraft = await storage.createCase({
             ...validatedData,
-            caseNumber: `DRAFT-${timestamp}-1`,
+            caseNumber: prefix,  // Damage prevention without suffix
             caseGroupId,
             createdBy: req.session.userId,
           });
           const recoveryDraft = await storage.createCase({
             ...validatedData,
-            caseNumber: `DRAFT-${timestamp}-2`,
+            caseNumber: `${prefix}-1`,  // First victim recovery
             caseGroupId,
             createdBy: req.session.userId,
           });
           createdCases.push(preventionDraft, recoveryDraft);
         } else {
-          // No processing type selected - create single draft
+          // No processing type selected - create single draft with -1 suffix (default victim recovery)
+          const caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
           const draftCase = await storage.createCase({
             ...validatedData,
-            caseNumber: `DRAFT-${Date.now()}`,
+            caseNumber,
             caseGroupId,
             createdBy: req.session.userId,
           });
@@ -454,7 +463,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fallback: single case creation for other statuses
-      const caseNumber = validatedData.caseNumber || `DRAFT-${Date.now()}`;
+      // 다른 상태의 경우에도 실제 접수번호 형식 사용
+      let caseNumber = validatedData.caseNumber;
+      if (!caseNumber) {
+        const fallbackDate = validatedData.accidentDate || new Date().toISOString().split('T')[0];
+        const { prefix, suffix } = await storage.getNextCaseSequence(
+          fallbackDate,
+          validatedData.insuranceAccidentNo || undefined
+        );
+        caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
+      }
       const newCase = await storage.createCase({
         ...validatedData,
         caseNumber,
