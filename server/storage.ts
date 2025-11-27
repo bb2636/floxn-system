@@ -2599,6 +2599,9 @@ export class DbStorage implements IStorage {
       insuredAddress: caseData.insuredAddress || null,
       victimName: caseData.victimName || null,
       victimContact: caseData.victimContact || null,
+      sameAsPolicyHolder: caseData.sameAsPolicyHolder != null 
+        ? String(caseData.sameAsPolicyHolder)
+        : null,
       clientPhone: caseData.clientPhone || null,
       clientAddress: caseData.clientAddress || null,
       accidentLocation: caseData.accidentLocation || null,
