@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, UserFavorite, Notice } from "@shared/schema";
+import { User, UserFavorite, Notice, Inquiry } from "@shared/schema";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { X, Pencil, Star, Home, CalendarPlus, AlertCircle, Building2, TrendingUp, Settings, FileText } from "lucide-react";
+import { X, Pencil, Star, Home, CalendarPlus, AlertCircle, Building2, TrendingUp, Settings, FileText, Plus, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 
@@ -22,6 +23,10 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
   const [activeTab, setActiveTab] = useState<TabType>("profile");
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
+  const [showInquiryForm, setShowInquiryForm] = useState(false);
+  const [inquiryTitle, setInquiryTitle] = useState("");
+  const [inquiryContent, setInquiryContent] = useState("");
+  const [expandedInquiry, setExpandedInquiry] = useState<string | null>(null);
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, setLocation] = useLocation();
@@ -36,6 +41,35 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
   const { data: notices = [], isLoading: noticesLoading } = useQuery<Notice[]>({
     queryKey: ["/api/notices"],
     enabled: open,
+  });
+
+  // Fetch inquiries
+  const { data: inquiries = [], isLoading: inquiriesLoading } = useQuery<Inquiry[]>({
+    queryKey: ["/api/inquiries"],
+    enabled: open,
+  });
+
+  // Create inquiry mutation
+  const createInquiryMutation = useMutation({
+    mutationFn: (data: { title: string; content: string }) =>
+      apiRequest("POST", "/api/inquiries", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/inquiries"] });
+      toast({
+        title: "문의 등록 완료",
+        description: "문의가 성공적으로 등록되었습니다.",
+      });
+      setShowInquiryForm(false);
+      setInquiryTitle("");
+      setInquiryContent("");
+    },
+    onError: () => {
+      toast({
+        title: "문의 등록 실패",
+        description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Remove favorite mutation
@@ -305,10 +339,155 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
 
             {activeTab === "inquiries" && (
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">1:1 문의</h3>
-                <div className="text-center py-12 text-gray-500">
-                  문의 내역이 없습니다.
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900">1:1 문의</h3>
+                  {!showInquiryForm && (
+                    <Button
+                      onClick={() => setShowInquiryForm(true)}
+                      size="sm"
+                      className="bg-[#008FED] hover:bg-[#0070BE]"
+                      data-testid="button-new-inquiry"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      문의하기
+                    </Button>
+                  )}
                 </div>
+
+                {showInquiryForm ? (
+                  <div className="space-y-4 p-4 bg-gray-50 rounded-xl mb-6">
+                    <h4 className="font-medium text-gray-900">새 문의 작성</h4>
+                    <Input
+                      placeholder="문의 제목을 입력하세요"
+                      value={inquiryTitle}
+                      onChange={(e) => setInquiryTitle(e.target.value)}
+                      data-testid="input-inquiry-title"
+                    />
+                    <Textarea
+                      placeholder="문의 내용을 입력하세요"
+                      value={inquiryContent}
+                      onChange={(e) => setInquiryContent(e.target.value)}
+                      rows={5}
+                      data-testid="input-inquiry-content"
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowInquiryForm(false);
+                          setInquiryTitle("");
+                          setInquiryContent("");
+                        }}
+                        data-testid="button-cancel-inquiry"
+                      >
+                        취소
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (inquiryTitle.trim() && inquiryContent.trim()) {
+                            createInquiryMutation.mutate({
+                              title: inquiryTitle,
+                              content: inquiryContent,
+                            });
+                          }
+                        }}
+                        disabled={!inquiryTitle.trim() || !inquiryContent.trim() || createInquiryMutation.isPending}
+                        className="bg-[#008FED] hover:bg-[#0070BE]"
+                        data-testid="button-submit-inquiry"
+                      >
+                        {createInquiryMutation.isPending ? "등록 중..." : "등록"}
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {inquiriesLoading ? (
+                  <div className="text-center py-12 text-gray-500">로딩 중...</div>
+                ) : inquiries.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    문의 내역이 없습니다.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {inquiries.map((inquiry) => {
+                      const formatDate = (date: Date | string) => {
+                        try {
+                          return format(new Date(date), "yyyy-MM-dd HH:mm");
+                        } catch {
+                          return "-";
+                        }
+                      };
+
+                      const isExpanded = expandedInquiry === inquiry.id;
+
+                      return (
+                        <div
+                          key={inquiry.id}
+                          className="border border-gray-200 rounded-xl overflow-hidden"
+                        >
+                          <button
+                            onClick={() => setExpandedInquiry(isExpanded ? null : inquiry.id)}
+                            className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            data-testid={`inquiry-item-${inquiry.id}`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                inquiry.status === "완료" ? "bg-green-100" : "bg-orange-100"
+                              }`}>
+                                <MessageCircle className={`w-5 h-5 ${
+                                  inquiry.status === "완료" ? "text-green-600" : "text-orange-600"
+                                }`} />
+                              </div>
+                              <div className="text-left">
+                                <h4 className="font-medium text-gray-900">{inquiry.title}</h4>
+                                <p className="text-sm text-gray-400">{formatDate(inquiry.createdAt)}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                inquiry.status === "완료" 
+                                  ? "bg-green-100 text-green-700" 
+                                  : "bg-orange-100 text-orange-700"
+                              }`}>
+                                {inquiry.status === "완료" ? "답변완료" : "처리중"}
+                              </span>
+                              {isExpanded ? (
+                                <ChevronUp className="w-5 h-5 text-gray-400" />
+                              ) : (
+                                <ChevronDown className="w-5 h-5 text-gray-400" />
+                              )}
+                            </div>
+                          </button>
+
+                          {isExpanded && (
+                            <div className="px-4 pb-4 border-t border-gray-100">
+                              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm text-gray-600 whitespace-pre-wrap">{inquiry.content}</p>
+                              </div>
+                              
+                              {inquiry.response && (
+                                <div className="mt-4 p-3 bg-blue-50 rounded-lg border-l-4 border-[#008FED]">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-sm font-medium text-[#008FED]">관리자 답변</span>
+                                    {inquiry.respondedAt && (
+                                      <span className="text-xs text-gray-400">
+                                        {formatDate(inquiry.respondedAt)}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {inquiry.responseTitle && (
+                                    <p className="font-medium text-gray-900 mb-1">{inquiry.responseTitle}</p>
+                                  )}
+                                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{inquiry.response}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
