@@ -2462,7 +2462,7 @@ export default function AdminSettings() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2" style={{ maxHeight: "400px", overflowY: "auto" }}>
                     {allCategories
                       .filter(category => 
                         masterDataSearchQuery === "" || 
