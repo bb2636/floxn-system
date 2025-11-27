@@ -299,6 +299,7 @@ export default function AdminSettings() {
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
   const [replyTitle, setReplyTitle] = useState("");
   const [replyContent, setReplyContent] = useState("");
+  const [inquiryStatusFilter, setInquiryStatusFilter] = useState("전체");
   
   // Notice states
   const [showAddNoticeModal, setShowAddNoticeModal] = useState(false);
@@ -550,6 +551,14 @@ export default function AdminSettings() {
 
   // Check if 1:1 문의 관리 is a favorite
   const isInquiryManagementFavorite = favorites.some(fav => fav.menuName === "1:1 문의 관리");
+
+  // Filter inquiries based on status
+  const filteredInquiries = inquiries.filter((inquiry) => {
+    if (inquiryStatusFilter === "전체") return true;
+    if (inquiryStatusFilter === "완료") return inquiry.response !== null && inquiry.response !== "";
+    if (inquiryStatusFilter === "대기") return inquiry.response === null || inquiry.response === "";
+    return true;
+  });
 
   // Toggle favorite mutation
   const toggleFavoriteMutation = useMutation({
@@ -841,10 +850,10 @@ export default function AdminSettings() {
                       color: "#008FED",
                     }}
                   >
-                    {inquiries.length}
+                    {filteredInquiries.length}
                   </span>
                 </div>
-                <Select defaultValue="전체">
+                <Select value={inquiryStatusFilter} onValueChange={setInquiryStatusFilter}>
                   <SelectTrigger
                     className="w-[120px]"
                     style={{
@@ -853,6 +862,7 @@ export default function AdminSettings() {
                       borderRadius: "8px",
                       height: "40px",
                     }}
+                    data-testid="select-inquiry-filter"
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -997,14 +1007,18 @@ export default function AdminSettings() {
                           <div className="text-sm text-gray-500">로딩 중...</div>
                         </td>
                       </tr>
-                    ) : inquiries.length === 0 ? (
+                    ) : filteredInquiries.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="px-4 py-8 text-center">
-                          <div className="text-sm text-gray-500">등록된 문의가 없습니다</div>
+                          <div className="text-sm text-gray-500">
+                            {inquiryStatusFilter === "전체" ? "등록된 문의가 없습니다" : 
+                             inquiryStatusFilter === "완료" ? "답변 완료된 문의가 없습니다" : 
+                             "대기 중인 문의가 없습니다"}
+                          </div>
                         </td>
                       </tr>
                     ) : (
-                      inquiries.map((inquiry) => {
+                      filteredInquiries.map((inquiry) => {
                         const inquiryUser = allUsers.find(u => u.id === inquiry.userId);
                         const date = new Date(inquiry.createdAt).toLocaleDateString('ko-KR', {
                           year: 'numeric',
