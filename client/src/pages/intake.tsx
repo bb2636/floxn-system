@@ -73,6 +73,9 @@ export default function Intake() {
   const [predictedPrefix, setPredictedPrefix] = useState<string>("");
   const [predictedSuffix, setPredictedSuffix] = useState<number>(0);
   
+  // 기존 케이스 편집 시 실제 접수번호 저장
+  const [loadedCaseNumber, setLoadedCaseNumber] = useState<string | null>(null);
+  
   // 협력사 검색 팝업 상태
   const [isPartnerSearchOpen, setIsPartnerSearchOpen] = useState(false);
   const [partnerSearchQuery, setPartnerSearchQuery] = useState("");
@@ -345,7 +348,13 @@ export default function Intake() {
   }, [investigators]);
 
   // 예상 접수번호 계산 (B-style: 손해방지는 접미사 없이, 피해세대복구는 -N 형식)
-  const predictedCaseNumber = useMemo(() => {
+  // 기존 케이스 편집 시에는 loadedCaseNumber를 우선 표시
+  const displayCaseNumber = useMemo(() => {
+    // 기존 케이스 편집 시 실제 접수번호 표시
+    if (loadedCaseNumber) {
+      return loadedCaseNumber;
+    }
+    
     if (!predictedPrefix) {
       return "입력 정보를 채우면 표시됩니다";
     }
@@ -377,7 +386,7 @@ export default function Intake() {
     // 피해세대복구만 또는 둘 다 선택 안함 (기본값)
     const suffix = predictedSuffix === 0 ? 1 : predictedSuffix;
     return `${predictedPrefix}-${suffix}`;
-  }, [predictedPrefix, predictedSuffix, formData.damagePreventionCost, formData.victimIncidentAssistance]);
+  }, [loadedCaseNumber, predictedPrefix, predictedSuffix, formData.damagePreventionCost, formData.victimIncidentAssistance]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -425,6 +434,12 @@ export default function Intake() {
         .then((res) => res.json())
         .then((caseData: any) => {
           console.log("✅ Draft case loaded successfully:", caseData);
+          
+          // 기존 케이스의 실제 접수번호 저장
+          if (caseData.caseNumber) {
+            console.log("✓ Setting loadedCaseNumber:", caseData.caseNumber);
+            setLoadedCaseNumber(caseData.caseNumber);
+          }
           
           // 폼 데이터 채우기
           setFormData({
@@ -1126,11 +1141,11 @@ export default function Intake() {
                               fontWeight: 600,
                               lineHeight: '128%',
                               letterSpacing: '-0.02em',
-                              color: predictedCaseNumber.includes("입력 정보") || predictedCaseNumber.includes("기존 사고") ? '#DC2626' : '#0C0C0C',
+                              color: displayCaseNumber.includes("입력 정보") || displayCaseNumber.includes("기존 사고") ? '#DC2626' : '#0C0C0C',
                             }}
                             data-testid="text-case-number"
                           >
-                            {predictedCaseNumber}
+                            {displayCaseNumber}
                           </span>
                         </div>
                       </div>
