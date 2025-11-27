@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, UserFavorite } from "@shared/schema";
+import { User, UserFavorite, Notice } from "@shared/schema";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { X, Pencil, Star, Home, CalendarPlus, AlertCircle, Building2, TrendingUp, Settings } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { X, Pencil, Star, Home, CalendarPlus, AlertCircle, Building2, TrendingUp, Settings, FileText } from "lucide-react";
 import { useLocation } from "wouter";
+import { format } from "date-fns";
 
 interface MyPageDialogProps {
   open: boolean;
@@ -28,6 +29,12 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
   // Fetch favorites
   const { data: favorites = [], isLoading: favoritesLoading } = useQuery<UserFavorite[]>({
     queryKey: ["/api/favorites"],
+    enabled: open,
+  });
+
+  // Fetch notices
+  const { data: notices = [], isLoading: noticesLoading } = useQuery<Notice[]>({
+    queryKey: ["/api/notices"],
     enabled: open,
   });
 
@@ -243,10 +250,56 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
 
             {activeTab === "notices" && (
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">공지사항</h3>
-                <div className="text-center py-12 text-gray-500">
-                  등록된 공지사항이 없습니다.
-                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">공지사항</h3>
+                <p className="text-sm text-gray-500 mb-6">
+                  보안·개인정보·권한 규정을 준수하세요. 위반 시 계정 제한이 발생할 수 있습니다.
+                </p>
+                {noticesLoading ? (
+                  <div className="text-center py-12 text-gray-500">로딩 중...</div>
+                ) : notices.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    등록된 공지사항이 없습니다.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {notices.map((notice) => {
+                      const formatDate = (date: Date | string) => {
+                        try {
+                          return format(new Date(date), "yyyy-MM-dd");
+                        } catch {
+                          return "-";
+                        }
+                      };
+
+                      const contentLines = notice.content.split("\n").filter(line => line.trim());
+
+                      return (
+                        <div
+                          key={notice.id}
+                          className="p-4 rounded-xl bg-gray-50"
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                              <FileText className="w-5 h-5 text-gray-500" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-gray-900 mb-1">{notice.title}</h4>
+                              <p className="text-sm text-gray-400 mb-3">{formatDate(notice.createdAt)}</p>
+                              <ul className="space-y-1">
+                                {contentLines.map((line, idx) => (
+                                  <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
+                                    <span className="text-gray-400 mt-1">•</span>
+                                    <span>{line}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
