@@ -552,6 +552,7 @@ export default function AdminSettings() {
   // Check if pages are favorites
   const isInquiryManagementFavorite = favorites.some(fav => fav.menuName === "1:1 문의 관리");
   const isNoticeManagementFavorite = favorites.some(fav => fav.menuName === "공지사항 관리");
+  const isDbManagementFavorite = favorites.some(fav => fav.menuName === "DB 관리");
 
   // Filter inquiries based on status
   const filteredInquiries = inquiries.filter((inquiry) => {
@@ -1881,26 +1882,19 @@ export default function AdminSettings() {
                   >
                     DB 관리
                   </h1>
-                  <div
-                    className="flex items-center justify-center"
-                    style={{
-                      width: "24px",
-                      height: "24px",
-                      borderRadius: "50%",
-                      background: "#008FED",
-                    }}
+                  <button
+                    onClick={() => toggleFavoriteMutation.mutate("DB 관리")}
+                    className="hover:opacity-70 transition-opacity cursor-pointer"
+                    data-testid="button-toggle-db-favorite"
                   >
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 600,
-                        color: "#FFFFFF",
-                      }}
-                    >
-                      0
-                    </span>
-                  </div>
+                    <Star 
+                      className="w-5 h-5" 
+                      style={{ 
+                        color: isDbManagementFavorite ? '#FFD700' : 'rgba(12, 12, 12, 0.24)',
+                        fill: isDbManagementFavorite ? '#FFD700' : 'none',
+                      }} 
+                    />
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-3">
