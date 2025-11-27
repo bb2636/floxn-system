@@ -1590,6 +1590,173 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== Asset Cloning API (Copy from Related Cases) =====
+
+  // Get related case with drawing (for cloning suggestion)
+  app.get("/api/cases/:caseId/related-drawing", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const relatedCase = await storage.getRelatedCaseWithDrawing(caseId);
+      
+      if (!relatedCase) {
+        return res.json({ hasRelatedDrawing: false });
+      }
+
+      res.json({ 
+        hasRelatedDrawing: true, 
+        sourceCaseId: relatedCase.caseId, 
+        sourceCaseNumber: relatedCase.caseNumber 
+      });
+    } catch (error) {
+      console.error("Get related drawing error:", error);
+      res.status(500).json({ error: "관련 도면을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Clone drawing from related case
+  app.post("/api/cases/:caseId/clone-drawing", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const { sourceCaseId } = req.body;
+
+      if (!sourceCaseId) {
+        return res.status(400).json({ error: "소스 케이스 ID가 필요합니다" });
+      }
+
+      const clonedDrawing = await storage.cloneDrawingFromCase(
+        sourceCaseId, 
+        caseId, 
+        req.session.userId!
+      );
+
+      if (!clonedDrawing) {
+        return res.status(404).json({ error: "소스 케이스에 도면이 없습니다" });
+      }
+
+      res.json({ success: true, drawing: clonedDrawing });
+    } catch (error) {
+      console.error("Clone drawing error:", error);
+      res.status(500).json({ error: "도면을 복제하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get related case with estimate (for cloning suggestion)
+  app.get("/api/cases/:caseId/related-estimate", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const relatedCase = await storage.getRelatedCaseWithEstimate(caseId);
+      
+      if (!relatedCase) {
+        return res.json({ hasRelatedEstimate: false });
+      }
+
+      res.json({ 
+        hasRelatedEstimate: true, 
+        sourceCaseId: relatedCase.caseId, 
+        sourceCaseNumber: relatedCase.caseNumber 
+      });
+    } catch (error) {
+      console.error("Get related estimate error:", error);
+      res.status(500).json({ error: "관련 견적서를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Clone estimate from related case
+  app.post("/api/cases/:caseId/clone-estimate", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const { sourceCaseId } = req.body;
+
+      if (!sourceCaseId) {
+        return res.status(400).json({ error: "소스 케이스 ID가 필요합니다" });
+      }
+
+      const clonedEstimate = await storage.cloneEstimateFromCase(
+        sourceCaseId, 
+        caseId, 
+        req.session.userId!
+      );
+
+      if (!clonedEstimate) {
+        return res.status(404).json({ error: "소스 케이스에 견적서가 없습니다" });
+      }
+
+      res.json({ success: true, estimate: clonedEstimate });
+    } catch (error) {
+      console.error("Clone estimate error:", error);
+      res.status(500).json({ error: "견적서를 복제하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get related case with documents (for cloning suggestion)
+  app.get("/api/cases/:caseId/related-documents", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const relatedCase = await storage.getRelatedCaseWithDocuments(caseId);
+      
+      if (!relatedCase) {
+        return res.json({ hasRelatedDocuments: false });
+      }
+
+      res.json({ 
+        hasRelatedDocuments: true, 
+        sourceCaseId: relatedCase.caseId, 
+        sourceCaseNumber: relatedCase.caseNumber,
+        documentCount: relatedCase.documentCount
+      });
+    } catch (error) {
+      console.error("Get related documents error:", error);
+      res.status(500).json({ error: "관련 증빙자료를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Clone documents from related case
+  app.post("/api/cases/:caseId/clone-documents", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const { sourceCaseId } = req.body;
+
+      if (!sourceCaseId) {
+        return res.status(400).json({ error: "소스 케이스 ID가 필요합니다" });
+      }
+
+      const clonedDocuments = await storage.cloneDocumentsFromCase(
+        sourceCaseId, 
+        caseId, 
+        req.session.userId!
+      );
+
+      res.json({ success: true, documents: clonedDocuments, count: clonedDocuments.length });
+    } catch (error) {
+      console.error("Clone documents error:", error);
+      res.status(500).json({ error: "증빙자료를 복제하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // ===== 증빙자료 Documents API =====
   
   // Upload document(s) to a case
