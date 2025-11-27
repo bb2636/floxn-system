@@ -160,6 +160,13 @@ export interface IStorage {
   createNotice(data: InsertNotice): Promise<Notice>;
   updateNotice(id: string, data: { title: string; content: string }): Promise<Notice | null>;
   deleteNotice(id: string): Promise<void>;
+  // Asset cloning methods (for syncing from related cases)
+  getRelatedCaseWithDrawing(caseId: string): Promise<{ caseId: string; caseNumber: string } | null>;
+  getRelatedCaseWithEstimate(caseId: string): Promise<{ caseId: string; caseNumber: string } | null>;
+  getRelatedCaseWithDocuments(caseId: string): Promise<{ caseId: string; caseNumber: string; documentCount: number } | null>;
+  cloneDrawingFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<Drawing | null>;
+  cloneEstimateFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
+  cloneDocumentsFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<CaseDocument[]>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -1896,6 +1903,31 @@ export class MemStorage implements IStorage {
 
   async deleteNotice(id: string): Promise<void> {
     throw new Error("Notice methods not implemented in MemStorage");
+  }
+
+  // Asset cloning methods (stub)
+  async getRelatedCaseWithDrawing(caseId: string): Promise<{ caseId: string; caseNumber: string } | null> {
+    throw new Error("Asset cloning methods not implemented in MemStorage");
+  }
+
+  async getRelatedCaseWithEstimate(caseId: string): Promise<{ caseId: string; caseNumber: string } | null> {
+    throw new Error("Asset cloning methods not implemented in MemStorage");
+  }
+
+  async getRelatedCaseWithDocuments(caseId: string): Promise<{ caseId: string; caseNumber: string; documentCount: number } | null> {
+    throw new Error("Asset cloning methods not implemented in MemStorage");
+  }
+
+  async cloneDrawingFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<Drawing | null> {
+    throw new Error("Asset cloning methods not implemented in MemStorage");
+  }
+
+  async cloneEstimateFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+    throw new Error("Asset cloning methods not implemented in MemStorage");
+  }
+
+  async cloneDocumentsFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<CaseDocument[]> {
+    throw new Error("Asset cloning methods not implemented in MemStorage");
   }
 
   // Field Survey Data methods (stub)
@@ -3679,6 +3711,144 @@ export class DbStorage implements IStorage {
 
   async deleteNotice(id: string): Promise<void> {
     await db.delete(notices).where(eq(notices.id, id));
+  }
+
+  // Asset cloning methods (for syncing from related cases)
+  async getRelatedCaseWithDrawing(caseId: string): Promise<{ caseId: string; caseNumber: string } | null> {
+    // Get the source case to find its accident number
+    const sourceCase = await this.getCaseById(caseId);
+    if (!sourceCase || !sourceCase.insuranceAccidentNo) return null;
+
+    // Find related cases with the same accident number
+    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, caseId);
+    
+    // Find the first related case that has a drawing
+    for (const relatedCase of relatedCases) {
+      const drawing = await this.getDrawingByCaseId(relatedCase.id);
+      if (drawing) {
+        return { caseId: relatedCase.id, caseNumber: relatedCase.caseNumber || '' };
+      }
+    }
+    return null;
+  }
+
+  async getRelatedCaseWithEstimate(caseId: string): Promise<{ caseId: string; caseNumber: string } | null> {
+    // Get the source case to find its accident number
+    const sourceCase = await this.getCaseById(caseId);
+    if (!sourceCase || !sourceCase.insuranceAccidentNo) return null;
+
+    // Find related cases with the same accident number
+    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, caseId);
+    
+    // Find the first related case that has an estimate
+    for (const relatedCase of relatedCases) {
+      const estimate = await this.getLatestEstimate(relatedCase.id);
+      if (estimate) {
+        return { caseId: relatedCase.id, caseNumber: relatedCase.caseNumber || '' };
+      }
+    }
+    return null;
+  }
+
+  async getRelatedCaseWithDocuments(caseId: string): Promise<{ caseId: string; caseNumber: string; documentCount: number } | null> {
+    // Get the source case to find its accident number
+    const sourceCase = await this.getCaseById(caseId);
+    if (!sourceCase || !sourceCase.insuranceAccidentNo) return null;
+
+    // Find related cases with the same accident number
+    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, caseId);
+    
+    // Find the first related case that has documents
+    for (const relatedCase of relatedCases) {
+      const docs = await this.getDocumentsByCaseId(relatedCase.id);
+      if (docs && docs.length > 0) {
+        return { caseId: relatedCase.id, caseNumber: relatedCase.caseNumber || '', documentCount: docs.length };
+      }
+    }
+    return null;
+  }
+
+  async cloneDrawingFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<Drawing | null> {
+    // Get source drawing
+    const sourceDrawing = await this.getDrawingByCaseId(sourceCaseId);
+    if (!sourceDrawing) return null;
+
+    // Check if target already has a drawing
+    const existingDrawing = await this.getDrawingByCaseId(targetCaseId);
+    if (existingDrawing) {
+      // Update existing drawing with source data
+      const updated = await this.updateDrawing(existingDrawing.id, {
+        uploadedImages: sourceDrawing.uploadedImages,
+        rectangles: sourceDrawing.rectangles,
+        accidentAreas: sourceDrawing.accidentAreas,
+        leakMarkers: sourceDrawing.leakMarkers,
+      });
+      return updated;
+    }
+
+    // Create new drawing for target case
+    const newDrawing = await this.saveDrawing({
+      caseId: targetCaseId,
+      uploadedImages: sourceDrawing.uploadedImages,
+      rectangles: sourceDrawing.rectangles,
+      accidentAreas: sourceDrawing.accidentAreas,
+      leakMarkers: sourceDrawing.leakMarkers,
+      createdBy: userId,
+    });
+    return newDrawing;
+  }
+
+  async cloneEstimateFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+    // Get source estimate with rows
+    const sourceEstimate = await this.getLatestEstimate(sourceCaseId);
+    if (!sourceEstimate) return null;
+
+    // Create new estimate for target case (version 1)
+    const rowsData = sourceEstimate.rows.map(row => ({
+      category: row.category,
+      location: row.location,
+      workName: row.workName,
+      damageWidth: row.damageWidth,
+      damageHeight: row.damageHeight,
+      damageArea: row.damageArea,
+      repairWidth: row.repairWidth,
+      repairHeight: row.repairHeight,
+      repairArea: row.repairArea,
+      note: row.note,
+      rowOrder: row.rowOrder,
+    }));
+
+    const newEstimate = await this.createEstimateVersion(
+      targetCaseId,
+      userId,
+      rowsData,
+      sourceEstimate.estimate.laborCostData,
+      sourceEstimate.estimate.materialCostData
+    );
+
+    return newEstimate;
+  }
+
+  async cloneDocumentsFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<CaseDocument[]> {
+    // Get source documents
+    const sourceDocuments = await this.getDocumentsByCaseId(sourceCaseId);
+    if (!sourceDocuments || sourceDocuments.length === 0) return [];
+
+    // Clone each document
+    const clonedDocuments: CaseDocument[] = [];
+    for (const doc of sourceDocuments) {
+      const newDoc = await this.saveDocument({
+        caseId: targetCaseId,
+        category: doc.category,
+        fileName: doc.fileName,
+        fileType: doc.fileType,
+        fileSize: doc.fileSize,
+        fileData: doc.fileData,
+        createdBy: userId,
+      });
+      clonedDocuments.push(newDoc);
+    }
+    return clonedDocuments;
   }
 
   // Field Survey Data methods
