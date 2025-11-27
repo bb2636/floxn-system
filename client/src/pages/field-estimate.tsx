@@ -2,7 +2,18 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Case, MasterData, LaborCost, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Check, Search } from "lucide-react";
+import { Plus, Trash2, Check, Search, Copy } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
@@ -418,9 +429,48 @@ export default function FieldEstimate() {
   });
 
   // 최신 견적 가져오기
-  const { data: latestEstimate } = useQuery<{ estimate: any; rows: any[] }>({
+  const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
     queryKey: ["/api/estimates", selectedCaseId, "latest"],
     enabled: !!selectedCaseId,
+  });
+
+  // 관련 케이스 견적서 확인 (같은 사고번호의 다른 케이스에 견적서가 있는지)
+  const { data: relatedEstimateInfo } = useQuery<{
+    hasRelatedEstimate: boolean;
+    sourceCaseId?: string;
+    sourceCaseNumber?: string;
+  }>({
+    queryKey: ["/api/cases", selectedCaseId, "related-estimate"],
+    enabled: !!selectedCaseId && !latestEstimate?.estimate && !isLoadingEstimate,
+  });
+
+  // 견적서 복제 mutation
+  const cloneEstimateMutation = useMutation({
+    mutationFn: async (sourceCaseId: string) => {
+      const response = await apiRequest("POST", `/api/cases/${selectedCaseId}/clone-estimate`, {
+        sourceCaseId,
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "견적서 복제 실패");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId, "latest"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cases", selectedCaseId, "related-estimate"] });
+      toast({
+        title: "견적서 복제 완료",
+        description: "관련 케이스의 견적서가 복제되었습니다.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "견적서 복제 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // 현재 작성중인 건 정보를 견적서에 자동 설정
@@ -2555,8 +2605,61 @@ export default function FieldEstimate() {
                 marginTop: "24px",
                 display: "flex",
                 justifyContent: "flex-end",
+                gap: "12px",
               }}
             >
+              {/* 관련 케이스에서 견적서 복제 버튼 */}
+              {relatedEstimateInfo?.hasRelatedEstimate && !latestEstimate?.estimate && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      disabled={cloneEstimateMutation.isPending}
+                      style={{
+                        padding: "12px 32px",
+                        background: cloneEstimateMutation.isPending ? "#ccc" : "#F59E0B",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "white",
+                        cursor: cloneEstimateMutation.isPending ? "not-allowed" : "pointer",
+                        boxShadow: "0px 2px 8px rgba(245, 158, 11, 0.3)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                      data-testid="button-clone-estimate"
+                    >
+                      <Copy className="w-4 h-4" />
+                      {cloneEstimateMutation.isPending ? "복제 중..." : "관련 견적서 가져오기"}
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>관련 케이스에서 견적서 복제</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        <span className="font-semibold">{formatCaseNumber(relatedEstimateInfo.sourceCaseNumber)}</span> 케이스의 견적서를 복제하시겠습니까?
+                        <br />
+                        복제 후에도 개별적으로 수정할 수 있습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => {
+                          if (relatedEstimateInfo.sourceCaseId) {
+                            cloneEstimateMutation.mutate(relatedEstimateInfo.sourceCaseId);
+                          }
+                        }}
+                        data-testid="button-confirm-clone-estimate"
+                      >
+                        복제하기
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <button
                 onClick={handleSave}
                 disabled={saveMutation.isPending}
