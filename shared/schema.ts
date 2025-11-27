@@ -535,6 +535,8 @@ export const masterData = pgTable("master_data", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   category: text("category").notNull(), // "room_category" | "location" | "work_name"
   value: text("value").notNull(), // 실제 표시 값
+  note: text("note"), // 메모
+  tag: text("tag").default("공통"), // 태그: 공통, 새로운 접수, 현장입력 등
   isActive: text("is_active").notNull().default("true"), // "true" | "false"
   displayOrder: integer("display_order").notNull().default(0), // 표시 순서
   createdAt: timestamp("created_at").defaultNow().notNull(),

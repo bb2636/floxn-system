@@ -2189,12 +2189,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { id } = req.params;
-      const { value, displayOrder, isActive } = req.body;
+      const { value, displayOrder, isActive, note } = req.body;
 
       const updated = await storage.updateMasterData(id, {
         value,
         displayOrder,
         isActive,
+        note,
       });
 
       if (!updated) {

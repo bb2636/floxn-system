@@ -290,6 +290,9 @@ export default function AdminSettings() {
     "사고 원인": [],
   });
   const [newItemInput, setNewItemInput] = useState("");
+  const [masterDataSearchQuery, setMasterDataSearchQuery] = useState("");
+  const [selectedMasterDataIds, setSelectedMasterDataIds] = useState<Set<string>>(new Set());
+  const [editingMasterData, setEditingMasterData] = useState<Record<string, { value: string; note: string }>>({}); // 인라인 편집용
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
   const [showAccountCreatedModal, setShowAccountCreatedModal] = useState(false);
   const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
@@ -398,7 +401,7 @@ export default function AdminSettings() {
 
   // 마스터 데이터 삭제 mutation
   const deleteMasterDataMutation = useMutation({
-    mutationFn: async (id: number) => {
+    mutationFn: async (id: string) => {
       return await apiRequest("DELETE", `/api/master-data/${id}`);
     },
     onSuccess: () => {
@@ -416,6 +419,44 @@ export default function AdminSettings() {
       });
     },
   });
+
+  // 마스터 데이터 수정 mutation
+  const updateMasterDataMutation = useMutation({
+    mutationFn: async (data: { id: string; value: string; note?: string }) => {
+      return await apiRequest("PATCH", `/api/master-data/${data.id}`, { value: data.value, note: data.note });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/master-data"] });
+      setEditingMasterData({});
+      toast({
+        title: "수정 완료",
+        description: "항목이 수정되었습니다.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "수정 실패",
+        description: error.message || "항목을 수정하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 선택된 마스터 데이터 일괄 삭제
+  const deleteSelectedMasterData = () => {
+    if (selectedMasterDataIds.size === 0) {
+      toast({
+        title: "선택된 항목이 없습니다",
+        description: "삭제할 항목을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    selectedMasterDataIds.forEach(id => {
+      deleteMasterDataMutation.mutate(id);
+    });
+    setSelectedMasterDataIds(new Set());
+  };
 
   // Fetch all users from server
   const { data: allUsers = [], isLoading: usersLoading } = useQuery<
@@ -2376,41 +2417,101 @@ export default function AdminSettings() {
                     기준정보 목록
                   </h3>
 
+                  {/* 검색 영역 */}
+                  <div className="mb-4">
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#686A6E",
+                      }}
+                    >
+                      항목 검색
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={masterDataSearchQuery}
+                        onChange={(e) => setMasterDataSearchQuery(e.target.value)}
+                        placeholder="검색어를 입력하세요"
+                        className="flex-1 px-3 py-2 outline-none"
+                        style={{
+                          background: "#FFFFFF",
+                          border: "1px solid rgba(12, 12, 12, 0.08)",
+                          borderRadius: "6px",
+                          fontFamily: "Pretendard",
+                          fontSize: "13px",
+                        }}
+                        data-testid="input-master-search"
+                      />
+                      <button
+                        className="px-4 py-2"
+                        style={{
+                          background: "#008FED",
+                          borderRadius: "6px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#FFFFFF",
+                        }}
+                        data-testid="button-master-search"
+                      >
+                        검색
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
-                    {allCategories.map((category) => (
+                    {allCategories
+                      .filter(category => 
+                        masterDataSearchQuery === "" || 
+                        category.toLowerCase().includes(masterDataSearchQuery.toLowerCase())
+                      )
+                      .map((category) => (
                       <div key={category}>
                         <button
-                          onClick={() => setSelectedCategory(category)}
+                          onClick={() => {
+                            setSelectedCategory(category);
+                            setSelectedMasterDataIds(new Set());
+                          }}
                           className="w-full text-left px-4 py-3 rounded-lg transition-colors"
                           style={{
-                            background: selectedCategory === category ? "rgba(0, 143, 237, 0.1)" : "transparent",
+                            background: selectedCategory === category ? "rgba(0, 143, 237, 0.05)" : "transparent",
                             fontFamily: "Pretendard",
                             fontSize: "15px",
                             fontWeight: selectedCategory === category ? 600 : 400,
                             color: selectedCategory === category ? "#008FED" : "#0C0C0C",
+                            border: selectedCategory === category ? "1px solid rgba(0, 143, 237, 0.2)" : "1px solid transparent",
                           }}
                           data-testid={`category-${category}`}
                         >
                           <div className="flex items-center justify-between">
                             <span>{category}</span>
-                            <span
-                              style={{
-                                fontSize: "13px",
-                                color: "#686A6E",
-                              }}
-                            >
-                              {getCategoryCount(category)}개
-                            </span>
                           </div>
                           <div
                             style={{
-                              fontSize: "13px",
+                              fontSize: "12px",
                               fontWeight: 400,
                               color: "#686A6E",
                               marginTop: "4px",
                             }}
                           >
                             {category} 목록
+                          </div>
+                          <div className="mt-2">
+                            <span
+                              className="inline-block px-2 py-1 rounded"
+                              style={{
+                                background: "rgba(0, 143, 237, 0.1)",
+                                fontSize: "11px",
+                                fontWeight: 500,
+                                color: "#008FED",
+                              }}
+                            >
+                              공통
+                            </span>
                           </div>
                         </button>
                       </div>
@@ -2440,33 +2541,28 @@ export default function AdminSettings() {
 
                   {/* Selected Category Info */}
                   <div className="flex items-center gap-3 mb-6">
-                    <div
-                      className="px-4 py-2 rounded-lg flex items-center gap-2"
+                    <span style={{ color: "#008FED", fontSize: "16px" }}>●</span>
+                    <span
                       style={{
-                        background: "rgba(0, 143, 237, 0.1)",
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "#0C0C0C",
                       }}
                     >
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "15px",
-                          fontWeight: 600,
-                          color: "#008FED",
-                        }}
-                      >
-                        {selectedCategory}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "13px",
-                          fontWeight: 400,
-                          color: "#686A6E",
-                        }}
-                      >
-                        목록
-                      </span>
-                    </div>
+                      {selectedCategory}
+                    </span>
+                    <span
+                      className="px-2 py-1 rounded"
+                      style={{
+                        background: "rgba(0, 143, 237, 0.1)",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "#008FED",
+                      }}
+                    >
+                      공통
+                    </span>
                     <span
                       style={{
                         fontFamily: "Pretendard",
@@ -2479,143 +2575,54 @@ export default function AdminSettings() {
                     </span>
                   </div>
 
-                  {/* Add New Item Section */}
-                  <div
-                    className="mb-6 p-4 rounded-lg"
-                    style={{
-                      background: "rgba(248, 248, 248, 1)",
-                      border: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <div className="flex items-end gap-3">
-                      <div className="flex-1">
-                        <label
-                          className="block mb-2"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            color: "#686A6E",
-                          }}
-                        >
-                          항목 이름
-                        </label>
-                        <input
-                          type="text"
-                          value={newItemInput}
-                          onChange={(e) => setNewItemInput(e.target.value)}
-                          placeholder="항목이름을 입력하세요"
-                          className="w-full px-4 py-3 outline-none"
-                          style={{
-                            background: "#FFFFFF",
-                            border: "2px solid rgba(12, 12, 12, 0.08)",
-                            borderRadius: "8px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                          }}
-                          data-testid="input-new-item"
-                        />
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (!newItemInput.trim()) {
-                            toast({
-                              title: "입력 오류",
-                              description: "항목 이름을 입력해주세요.",
-                              variant: "destructive",
-                            });
-                            return;
-                          }
-                          
-                          if (isMasterDataCategory(selectedCategory)) {
-                            // DB 연동 카테고리: mutation 사용
-                            const categoryKey = MASTER_DATA_CATEGORIES[selectedCategory];
-                            const currentCount = getCategoryCount(selectedCategory);
-                            createMasterDataMutation.mutate({
-                              category: categoryKey,
-                              value: newItemInput.trim(),
-                              isActive: "true",
-                              displayOrder: currentCount,
-                            });
-                          } else {
-                            // 메모리 state 카테고리: 기존 로직 유지
-                            setCategoryItems(prev => ({
-                              ...prev,
-                              [selectedCategory]: [...(prev[selectedCategory] || []), newItemInput.trim()],
-                            }));
-                            toast({
-                              title: "항목 추가 완료",
-                              description: `${newItemInput.trim()}이(가) 추가되었습니다.`,
-                            });
-                          }
-                          setNewItemInput("");
-                        }}
-                        className="px-6 py-3"
-                        style={{
-                          background: "#008FED",
-                          borderRadius: "8px",
-                          fontFamily: "Pretendard",
-                          fontSize: "15px",
-                          fontWeight: 600,
-                          color: "#FFFFFF",
-                        }}
-                        data-testid="button-add-item"
-                      >
-                        항목 추가
-                      </button>
-                    </div>
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 mb-6">
+                    <button
+                      onClick={() => {
+                        if (isMasterDataCategory(selectedCategory)) {
+                          const categoryKey = MASTER_DATA_CATEGORIES[selectedCategory];
+                          const currentCount = getCategoryCount(selectedCategory);
+                          createMasterDataMutation.mutate({
+                            category: categoryKey,
+                            value: "",
+                            isActive: "true",
+                            displayOrder: currentCount,
+                          });
+                        }
+                      }}
+                      className="px-4 py-2"
+                      style={{
+                        background: "#008FED",
+                        borderRadius: "6px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        color: "#FFFFFF",
+                      }}
+                      data-testid="button-add-row"
+                    >
+                      행 추가
+                    </button>
+                    <button
+                      onClick={deleteSelectedMasterData}
+                      className="px-4 py-2"
+                      style={{
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(12, 12, 12, 0.1)",
+                        borderRadius: "6px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#686A6E",
+                      }}
+                      data-testid="button-delete-selected"
+                    >
+                      선택 행 삭제
+                    </button>
                   </div>
 
                   {/* Items Table */}
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <h4
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 600,
-                          color: "#0C0C0C",
-                        }}
-                      >
-                        등록된 항목
-                      </h4>
-                      {getCategoryCount(selectedCategory) > 0 && (
-                        <button
-                          onClick={() => {
-                            if (isMasterDataCategory(selectedCategory)) {
-                              // DB 연동 카테고리: 각 항목을 개별 삭제
-                              const items = getCategoryItems(selectedCategory) as MasterData[];
-                              items.forEach(item => {
-                                deleteMasterDataMutation.mutate(item.id);
-                              });
-                            } else {
-                              // 메모리 state 카테고리: 기존 로직 유지
-                              setCategoryItems(prev => ({
-                                ...prev,
-                                [selectedCategory]: [],
-                              }));
-                              toast({
-                                title: "전체 삭제 완료",
-                                description: "모든 항목이 삭제되었습니다.",
-                              });
-                            }
-                          }}
-                          className="px-4 py-2"
-                          style={{
-                            background: "rgba(239, 68, 68, 0.1)",
-                            borderRadius: "6px",
-                            fontFamily: "Pretendard",
-                            fontSize: "13px",
-                            fontWeight: 500,
-                            color: "#EF4444",
-                          }}
-                          data-testid="button-delete-all"
-                        >
-                          전체 삭제
-                        </button>
-                      )}
-                    </div>
-
                     <table className="w-full">
                       <thead
                         style={{
@@ -2630,10 +2637,45 @@ export default function AdminSettings() {
                               fontSize: "14px",
                               fontWeight: 600,
                               color: "#686A6E",
-                              width: "80px",
+                              width: "60px",
                             }}
                           >
-                            입력
+                            정렬
+                          </th>
+                          <th
+                            className="px-4 py-3 text-center"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              color: "#686A6E",
+                              width: "50px",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4"
+                              style={{ accentColor: "#008FED" }}
+                              checked={(() => {
+                                const items = getCategoryItems(selectedCategory);
+                                if (items.length === 0) return false;
+                                const isMaster = isMasterDataCategory(selectedCategory);
+                                if (!isMaster) return false;
+                                return (items as MasterData[]).every(item => selectedMasterDataIds.has(item.id));
+                              })()}
+                              onChange={(e) => {
+                                const items = getCategoryItems(selectedCategory);
+                                const isMaster = isMasterDataCategory(selectedCategory);
+                                if (!isMaster) return;
+                                if (e.target.checked) {
+                                  const newIds = new Set((items as MasterData[]).map(item => item.id));
+                                  setSelectedMasterDataIds(newIds);
+                                } else {
+                                  setSelectedMasterDataIds(new Set());
+                                }
+                              }}
+                              data-testid="checkbox-select-all"
+                            />
                           </th>
                           <th
                             className="px-4 py-3 text-left"
@@ -2653,22 +2695,10 @@ export default function AdminSettings() {
                               fontSize: "14px",
                               fontWeight: 600,
                               color: "#686A6E",
-                              width: "150px",
+                              width: "200px",
                             }}
                           >
-                            {selectedCategory} †
-                          </th>
-                          <th
-                            className="px-4 py-3 text-center"
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              fontWeight: 600,
-                              color: "#686A6E",
-                              width: "100px",
-                            }}
-                          >
-                            삭제
+                            메모
                           </th>
                         </tr>
                       </thead>
@@ -2690,7 +2720,7 @@ export default function AdminSettings() {
                                     color: "#686A6E",
                                   }}
                                 >
-                                  등록된 항목이 없습니다. 항목을 추가해주세요.
+                                  등록된 항목이 없습니다. 행 추가 버튼을 클릭해주세요.
                                 </td>
                               </tr>
                             );
@@ -2698,83 +2728,116 @@ export default function AdminSettings() {
                           
                           return items.map((item, idx) => {
                             const itemValue = isMasterCategory ? (item as MasterData).value : (item as string);
-                            const itemId = isMasterCategory ? (item as MasterData).id : null;
+                            const itemNote = isMasterCategory ? (item as MasterData).note || "" : "";
+                            const itemId = isMasterCategory ? (item as MasterData).id : `mem-${idx}`;
+                            const isEditing = editingMasterData[itemId];
                             
                             return (
                               <tr
-                                key={isMasterCategory ? itemId : idx}
+                                key={itemId}
                                 style={{
                                   borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                                 }}
                               >
                                 <td
-                                  className="px-4 py-4"
+                                  className="px-4 py-3"
                                   style={{
                                     fontFamily: "Pretendard",
-                                    fontSize: "14px",
-                                    fontWeight: 400,
-                                    color: "#0C0C0C",
+                                    fontSize: "16px",
+                                    color: "#686A6E",
+                                    cursor: "grab",
                                   }}
                                 >
+                                  ≡
+                                </td>
+                                <td className="px-4 py-3 text-center">
                                   <input
                                     type="checkbox"
                                     className="w-4 h-4"
-                                    style={{
-                                      accentColor: "#008FED",
+                                    style={{ accentColor: "#008FED" }}
+                                    checked={selectedMasterDataIds.has(itemId)}
+                                    onChange={(e) => {
+                                      const newIds = new Set(selectedMasterDataIds);
+                                      if (e.target.checked) {
+                                        newIds.add(itemId);
+                                      } else {
+                                        newIds.delete(itemId);
+                                      }
+                                      setSelectedMasterDataIds(newIds);
                                     }}
+                                    data-testid={`checkbox-item-${idx}`}
                                   />
                                 </td>
-                                <td
-                                  className="px-4 py-4"
-                                  style={{
-                                    fontFamily: "Pretendard",
-                                    fontSize: "14px",
-                                    fontWeight: 400,
-                                    color: "#686A6E",
-                                  }}
-                                >
-                                  내용
-                                </td>
-                                <td
-                                  className="px-4 py-4"
-                                  style={{
-                                    fontFamily: "Pretendard",
-                                    fontSize: "14px",
-                                    fontWeight: 500,
-                                    color: "#0C0C0C",
-                                  }}
-                                >
-                                  {itemValue}
-                                </td>
-                                <td className="px-4 py-4 text-center">
-                                  <button
-                                    onClick={() => {
-                                      if (isMasterCategory && itemId) {
-                                        deleteMasterDataMutation.mutate(itemId);
-                                      } else {
-                                        setCategoryItems(prev => ({
+                                <td className="px-4 py-3">
+                                  {isEditing ? (
+                                    <input
+                                      type="text"
+                                      value={isEditing.value}
+                                      onChange={(e) => {
+                                        setEditingMasterData(prev => ({
                                           ...prev,
-                                          [selectedCategory]: (prev[selectedCategory] || []).filter((_, i) => i !== idx),
+                                          [itemId]: { ...prev[itemId], value: e.target.value }
                                         }));
-                                        toast({
-                                          title: "삭제 완료",
-                                          description: `${itemValue}이(가) 삭제되었습니다.`,
+                                      }}
+                                      onBlur={() => {
+                                        if (isMasterCategory && isEditing.value !== itemValue) {
+                                          updateMasterDataMutation.mutate({
+                                            id: itemId,
+                                            value: isEditing.value,
+                                            note: isEditing.note,
+                                          });
+                                        }
+                                        setEditingMasterData(prev => {
+                                          const newData = { ...prev };
+                                          delete newData[itemId];
+                                          return newData;
                                         });
-                                      }
-                                    }}
-                                    className="px-3 py-1"
+                                      }}
+                                      className="w-full px-3 py-2 outline-none"
+                                      style={{
+                                        background: "#FFFFFF",
+                                        border: "1px solid #008FED",
+                                        borderRadius: "4px",
+                                        fontFamily: "Pretendard",
+                                        fontSize: "14px",
+                                      }}
+                                      autoFocus
+                                      data-testid={`input-value-${idx}`}
+                                    />
+                                  ) : (
+                                    <div
+                                      onClick={() => {
+                                        setEditingMasterData(prev => ({
+                                          ...prev,
+                                          [itemId]: { value: itemValue, note: itemNote }
+                                        }));
+                                      }}
+                                      className="px-3 py-2 cursor-text"
+                                      style={{
+                                        fontFamily: "Pretendard",
+                                        fontSize: "14px",
+                                        fontWeight: 400,
+                                        color: itemValue ? "#0C0C0C" : "#ABABAB",
+                                        background: "rgba(248, 248, 248, 0.5)",
+                                        borderRadius: "4px",
+                                      }}
+                                      data-testid={`text-value-${idx}`}
+                                    >
+                                      {itemValue || "내용을 입력하세요"}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span
                                     style={{
-                                      background: "rgba(239, 68, 68, 0.1)",
-                                      borderRadius: "4px",
                                       fontFamily: "Pretendard",
-                                      fontSize: "13px",
-                                      fontWeight: 500,
-                                      color: "#EF4444",
+                                      fontSize: "14px",
+                                      fontWeight: 400,
+                                      color: itemNote ? "#0C0C0C" : "#ABABAB",
                                     }}
-                                    data-testid={`button-delete-item-${idx}`}
                                   >
-                                    -
-                                  </button>
+                                    {itemNote || "-"}
+                                  </span>
                                 </td>
                               </tr>
                             );
