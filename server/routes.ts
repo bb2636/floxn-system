@@ -933,16 +933,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update case field survey endpoint (협력사 only)
+  // Update case field survey endpoint (협력사 및 관리자)
   app.patch("/api/cases/:caseId/field-survey", async (req, res) => {
     // Check authentication
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
-    // Check authorization (협력사만 가능)
-    if (req.session.userRole !== "협력사") {
-      return res.status(403).json({ error: "협력사 권한이 필요합니다" });
+    // Check authorization (협력사 또는 관리자만 가능)
+    if (req.session.userRole !== "협력사" && req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "협력사 또는 관리자 권한이 필요합니다" });
     }
 
     try {
