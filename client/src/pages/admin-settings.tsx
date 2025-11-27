@@ -808,20 +808,15 @@ export default function AdminSettings() {
                   </h1>
                   <button
                     onClick={() => toggleFavoriteMutation.mutate("1:1 문의 관리")}
-                    className="flex items-center justify-center hover:scale-110 transition-transform"
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      background: isInquiryManagementFavorite ? "rgba(255, 193, 7, 0.15)" : "rgba(0, 143, 237, 0.1)",
-                      borderRadius: "50%",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
+                    className="hover:opacity-70 transition-opacity cursor-pointer"
                     data-testid="button-toggle-inquiry-favorite"
-                    title={isInquiryManagementFavorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
                   >
-                    <Star
-                      className={`w-4 h-4 ${isInquiryManagementFavorite ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`}
+                    <Star 
+                      className="w-5 h-5" 
+                      style={{ 
+                        color: isInquiryManagementFavorite ? '#FFD700' : 'rgba(12, 12, 12, 0.24)',
+                        fill: isInquiryManagementFavorite ? '#FFD700' : 'none',
+                      }} 
                     />
                   </button>
                 </div>
