@@ -51,7 +51,6 @@ export default function StatisticsOverview() {
           }}
         />
       </div>
-
       {/* Search Section */}
       <div className="mb-6">
         <div className="flex gap-3">
@@ -95,7 +94,6 @@ export default function StatisticsOverview() {
           </Button>
         </div>
       </div>
-
       {/* Filter Section */}
       <div className="mb-6">
         <div className="flex items-center gap-6 flex-wrap">
@@ -244,7 +242,6 @@ export default function StatisticsOverview() {
           </Select>
         </div>
       </div>
-
       {/* Results label */}
       <div
         className="mb-4"
@@ -257,7 +254,6 @@ export default function StatisticsOverview() {
       >
         총 0건의 통계
       </div>
-
       {/* Statistics Table */}
       <div
         style={{
@@ -299,9 +295,8 @@ export default function StatisticsOverview() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                   }}
-                >
-                  여행
-                </th>
+                >이월
+</th>
                 <th
                   colSpan={3}
                   style={{
