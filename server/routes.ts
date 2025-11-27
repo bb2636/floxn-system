@@ -2325,28 +2325,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return accidentDate.getFullYear() === lastYear && accidentDate.getMonth() + 1 === lastMonth;
       });
       
-      // Calculate statistics (협력사는 다른 기준 사용)
-      let receivedCases, lastMonthReceivedCases, pendingCases, lastMonthPendingCases;
+      // 미결건: 청구자료제출 이전 단계 (청구 상태 이전)
+      const preClaimStatuses = [
+        "배당대기", "접수완료", "현장방문", "현장정보입력", "검토중", "반려",
+        "1차승인", "현장정보제출", "복구요청(2차승인)", "직접복구", "선견적요청",
+        "(직접복구인 경우) 청구자료제출", "(선견적요청인 경우) 출동비 청구"
+      ];
       
-      if (currentUser.role === "협력사") {
-        // 협력사: 접수건 = "접수완료" 상태 케이스
-        receivedCases = currentMonthCases.filter(c => c.status === "접수완료").length;
-        lastMonthReceivedCases = lastMonthCases.filter(c => c.status === "접수완료").length;
-        
-        // 협력사: 미완건 = 작업 진행 중인 케이스 (접수완료, 현장방문, 현장정보입력, 검토중 등)
-        pendingCases = currentMonthCases.filter(c => 
-          c.status !== "정산완료" && c.status !== "접수취소" && c.status !== "입금완료"
-        ).length;
-        lastMonthPendingCases = lastMonthCases.filter(c => 
-          c.status !== "정산완료" && c.status !== "접수취소" && c.status !== "입금완료"
-        ).length;
-      } else {
-        // 다른 역할: 기존 로직 유지
-        receivedCases = currentMonthCases.length;
-        lastMonthReceivedCases = lastMonthCases.length;
-        pendingCases = currentMonthCases.filter(c => c.status === "제출" || c.status === "검토중" || c.status === "1차승인").length;
-        lastMonthPendingCases = lastMonthCases.filter(c => c.status === "제출" || c.status === "검토중" || c.status === "1차승인").length;
-      }
+      // 접수건: 전체 케이스 (취소 제외)
+      const receivedCases = filteredCases.filter(c => c.status !== "접수취소").length;
+      const lastMonthReceivedCases = lastMonthCases.filter(c => c.status !== "접수취소").length;
+      
+      // 미결건: 청구자료제출 이전 단계의 건들
+      const pendingCases = filteredCases.filter(c => preClaimStatuses.includes(c.status)).length;
+      const lastMonthPendingCases = lastMonthCases.filter(c => preClaimStatuses.includes(c.status)).length;
       
       // Calculate changes
       const receivedCasesChangeCount = receivedCases - lastMonthReceivedCases;
@@ -2426,7 +2418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Calculate insurance unsettled (청구 상태: 보험사에 청구했지만 아직 받지 못함)
+      // 보험사 미정산: 입금완료 상태 이전인 건들 (청구했지만 아직 입금 안된 건)
       const insuranceUnsettledCases = filteredCases.filter(c => c.status === "청구");
       const insuranceUnsettledAmount = insuranceUnsettledCases.reduce((sum, c) => {
         const estimate = latestEstimatesByCaseId.get(c.id);
@@ -2437,8 +2429,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return sum;
       }, 0);
 
-      // Calculate partner unsettled (완료 또는 청구 상태: 협력사가 작업 완료했지만 아직 지급하지 않음)
-      const partnerUnsettledCases = filteredCases.filter(c => c.status === "완료" || c.status === "청구");
+      // 협력사 미정산: 정산완료 이전 상태의 건들 (입금 됐지만 아직 정산 안된 건)
+      const partnerUnsettledCases = filteredCases.filter(c => 
+        c.status === "입금완료" || c.status === "일부입금"
+      );
       const partnerUnsettledAmount = partnerUnsettledCases.reduce((sum, c) => {
         const estimate = latestEstimatesByCaseId.get(c.id);
         if (estimate) {
