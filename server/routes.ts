@@ -290,13 +290,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Debug: log validated sameAsPolicyHolder with type
       console.log("✅ Validated sameAsPolicyHolder:", validatedData.sameAsPolicyHolder, "type:", typeof validatedData.sameAsPolicyHolder);
       
-      // Determine case types based on processingTypes (stored as JSON string)
-      const processingTypesStr = validatedData.processingTypes || "[]";
-      const processingTypes = typeof processingTypesStr === 'string' 
-        ? JSON.parse(processingTypesStr) 
-        : processingTypesStr;
-      const hasDamagePrevention = Array.isArray(processingTypes) && processingTypes.includes("손해방지");
-      const hasVictimRecovery = Array.isArray(processingTypes) && processingTypes.includes("피해세대복구");
+      // Determine case types based on damagePreventionCost and victimIncidentAssistance fields
+      // 프론트엔드에서 "true"/"false" 문자열로 전송됨
+      const hasDamagePrevention = validatedData.damagePreventionCost === "true" || validatedData.damagePreventionCost === true;
+      const hasVictimRecovery = validatedData.victimIncidentAssistance === "true" || validatedData.victimIncidentAssistance === true;
+      
+      console.log("🔍 Processing types:", { hasDamagePrevention, hasVictimRecovery, damagePreventionCost: validatedData.damagePreventionCost, victimIncidentAssistance: validatedData.victimIncidentAssistance });
       
       // Generate caseGroupId (use insuranceAccidentNo or generate unique ID)
       const caseGroupId = validatedData.insuranceAccidentNo || `GROUP-${Date.now()}`;
