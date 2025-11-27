@@ -313,9 +313,7 @@ export default function StatisticsOverview() {
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
                   }}
-                >
-                  심리변호사
-                </th>
+                >선견적요청</th>
                 <th
                   style={{
                     padding: "12px 16px",
