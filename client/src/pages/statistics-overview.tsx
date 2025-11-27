@@ -166,24 +166,28 @@ export default function StatisticsOverview() {
         style={{
           background: "#FFFFFF",
           borderRadius: "12px",
-          border: "1px solid rgba(12, 12, 12, 0.08)",
+          border: "1px solid rgba(12, 12, 12, 0.06)",
           overflow: "hidden",
         }}
       >
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
+              <tr style={{ 
+                background: "rgba(12, 12, 12, 0.04)",
+                borderRadius: "8px 8px 0px 0px"
+              }}>
                 <th
                   rowSpan={2}
                   style={{
-                    padding: "16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "14px",
+                    fontSize: "15px",
                     fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                     verticalAlign: "middle",
                   }}
@@ -193,40 +197,46 @@ export default function StatisticsOverview() {
                 <th
                   colSpan={3}
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "14px",
+                    fontSize: "15px",
                     fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
-                >이월
-</th>
+                >
+                  이월
+                </th>
                 <th
                   colSpan={3}
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "14px",
+                    fontSize: "15px",
                     fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
-                >수임</th>
+                >
+                  수임
+                </th>
                 <th
                   colSpan={4}
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "14px",
+                    fontSize: "15px",
                     fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
@@ -235,107 +245,124 @@ export default function StatisticsOverview() {
                 <th
                   colSpan={3}
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "14px",
+                    fontSize: "15px",
                     fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
                   출장
                 </th>
               </tr>
-              <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
-                {/* 여행 */}
+              <tr style={{ background: "rgba(12, 12, 12, 0.04)" }}>
+                {/* 이월 sub-headers */}
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
-                >직접복구</th>
+                >
+                  직접복구
+                </th>
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
-                >선견적요청</th>
+                >
+                  선견적요청
+                </th>
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
                   계
                 </th>
-                {/* 수령 */}
+                {/* 수임 sub-headers */}
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
-                >직접복구</th>
+                >
+                  직접복구
+                </th>
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
-                >선견적요청</th>
+                >
+                  선견적요청
+                </th>
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
                   계
                 </th>
-                {/* 정산관련 */}
+                {/* 정산관련 sub-headers */}
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
@@ -343,13 +370,14 @@ export default function StatisticsOverview() {
                 </th>
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
@@ -357,13 +385,14 @@ export default function StatisticsOverview() {
                 </th>
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
@@ -371,28 +400,30 @@ export default function StatisticsOverview() {
                 </th>
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
                   소계
                 </th>
-                {/* 출장 */}
+                {/* 출장 sub-headers */}
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
@@ -400,13 +431,14 @@ export default function StatisticsOverview() {
                 </th>
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
@@ -414,12 +446,14 @@ export default function StatisticsOverview() {
                 </th>
                 <th
                   style={{
-                    padding: "12px 16px",
+                    padding: "17.5px 8px",
                     fontFamily: "Pretendard",
-                    fontSize: "13px",
-                    fontWeight: 500,
-                    color: "rgba(12, 12, 12, 0.7)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                    fontSize: "15px",
+                    fontWeight: 600,
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.6)",
+                    border: "1px solid rgba(12, 12, 12, 0.06)",
                     textAlign: "center",
                   }}
                 >
@@ -434,42 +468,34 @@ export default function StatisticsOverview() {
                   style={{
                     borderBottom:
                       index < tableRows.length - 1
-                        ? "1px solid rgba(12, 12, 12, 0.05)"
+                        ? "1px solid rgba(12, 12, 12, 0.06)"
                         : "none",
                   }}
                 >
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
                     -
                   </td>
-                  {/* 여행 3개 */}
+                  {/* 이월 3개 */}
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  <td
-                    style={{
-                      padding: "14px 16px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
@@ -477,24 +503,13 @@ export default function StatisticsOverview() {
                   </td>
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  {/* 수령 3개 */}
-                  <td
-                    style={{
-                      padding: "14px 16px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
@@ -502,11 +517,28 @@ export default function StatisticsOverview() {
                   </td>
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
+                      textAlign: "center",
+                    }}
+                  >
+                    -
+                  </td>
+                  {/* 수임 3개 */}
+                  <td
+                    style={{
+                      padding: "17.5px 8px",
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
@@ -514,11 +546,27 @@ export default function StatisticsOverview() {
                   </td>
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
+                      textAlign: "center",
+                    }}
+                  >
+                    -
+                  </td>
+                  <td
+                    style={{
+                      padding: "17.5px 8px",
+                      fontFamily: "Pretendard",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
@@ -527,11 +575,13 @@ export default function StatisticsOverview() {
                   {/* 정산관련 4개 */}
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
@@ -539,11 +589,13 @@ export default function StatisticsOverview() {
                   </td>
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
@@ -551,11 +603,13 @@ export default function StatisticsOverview() {
                   </td>
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
@@ -563,11 +617,13 @@ export default function StatisticsOverview() {
                   </td>
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
@@ -576,11 +632,13 @@ export default function StatisticsOverview() {
                   {/* 출장 3개 */}
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
@@ -588,11 +646,13 @@ export default function StatisticsOverview() {
                   </td>
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
@@ -600,10 +660,13 @@ export default function StatisticsOverview() {
                   </td>
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "17.5px 8px",
                       fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      fontSize: "15px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      border: "1px solid rgba(12, 12, 12, 0.06)",
                       textAlign: "center",
                     }}
                   >
