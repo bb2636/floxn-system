@@ -2,10 +2,22 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, Drawing, Case } from "@shared/schema";
-import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus } from "lucide-react";
+import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { formatCaseNumber } from "@/lib/utils";
 
 interface UploadedImage {
@@ -100,6 +112,50 @@ export default function FieldDrawing() {
     queryKey: ["/api/drawings", "case", selectedCaseId],
     enabled: !!selectedCaseId && !!user,
     staleTime: 0,
+  });
+
+  // 관련 케이스 도면 확인 (같은 사고번호의 다른 케이스에 도면이 있는지)
+  const { data: relatedDrawingInfo } = useQuery<{
+    hasRelatedDrawing: boolean;
+    sourceCaseId?: string;
+    sourceCaseNumber?: string;
+  }>({
+    queryKey: ["/api/cases", selectedCaseId, "related-drawing"],
+    enabled: !!selectedCaseId && !savedDrawing && !isLoadingDrawing,
+  });
+
+  // 도면 복제 mutation
+  const cloneDrawingMutation = useMutation({
+    mutationFn: async (sourceCaseId: string) => {
+      const response = await apiRequest("POST", `/api/cases/${selectedCaseId}/clone-drawing`, {
+        sourceCaseId,
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "도면 복제 실패");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.drawing) {
+        setUploadedImages(data.drawing.uploadedImages || []);
+        setRectangles(data.drawing.rectangles || []);
+        setAccidentAreas(data.drawing.accidentAreas || []);
+        setLeakMarkers(data.drawing.leakMarkers || []);
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/drawings", "case", selectedCaseId] });
+      toast({
+        title: "도면 복제 완료",
+        description: "관련 케이스의 도면이 복제되었습니다.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "도면 복제 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
   // 로드된 도면으로 canvas state 초기화
@@ -1046,6 +1102,50 @@ export default function FieldDrawing() {
 
           {/* 저장 버튼 (우측 상단) */}
           <div className="absolute top-4 right-4 z-10 flex gap-2" data-ui="save-buttons">
+            {/* 관련 케이스에서 도면 복제 버튼 */}
+            {relatedDrawingInfo?.hasRelatedDrawing && !savedDrawing && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    className="px-6 py-2.5 rounded-lg font-medium transition-all hover-elevate active-elevate-2 flex items-center gap-2"
+                    style={{
+                      background: "#F59E0B",
+                      color: "white",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                    }}
+                    data-testid="button-clone-drawing"
+                    disabled={cloneDrawingMutation.isPending}
+                  >
+                    <Copy className="w-4 h-4" />
+                    {cloneDrawingMutation.isPending ? "복제 중..." : "관련 도면 가져오기"}
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>관련 케이스에서 도면 복제</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      <span className="font-semibold">{formatCaseNumber(relatedDrawingInfo.sourceCaseNumber)}</span> 케이스의 도면을 복제하시겠습니까?
+                      <br />
+                      복제 후에도 개별적으로 수정할 수 있습니다.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>취소</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        if (relatedDrawingInfo.sourceCaseId) {
+                          cloneDrawingMutation.mutate(relatedDrawingInfo.sourceCaseId);
+                        }
+                      }}
+                      data-testid="button-confirm-clone-drawing"
+                    >
+                      복제하기
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
             <button
               onClick={handleSave}
               disabled={!isSaveReady || saveDrawingMutation.isPending}
