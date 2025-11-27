@@ -683,10 +683,12 @@ export default function Intake() {
       
       // 백엔드가 자동으로 다중 케이스 생성 및 접수번호 생성 처리
       // editCaseId를 포함하여 백엔드에서 draft 삭제 가능하도록
+      // assignedTo: 현재 로그인한 사용자를 담당자로 설정
       const payload = {
         ...cleanedData,
         status: "접수완료",
         receptionDate: data.accidentDate || getTodayDate(),
+        assignedTo: user?.id || null,
         ...(editCaseId ? { id: editCaseId } : {})
       };
       
