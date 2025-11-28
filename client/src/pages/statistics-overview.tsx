@@ -45,7 +45,13 @@ export default function StatisticsOverview() {
   }
 
   const tableRows = Array(5).fill(null);
-  const subFilters = ["진행과정별", "수리비 금액계층별", "기간별"];
+  
+  const subFiltersMap: Record<string, string[]> = {
+    "미결": ["진행과정별", "수리비 금액계층별", "기간별"],
+    "직접복구": ["전체", "종결건 진행과정별", "완료건 금액계층별", "평균 수리비 항목별"],
+  };
+  
+  const currentSubFilters = subFiltersMap[activeTab] || [];
 
   return (
     <div className="p-8">
@@ -147,32 +153,43 @@ export default function StatisticsOverview() {
           />
 
           <div className="flex items-center gap-2">
-            {["수임", "미결", "직접복구", "출동비 청구", "사고확인"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  height: "40px",
-                  padding: "0 20px",
-                  background: "transparent",
-                  border: tab === "미결" && activeTab === "미결" ? "1px solid rgba(12, 12, 12, 0.2)" : "none",
-                  borderRadius: "8px",
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: activeTab === tab ? "#008FED" : "rgba(12, 12, 12, 0.5)",
-                  cursor: "pointer",
-                  transition: "color 0.2s",
-                }}
-                data-testid={`tab-${tab}`}
-              >
-                {tab}
-              </button>
-            ))}
+            {["수임", "미결", "직접복구", "출동비 청구", "사고확인"].map((tab) => {
+              const hasSubFilters = subFiltersMap[tab];
+              const isActive = activeTab === tab;
+              const showBorder = hasSubFilters && isActive;
+              
+              return (
+                <button
+                  key={tab}
+                  onClick={() => {
+                    setActiveTab(tab);
+                    if (subFiltersMap[tab]) {
+                      setActiveSubFilter(subFiltersMap[tab][0]);
+                    }
+                  }}
+                  style={{
+                    height: "40px",
+                    padding: "0 20px",
+                    background: "transparent",
+                    border: showBorder ? "1px solid rgba(12, 12, 12, 0.2)" : "none",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: isActive ? "#008FED" : "rgba(12, 12, 12, 0.5)",
+                    cursor: "pointer",
+                    transition: "color 0.2s",
+                  }}
+                  data-testid={`tab-${tab}`}
+                >
+                  {tab}
+                </button>
+              );
+            })}
           </div>
 
-          {/* 미결 선택 시 서브 필터 표시 */}
-          {activeTab === "미결" && (
+          {/* 서브 필터 표시 (미결, 직접복구) */}
+          {currentSubFilters.length > 0 && (
             <>
               <div
                 style={{
@@ -182,7 +199,7 @@ export default function StatisticsOverview() {
                 }}
               />
               <div className="flex items-center gap-2">
-                {subFilters.map((filter) => (
+                {currentSubFilters.map((filter) => (
                   <button
                     key={filter}
                     onClick={() => setActiveSubFilter(filter)}
