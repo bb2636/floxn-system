@@ -941,7 +941,7 @@ export default function FieldReport() {
             </span>
           </div>
           
-          {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+          {/* 두 번째 줄: 접수번호, 피보험자, 담당자 */}
           <div 
             className="flex items-center gap-4"
             style={{
@@ -954,7 +954,7 @@ export default function FieldReport() {
             }}
           >
             <span>접수번호 {formatCaseNumber(caseData.caseNumber)}</span>
-            <span>계약자 {caseData.policyHolderName || caseData.clientName || "미정"}</span>
+            <span>피보험자 {caseData.policyHolderName || caseData.clientName || "미정"}</span>
             <span>담당자 {caseData.assignedPartnerManager || "미정"}</span>
           </div>
         </div>

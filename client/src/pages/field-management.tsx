@@ -516,7 +516,7 @@ export default function FieldManagement() {
                       {selectedCaseData.insuranceCompany || "보험사 미지정"} {formatCaseNumber(selectedCaseData.caseNumber) || ""}
                     </span>
                   </div>
-                  {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+                  {/* 두 번째 줄: 접수번호, 피보험자, 담당자 */}
                   <div 
                     className="flex items-center gap-4"
                     style={{
@@ -527,7 +527,7 @@ export default function FieldManagement() {
                     }}
                   >
                     <span>접수번호 {selectedCaseData.insuranceAccidentNo || "-"}</span>
-                    <span>계약자 {selectedCaseData.policyHolderName || "-"}</span>
+                    <span>피보험자 {selectedCaseData.policyHolderName || "-"}</span>
                     <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
                   </div>
                 </div>

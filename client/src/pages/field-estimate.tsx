@@ -1186,7 +1186,7 @@ export default function FieldEstimate() {
               </span>
             </div>
             
-            {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+            {/* 두 번째 줄: 접수번호, 피보험자, 담당자 */}
             <div 
               className="flex items-center gap-4"
               style={{

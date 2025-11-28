@@ -548,7 +548,7 @@ export default function FieldDocuments() {
               </span>
             </div>
             
-            {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+            {/* 두 번째 줄: 접수번호, 피보험자, 담당자 */}
             <div 
               className="flex items-center gap-4"
               style={{
@@ -561,7 +561,7 @@ export default function FieldDocuments() {
               }}
             >
               <span>접수번호 {formatCaseNumber(selectedCase.caseNumber)}</span>
-              <span>계약자 {selectedCase.policyHolderName || selectedCase.clientName || "미정"}</span>
+              <span>피보험자 {selectedCase.policyHolderName || selectedCase.clientName || "미정"}</span>
               <span>담당자 {selectedCase.assignedPartnerManager || "미정"}</span>
             </div>
           </div>
