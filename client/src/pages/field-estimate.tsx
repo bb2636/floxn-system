@@ -648,6 +648,28 @@ export default function FieldEstimate() {
           // mm² -> m² 변환
           const area = (width * height / 1000000).toFixed(2);
           updated.repairArea = area;
+          
+          // 복구면적이 변경되면 노무비의 피해면적과 자재비의 수량에 자동 연동
+          const repairAreaNum = parseFloat(area) || 0;
+          
+          // 노무비 연동: 공사내용(workName)과 일치하는 행의 damageArea 업데이트
+          setLaborCostRows(prevLabor => prevLabor.map(laborRow => {
+            // 공사내용(workName)이 노무비의 공사명(workName) 또는 공종(category)과 일치하는 경우 연동
+            if (laborRow.workName === updated.workName || laborRow.category === updated.workName) {
+              return { ...laborRow, damageArea: repairAreaNum };
+            }
+            return laborRow;
+          }));
+          
+          // 자재비 연동: 공사내용(workName)과 일치하는 행의 수량 업데이트
+          setMaterialRows(prevMaterial => prevMaterial.map(materialRow => {
+            // 공종이 공사내용(workName)과 일치하는 경우 연동
+            if (materialRow.공종 === updated.workName) {
+              const newAmount = repairAreaNum * materialRow.기준단가;
+              return { ...materialRow, 수량: repairAreaNum, 금액: newAmount };
+            }
+            return materialRow;
+          }));
         }
         
         return updated;
