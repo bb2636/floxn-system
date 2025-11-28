@@ -98,7 +98,7 @@ export function LaborCostSection({
   const [areaPopupOpen, setAreaPopupOpen] = useState(false);
   const [areaPopupRowId, setAreaPopupRowId] = useState<string | null>(null);
   const [areaPopupWorkName, setAreaPopupWorkName] = useState<string>("");
-  const [selectedAreaRowId, setSelectedAreaRowId] = useState<string | null>(null); // 팝업에서 선택된 행
+  const [selectedGroupWorkName, setSelectedGroupWorkName] = useState<string | null>(null); // 팝업에서 선택된 공사명 그룹
 
   // 공사명 선택 시 팝업 열기
   const handleWorkNameChange = (rowId: string, workName: string) => {
@@ -110,7 +110,7 @@ export function LaborCostSection({
     if (matchingRows.length > 0) {
       setAreaPopupRowId(rowId);
       setAreaPopupWorkName(workName);
-      setSelectedAreaRowId(null); // 선택 초기화
+      setSelectedGroupWorkName(null); // 선택 초기화
       setAreaPopupOpen(true);
     }
   };
@@ -120,18 +120,18 @@ export function LaborCostSection({
     setAreaPopupOpen(false);
     setAreaPopupRowId(null);
     setAreaPopupWorkName("");
-    setSelectedAreaRowId(null);
+    setSelectedGroupWorkName(null);
   };
 
-  // 팝업에서 "불러오기" 클릭 시 선택된 행의 피해면적 값 적용
+  // 팝업에서 "불러오기" 클릭 시 선택된 공사명 그룹의 복구면적 합계 적용
   const handleAreaRowImport = () => {
-    if (!areaPopupRowId || !selectedAreaRowId) return;
+    if (!areaPopupRowId || !selectedGroupWorkName) return;
     
-    const selectedRow = matchingAreaRows.find(r => r.id === selectedAreaRowId);
-    if (!selectedRow) return;
+    // 선택된 공사명 그룹의 복구면적 합계 계산
+    const selectedGroup = groupedAreaRows.find(g => g.workName === selectedGroupWorkName);
+    if (!selectedGroup) return;
     
-    // 피해면적 값을 노무비 행에 적용 (복구면적 사용)
-    const damageArea = parseFloat(selectedRow.repairArea) || 0;
+    const damageArea = selectedGroup.totalRepairArea;
     onRowsChange(rows.map(row => {
       if (row.id === areaPopupRowId) {
         const updated = { ...row, damageArea };
@@ -157,10 +157,30 @@ export function LaborCostSection({
     handleAreaPopupClose();
   };
 
-  // 팝업에 표시할 복구면적 산출표 데이터
+  // 팝업에 표시할 복구면적 산출표 데이터 (공사명별 그룹화)
   const matchingAreaRows = useMemo(() => {
     return areaCalculationRows.filter(ar => ar.workName === areaPopupWorkName);
   }, [areaCalculationRows, areaPopupWorkName]);
+
+  // 공사명별로 그룹화하고 복구면적 합계 계산
+  const groupedAreaRows = useMemo(() => {
+    const groups: Record<string, { workName: string; totalRepairArea: number; rows: typeof matchingAreaRows }> = {};
+    
+    matchingAreaRows.forEach(row => {
+      const workName = row.workName;
+      if (!groups[workName]) {
+        groups[workName] = {
+          workName,
+          totalRepairArea: 0,
+          rows: [],
+        };
+      }
+      groups[workName].totalRepairArea += parseFloat(row.repairArea) || 0;
+      groups[workName].rows.push(row);
+    });
+    
+    return Object.values(groups);
+  }, [matchingAreaRows]);
   // 캐스케이딩 옵션 생성 - filteredWorkTypes가 제공되면 우선 사용
   const categoryOptions = useMemo(() => {
     // filteredWorkTypes가 제공되면 그것을 사용
@@ -728,7 +748,7 @@ export function LaborCostSection({
               피해면적산출표
             </div>
 
-            {/* 테이블 */}
+            {/* 테이블 - 공사명별 그룹화 */}
             <div className="border rounded-lg overflow-hidden">
               <table className="w-full" style={{ borderCollapse: "collapse" }}>
                 <thead>
@@ -756,23 +776,10 @@ export function LaborCostSection({
                         borderBottom: "1px solid #e9ecef"
                       }}
                     >
-                      위치
-                    </th>
-                    <th 
-                      className="px-4 py-3 text-center" 
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "13px", 
-                        fontWeight: 500, 
-                        color: "#495057",
-                        borderBottom: "1px solid #e9ecef"
-                      }}
-                    >
                       공사명
                     </th>
                     <th 
                       className="px-4 py-3 text-center" 
-                      colSpan={3}
                       style={{ 
                         fontFamily: "Pretendard", 
                         fontSize: "13px", 
@@ -781,73 +788,32 @@ export function LaborCostSection({
                         borderBottom: "1px solid #e9ecef"
                       }}
                     >
-                      복구면적
-                    </th>
-                  </tr>
-                  <tr style={{ backgroundColor: "#f8f9fa" }}>
-                    <th style={{ borderBottom: "1px solid #e9ecef" }}></th>
-                    <th style={{ borderBottom: "1px solid #e9ecef" }}></th>
-                    <th style={{ borderBottom: "1px solid #e9ecef" }}></th>
-                    <th 
-                      className="px-4 py-2 text-center" 
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "12px", 
-                        fontWeight: 400, 
-                        color: "#6c757d",
-                        borderBottom: "1px solid #e9ecef"
-                      }}
-                    >
-                      가로(mm)
-                    </th>
-                    <th 
-                      className="px-4 py-2 text-center" 
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "12px", 
-                        fontWeight: 400, 
-                        color: "#6c757d",
-                        borderBottom: "1px solid #e9ecef"
-                      }}
-                    >
-                      세로(mm)
-                    </th>
-                    <th 
-                      className="px-4 py-2 text-center" 
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "12px", 
-                        fontWeight: 400, 
-                        color: "#6c757d",
-                        borderBottom: "1px solid #e9ecef"
-                      }}
-                    >
-                      면적(㎡)
+                      복구면적 합계(㎡)
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {matchingAreaRows.map((areaRow, idx) => (
+                  {groupedAreaRows.map((group, idx) => (
                     <tr 
-                      key={areaRow.id} 
+                      key={group.workName} 
                       className="cursor-pointer transition-colors"
                       style={{ 
-                        backgroundColor: selectedAreaRowId === areaRow.id ? "#e7f5ff" : "white",
+                        backgroundColor: selectedGroupWorkName === group.workName ? "#e7f5ff" : "white",
                         borderBottom: "1px solid #e9ecef"
                       }}
-                      onClick={() => setSelectedAreaRowId(areaRow.id)}
+                      onClick={() => setSelectedGroupWorkName(group.workName)}
                     >
                       <td className="px-4 py-3 text-center">
                         <div className="flex justify-center">
                           <div
                             className="w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer"
                             style={{
-                              borderColor: selectedAreaRowId === areaRow.id ? "#228be6" : "#ced4da",
-                              backgroundColor: selectedAreaRowId === areaRow.id ? "#228be6" : "white"
+                              borderColor: selectedGroupWorkName === group.workName ? "#228be6" : "#ced4da",
+                              backgroundColor: selectedGroupWorkName === group.workName ? "#228be6" : "white"
                             }}
-                            data-testid={`radio-area-${idx}`}
+                            data-testid={`radio-area-group-${idx}`}
                           >
-                            {selectedAreaRowId === areaRow.id && (
+                            {selectedGroupWorkName === group.workName && (
                               <div 
                                 className="w-2 h-2 rounded-full" 
                                 style={{ backgroundColor: "white" }}
@@ -860,38 +826,20 @@ export function LaborCostSection({
                         className="px-4 py-3 text-center"
                         style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
                       >
-                        {areaRow.location || '-'}
+                        {group.workName || '-'}
                       </td>
                       <td 
                         className="px-4 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a", fontWeight: 600 }}
                       >
-                        {areaRow.workName || '-'}
-                      </td>
-                      <td 
-                        className="px-4 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
-                      >
-                        {areaRow.width || '0000'}
-                      </td>
-                      <td 
-                        className="px-4 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
-                      >
-                        {areaRow.height || '0000'}
-                      </td>
-                      <td 
-                        className="px-4 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
-                      >
-                        {areaRow.repairArea || '0000'}
+                        {group.totalRepairArea.toFixed(2)}
                       </td>
                     </tr>
                   ))}
-                  {matchingAreaRows.length === 0 && (
+                  {groupedAreaRows.length === 0 && (
                     <tr>
                       <td 
-                        colSpan={6} 
+                        colSpan={3} 
                         className="px-4 py-8 text-center"
                         style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#868e96" }}
                       >
@@ -927,16 +875,16 @@ export function LaborCostSection({
             </button>
             <button
               onClick={handleAreaRowImport}
-              disabled={!selectedAreaRowId}
+              disabled={!selectedGroupWorkName}
               className="flex-1 py-4 text-center transition-colors"
               style={{
                 fontFamily: "Pretendard",
                 fontWeight: 500,
                 fontSize: "16px",
                 color: "white",
-                backgroundColor: selectedAreaRowId ? "#228be6" : "#adb5bd",
+                backgroundColor: selectedGroupWorkName ? "#228be6" : "#adb5bd",
                 border: "none",
-                cursor: selectedAreaRowId ? "pointer" : "not-allowed"
+                cursor: selectedGroupWorkName ? "pointer" : "not-allowed"
               }}
               data-testid="button-area-import"
             >
