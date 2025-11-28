@@ -90,6 +90,8 @@ export default function FieldEstimate() {
   const [vatIncluded, setVatIncluded] = useState(true); // VAT 포함 여부
   const [estimateCase, setEstimateCase] = useState<Case | null>(null); // 견적서용 선택된 케이스
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false); // 케이스 검색 모달
+  const [customWorkTypes, setCustomWorkTypes] = useState<string[]>([]); // 사용자가 추가한 공종 목록
+  const [workTypeInputMode, setWorkTypeInputMode] = useState<{[rowId: string]: boolean}>({}); // 행별 직접입력 모드
   const [selectedCaseId, setSelectedCaseId] = useState(() => 
     localStorage.getItem('selectedFieldSurveyCaseId') || ''
   );
@@ -511,6 +513,18 @@ export default function FieldEstimate() {
           note: row.note || "",
         }));
         setRows(loadedRows);
+        
+        // 기존 workType 값을 customWorkTypes에 추가
+        const existingWorkTypes = latestEstimate.rows
+          .map((row: any) => row.workType)
+          .filter((wt: string) => wt && wt.trim() !== '');
+        const uniqueWorkTypes = Array.from(new Set(existingWorkTypes)) as string[];
+        if (uniqueWorkTypes.length > 0) {
+          setCustomWorkTypes(prev => {
+            const combined = Array.from(new Set([...prev, ...uniqueWorkTypes]));
+            return combined;
+          });
+        }
       } else {
         // 복구면적 데이터가 없으면 빈 행 생성
         addRow();
@@ -1578,23 +1592,99 @@ export default function FieldEstimate() {
                         </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <input
-                          type="text"
-                          value={row.workType || ""}
-                          onChange={(e) => updateRow(row.id, 'workType', e.target.value)}
-                          placeholder="직접 입력"
-                          className="input-focus-blue"
-                          style={{
-                            width: "100%",
-                            height: "40px",
-                            padding: "8px",
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            border: "1px solid rgba(12, 12, 12, 0.2)",
-                            borderRadius: "6px",
-                          }}
-                          data-testid={`input-worktype-${index}`}
-                        />
+                        {workTypeInputMode[row.id] ? (
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            <input
+                              type="text"
+                              value={row.workType || ""}
+                              onChange={(e) => updateRow(row.id, 'workType', e.target.value)}
+                              placeholder="공종 입력"
+                              className="input-focus-blue"
+                              autoFocus
+                              style={{
+                                flex: 1,
+                                height: "40px",
+                                padding: "8px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                border: "1px solid rgba(12, 12, 12, 0.2)",
+                                borderRadius: "6px",
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && row.workType) {
+                                  if (!customWorkTypes.includes(row.workType)) {
+                                    setCustomWorkTypes(prev => [...prev, row.workType]);
+                                  }
+                                  setWorkTypeInputMode(prev => ({ ...prev, [row.id]: false }));
+                                }
+                              }}
+                              data-testid={`input-worktype-custom-${index}`}
+                            />
+                            <button
+                              onClick={() => {
+                                if (row.workType && !customWorkTypes.includes(row.workType)) {
+                                  setCustomWorkTypes(prev => [...prev, row.workType]);
+                                }
+                                setWorkTypeInputMode(prev => ({ ...prev, [row.id]: false }));
+                              }}
+                              style={{
+                                width: "40px",
+                                height: "40px",
+                                border: "1px solid rgba(12, 12, 12, 0.2)",
+                                borderRadius: "6px",
+                                background: "white",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#2563EB",
+                              }}
+                              data-testid={`button-worktype-confirm-${index}`}
+                            >
+                              <Check size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <Select
+                            value={row.workType || "선택"}
+                            onValueChange={(value) => {
+                              if (value === "__직접입력__") {
+                                updateRow(row.id, 'workType', '');
+                                setWorkTypeInputMode(prev => ({ ...prev, [row.id]: true }));
+                              } else {
+                                updateRow(row.id, 'workType', value === "선택" ? "" : value);
+                              }
+                            }}
+                          >
+                            <SelectTrigger 
+                              className="border focus:ring-0"
+                              style={{
+                                width: "100%",
+                                height: "40px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                borderColor: "rgba(12, 12, 12, 0.2)",
+                                borderRadius: "6px",
+                              }}
+                              data-testid={`select-worktype-${index}`}
+                            >
+                              <SelectValue placeholder="선택">
+                                {row.workType || "선택"}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="선택">선택</SelectItem>
+                              {customWorkTypes.map(wt => (
+                                <SelectItem key={wt} value={wt}>
+                                  {wt}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="__직접입력__">
+                                <span style={{ fontWeight: 600, color: "#2563EB" }}>직접입력</span>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       </td>
                       <td style={{ padding: "8px" }}>
                         <Select
