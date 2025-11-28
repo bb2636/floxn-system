@@ -267,6 +267,7 @@ export default function Intake() {
     insuredIdNumber: "",
     insuredContact: "",
     insuredAddress: "",
+    insuredAddressDetail: "",
     victimName: "",
     victimContact: "",
     victimAddress: "",
@@ -495,6 +496,7 @@ export default function Intake() {
             insuredIdNumber: caseData.insuredIdNumber || "",
             insuredContact: caseData.insuredContact || "",
             insuredAddress: caseData.insuredAddress || "",
+            insuredAddressDetail: caseData.insuredAddressDetail || "",
             victimName: caseData.victimName || "",
             victimContact: caseData.victimContact || "",
             victimAddress: caseData.victimAddress || "",
@@ -852,6 +854,7 @@ export default function Intake() {
       insuredIdNumber: "",
       insuredContact: "",
       insuredAddress: "",
+      insuredAddressDetail: "",
       victimName: "",
       victimContact: "",
       victimAddress: "",
@@ -1841,6 +1844,28 @@ export default function Intake() {
                             />
                           </div>
                         )}
+                        {/* 상세주소 입력 */}
+                        <input
+                          type="text"
+                          placeholder="상세주소 입력 (동/호수 등)"
+                          value={formData.insuredAddressDetail}
+                          onChange={(e) => handleInputChange("insuredAddressDetail", e.target.value)}
+                          style={{
+                            marginTop: '8px',
+                            height: '68px',
+                            padding: '10px 20px',
+                            background: '#FDFDFD',
+                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            borderRadius: '8px',
+                            fontFamily: 'Pretendard',
+                            fontWeight: 600,
+                            fontSize: '16px',
+                            letterSpacing: '-0.02em',
+                            color: '#0C0C0C',
+                            width: '100%',
+                          }}
+                          data-testid="input-insured-address-detail"
+                        />
                       </div>
                     </div>
 
