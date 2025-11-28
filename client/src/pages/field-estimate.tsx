@@ -727,37 +727,8 @@ export default function FieldEstimate() {
           const area = (widthM * heightM).toFixed(2);
           updated.repairArea = area;
           
-          // 복구면적이 변경되면 노무비의 피해면적과 자재비의 수량에 자동 연동
-          // 복구면적산출표 N행 → 노무비 N행, 자재비 N행으로 연동
-          const repairAreaNum = parseFloat(area) || 0;
-          
-          // 노무비 연동: 같은 인덱스 행의 damageArea 업데이트
-          if (currentRowIndex >= 0) {
-            setLaborCostRows(prevLabor => {
-              // 노무비 행이 부족하면 빈 행 추가
-              const newLabor = [...prevLabor];
-              while (newLabor.length <= currentRowIndex) {
-                newLabor.push(createBlankLaborRow());
-              }
-              // 같은 인덱스 행에 복구면적 값 자동 입력
-              newLabor[currentRowIndex] = { ...newLabor[currentRowIndex], damageArea: repairAreaNum };
-              return newLabor;
-            });
-            
-            // 자재비 연동: 같은 인덱스 행의 수량 업데이트
-            setMaterialRows(prevMaterial => {
-              // 자재비 행이 부족하면 빈 행 추가
-              const newMaterial = [...prevMaterial];
-              while (newMaterial.length <= currentRowIndex) {
-                newMaterial.push(createBlankMaterialRow());
-              }
-              // 같은 인덱스 행에 복구면적 값을 수량으로 자동 입력
-              const currentRow = newMaterial[currentRowIndex];
-              const newAmount = repairAreaNum * (currentRow.기준단가 || 0);
-              newMaterial[currentRowIndex] = { ...currentRow, 수량: repairAreaNum, 금액: newAmount };
-              return newMaterial;
-            });
-          }
+          // 노무비 피해면적 연동은 팝업(피해면적산출표)을 통해서만 수행됨
+          // 인덱스 기반 자동 연동 제거 - 팝업에서 공사명 선택 후 불러오기로만 연동
         }
         
         return updated;
