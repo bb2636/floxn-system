@@ -1783,12 +1783,7 @@ export default function FieldEstimate() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="선택">선택</SelectItem>
-                              {workNames.map(work => (
-                                <SelectItem key={work} value={work}>
-                                  {work}
-                                </SelectItem>
-                              ))}
-                              {customWorkNames.filter(wn => !workNames.includes(wn)).map(wn => (
+                              {customWorkNames.map(wn => (
                                 <SelectItem key={wn} value={wn}>
                                   {wn}
                                 </SelectItem>
