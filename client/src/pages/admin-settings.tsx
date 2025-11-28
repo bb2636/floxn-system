@@ -6307,10 +6307,10 @@ export default function AdminSettings() {
                       </span>
                     </div>
 
-                    {/* Input Field + Copy Button */}
+                    {/* Input Field */}
                     <div
                       className="flex flex-row items-center"
-                      style={{ width: "419px", height: "50px", gap: "8px" }}
+                      style={{ width: "419px", height: "50px" }}
                     >
                       <input
                         type="text"
@@ -6318,7 +6318,7 @@ export default function AdminSettings() {
                         onChange={(e) => setGeneratedPassword(e.target.value)}
                         className="flex flex-row items-center"
                         style={{
-                          width: "343px",
+                          width: "100%",
                           height: "50px",
                           padding: "10px 20px",
                           background: "#FDFDFD",
@@ -6333,40 +6333,6 @@ export default function AdminSettings() {
                         }}
                         data-testid="input-password"
                       />
-
-                      <button
-                        className="flex flex-row items-center justify-center"
-                        style={{
-                          width: "68px",
-                          height: "50px",
-                          padding: "10px 20px",
-                          background: "rgba(0, 143, 237, 0.1)",
-                          border: "1px solid rgba(0, 143, 237, 0.3)",
-                          borderRadius: "8px",
-                          gap: "10px",
-                        }}
-                        onClick={() => {
-                          navigator.clipboard.writeText(generatedPassword);
-                          toast({
-                            title: "복사 완료",
-                            description:
-                              "비밀번호가 클립보드에 복사되었습니다.",
-                          });
-                        }}
-                        data-testid="button-copy-password"
-                      >
-                        <span
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "16px",
-                            fontWeight: 600,
-                            letterSpacing: "-0.02em",
-                            color: "#008FED",
-                          }}
-                        >
-                          복사
-                        </span>
-                      </button>
                     </div>
                   </div>
 
