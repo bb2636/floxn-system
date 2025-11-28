@@ -191,6 +191,12 @@ export default function FieldEstimate() {
     }
   }, [materialRows.length]);
 
+  // 자재비 DB에 있는 공종 목록 추출
+  const materialWorkTypes = useMemo(() => {
+    const workTypes = new Set(materialCatalog.map(item => item.workType));
+    return workTypes;
+  }, [materialCatalog]);
+
   // 노무비 행 변화 감지 및 자재비 행 동기화
   useEffect(() => {
     // Hydration 완료 전에는 동기화 건너뛰기 (중복 행 방지)
@@ -213,7 +219,11 @@ export default function FieldEstimate() {
         if (matRow.sourceLaborRowId) {
           const linkedLaborRow = laborCostRows.find(lr => lr.id === matRow.sourceLaborRowId);
           if (linkedLaborRow && linkedLaborRow.category !== matRow.공종) {
-            return { ...matRow, 공종: linkedLaborRow.category };
+            // 노무비 공종이 자재비 DB에 있을 때만 동기화
+            const newCategory = materialWorkTypes.has(linkedLaborRow.category) 
+              ? linkedLaborRow.category 
+              : '';
+            return { ...matRow, 공종: newCategory };
           }
           return matRow;
         }
@@ -221,19 +231,24 @@ export default function FieldEstimate() {
         // sourceLaborRowId가 없으면 같은 인덱스의 노무비 행과 동기화
         const correspondingLaborRow = laborCostRows[index];
         if (correspondingLaborRow && correspondingLaborRow.category !== matRow.공종) {
-          return { ...matRow, 공종: correspondingLaborRow.category };
+          // 노무비 공종이 자재비 DB에 있을 때만 동기화
+          const newCategory = materialWorkTypes.has(correspondingLaborRow.category) 
+            ? correspondingLaborRow.category 
+            : '';
+          return { ...matRow, 공종: newCategory };
         }
         return matRow;
       });
       
-      // 새로운 자재비 행 추가
-      const newRows = laborRowsNeedingMaterial.map(laborRow => 
-        createBlankMaterialRow(laborRow.category, laborRow.id)
-      );
+      // 새로운 자재비 행 추가 (노무비 공종이 자재비 DB에 있을 때만 공종 설정)
+      const newRows = laborRowsNeedingMaterial.map(laborRow => {
+        const category = materialWorkTypes.has(laborRow.category) ? laborRow.category : '';
+        return createBlankMaterialRow(category, laborRow.id);
+      });
       
       return [...updatedRows, ...newRows];
     });
-  }, [laborCostRows]);
+  }, [laborCostRows, materialWorkTypes]);
 
   // selectedCaseId 변경 시 hydration guard 및 상태 초기화
   useEffect(() => {
