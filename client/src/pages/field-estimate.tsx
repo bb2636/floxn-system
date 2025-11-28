@@ -2472,6 +2472,7 @@ export default function FieldEstimate() {
                   width: r.repairWidth,
                   height: r.repairHeight,
                 }))}
+                filteredWorkTypes={workTypes}
               />
             </div>
 
@@ -2516,7 +2517,7 @@ export default function FieldEstimate() {
                 rows={materialRows}
                 onRowsChange={setMaterialRows}
                 catalog={materialCatalog}
-                laborCategories={laborCategories}
+                laborCategories={workTypes}
                 selectedRows={selectedMaterialRows}
                 onSelectRow={toggleSelectMaterialRow}
                 onSelectAll={toggleSelectAllMaterialRows}
@@ -2931,6 +2932,7 @@ export default function FieldEstimate() {
                   width: r.repairWidth,
                   height: r.repairHeight,
                 }))}
+                filteredWorkTypes={workTypes}
               />
             </div>
 
@@ -3264,7 +3266,7 @@ export default function FieldEstimate() {
               rows={materialRows}
               onRowsChange={setMaterialRows}
               catalog={materialCatalog}
-              laborCategories={laborCategories}
+              laborCategories={workTypes}
               selectedRows={selectedMaterialRows}
               onSelectRow={toggleSelectMaterialRow}
               onSelectAll={toggleSelectAllMaterialRows}

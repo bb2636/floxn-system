@@ -80,6 +80,7 @@ interface LaborCostSectionProps {
   onSelectAll: () => void;
   isLoading?: boolean;
   areaCalculationRows?: AreaCalculationRowForLabor[]; // 복구면적 산출표 데이터
+  filteredWorkTypes?: string[]; // 케이스 유형에 따라 필터링된 공종 목록
 }
 
 export function LaborCostSection({
@@ -91,6 +92,7 @@ export function LaborCostSection({
   onSelectAll,
   isLoading = false,
   areaCalculationRows = [],
+  filteredWorkTypes,
 }: LaborCostSectionProps) {
   // 공사명 선택 팝업 상태
   const [areaPopupOpen, setAreaPopupOpen] = useState(false);
@@ -159,8 +161,13 @@ export function LaborCostSection({
   const matchingAreaRows = useMemo(() => {
     return areaCalculationRows.filter(ar => ar.workName === areaPopupWorkName);
   }, [areaCalculationRows, areaPopupWorkName]);
-  // 캐스케이딩 옵션 생성
+  // 캐스케이딩 옵션 생성 - filteredWorkTypes가 제공되면 우선 사용
   const categoryOptions = useMemo(() => {
+    // filteredWorkTypes가 제공되면 그것을 사용
+    if (filteredWorkTypes && filteredWorkTypes.length > 0) {
+      return filteredWorkTypes;
+    }
+    // 기본 로직: 카탈로그에서 공종 추출
     if (!catalog.length) return ["누수탐지비용"]; // 누수탐지비용은 항상 표시
     const unique = new Set(catalog.map(item => item.공종));
     const categories = Array.from(unique);
@@ -169,7 +176,7 @@ export function LaborCostSection({
       return ["누수탐지비용", ...categories];
     }
     return categories;
-  }, [catalog]);
+  }, [catalog, filteredWorkTypes]);
 
   const getWorkNameOptions = (category: string) => {
     if (!category) return [];
