@@ -1279,7 +1279,7 @@ export default function FieldEstimate() {
                         borderRight: "1px solid rgba(12, 12, 12, 0.06)",
                       }}
                     >
-                      위치
+                      장소
                     </th>
                     <th 
                       style={{ 
@@ -1293,7 +1293,7 @@ export default function FieldEstimate() {
                         borderRight: "1px solid rgba(12, 12, 12, 0.06)",
                       }}
                     >
-                      장소
+                      위치
                     </th>
                     <th 
                       style={{ 
@@ -1519,36 +1519,6 @@ export default function FieldEstimate() {
                       </td>
                       <td style={{ padding: "8px" }}>
                         <Select
-                          value={row.location}
-                          onValueChange={(value) => updateRow(row.id, 'location', value)}
-                        >
-                          <SelectTrigger 
-                            className="border focus:ring-0"
-                            style={{
-                              width: "100%",
-                              height: "40px",
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              borderColor: "rgba(12, 12, 12, 0.2)",
-                              borderRadius: "6px",
-                            }}
-                            data-testid={`select-location-${index}`}
-                          >
-                            <SelectValue>
-                              {row.location}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {locations.map(loc => (
-                              <SelectItem key={loc} value={loc}>
-                                {loc}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <Select
                           value={row.category}
                           onValueChange={(value) => updateRow(row.id, 'category', value)}
                         >
@@ -1572,6 +1542,36 @@ export default function FieldEstimate() {
                             {roomCategories.map(cat => (
                               <SelectItem key={cat} value={cat}>
                                 {cat}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <Select
+                          value={row.location}
+                          onValueChange={(value) => updateRow(row.id, 'location', value)}
+                        >
+                          <SelectTrigger 
+                            className="border focus:ring-0"
+                            style={{
+                              width: "100%",
+                              height: "40px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              borderColor: "rgba(12, 12, 12, 0.2)",
+                              borderRadius: "6px",
+                            }}
+                            data-testid={`select-location-${index}`}
+                          >
+                            <SelectValue>
+                              {row.location}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {locations.map(loc => (
+                              <SelectItem key={loc} value={loc}>
+                                {loc}
                               </SelectItem>
                             ))}
                           </SelectContent>
