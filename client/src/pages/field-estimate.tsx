@@ -433,27 +433,25 @@ export default function FieldEstimate() {
     enabled: !!selectedCaseId,
   });
   
-  // 공종 목록 (케이스 유형에 따라 필터링)
-  // 손해방지: damagePreventionCost가 'true'인 경우 → tag가 '손해방지'인 공종
-  // 피해복구: victimIncidentAssistance가 'true'인 경우 → tag가 '피해복구'인 공종
+  // 공종 목록 (케이스 번호로 유형 구분)
+  // 접수번호에 -1, -2 등이 붙어있으면 피해복구, 없으면 손해방지
   const workTypes = useMemo(() => {
-    const isDamagePrevention = selectedCase?.damagePreventionCost === 'true';
-    const isVictimRecovery = selectedCase?.victimIncidentAssistance === 'true';
+    const caseNumber = selectedCase?.caseNumber || '';
+    // -숫자 패턴이 있으면 피해복구
+    const isVictimRecovery = /-\d+$/.test(caseNumber);
     
     const allWorkTypes = masterDataList
       .filter(item => item.category === 'work_type' && item.isActive === 'true')
       .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
     
-    if (isDamagePrevention && !isVictimRecovery) {
-      // 손해방지만 선택된 경우
-      return allWorkTypes.filter(item => item.tag === '손해방지').map(item => item.value);
-    } else if (isVictimRecovery && !isDamagePrevention) {
-      // 피해복구만 선택된 경우
+    if (isVictimRecovery) {
+      // 피해복구 케이스 (접수번호에 -N이 붙은 경우)
       return allWorkTypes.filter(item => item.tag === '피해복구').map(item => item.value);
+    } else {
+      // 손해방지 케이스 (접수번호에 -N이 없는 경우)
+      return allWorkTypes.filter(item => item.tag === '손해방지').map(item => item.value);
     }
-    // 둘 다 선택되었거나 아무것도 선택되지 않은 경우 모든 공종 표시
-    return allWorkTypes.map(item => item.value);
-  }, [masterDataList, selectedCase?.damagePreventionCost, selectedCase?.victimIncidentAssistance]);
+  }, [masterDataList, selectedCase?.caseNumber]);
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
