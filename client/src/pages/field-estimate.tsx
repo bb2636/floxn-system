@@ -1646,7 +1646,7 @@ export default function FieldEstimate() {
                       </td>
                       <td style={{ padding: "8px" }}>
                         <Select
-                          value={row.workType || ""}
+                          value={row.workType || undefined}
                           onValueChange={(value) => updateRow(row.id, 'workType', value)}
                         >
                           <SelectTrigger 
@@ -1661,9 +1661,7 @@ export default function FieldEstimate() {
                             }}
                             data-testid={`select-worktype-${index}`}
                           >
-                            <SelectValue placeholder="공종 선택">
-                              {row.workType || ""}
-                            </SelectValue>
+                            <SelectValue placeholder="공종 선택" />
                           </SelectTrigger>
                           <SelectContent>
                             {workTypes.map(wt => (
@@ -1676,7 +1674,7 @@ export default function FieldEstimate() {
                       </td>
                       <td style={{ padding: "8px" }}>
                         <Select
-                          value={row.workName || ""}
+                          value={row.workName || undefined}
                           onValueChange={(value) => updateRow(row.id, 'workName', value)}
                         >
                           <SelectTrigger 
@@ -1691,9 +1689,7 @@ export default function FieldEstimate() {
                             }}
                             data-testid={`select-workname-${index}`}
                           >
-                            <SelectValue placeholder="공사명 선택">
-                              {row.workName || ""}
-                            </SelectValue>
+                            <SelectValue placeholder="공사명 선택" />
                           </SelectTrigger>
                           <SelectContent>
                             {(workNamesByWorkType[row.workType] || []).map(wn => (
