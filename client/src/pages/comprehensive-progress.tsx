@@ -331,7 +331,7 @@ export default function ComprehensiveProgress() {
     const insuranceCompany = (caseItem.insuranceCompany || "").toLowerCase();
     const insuranceAccidentNo = (caseItem.insuranceAccidentNo || "").toLowerCase();
     const caseNumber = (caseItem.caseNumber || "").toLowerCase();
-    const clientName = (caseItem.clientName || "").toLowerCase();
+    const insuredName = (caseItem.insuredName || "").toLowerCase();
     const assignedPartnerManager = (caseItem.assignedPartnerManager || "").toLowerCase();
     const insuredAddress = (caseItem.insuredAddress || "").toLowerCase();
     const insuredAddressDetail = ((caseItem as any).insuredAddressDetail || "").toLowerCase();
@@ -340,7 +340,7 @@ export default function ComprehensiveProgress() {
       insuranceCompany.includes(normalizedQuery) ||
       insuranceAccidentNo.includes(normalizedQuery) ||
       caseNumber.includes(normalizedQuery) ||
-      clientName.includes(normalizedQuery) ||
+      insuredName.includes(normalizedQuery) ||
       assignedPartnerManager.includes(normalizedQuery) ||
       insuredAddress.includes(normalizedQuery) ||
       insuredAddressDetail.includes(normalizedQuery)
@@ -640,7 +640,7 @@ export default function ComprehensiveProgress() {
               />
               <input
                 type="text"
-                placeholder="보험사 사고번호, 접수번호, 보험계약자, 피보험자 주소, 당사 담당자 등으로 검색해주세요."
+                placeholder="보험사 사고번호, 접수번호, 피보험자, 피보험자 주소, 당사 담당자 등으로 검색해주세요."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => {
@@ -750,7 +750,7 @@ export default function ComprehensiveProgress() {
               보험사
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-              계약자
+              피보험자
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               당사 담당자
@@ -869,7 +869,7 @@ export default function ComprehensiveProgress() {
                     }}
                   >
                     <li>• 검색어를 콤마(,)로 분리하면 다중검색이 가능합니다</li>
-                    <li>• 보험사명, 사고번호, 접수번호, 계약자, 당사 담당자 등으로 검색해보세요.</li>
+                    <li>• 보험사명, 사고번호, 접수번호, 피보험자, 당사 담당자 등으로 검색해보세요.</li>
                   </ul>
                 </div>
               </div>
@@ -904,7 +904,7 @@ export default function ComprehensiveProgress() {
                     {caseItem.insuranceCompany || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    {caseItem.clientName || "-"}
+                    {caseItem.insuredName || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     {caseItem.assignedPartnerManager || "-"}
