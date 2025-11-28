@@ -114,6 +114,24 @@ export function LaborCostSection({
       setAreaPopupOpen(true);
     }
   };
+  
+  // 공사명 Select 닫힐 때 팝업 열기 (같은 값 재선택 시에도 팝업 열리도록)
+  const handleWorkNameSelectClose = (rowId: string, open: boolean) => {
+    // Select가 닫힐 때만 처리
+    if (open) return;
+    
+    const row = rows.find(r => r.id === rowId);
+    if (!row?.workName) return;
+    
+    // 해당 공사명과 일치하는 복구면적 산출표 데이터가 있으면 팝업 열기
+    const matchingRows = areaCalculationRows.filter(ar => ar.workName === row.workName);
+    if (matchingRows.length > 0) {
+      setAreaPopupRowId(rowId);
+      setAreaPopupWorkName(row.workName);
+      setSelectedGroupKey(null); // 선택 초기화
+      setAreaPopupOpen(true);
+    }
+  };
 
   // 팝업 닫기 (취소)
   const handleAreaPopupClose = () => {
@@ -526,6 +544,7 @@ export function LaborCostSection({
                 <Select 
                   value={row.workName || undefined} 
                   onValueChange={(value) => handleWorkNameChange(row.id, value)}
+                  onOpenChange={(open) => handleWorkNameSelectClose(row.id, open)}
                   disabled={!row.category}
                 >
                   <SelectTrigger 
