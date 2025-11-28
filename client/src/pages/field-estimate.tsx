@@ -432,6 +432,28 @@ export default function FieldEstimate() {
     queryKey: [`/api/cases/${selectedCaseId}`],
     enabled: !!selectedCaseId,
   });
+  
+  // 공종 목록 (케이스 유형에 따라 필터링)
+  // 손해방지: damagePreventionCost가 'true'인 경우 → tag가 '손해방지'인 공종
+  // 피해복구: victimIncidentAssistance가 'true'인 경우 → tag가 '피해복구'인 공종
+  const workTypes = useMemo(() => {
+    const isDamagePrevention = selectedCase?.damagePreventionCost === 'true';
+    const isVictimRecovery = selectedCase?.victimIncidentAssistance === 'true';
+    
+    const allWorkTypes = masterDataList
+      .filter(item => item.category === 'work_type' && item.isActive === 'true')
+      .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+    
+    if (isDamagePrevention && !isVictimRecovery) {
+      // 손해방지만 선택된 경우
+      return allWorkTypes.filter(item => item.tag === '손해방지').map(item => item.value);
+    } else if (isVictimRecovery && !isDamagePrevention) {
+      // 피해복구만 선택된 경우
+      return allWorkTypes.filter(item => item.tag === '피해복구').map(item => item.value);
+    }
+    // 둘 다 선택되었거나 아무것도 선택되지 않은 경우 모든 공종 표시
+    return allWorkTypes.map(item => item.value);
+  }, [masterDataList, selectedCase?.damagePreventionCost, selectedCase?.victimIncidentAssistance]);
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
@@ -1687,8 +1709,13 @@ export default function FieldEstimate() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="선택">선택</SelectItem>
-                              {customWorkTypes.map(wt => (
+                              {workTypes.map(wt => (
                                 <SelectItem key={wt} value={wt}>
+                                  {wt}
+                                </SelectItem>
+                              ))}
+                              {customWorkTypes.filter(wt => !workTypes.includes(wt)).map(wt => (
+                                <SelectItem key={`custom-${wt}`} value={wt}>
                                   {wt}
                                 </SelectItem>
                               ))}

@@ -547,7 +547,7 @@ export const masterData = pgTable("master_data", {
   unq: unique().on(table.category, table.value),
 }));
 
-export const MASTER_DATA_CATEGORIES = ["room_category", "location", "work_name"] as const;
+export const MASTER_DATA_CATEGORIES = ["room_category", "location", "work_name", "work_type"] as const;
 export type MasterDataCategory = typeof MASTER_DATA_CATEGORIES[number];
 
 export const insertMasterDataSchema = createInsertSchema(masterData).omit({
