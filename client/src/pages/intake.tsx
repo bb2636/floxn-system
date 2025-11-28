@@ -728,6 +728,19 @@ export default function Intake() {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
       
+      // 의뢰사를 선택하면 해당 회사 사용자의 소속부서를 자동으로 설정
+      if (field === "clientResidence" && value && allUsers) {
+        const companyUser = allUsers.find(u => u.company === value);
+        if (companyUser?.department) {
+          updated.clientDepartment = companyUser.department;
+        } else {
+          updated.clientDepartment = "";
+        }
+        // 의뢰사 변경 시 의뢰자, 연락처 초기화
+        updated.clientName = "";
+        updated.clientContact = "";
+      }
+      
       // 의뢰자를 선택하면 해당 직원의 연락처를 자동으로 설정
       if (field === "clientName" && value) {
         const selectedEmployee = filteredClientEmployees.find(emp => emp.name === value);
@@ -736,12 +749,38 @@ export default function Intake() {
         }
       }
       
+      // 심사사를 선택하면 해당 회사 사용자의 소속부서를 자동으로 설정
+      if (field === "assessorId" && value && allUsers) {
+        const companyUser = allUsers.find(u => u.company === value && u.role === "심사사");
+        if (companyUser?.department) {
+          updated.assessorDepartment = companyUser.department;
+        } else {
+          updated.assessorDepartment = "";
+        }
+        // 심사사 변경 시 심사자, 연락처 초기화
+        updated.assessorTeam = "";
+        updated.assessorContact = "";
+      }
+      
       // 심사자를 선택하면 해당 심사자의 연락처를 자동으로 설정
       if (field === "assessorTeam" && value) {
         const selectedAssessor = filteredAssessorEmployees.find(assessor => assessor.name === value);
         if (selectedAssessor) {
           updated.assessorContact = selectedAssessor.phone || "";
         }
+      }
+      
+      // 손사명(조사사 회사)을 선택하면 해당 회사 사용자의 소속부서를 자동으로 설정
+      if (field === "investigatorTeam" && value && allUsers) {
+        const companyUser = allUsers.find(u => u.company === value && u.role === "조사사");
+        if (companyUser?.department) {
+          updated.investigatorDepartment = companyUser.department;
+        } else {
+          updated.investigatorDepartment = "";
+        }
+        // 손사명 변경 시 조사자, 연락처 초기화
+        updated.investigatorTeamName = "";
+        updated.investigatorContact = "";
       }
       
       // 조사자를 선택하면 해당 조사자의 연락처를 자동으로 설정
