@@ -35,6 +35,7 @@ interface AreaCalculationRow {
   id: string;
   category: string; // 장소: 주방, 화장실, 방안, 거실상
   location: string; // 위치
+  workType: string; // 공종: 방수공사, 도배공사 등
   workName: string; // 공사명
   damageWidth: string; // 피해면적 가로 (mm)
   damageHeight: string; // 피해면적 세로 (mm)
@@ -499,6 +500,7 @@ export default function FieldEstimate() {
           id: `row-${row.id}`,
           category: row.category || (roomCategories[0] || ""),
           location: row.location || (locations[0] || ""),
+          workType: row.workType || "",
           workName: row.workName || (workNames[0] || ""),
           damageWidth: row.damageWidth?.toString() || "0000",
           damageHeight: row.damageHeight?.toString() || "0000",
@@ -594,6 +596,7 @@ export default function FieldEstimate() {
     id: `row-${Date.now()}-${Math.random()}`,
     category: roomCategories[0] || "",
     location: locations[0] || "",
+    workType: laborCategories[0] || "",
     workName: workNames[0] || "",
     damageWidth: "0000",
     damageHeight: "0000",
@@ -939,6 +942,7 @@ export default function FieldEstimate() {
       const apiRows = rows.map((row) => ({
         category: row.category,
         location: row.location === "선택" ? null : row.location,
+        workType: row.workType === "선택" ? null : row.workType,
         workName: row.workName === "선택" ? null : row.workName,
         damageWidth: row.damageWidth,
         damageHeight: row.damageHeight,
@@ -1265,21 +1269,7 @@ export default function FieldEstimate() {
                     ></th>
                     <th 
                       style={{ 
-                        width: "183px", 
-                        padding: "17.5px 8px", 
-                        fontFamily: "Pretendard", 
-                        fontSize: "15px", 
-                        fontWeight: 600, 
-                        color: "rgba(12, 12, 12, 0.6)", 
-                        textAlign: "center",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
-                      }}
-                    >
-                      장소
-                    </th>
-                    <th 
-                      style={{ 
-                        width: "185px", 
+                        width: "140px", 
                         padding: "17.5px 8px", 
                         fontFamily: "Pretendard", 
                         fontSize: "15px", 
@@ -1293,7 +1283,35 @@ export default function FieldEstimate() {
                     </th>
                     <th 
                       style={{ 
-                        width: "183px", 
+                        width: "140px", 
+                        padding: "17.5px 8px", 
+                        fontFamily: "Pretendard", 
+                        fontSize: "15px", 
+                        fontWeight: 600, 
+                        color: "rgba(12, 12, 12, 0.6)", 
+                        textAlign: "center",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                      }}
+                    >
+                      장소
+                    </th>
+                    <th 
+                      style={{ 
+                        width: "140px", 
+                        padding: "17.5px 8px", 
+                        fontFamily: "Pretendard", 
+                        fontSize: "15px", 
+                        fontWeight: 600, 
+                        color: "rgba(12, 12, 12, 0.6)", 
+                        textAlign: "center",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                      }}
+                    >
+                      공종
+                    </th>
+                    <th 
+                      style={{ 
+                        width: "140px", 
                         padding: "17.5px 8px", 
                         fontFamily: "Pretendard", 
                         fontSize: "15px", 
@@ -1501,6 +1519,36 @@ export default function FieldEstimate() {
                       </td>
                       <td style={{ padding: "8px" }}>
                         <Select
+                          value={row.location}
+                          onValueChange={(value) => updateRow(row.id, 'location', value)}
+                        >
+                          <SelectTrigger 
+                            className="border focus:ring-0"
+                            style={{
+                              width: "100%",
+                              height: "40px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              borderColor: "rgba(12, 12, 12, 0.2)",
+                              borderRadius: "6px",
+                            }}
+                            data-testid={`select-location-${index}`}
+                          >
+                            <SelectValue>
+                              {row.location}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {locations.map(loc => (
+                              <SelectItem key={loc} value={loc}>
+                                {loc}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </td>
+                      <td style={{ padding: "8px" }}>
+                        <Select
                           value={row.category}
                           onValueChange={(value) => updateRow(row.id, 'category', value)}
                         >
@@ -1531,8 +1579,8 @@ export default function FieldEstimate() {
                       </td>
                       <td style={{ padding: "8px" }}>
                         <Select
-                          value={row.location}
-                          onValueChange={(value) => updateRow(row.id, 'location', value)}
+                          value={row.workType}
+                          onValueChange={(value) => updateRow(row.id, 'workType', value)}
                         >
                           <SelectTrigger 
                             className="border focus:ring-0"
@@ -1544,16 +1592,16 @@ export default function FieldEstimate() {
                               borderColor: "rgba(12, 12, 12, 0.2)",
                               borderRadius: "6px",
                             }}
-                            data-testid={`select-location-${index}`}
+                            data-testid={`select-worktype-${index}`}
                           >
-                            <SelectValue>
-                              {row.location}
+                            <SelectValue placeholder="선택">
+                              {row.workType || "선택"}
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {locations.map(loc => (
-                              <SelectItem key={loc} value={loc}>
-                                {loc}
+                            {laborCategories.map(cat => (
+                              <SelectItem key={cat} value={cat}>
+                                {cat}
                               </SelectItem>
                             ))}
                           </SelectContent>
