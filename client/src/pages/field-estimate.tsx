@@ -942,7 +942,7 @@ export default function FieldEstimate() {
       const apiRows = rows.map((row) => ({
         category: row.category,
         location: row.location === "선택" ? null : row.location,
-        workType: row.workType === "선택" || row.workType === "__직접입력__" ? null : row.workType,
+        workType: row.workType || null,
         workName: row.workName === "선택" ? null : row.workName,
         damageWidth: row.damageWidth,
         damageHeight: row.damageHeight,
@@ -1578,78 +1578,23 @@ export default function FieldEstimate() {
                         </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
-                        {/* 직접입력 모드일 때 */}
-                        {row.workType === "__직접입력__" || (row.workType && !laborCategories.includes(row.workType) && row.workType !== "선택") ? (
-                          <div style={{ display: "flex", gap: "4px" }}>
-                            <input
-                              type="text"
-                              value={row.workType === "__직접입력__" ? "" : row.workType}
-                              onChange={(e) => updateRow(row.id, 'workType', e.target.value || "__직접입력__")}
-                              placeholder="직접 입력"
-                              className="input-focus-blue"
-                              style={{
-                                flex: 1,
-                                height: "40px",
-                                padding: "8px",
-                                fontFamily: "Pretendard",
-                                fontSize: "14px",
-                                border: "1px solid rgba(12, 12, 12, 0.2)",
-                                borderRadius: "6px",
-                              }}
-                              data-testid={`input-worktype-custom-${index}`}
-                            />
-                            <button
-                              onClick={() => updateRow(row.id, 'workType', '')}
-                              style={{
-                                width: "40px",
-                                height: "40px",
-                                border: "1px solid rgba(12, 12, 12, 0.2)",
-                                borderRadius: "6px",
-                                background: "white",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                              data-testid={`button-worktype-back-${index}`}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <Select
-                            value={row.workType || "선택"}
-                            onValueChange={(value) => updateRow(row.id, 'workType', value === "선택" ? "" : value)}
-                          >
-                            <SelectTrigger 
-                              className="border focus:ring-0"
-                              style={{
-                                width: "100%",
-                                height: "40px",
-                                fontFamily: "Pretendard",
-                                fontSize: "14px",
-                                borderColor: "rgba(12, 12, 12, 0.2)",
-                                borderRadius: "6px",
-                              }}
-                              data-testid={`select-worktype-${index}`}
-                            >
-                              <SelectValue placeholder="선택">
-                                {row.workType || "선택"}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="선택">선택</SelectItem>
-                              {laborCategories.map(cat => (
-                                <SelectItem key={cat} value={cat}>
-                                  {cat}
-                                </SelectItem>
-                              ))}
-                              <SelectItem value="__직접입력__" className="border-t mt-1 pt-1">
-                                <span style={{ fontWeight: 600 }}>직접입력</span>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
+                        <input
+                          type="text"
+                          value={row.workType || ""}
+                          onChange={(e) => updateRow(row.id, 'workType', e.target.value)}
+                          placeholder="직접 입력"
+                          className="input-focus-blue"
+                          style={{
+                            width: "100%",
+                            height: "40px",
+                            padding: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            border: "1px solid rgba(12, 12, 12, 0.2)",
+                            borderRadius: "6px",
+                          }}
+                          data-testid={`input-worktype-${index}`}
+                        />
                       </td>
                       <td style={{ padding: "8px" }}>
                         <Select
