@@ -2465,6 +2465,15 @@ export default function FieldEstimate() {
                   }
                 }}
                 isLoading={isLoadingLaborCatalog}
+                areaCalculationRows={rows.map(r => ({
+                  id: r.id,
+                  category: r.category,
+                  location: r.location,
+                  workType: r.workType,
+                  workName: r.workName,
+                  damageArea: r.damageArea,
+                  repairArea: r.repairArea,
+                }))}
               />
             </div>
 
@@ -2913,6 +2922,15 @@ export default function FieldEstimate() {
                   }
                 }}
                 isLoading={isLoadingLaborCatalog}
+                areaCalculationRows={rows.map(r => ({
+                  id: r.id,
+                  category: r.category,
+                  location: r.location,
+                  workType: r.workType,
+                  workName: r.workName,
+                  damageArea: r.damageArea,
+                  repairArea: r.repairArea,
+                }))}
               />
             </div>
 

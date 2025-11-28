@@ -10,7 +10,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Copy } from "lucide-react";
+import { Copy, Search } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+// 복구면적 산출표 행 인터페이스
+export interface AreaCalculationRowForLabor {
+  id: string;
+  category: string; // 장소
+  location: string; // 위치
+  workType: string; // 공종
+  workName: string; // 공사명
+  damageArea: string; // 피해면적
+  repairArea: string; // 복구면적
+}
 
 // 노무비 카탈로그 항목 (from excel_data)
 export interface LaborCatalogItem {
@@ -60,6 +77,7 @@ interface LaborCostSectionProps {
   onSelectRow: (rowId: string) => void;
   onSelectAll: () => void;
   isLoading?: boolean;
+  areaCalculationRows?: AreaCalculationRowForLabor[]; // 복구면적 산출표 데이터
 }
 
 export function LaborCostSection({
@@ -70,7 +88,62 @@ export function LaborCostSection({
   onSelectRow,
   onSelectAll,
   isLoading = false,
+  areaCalculationRows = [],
 }: LaborCostSectionProps) {
+  // 공사명 선택 팝업 상태
+  const [areaPopupOpen, setAreaPopupOpen] = useState(false);
+  const [areaPopupRowId, setAreaPopupRowId] = useState<string | null>(null);
+  const [areaPopupWorkName, setAreaPopupWorkName] = useState<string>("");
+
+  // 공사명 선택 시 팝업 열기
+  const handleWorkNameChange = (rowId: string, workName: string) => {
+    // 먼저 workName 업데이트
+    updateRow(rowId, 'workName', workName);
+    
+    // 해당 공사명과 일치하는 복구면적 산출표 데이터가 있으면 팝업 열기
+    const matchingRows = areaCalculationRows.filter(ar => ar.workName === workName);
+    if (matchingRows.length > 0) {
+      setAreaPopupRowId(rowId);
+      setAreaPopupWorkName(workName);
+      setAreaPopupOpen(true);
+    }
+  };
+
+  // 팝업에서 행 선택 시 피해면적 값 적용
+  const handleAreaRowSelect = (areaRow: AreaCalculationRowForLabor) => {
+    if (!areaPopupRowId) return;
+    
+    // 피해면적 값을 노무비 행에 적용
+    const damageArea = parseFloat(areaRow.repairArea) || 0;
+    onRowsChange(rows.map(row => {
+      if (row.id === areaPopupRowId) {
+        const updated = { ...row, damageArea };
+        // 금액 재계산
+        const standardPrice = Number(updated.standardPrice) || 0;
+        const quantity = Number(updated.quantity) || 0;
+        const pricePerSqm = Number(updated.pricePerSqm) || 0;
+        
+        if (updated.category === '누수탐지비용') {
+          updated.amount = Math.round(standardPrice * quantity);
+        } else if (updated.detailWork === '노무비') {
+          updated.amount = Math.round(standardPrice * quantity);
+        } else if (updated.detailWork === '일위대가') {
+          updated.amount = Math.round(pricePerSqm * damageArea * quantity);
+        }
+        return updated;
+      }
+      return row;
+    }));
+    
+    setAreaPopupOpen(false);
+    setAreaPopupRowId(null);
+    setAreaPopupWorkName("");
+  };
+
+  // 팝업에 표시할 복구면적 산출표 데이터
+  const matchingAreaRows = useMemo(() => {
+    return areaCalculationRows.filter(ar => ar.workName === areaPopupWorkName);
+  }, [areaCalculationRows, areaPopupWorkName]);
   // 캐스케이딩 옵션 생성
   const categoryOptions = useMemo(() => {
     if (!catalog.length) return ["누수탐지비용"]; // 누수탐지비용은 항상 표시
@@ -380,7 +453,7 @@ export function LaborCostSection({
               <td style={{ padding: "0 8px" }}>
                 <Select 
                   value={row.workName} 
-                  onValueChange={(value) => updateRow(row.id, 'workName', value)}
+                  onValueChange={(value) => handleWorkNameChange(row.id, value)}
                   disabled={!row.category}
                 >
                   <SelectTrigger 
@@ -576,6 +649,74 @@ export function LaborCostSection({
           ))}
         </tbody>
       </table>
+
+      {/* 복구면적 산출표 데이터 선택 팝업 */}
+      <Dialog open={areaPopupOpen} onOpenChange={setAreaPopupOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              복구면적 산출표 - {areaPopupWorkName}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            <p className="text-sm text-muted-foreground mb-4">
+              선택한 공사명과 일치하는 복구면적 산출표 데이터입니다. 선택하면 피해면적이 자동으로 적용됩니다.
+            </p>
+            <div className="border rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="px-4 py-3 text-left text-sm font-medium">장소</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">위치</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">공종</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">공사명</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium">피해면적(㎡)</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium">복구면적(㎡)</th>
+                    <th className="px-4 py-3 text-center text-sm font-medium">선택</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matchingAreaRows.map((areaRow, idx) => (
+                    <tr 
+                      key={areaRow.id} 
+                      className="border-t hover:bg-muted/30 cursor-pointer"
+                      onClick={() => handleAreaRowSelect(areaRow)}
+                    >
+                      <td className="px-4 py-3 text-sm">{areaRow.category || '-'}</td>
+                      <td className="px-4 py-3 text-sm">{areaRow.location || '-'}</td>
+                      <td className="px-4 py-3 text-sm">{areaRow.workType || '-'}</td>
+                      <td className="px-4 py-3 text-sm">{areaRow.workName || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-right">{areaRow.damageArea || '0'}</td>
+                      <td className="px-4 py-3 text-sm text-right font-medium text-primary">{areaRow.repairArea || '0'}</td>
+                      <td className="px-4 py-3 text-center">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAreaRowSelect(areaRow);
+                          }}
+                          data-testid={`button-select-area-${idx}`}
+                        >
+                          선택
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                  {matchingAreaRows.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                        일치하는 데이터가 없습니다.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
