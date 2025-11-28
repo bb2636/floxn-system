@@ -1046,9 +1046,7 @@ export default function Intake() {
           }}
         />
       </div>
-
       <GlobalHeader />
-
       {/* Main Content */}
       <main className="relative flex items-center justify-center px-4 md:px-6 lg:px-8 pb-10">
         {/* Responsive Container */}
@@ -1304,7 +1302,7 @@ export default function Intake() {
                         </Select>
                       </div>
                       <div className="flex flex-col gap-2">
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속/시설</label>
+                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
                         <input type="text" placeholder="소속/시설" value={formData.clientDepartment} onChange={(e) => handleInputChange("clientDepartment", e.target.value)} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-department" />
                       </div>
                       <div className="flex flex-col gap-2">
@@ -2844,7 +2842,6 @@ export default function Intake() {
           </div>
         </div>
       </main>
-
       {/* 협력사 검색 팝업 */}
       {isPartnerSearchOpen && (
         <div 
@@ -2925,7 +2922,7 @@ export default function Intake() {
               <div className="flex flex-col items-start w-full gap-6 overflow-x-auto" style={{ maxHeight: '500px' }}>
                 {filteredPartners.length === 0 ? (
                   /* Empty State */
-                  <div className="flex flex-col items-center w-full pb-14 gap-32">
+                  (<div className="flex flex-col items-center w-full pb-14 gap-32">
                     <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5', minWidth: '700px' }}>
                       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '155px', height: '39px' }}>
                         <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>업체명</span>
@@ -2958,10 +2955,10 @@ export default function Intake() {
                             : "피보험자 주소를 입력하면 해당 지역의 협력사를 볼 수 있습니다"}
                       </span>
                     </div>
-                  </div>
+                  </div>)
                 ) : (
                   /* Table with Data */
-                  <div className="flex flex-col items-start w-full" style={{ maxHeight: '373px', minWidth: '700px' }}>
+                  (<div className="flex flex-col items-start w-full" style={{ maxHeight: '373px', minWidth: '700px' }}>
                     {/* Header */}
                     <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
                       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '155px', height: '39px' }}>
@@ -2986,7 +2983,6 @@ export default function Intake() {
                         <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
                       </div>
                     </div>
-                    
                     {/* Data Rows */}
                     <div className="flex flex-col items-start w-full overflow-y-auto" style={{ maxHeight: '334px' }}>
                       {filteredPartners.map((partner) => (
@@ -3036,7 +3032,7 @@ export default function Intake() {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </div>)
                 )}
 
                 {/* Selected Partner Card */}
