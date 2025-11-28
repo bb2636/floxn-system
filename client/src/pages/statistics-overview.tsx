@@ -5,6 +5,32 @@ import { Search, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+const headerStyle = {
+  padding: "17.5px 8px",
+  fontFamily: "Pretendard",
+  fontSize: "15px",
+  fontWeight: 600,
+  lineHeight: "128%",
+  letterSpacing: "-0.02em",
+  color: "rgba(12, 12, 12, 0.6)",
+  borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+  borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+  textAlign: "center" as const,
+  background: "rgba(12, 12, 12, 0.04)",
+};
+
+const cellStyle = {
+  padding: "17.5px 8px",
+  fontFamily: "Pretendard",
+  fontSize: "15px",
+  lineHeight: "128%",
+  letterSpacing: "-0.02em",
+  color: "rgba(12, 12, 12, 0.6)",
+  borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+  borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+  textAlign: "center" as const,
+};
+
 export default function StatisticsOverview() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("수임");
@@ -17,12 +43,10 @@ export default function StatisticsOverview() {
     return null;
   }
 
-  // Mock data for table rows - will be replaced with real data later
-  const tableRows = Array(15).fill(null);
+  const tableRows = Array(5).fill(null);
 
   return (
     <div className="p-8">
-      {/* Page title */}
       <div className="flex items-center gap-2 mb-6">
         <h1
           style={{
@@ -44,7 +68,7 @@ export default function StatisticsOverview() {
           }}
         />
       </div>
-      {/* Search Section */}
+
       <div className="mb-6">
         <div className="flex gap-3">
           <div className="relative flex-1">
@@ -87,10 +111,9 @@ export default function StatisticsOverview() {
           </Button>
         </div>
       </div>
-      {/* Filter Section */}
+
       <div className="mb-6">
         <div className="flex items-center gap-4">
-          {/* 기간추가 Button */}
           <Button
             variant="outline"
             style={{
@@ -113,7 +136,6 @@ export default function StatisticsOverview() {
             기간추가
           </Button>
 
-          {/* Vertical Divider */}
           <div
             style={{
               width: "1px",
@@ -122,7 +144,6 @@ export default function StatisticsOverview() {
             }}
           />
 
-          {/* Tab Buttons */}
           <div className="flex items-center gap-2">
             {["수임", "미결", "직접복구", "출동비 청구", "사고확인"].map((tab) => (
               <button
@@ -149,7 +170,7 @@ export default function StatisticsOverview() {
           </div>
         </div>
       </div>
-      {/* Results label */}
+
       <div
         className="mb-4"
         style={{
@@ -161,7 +182,7 @@ export default function StatisticsOverview() {
       >
         총 0건의 통계
       </div>
-      {/* Statistics Table */}
+
       <div
         style={{
           background: "#FFFFFF",
@@ -171,507 +192,119 @@ export default function StatisticsOverview() {
         }}
       >
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1800px" }}>
             <thead>
-              <tr style={{ 
-                background: "rgba(12, 12, 12, 0.04)",
-                borderRadius: "8px 8px 0px 0px"
-              }}>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                    verticalAlign: "middle",
-                  }}
-                >
-                  구분
+              {/* 1행: 최상위 헤더 */}
+              <tr>
+                <th rowSpan={3} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>
+                  구분값
                 </th>
-                <th
-                  colSpan={3}
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
+                <th colSpan={3} style={headerStyle}>
                   이월
                 </th>
-                <th
-                  colSpan={3}
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
+                <th colSpan={3} style={headerStyle}>
                   수임
                 </th>
-                <th
-                  colSpan={4}
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  정산관련
+                <th colSpan={12} style={headerStyle}>
+                  종결
                 </th>
-                <th
-                  colSpan={3}
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  출장
+                <th rowSpan={3} style={{ ...headerStyle, width: "80px", verticalAlign: "middle" }}>
+                  처리율
+                </th>
+                <th colSpan={3} style={headerStyle}>
+                  미결
                 </th>
               </tr>
-              <tr style={{ background: "rgba(12, 12, 12, 0.04)" }}>
-                {/* 이월 sub-headers */}
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  직접복구
-                </th>
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  선견적요청
-                </th>
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  계
-                </th>
-                {/* 수임 sub-headers */}
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  직접복구
-                </th>
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  선견적요청
-                </th>
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  계
-                </th>
-                {/* 정산관련 sub-headers */}
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  직접방문
-                </th>
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  심리변호사
-                </th>
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  중수수료
-                </th>
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  소계
-                </th>
-                {/* 출장 sub-headers */}
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  직접방문
-                </th>
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  심리변호사
-                </th>
-                <th
-                  style={{
-                    padding: "17.5px 8px",
-                    fontFamily: "Pretendard",
-                    fontSize: "15px",
-                    fontWeight: 600,
-                    lineHeight: "128%",
-                    letterSpacing: "-0.02em",
-                    color: "rgba(12, 12, 12, 0.6)",
-                    border: "1px solid rgba(12, 12, 12, 0.06)",
-                    textAlign: "center",
-                  }}
-                >
-                  중수수료
-                </th>
+
+              {/* 2행: 중간 헤더 */}
+              <tr>
+                {/* 이월 하위 */}
+                <th rowSpan={2} style={headerStyle}>직접복구</th>
+                <th rowSpan={2} style={headerStyle}>선견적요청</th>
+                <th rowSpan={2} style={headerStyle}>계</th>
+                
+                {/* 수임 하위 */}
+                <th rowSpan={2} style={headerStyle}>직접복구</th>
+                <th rowSpan={2} style={headerStyle}>선견적요청</th>
+                <th rowSpan={2} style={headerStyle}>계</th>
+                
+                {/* 종결 하위 - 직접복구 */}
+                <th colSpan={4} style={headerStyle}>직접복구</th>
+                
+                {/* 종결 하위 - 선견적요청 */}
+                <th colSpan={4} style={headerStyle}>선견적요청</th>
+                
+                {/* 종결 하위 - 합계 */}
+                <th colSpan={4} style={headerStyle}>합계</th>
+                
+                {/* 미결 하위 */}
+                <th rowSpan={2} style={headerStyle}>직접복구</th>
+                <th rowSpan={2} style={headerStyle}>선견적요청</th>
+                <th rowSpan={2} style={headerStyle}>계</th>
+              </tr>
+
+              {/* 3행: 최하위 헤더 (종결 세부) */}
+              <tr>
+                {/* 종결 > 직접복구 하위 */}
+                <th style={headerStyle}>직접복구</th>
+                <th style={headerStyle}>선견적요청</th>
+                <th style={headerStyle}>접수취소</th>
+                <th style={headerStyle}>소계</th>
+                
+                {/* 종결 > 선견적요청 하위 */}
+                <th style={headerStyle}>직접복구</th>
+                <th style={headerStyle}>선견적요청</th>
+                <th style={headerStyle}>접수취소</th>
+                <th style={headerStyle}>소계</th>
+                
+                {/* 종결 > 합계 하위 */}
+                <th style={headerStyle}>직접복구</th>
+                <th style={headerStyle}>선견적요청</th>
+                <th style={headerStyle}>접수취소</th>
+                <th style={headerStyle}>소계</th>
               </tr>
             </thead>
             <tbody>
               {tableRows.map((_, index) => (
-                <tr
-                  key={index}
-                  style={{
-                    borderBottom:
-                      index < tableRows.length - 1
-                        ? "1px solid rgba(12, 12, 12, 0.06)"
-                        : "none",
-                  }}
-                >
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  {/* 이월 3개 */}
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  {/* 수임 3개 */}
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  {/* 정산관련 4개 */}
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  {/* 출장 3개 */}
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
-                  <td
-                    style={{
-                      padding: "17.5px 8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.6)",
-                      border: "1px solid rgba(12, 12, 12, 0.06)",
-                      textAlign: "center",
-                    }}
-                  >
-                    -
-                  </td>
+                <tr key={index}>
+                  {/* 구분값 */}
+                  <td style={cellStyle}>-</td>
+                  
+                  {/* 이월 (3) */}
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  
+                  {/* 수임 (3) */}
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  
+                  {/* 종결 > 직접복구 (4) */}
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  
+                  {/* 종결 > 선견적요청 (4) */}
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  
+                  {/* 종결 > 합계 (4) */}
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  
+                  {/* 처리율 */}
+                  <td style={cellStyle}>-</td>
+                  
+                  {/* 미결 (3) */}
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
+                  <td style={cellStyle}>-</td>
                 </tr>
               ))}
             </tbody>
