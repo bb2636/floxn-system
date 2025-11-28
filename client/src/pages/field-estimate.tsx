@@ -629,6 +629,9 @@ export default function FieldEstimate() {
 
   // 행 업데이트
   const updateRow = (rowId: string, field: keyof AreaCalculationRow, value: string) => {
+    // 현재 행의 인덱스 찾기 (노무비/자재비 연동용)
+    const currentRowIndex = rows.findIndex(r => r.id === rowId);
+    
     setRows(prev => prev.map(row => {
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
@@ -654,32 +657,36 @@ export default function FieldEstimate() {
           updated.repairArea = area;
           
           // 복구면적이 변경되면 노무비의 피해면적과 자재비의 수량에 자동 연동
+          // 복구면적산출표 N행 → 노무비 N행, 자재비 N행으로 연동
           const repairAreaNum = parseFloat(area) || 0;
           
-          // 노무비 연동: 첫 번째 행의 damageArea 업데이트
-          setLaborCostRows(prevLabor => {
-            if (prevLabor.length === 0) return prevLabor;
-            return prevLabor.map((laborRow, index) => {
-              // 첫 번째 행에 복구면적 값 자동 입력
-              if (index === 0) {
-                return { ...laborRow, damageArea: repairAreaNum };
+          // 노무비 연동: 같은 인덱스 행의 damageArea 업데이트
+          if (currentRowIndex >= 0) {
+            setLaborCostRows(prevLabor => {
+              // 노무비 행이 부족하면 빈 행 추가
+              const newLabor = [...prevLabor];
+              while (newLabor.length <= currentRowIndex) {
+                newLabor.push(createBlankLaborRow());
               }
-              return laborRow;
+              // 같은 인덱스 행에 복구면적 값 자동 입력
+              newLabor[currentRowIndex] = { ...newLabor[currentRowIndex], damageArea: repairAreaNum };
+              return newLabor;
             });
-          });
-          
-          // 자재비 연동: 첫 번째 행의 수량 업데이트
-          setMaterialRows(prevMaterial => {
-            if (prevMaterial.length === 0) return prevMaterial;
-            return prevMaterial.map((materialRow, index) => {
-              // 첫 번째 행에 복구면적 값을 수량으로 자동 입력
-              if (index === 0) {
-                const newAmount = repairAreaNum * materialRow.기준단가;
-                return { ...materialRow, 수량: repairAreaNum, 금액: newAmount };
+            
+            // 자재비 연동: 같은 인덱스 행의 수량 업데이트
+            setMaterialRows(prevMaterial => {
+              // 자재비 행이 부족하면 빈 행 추가
+              const newMaterial = [...prevMaterial];
+              while (newMaterial.length <= currentRowIndex) {
+                newMaterial.push(createBlankMaterialRow());
               }
-              return materialRow;
+              // 같은 인덱스 행에 복구면적 값을 수량으로 자동 입력
+              const currentRow = newMaterial[currentRowIndex];
+              const newAmount = repairAreaNum * (currentRow.기준단가 || 0);
+              newMaterial[currentRowIndex] = { ...currentRow, 수량: repairAreaNum, 금액: newAmount };
+              return newMaterial;
             });
-          });
+          }
         }
         
         return updated;
