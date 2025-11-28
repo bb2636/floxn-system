@@ -637,16 +637,20 @@ export default function FieldEstimate() {
         if (field === 'damageWidth' || field === 'damageHeight') {
           const width = parseFloat(field === 'damageWidth' ? value : row.damageWidth) || 0;
           const height = parseFloat(field === 'damageHeight' ? value : row.damageHeight) || 0;
-          // mm² -> m² 변환 (1,000,000 mm² = 1 m²)
-          const area = (width * height / 1000000).toFixed(2);
+          // mm -> m 변환하여 m² 계산 (1000mm = 1m)
+          const widthM = width / 1000;
+          const heightM = height / 1000;
+          const area = (widthM * heightM).toFixed(2);
           updated.damageArea = area;
         }
         
         if (field === 'repairWidth' || field === 'repairHeight') {
           const width = parseFloat(field === 'repairWidth' ? value : row.repairWidth) || 0;
           const height = parseFloat(field === 'repairHeight' ? value : row.repairHeight) || 0;
-          // mm² -> m² 변환
-          const area = (width * height / 1000000).toFixed(2);
+          // mm -> m 변환하여 m² 계산 (1000mm = 1m)
+          const widthM = width / 1000;
+          const heightM = height / 1000;
+          const area = (widthM * heightM).toFixed(2);
           updated.repairArea = area;
           
           // 복구면적이 변경되면 노무비의 피해면적과 자재비의 수량에 자동 연동
