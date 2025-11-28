@@ -122,6 +122,7 @@ export const cases = pgTable("cases", {
   insuredIdNumber: text("insured_id_number"),
   insuredContact: text("insured_contact"),
   insuredAddress: text("insured_address"),
+  insuredAddressDetail: text("insured_address_detail"),
   sameAsPolicyHolder: text("same_as_policy_holder"), // "true" | "false" | null
   
   // 피해자 정보
