@@ -2129,11 +2129,11 @@ export default function Intake() {
                           </div>
                         </div>
 
-                        {/* Row 2: 4-column Dropdowns */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5 w-full">
+                        {/* Row 2: 4-column Dropdowns - Responsive */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-5 w-full">
                           {/* Column 1 */}
                           <div className="flex flex-col gap-2">
-                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                            <label className="text-xs md:text-sm" style={{ fontFamily: 'Pretendard', fontWeight: 500, lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               사고 유형
                             </label>
                             <Select 
@@ -2141,15 +2141,13 @@ export default function Intake() {
                               onValueChange={(value) => handleInputChange("accidentType", value)}
                             >
                               <SelectTrigger 
+                                className="h-12 md:h-14 lg:h-[68px] px-3 md:px-4 lg:px-5 text-sm md:text-base"
                                 style={{
-                                  height: '68px',
-                                  padding: '10px 20px',
                                   background: '#FDFDFD',
                                   border: '2px solid rgba(12, 12, 12, 0.08)',
                                   borderRadius: '8px',
                                   fontFamily: 'Pretendard',
                                   fontWeight: 600,
-                                  fontSize: '16px',
                                   letterSpacing: '-0.02em',
                                 }}
                                 data-testid="select-accident-type"
@@ -2175,7 +2173,7 @@ export default function Intake() {
 
                           {/* Column 2 */}
                           <div className="flex flex-col gap-2">
-                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                            <label className="text-xs md:text-sm" style={{ fontFamily: 'Pretendard', fontWeight: 500, lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               사고 원인
                             </label>
                             <Select 
@@ -2183,15 +2181,13 @@ export default function Intake() {
                               onValueChange={(value) => handleInputChange("accidentCause", value)}
                             >
                               <SelectTrigger 
+                                className="h-12 md:h-14 lg:h-[68px] px-3 md:px-4 lg:px-5 text-sm md:text-base"
                                 style={{
-                                  height: '68px',
-                                  padding: '10px 20px',
                                   background: '#FDFDFD',
                                   border: '2px solid rgba(12, 12, 12, 0.08)',
                                   borderRadius: '8px',
                                   fontFamily: 'Pretendard',
                                   fontWeight: 600,
-                                  fontSize: '16px',
                                   letterSpacing: '-0.02em',
                                 }}
                                 data-testid="select-accident-cause"
@@ -2218,7 +2214,7 @@ export default function Intake() {
 
                           {/* Column 3 */}
                           <div className="flex flex-col gap-2">
-                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                            <label className="text-xs md:text-sm" style={{ fontFamily: 'Pretendard', fontWeight: 500, lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               복구 방식
                             </label>
                             <Select 
@@ -2226,15 +2222,13 @@ export default function Intake() {
                               onValueChange={(value) => handleInputChange("restorationMethod", value)}
                             >
                               <SelectTrigger 
+                                className="h-12 md:h-14 lg:h-[68px] px-3 md:px-4 lg:px-5 text-sm md:text-base"
                                 style={{
-                                  height: '68px',
-                                  padding: '10px 20px',
                                   background: '#FDFDFD',
                                   border: '2px solid rgba(12, 12, 12, 0.08)',
                                   borderRadius: '8px',
                                   fontFamily: 'Pretendard',
                                   fontWeight: 600,
-                                  fontSize: '16px',
                                   letterSpacing: '-0.02em',
                                 }}
                                 data-testid="select-restoration-method"
@@ -2259,28 +2253,26 @@ export default function Intake() {
 
                           {/* Column 4 */}
                           <div className="flex flex-col gap-2">
-                            <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
-                              타업체 견적 여부
+                            <label className="text-xs md:text-sm whitespace-nowrap" style={{ fontFamily: 'Pretendard', fontWeight: 500, lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                              타업체 견적
                             </label>
                             <Select 
                               value={formData.otherVendorEstimate} 
                               onValueChange={(value) => handleInputChange("otherVendorEstimate", value)}
                             >
                               <SelectTrigger 
+                                className="h-12 md:h-14 lg:h-[68px] px-3 md:px-4 lg:px-5 text-sm md:text-base"
                                 style={{
-                                  height: '68px',
-                                  padding: '10px 20px',
                                   background: '#FDFDFD',
                                   border: '2px solid rgba(12, 12, 12, 0.08)',
                                   borderRadius: '8px',
                                   fontFamily: 'Pretendard',
                                   fontWeight: 600,
-                                  fontSize: '16px',
                                   letterSpacing: '-0.02em',
                                 }}
                                 data-testid="select-other-vendor-estimate"
                               >
-                                <SelectValue placeholder="타업체 견적 여부 선택" />
+                                <SelectValue placeholder="선택" />
                               </SelectTrigger>
                               <SelectContent>
                                 {getMasterDataOptions("other_company_estimate").length > 0 ? (
