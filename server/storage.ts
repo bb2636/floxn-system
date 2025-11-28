@@ -1305,26 +1305,56 @@ export class MemStorage implements IStorage {
     // 미복구 선택 시 자동으로 출동비 청구로 정규화
     const normalizedStatus = status === "미복구" ? "출동비 청구" : status;
     
-    // 상태에 따라 자동으로 날짜 기록
+    // 상태에 따라 자동으로 날짜 기록 (기존 값이 없을 때만)
     const dateUpdates: Partial<Case> = {};
     
     switch (normalizedStatus) {
       case "접수완료":
-        // 접수일과 배당일 자동 기록
-        dateUpdates.receptionDate = currentDate;
-        dateUpdates.assignmentDate = currentDate;
+        // 접수일과 배당일 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.receptionDate) {
+          dateUpdates.receptionDate = currentDate;
+        }
+        if (!caseItem.assignmentDate) {
+          dateUpdates.assignmentDate = currentDate;
+        }
+        break;
+      case "현장방문":
+        // 현장방문일 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.siteVisitDate) {
+          dateUpdates.siteVisitDate = currentDate;
+        }
+        break;
+      case "현장정보입력":
+      case "현장정보제출":
+        // 현장자료 제출일 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.siteInvestigationSubmitDate) {
+          dateUpdates.siteInvestigationSubmitDate = currentDate;
+        }
         break;
       case "1차승인":
-        // 1차 승인일(내부) 자동 기록
-        dateUpdates.firstApprovalDate = currentDate;
+        // 1차 승인일(내부) 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.firstApprovalDate) {
+          dateUpdates.firstApprovalDate = currentDate;
+        }
         break;
       case "복구요청(2차승인)":
-        // 2차 승인일(복구 요청일) 자동 기록
-        dateUpdates.secondApprovalDate = currentDate;
+        // 2차 승인일(복구 요청일) 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.secondApprovalDate) {
+          dateUpdates.secondApprovalDate = currentDate;
+        }
+        break;
+      case "(직접복구인 경우) 청구자료제출":
+      case "(선견적요청인 경우) 출동비 청구":
+        // 복구완료일 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.constructionCompletionDate) {
+          dateUpdates.constructionCompletionDate = currentDate;
+        }
         break;
       case "청구":
-        // 청구일 자동 기록
-        dateUpdates.claimDate = currentDate;
+        // 청구일 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.claimDate) {
+          dateUpdates.claimDate = currentDate;
+        }
         break;
     }
     
@@ -2759,40 +2789,62 @@ export class DbStorage implements IStorage {
     // 미복구 선택 시 자동으로 출동비 청구로 정규화 (모든 경로에서 일관성 보장)
     const normalizedStatus = status === "미복구" ? "출동비 청구" : status;
     
-    // 상태에 따라 자동으로 날짜 기록
+    // 먼저 기존 케이스 데이터를 가져와서 일자가 이미 설정되어 있는지 확인
+    const existingCase = await this.getCaseById(caseId);
+    if (!existingCase) {
+      return null;
+    }
+    
+    // 상태에 따라 자동으로 날짜 기록 (기존 값이 없을 때만)
     const dateUpdates: Partial<typeof cases.$inferInsert> = {};
     
     switch (normalizedStatus) {
       case "접수완료":
-        // 접수일과 배당일 자동 기록
-        dateUpdates.receptionDate = currentDate;
-        dateUpdates.assignmentDate = currentDate;
+        // 접수일과 배당일 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.receptionDate) {
+          dateUpdates.receptionDate = currentDate;
+        }
+        if (!existingCase.assignmentDate) {
+          dateUpdates.assignmentDate = currentDate;
+        }
         break;
       case "현장방문":
-        // 현장방문일 자동 기록
-        dateUpdates.siteVisitDate = currentDate;
+        // 현장방문일 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.siteVisitDate) {
+          dateUpdates.siteVisitDate = currentDate;
+        }
         break;
       case "현장정보입력":
       case "현장정보제출":
-        // 현장자료 제출일 자동 기록
-        dateUpdates.siteInvestigationSubmitDate = currentDate;
+        // 현장자료 제출일 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.siteInvestigationSubmitDate) {
+          dateUpdates.siteInvestigationSubmitDate = currentDate;
+        }
         break;
       case "1차승인":
-        // 1차 승인일(내부) 자동 기록
-        dateUpdates.firstApprovalDate = currentDate;
+        // 1차 승인일(내부) 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.firstApprovalDate) {
+          dateUpdates.firstApprovalDate = currentDate;
+        }
         break;
       case "복구요청(2차승인)":
-        // 2차 승인일(복구 요청일) 자동 기록
-        dateUpdates.secondApprovalDate = currentDate;
+        // 2차 승인일(복구 요청일) 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.secondApprovalDate) {
+          dateUpdates.secondApprovalDate = currentDate;
+        }
         break;
       case "(직접복구인 경우) 청구자료제출":
       case "(선견적요청인 경우) 출동비 청구":
-        // 복구완료일 자동 기록
-        dateUpdates.constructionCompletionDate = currentDate;
+        // 복구완료일 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.constructionCompletionDate) {
+          dateUpdates.constructionCompletionDate = currentDate;
+        }
         break;
       case "청구":
-        // 청구일 자동 기록
-        dateUpdates.claimDate = currentDate;
+        // 청구일 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.claimDate) {
+          dateUpdates.claimDate = currentDate;
+        }
         break;
     }
     
