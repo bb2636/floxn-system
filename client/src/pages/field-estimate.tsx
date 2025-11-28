@@ -1348,9 +1348,8 @@ export default function FieldEstimate() {
                         textAlign: "center",
                         borderRight: "1px solid rgba(12, 12, 12, 0.06)",
                       }}
-                    >
-                      공사내용
-                    </th>
+                    >공사명
+</th>
                     <th 
                       style={{ 
                         width: "393px",
@@ -3423,7 +3422,6 @@ export default function FieldEstimate() {
 
         {/* 하단 버튼 - 자재비 */}
       </div>
-
       {/* 케이스 선택 모달 */}
       <Dialog open={caseSearchModalOpen} onOpenChange={setCaseSearchModalOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
