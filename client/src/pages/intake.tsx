@@ -82,6 +82,9 @@ export default function Intake() {
   const [selectedPartner, setSelectedPartner] = useState<any>(null);
   const [tempSelectedPartner, setTempSelectedPartner] = useState<any>(null);
   
+  // 다음 포스트코드 상태 (피보험자 주소)
+  const [showInsuredAddressSearch, setShowInsuredAddressSearch] = useState(false);
+  
   // 협력사 통계 가져오기
   const { data: partnerStats } = useQuery<Array<{
     partnerName: string;
@@ -406,6 +409,19 @@ export default function Intake() {
       setLocation("/");
     }
   }, [user, userLoading, setLocation]);
+
+  // 다음 포스트코드 스크립트 로드
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+    script.async = true;
+    document.head.appendChild(script);
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
 
   // 접수번호 예측 - 날짜 또는 보험사고번호 변경 시
   useEffect(() => {
@@ -1743,23 +1759,88 @@ export default function Intake() {
                         </label>
                         <input
                           type="text"
-                          placeholder="도로명 주소, 동/호 포함"
+                          placeholder="클릭하여 주소 검색"
                           value={formData.insuredAddress}
-                          onChange={(e) => handleInputChange("insuredAddress", e.target.value)}
+                          onClick={() => setShowInsuredAddressSearch(true)}
+                          readOnly
                           style={{
                             height: '68px',
                             padding: '10px 20px',
                             background: '#FDFDFD',
-                            border: '2px solid rgba(12, 12, 12, 0.08)',
+                            border: showInsuredAddressSearch ? '2px solid #4A90D9' : '2px solid rgba(12, 12, 12, 0.08)',
                             borderRadius: '8px',
                             fontFamily: 'Pretendard',
                             fontWeight: 600,
                             fontSize: '16px',
                             letterSpacing: '-0.02em',
                             color: '#0C0C0C',
+                            cursor: 'pointer',
                           }}
                           data-testid="input-insured-address"
                         />
+                        {/* 다음 포스트코드 주소 검색 */}
+                        {showInsuredAddressSearch && (
+                          <div 
+                            style={{
+                              marginTop: '8px',
+                              border: '1px solid rgba(12, 12, 12, 0.12)',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                            }}
+                          >
+                            <div 
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '12px 16px',
+                                background: '#f5f5f5',
+                                borderBottom: '1px solid rgba(12, 12, 12, 0.08)',
+                              }}
+                            >
+                              <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '14px' }}>
+                                주소 검색
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setShowInsuredAddressSearch(false)}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  padding: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <X size={18} color="#686A6E" />
+                              </button>
+                            </div>
+                            <div
+                              id="insured-address-postcode"
+                              ref={(el) => {
+                                if (el && showInsuredAddressSearch && (window as any).daum?.Postcode) {
+                                  el.innerHTML = '';
+                                  new (window as any).daum.Postcode({
+                                    oncomplete: (data: any) => {
+                                      let fullAddress = data.roadAddress || data.jibunAddress;
+                                      if (data.buildingName) {
+                                        fullAddress += ` (${data.buildingName})`;
+                                      }
+                                      handleInputChange("insuredAddress", fullAddress);
+                                      setShowInsuredAddressSearch(false);
+                                    },
+                                    width: '100%',
+                                    height: '400px',
+                                  }).embed(el);
+                                }
+                              }}
+                              style={{ width: '100%', height: '400px' }}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
 
