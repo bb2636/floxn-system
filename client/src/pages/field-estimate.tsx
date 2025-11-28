@@ -2346,7 +2346,7 @@ export default function FieldEstimate() {
                               }}
                             >
                               <option value="">공사명 선택</option>
-                              {workNames.map((work) => (
+                              {(workNamesByWorkType[row.workType] || []).map((work) => (
                                 <option key={work} value={work}>{work}</option>
                               ))}
                             </select>
