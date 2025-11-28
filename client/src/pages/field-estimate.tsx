@@ -92,6 +92,8 @@ export default function FieldEstimate() {
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false); // 케이스 검색 모달
   const [customWorkTypes, setCustomWorkTypes] = useState<string[]>([]); // 사용자가 추가한 공종 목록
   const [workTypeInputMode, setWorkTypeInputMode] = useState<{[rowId: string]: boolean}>({}); // 행별 직접입력 모드
+  const [customWorkNames, setCustomWorkNames] = useState<string[]>([]); // 사용자가 추가한 공사내용 목록
+  const [workNameInputMode, setWorkNameInputMode] = useState<{[rowId: string]: boolean}>({}); // 행별 직접입력 모드
   const [selectedCaseId, setSelectedCaseId] = useState(() => 
     localStorage.getItem('selectedFieldSurveyCaseId') || ''
   );
@@ -522,6 +524,18 @@ export default function FieldEstimate() {
         if (uniqueWorkTypes.length > 0) {
           setCustomWorkTypes(prev => {
             const combined = Array.from(new Set([...prev, ...uniqueWorkTypes]));
+            return combined;
+          });
+        }
+        
+        // 기존 workName 값을 customWorkNames에 추가 (마스터 데이터에 없는 것만)
+        const existingWorkNames = latestEstimate.rows
+          .map((row: any) => row.workName)
+          .filter((wn: string) => wn && wn.trim() !== '');
+        const uniqueWorkNames = Array.from(new Set(existingWorkNames)) as string[];
+        if (uniqueWorkNames.length > 0) {
+          setCustomWorkNames(prev => {
+            const combined = Array.from(new Set([...prev, ...uniqueWorkNames]));
             return combined;
           });
         }
@@ -1687,34 +1701,104 @@ export default function FieldEstimate() {
                         )}
                       </td>
                       <td style={{ padding: "8px" }}>
-                        <Select
-                          value={row.workName}
-                          onValueChange={(value) => updateRow(row.id, 'workName', value)}
-                        >
-                          <SelectTrigger 
-                            className="border focus:ring-0"
-                            style={{
-                              width: "100%",
-                              height: "40px",
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              borderColor: "rgba(12, 12, 12, 0.2)",
-                              borderRadius: "6px",
+                        {workNameInputMode[row.id] ? (
+                          <div style={{ display: "flex", gap: "4px" }}>
+                            <input
+                              type="text"
+                              value={row.workName || ""}
+                              onChange={(e) => updateRow(row.id, 'workName', e.target.value)}
+                              placeholder="공사내용 입력"
+                              className="input-focus-blue"
+                              autoFocus
+                              style={{
+                                flex: 1,
+                                height: "40px",
+                                padding: "8px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                border: "1px solid rgba(12, 12, 12, 0.2)",
+                                borderRadius: "6px",
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && row.workName) {
+                                  if (!customWorkNames.includes(row.workName)) {
+                                    setCustomWorkNames(prev => [...prev, row.workName]);
+                                  }
+                                  setWorkNameInputMode(prev => ({ ...prev, [row.id]: false }));
+                                }
+                              }}
+                              data-testid={`input-workname-custom-${index}`}
+                            />
+                            <button
+                              onClick={() => {
+                                if (row.workName && !customWorkNames.includes(row.workName)) {
+                                  setCustomWorkNames(prev => [...prev, row.workName]);
+                                }
+                                setWorkNameInputMode(prev => ({ ...prev, [row.id]: false }));
+                              }}
+                              style={{
+                                width: "40px",
+                                height: "40px",
+                                border: "1px solid rgba(12, 12, 12, 0.2)",
+                                borderRadius: "6px",
+                                background: "white",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#2563EB",
+                              }}
+                              data-testid={`button-workname-confirm-${index}`}
+                            >
+                              <Check size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <Select
+                            value={row.workName || "선택"}
+                            onValueChange={(value) => {
+                              if (value === "__직접입력__") {
+                                updateRow(row.id, 'workName', '');
+                                setWorkNameInputMode(prev => ({ ...prev, [row.id]: true }));
+                              } else {
+                                updateRow(row.id, 'workName', value === "선택" ? "" : value);
+                              }
                             }}
-                            data-testid={`select-workname-${index}`}
                           >
-                            <SelectValue>
-                              {row.workName}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {workNames.map(work => (
-                              <SelectItem key={work} value={work}>
-                                {work}
+                            <SelectTrigger 
+                              className="border focus:ring-0"
+                              style={{
+                                width: "100%",
+                                height: "40px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                borderColor: "rgba(12, 12, 12, 0.2)",
+                                borderRadius: "6px",
+                              }}
+                              data-testid={`select-workname-${index}`}
+                            >
+                              <SelectValue placeholder="선택">
+                                {row.workName || "선택"}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="선택">선택</SelectItem>
+                              {workNames.map(work => (
+                                <SelectItem key={work} value={work}>
+                                  {work}
+                                </SelectItem>
+                              ))}
+                              {customWorkNames.filter(wn => !workNames.includes(wn)).map(wn => (
+                                <SelectItem key={wn} value={wn}>
+                                  {wn}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="__직접입력__">
+                                <span style={{ fontWeight: 600, color: "#2563EB" }}>직접입력</span>
                               </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                            </SelectContent>
+                          </Select>
+                        )}
                       </td>
                       <td style={{ padding: "8px" }}>
                         <input
