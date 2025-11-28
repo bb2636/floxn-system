@@ -2568,20 +2568,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return accidentDate.getFullYear() === lastYear && accidentDate.getMonth() + 1 === lastMonth;
       });
       
-      // 미결건: 청구자료제출 이전 단계 (청구 상태 이전)
-      const preClaimStatuses = [
-        "배당대기", "접수완료", "현장방문", "현장정보입력", "검토중", "반려",
-        "1차승인", "현장정보제출", "복구요청(2차승인)", "직접복구", "선견적요청",
-        "(직접복구인 경우) 청구자료제출", "(선견적요청인 경우) 출동비 청구"
-      ];
+      // 미결건: 청구단계 이전 (청구, 입금완료, 일부입금, 정산완료 제외)
+      const claimStatuses = ["청구", "입금완료", "일부입금", "정산완료", "접수취소"];
       
       // 접수건: 전체 케이스 (취소 제외)
       const receivedCases = filteredCases.filter(c => c.status !== "접수취소").length;
       const lastMonthReceivedCases = lastMonthCases.filter(c => c.status !== "접수취소").length;
       
-      // 미결건: 청구자료제출 이전 단계의 건들
-      const pendingCases = filteredCases.filter(c => preClaimStatuses.includes(c.status)).length;
-      const lastMonthPendingCases = lastMonthCases.filter(c => preClaimStatuses.includes(c.status)).length;
+      // 미결건: 청구단계 이전 (청구, 입금완료, 일부입금, 정산완료, 접수취소 제외)
+      const pendingCases = filteredCases.filter(c => !claimStatuses.includes(c.status)).length;
+      const lastMonthPendingCases = lastMonthCases.filter(c => !claimStatuses.includes(c.status)).length;
       
       // Calculate changes
       const receivedCasesChangeCount = receivedCases - lastMonthReceivedCases;
