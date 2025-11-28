@@ -306,14 +306,21 @@ export default function Intake() {
       );
     }
     
-    // 검색어가 없으면 피보험자 주소 기반으로 지역 협력사만 표시
+    // 피보험자 주소가 있으면 지역 협력사 표시
     const city = extractCityFromAddress(formData.insuredAddress);
-    if (!city) return []; // 주소가 없으면 빈 배열
+    if (city) {
+      const regionFiltered = partnersWithStats.filter(p => {
+        // 협력사의 서비스 지역에 해당 키워드가 포함되어 있는지 확인
+        return p.region.includes(city);
+      });
+      // 지역 협력사가 있으면 반환, 없으면 전체 협력사 반환
+      if (regionFiltered.length > 0) {
+        return regionFiltered;
+      }
+    }
     
-    return partnersWithStats.filter(p => {
-      // 협력사의 서비스 지역에 해당 키워드가 포함되어 있는지 확인
-      return p.region.includes(city);
-    });
+    // 주소가 없거나 해당 지역 협력사가 없으면 전체 협력사 리스트 반환
+    return partnersWithStats;
   }, [partnerSearchQuery, partnersWithStats, formData.insuredAddress]);
 
   // 모든 회사 목록 (중복 제거)
@@ -3087,9 +3094,7 @@ export default function Intake() {
                       <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', textAlign: 'center', letterSpacing: '-0.01em', color: '#686A6E', whiteSpace: 'pre-line' }}>
                         {partnerSearchQuery 
                           ? "검색 결과가 없습니다" 
-                          : formData.insuredAddress
-                            ? "해당 지역에 서비스 가능한 협력사가 없습니다.\n검색을 이용해주세요"
-                            : "피보험자 주소를 입력하면 해당 지역의 협력사를 볼 수 있습니다"}
+                          : "등록된 협력사가 없습니다"}
                       </span>
                     </div>
                   </div>)
