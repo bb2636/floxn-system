@@ -98,7 +98,7 @@ export function LaborCostSection({
   const [areaPopupOpen, setAreaPopupOpen] = useState(false);
   const [areaPopupRowId, setAreaPopupRowId] = useState<string | null>(null);
   const [areaPopupWorkName, setAreaPopupWorkName] = useState<string>("");
-  const [selectedGroupWorkName, setSelectedGroupWorkName] = useState<string | null>(null); // 팝업에서 선택된 공사명 그룹
+  const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null); // 팝업에서 선택된 그룹 key
 
   // 공사명 선택 시 팝업 열기
   const handleWorkNameChange = (rowId: string, workName: string) => {
@@ -110,7 +110,7 @@ export function LaborCostSection({
     if (matchingRows.length > 0) {
       setAreaPopupRowId(rowId);
       setAreaPopupWorkName(workName);
-      setSelectedGroupWorkName(null); // 선택 초기화
+      setSelectedGroupKey(null); // 선택 초기화
       setAreaPopupOpen(true);
     }
   };
@@ -120,15 +120,15 @@ export function LaborCostSection({
     setAreaPopupOpen(false);
     setAreaPopupRowId(null);
     setAreaPopupWorkName("");
-    setSelectedGroupWorkName(null);
+    setSelectedGroupKey(null);
   };
 
-  // 팝업에서 "불러오기" 클릭 시 선택된 공사명 그룹의 복구면적 합계 적용
+  // 팝업에서 "불러오기" 클릭 시 선택된 그룹의 복구면적 합계 적용
   const handleAreaRowImport = () => {
-    if (!areaPopupRowId || !selectedGroupWorkName) return;
+    if (!areaPopupRowId || !selectedGroupKey) return;
     
-    // 선택된 공사명 그룹의 복구면적 합계 계산
-    const selectedGroup = groupedAreaRows.find(g => g.workName === selectedGroupWorkName);
+    // 선택된 그룹의 복구면적 합계 계산
+    const selectedGroup = groupedAreaRows.find(g => g.key === selectedGroupKey);
     if (!selectedGroup) return;
     
     const damageArea = selectedGroup.totalRepairArea;
@@ -157,26 +157,54 @@ export function LaborCostSection({
     handleAreaPopupClose();
   };
 
-  // 팝업에 표시할 복구면적 산출표 데이터 (공사명별 그룹화)
+  // 팝업에 표시할 복구면적 산출표 데이터 (공사명별 필터링)
   const matchingAreaRows = useMemo(() => {
     return areaCalculationRows.filter(ar => ar.workName === areaPopupWorkName);
   }, [areaCalculationRows, areaPopupWorkName]);
 
-  // 공사명별로 그룹화하고 복구면적 합계 계산
+  // 위치(방분류) + 공사명별 그룹화, 천장/벽체/바닥별 복구면적 계산
   const groupedAreaRows = useMemo(() => {
-    const groups: Record<string, { workName: string; totalRepairArea: number; rows: typeof matchingAreaRows }> = {};
+    // 위치(category) + 공사명(workName) 기준으로 그룹화
+    const groups: Record<string, { 
+      key: string;
+      category: string; // 위치 (주방, 발코니 등)
+      workName: string; // 공사명
+      천장: number;
+      벽체: number;
+      바닥: number;
+      totalRepairArea: number;
+    }> = {};
     
     matchingAreaRows.forEach(row => {
-      const workName = row.workName;
-      if (!groups[workName]) {
-        groups[workName] = {
-          workName,
+      const key = `${row.category || ''}-${row.workName || ''}`;
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          category: row.category || '',
+          workName: row.workName || '',
+          천장: 0,
+          벽체: 0,
+          바닥: 0,
           totalRepairArea: 0,
-          rows: [],
         };
       }
-      groups[workName].totalRepairArea += parseFloat(row.repairArea) || 0;
-      groups[workName].rows.push(row);
+      
+      const area = parseFloat(row.repairArea) || 0;
+      const location = row.location || '';
+      
+      // location에 따라 천장/벽체/바닥 분류
+      if (location.includes('천장') || location === '천장') {
+        groups[key].천장 += area;
+      } else if (location.includes('벽체') || location.includes('벽') || location === '벽체') {
+        groups[key].벽체 += area;
+      } else if (location.includes('바닥') || location === '바닥') {
+        groups[key].바닥 += area;
+      } else {
+        // 기타 위치는 전체에 추가
+        groups[key].totalRepairArea += area;
+      }
+      
+      groups[key].totalRepairArea = groups[key].천장 + groups[key].벽체 + groups[key].바닥;
     });
     
     return Object.values(groups);
@@ -748,38 +776,59 @@ export function LaborCostSection({
               피해면적산출표
             </div>
 
-            {/* 테이블 - 공사명별 그룹화 */}
+            {/* 테이블 - 위치/공사명별 그룹화, 천장/벽체/바닥 표시 */}
+            <div className="text-right mb-2" style={{ fontFamily: "Pretendard", fontSize: "12px", color: "#6c757d" }}>
+              (단위 : ㎡)
+            </div>
             <div className="border rounded-lg overflow-hidden">
               <table className="w-full" style={{ borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ backgroundColor: "#f8f9fa" }}>
                     <th 
-                      className="px-4 py-3 text-center" 
+                      className="px-3 py-3 text-center" 
                       style={{ 
                         fontFamily: "Pretendard", 
                         fontSize: "13px", 
                         fontWeight: 500, 
                         color: "#495057",
-                        width: "60px",
-                        borderBottom: "1px solid #e9ecef"
+                        width: "70px",
+                        borderBottom: "1px solid #e9ecef",
+                        borderRight: "1px solid #e9ecef"
                       }}
                     >
-                      선택
+                      반영
                     </th>
                     <th 
-                      className="px-4 py-3 text-center" 
+                      className="px-3 py-3 text-center" 
                       style={{ 
                         fontFamily: "Pretendard", 
                         fontSize: "13px", 
                         fontWeight: 500, 
                         color: "#495057",
-                        borderBottom: "1px solid #e9ecef"
+                        width: "80px",
+                        borderBottom: "1px solid #e9ecef",
+                        borderRight: "1px solid #e9ecef"
+                      }}
+                    >
+                      위치
+                    </th>
+                    <th 
+                      className="px-3 py-3 text-center" 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "13px", 
+                        fontWeight: 500, 
+                        color: "#495057",
+                        width: "100px",
+                        borderBottom: "1px solid #e9ecef",
+                        borderRight: "1px solid #e9ecef"
                       }}
                     >
                       공사명
                     </th>
                     <th 
-                      className="px-4 py-3 text-center" 
+                      className="px-3 py-3 text-center" 
+                      colSpan={3}
                       style={{ 
                         fontFamily: "Pretendard", 
                         fontSize: "13px", 
@@ -788,32 +837,78 @@ export function LaborCostSection({
                         borderBottom: "1px solid #e9ecef"
                       }}
                     >
-                      복구면적 합계(㎡)
+                      복구면적
+                    </th>
+                  </tr>
+                  <tr style={{ backgroundColor: "#f8f9fa" }}>
+                    <th style={{ borderBottom: "1px solid #e9ecef", borderRight: "1px solid #e9ecef" }}></th>
+                    <th style={{ borderBottom: "1px solid #e9ecef", borderRight: "1px solid #e9ecef" }}></th>
+                    <th style={{ borderBottom: "1px solid #e9ecef", borderRight: "1px solid #e9ecef" }}></th>
+                    <th 
+                      className="px-2 py-2 text-center" 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "12px", 
+                        fontWeight: 400, 
+                        color: "#6c757d",
+                        width: "70px",
+                        borderBottom: "1px solid #e9ecef",
+                        borderRight: "1px solid #e9ecef"
+                      }}
+                    >
+                      천장
+                    </th>
+                    <th 
+                      className="px-2 py-2 text-center" 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "12px", 
+                        fontWeight: 400, 
+                        color: "#6c757d",
+                        width: "70px",
+                        borderBottom: "1px solid #e9ecef",
+                        borderRight: "1px solid #e9ecef"
+                      }}
+                    >
+                      벽체
+                    </th>
+                    <th 
+                      className="px-2 py-2 text-center" 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "12px", 
+                        fontWeight: 400, 
+                        color: "#6c757d",
+                        width: "70px",
+                        borderBottom: "1px solid #e9ecef"
+                      }}
+                    >
+                      바닥
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {groupedAreaRows.map((group, idx) => (
                     <tr 
-                      key={group.workName} 
+                      key={group.key} 
                       className="cursor-pointer transition-colors"
                       style={{ 
-                        backgroundColor: selectedGroupWorkName === group.workName ? "#e7f5ff" : "white",
+                        backgroundColor: selectedGroupKey === group.key ? "#e7f5ff" : "white",
                         borderBottom: "1px solid #e9ecef"
                       }}
-                      onClick={() => setSelectedGroupWorkName(group.workName)}
+                      onClick={() => setSelectedGroupKey(group.key)}
                     >
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-3 py-3 text-center" style={{ borderRight: "1px solid #e9ecef" }}>
                         <div className="flex justify-center">
                           <div
                             className="w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer"
                             style={{
-                              borderColor: selectedGroupWorkName === group.workName ? "#228be6" : "#ced4da",
-                              backgroundColor: selectedGroupWorkName === group.workName ? "#228be6" : "white"
+                              borderColor: selectedGroupKey === group.key ? "#228be6" : "#ced4da",
+                              backgroundColor: selectedGroupKey === group.key ? "#228be6" : "white"
                             }}
                             data-testid={`radio-area-group-${idx}`}
                           >
-                            {selectedGroupWorkName === group.workName && (
+                            {selectedGroupKey === group.key && (
                               <div 
                                 className="w-2 h-2 rounded-full" 
                                 style={{ backgroundColor: "white" }}
@@ -823,23 +918,41 @@ export function LaborCostSection({
                         </div>
                       </td>
                       <td 
-                        className="px-4 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
+                        className="px-3 py-3 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a", borderRight: "1px solid #e9ecef" }}
+                      >
+                        {group.category || '-'}
+                      </td>
+                      <td 
+                        className="px-3 py-3 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a", borderRight: "1px solid #e9ecef" }}
                       >
                         {group.workName || '-'}
                       </td>
                       <td 
-                        className="px-4 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a", fontWeight: 600 }}
+                        className="px-2 py-3 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a", borderRight: "1px solid #e9ecef" }}
                       >
-                        {group.totalRepairArea.toFixed(2)}
+                        {group.천장 > 0 ? group.천장.toFixed(2) : ''}
+                      </td>
+                      <td 
+                        className="px-2 py-3 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a", borderRight: "1px solid #e9ecef" }}
+                      >
+                        {group.벽체 > 0 ? group.벽체.toFixed(2) : ''}
+                      </td>
+                      <td 
+                        className="px-2 py-3 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
+                      >
+                        {group.바닥 > 0 ? group.바닥.toFixed(2) : ''}
                       </td>
                     </tr>
                   ))}
                   {groupedAreaRows.length === 0 && (
                     <tr>
                       <td 
-                        colSpan={3} 
+                        colSpan={6} 
                         className="px-4 py-8 text-center"
                         style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#868e96" }}
                       >
@@ -875,16 +988,16 @@ export function LaborCostSection({
             </button>
             <button
               onClick={handleAreaRowImport}
-              disabled={!selectedGroupWorkName}
+              disabled={!selectedGroupKey}
               className="flex-1 py-4 text-center transition-colors"
               style={{
                 fontFamily: "Pretendard",
                 fontWeight: 500,
                 fontSize: "16px",
                 color: "white",
-                backgroundColor: selectedGroupWorkName ? "#228be6" : "#adb5bd",
+                backgroundColor: selectedGroupKey ? "#228be6" : "#adb5bd",
                 border: "none",
-                cursor: selectedGroupWorkName ? "pointer" : "not-allowed"
+                cursor: selectedGroupKey ? "pointer" : "not-allowed"
               }}
               data-testid="button-area-import"
             >
