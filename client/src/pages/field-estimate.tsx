@@ -172,19 +172,19 @@ export default function FieldEstimate() {
     };
   };
 
-  // 노무비 초기 첫 행 설정
+  // 노무비 초기 첫 행 설정 (항상 기본 1행 유지)
   useEffect(() => {
-    if (laborCostRows.length === 0 && laborCatalog.length > 0) {
+    if (laborCostRows.length === 0) {
       setLaborCostRows([createBlankLaborRow()]);
     }
-  }, [laborCatalog]);
+  }, [laborCostRows.length]);
 
-  // 자재비 초기 빈 행 설정
+  // 자재비 초기 빈 행 설정 (항상 기본 1행 유지)
   useEffect(() => {
     if (materialRows.length === 0) {
       setMaterialRows([createBlankMaterialRow()]);
     }
-  }, []);
+  }, [materialRows.length]);
 
   // 노무비 행 변화 감지 및 자재비 행 동기화
   useEffect(() => {
@@ -656,24 +656,30 @@ export default function FieldEstimate() {
           // 복구면적이 변경되면 노무비의 피해면적과 자재비의 수량에 자동 연동
           const repairAreaNum = parseFloat(area) || 0;
           
-          // 노무비 연동: 공사내용(workName)과 일치하는 행의 damageArea 업데이트
-          setLaborCostRows(prevLabor => prevLabor.map(laborRow => {
-            // 공사내용(workName)이 노무비의 공사명(workName) 또는 공종(category)과 일치하는 경우 연동
-            if (laborRow.workName === updated.workName || laborRow.category === updated.workName) {
-              return { ...laborRow, damageArea: repairAreaNum };
-            }
-            return laborRow;
-          }));
+          // 노무비 연동: 첫 번째 행의 damageArea 업데이트
+          setLaborCostRows(prevLabor => {
+            if (prevLabor.length === 0) return prevLabor;
+            return prevLabor.map((laborRow, index) => {
+              // 첫 번째 행에 복구면적 값 자동 입력
+              if (index === 0) {
+                return { ...laborRow, damageArea: repairAreaNum };
+              }
+              return laborRow;
+            });
+          });
           
-          // 자재비 연동: 공사내용(workName)과 일치하는 행의 수량 업데이트
-          setMaterialRows(prevMaterial => prevMaterial.map(materialRow => {
-            // 공종이 공사내용(workName)과 일치하는 경우 연동
-            if (materialRow.공종 === updated.workName) {
-              const newAmount = repairAreaNum * materialRow.기준단가;
-              return { ...materialRow, 수량: repairAreaNum, 금액: newAmount };
-            }
-            return materialRow;
-          }));
+          // 자재비 연동: 첫 번째 행의 수량 업데이트
+          setMaterialRows(prevMaterial => {
+            if (prevMaterial.length === 0) return prevMaterial;
+            return prevMaterial.map((materialRow, index) => {
+              // 첫 번째 행에 복구면적 값을 수량으로 자동 입력
+              if (index === 0) {
+                const newAmount = repairAreaNum * materialRow.기준단가;
+                return { ...materialRow, 수량: repairAreaNum, 금액: newAmount };
+              }
+              return materialRow;
+            });
+          });
         }
         
         return updated;
