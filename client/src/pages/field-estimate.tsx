@@ -2249,29 +2249,31 @@ export default function FieldEstimate() {
                         <th style={{ width: "40px", padding: "12px", textAlign: "center" }}></th>
                         <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>장소</th>
                         <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>위치</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공사내용</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가(mm)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>면적(mm)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>기준가(mm)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>면적(m²)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공종</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공사명</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적 가로(mm)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적 세로(mm)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적(㎡)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>복구면적 가로(mm)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>복구면적 세로(mm)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>복구면적(㎡)</th>
                         <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>비고</th>
                       </tr>
                     </thead>
                     <tbody>
                       {rows.map((row, index) => (
-                        <tr key={index} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.06)" }}>
                           <td style={{ padding: "8px", textAlign: "center" }}>
                             <input
                               type="checkbox"
                               checked={selectedRows.has(row.id)}
                               onChange={() => toggleRowSelection(row.id)}
-                              data-testid={`checkbox-area-row-${index}`}
+                              data-testid={`checkbox-estimate-area-row-${index}`}
                             />
                           </td>
                           <td style={{ padding: "8px" }}>
                             <select
-                              value={row.category}
+                              value={row.category || ""}
                               onChange={(e) => updateRow(row.id, 'category', e.target.value)}
                               style={{
                                 width: "100%",
@@ -2280,8 +2282,10 @@ export default function FieldEstimate() {
                                 borderRadius: "4px",
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
+                                color: row.category ? "#0C0C0C" : "rgba(12, 12, 12, 0.4)",
                               }}
                             >
+                              <option value="">선택</option>
                               {roomCategories.map((cat) => (
                                 <option key={cat} value={cat}>{cat}</option>
                               ))}
@@ -2289,7 +2293,7 @@ export default function FieldEstimate() {
                           </td>
                           <td style={{ padding: "8px" }}>
                             <select
-                              value={row.location}
+                              value={row.location || ""}
                               onChange={(e) => updateRow(row.id, 'location', e.target.value)}
                               style={{
                                 width: "100%",
@@ -2298,8 +2302,10 @@ export default function FieldEstimate() {
                                 borderRadius: "4px",
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
+                                color: row.location ? "#0C0C0C" : "rgba(12, 12, 12, 0.4)",
                               }}
                             >
+                              <option value="">선택</option>
                               {locations.map((loc) => (
                                 <option key={loc} value={loc}>{loc}</option>
                               ))}
@@ -2307,7 +2313,27 @@ export default function FieldEstimate() {
                           </td>
                           <td style={{ padding: "8px" }}>
                             <select
-                              value={row.workName}
+                              value={row.workType || ""}
+                              onChange={(e) => updateRow(row.id, 'workType', e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "6px 8px",
+                                border: "1px solid rgba(12, 12, 12, 0.1)",
+                                borderRadius: "4px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                color: row.workType ? "#0C0C0C" : "rgba(12, 12, 12, 0.4)",
+                              }}
+                            >
+                              <option value="">공종 선택</option>
+                              {workTypes.map((wt) => (
+                                <option key={wt} value={wt}>{wt}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td style={{ padding: "8px" }}>
+                            <select
+                              value={row.workName || ""}
                               onChange={(e) => updateRow(row.id, 'workName', e.target.value)}
                               style={{
                                 width: "100%",
@@ -2316,14 +2342,15 @@ export default function FieldEstimate() {
                                 borderRadius: "4px",
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
+                                color: row.workName ? "#0C0C0C" : "rgba(12, 12, 12, 0.4)",
                               }}
                             >
+                              <option value="">공사명 선택</option>
                               {workNames.map((work) => (
                                 <option key={work} value={work}>{work}</option>
                               ))}
                             </select>
                           </td>
-                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right", background: "rgba(12, 12, 12, 0.02)" }}>{row.damageArea}</td>
                           <td style={{ padding: "8px" }}>
                             <input
                               type="text"
@@ -2356,11 +2383,28 @@ export default function FieldEstimate() {
                               }}
                             />
                           </td>
+                          <td style={{ padding: "8px", fontFamily: "Pretendard", fontSize: "14px", textAlign: "right", background: "rgba(12, 12, 12, 0.02)" }}>{row.damageArea}</td>
                           <td style={{ padding: "8px" }}>
                             <input
                               type="text"
                               value={row.repairWidth}
                               onChange={(e) => updateRow(row.id, 'repairWidth', e.target.value)}
+                              style={{
+                                width: "100%",
+                                padding: "6px 8px",
+                                border: "1px solid rgba(12, 12, 12, 0.1)",
+                                borderRadius: "4px",
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                textAlign: "right",
+                              }}
+                            />
+                          </td>
+                          <td style={{ padding: "8px" }}>
+                            <input
+                              type="text"
+                              value={row.repairHeight}
+                              onChange={(e) => updateRow(row.id, 'repairHeight', e.target.value)}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
