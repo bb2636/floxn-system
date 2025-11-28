@@ -27,6 +27,8 @@ export interface AreaCalculationRowForLabor {
   workName: string; // 공사명
   damageArea: string; // 피해면적
   repairArea: string; // 복구면적
+  width?: string; // 가로(mm)
+  height?: string; // 세로(mm)
 }
 
 // 노무비 카탈로그 항목 (from excel_data)
@@ -94,6 +96,7 @@ export function LaborCostSection({
   const [areaPopupOpen, setAreaPopupOpen] = useState(false);
   const [areaPopupRowId, setAreaPopupRowId] = useState<string | null>(null);
   const [areaPopupWorkName, setAreaPopupWorkName] = useState<string>("");
+  const [selectedAreaRowId, setSelectedAreaRowId] = useState<string | null>(null); // 팝업에서 선택된 행
 
   // 공사명 선택 시 팝업 열기
   const handleWorkNameChange = (rowId: string, workName: string) => {
@@ -105,16 +108,28 @@ export function LaborCostSection({
     if (matchingRows.length > 0) {
       setAreaPopupRowId(rowId);
       setAreaPopupWorkName(workName);
+      setSelectedAreaRowId(null); // 선택 초기화
       setAreaPopupOpen(true);
     }
   };
 
-  // 팝업에서 행 선택 시 피해면적 값 적용
-  const handleAreaRowSelect = (areaRow: AreaCalculationRowForLabor) => {
-    if (!areaPopupRowId) return;
+  // 팝업 닫기 (취소)
+  const handleAreaPopupClose = () => {
+    setAreaPopupOpen(false);
+    setAreaPopupRowId(null);
+    setAreaPopupWorkName("");
+    setSelectedAreaRowId(null);
+  };
+
+  // 팝업에서 "불러오기" 클릭 시 선택된 행의 피해면적 값 적용
+  const handleAreaRowImport = () => {
+    if (!areaPopupRowId || !selectedAreaRowId) return;
     
-    // 피해면적 값을 노무비 행에 적용
-    const damageArea = parseFloat(areaRow.repairArea) || 0;
+    const selectedRow = matchingAreaRows.find(r => r.id === selectedAreaRowId);
+    if (!selectedRow) return;
+    
+    // 피해면적 값을 노무비 행에 적용 (복구면적 사용)
+    const damageArea = parseFloat(selectedRow.repairArea) || 0;
     onRowsChange(rows.map(row => {
       if (row.id === areaPopupRowId) {
         const updated = { ...row, damageArea };
@@ -135,9 +150,7 @@ export function LaborCostSection({
       return row;
     }));
     
-    setAreaPopupOpen(false);
-    setAreaPopupRowId(null);
-    setAreaPopupWorkName("");
+    handleAreaPopupClose();
   };
 
   // 팝업에 표시할 복구면적 산출표 데이터
@@ -650,63 +663,213 @@ export function LaborCostSection({
         </tbody>
       </table>
 
-      {/* 복구면적 산출표 데이터 선택 팝업 */}
-      <Dialog open={areaPopupOpen} onOpenChange={setAreaPopupOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              복구면적 산출표 - {areaPopupWorkName}
+      {/* 피해면적산출표 데이터 선택 팝업 - 이미지 UI에 맞게 구현 */}
+      <Dialog open={areaPopupOpen} onOpenChange={(open) => !open && handleAreaPopupClose()}>
+        <DialogContent 
+          className="max-w-3xl p-0 gap-0 overflow-hidden"
+          style={{ borderRadius: "12px" }}
+        >
+          {/* 헤더 */}
+          <div 
+            className="text-center py-5 border-b"
+            style={{ 
+              background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"
+            }}
+          >
+            <DialogTitle 
+              style={{ 
+                fontFamily: "Pretendard",
+                fontWeight: 700,
+                fontSize: "20px",
+                color: "#1a1a1a"
+              }}
+            >
+              피해면적산출표
             </DialogTitle>
-          </DialogHeader>
-          <div className="mt-4">
-            <p className="text-sm text-muted-foreground mb-4">
-              선택한 공사명과 일치하는 복구면적 산출표 데이터입니다. 선택하면 피해면적이 자동으로 적용됩니다.
-            </p>
+          </div>
+
+          {/* 본문 */}
+          <div className="p-6">
+            {/* 서브헤더 */}
+            <div 
+              style={{ 
+                fontFamily: "Pretendard",
+                fontWeight: 500,
+                fontSize: "14px",
+                color: "#495057",
+                marginBottom: "16px"
+              }}
+            >
+              피해면적산출표
+            </div>
+
+            {/* 테이블 */}
             <div className="border rounded-lg overflow-hidden">
-              <table className="w-full">
+              <table className="w-full" style={{ borderCollapse: "collapse" }}>
                 <thead>
-                  <tr className="bg-muted/50">
-                    <th className="px-4 py-3 text-left text-sm font-medium">장소</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">위치</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">공종</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">공사명</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium">피해면적(㎡)</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium">복구면적(㎡)</th>
-                    <th className="px-4 py-3 text-center text-sm font-medium">선택</th>
+                  <tr style={{ backgroundColor: "#f8f9fa" }}>
+                    <th 
+                      className="px-4 py-3 text-center" 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "13px", 
+                        fontWeight: 500, 
+                        color: "#495057",
+                        width: "60px",
+                        borderBottom: "1px solid #e9ecef"
+                      }}
+                    >
+                      선택
+                    </th>
+                    <th 
+                      className="px-4 py-3 text-center" 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "13px", 
+                        fontWeight: 500, 
+                        color: "#495057",
+                        borderBottom: "1px solid #e9ecef"
+                      }}
+                    >
+                      위치
+                    </th>
+                    <th 
+                      className="px-4 py-3 text-center" 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "13px", 
+                        fontWeight: 500, 
+                        color: "#495057",
+                        borderBottom: "1px solid #e9ecef"
+                      }}
+                    >
+                      공사명
+                    </th>
+                    <th 
+                      className="px-4 py-3 text-center" 
+                      colSpan={3}
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "13px", 
+                        fontWeight: 500, 
+                        color: "#495057",
+                        borderBottom: "1px solid #e9ecef"
+                      }}
+                    >
+                      복구면적
+                    </th>
+                  </tr>
+                  <tr style={{ backgroundColor: "#f8f9fa" }}>
+                    <th style={{ borderBottom: "1px solid #e9ecef" }}></th>
+                    <th style={{ borderBottom: "1px solid #e9ecef" }}></th>
+                    <th style={{ borderBottom: "1px solid #e9ecef" }}></th>
+                    <th 
+                      className="px-4 py-2 text-center" 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "12px", 
+                        fontWeight: 400, 
+                        color: "#6c757d",
+                        borderBottom: "1px solid #e9ecef"
+                      }}
+                    >
+                      가로(mm)
+                    </th>
+                    <th 
+                      className="px-4 py-2 text-center" 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "12px", 
+                        fontWeight: 400, 
+                        color: "#6c757d",
+                        borderBottom: "1px solid #e9ecef"
+                      }}
+                    >
+                      세로(mm)
+                    </th>
+                    <th 
+                      className="px-4 py-2 text-center" 
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "12px", 
+                        fontWeight: 400, 
+                        color: "#6c757d",
+                        borderBottom: "1px solid #e9ecef"
+                      }}
+                    >
+                      면적(㎡)
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {matchingAreaRows.map((areaRow, idx) => (
                     <tr 
                       key={areaRow.id} 
-                      className="border-t hover:bg-muted/30 cursor-pointer"
-                      onClick={() => handleAreaRowSelect(areaRow)}
+                      className="cursor-pointer transition-colors"
+                      style={{ 
+                        backgroundColor: selectedAreaRowId === areaRow.id ? "#e7f5ff" : "white",
+                        borderBottom: "1px solid #e9ecef"
+                      }}
+                      onClick={() => setSelectedAreaRowId(areaRow.id)}
                     >
-                      <td className="px-4 py-3 text-sm">{areaRow.category || '-'}</td>
-                      <td className="px-4 py-3 text-sm">{areaRow.location || '-'}</td>
-                      <td className="px-4 py-3 text-sm">{areaRow.workType || '-'}</td>
-                      <td className="px-4 py-3 text-sm">{areaRow.workName || '-'}</td>
-                      <td className="px-4 py-3 text-sm text-right">{areaRow.damageArea || '0'}</td>
-                      <td className="px-4 py-3 text-sm text-right font-medium text-primary">{areaRow.repairArea || '0'}</td>
                       <td className="px-4 py-3 text-center">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAreaRowSelect(areaRow);
-                          }}
-                          data-testid={`button-select-area-${idx}`}
-                        >
-                          선택
-                        </Button>
+                        <div className="flex justify-center">
+                          <div
+                            className="w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer"
+                            style={{
+                              borderColor: selectedAreaRowId === areaRow.id ? "#228be6" : "#ced4da",
+                              backgroundColor: selectedAreaRowId === areaRow.id ? "#228be6" : "white"
+                            }}
+                            data-testid={`radio-area-${idx}`}
+                          >
+                            {selectedAreaRowId === areaRow.id && (
+                              <div 
+                                className="w-2 h-2 rounded-full" 
+                                style={{ backgroundColor: "white" }}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td 
+                        className="px-4 py-3 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
+                      >
+                        {areaRow.location || '-'}
+                      </td>
+                      <td 
+                        className="px-4 py-3 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
+                      >
+                        {areaRow.workName || '-'}
+                      </td>
+                      <td 
+                        className="px-4 py-3 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
+                      >
+                        {areaRow.width || '0000'}
+                      </td>
+                      <td 
+                        className="px-4 py-3 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
+                      >
+                        {areaRow.height || '0000'}
+                      </td>
+                      <td 
+                        className="px-4 py-3 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
+                      >
+                        {areaRow.repairArea || '0000'}
                       </td>
                     </tr>
                   ))}
                   {matchingAreaRows.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      <td 
+                        colSpan={6} 
+                        className="px-4 py-8 text-center"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#868e96" }}
+                      >
                         일치하는 데이터가 없습니다.
                       </td>
                     </tr>
@@ -714,6 +877,46 @@ export function LaborCostSection({
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* 하단 버튼 */}
+          <div 
+            className="flex border-t"
+            style={{ minHeight: "56px" }}
+          >
+            <button
+              onClick={handleAreaPopupClose}
+              className="flex-1 py-4 text-center transition-colors hover:bg-gray-50"
+              style={{
+                fontFamily: "Pretendard",
+                fontWeight: 500,
+                fontSize: "16px",
+                color: "#228be6",
+                backgroundColor: "white",
+                border: "none",
+                cursor: "pointer"
+              }}
+              data-testid="button-area-cancel"
+            >
+              취소
+            </button>
+            <button
+              onClick={handleAreaRowImport}
+              disabled={!selectedAreaRowId}
+              className="flex-1 py-4 text-center transition-colors"
+              style={{
+                fontFamily: "Pretendard",
+                fontWeight: 500,
+                fontSize: "16px",
+                color: "white",
+                backgroundColor: selectedAreaRowId ? "#228be6" : "#adb5bd",
+                border: "none",
+                cursor: selectedAreaRowId ? "pointer" : "not-allowed"
+              }}
+              data-testid="button-area-import"
+            >
+              불러오기
+            </button>
           </div>
         </DialogContent>
       </Dialog>

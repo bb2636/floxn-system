@@ -2473,6 +2473,8 @@ export default function FieldEstimate() {
                   workName: r.workName,
                   damageArea: r.damageArea,
                   repairArea: r.repairArea,
+                  width: r.repairWidth,
+                  height: r.repairHeight,
                 }))}
               />
             </div>
@@ -2930,6 +2932,8 @@ export default function FieldEstimate() {
                   workName: r.workName,
                   damageArea: r.damageArea,
                   repairArea: r.repairArea,
+                  width: r.repairWidth,
+                  height: r.repairHeight,
                 }))}
               />
             </div>
