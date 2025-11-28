@@ -141,8 +141,10 @@ export function LaborCostSection({
         if (updated.category === '누수탐지비용') {
           updated.amount = Math.round(standardPrice * quantity);
         } else if (updated.detailWork === '노무비') {
-          updated.amount = Math.round(standardPrice * quantity);
+          // 노무비: 기준가(단위) * 수량 * 피해면적
+          updated.amount = Math.round(standardPrice * quantity * damageArea);
         } else if (updated.detailWork === '일위대가') {
+          // 일위대가: 기준가(m²) * 피해면적 * 수량
           updated.amount = Math.round(pricePerSqm * damageArea * quantity);
         }
         return updated;
@@ -363,8 +365,10 @@ export function LaborCostSection({
         if (updated.category === '누수탐지비용') {
           updated.amount = Math.round(standardPrice * quantity);
         } else if (updated.detailWork === '노무비') {
-          updated.amount = Math.round(standardPrice * quantity);
+          // 노무비: 기준가(단위) * 수량 * 피해면적
+          updated.amount = Math.round(standardPrice * quantity * damageArea);
         } else if (updated.detailWork === '일위대가') {
+          // 일위대가: 기준가(m²) * 피해면적 * 수량
           updated.amount = Math.round(pricePerSqm * damageArea * quantity);
         } else {
           updated.amount = 0;
