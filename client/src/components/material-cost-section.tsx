@@ -47,6 +47,12 @@ export function MaterialCostSection({
   onSelectAll,
   isLoading = false,
 }: MaterialCostSectionProps) {
+  // 자재비 카탈로그에서 공종 목록 추출 (자재비 DB에 있는 공종만 표시)
+  const materialCategoryOptions = useMemo(() => {
+    const categories = new Set(catalog.map(item => item.workType));
+    return Array.from(categories).sort();
+  }, [catalog]);
+
   // 공종별로 필터링된 자재명 옵션
   const getMaterialNamesForWorkType = (workType: string) => {
     if (!workType) return [];
@@ -183,7 +189,7 @@ export function MaterialCostSection({
                   />
                 </td>
                 
-                {/* 공종 - Select */}
+                {/* 공종 - Select (자재비 카탈로그에 있는 공종만 표시) */}
                 <td style={{ padding: "0 8px" }}>
                   <Select 
                     value={row.공종} 
@@ -197,7 +203,7 @@ export function MaterialCostSection({
                       <SelectValue placeholder="선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      {laborCategories.map(cat => (
+                      {materialCategoryOptions.map(cat => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                       ))}
                     </SelectContent>
