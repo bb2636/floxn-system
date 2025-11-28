@@ -1140,11 +1140,26 @@ export class MemStorage implements IStorage {
 
   async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
     const currentDate = getKSTDate();
+    const status = caseData.status || "작성중";
+    
+    // 상태에 따라 자동으로 날짜 기록 (케이스 생성 시)
+    let autoReceptionDate = caseData.receptionDate || null;
+    let autoAssignmentDate = caseData.assignmentDate || null;
+    
+    if (status === "접수완료") {
+      // 접수완료 상태로 생성 시 접수일과 배당일 자동 기록 (기존 값 없을 때만)
+      if (!autoReceptionDate) {
+        autoReceptionDate = currentDate;
+      }
+      if (!autoAssignmentDate) {
+        autoAssignmentDate = currentDate;
+      }
+    }
     
     // Insert into database and get the created case
     const [newCase] = await db.insert(cases).values({
       caseNumber: caseData.caseNumber,
-      status: caseData.status || "작성중",
+      status: status,
       accidentDate: caseData.accidentDate || null,
       insuranceCompany: caseData.insuranceCompany || null,
       insurancePolicyNo: caseData.insurancePolicyNo || null,
@@ -1194,7 +1209,8 @@ export class MemStorage implements IStorage {
       specialRequests: caseData.specialRequests || null,
       progressStatus: caseData.progressStatus || null,
       specialNotes: caseData.specialNotes || null,
-      assignmentDate: caseData.assignmentDate || null,
+      receptionDate: autoReceptionDate,
+      assignmentDate: autoAssignmentDate,
       siteVisitDate: caseData.siteVisitDate || null,
       fieldSurveyDate: caseData.fieldSurveyDate || null,
       firstInspectionDate: caseData.firstInspectionDate || null,
@@ -2644,10 +2660,25 @@ export class DbStorage implements IStorage {
 
   async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
     const currentDate = getKSTDate();
+    const status = caseData.status || "작성중";
+    
+    // 상태에 따라 자동으로 날짜 기록 (케이스 생성 시)
+    let autoReceptionDate = caseData.receptionDate || null;
+    let autoAssignmentDate = caseData.assignmentDate || null;
+    
+    if (status === "접수완료") {
+      // 접수완료 상태로 생성 시 접수일과 배당일 자동 기록 (기존 값 없을 때만)
+      if (!autoReceptionDate) {
+        autoReceptionDate = currentDate;
+      }
+      if (!autoAssignmentDate) {
+        autoAssignmentDate = currentDate;
+      }
+    }
     
     const newCase = {
       caseNumber: caseData.caseNumber,
-      status: caseData.status || "작성중",
+      status: status,
       accidentDate: caseData.accidentDate || null,
       insuranceCompany: caseData.insuranceCompany || null,
       insurancePolicyNo: caseData.insurancePolicyNo || null,
@@ -2694,6 +2725,9 @@ export class DbStorage implements IStorage {
       specialRequests: caseData.specialRequests || null,
       progressStatus: caseData.progressStatus || null,
       specialNotes: caseData.specialNotes || null,
+      receptionDate: autoReceptionDate,
+      assignmentDate: autoAssignmentDate,
+      siteVisitDate: caseData.siteVisitDate || null,
       assignedTo: caseData.assignedTo || null,
       createdBy: caseData.createdBy,
       createdAt: currentDate,
