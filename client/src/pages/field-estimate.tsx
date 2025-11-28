@@ -410,6 +410,24 @@ export default function FieldEstimate() {
     const unique = new Set(laborCatalog.map(item => item.공종));
     return Array.from(unique).sort();
   }, [laborCatalog]);
+  
+  // 공종별 공사명 매핑 (복구면적 산출표에서 사용)
+  const workNamesByWorkType = useMemo(() => {
+    if (!laborCatalog.length) return {} as Record<string, string[]>;
+    const mapping: Record<string, Set<string>> = {};
+    laborCatalog.forEach(item => {
+      if (!mapping[item.공종]) {
+        mapping[item.공종] = new Set();
+      }
+      mapping[item.공종].add(item.공사명);
+    });
+    // Set을 배열로 변환하고 정렬
+    const result: Record<string, string[]> = {};
+    Object.keys(mapping).forEach(key => {
+      result[key] = Array.from(mapping[key]).sort();
+    });
+    return result;
+  }, [laborCatalog]);
 
   // 자재비 선택기 state
   const [selectedMaterialCategory, setSelectedMaterialCategory] = useState("");
@@ -1655,99 +1673,34 @@ export default function FieldEstimate() {
                         </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
-                        {workNameInputMode[row.id] ? (
-                          <div style={{ display: "flex", gap: "4px" }}>
-                            <input
-                              type="text"
-                              value={row.workName || ""}
-                              onChange={(e) => updateRow(row.id, 'workName', e.target.value)}
-                              placeholder="공사내용 입력"
-                              className="input-focus-blue"
-                              autoFocus
-                              style={{
-                                flex: 1,
-                                height: "40px",
-                                padding: "8px",
-                                fontFamily: "Pretendard",
-                                fontSize: "14px",
-                                border: "1px solid rgba(12, 12, 12, 0.2)",
-                                borderRadius: "6px",
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && row.workName) {
-                                  if (!customWorkNames.includes(row.workName)) {
-                                    setCustomWorkNames(prev => [...prev, row.workName]);
-                                  }
-                                  setWorkNameInputMode(prev => ({ ...prev, [row.id]: false }));
-                                }
-                              }}
-                              data-testid={`input-workname-custom-${index}`}
-                            />
-                            <button
-                              onClick={() => {
-                                if (row.workName && !customWorkNames.includes(row.workName)) {
-                                  setCustomWorkNames(prev => [...prev, row.workName]);
-                                }
-                                setWorkNameInputMode(prev => ({ ...prev, [row.id]: false }));
-                              }}
-                              style={{
-                                width: "40px",
-                                height: "40px",
-                                border: "1px solid rgba(12, 12, 12, 0.2)",
-                                borderRadius: "6px",
-                                background: "white",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: "#2563EB",
-                              }}
-                              data-testid={`button-workname-confirm-${index}`}
-                            >
-                              <Check size={16} />
-                            </button>
-                          </div>
-                        ) : (
-                          <Select
-                            value={row.workName || "선택"}
-                            onValueChange={(value) => {
-                              if (value === "__직접입력__") {
-                                updateRow(row.id, 'workName', '');
-                                setWorkNameInputMode(prev => ({ ...prev, [row.id]: true }));
-                              } else {
-                                updateRow(row.id, 'workName', value === "선택" ? "" : value);
-                              }
+                        <Select
+                          value={row.workName || ""}
+                          onValueChange={(value) => updateRow(row.id, 'workName', value)}
+                        >
+                          <SelectTrigger 
+                            className="border focus:ring-0"
+                            style={{
+                              width: "100%",
+                              height: "40px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              borderColor: "rgba(12, 12, 12, 0.2)",
+                              borderRadius: "6px",
                             }}
+                            data-testid={`select-workname-${index}`}
                           >
-                            <SelectTrigger 
-                              className="border focus:ring-0"
-                              style={{
-                                width: "100%",
-                                height: "40px",
-                                fontFamily: "Pretendard",
-                                fontSize: "14px",
-                                borderColor: "rgba(12, 12, 12, 0.2)",
-                                borderRadius: "6px",
-                              }}
-                              data-testid={`select-workname-${index}`}
-                            >
-                              <SelectValue placeholder="선택">
-                                {row.workName || "선택"}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="선택">선택</SelectItem>
-                              {customWorkNames.map(wn => (
-                                <SelectItem key={wn} value={wn}>
-                                  {wn}
-                                </SelectItem>
-                              ))}
-                              <SelectItem value="__직접입력__">
-                                <span style={{ fontWeight: 600, color: "#2563EB" }}>직접입력</span>
+                            <SelectValue placeholder="공사명 선택">
+                              {row.workName || ""}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(workNamesByWorkType[row.workType] || []).map(wn => (
+                              <SelectItem key={wn} value={wn}>
+                                {wn}
                               </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td style={{ padding: "8px" }}>
                         <input
