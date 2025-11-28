@@ -611,8 +611,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // 임시저장 건("배당대기" 상태)만 삭제 가능
-      if (existingCase.status !== "배당대기") {
+      // 관리자는 모든 케이스 삭제 가능, 그 외는 배당대기 상태만 삭제 가능
+      if (req.session.userRole !== "관리자" && existingCase.status !== "배당대기") {
         return res.status(403).json({ error: "임시저장 건(배당대기 상태)만 삭제할 수 있습니다" });
       }
 

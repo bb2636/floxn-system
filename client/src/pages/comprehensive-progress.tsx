@@ -24,6 +24,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Form,
   FormControl,
   FormField,
@@ -81,6 +91,7 @@ export default function ComprehensiveProgress() {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [showProgressDialog, setShowProgressDialog] = useState(false);
   const [detailTab, setDetailTab] = useState("기본정보");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -120,6 +131,28 @@ export default function ComprehensiveProgress() {
       toast({
         title: "즐겨찾기 처리 실패",
         description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCaseMutation = useMutation({
+    mutationFn: async (caseId: string) => {
+      return await apiRequest("DELETE", `/api/cases/${caseId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      setSelectedCaseId(null);
+      setShowDeleteDialog(false);
+      toast({
+        title: "삭제 완료",
+        description: "접수건이 삭제되었습니다.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "삭제 실패",
+        description: error?.message || "접수건 삭제 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     },
@@ -1113,6 +1146,16 @@ export default function ComprehensiveProgress() {
               >
                 진행건 상세보기
               </SheetTitle>
+              {user?.role === "관리자" && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setShowDeleteDialog(true)}
+                  data-testid="button-delete-case"
+                >
+                  삭제
+                </Button>
+              )}
             </div>
           </SheetHeader>
 
@@ -1816,6 +1859,33 @@ export default function ComprehensiveProgress() {
           })()}
         </SheetContent>
       </Sheet>
+
+      {/* 삭제 확인 Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>접수건 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              이 접수건을 삭제하시겠습니까? 삭제된 데이터는 복구할 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedCaseId) {
+                  deleteCaseMutation.mutate(selectedCaseId);
+                }
+              }}
+              disabled={deleteCaseMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              {deleteCaseMutation.isPending ? "삭제 중..." : "확인"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* 진행상황 추가 Dialog (관리자 전용) */}
       <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
