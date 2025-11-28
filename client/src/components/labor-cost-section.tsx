@@ -503,7 +503,7 @@ export function LaborCostSection({
               {/* 공종 - Select */}
               <td style={{ padding: "0 8px" }}>
                 <Select 
-                  value={row.category} 
+                  value={row.category || undefined} 
                   onValueChange={(value) => updateRow(row.id, 'category', value)}
                 >
                   <SelectTrigger 
@@ -524,7 +524,7 @@ export function LaborCostSection({
               {/* 공사명 - Select */}
               <td style={{ padding: "0 8px" }}>
                 <Select 
-                  value={row.workName} 
+                  value={row.workName || undefined} 
                   onValueChange={(value) => handleWorkNameChange(row.id, value)}
                   disabled={!row.category}
                 >
@@ -546,7 +546,7 @@ export function LaborCostSection({
               {/* 세부공사 - Select */}
               <td style={{ padding: "0 8px" }}>
                 <Select 
-                  value={row.detailWork} 
+                  value={row.detailWork || undefined} 
                   onValueChange={(value) => updateRow(row.id, 'detailWork', value)}
                   disabled={!row.workName}
                 >
@@ -568,7 +568,7 @@ export function LaborCostSection({
               {/* 세부항목 - Select */}
               <td style={{ padding: "0 8px" }}>
                 <Select 
-                  value={row.detailItem} 
+                  value={row.detailItem || undefined} 
                   onValueChange={(value) => updateRow(row.id, 'detailItem', value)}
                   disabled={!row.detailWork}
                 >
