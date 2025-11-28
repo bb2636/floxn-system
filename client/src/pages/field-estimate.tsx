@@ -659,13 +659,13 @@ export default function FieldEstimate() {
     }
   }, [latestEstimate, masterDataList, selectedCaseId]);
 
-  // 빈 행 생성 함수
+  // 빈 행 생성 함수 - 모든 선택 필드는 빈 값으로 시작
   const createBlankRow = (): AreaCalculationRow => ({
     id: `row-${Date.now()}-${Math.random()}`,
-    category: roomCategories[0] || "",
-    location: locations[0] || "",
-    workType: laborCategories[0] || "",
-    workName: workNames[0] || "",
+    category: "",
+    location: "",
+    workType: "",
+    workName: "",
     damageWidth: "0000",
     damageHeight: "0000",
     damageArea: "0000",
