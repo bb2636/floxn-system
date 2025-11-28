@@ -34,6 +34,7 @@ const cellStyle = {
 export default function StatisticsOverview() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("수임");
+  const [activeSubFilter, setActiveSubFilter] = useState("진행과정별");
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -44,6 +45,7 @@ export default function StatisticsOverview() {
   }
 
   const tableRows = Array(5).fill(null);
+  const subFilters = ["진행과정별", "수리비 금액계층별", "기간별"];
 
   return (
     <div className="p-8">
@@ -153,7 +155,7 @@ export default function StatisticsOverview() {
                   height: "40px",
                   padding: "0 20px",
                   background: "transparent",
-                  border: "none",
+                  border: tab === "미결" && activeTab === "미결" ? "1px solid rgba(12, 12, 12, 0.2)" : "none",
                   borderRadius: "8px",
                   fontFamily: "Pretendard",
                   fontSize: "14px",
@@ -168,6 +170,43 @@ export default function StatisticsOverview() {
               </button>
             ))}
           </div>
+
+          {/* 미결 선택 시 서브 필터 표시 */}
+          {activeTab === "미결" && (
+            <>
+              <div
+                style={{
+                  width: "1px",
+                  height: "24px",
+                  background: "rgba(12, 12, 12, 0.1)",
+                }}
+              />
+              <div className="flex items-center gap-2">
+                {subFilters.map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setActiveSubFilter(filter)}
+                    style={{
+                      height: "40px",
+                      padding: "0 20px",
+                      background: activeSubFilter === filter ? "#FFFFFF" : "transparent",
+                      border: activeSubFilter === filter ? "1px solid rgba(12, 12, 12, 0.2)" : "none",
+                      borderRadius: "8px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: activeSubFilter === filter ? "#0C0C0C" : "rgba(12, 12, 12, 0.5)",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    data-testid={`subfilter-${filter}`}
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
