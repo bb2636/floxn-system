@@ -1549,7 +1549,7 @@ export default function FieldReport() {
                           width: `${rect.width}px`,
                           height: `${rect.height}px`,
                           border: "1px solid #0C0C0C",
-                          background: "rgba(255, 255, 255, 0.8)",
+                          background: rect.backgroundColor || "#FFFFFF",
                           zIndex: 2,
                         }}
                       >
