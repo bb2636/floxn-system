@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, Drawing, Case } from "@shared/schema";
-import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus, Copy, ChevronDown } from "lucide-react";
+import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus, Copy, ChevronDown, Undo2 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -93,6 +93,17 @@ export default function FieldDrawing() {
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 });
   const [drawCurrent, setDrawCurrent] = useState({ x: 0, y: 0 });
+  
+  // 되돌리기(Undo) 기능을 위한 히스토리 상태
+  interface HistoryState {
+    uploadedImages: UploadedImage[];
+    rectangles: DrawnRectangle[];
+    accidentAreas: AccidentArea[];
+    leakMarkers: LeakMarker[];
+  }
+  const [history, setHistory] = useState<HistoryState[]>([]);
+  const maxHistoryLength = 50; // 최대 히스토리 개수
+  
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Hybrid approach: activeTransformRef prevents stale closures in document-level listeners
@@ -448,6 +459,7 @@ export default function FieldDrawing() {
   const addImageToCanvas = (dataUrl: string) => {
     const img = new Image();
     img.onload = () => {
+      saveToHistory(); // 이미지 추가 전 히스토리 저장
       const newImage: UploadedImage = {
         id: `img-${Date.now()}`,
         src: dataUrl,
@@ -614,6 +626,7 @@ export default function FieldDrawing() {
     const y = e.clientY - canvasRect.top;
 
     if (selectedTool === "leak") {
+      saveToHistory(); // 누수마커 추가 전 히스토리 저장
       // 누수 지점 마커 추가
       const newMarker: LeakMarker = {
         id: `leak-${Date.now()}`,
@@ -740,6 +753,7 @@ export default function FieldDrawing() {
 
   // 삭제 핸들러
   const handleDelete = () => {
+    saveToHistory(); // 삭제 전 히스토리 저장
     if (selectedImageId) {
       setUploadedImages(prev => prev.filter(img => img.id !== selectedImageId));
       setSelectedImageId(null);
@@ -837,6 +851,55 @@ export default function FieldDrawing() {
     { value: "#87CEEB", label: "하늘색" },
   ];
 
+  // 현재 상태를 히스토리에 저장
+  const saveToHistory = () => {
+    const currentState: HistoryState = {
+      uploadedImages: JSON.parse(JSON.stringify(uploadedImages)),
+      rectangles: JSON.parse(JSON.stringify(rectangles)),
+      accidentAreas: JSON.parse(JSON.stringify(accidentAreas)),
+      leakMarkers: JSON.parse(JSON.stringify(leakMarkers)),
+    };
+    setHistory(prev => {
+      const newHistory = [...prev, currentState];
+      if (newHistory.length > maxHistoryLength) {
+        return newHistory.slice(-maxHistoryLength);
+      }
+      return newHistory;
+    });
+  };
+
+  // 되돌리기(Undo) 함수
+  const handleUndo = () => {
+    if (history.length === 0) {
+      toast({
+        title: "되돌리기 불가",
+        description: "더 이상 되돌릴 수 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const previousState = history[history.length - 1];
+    setUploadedImages(previousState.uploadedImages);
+    setRectangles(previousState.rectangles);
+    setAccidentAreas(previousState.accidentAreas);
+    setLeakMarkers(previousState.leakMarkers);
+    
+    // 선택 해제
+    setSelectedImageId(null);
+    setSelectedRectangleId(null);
+    setSelectedAccidentAreaId(null);
+    setSelectedLeakId(null);
+    
+    // 히스토리에서 제거
+    setHistory(prev => prev.slice(0, -1));
+    
+    toast({
+      title: "되돌리기",
+      description: "이전 상태로 복원되었습니다.",
+    });
+  };
+
   // 사각형/사고영역 그리기 시작
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;
@@ -881,6 +944,7 @@ export default function FieldDrawing() {
       const height = Math.abs(endY - drawStart.y);
       
       if (width > 10 && height > 10) {
+        saveToHistory(); // 사각형 추가 전 히스토리 저장
         const newRectangle: DrawnRectangle = {
           id: `rect-${Date.now()}`,
           x: Math.min(drawStart.x, endX),
@@ -889,7 +953,7 @@ export default function FieldDrawing() {
           height,
           text: "",
           locked: false,
-          borderColor: "#0C0C0C", // 기본 검정색
+          backgroundColor: "#FFFFFF", // 기본 흰색
         };
         setRectangles(prev => [...prev, newRectangle]);
         setSelectedRectangleId(newRectangle.id);
@@ -911,6 +975,7 @@ export default function FieldDrawing() {
       const height = Math.abs(endY - drawStart.y);
       
       if (width > 10 && height > 10) {
+        saveToHistory(); // 피해면적 추가 전 히스토리 저장
         const newArea: AccidentArea = {
           id: `area-${Date.now()}`,
           x: Math.min(drawStart.x, endX),
@@ -1215,6 +1280,20 @@ export default function FieldDrawing() {
                 border: "1px solid rgba(0, 0, 0, 0.08)",
               }}
             >
+              {/* 되돌리기 버튼 */}
+              <button
+                onClick={handleUndo}
+                data-testid="button-undo"
+                className="p-3 rounded-lg transition-all hover:bg-gray-100"
+                style={{
+                  background: "transparent",
+                  color: history.length > 0 ? "#0C0C0C" : "#CCCCCC",
+                }}
+                title="되돌리기 (Ctrl+Z)"
+              >
+                <Undo2 className="w-6 h-6" />
+              </button>
+              <div className="w-px h-8 bg-gray-200 mx-1" />
               {tools.map((tool) => (
                 <button
                   key={tool.id}
