@@ -43,7 +43,7 @@ interface DrawnRectangle {
   height: number;
   text: string;
   locked: boolean;
-  borderColor?: string; // 테두리 색상 (기본값: #0C0C0C)
+  backgroundColor?: string; // 배경 색상 (기본값: 흰색)
 }
 
 interface AccidentArea {
@@ -817,12 +817,12 @@ export default function FieldDrawing() {
     }
   };
 
-  // 사각형 테두리 색상 변경
-  const handleRectangleBorderColorChange = (color: string) => {
+  // 사각형 배경 색상 변경
+  const handleRectangleBackgroundColorChange = (color: string) => {
     if (selectedRectangleId) {
       setRectangles(prev =>
         prev.map(rect =>
-          rect.id === selectedRectangleId ? { ...rect, borderColor: color } : rect
+          rect.id === selectedRectangleId ? { ...rect, backgroundColor: color } : rect
         )
       );
     }
@@ -830,12 +830,11 @@ export default function FieldDrawing() {
 
   // 색상 옵션 목록
   const colorOptions = [
-    { value: "#0C0C0C", label: "검정" },
-    { value: "#FF0000", label: "빨강" },
-    { value: "#0066FF", label: "파랑" },
-    { value: "#00AA00", label: "초록" },
-    { value: "#FF8800", label: "주황" },
-    { value: "#9900FF", label: "보라" },
+    { value: "#FFFFFF", label: "흰색" },
+    { value: "#FFFACD", label: "연노랑" },
+    { value: "#FFD1DC", label: "연분홍" },
+    { value: "#90EE90", label: "연두색" },
+    { value: "#87CEEB", label: "하늘색" },
   ];
 
   // 사각형/사고영역 그리기 시작
@@ -1287,7 +1286,7 @@ export default function FieldDrawing() {
                       <div 
                         className="w-5 h-5 rounded border border-white/30"
                         style={{ 
-                          background: selectedRectangle.borderColor || "#0C0C0C"
+                          background: selectedRectangle.backgroundColor || "#FFFFFF"
                         }}
                       />
                       <ChevronDown className="w-3 h-3 text-white" />
@@ -1301,7 +1300,7 @@ export default function FieldDrawing() {
                       {colorOptions.map((color) => (
                         <button
                           key={color.value}
-                          onClick={() => handleRectangleBorderColorChange(color.value)}
+                          onClick={() => handleRectangleBackgroundColorChange(color.value)}
                           className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10"
                           data-testid={`color-option-${color.value}`}
                         >
@@ -1478,10 +1477,10 @@ export default function FieldDrawing() {
                       width: `${rect.width}px`,
                       height: `${rect.height}px`,
                       border: selectedRectangleId === rect.id 
-                        ? `2px solid ${rect.borderColor || "#0C0C0C"}` 
-                        : `1px solid ${rect.borderColor || "#0C0C0C"}`,
+                        ? `2px solid #0C0C0C` 
+                        : `1px solid #0C0C0C`,
                       boxShadow: selectedRectangleId === rect.id ? "0 0 0 2px #008FED" : "none",
-                      background: "rgba(255, 255, 255, 0.8)",
+                      background: rect.backgroundColor || "#FFFFFF",
                       cursor: selectedTool === "pointer" && !rect.locked ? "move" : "pointer",
                       zIndex: selectedRectangleId === rect.id ? 10 : 2,
                     }}
