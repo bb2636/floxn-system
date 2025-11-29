@@ -976,7 +976,7 @@ export default function ComprehensiveProgress() {
                     {calculateDays(caseItem.createdAt)}
                   </div>
                   <div onClick={(e) => e.stopPropagation()}>
-                    {user?.role === "관리자" ? (
+                    {(user?.role === "관리자" || user?.role === "협력사") ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild disabled={updateStatusMutation.isPending}>
                           <div
@@ -1009,7 +1009,7 @@ export default function ComprehensiveProgress() {
                             padding: "8px",
                           }}
                         >
-                          {CASE_STATUSES.map((status) => (
+                          {(user?.role === "협력사" ? PARTNER_ALLOWED_STATUSES : CASE_STATUSES).map((status) => (
                             <DropdownMenuItem
                               key={status}
                               onClick={() => handleStatusChange(caseItem.id, status)}
