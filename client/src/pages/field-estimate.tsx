@@ -310,13 +310,15 @@ export default function FieldEstimate() {
     const insuranceAccidentNo = c.insuranceAccidentNo?.toLowerCase() ?? '';
     const policyHolderName = c.policyHolderName?.toLowerCase() ?? '';
     const victimName = c.victimName?.toLowerCase() ?? '';
+    const insuredAddress = c.insuredAddress?.toLowerCase() ?? '';
     
     return (
       caseNumber.includes(query) ||
       insuranceCompany.includes(query) ||
       insuranceAccidentNo.includes(query) ||
       policyHolderName.includes(query) ||
-      victimName.includes(query)
+      victimName.includes(query) ||
+      insuredAddress.includes(query)
     );
   });
 
@@ -3402,7 +3404,7 @@ export default function FieldEstimate() {
           {/* 검색 입력 */}
           <div className="mb-4">
             <Input
-              placeholder="접수번호, 보험사, 사고번호, 계약자명, 피해자명 검색..."
+              placeholder="접수번호, 보험사, 사고번호, 계약자명, 피해자명, 피보험자주소 검색..."
               value={caseSearchQuery}
               onChange={(e) => setCaseSearchQuery(e.target.value)}
               className="w-full"
