@@ -4113,6 +4113,81 @@ export class DbStorage implements IStorage {
     
     return maxSuffix + 1;
   }
+
+  // 기존 케이스들의 날짜를 상태 기반으로 자동 채우기
+  async migrateExistingCaseDates(): Promise<number> {
+    const allCases = await db.select().from(cases);
+    let updatedCount = 0;
+
+    for (const caseItem of allCases) {
+      const dateUpdates: Partial<typeof cases.$inferInsert> = {};
+      const baseDate = caseItem.createdAt || getKSTDate();
+
+      // 접수일: 없으면 createdAt으로 설정
+      if (!caseItem.receptionDate) {
+        dateUpdates.receptionDate = baseDate;
+      }
+
+      // 상태에 따라 순차적으로 날짜 채우기
+      const status = caseItem.status;
+      const statusOrder = [
+        "배당대기", "접수완료", "현장방문", "현장정보입력", "검토중", "반려",
+        "1차승인", "현장정보제출", "복구요청(2차승인)", "직접복구", "선견적요청",
+        "(직접복구인 경우) 청구자료제출", "(선견적요청인 경우) 출동비 청구",
+        "청구", "입금완료", "일부입금", "정산완료"
+      ];
+
+      const currentIndex = statusOrder.indexOf(status || "");
+
+      // 배당일: 접수완료 이후 상태면 설정
+      if (!caseItem.assignmentDate && currentIndex >= statusOrder.indexOf("접수완료")) {
+        dateUpdates.assignmentDate = baseDate;
+      }
+
+      // 현장방문일: 현장방문 이후 상태면 설정
+      if (!caseItem.siteVisitDate && currentIndex >= statusOrder.indexOf("현장방문")) {
+        dateUpdates.siteVisitDate = baseDate;
+      }
+
+      // 현장자료 제출일: 현장정보입력 이후 상태면 설정
+      if (!caseItem.siteInvestigationSubmitDate && currentIndex >= statusOrder.indexOf("현장정보입력")) {
+        dateUpdates.siteInvestigationSubmitDate = baseDate;
+      }
+
+      // 1차 승인일: 1차승인 이후 상태면 설정
+      if (!caseItem.firstApprovalDate && currentIndex >= statusOrder.indexOf("1차승인")) {
+        dateUpdates.firstApprovalDate = baseDate;
+      }
+
+      // 2차 승인일: 복구요청(2차승인) 이후 상태면 설정
+      if (!caseItem.secondApprovalDate && currentIndex >= statusOrder.indexOf("복구요청(2차승인)")) {
+        dateUpdates.secondApprovalDate = baseDate;
+      }
+
+      // 복구완료일: 청구자료제출 또는 출동비 청구 이후 상태면 설정
+      if (!caseItem.constructionCompletionDate && 
+          (currentIndex >= statusOrder.indexOf("(직접복구인 경우) 청구자료제출") ||
+           currentIndex >= statusOrder.indexOf("(선견적요청인 경우) 출동비 청구"))) {
+        dateUpdates.constructionCompletionDate = baseDate;
+      }
+
+      // 청구일: 청구 이후 상태면 설정
+      if (!caseItem.claimDate && currentIndex >= statusOrder.indexOf("청구")) {
+        dateUpdates.claimDate = baseDate;
+      }
+
+      // 업데이트할 내용이 있으면 DB 업데이트
+      if (Object.keys(dateUpdates).length > 0) {
+        await db.update(cases)
+          .set(dateUpdates)
+          .where(eq(cases.id, caseItem.id));
+        updatedCount++;
+      }
+    }
+
+    console.log(`[Date Migration] Updated ${updatedCount} cases with auto-populated dates`);
+    return updatedCount;
+  }
 }
 
 export const storage = new DbStorage();

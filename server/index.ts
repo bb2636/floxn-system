@@ -3,6 +3,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
 
 const app = express();
 
@@ -98,6 +99,16 @@ app.use((req, res, next) => {
     await setupVite(app, server);
   } else {
     serveStatic(app);
+  }
+
+  // 기존 케이스 날짜 자동 채우기 마이그레이션 (서버 시작 시 한 번만 실행)
+  try {
+    const migratedCount = await storage.migrateExistingCaseDates();
+    if (migratedCount > 0) {
+      log(`Date migration completed: ${migratedCount} cases updated`);
+    }
+  } catch (error) {
+    console.error("Date migration failed:", error);
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
