@@ -1478,8 +1478,9 @@ export default function FieldDrawing() {
                       width: `${rect.width}px`,
                       height: `${rect.height}px`,
                       border: selectedRectangleId === rect.id 
-                        ? `2px solid #008FED` 
+                        ? `2px solid ${rect.borderColor || "#0C0C0C"}` 
                         : `1px solid ${rect.borderColor || "#0C0C0C"}`,
+                      boxShadow: selectedRectangleId === rect.id ? "0 0 0 2px #008FED" : "none",
                       background: "rgba(255, 255, 255, 0.8)",
                       cursor: selectedTool === "pointer" && !rect.locked ? "move" : "pointer",
                       zIndex: selectedRectangleId === rect.id ? 10 : 2,
