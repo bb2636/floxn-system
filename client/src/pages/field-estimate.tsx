@@ -3466,7 +3466,7 @@ export default function FieldEstimate() {
                       }}
                     >
                       <span>접수번호: {formatCaseNumber(caseItem.caseNumber)}</span>
-                      <span>계약자: {caseItem.policyHolderName || caseItem.clientName || "미정"}</span>
+                      <span>피보험자: {caseItem.insuredName || caseItem.policyHolderName || caseItem.clientName || "미정"}</span>
                       <span>피해자: {caseItem.victimName || "미정"}</span>
                       <span className="px-2 py-0.5 rounded" style={{
                         background: "rgba(0, 143, 237, 0.1)",
