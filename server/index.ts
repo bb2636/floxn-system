@@ -43,11 +43,12 @@ app.use(session({
 }));
 
 app.use(express.json({
+  limit: '50mb', // 파일 업로드를 위해 크기 제한 증가
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
 }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();
