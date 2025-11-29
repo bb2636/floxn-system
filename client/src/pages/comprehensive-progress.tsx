@@ -382,17 +382,38 @@ export default function ComprehensiveProgress() {
 
   const totalCount = filteredData.length;
 
+  // 협력사가 변경 가능한 상태 목록
+  const PARTNER_ALLOWED_STATUSES = ["직접복구", "선견적요청"];
+
   // 상태 변경 핸들러
   const handleStatusChange = (caseId: string, status: string) => {
-    if (user?.role !== "관리자") {
-      toast({
-        title: "권한 없음",
-        description: "상태 변경은 관리자만 가능합니다.",
-        variant: "destructive",
-      });
+    // 관리자는 모든 상태 변경 가능
+    if (user?.role === "관리자") {
+      updateStatusMutation.mutate({ caseId, status });
       return;
     }
-    updateStatusMutation.mutate({ caseId, status });
+    
+    // 협력사는 직접복구/선견적요청만 변경 가능
+    if (user?.role === "협력사") {
+      if (PARTNER_ALLOWED_STATUSES.includes(status)) {
+        updateStatusMutation.mutate({ caseId, status });
+        return;
+      } else {
+        toast({
+          title: "권한 없음",
+          description: "협력사는 '직접복구' 또는 '선견적요청' 상태만 선택할 수 있습니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // 그 외 역할은 상태 변경 불가
+    toast({
+      title: "권한 없음",
+      description: "상태 변경 권한이 없습니다.",
+      variant: "destructive",
+    });
   };
 
   // 진행상황 Dialog 열기 핸들러 (관리자만)
