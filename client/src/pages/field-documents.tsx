@@ -940,10 +940,7 @@ export default function FieldDocuments() {
                     <SelectContent>
                       {categories.filter(c => c !== "전체").map((category) => (
                         <SelectItem key={category} value={category}>
-                          <div className="flex items-center gap-2">
-                            {doc.category === category && <Check className="w-3 h-3" />}
-                            <span>{category}</span>
-                          </div>
+                          {category}
                         </SelectItem>
                       ))}
                     </SelectContent>
