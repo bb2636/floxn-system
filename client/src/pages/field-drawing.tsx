@@ -1371,6 +1371,40 @@ export default function FieldDrawing() {
             </div>
           )}
 
+          {/* 선택된 피해면적의 컨트롤 (삭제 버튼) */}
+          {selectedAccidentArea && selectedTool === "pointer" && (
+            <div 
+              className="absolute z-10"
+              data-ui="control-panel"
+              style={{
+                left: `calc(${selectedAccidentArea.x + selectedAccidentArea.width / 2}px + 180px - 20px)`,
+                top: `${Math.max(selectedAccidentArea.y - 50, 80)}px`,
+              }}
+            >
+              <div 
+                className="flex items-center gap-2 px-2 py-2 rounded-lg shadow-lg"
+                style={{
+                  background: "#2C2C2C",
+                }}
+              >
+                <button
+                  onClick={handleToggleLock}
+                  className="p-2 rounded hover:bg-white/10"
+                  data-testid="button-toggle-lock-accident-area"
+                >
+                  <Lock className="w-5 h-5 text-white" />
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="p-2 rounded hover:bg-white/10"
+                  data-testid="button-delete-accident-area"
+                >
+                  <Trash2 className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* 캔버스 영역 - 전체 화면 */}
           <div 
             ref={canvasRef}
