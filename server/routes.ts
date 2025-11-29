@@ -626,16 +626,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update case status endpoint (admin only)
+  // Update case status endpoint (admin and partner)
   app.patch("/api/cases/:caseId/status", async (req, res) => {
     // Check authentication
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
-    // Check admin authorization
-    if (req.session.userRole !== "관리자") {
-      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    const userRole = req.session.userRole;
+    
+    // Check authorization (관리자 또는 협력사)
+    if (userRole !== "관리자" && userRole !== "협력사") {
+      return res.status(403).json({ error: "권한이 없습니다" });
     }
 
     try {
@@ -657,7 +659,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: `허용되지 않은 상태값입니다: ${status}` });
       }
 
-      // storage.updateCaseStatus에서 미복구→출동비 청구 정규화 처리
+      // 협력사는 직접복구/선견적요청만 변경 가능
+      if (userRole === "협력사") {
+        const PARTNER_ALLOWED = ["직접복구", "선견적요청"];
+        if (!PARTNER_ALLOWED.includes(status)) {
+          return res.status(403).json({ error: "협력사는 직접복구/선견적요청만 선택할 수 있습니다" });
+        }
+      }
+
+      // storage.updateCaseStatus에서 미복구→출동비 청구 정규화 처리 및 날짜 자동 기록
       const updatedCase = await storage.updateCaseStatus(caseId, status);
       
       if (!updatedCase) {
