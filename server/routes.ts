@@ -1491,15 +1491,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If drawingId is provided, update existing drawing
       if (drawingId) {
-        // Verify ownership before update
         const existing = await storage.getDrawing(drawingId);
         if (!existing) {
           return res.status(404).json({ error: "도면을 찾을 수 없습니다" });
         }
-        if (existing.createdBy !== req.session.userId) {
-          return res.status(403).json({ error: "권한이 없습니다" });
-        }
-        // Verify case match
+        // Verify case match (케이스 접근 권한은 이미 위에서 확인됨)
         if (existing.caseId !== validatedData.caseId) {
           return res.status(403).json({ error: "다른 케이스의 도면입니다" });
         }
@@ -1517,12 +1513,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const existing = await storage.getDrawingByCaseId(validatedData.caseId);
 
         if (existing) {
-          // Verify ownership before updating
-          if (existing.createdBy !== req.session.userId) {
-            return res.status(403).json({ error: "권한이 없습니다" });
-          }
-          
-          // Update existing drawing (exclude immutable fields)
+          // Update existing drawing - 케이스 접근 권한이 있으면 수정 가능
           const updateData = {
             uploadedImages: validatedData.uploadedImages,
             rectangles: validatedData.rectangles,
