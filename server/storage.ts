@@ -2814,6 +2814,29 @@ export class DbStorage implements IStorage {
   }
 
   async deleteCase(caseId: string): Promise<void> {
+    // 1. 먼저 해당 케이스의 견적서 ID 목록 가져오기
+    const caseEstimates = await db.select({ id: estimates.id })
+      .from(estimates)
+      .where(eq(estimates.caseId, caseId));
+    
+    // 2. 각 견적서의 estimateRows 삭제
+    for (const estimate of caseEstimates) {
+      await db.delete(estimateRows).where(eq(estimateRows.estimateId, estimate.id));
+    }
+    
+    // 3. 견적서 삭제
+    await db.delete(estimates).where(eq(estimates.caseId, caseId));
+    
+    // 4. 케이스 문서 삭제
+    await db.delete(caseDocuments).where(eq(caseDocuments.caseId, caseId));
+    
+    // 5. 진행상황 업데이트 삭제
+    await db.delete(progressUpdates).where(eq(progressUpdates.caseId, caseId));
+    
+    // 6. 도면 삭제 (drawings 테이블)
+    await db.delete(drawings).where(eq(drawings.caseId, caseId));
+    
+    // 7. 마지막으로 케이스 삭제
     await db.delete(cases).where(eq(cases.id, caseId));
   }
 
