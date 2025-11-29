@@ -2,7 +2,12 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, Drawing, Case } from "@shared/schema";
-import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus, Copy } from "lucide-react";
+import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus, Copy, ChevronDown } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -38,6 +43,7 @@ interface DrawnRectangle {
   height: number;
   text: string;
   locked: boolean;
+  borderColor?: string; // 테두리 색상 (기본값: #0C0C0C)
 }
 
 interface AccidentArea {
@@ -811,6 +817,27 @@ export default function FieldDrawing() {
     }
   };
 
+  // 사각형 테두리 색상 변경
+  const handleRectangleBorderColorChange = (color: string) => {
+    if (selectedRectangleId) {
+      setRectangles(prev =>
+        prev.map(rect =>
+          rect.id === selectedRectangleId ? { ...rect, borderColor: color } : rect
+        )
+      );
+    }
+  };
+
+  // 색상 옵션 목록
+  const colorOptions = [
+    { value: "#0C0C0C", label: "검정" },
+    { value: "#FF0000", label: "빨강" },
+    { value: "#0066FF", label: "파랑" },
+    { value: "#00AA00", label: "초록" },
+    { value: "#FF8800", label: "주황" },
+    { value: "#9900FF", label: "보라" },
+  ];
+
   // 사각형/사고영역 그리기 시작
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;
@@ -863,6 +890,7 @@ export default function FieldDrawing() {
           height,
           text: "",
           locked: false,
+          borderColor: "#0C0C0C", // 기본 검정색
         };
         setRectangles(prev => [...prev, newRectangle]);
         setSelectedRectangleId(newRectangle.id);
@@ -1249,6 +1277,46 @@ export default function FieldDrawing() {
                     data-testid="input-rectangle-height"
                   />
                 </div>
+                {/* 색상 선택 드롭다운 */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      className="flex items-center gap-1 p-1 rounded hover:bg-white/10"
+                      data-testid="button-color-picker"
+                    >
+                      <div 
+                        className="w-5 h-5 rounded border border-white/30"
+                        style={{ 
+                          background: selectedRectangle.borderColor || "#0C0C0C"
+                        }}
+                      />
+                      <ChevronDown className="w-3 h-3 text-white" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-auto p-2" 
+                    style={{ background: "#2C2C2C", border: "1px solid #444" }}
+                  >
+                    <div className="flex flex-col gap-1">
+                      {colorOptions.map((color) => (
+                        <button
+                          key={color.value}
+                          onClick={() => handleRectangleBorderColorChange(color.value)}
+                          className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10"
+                          data-testid={`color-option-${color.value}`}
+                        >
+                          <div 
+                            className="w-4 h-4 rounded"
+                            style={{ background: color.value }}
+                          />
+                          <span style={{ color: "white", fontSize: "12px" }}>
+                            {color.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <button
                   onClick={handleToggleLock}
                   className="p-1 rounded hover:bg-white/10"
@@ -1375,7 +1443,9 @@ export default function FieldDrawing() {
                       top: `${rect.y}px`,
                       width: `${rect.width}px`,
                       height: `${rect.height}px`,
-                      border: selectedRectangleId === rect.id ? "2px solid #008FED" : "1px solid #0C0C0C",
+                      border: selectedRectangleId === rect.id 
+                        ? `2px solid #008FED` 
+                        : `1px solid ${rect.borderColor || "#0C0C0C"}`,
                       background: "rgba(255, 255, 255, 0.8)",
                       cursor: selectedTool === "pointer" && !rect.locked ? "move" : "pointer",
                       zIndex: selectedRectangleId === rect.id ? 10 : 2,
