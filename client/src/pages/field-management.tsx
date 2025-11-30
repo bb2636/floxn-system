@@ -33,7 +33,6 @@ export default function FieldManagement() {
   // Collapsible states - intake.tsx 스타일
   const [scheduleOpen, setScheduleOpen] = useState(true);
   const [basicInfoOpen, setBasicInfoOpen] = useState(true);
-  const [fieldSurveyInfoOpen, setFieldSurveyInfoOpen] = useState(true);
   const [damageInfoOpen, setDamageInfoOpen] = useState(true);
   const [insuranceInfoOpen, setInsuranceInfoOpen] = useState(true);
   const [insuredInfoOpen, setInsuredInfoOpen] = useState(true);
@@ -537,15 +536,15 @@ export default function FieldManagement() {
           </div>
         </SectionCard>
 
-        {/* 기본 정보 섹션 */}
+        {/* 기본정보 섹션 */}
         <SectionCard
-          title="기본 정보"
+          title="기본정보"
           isOpen={basicInfoOpen}
           onToggle={() => setBasicInfoOpen(!basicInfoOpen)}
           disabled={!selectedCaseData}
         >
           <div className="space-y-5">
-            {/* 협력사, 담당자명, 담당자 연락처 - 3열 */}
+            {/* 접수사, 담당자명, 담당자 연락처 - 3열 */}
             <div className="grid grid-cols-3 gap-5">
               <div>
                 <Label 
@@ -557,12 +556,12 @@ export default function FieldManagement() {
                     color: "#686A6E",
                   }}
                 >
-                  협력사
+                  접수사
                 </Label>
                 <Input
                   value={selectedCaseData?.assignedPartner || ""}
                   readOnly
-                  placeholder="협력사명"
+                  placeholder="담당사명"
                   className={intakeFieldClass}
                   style={{
                     ...intakeFieldStyle,
@@ -624,7 +623,7 @@ export default function FieldManagement() {
               </div>
             </div>
 
-            {/* 접수 정보 소제목 */}
+            {/* 접수정보 소제목 */}
             <div
               style={{
                 fontFamily: "Pretendard",
@@ -635,7 +634,7 @@ export default function FieldManagement() {
                 marginBottom: "16px",
               }}
             >
-              접수 정보
+              접수정보
             </div>
 
             {/* 접수번호, 보험사 - 2열 */}
@@ -677,33 +676,18 @@ export default function FieldManagement() {
                 >
                   보험사
                 </Label>
-                <Select 
-                  value={selectedCaseData?.insuranceCompany || ""} 
-                  disabled
-                >
-                  <SelectTrigger 
-                    className={intakeFieldClass}
-                    style={{
-                      ...intakeFieldStyle,
-                      background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.4)",
-                    }}
-                    data-testid="select-insurance-company"
-                  >
-                    <SelectValue placeholder="보험사 선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="현대해상">현대해상</SelectItem>
-                    <SelectItem value="삼성화재">삼성화재</SelectItem>
-                    <SelectItem value="DB손해보험">DB손해보험</SelectItem>
-                    <SelectItem value="KB손해보험">KB손해보험</SelectItem>
-                    <SelectItem value="메리츠화재">메리츠화재</SelectItem>
-                    <SelectItem value="한화손해보험">한화손해보험</SelectItem>
-                    <SelectItem value="롯데손해보험">롯데손해보험</SelectItem>
-                    <SelectItem value="MG손해보험">MG손해보험</SelectItem>
-                    <SelectItem value="흥국화재">흥국화재</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  value={selectedCaseData?.insuranceCompany || ""}
+                  readOnly
+                  placeholder="보험사 선택"
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    background: "rgba(12, 12, 12, 0.04)",
+                    color: "rgba(12, 12, 12, 0.4)",
+                  }}
+                  data-testid="input-insurance-company"
+                />
               </div>
             </div>
 
@@ -712,7 +696,7 @@ export default function FieldManagement() {
               className="flex items-center justify-between"
               style={{
                 marginTop: "24px",
-                marginBottom: "8px",
+                marginBottom: "16px",
               }}
             >
               <div
@@ -747,19 +731,6 @@ export default function FieldManagement() {
               </div>
             </div>
 
-            {/* 안내문 */}
-            <div
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "13px",
-                fontWeight: 400,
-                color: "rgba(12, 12, 12, 0.5)",
-                marginBottom: "16px",
-              }}
-            >
-              보험 계약자, 피보험자 중 한 가지는 반드시 기입해야 합니다.
-            </div>
-
             {/* 보험계약자, 피보험자, 피보험자 연락처 - 3열 */}
             <div className="grid grid-cols-3 gap-5">
               <div>
@@ -777,7 +748,7 @@ export default function FieldManagement() {
                 <Input
                   value={selectedCaseData?.policyHolderName || ""}
                   readOnly
-                  placeholder="보험자 성함"
+                  placeholder="보험계약자 성명"
                   className={intakeFieldClass}
                   style={{
                     ...intakeFieldStyle,
@@ -802,7 +773,7 @@ export default function FieldManagement() {
                 <Input
                   value={selectedCaseData?.insuredName || ""}
                   readOnly
-                  placeholder="피보험자 성함"
+                  placeholder="피보험자 성명"
                   className={intakeFieldClass}
                   style={{
                     ...intakeFieldStyle,
@@ -822,7 +793,7 @@ export default function FieldManagement() {
                     color: "#686A6E",
                   }}
                 >
-                  피보험자 연락처<span style={{ color: "#008FED" }}>*</span>
+                  피보험자 연락처
                 </Label>
                 <Input
                   value={selectedCaseData?.insuredContact || ""}
@@ -850,12 +821,12 @@ export default function FieldManagement() {
                   color: "#686A6E",
                 }}
               >
-                피보험자 주소<span style={{ color: "#008FED" }}>*</span>
+                피보험자 주소
               </Label>
               <Input
                 value={selectedCaseData?.insuredAddress || ""}
                 readOnly
-                placeholder="도로명 주소, 동/호 포함"
+                placeholder="도로명 주소, 동/호수 포함"
                 className={intakeFieldClass}
                 style={{
                   ...intakeFieldStyle,
@@ -866,63 +837,61 @@ export default function FieldManagement() {
               />
             </div>
 
-            {/* 사고 발생 일시 소제목 */}
-            <div
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "18px",
-                fontWeight: 600,
-                color: "#0C0C0C",
-                marginTop: "24px",
-                marginBottom: "16px",
-              }}
-            >
-              사고 발생 일시
-            </div>
-
-            {/* 날짜 선택, 시간 선택 */}
-            <div className="flex gap-4">
-              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
-                <PopoverTrigger asChild>
-                  <Button
-                    ref={accidentDateTriggerRef}
-                    type="button"
-                    variant="outline"
-                    className={intakeButtonClass}
-                    style={{
-                      ...intakeButtonStyle,
-                      justifyContent: "flex-start",
-                      background: "rgba(12, 12, 12, 0.04)",
-                      border: "none",
-                      width: "200px",
+            {/* 사고 발생 일시 */}
+            <div>
+              <Label 
+                className="mb-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#686A6E",
+                }}
+              >
+                사고 발생일시
+              </Label>
+              <div className="flex gap-2">
+                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      ref={accidentDateTriggerRef}
+                      type="button"
+                      variant="outline"
+                      className={intakeButtonClass}
+                      style={{
+                        ...intakeButtonStyle,
+                        justifyContent: "flex-start",
+                        background: "#FDFDFD",
+                        border: isReadOnly ? "none" : "2px solid rgba(12,12,12,0.08)",
+                        flex: 1,
+                      }}
+                      disabled={isReadOnly}
+                      data-testid="button-accident-date"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {accidentDate ? format(accidentDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  {/* FIX: focus() 호출 제거 - trigger 버튼 포커스 재지정 시 스크롤 위로 이동 문제 해결 */}
+                  <PopoverContent 
+                    className="w-auto p-0"
+                    onOpenAutoFocus={(e) => {
+                      e.preventDefault();
                     }}
-                    disabled
-                    data-testid="button-accident-date"
+                    onCloseAutoFocus={(e) => {
+                      e.preventDefault();
+                    }}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {accidentDate ? format(accidentDate, "yyyy.MM.dd", { locale: ko }) : <span style={{ color: "rgba(12, 12, 12, 0.4)" }}>날짜 선택</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent 
-                  className="w-auto p-0"
-                  onOpenAutoFocus={(e) => {
-                    e.preventDefault();
-                  }}
-                  onCloseAutoFocus={(e) => {
-                    e.preventDefault();
-                  }}
-                >
-                  <Calendar
-                    mode="single"
-                    selected={accidentDate}
-                    onSelect={(date) => {
-                      setAccidentDate(date);
-                      setDatePickerOpen(false);
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-              <div className="relative" style={{ width: "200px" }}>
+                    <Calendar
+                      mode="single"
+                      selected={accidentDate}
+                      onSelect={(date) => {
+                        setAccidentDate(date);
+                        setDatePickerOpen(false);
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
                 <Input
                   type="time"
                   value={accidentTime}
@@ -930,154 +899,291 @@ export default function FieldManagement() {
                   className={intakeFieldClass}
                   style={{
                     ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    border: "none",
-                    color: accidentTime ? "rgba(12, 12, 12, 0.4)" : "rgba(12, 12, 12, 0.4)",
+                    flex: 1,
+                    border: isReadOnly ? "none" : undefined,
                   }}
-                  placeholder="시간 선택"
-                  disabled
+                  disabled={isReadOnly}
                   data-testid="input-accident-time"
                 />
               </div>
             </div>
-
           </div>
         </SectionCard>
 
         {/* 현장조사 정보 섹션 */}
         <SectionCard
           title="현장조사 정보"
-          isOpen={fieldSurveyInfoOpen}
-          onToggle={() => setFieldSurveyInfoOpen(!fieldSurveyInfoOpen)}
-          disabled={!selectedCaseData}
-        >
-          <div className="space-y-5">
-            {/* 현장정보 소제목 */}
-            <div
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "18px",
-                fontWeight: 600,
-                color: "#0C0C0C",
-                marginBottom: "16px",
-              }}
-            >
-              현장정보
-            </div>
-
-            {/* 방문 일시, 출동 담당자 */}
-            <div className="grid grid-cols-2 gap-5">
-              {/* 방문 일시 */}
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  방문 일시
-                </Label>
-                <div className="flex gap-2">
-                  <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen} modal={false}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        ref={visitDateTriggerRef}
-                        type="button"
-                        variant="outline"
-                        className={intakeButtonClass}
-                        style={{
-                          ...intakeButtonStyle,
-                          justifyContent: "flex-start",
-                          background: "#fff",
-                          border: "1px solid rgba(12, 12, 12, 0.1)",
-                          flex: 1,
-                        }}
-                        data-testid="button-visit-date"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span style={{ color: "rgba(12, 12, 12, 0.4)" }}>날짜 선택</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent 
-                      className="w-auto p-0"
-                      onOpenAutoFocus={(e) => {
-                        e.preventDefault();
-                      }}
-                      onCloseAutoFocus={(e) => {
-                        e.preventDefault();
-                      }}
-                    >
-                      <Calendar
-                        mode="single"
-                        selected={visitDate}
-                        onSelect={(date) => {
-                          handleUserInput();
-                          setVisitDate(date);
-                          setVisitDatePickerOpen(false);
-                        }}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Input
-                    type="time"
-                    value={visitTime}
-                    onChange={(e) => { handleUserInput(); setVisitTime(e.target.value); }}
-                    className={intakeFieldClass}
-                    style={{
-                      ...intakeFieldStyle,
-                      background: "#fff",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                      flex: 1,
-                    }}
-                    placeholder="시간 선택"
-                    data-testid="input-visit-time"
-                  />
-                </div>
-              </div>
-
-              {/* 출동 담당자 */}
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  출동 담당자
-                </Label>
-                <Input
-                  value={dispatchLocation}
-                  onChange={(e) => { handleUserInput(); setDispatchLocation(e.target.value); }}
-                  placeholder="출동 담당자 성함"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "#fff",
-                    border: "1px solid rgba(12, 12, 12, 0.1)",
-                  }}
-                  data-testid="input-dispatch-manager"
-                />
-              </div>
-            </div>
-
-          </div>
-        </SectionCard>
-
-        {/* 같은 사고의 케이스들 섹션 */}
-        <SectionCard
-          title={`같은 사고의 케이스들 (총 ${relatedCases.length}건)`}
           isOpen={true}
           onToggle={() => {}}
           disabled={!selectedCaseData}
         >
           <div className="space-y-6">
+            {/* 현장정보 서브섹션 */}
             <div>
+              <h3
+                className="mb-4"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "18px",
+                  fontWeight: 600,
+                  color: "rgba(12, 12, 12, 0.8)",
+                }}
+              >
+                현장정보
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                {/* 방문 일시 */}
+                <div>
+                  <Label 
+                    htmlFor="visit-date"
+                    className="mb-3"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    방문 일시
+                  </Label>
+                  <div className="flex gap-2">
+                    <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen} modal={false}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          ref={visitDateTriggerRef}
+                          type="button"
+                          variant="outline"
+                          className={intakeButtonClass}
+                          style={{
+                            ...intakeButtonStyle,
+                            justifyContent: "flex-start",
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12,12,12,0.08)",
+                            flex: 1,
+                          }}
+                          disabled={isReadOnly}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          data-testid="button-visit-date"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      {/* FIX: focus() 호출 제거 - 현장조사 정보에서 날짜 선택 시 스크롤 위치 유지 */}
+                      <PopoverContent 
+                        className="w-auto p-0"
+                        onOpenAutoFocus={(e) => {
+                          e.preventDefault();
+                        }}
+                        onCloseAutoFocus={(e) => {
+                          e.preventDefault();
+                        }}
+                      >
+                        <Calendar
+                          mode="single"
+                          selected={visitDate}
+                          onSelect={(date) => {
+                            setVisitDate(date);
+                            setVisitDatePickerOpen(false);
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <Input
+                      type="time"
+                      value={visitTime}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleUserInput();
+                        setVisitTime(e.target.value);
+                      }}
+                      onFocus={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className={intakeFieldClass}
+                      style={{
+                        ...intakeFieldStyle,
+                        flex: 1,
+                      }}
+                      disabled={isReadOnly}
+                      data-testid="input-visit-time"
+                    />
+                  </div>
+                </div>
+
+                {/* 출동 담당자 */}
+                <div>
+                  <Label 
+                    htmlFor="dispatch-manager"
+                    className="mb-3"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}
+                  >
+                    출동 담당자
+                  </Label>
+                  <Input
+                    id="dispatch-manager"
+                    value={selectedCaseData?.assignedPartnerManager || ""}
+                    readOnly
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.04)",
+                      color: "rgba(12, 12, 12, 0.6)",
+                    }}
+                    placeholder="출동 담당자 성명"
+                    data-testid="input-dispatch-manager"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 사고 원인(누수소견서) 서브섹션 */}
+            <div>
+              <h3
+                className="mb-4"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  color: "rgba(12, 12, 12, 0.8)",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                사고 원인(누수소견서)
+              </h3>
+              <div className="space-y-4">
+                {/* 카테고리 */}
+                <div>
+                  <Label 
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    카테고리
+                  </Label>
+                  <div className="flex gap-2">
+                    {["배관", "코킹", "방수", "기타"].map((category) => (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setAccidentCategory(category);
+                        }}
+                        disabled={isReadOnly}
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "16px",
+                          fontWeight: 600,
+                          height: "52px",
+                          padding: "12px 16px",
+                          borderRadius: "6px",
+                          border: accidentCategory === category 
+                            ? "2px solid rgba(255, 255, 255, 0.04)" 
+                            : "1px solid rgba(12, 12, 12, 0.3)",
+                          background: accidentCategory === category 
+                            ? "rgba(0, 143, 237, 0.1)" 
+                            : "#FDFDFD",
+                          color: accidentCategory === category 
+                            ? "#008FED" 
+                            : "rgba(12, 12, 12, 0.9)",
+                          boxShadow: accidentCategory === category 
+                            ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
+                            : "none",
+                          backdropFilter: accidentCategory === category ? "blur(7px)" : "none",
+                          cursor: isReadOnly ? "not-allowed" : "pointer",
+                          opacity: isReadOnly ? 0.5 : 1,
+                        }}
+                        data-testid={`button-category-${category}`}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 사고원인 */}
+                <div>
+                  <Label 
+                    htmlFor="accident-cause-detail"
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    사고원인
+                  </Label>
+                  <textarea
+                    id="accident-cause-detail"
+                    value={accidentCause}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handleUserInput();
+                      setAccidentCause(e.target.value);
+                    }}
+                    onFocus={(e) => {
+                      e.stopPropagation();
+                    }}
+                    placeholder="누수원인, 누수지점 등 기타 특이사항을 자유롭게 입력해주세요"
+                    maxLength={800}
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      padding: "16px 20px",
+                      background: "#FDFDFD",
+                      border: "2px solid rgba(12,12,12,0.08)",
+                      borderRadius: "8px",
+                      resize: "none",
+                      minHeight: "120px",
+                      width: "100%",
+                    }}
+                    disabled={isReadOnly}
+                    data-testid="textarea-accident-cause"
+                  />
+                  <div 
+                    className="text-right mt-1"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "12px",
+                      color: "rgba(12, 12, 12, 0.5)",
+                    }}
+                  >
+                    {accidentCause.length}/800
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 같은 사고의 케이스들 */}
+            <div>
+              <h3
+                className="mb-4"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  color: "rgba(12, 12, 12, 0.8)",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                같은 사고의 케이스들 (총 {relatedCases.length}건)
+              </h3>
+              
               <div className="space-y-3">
                 {relatedCases.map((caseItem) => (
                   <div
@@ -1150,6 +1256,318 @@ export default function FieldManagement() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* 새 피해자 추가 폼 */}
+              {!isReadOnly && (
+                <div className="mt-6 space-y-4">
+                  <div
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      color: "rgba(12, 12, 12, 0.8)",
+                    }}
+                  >
+                    피해자 추가
+                  </div>
+                  
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        value={newVictimName}
+                        onChange={(e) => { handleUserInput(); setNewVictimName(e.target.value); }}
+                        placeholder="성함을 입력해주세요"
+                        className={intakeFieldClass}
+                        style={intakeFieldStyle}
+                        data-testid="input-new-victim-name"
+                      />
+                      <Input
+                        value={newVictimContact}
+                        onChange={(e) => { handleUserInput(); setNewVictimContact(e.target.value); }}
+                        placeholder="연락처를 입력해주세요"
+                        className={intakeFieldClass}
+                        style={intakeFieldStyle}
+                        data-testid="input-new-victim-contact"
+                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={newVictimAddress}
+                          onChange={(e) => { handleUserInput(); setNewVictimAddress(e.target.value); }}
+                          placeholder="상세주소"
+                          className={intakeFieldClass}
+                          style={{
+                            ...intakeFieldStyle,
+                            flex: 1,
+                          }}
+                          disabled={sameAsInsured}
+                          data-testid="input-new-victim-address"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="same-as-insured-address"
+                            checked={sameAsInsured}
+                            onCheckedChange={(checked) => {
+                              setSameAsInsured(checked === true);
+                              if (checked === true) {
+                                setNewVictimAddress(selectedCaseData?.insuredAddress || "");
+                              } else {
+                                setNewVictimAddress("");
+                              }
+                            }}
+                            data-testid="checkbox-same-as-insured"
+                          />
+                          <label
+                            htmlFor="same-as-insured-address"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 500,
+                              color: "#686A6E",
+                              whiteSpace: "nowrap",
+                              cursor: "pointer",
+                            }}
+                          >
+                            주소지 등일
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      onClick={async () => {
+                        if (newVictimName && newVictimContact && newVictimAddress && selectedCaseData) {
+                          try {
+                            // 새 피해세대 케이스 생성 (spread 사용 안 함 - 필요한 필드만 명시적으로 복사)
+                            const newCasePayload = {
+                              // 기본 정보 (복사)
+                              receptionDate: selectedCaseData.receptionDate,
+                              accidentDate: selectedCaseData.accidentDate,
+                              
+                              // 보험 정보 (복사)
+                              insuranceCompany: selectedCaseData.insuranceCompany,
+                              insurancePolicyNo: selectedCaseData.insurancePolicyNo,
+                              insuranceAccidentNo: selectedCaseData.insuranceAccidentNo,
+                              
+                              // 의뢰사 정보 (복사)
+                              clientResidence: selectedCaseData.clientResidence,
+                              clientDepartment: selectedCaseData.clientDepartment,
+                              clientName: selectedCaseData.clientName,
+                              clientContact: selectedCaseData.clientContact,
+                              
+                              // 심사사 정보 (복사)
+                              assessorId: selectedCaseData.assessorId,
+                              assessorDepartment: selectedCaseData.assessorDepartment,
+                              assessorTeam: selectedCaseData.assessorTeam,
+                              assessorContact: selectedCaseData.assessorContact,
+                              
+                              // 조사사 정보 (복사)
+                              investigatorTeam: selectedCaseData.investigatorTeam,
+                              investigatorDepartment: selectedCaseData.investigatorDepartment,
+                              investigatorTeamName: selectedCaseData.investigatorTeamName,
+                              investigatorContact: selectedCaseData.investigatorContact,
+                              
+                              // 보험계약자 정보 (복사)
+                              policyHolderName: selectedCaseData.policyHolderName,
+                              policyHolderIdNumber: selectedCaseData.policyHolderIdNumber,
+                              policyHolderAddress: selectedCaseData.policyHolderAddress,
+                              
+                              // 피보험자 정보 (복사)
+                              insuredName: selectedCaseData.insuredName,
+                              insuredIdNumber: selectedCaseData.insuredIdNumber,
+                              insuredContact: selectedCaseData.insuredContact,
+                              insuredAddress: selectedCaseData.insuredAddress,
+                              sameAsPolicyHolder: selectedCaseData.sameAsPolicyHolder,
+                              
+                              // 새 피해자 정보 (신규 입력)
+                              victimName: newVictimName,
+                              victimContact: newVictimContact,
+                              victimAddress: newVictimAddress,
+                              
+                              // 피해사항 정보 (빈 배열로 초기화 - 새 피해자는 자신의 피해사항 입력)
+                              damageItems: "[]",
+                              
+                              // 처리 유형: 피해세대복구지원만 (JSON string으로 전송 - schema가 text 타입)
+                              processingTypes: JSON.stringify(["피해세대복구"]),
+                              victimIncidentAssistance: "true",  // schema는 text 타입 ("true" | "false" | null)
+                              damagePreventionCost: "false",     // schema는 text 타입 ("true" | "false" | null)
+                              
+                              // 배당 정보 (복사 - 같은 업체에 배당)
+                              assignedPartner: selectedCaseData.assignedPartner,
+                              assignmentDate: selectedCaseData.assignmentDate,
+                              
+                              // 복구 타입 (복사)
+                              recoveryType: selectedCaseData.recoveryType,
+                              
+                              // 상태: 접수완료 (워크플로우 시작점)
+                              status: "접수완료",
+                              
+                              // 워크플로우 필드: 모두 null/초기값 (새 케이스는 처음부터 시작)
+                              progressStatus: null,
+                              reviewDecision: null,
+                              reviewComment: null,
+                              reviewedAt: null,
+                              reviewedBy: null,
+                              visitDate: null,
+                              visitTime: null,
+                              fieldSurveyStatus: "draft",               // 현장조사 상태 (초기값: draft)
+                              
+                              // 현장조사 관련 필드: 모두 null (새 케이스는 입력 전 상태)
+                              accompaniedPerson: null,
+                              travelDistance: null,
+                              dispatchLocation: null,
+                              accidentTime: null,
+                              accidentCategory: null,
+                              processingTypeOther: null,
+                              recoveryMethodType: null,
+                              
+                              // 기타 필드: 모두 null
+                              clientPhone: null,
+                              clientAddress: null,
+                              accidentLocation: null,
+                              accidentDescription: null,
+                              accidentType: null,
+                              accidentCause: null,
+                              restorationMethod: null,
+                              otherVendorEstimate: null,
+                              
+                              // 추가 피해자: 빈 배열 (JSON string)
+                              additionalVictims: "[]",
+                              
+                              // 배당사항 추가 필드: null
+                              assignedPartnerManager: null,
+                              assignedPartnerContact: null,
+                              urgency: null,
+                              specialRequests: null,
+                              
+                              // 진행상황 메모: null
+                              specialNotes: null,
+                              specialNotesConfirmedBy: null,
+                              additionalNotes: null,
+                              
+                              // 금액: null
+                              estimateAmount: null,
+                              
+                              // 기타 연관 필드: null
+                              assignedTo: null,
+                              
+                              // 날짜 필드: 모두 null (접수일/배당일 제외)
+                              inspectionDate: null,
+                              siteVisitDate: null,
+                              fieldSurveyDate: null,
+                              siteInvestigationSubmitDate: null,
+                              firstInspectionDate: null,
+                              firstApprovalDate: null,
+                              secondApprovalDate: null,
+                              firstInvoiceDate: null,
+                              approvalRequestDate: null,
+                              approvalDate: null,
+                              approvalCompletionDate: null,
+                              constructionStartDate: null,
+                              constructionCompletionDate: null,
+                              constructionReportSubmitDate: null,
+                              totalWorkDate: null,
+                              contractorReportDate: null,
+                              contractorRepairDate: null,
+                              completionDate: null,
+                              claimDate: null,
+                            };
+                            
+                            await apiRequest("/api/cases", "POST", newCasePayload);
+                            
+                            toast({
+                              title: "추가 피해자 등록 완료",
+                              description: `${newVictimName} 님의 케이스가 생성되었습니다.`,
+                            });
+                            
+                            // 입력 필드 초기화
+                            setNewVictimName("");
+                            setNewVictimContact("");
+                            setNewVictimAddress("");
+                            setSameAsInsured(false);
+                            
+                            // 케이스 목록 새로고침
+                            queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                          } catch (error) {
+                            toast({
+                              title: "케이스 생성 실패",
+                              description: error instanceof Error ? error.message : "케이스 생성 중 오류가 발생했습니다.",
+                              variant: "destructive",
+                            });
+                          }
+                        }
+                      }}
+                      disabled={!newVictimName || !newVictimContact || !newVictimAddress || !selectedCaseData}
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        height: "68px",
+                        width: "120px",
+                        background: newVictimName && newVictimContact && newVictimAddress 
+                          ? "#ECECEC" 
+                          : "rgba(12, 12, 12, 0.04)",
+                        color: newVictimName && newVictimContact && newVictimAddress 
+                          ? "rgba(12, 12, 12, 0.8)" 
+                          : "rgba(12, 12, 12, 0.3)",
+                        border: "none",
+                        borderRadius: "8px",
+                      }}
+                      data-testid="button-add-new-victim"
+                    >
+                      등록
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* VOC(고객의 소리) 서브섹션 */}
+            <div>
+              <h3
+                className="mb-4"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "20px",
+                  fontWeight: 600,
+                  color: "rgba(12, 12, 12, 0.8)",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                VOC(고객의 소리)
+              </h3>
+              <div>
+                <textarea
+                  id="voc"
+                  value={voc}
+                  onChange={(e) => { handleUserInput(); setVoc(e.target.value); }}
+                  placeholder="내용을 적어주세요"
+                  maxLength={800}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    padding: "16px 20px",
+                    background: "#FDFDFD",
+                    border: "2px solid rgba(12,12,12,0.08)",
+                    borderRadius: "8px",
+                    resize: "none",
+                    minHeight: "120px",
+                    width: "100%",
+                  }}
+                  disabled={isReadOnly}
+                  data-testid="textarea-voc"
+                />
+                <div 
+                  className="text-right mt-1"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "12px",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                >
+                  {voc.length}/800
+                </div>
               </div>
             </div>
           </div>
