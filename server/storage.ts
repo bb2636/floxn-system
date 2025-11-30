@@ -1296,9 +1296,17 @@ export class MemStorage implements IStorage {
     }
     
     const currentDate = getKSTDate();
+    
+    // 배당 협력사 저장 시 assignmentDate 자동 기록 (기존 값이 없을 때만)
+    const additionalUpdates: Partial<Case> = {};
+    if (caseData.assignedPartner && !caseItem.assignmentDate) {
+      additionalUpdates.assignmentDate = currentDate;
+    }
+    
     const updatedCase: Case = {
       ...caseItem,
       ...caseData,
+      ...additionalUpdates,
       updatedAt: currentDate,
     };
     
@@ -2801,8 +2809,16 @@ export class DbStorage implements IStorage {
   async updateCase(caseId: string, caseData: Partial<InsertCase>): Promise<Case | null> {
     const currentDate = getKSTDate();
     
+    // 배당 협력사 저장 시 assignmentDate 자동 기록 (기존 값이 없을 때만)
+    const existingCase = await this.getCaseById(caseId);
+    const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
+    
+    if (caseData.assignedPartner && existingCase && !existingCase.assignmentDate) {
+      additionalUpdates.assignmentDate = currentDate;
+    }
+    
     const result = await db.update(cases)
-      .set({ ...caseData, updatedAt: currentDate })
+      .set({ ...caseData, ...additionalUpdates, updatedAt: currentDate })
       .where(eq(cases.id, caseId))
       .returning();
     
@@ -2984,10 +3000,19 @@ export class DbStorage implements IStorage {
   async submitFieldSurvey(caseId: string): Promise<Case | null> {
     const currentDate = getKSTDate();
     
+    // 현장자료 제출일 자동 기록 (기존 값이 없을 때만)
+    const existingCase = await this.getCaseById(caseId);
+    const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
+    
+    if (existingCase && !existingCase.siteInvestigationSubmitDate) {
+      additionalUpdates.siteInvestigationSubmitDate = currentDate;
+    }
+    
     const result = await db.update(cases)
       .set({ 
         fieldSurveyStatus: "submitted",
         status: "제출",
+        ...additionalUpdates,
         updatedAt: currentDate 
       })
       .where(eq(cases.id, caseId))
@@ -3004,6 +3029,14 @@ export class DbStorage implements IStorage {
     const currentDate = getKSTDate();
     const currentTimestamp = getKSTTimestamp();
     
+    // 승인 시 1차 승인일(내부) 자동 기록 (기존 값이 없을 때만)
+    const existingCase = await this.getCaseById(caseId);
+    const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
+    
+    if (decision === "승인" && existingCase && !existingCase.firstApprovalDate) {
+      additionalUpdates.firstApprovalDate = currentDate;
+    }
+    
     const result = await db.update(cases)
       .set({ 
         reviewDecision: decision,
@@ -3011,6 +3044,7 @@ export class DbStorage implements IStorage {
         reviewedAt: currentTimestamp,
         reviewedBy: reviewedBy,
         status: decision === "승인" ? "1차승인" : "반려",
+        ...additionalUpdates,
         updatedAt: currentDate 
       })
       .where(eq(cases.id, caseId))
@@ -3046,8 +3080,16 @@ export class DbStorage implements IStorage {
   }): Promise<Case | null> {
     const currentDate = getKSTDate();
     
+    // 현장방문일 저장 시 siteVisitDate 자동 기록 (기존 값이 없을 때만)
+    const existingCase = await this.getCaseById(caseId);
+    const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
+    
+    if (fieldData.visitDate && existingCase && !existingCase.siteVisitDate) {
+      additionalUpdates.siteVisitDate = currentDate;
+    }
+    
     const result = await db.update(cases)
-      .set({ ...fieldData, updatedAt: currentDate })
+      .set({ ...fieldData, ...additionalUpdates, updatedAt: currentDate })
       .where(eq(cases.id, caseId))
       .returning();
     

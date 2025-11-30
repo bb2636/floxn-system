@@ -1782,6 +1782,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertCaseDocumentSchema.parse(req.body);
       const document = await storage.saveDocument(validatedData);
+      
+      // 청구 탭 자료 제출 시 복구완료일 자동 기록 (기존 값이 없을 때만)
+      if (validatedData.category === "청구" && validatedData.caseId) {
+        const existingCase = await storage.getCaseById(validatedData.caseId);
+        if (existingCase && !existingCase.constructionCompletionDate) {
+          await storage.updateCase(validatedData.caseId, {
+            constructionCompletionDate: new Date().toLocaleString("en-CA", { 
+              timeZone: "Asia/Seoul" 
+            }).split(",")[0]
+          });
+        }
+      }
+      
       res.json(document);
     } catch (error) {
       if (error instanceof z.ZodError) {
