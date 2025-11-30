@@ -23,6 +23,75 @@ const normalizeBoolean = (value: any): boolean => {
   return false;
 };
 
+// SectionCard: intake.tsx 스타일의 Collapsible 카드 (컴포넌트 외부 정의로 리렌더링 시 재생성 방지)
+const SectionCard = ({
+  title,
+  isOpen,
+  onToggle,
+  children,
+  disabled = false,
+}: {
+  title: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  disabled?: boolean;
+}) => (
+  <div
+    style={{
+      background: 'transparent',
+      borderRadius: '12px',
+      marginBottom: '20px',
+    }}
+  >
+    <Collapsible open={isOpen} onOpenChange={onToggle}>
+      {/* 헤더 */}
+      <div
+        style={{
+          padding: '24px',
+          height: '82px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <h3
+          style={{
+            fontFamily: "Pretendard",
+            fontSize: "20px",
+            fontWeight: 600,
+            letterSpacing: "-0.02em",
+            color: "#0C0C0C",
+          }}
+        >
+          {title}
+        </h3>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="flex items-center gap-1 px-3 py-2 rounded hover-elevate active-elevate-2"
+            disabled={disabled}
+            data-testid={`button-toggle-${title}`}
+          >
+            {isOpen ? (
+              <ChevronUp className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
+            ) : (
+              <ChevronDown className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
+            )}
+          </button>
+        </CollapsibleTrigger>
+      </div>
+
+      {/* 콘텐츠 */}
+      <CollapsibleContent>
+        <div style={{ padding: '0 24px 24px 24px' }}>
+          {children}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  </div>
+);
+
 export default function FieldManagement() {
   const { toast } = useToast();
   const [selectedCase, setSelectedCase] = useState<string>(() => {
@@ -393,75 +462,6 @@ export default function FieldManagement() {
     fontSize: "14px",
     fontWeight: 500,
   };
-
-  // SectionCard: intake.tsx 스타일의 Collapsible 카드
-  const SectionCard = ({
-    title,
-    isOpen,
-    onToggle,
-    children,
-    disabled = false,
-  }: {
-    title: string;
-    isOpen: boolean;
-    onToggle: () => void;
-    children: React.ReactNode;
-    disabled?: boolean;
-  }) => (
-    <div
-      style={{
-        background: 'transparent',
-        borderRadius: '12px',
-        marginBottom: '20px',
-      }}
-    >
-      <Collapsible open={isOpen} onOpenChange={onToggle}>
-        {/* 헤더 */}
-        <div
-          style={{
-            padding: '24px',
-            height: '82px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <h3
-            style={{
-              fontFamily: "Pretendard",
-              fontSize: "20px",
-              fontWeight: 600,
-              letterSpacing: "-0.02em",
-              color: "#0C0C0C",
-            }}
-          >
-            {title}
-          </h3>
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              className="flex items-center gap-1 px-3 py-2 rounded hover-elevate active-elevate-2"
-              disabled={disabled}
-              data-testid={`button-toggle-${title}`}
-            >
-              {isOpen ? (
-                <ChevronUp className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
-              ) : (
-                <ChevronDown className="w-5 h-5" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
-              )}
-            </button>
-          </CollapsibleTrigger>
-        </div>
-
-        {/* 콘텐츠 */}
-        <CollapsibleContent>
-          <div style={{ padding: '0 24px 24px 24px' }}>
-            {children}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    </div>
-  );
 
   return (
     <>
