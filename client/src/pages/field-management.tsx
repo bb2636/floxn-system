@@ -1474,7 +1474,7 @@ export default function FieldManagement() {
                               claimDate: null,
                             };
                             
-                            await apiRequest("/api/cases", "POST", newCasePayload);
+                            await apiRequest("POST", "/api/cases", newCasePayload);
                             
                             toast({
                               title: "추가 피해자 등록 완료",
