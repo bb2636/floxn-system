@@ -33,6 +33,7 @@ export default function FieldManagement() {
   // Collapsible states - intake.tsx 스타일
   const [scheduleOpen, setScheduleOpen] = useState(true);
   const [basicInfoOpen, setBasicInfoOpen] = useState(true);
+  const [fieldSurveyInfoOpen, setFieldSurveyInfoOpen] = useState(true);
   const [damageInfoOpen, setDamageInfoOpen] = useState(true);
   const [insuranceInfoOpen, setInsuranceInfoOpen] = useState(true);
   const [insuredInfoOpen, setInsuredInfoOpen] = useState(true);
@@ -936,6 +937,131 @@ export default function FieldManagement() {
                   placeholder="시간 선택"
                   disabled
                   data-testid="input-accident-time"
+                />
+              </div>
+            </div>
+
+          </div>
+        </SectionCard>
+
+        {/* 현장조사 정보 섹션 */}
+        <SectionCard
+          title="현장조사 정보"
+          isOpen={fieldSurveyInfoOpen}
+          onToggle={() => setFieldSurveyInfoOpen(!fieldSurveyInfoOpen)}
+          disabled={!selectedCaseData}
+        >
+          <div className="space-y-5">
+            {/* 현장정보 소제목 */}
+            <div
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "18px",
+                fontWeight: 600,
+                color: "#0C0C0C",
+                marginBottom: "16px",
+              }}
+            >
+              현장정보
+            </div>
+
+            {/* 방문 일시, 출동 담당자 */}
+            <div className="grid grid-cols-2 gap-5">
+              {/* 방문 일시 */}
+              <div>
+                <Label 
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#686A6E",
+                  }}
+                >
+                  방문 일시
+                </Label>
+                <div className="flex gap-2">
+                  <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen} modal={false}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        ref={visitDateTriggerRef}
+                        type="button"
+                        variant="outline"
+                        className={intakeButtonClass}
+                        style={{
+                          ...intakeButtonStyle,
+                          justifyContent: "flex-start",
+                          background: "#fff",
+                          border: "1px solid rgba(12, 12, 12, 0.1)",
+                          flex: 1,
+                        }}
+                        data-testid="button-visit-date"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span style={{ color: "rgba(12, 12, 12, 0.4)" }}>날짜 선택</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent 
+                      className="w-auto p-0"
+                      onOpenAutoFocus={(e) => {
+                        e.preventDefault();
+                      }}
+                      onCloseAutoFocus={(e) => {
+                        e.preventDefault();
+                      }}
+                    >
+                      <Calendar
+                        mode="single"
+                        selected={visitDate}
+                        onSelect={(date) => {
+                          handleUserInput();
+                          setVisitDate(date);
+                          setVisitDatePickerOpen(false);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Input
+                    type="time"
+                    value={visitTime}
+                    onChange={(e) => { handleUserInput(); setVisitTime(e.target.value); }}
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "#fff",
+                      border: "1px solid rgba(12, 12, 12, 0.1)",
+                      flex: 1,
+                    }}
+                    placeholder="시간 선택"
+                    data-testid="input-visit-time"
+                  />
+                </div>
+              </div>
+
+              {/* 출동 담당자 */}
+              <div>
+                <Label 
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#686A6E",
+                  }}
+                >
+                  출동 담당자
+                </Label>
+                <Input
+                  value={dispatchLocation}
+                  onChange={(e) => { handleUserInput(); setDispatchLocation(e.target.value); }}
+                  placeholder="출동 담당자 성함"
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    background: "#fff",
+                    border: "1px solid rgba(12, 12, 12, 0.1)",
+                  }}
+                  data-testid="input-dispatch-manager"
                 />
               </div>
             </div>
