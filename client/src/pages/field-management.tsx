@@ -536,15 +536,15 @@ export default function FieldManagement() {
           </div>
         </SectionCard>
 
-        {/* 기본정보 섹션 */}
+        {/* 기본 정보 섹션 */}
         <SectionCard
-          title="기본정보"
+          title="기본 정보"
           isOpen={basicInfoOpen}
           onToggle={() => setBasicInfoOpen(!basicInfoOpen)}
           disabled={!selectedCaseData}
         >
           <div className="space-y-5">
-            {/* 접수사, 담당자명, 담당자 연락처 - 3열 */}
+            {/* 협력사, 담당자명, 담당자 연락처 - 3열 */}
             <div className="grid grid-cols-3 gap-5">
               <div>
                 <Label 
@@ -556,12 +556,12 @@ export default function FieldManagement() {
                     color: "#686A6E",
                   }}
                 >
-                  접수사
+                  협력사
                 </Label>
                 <Input
                   value={selectedCaseData?.assignedPartner || ""}
                   readOnly
-                  placeholder="담당사명"
+                  placeholder="협력사명"
                   className={intakeFieldClass}
                   style={{
                     ...intakeFieldStyle,
@@ -623,7 +623,7 @@ export default function FieldManagement() {
               </div>
             </div>
 
-            {/* 접수정보 소제목 */}
+            {/* 접수 정보 소제목 */}
             <div
               style={{
                 fontFamily: "Pretendard",
@@ -634,7 +634,7 @@ export default function FieldManagement() {
                 marginBottom: "16px",
               }}
             >
-              접수정보
+              접수 정보
             </div>
 
             {/* 접수번호, 보험사 - 2열 */}
@@ -676,18 +676,33 @@ export default function FieldManagement() {
                 >
                   보험사
                 </Label>
-                <Input
-                  value={selectedCaseData?.insuranceCompany || ""}
-                  readOnly
-                  placeholder="보험사 선택"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    color: "rgba(12, 12, 12, 0.4)",
-                  }}
-                  data-testid="input-insurance-company"
-                />
+                <Select 
+                  value={selectedCaseData?.insuranceCompany || ""} 
+                  disabled
+                >
+                  <SelectTrigger 
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.04)",
+                      color: "rgba(12, 12, 12, 0.4)",
+                    }}
+                    data-testid="select-insurance-company"
+                  >
+                    <SelectValue placeholder="보험사 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="현대해상">현대해상</SelectItem>
+                    <SelectItem value="삼성화재">삼성화재</SelectItem>
+                    <SelectItem value="DB손해보험">DB손해보험</SelectItem>
+                    <SelectItem value="KB손해보험">KB손해보험</SelectItem>
+                    <SelectItem value="메리츠화재">메리츠화재</SelectItem>
+                    <SelectItem value="한화손해보험">한화손해보험</SelectItem>
+                    <SelectItem value="롯데손해보험">롯데손해보험</SelectItem>
+                    <SelectItem value="MG손해보험">MG손해보험</SelectItem>
+                    <SelectItem value="흥국화재">흥국화재</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -696,7 +711,7 @@ export default function FieldManagement() {
               className="flex items-center justify-between"
               style={{
                 marginTop: "24px",
-                marginBottom: "16px",
+                marginBottom: "8px",
               }}
             >
               <div
@@ -731,6 +746,19 @@ export default function FieldManagement() {
               </div>
             </div>
 
+            {/* 안내문 */}
+            <div
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "13px",
+                fontWeight: 400,
+                color: "rgba(12, 12, 12, 0.5)",
+                marginBottom: "16px",
+              }}
+            >
+              보험 계약자, 피보험자 중 한 가지는 반드시 기입해야 합니다.
+            </div>
+
             {/* 보험계약자, 피보험자, 피보험자 연락처 - 3열 */}
             <div className="grid grid-cols-3 gap-5">
               <div>
@@ -748,7 +776,7 @@ export default function FieldManagement() {
                 <Input
                   value={selectedCaseData?.policyHolderName || ""}
                   readOnly
-                  placeholder="보험계약자 성명"
+                  placeholder="보험자 성함"
                   className={intakeFieldClass}
                   style={{
                     ...intakeFieldStyle,
@@ -773,7 +801,7 @@ export default function FieldManagement() {
                 <Input
                   value={selectedCaseData?.insuredName || ""}
                   readOnly
-                  placeholder="피보험자 성명"
+                  placeholder="피보험자 성함"
                   className={intakeFieldClass}
                   style={{
                     ...intakeFieldStyle,
@@ -793,7 +821,7 @@ export default function FieldManagement() {
                     color: "#686A6E",
                   }}
                 >
-                  피보험자 연락처
+                  피보험자 연락처<span style={{ color: "#008FED" }}>*</span>
                 </Label>
                 <Input
                   value={selectedCaseData?.insuredContact || ""}
@@ -821,12 +849,12 @@ export default function FieldManagement() {
                   color: "#686A6E",
                 }}
               >
-                피보험자 주소
+                피보험자 주소<span style={{ color: "#008FED" }}>*</span>
               </Label>
               <Input
                 value={selectedCaseData?.insuredAddress || ""}
                 readOnly
-                placeholder="도로명 주소, 동/호수 포함"
+                placeholder="도로명 주소, 동/호 포함"
                 className={intakeFieldClass}
                 style={{
                   ...intakeFieldStyle,
@@ -835,6 +863,81 @@ export default function FieldManagement() {
                 }}
                 data-testid="input-insured-address"
               />
+            </div>
+
+            {/* 사고 발생 일시 소제목 */}
+            <div
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "18px",
+                fontWeight: 600,
+                color: "#0C0C0C",
+                marginTop: "24px",
+                marginBottom: "16px",
+              }}
+            >
+              사고 발생 일시
+            </div>
+
+            {/* 날짜 선택, 시간 선택 */}
+            <div className="flex gap-4">
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
+                <PopoverTrigger asChild>
+                  <Button
+                    ref={accidentDateTriggerRef}
+                    type="button"
+                    variant="outline"
+                    className={intakeButtonClass}
+                    style={{
+                      ...intakeButtonStyle,
+                      justifyContent: "flex-start",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      border: "none",
+                      width: "200px",
+                    }}
+                    disabled
+                    data-testid="button-accident-date"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {accidentDate ? format(accidentDate, "yyyy.MM.dd", { locale: ko }) : <span style={{ color: "rgba(12, 12, 12, 0.4)" }}>날짜 선택</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-auto p-0"
+                  onOpenAutoFocus={(e) => {
+                    e.preventDefault();
+                  }}
+                  onCloseAutoFocus={(e) => {
+                    e.preventDefault();
+                  }}
+                >
+                  <Calendar
+                    mode="single"
+                    selected={accidentDate}
+                    onSelect={(date) => {
+                      setAccidentDate(date);
+                      setDatePickerOpen(false);
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+              <div className="relative" style={{ width: "200px" }}>
+                <Input
+                  type="time"
+                  value={accidentTime}
+                  onChange={(e) => { handleUserInput(); setAccidentTime(e.target.value); }}
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    background: "rgba(12, 12, 12, 0.04)",
+                    border: "none",
+                    color: accidentTime ? "rgba(12, 12, 12, 0.4)" : "rgba(12, 12, 12, 0.4)",
+                  }}
+                  placeholder="시간 선택"
+                  disabled
+                  data-testid="input-accident-time"
+                />
+              </div>
             </div>
 
           </div>
