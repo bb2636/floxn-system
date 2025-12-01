@@ -2032,6 +2032,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateCaseEstimateAmount(caseId, totalAmount.toString());
       }
       
+      // Auto-sync estimate to all related cases (same insuranceAccidentNo)
+      try {
+        const syncCount = await storage.syncEstimateToRelatedCases(caseId);
+        if (syncCount > 0) {
+          console.log(`[Estimate] Auto-synced to ${syncCount} related cases`);
+        }
+      } catch (syncError) {
+        console.error("Failed to sync estimate to related cases:", syncError);
+        // Don't fail the request if sync fails
+      }
+      
       res.json(result);
     } catch (error) {
       console.error("Create estimate error:", error);
