@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, CaseWithLatestProgress, type UserFavorite } from "@shared/schema";
-import { Search, Cloud, Star } from "lucide-react";
+import { Search, Cloud, Star, Plus } from "lucide-react";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
@@ -2143,6 +2143,43 @@ export default function ComprehensiveProgress() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 관리자용 플로팅 접수 버튼 */}
+      {user?.role === "관리자" && (
+        <button
+          onClick={() => setLocation('/intake')}
+          style={{
+            position: 'fixed',
+            bottom: '32px',
+            right: '32px',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            padding: '16px 24px',
+            background: '#008FED',
+            borderRadius: '40px',
+            border: 'none',
+            boxShadow: '0px 4px 20px rgba(0, 143, 237, 0.4)',
+            cursor: 'pointer',
+            zIndex: 100,
+          }}
+          data-testid="button-floating-intake"
+        >
+          <span style={{
+            fontFamily: 'Pretendard',
+            fontWeight: 600,
+            fontSize: '16px',
+            lineHeight: '128%',
+            letterSpacing: '-0.02em',
+            color: '#FFFFFF',
+          }}>
+            접수
+          </span>
+          <Plus size={20} color="#FFFFFF" />
+        </button>
+      )}
 
     </div>
   );
