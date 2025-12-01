@@ -82,6 +82,21 @@ export default function Intake() {
   const [selectedPartner, setSelectedPartner] = useState<any>(null);
   const [tempSelectedPartner, setTempSelectedPartner] = useState<any>(null);
   
+  // 의뢰사 검색 팝업 상태
+  const [isClientSearchOpen, setIsClientSearchOpen] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [tempSelectedClient, setTempSelectedClient] = useState<any>(null);
+  
+  // 심사사 검색 팝업 상태
+  const [isAssessorSearchOpen, setIsAssessorSearchOpen] = useState(false);
+  const [assessorSearchQuery, setAssessorSearchQuery] = useState("");
+  const [tempSelectedAssessor, setTempSelectedAssessor] = useState<any>(null);
+  
+  // 조사사(손사명) 검색 팝업 상태
+  const [isInvestigatorSearchOpen, setIsInvestigatorSearchOpen] = useState(false);
+  const [investigatorSearchQuery, setInvestigatorSearchQuery] = useState("");
+  const [tempSelectedInvestigator, setTempSelectedInvestigator] = useState<any>(null);
+  
   // 다음 포스트코드 상태 (피보험자 주소)
   const [showInsuredAddressSearch, setShowInsuredAddressSearch] = useState(false);
   
@@ -382,6 +397,56 @@ export default function Intake() {
       .filter((company): company is string => !!company);
     return Array.from(new Set(companies));
   }, [investigators]);
+
+  // 의뢰사 회사명 목록 (중복 제거)
+  const clientCompanies = useMemo(() => {
+    if (!allUsers) {
+      return [];
+    }
+    const companies = allUsers
+      .filter(u => u.role === "의뢰사")
+      .map(u => u.company)
+      .filter((company): company is string => !!company);
+    return Array.from(new Set(companies));
+  }, [allUsers]);
+
+  // 심사사 회사명 목록 (중복 제거)
+  const assessorCompanies = useMemo(() => {
+    if (!assessors) {
+      return [];
+    }
+    const companies = assessors
+      .map(a => a.company)
+      .filter((company): company is string => !!company);
+    return Array.from(new Set(companies));
+  }, [assessors]);
+
+  // 의뢰사 검색 필터링
+  const filteredClients = useMemo(() => {
+    if (!clientCompanies) return [];
+    if (!clientSearchQuery) return clientCompanies.map(name => ({ name }));
+    return clientCompanies
+      .filter(name => name.toLowerCase().includes(clientSearchQuery.toLowerCase()))
+      .map(name => ({ name }));
+  }, [clientCompanies, clientSearchQuery]);
+
+  // 심사사 검색 필터링
+  const filteredAssessors = useMemo(() => {
+    if (!assessorCompanies) return [];
+    if (!assessorSearchQuery) return assessorCompanies.map(name => ({ name }));
+    return assessorCompanies
+      .filter(name => name.toLowerCase().includes(assessorSearchQuery.toLowerCase()))
+      .map(name => ({ name }));
+  }, [assessorCompanies, assessorSearchQuery]);
+
+  // 조사사 검색 필터링
+  const filteredInvestigators = useMemo(() => {
+    if (!investigatorCompanies) return [];
+    if (!investigatorSearchQuery) return investigatorCompanies.map(name => ({ name }));
+    return investigatorCompanies
+      .filter(name => name.toLowerCase().includes(investigatorSearchQuery.toLowerCase()))
+      .map(name => ({ name }));
+  }, [investigatorCompanies, investigatorSearchQuery]);
 
   // 예상 접수번호 계산 (B-style: 손해방지는 접미사 없이, 피해세대복구는 -N 형식)
   // 기존 케이스 편집 시에는 loadedCaseNumber를 우선 표시
@@ -1545,18 +1610,14 @@ export default function Intake() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
                       <div className="flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰사</label>
-                        <Select value={formData.clientResidence} onValueChange={(value) => handleInputChange("clientResidence", value)}>
-                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-client-company">
-                            <SelectValue placeholder="의뢰사 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {allCompanies.map((company) => (
-                              <SelectItem key={company} value={company} data-testid={`select-option-client-${company}`}>
-                                {company}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div
+                          onClick={() => setIsClientSearchOpen(true)}
+                          className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
+                          style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.clientResidence ? '#0C0C0C' : '#A0A0A0'}}
+                          data-testid="button-client-search"
+                        >
+                          {formData.clientResidence || "의뢰사 선택"}
+                        </div>
                       </div>
                       <div className="flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
@@ -1602,21 +1663,14 @@ export default function Intake() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
                       <div className="flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사사</label>
-                        <Select value={formData.assessorId} onValueChange={(value) => handleInputChange("assessorId", value)}>
-                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-assessor-company">
-                            <SelectValue placeholder="심사사 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="한국손해사정" data-testid="select-option-assessor-korea">한국손해사정</SelectItem>
-                            <SelectItem value="코리아손해사정" data-testid="select-option-assessor-corea">코리아손해사정</SelectItem>
-                            <SelectItem value="대한손해사정" data-testid="select-option-assessor-daehan">대한손해사정</SelectItem>
-                            <SelectItem value="글로벌손해사정" data-testid="select-option-assessor-global">글로벌손해사정</SelectItem>
-                            <SelectItem value="한빛손해사정" data-testid="select-option-assessor-hanbit">한빛손해사정</SelectItem>
-                            <SelectItem value="우리손해사정" data-testid="select-option-assessor-woori">우리손해사정</SelectItem>
-                            <SelectItem value="서울손해사정" data-testid="select-option-assessor-seoul">서울손해사정</SelectItem>
-                            <SelectItem value="현대손해사정" data-testid="select-option-assessor-hyundai">현대손해사정</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div
+                          onClick={() => setIsAssessorSearchOpen(true)}
+                          className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
+                          style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.assessorId ? '#0C0C0C' : '#A0A0A0'}}
+                          data-testid="button-assessor-search"
+                        >
+                          {formData.assessorId || "심사사 선택"}
+                        </div>
                       </div>
                       <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
@@ -1662,18 +1716,14 @@ export default function Intake() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
                       <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>손사명</label>
-                        <Select value={formData.investigatorTeam} onValueChange={(value) => handleInputChange("investigatorTeam", value)}>
-                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-investigator-team">
-                            <SelectValue placeholder="선택해주세요" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {investigatorCompanies.map((company) => (
-                              <SelectItem key={company} value={company} data-testid={`select-option-investigator-team-${company}`}>
-                                {company}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div
+                          onClick={() => setIsInvestigatorSearchOpen(true)}
+                          className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
+                          style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.investigatorTeam ? '#0C0C0C' : '#A0A0A0'}}
+                          data-testid="button-investigator-search"
+                        >
+                          {formData.investigatorTeam || "선택해주세요"}
+                        </div>
                       </div>
                       <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
@@ -3412,6 +3462,516 @@ export default function Intake() {
                         }}
                         style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', margin: '0 auto', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
                         data-testid="button-apply-partner"
+                      >
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                          적용
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 의뢰사 검색 팝업 */}
+      {isClientSearchOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '16px',
+          }}
+          onClick={() => setIsClientSearchOpen(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[600px] max-h-[90vh] overflow-y-auto"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              padding: '0px 0px 20px',
+              gap: '10px',
+              isolation: 'isolate',
+              background: '#FFFFFF',
+              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
+              borderRadius: '12px',
+            }}
+          >
+            {/* Header */}
+            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
+              <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#0C0C0C' }}>
+                의뢰사 검색
+              </h2>
+              <button
+                onClick={() => setIsClientSearchOpen(false)}
+                style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: '24px 20px', width: '60px', height: '60px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                data-testid="button-close-client-search"
+              >
+                <X size={24} color="#1C1B1F" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex flex-col items-center w-full px-5 gap-4">
+              {/* Search Input */}
+              <div className="flex flex-col items-start w-full gap-2">
+                <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                  의뢰사 검색
+                </label>
+                <div className="flex flex-row items-center w-full h-[58px]">
+                  <input
+                    type="text"
+                    placeholder="의뢰사명을 입력해주세요."
+                    value={clientSearchQuery}
+                    onChange={(e) => setClientSearchQuery(e.target.value)}
+                    className="flex-1"
+                    style={{ boxSizing: 'border-box', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', height: '58px', background: '#FDFDFD', border: '1px solid rgba(12, 12, 12, 0.08)', borderRadius: '6px 0px 0px 6px', fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#0C0C0C' }}
+                    data-testid="input-client-search"
+                  />
+                  <button
+                    onClick={() => {}}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px 16px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                    data-testid="button-client-search-submit"
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                      검색
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Results */}
+              <div className="flex flex-col items-start w-full gap-4 overflow-y-auto" style={{ maxHeight: '400px' }}>
+                {filteredClients.length === 0 ? (
+                  <div className="flex items-center justify-center w-full py-10">
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                      {clientSearchQuery ? "검색 결과가 없습니다" : "등록된 의뢰사가 없습니다"}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-start w-full">
+                    {/* Header */}
+                    <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>의뢰사명</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', width: '60px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
+                      </div>
+                    </div>
+                    {/* Data Rows */}
+                    {filteredClients.map((client) => (
+                      <div 
+                        key={client.name} 
+                        className="flex flex-row items-center w-full h-[50px]"
+                        style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                          <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                            {client.name}
+                          </span>
+                        </div>
+                        <div 
+                          onClick={() => setTempSelectedClient(client)}
+                          style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
+                          data-testid={`radio-client-${client.name}`}
+                        >
+                          <div style={{ position: 'relative', width: '18px', height: '18px' }}>
+                            <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedClient?.name === client.name ? '#008FED' : '#FDFDFD', border: tempSelectedClient?.name === client.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
+                            {tempSelectedClient?.name === client.name && (
+                              <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Selected Card */}
+                {tempSelectedClient && (
+                  <div className="w-full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
+                        <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
+                          {tempSelectedClient.name}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px', gap: '8px', width: '100%', height: '40px' }}>
+                      <button
+                        onClick={() => setTempSelectedClient(null)}
+                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                        data-testid="button-reset-client"
+                      >
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.3)' }}>
+                          초기화
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleInputChange("clientResidence", tempSelectedClient.name);
+                          setIsClientSearchOpen(false);
+                          setTempSelectedClient(null);
+                          setClientSearchQuery("");
+                        }}
+                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+                        data-testid="button-apply-client"
+                      >
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                          적용
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 심사사 검색 팝업 */}
+      {isAssessorSearchOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '16px',
+          }}
+          onClick={() => setIsAssessorSearchOpen(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[600px] max-h-[90vh] overflow-y-auto"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              padding: '0px 0px 20px',
+              gap: '10px',
+              isolation: 'isolate',
+              background: '#FFFFFF',
+              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
+              borderRadius: '12px',
+            }}
+          >
+            {/* Header */}
+            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
+              <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#0C0C0C' }}>
+                심사사 검색
+              </h2>
+              <button
+                onClick={() => setIsAssessorSearchOpen(false)}
+                style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: '24px 20px', width: '60px', height: '60px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                data-testid="button-close-assessor-search"
+              >
+                <X size={24} color="#1C1B1F" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex flex-col items-center w-full px-5 gap-4">
+              {/* Search Input */}
+              <div className="flex flex-col items-start w-full gap-2">
+                <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                  심사사 검색
+                </label>
+                <div className="flex flex-row items-center w-full h-[58px]">
+                  <input
+                    type="text"
+                    placeholder="심사사명을 입력해주세요."
+                    value={assessorSearchQuery}
+                    onChange={(e) => setAssessorSearchQuery(e.target.value)}
+                    className="flex-1"
+                    style={{ boxSizing: 'border-box', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', height: '58px', background: '#FDFDFD', border: '1px solid rgba(12, 12, 12, 0.08)', borderRadius: '6px 0px 0px 6px', fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#0C0C0C' }}
+                    data-testid="input-assessor-search"
+                  />
+                  <button
+                    onClick={() => {}}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px 16px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                    data-testid="button-assessor-search-submit"
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                      검색
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Results */}
+              <div className="flex flex-col items-start w-full gap-4 overflow-y-auto" style={{ maxHeight: '400px' }}>
+                {filteredAssessors.length === 0 ? (
+                  <div className="flex items-center justify-center w-full py-10">
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                      {assessorSearchQuery ? "검색 결과가 없습니다" : "등록된 심사사가 없습니다"}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-start w-full">
+                    {/* Header */}
+                    <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>심사사명</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', width: '60px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
+                      </div>
+                    </div>
+                    {/* Data Rows */}
+                    {filteredAssessors.map((assessor) => (
+                      <div 
+                        key={assessor.name} 
+                        className="flex flex-row items-center w-full h-[50px]"
+                        style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                          <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                            {assessor.name}
+                          </span>
+                        </div>
+                        <div 
+                          onClick={() => setTempSelectedAssessor(assessor)}
+                          style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
+                          data-testid={`radio-assessor-${assessor.name}`}
+                        >
+                          <div style={{ position: 'relative', width: '18px', height: '18px' }}>
+                            <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedAssessor?.name === assessor.name ? '#008FED' : '#FDFDFD', border: tempSelectedAssessor?.name === assessor.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
+                            {tempSelectedAssessor?.name === assessor.name && (
+                              <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Selected Card */}
+                {tempSelectedAssessor && (
+                  <div className="w-full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
+                        <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
+                          {tempSelectedAssessor.name}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px', gap: '8px', width: '100%', height: '40px' }}>
+                      <button
+                        onClick={() => setTempSelectedAssessor(null)}
+                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                        data-testid="button-reset-assessor"
+                      >
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.3)' }}>
+                          초기화
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleInputChange("assessorId", tempSelectedAssessor.name);
+                          setIsAssessorSearchOpen(false);
+                          setTempSelectedAssessor(null);
+                          setAssessorSearchQuery("");
+                        }}
+                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+                        data-testid="button-apply-assessor"
+                      >
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                          적용
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 조사사(손사명) 검색 팝업 */}
+      {isInvestigatorSearchOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '16px',
+          }}
+          onClick={() => setIsInvestigatorSearchOpen(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[600px] max-h-[90vh] overflow-y-auto"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              padding: '0px 0px 20px',
+              gap: '10px',
+              isolation: 'isolate',
+              background: '#FFFFFF',
+              boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
+              borderRadius: '12px',
+            }}
+          >
+            {/* Header */}
+            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
+              <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#0C0C0C' }}>
+                손사명 검색
+              </h2>
+              <button
+                onClick={() => setIsInvestigatorSearchOpen(false)}
+                style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: '24px 20px', width: '60px', height: '60px', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                data-testid="button-close-investigator-search"
+              >
+                <X size={24} color="#1C1B1F" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex flex-col items-center w-full px-5 gap-4">
+              {/* Search Input */}
+              <div className="flex flex-col items-start w-full gap-2">
+                <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                  손사명 검색
+                </label>
+                <div className="flex flex-row items-center w-full h-[58px]">
+                  <input
+                    type="text"
+                    placeholder="손사명을 입력해주세요."
+                    value={investigatorSearchQuery}
+                    onChange={(e) => setInvestigatorSearchQuery(e.target.value)}
+                    className="flex-1"
+                    style={{ boxSizing: 'border-box', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', height: '58px', background: '#FDFDFD', border: '1px solid rgba(12, 12, 12, 0.08)', borderRadius: '6px 0px 0px 6px', fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#0C0C0C' }}
+                    data-testid="input-investigator-search"
+                  />
+                  <button
+                    onClick={() => {}}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px 16px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                    data-testid="button-investigator-search-submit"
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                      검색
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Results */}
+              <div className="flex flex-col items-start w-full gap-4 overflow-y-auto" style={{ maxHeight: '400px' }}>
+                {filteredInvestigators.length === 0 ? (
+                  <div className="flex items-center justify-center w-full py-10">
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                      {investigatorSearchQuery ? "검색 결과가 없습니다" : "등록된 손사명이 없습니다"}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-start w-full">
+                    {/* Header */}
+                    <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>손사명</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', width: '60px' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
+                      </div>
+                    </div>
+                    {/* Data Rows */}
+                    {filteredInvestigators.map((investigator) => (
+                      <div 
+                        key={investigator.name} 
+                        className="flex flex-row items-center w-full h-[50px]"
+                        style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                          <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                            {investigator.name}
+                          </span>
+                        </div>
+                        <div 
+                          onClick={() => setTempSelectedInvestigator(investigator)}
+                          style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
+                          data-testid={`radio-investigator-${investigator.name}`}
+                        >
+                          <div style={{ position: 'relative', width: '18px', height: '18px' }}>
+                            <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedInvestigator?.name === investigator.name ? '#008FED' : '#FDFDFD', border: tempSelectedInvestigator?.name === investigator.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
+                            {tempSelectedInvestigator?.name === investigator.name && (
+                              <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Selected Card */}
+                {tempSelectedInvestigator && (
+                  <div className="w-full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
+                        <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
+                          {tempSelectedInvestigator.name}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Buttons */}
+                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px', gap: '8px', width: '100%', height: '40px' }}>
+                      <button
+                        onClick={() => setTempSelectedInvestigator(null)}
+                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                        data-testid="button-reset-investigator"
+                      >
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.3)' }}>
+                          초기화
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          handleInputChange("investigatorTeam", tempSelectedInvestigator.name);
+                          setIsInvestigatorSearchOpen(false);
+                          setTempSelectedInvestigator(null);
+                          setInvestigatorSearchQuery("");
+                        }}
+                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+                        data-testid="button-apply-investigator"
                       >
                         <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
                           적용
