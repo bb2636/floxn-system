@@ -972,6 +972,24 @@ export default function FieldEstimate() {
     }
   };
 
+  // 피해면적 산출표에서 불러온 면적을 자재비의 해당 공종 수량에 반영
+  const handleAreaImportToMaterial = (workType: string, totalArea: number) => {
+    if (!workType || totalArea <= 0) return;
+    
+    setMaterialRows(prev => 
+      prev.map(row => {
+        // 공종이 일치하는 자재비 행의 수량을 업데이트
+        if (row.공종 === workType) {
+          const updatedRow = { ...row, 수량: totalArea };
+          // 금액 재계산
+          updatedRow.금액 = updatedRow.수량 * updatedRow.기준단가;
+          return updatedRow;
+        }
+        return row;
+      })
+    );
+  };
+
   // 노무비 행 체크박스 토글
   const toggleLaborRow = (rowId: string) => {
     setSelectedLaborRows(prev => {
@@ -2525,6 +2543,7 @@ export default function FieldEstimate() {
                 }))}
                 filteredWorkTypes={workTypes}
                 isReadOnly={isReadOnly}
+                onAreaImportToMaterial={handleAreaImportToMaterial}
               />
             </div>
 
@@ -2987,6 +3006,7 @@ export default function FieldEstimate() {
                 }))}
                 filteredWorkTypes={workTypes}
                 isReadOnly={isReadOnly}
+                onAreaImportToMaterial={handleAreaImportToMaterial}
               />
             </div>
 

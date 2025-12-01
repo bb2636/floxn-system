@@ -82,6 +82,7 @@ interface LaborCostSectionProps {
   areaCalculationRows?: AreaCalculationRowForLabor[]; // 복구면적 산출표 데이터
   filteredWorkTypes?: string[]; // 케이스 유형에 따라 필터링된 공종 목록
   isReadOnly?: boolean; // 읽기 전용 모드
+  onAreaImportToMaterial?: (workType: string, totalArea: number) => void; // 피해면적 산출표 불러오기 시 자재비 수량 업데이트 콜백
 }
 
 export function LaborCostSection({
@@ -95,6 +96,7 @@ export function LaborCostSection({
   areaCalculationRows = [],
   filteredWorkTypes,
   isReadOnly = false,
+  onAreaImportToMaterial,
 }: LaborCostSectionProps) {
   // 공사명 선택 팝업 상태
   const [areaPopupOpen, setAreaPopupOpen] = useState(false);
@@ -152,6 +154,11 @@ export function LaborCostSection({
     if (!selectedGroup) return;
     
     const damageArea = selectedGroup.totalRepairArea;
+    
+    // 현재 노무비 행의 공종 가져오기
+    const currentRow = rows.find(r => r.id === areaPopupRowId);
+    const workType = currentRow?.category || '';
+    
     onRowsChange(rows.map(row => {
       if (row.id === areaPopupRowId) {
         const updated = { ...row, damageArea };
@@ -173,6 +180,11 @@ export function LaborCostSection({
       }
       return row;
     }));
+    
+    // 자재비에 해당 공종의 수량 업데이트 (콜백이 있을 경우)
+    if (onAreaImportToMaterial && workType) {
+      onAreaImportToMaterial(workType, damageArea);
+    }
     
     handleAreaPopupClose();
   };
