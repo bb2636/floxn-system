@@ -35,6 +35,7 @@ interface MaterialCostSectionProps {
   onSelectRow: (rowId: string) => void;
   onSelectAll: () => void;
   isLoading?: boolean;
+  isReadOnly?: boolean; // 읽기 전용 모드
 }
 
 export function MaterialCostSection({
@@ -46,6 +47,7 @@ export function MaterialCostSection({
   onSelectRow,
   onSelectAll,
   isLoading = false,
+  isReadOnly = false,
 }: MaterialCostSectionProps) {
   // 자재비 카탈로그에서 공종 목록 추출 (자재비 DB에 있는 공종만 표시)
   const materialCategoryOptions = useMemo(() => {
@@ -77,6 +79,7 @@ export function MaterialCostSection({
 
   // 행 업데이트
   const updateRow = (rowId: string, field: keyof MaterialRow, value: any) => {
+    if (isReadOnly) return;
     onRowsChange(rows.map(row => {
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };

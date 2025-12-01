@@ -81,6 +81,7 @@ interface LaborCostSectionProps {
   isLoading?: boolean;
   areaCalculationRows?: AreaCalculationRowForLabor[]; // 복구면적 산출표 데이터
   filteredWorkTypes?: string[]; // 케이스 유형에 따라 필터링된 공종 목록
+  isReadOnly?: boolean; // 읽기 전용 모드
 }
 
 export function LaborCostSection({
@@ -93,6 +94,7 @@ export function LaborCostSection({
   isLoading = false,
   areaCalculationRows = [],
   filteredWorkTypes,
+  isReadOnly = false,
 }: LaborCostSectionProps) {
   // 공사명 선택 팝업 상태
   const [areaPopupOpen, setAreaPopupOpen] = useState(false);
@@ -315,6 +317,7 @@ export function LaborCostSection({
 
   // 행 업데이트
   const updateRow = (rowId: string, field: keyof LaborCostRow, value: any) => {
+    if (isReadOnly) return;
     onRowsChange(rows.map(row => {
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };

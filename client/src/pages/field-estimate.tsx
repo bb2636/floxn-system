@@ -369,12 +369,14 @@ export default function FieldEstimate() {
 
   // 노무비 행 추가
   const addLaborRow = () => {
+    if (isReadOnly) return;
     const newLaborRow = createBlankLaborRow();
     setLaborCostRows(prev => [...prev, newLaborRow]);
   };
 
   // 선택된 노무비 행 삭제
   const deleteSelectedLaborRows = () => {
+    if (isReadOnly) return;
     if (selectedLaborRows.size === 0) return;
     setLaborCostRows(prev => prev.filter(row => !selectedLaborRows.has(row.id)));
     setSelectedLaborRows(new Set());
@@ -382,11 +384,13 @@ export default function FieldEstimate() {
 
   // 자재비 행 추가
   const addMaterialRow = () => {
+    if (isReadOnly) return;
     setMaterialRows(prev => [...prev, createBlankMaterialRow()]);
   };
 
   // 선택된 자재비 행 삭제
   const deleteSelectedMaterialRows = () => {
+    if (isReadOnly) return;
     if (selectedMaterialRows.size === 0) return;
     // 삭제된 행과 연결된 노무비 행 정보 제거
     const deletedSourceIds = new Set(
@@ -699,11 +703,13 @@ export default function FieldEstimate() {
 
   // 행 추가
   const addRow = () => {
+    if (isReadOnly) return;
     setRows(prev => [...prev, createBlankRow()]);
   };
 
   // 선택된 행 삭제
   const deleteSelectedRows = () => {
+    if (isReadOnly) return;
     if (selectedRows.size === 0) return;
     setRows(prev => prev.filter(row => !selectedRows.has(row.id)));
     setSelectedRows(new Set());
@@ -722,6 +728,9 @@ export default function FieldEstimate() {
 
   // 행 업데이트
   const updateRow = (rowId: string, field: keyof AreaCalculationRow, value: string) => {
+    // 읽기 전용 모드에서는 업데이트 불가
+    if (isReadOnly) return;
+    
     // 현재 행의 인덱스 찾기 (노무비/자재비 연동용)
     const currentRowIndex = rows.findIndex(r => r.id === rowId);
     
@@ -978,6 +987,7 @@ export default function FieldEstimate() {
   
   // 노무비 테이블 리셋
   const resetLaborTable = () => {
+    if (isReadOnly) return;
     if (laborCatalog.length === 0) {
       toast({
         title: "잠시만 기다려주세요",
@@ -1259,17 +1269,17 @@ export default function FieldEstimate() {
                 <button
                   type="button"
                   onClick={addRow}
-                  disabled={masterDataList.length === 0}
+                  disabled={masterDataList.length === 0 || isReadOnly}
                   className="px-4 py-2 rounded-md flex items-center gap-2 hover-elevate active-elevate-2"
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     fontWeight: 500,
-                    background: masterDataList.length === 0 ? "#f5f5f5" : "white",
-                    color: masterDataList.length === 0 ? "rgba(12, 12, 12, 0.3)" : "#008FED",
-                    border: masterDataList.length === 0 ? "1px solid rgba(12, 12, 12, 0.1)" : "1px solid #008FED",
-                    cursor: masterDataList.length === 0 ? "not-allowed" : "pointer",
-                    opacity: masterDataList.length === 0 ? 0.6 : 1,
+                    background: (masterDataList.length === 0 || isReadOnly) ? "#f5f5f5" : "white",
+                    color: (masterDataList.length === 0 || isReadOnly) ? "rgba(12, 12, 12, 0.3)" : "#008FED",
+                    border: (masterDataList.length === 0 || isReadOnly) ? "1px solid rgba(12, 12, 12, 0.1)" : "1px solid #008FED",
+                    cursor: (masterDataList.length === 0 || isReadOnly) ? "not-allowed" : "pointer",
+                    opacity: (masterDataList.length === 0 || isReadOnly) ? 0.6 : 1,
                   }}
                   data-testid="button-add-row"
                 >
@@ -1278,17 +1288,17 @@ export default function FieldEstimate() {
                 <button
                   type="button"
                   onClick={deleteSelectedRows}
-                  disabled={selectedRows.size === 0}
+                  disabled={selectedRows.size === 0 || isReadOnly}
                   className="px-4 py-2 rounded-md flex items-center gap-2 hover-elevate active-elevate-2"
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     fontWeight: 500,
-                    background: selectedRows.size === 0 ? "#f5f5f5" : "#FF4D4F",
-                    color: selectedRows.size === 0 ? "rgba(12, 12, 12, 0.3)" : "white",
+                    background: (selectedRows.size === 0 || isReadOnly) ? "#f5f5f5" : "#FF4D4F",
+                    color: (selectedRows.size === 0 || isReadOnly) ? "rgba(12, 12, 12, 0.3)" : "white",
                     border: "none",
-                    cursor: selectedRows.size === 0 ? "not-allowed" : "pointer",
-                    opacity: selectedRows.size === 0 ? 0.6 : 1,
+                    cursor: (selectedRows.size === 0 || isReadOnly) ? "not-allowed" : "pointer",
+                    opacity: (selectedRows.size === 0 || isReadOnly) ? 0.6 : 1,
                   }}
                   data-testid="button-delete-rows"
                 >
@@ -2197,14 +2207,16 @@ export default function FieldEstimate() {
                 <div style={{ display: "flex", gap: "6px" }}>
                   <button
                     onClick={addRow}
+                    disabled={isReadOnly}
                     style={{
                       padding: "6px 12px",
-                      background: "white",
+                      background: isReadOnly ? "#f5f5f5" : "white",
                       border: "1px solid rgba(12, 12, 12, 0.1)",
                       borderRadius: "4px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      cursor: "pointer",
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
+                      opacity: isReadOnly ? 0.5 : 1,
                     }}
                     data-testid="button-add-row-area"
                   >
@@ -2212,15 +2224,17 @@ export default function FieldEstimate() {
                   </button>
                   <button
                     onClick={deleteSelectedRows}
+                    disabled={isReadOnly}
                     style={{
                       padding: "6px 12px",
-                      background: "white",
+                      background: isReadOnly ? "#f5f5f5" : "white",
                       border: "1px solid rgba(12, 12, 12, 0.1)",
                       borderRadius: "4px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "#D02B20",
-                      cursor: "pointer",
+                      color: isReadOnly ? "#ccc" : "#D02B20",
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
+                      opacity: isReadOnly ? 0.5 : 1,
                     }}
                     data-testid="button-delete-row-area"
                   >
@@ -2510,6 +2524,7 @@ export default function FieldEstimate() {
                   height: r.repairHeight,
                 }))}
                 filteredWorkTypes={workTypes}
+                isReadOnly={isReadOnly}
               />
             </div>
 
@@ -2559,6 +2574,7 @@ export default function FieldEstimate() {
                 onSelectRow={toggleSelectMaterialRow}
                 onSelectAll={toggleSelectAllMaterialRows}
                 isLoading={isLoadingMaterialCatalog}
+                isReadOnly={isReadOnly}
               />
             </div>
 
@@ -2924,7 +2940,7 @@ export default function FieldEstimate() {
                     onClick={addLaborRow}
                     variant="outline"
                     size="sm"
-                    disabled={isLoadingLaborCatalog}
+                    disabled={isLoadingLaborCatalog || isReadOnly}
                     data-testid="button-add-labor-row"
                   >
                     <Plus className="h-4 w-4 mr-1" />
@@ -2934,7 +2950,7 @@ export default function FieldEstimate() {
                     onClick={deleteSelectedLaborRows}
                     variant="outline"
                     size="sm"
-                    disabled={selectedLaborRows.size === 0}
+                    disabled={selectedLaborRows.size === 0 || isReadOnly}
                     data-testid="button-delete-labor-rows"
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
@@ -2970,6 +2986,7 @@ export default function FieldEstimate() {
                   height: r.repairHeight,
                 }))}
                 filteredWorkTypes={workTypes}
+                isReadOnly={isReadOnly}
               />
             </div>
 
@@ -3281,6 +3298,7 @@ export default function FieldEstimate() {
                   onClick={addMaterialRow}
                   variant="outline"
                   size="sm"
+                  disabled={isReadOnly}
                   data-testid="button-add-material-row"
                 >
                   <Plus className="w-4 h-4 mr-1" />
@@ -3290,7 +3308,7 @@ export default function FieldEstimate() {
                   onClick={deleteSelectedMaterialRows}
                   variant="outline"
                   size="sm"
-                  disabled={selectedMaterialRows.size === 0}
+                  disabled={selectedMaterialRows.size === 0 || isReadOnly}
                   data-testid="button-delete-material-rows"
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
@@ -3308,6 +3326,7 @@ export default function FieldEstimate() {
               onSelectRow={toggleSelectMaterialRow}
               onSelectAll={toggleSelectAllMaterialRows}
               isLoading={isLoadingMaterialCatalog}
+              isReadOnly={isReadOnly}
             />
 
             {/* 하단 버튼 */}

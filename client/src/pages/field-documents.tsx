@@ -962,6 +962,7 @@ export default function FieldDocuments() {
                   <Select
                     value={doc.category}
                     onValueChange={(value) => handleCategoryChange(doc.id, value)}
+                    disabled={isReadOnly}
                   >
                     <SelectTrigger
                       className="w-32 h-8"
@@ -969,6 +970,8 @@ export default function FieldDocuments() {
                         fontFamily: "Pretendard",
                         fontSize: "12px",
                         fontWeight: 400,
+                        opacity: isReadOnly ? 0.5 : 1,
+                        cursor: isReadOnly ? "not-allowed" : "pointer",
                       }}
                     >
                       <SelectValue />
