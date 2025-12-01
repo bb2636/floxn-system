@@ -206,7 +206,7 @@ export function MaterialCostSection({
                       <SelectValue placeholder="선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      {materialCategoryOptions.map(cat => (
+                      {materialCategoryOptions.filter(cat => cat && cat.trim() !== '').map(cat => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                       ))}
                     </SelectContent>
@@ -228,7 +228,7 @@ export function MaterialCostSection({
                       <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {materialNamesForRow.map(name => (
+                      {materialNamesForRow.filter(name => name && name.trim() !== '').map(name => (
                         <SelectItem key={name} value={name}>{name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -250,7 +250,7 @@ export function MaterialCostSection({
                       <SelectValue placeholder="선택" />
                     </SelectTrigger>
                     <SelectContent>
-                      {specOptions.map((opt, idx) => (
+                      {specOptions.filter(opt => opt.spec && opt.spec.trim() !== '').map((opt, idx) => (
                         <SelectItem key={`${opt.spec}-${idx}`} value={opt.spec}>
                           {opt.spec}
                         </SelectItem>

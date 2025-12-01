@@ -1609,7 +1609,7 @@ export default function FieldEstimate() {
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {roomCategories.map(cat => (
+                            {roomCategories.filter(cat => cat && cat.trim() !== '').map(cat => (
                               <SelectItem key={cat} value={cat}>
                                 {cat}
                               </SelectItem>
@@ -1639,7 +1639,7 @@ export default function FieldEstimate() {
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent>
-                            {locations.map(loc => (
+                            {locations.filter(loc => loc && loc.trim() !== '').map(loc => (
                               <SelectItem key={loc} value={loc}>
                                 {loc}
                               </SelectItem>
@@ -1667,7 +1667,7 @@ export default function FieldEstimate() {
                             <SelectValue placeholder="공종 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            {workTypes.map(wt => (
+                            {workTypes.filter(wt => wt && wt.trim() !== '').map(wt => (
                               <SelectItem key={wt} value={wt}>
                                 {wt}
                               </SelectItem>
@@ -1695,7 +1695,7 @@ export default function FieldEstimate() {
                             <SelectValue placeholder="공사명 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            {(workNamesByWorkType[row.workType] || []).map(wn => (
+                            {(workNamesByWorkType[row.workType] || []).filter(wn => wn && wn.trim() !== '').map(wn => (
                               <SelectItem key={wn} value={wn}>
                                 {wn}
                               </SelectItem>

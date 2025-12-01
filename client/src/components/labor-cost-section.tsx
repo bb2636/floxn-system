@@ -535,7 +535,7 @@ export function LaborCostSection({
                     <SelectValue placeholder="선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categoryOptions.map(opt => (
+                    {categoryOptions.filter(opt => opt && opt.trim() !== '').map(opt => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                     ))}
                   </SelectContent>
@@ -558,7 +558,7 @@ export function LaborCostSection({
                     <SelectValue placeholder="선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getWorkNameOptions(row.category).map(opt => (
+                    {getWorkNameOptions(row.category).filter(opt => opt && opt.trim() !== '').map(opt => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                     ))}
                   </SelectContent>
@@ -580,7 +580,7 @@ export function LaborCostSection({
                     <SelectValue placeholder="선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getDetailWorkOptions(row.category, row.workName).map(opt => (
+                    {getDetailWorkOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                     ))}
                   </SelectContent>
@@ -602,7 +602,7 @@ export function LaborCostSection({
                     <SelectValue placeholder="선택" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getDetailItemOptions(row.category, row.workName, row.detailWork).map(opt => (
+                    {getDetailItemOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                     ))}
                   </SelectContent>
