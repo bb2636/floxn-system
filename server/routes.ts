@@ -1537,6 +1537,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Auto-sync drawing to all related cases (same insuranceAccidentNo)
+      try {
+        const syncCount = await storage.syncDrawingToRelatedCases(validatedData.caseId);
+        if (syncCount > 0) {
+          console.log(`[Drawing] Auto-synced to ${syncCount} related cases`);
+        }
+      } catch (syncError) {
+        console.error("Failed to sync drawing to related cases:", syncError);
+        // Don't fail the request if sync fails
+      }
+      
       res.json(drawing);
     } catch (error) {
       if (error instanceof z.ZodError) {
