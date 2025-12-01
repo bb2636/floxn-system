@@ -389,7 +389,7 @@ export default function ComprehensiveProgress() {
   });
 
   // 검색 필터링
-  const filteredData = filteredByStatus.filter((caseItem) => {
+  const filteredDataUnsorted = filteredByStatus.filter((caseItem) => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     
     if (normalizedQuery === "") {
@@ -413,6 +413,13 @@ export default function ComprehensiveProgress() {
       insuredAddress.includes(normalizedQuery) ||
       insuredAddressDetail.includes(normalizedQuery)
     );
+  });
+
+  // 최신순으로 정렬 (createdAt 기준 내림차순)
+  const filteredData = [...filteredDataUnsorted].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return dateB - dateA;
   });
 
   const totalCount = filteredData.length;
