@@ -196,6 +196,11 @@ export default function FieldDrawing() {
   // Check if save is ready
   const isSaveReady = Boolean(user && !isLoadingSelectedCase && selectedCase && !isLoadingDrawing);
 
+  // 협력사: 현장출동보고서 제출 후 수정 불가
+  const isPartner = user?.role === "협력사";
+  const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
+  const isReadOnly = isPartner && isSubmitted;
+
   // 도면 저장 mutation
   const saveDrawingMutation = useMutation({
     mutationFn: async () => {
@@ -1241,7 +1246,7 @@ export default function FieldDrawing() {
             )}
             <button
               onClick={handleSave}
-              disabled={!isSaveReady || saveDrawingMutation.isPending}
+              disabled={!isSaveReady || saveDrawingMutation.isPending || isReadOnly}
               className="px-6 py-2.5 rounded-lg font-medium transition-all hover-elevate active-elevate-2"
               style={{
                 background: "white",
@@ -1249,12 +1254,12 @@ export default function FieldDrawing() {
                 border: "1px solid #008FED",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
-                opacity: (!isSaveReady || saveDrawingMutation.isPending) ? 0.6 : 1,
-                cursor: (!isSaveReady || saveDrawingMutation.isPending) ? "not-allowed" : "pointer",
+                opacity: (!isSaveReady || saveDrawingMutation.isPending || isReadOnly) ? 0.6 : 1,
+                cursor: (!isSaveReady || saveDrawingMutation.isPending || isReadOnly) ? "not-allowed" : "pointer",
               }}
               data-testid="button-save"
             >
-              {!isSaveReady ? "준비 중..." : saveDrawingMutation.isPending ? "저장 중..." : "저장"}
+              {isReadOnly ? "수정 불가" : !isSaveReady ? "준비 중..." : saveDrawingMutation.isPending ? "저장 중..." : "저장"}
             </button>
             <button
               onClick={handleSavePNG}
@@ -1284,10 +1289,12 @@ export default function FieldDrawing() {
               <button
                 onClick={handleUndo}
                 data-testid="button-undo"
+                disabled={isReadOnly}
                 className="p-3 rounded-lg transition-all hover:bg-gray-100"
                 style={{
                   background: "transparent",
-                  color: history.length > 0 ? "#0C0C0C" : "#CCCCCC",
+                  color: isReadOnly ? "#CCCCCC" : (history.length > 0 ? "#0C0C0C" : "#CCCCCC"),
+                  cursor: isReadOnly ? "not-allowed" : "pointer",
                 }}
                 title="되돌리기 (Ctrl+Z)"
               >
@@ -1297,12 +1304,15 @@ export default function FieldDrawing() {
               {tools.map((tool) => (
                 <button
                   key={tool.id}
-                  onClick={() => handleToolClick(tool.id)}
+                  onClick={() => !isReadOnly && handleToolClick(tool.id)}
                   data-testid={`tool-${tool.id}`}
+                  disabled={isReadOnly}
                   className="p-3 rounded-lg transition-all"
                   style={{
                     background: selectedTool === tool.id ? "#008FED" : "transparent",
-                    color: selectedTool === tool.id ? "white" : "#0C0C0C",
+                    color: isReadOnly ? "#CCCCCC" : (selectedTool === tool.id ? "white" : "#0C0C0C"),
+                    cursor: isReadOnly ? "not-allowed" : "pointer",
+                    opacity: isReadOnly ? 0.5 : 1,
                   }}
                 >
                   <tool.icon className="w-6 h-6" />

@@ -119,6 +119,11 @@ export default function FieldDocuments() {
     enabled: !!selectedCaseId,
   });
 
+  // 협력사: 현장출동보고서 제출 후 수정 불가
+  const isPartner = user?.role === "협력사";
+  const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
+  const isReadOnly = isPartner && isSubmitted;
+
   // 케이스 선택 핸들러
   const handleCaseSelect = (caseId: string) => {
     setSelectedCaseId(caseId);
@@ -662,62 +667,93 @@ export default function FieldDocuments() {
       )}
 
       {/* 파일 업로드 영역 */}
-      <div
-        className="mb-6 rounded-xl p-12 transition-all cursor-pointer"
-        style={{
-          background: isDragging ? "rgba(0, 143, 237, 0.08)" : "rgba(0, 143, 237, 0.03)",
-          border: "none",
-        }}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
-        data-testid="upload-area"
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          onChange={(e) => handleFileSelect(e.target.files)}
-          className="hidden"
-          data-testid="file-input"
-        />
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0, 143, 237, 0.1)" }}>
-            <Upload className="w-8 h-8" style={{ color: "#008FED" }} />
-          </div>
-          <div className="text-center">
-            <div
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "15px",
-                fontWeight: 400,
-                letterSpacing: "-0.02em",
-                color: "rgba(12, 12, 12, 0.5)",
-                marginBottom: "12px",
-              }}
-            >
-              파일 또는 이미지를 이곳에 올려주세요
+      {isReadOnly ? (
+        <div
+          className="mb-6 rounded-xl p-12"
+          style={{
+            background: "rgba(12, 12, 12, 0.03)",
+            border: "none",
+            opacity: 0.5,
+          }}
+          data-testid="upload-area-disabled"
+        >
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(12, 12, 12, 0.1)" }}>
+              <Upload className="w-8 h-8" style={{ color: "#999" }} />
             </div>
-            <button
-              type="button"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "15px",
-                fontWeight: 500,
-                letterSpacing: "-0.02em",
-                color: "#008FED",
-                border: "none",
-                background: "transparent",
-                cursor: "pointer",
-              }}
-              data-testid="button-select-file"
-            >
-              파일 찾기
-            </button>
+            <div className="text-center">
+              <div
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 400,
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.3)",
+                }}
+              >
+                현장출동보고서 제출 후 수정 불가
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div
+          className="mb-6 rounded-xl p-12 transition-all cursor-pointer"
+          style={{
+            background: isDragging ? "rgba(0, 143, 237, 0.08)" : "rgba(0, 143, 237, 0.03)",
+            border: "none",
+          }}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          data-testid="upload-area"
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={(e) => handleFileSelect(e.target.files)}
+            className="hidden"
+            data-testid="file-input"
+          />
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0, 143, 237, 0.1)" }}>
+              <Upload className="w-8 h-8" style={{ color: "#008FED" }} />
+            </div>
+            <div className="text-center">
+              <div
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 400,
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.5)",
+                  marginBottom: "12px",
+                }}
+              >
+                파일 또는 이미지를 이곳에 올려주세요
+              </div>
+              <button
+                type="button"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  letterSpacing: "-0.02em",
+                  color: "#008FED",
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                }}
+                data-testid="button-select-file"
+              >
+                파일 찾기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Uploading files (progress) */}
       {uploadingFiles.length > 0 && (
@@ -961,18 +997,20 @@ export default function FieldDocuments() {
                   >
                     <Download className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.5)" }} />
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleFileRemove(doc.id)}
-                    className="p-1.5 rounded-lg hover-elevate active-elevate-2"
-                    style={{
-                      background: "rgba(255, 255, 255, 0.9)",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                    }}
-                    data-testid={`button-delete-${doc.id}`}
-                  >
-                    <X className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.5)" }} />
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      type="button"
+                      onClick={() => handleFileRemove(doc.id)}
+                      className="p-1.5 rounded-lg hover-elevate active-elevate-2"
+                      style={{
+                        background: "rgba(255, 255, 255, 0.9)",
+                        border: "1px solid rgba(12, 12, 12, 0.1)",
+                      }}
+                      data-testid={`button-delete-${doc.id}`}
+                    >
+                      <X className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.5)" }} />
+                    </button>
+                  )}
                 </div>
               </div>
             );

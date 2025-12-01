@@ -467,6 +467,11 @@ export default function FieldEstimate() {
     queryKey: [`/api/cases/${selectedCaseId}`],
     enabled: !!selectedCaseId,
   });
+
+  // 협력사: 현장출동보고서 제출 후 수정 불가
+  const isPartner = currentUser?.role === "협력사";
+  const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
+  const isReadOnly = isPartner && isSubmitted;
   
   // 손해방지 공종 목록 (하드코딩 - 손해방지에만 해당하는 공종)
   const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지비용', '코킹공사', '배관공사', '방수공사', '기타공사', '철거공사'];
@@ -2856,22 +2861,22 @@ export default function FieldEstimate() {
               )}
               <button
                 onClick={handleSave}
-                disabled={saveMutation.isPending}
+                disabled={saveMutation.isPending || isReadOnly}
                 style={{
                   padding: "12px 32px",
-                  background: saveMutation.isPending ? "#ccc" : "#008FED",
+                  background: (saveMutation.isPending || isReadOnly) ? "#ccc" : "#008FED",
                   border: "none",
                   borderRadius: "8px",
                   fontFamily: "Pretendard",
                   fontSize: "16px",
                   fontWeight: 600,
                   color: "white",
-                  cursor: saveMutation.isPending ? "not-allowed" : "pointer",
-                  boxShadow: "0px 2px 8px rgba(0, 143, 237, 0.3)",
+                  cursor: (saveMutation.isPending || isReadOnly) ? "not-allowed" : "pointer",
+                  boxShadow: (saveMutation.isPending || isReadOnly) ? "none" : "0px 2px 8px rgba(0, 143, 237, 0.3)",
                 }}
                 data-testid="button-save-estimate"
               >
-                {saveMutation.isPending ? "저장 중..." : "저장"}
+                {isReadOnly ? "수정 불가" : saveMutation.isPending ? "저장 중..." : "저장"}
               </button>
             </div>
           </div>
@@ -3313,6 +3318,7 @@ export default function FieldEstimate() {
               <button
                 type="button"
                 onClick={handleSave}
+                disabled={isReadOnly}
                 className="hover-elevate active-elevate-2"
                 style={{
                   fontFamily: "Pretendard",
@@ -3320,14 +3326,15 @@ export default function FieldEstimate() {
                   fontWeight: 600,
                   height: "52px",
                   padding: "12px 48px",
-                  background: "#008FED",
+                  background: isReadOnly ? "#ccc" : "#008FED",
                   color: "#FFFFFF",
                   border: "none",
                   borderRadius: "8px",
+                  cursor: isReadOnly ? "not-allowed" : "pointer",
                 }}
                 data-testid="button-save-material"
               >
-                저장
+                {isReadOnly ? "수정 불가" : "저장"}
               </button>
             </div>
           </div>
@@ -3344,14 +3351,15 @@ export default function FieldEstimate() {
             <button
               type="button"
               onClick={resetLaborTable}
+              disabled={isReadOnly}
               style={{
                 fontFamily: "Pretendard",
                 fontSize: "16px",
                 fontWeight: 600,
-                color: "#FF4D4F",
+                color: isReadOnly ? "#ccc" : "#FF4D4F",
                 background: "transparent",
                 border: "none",
-                cursor: "pointer",
+                cursor: isReadOnly ? "not-allowed" : "pointer",
               }}
               data-testid="button-reset-labor"
             >
@@ -3361,6 +3369,7 @@ export default function FieldEstimate() {
             <button
               type="button"
               onClick={handleSave}
+              disabled={isReadOnly}
               className="hover-elevate active-elevate-2"
               style={{
                 fontFamily: "Pretendard",
@@ -3368,14 +3377,15 @@ export default function FieldEstimate() {
                 fontWeight: 600,
                 height: "52px",
                 padding: "12px 48px",
-                background: "#008FED",
+                background: isReadOnly ? "#ccc" : "#008FED",
                 color: "#FFFFFF",
                 border: "none",
                 borderRadius: "8px",
+                cursor: isReadOnly ? "not-allowed" : "pointer",
               }}
               data-testid="button-save-labor"
             >
-              저장
+              {isReadOnly ? "수정 불가" : "저장"}
             </button>
           </div>
         )}

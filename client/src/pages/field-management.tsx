@@ -221,9 +221,12 @@ export default function FieldManagement() {
       .sort((a, b) => (a.caseNumber || "").localeCompare(b.caseNumber || ""));
   }, [selectedCaseData, availableCases]);
 
-  // 협력사 또는 관리자만 입력 가능, 단 검토중 상태에서는 수정 불가
+  // 협력사 또는 관리자만 입력 가능
+  // 협력사: 현장출동보고서 제출 후(fieldSurveyStatus === "submitted") 수정 불가
+  // 관리자: 항상 수정 가능
   const canEdit = isPartner || isAdmin;
-  const isReadOnly = !canEdit || (selectedCaseData?.status === "검토중");
+  const isSubmitted = selectedCaseData?.fieldSurveyStatus === "submitted";
+  const isReadOnly = !canEdit || (isPartner && isSubmitted);
 
   // 각 섹션 완료 상태 체크
   // 현장입력 완료: 필수 필드 입력 완료
