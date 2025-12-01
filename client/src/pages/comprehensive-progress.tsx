@@ -415,11 +415,19 @@ export default function ComprehensiveProgress() {
     );
   });
 
-  // 최신순으로 정렬 (createdAt 기준 내림차순)
+  // 최신순으로 정렬 (caseNumber 기준 내림차순 - yyMMddxxx 형식)
   const filteredData = [...filteredDataUnsorted].sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return dateB - dateA;
+    // caseNumber에서 숫자 부분만 추출 (예: "251201001" -> 251201001, "251201001-1" -> 2512010011)
+    const extractNumericValue = (caseNumber: string | null) => {
+      if (!caseNumber) return 0;
+      // 하이픈 제거하고 숫자만 추출
+      const numericStr = caseNumber.replace(/-/g, '');
+      return parseInt(numericStr, 10) || 0;
+    };
+    
+    const numA = extractNumericValue(a.caseNumber);
+    const numB = extractNumericValue(b.caseNumber);
+    return numB - numA;
   });
 
   const totalCount = filteredData.length;
