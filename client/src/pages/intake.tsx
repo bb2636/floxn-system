@@ -200,6 +200,12 @@ export default function Intake() {
     select: (users) => users.filter(u => u.role === "협력사"),
   });
 
+  // 관리자 목록 가져오기
+  const { data: administrators } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    select: (users) => users.filter(u => u.role === "관리자"),
+  });
+
   // 협력사 회사 목록 (중복 제거)
   const partnerCompanies = useMemo(() => {
     if (!partners) return [];
@@ -244,6 +250,12 @@ export default function Intake() {
   };
   const [editCaseId, setEditCaseId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
+    // 담당자 정보
+    managerId: "",
+    managerDepartment: "",
+    managerPosition: "",
+    managerContact: "",
+    // 기본 정보
     accidentDate: getTodayDate(),
     insuranceCompany: "",
     insurancePolicyNo: "",
@@ -478,8 +490,17 @@ export default function Intake() {
             setLoadedCaseNumber(caseData.caseNumber);
           }
           
+          // 담당자 정보 로드 (관리자)
+          const manager = administrators?.find(a => a.id === caseData.managerId);
+          
           // 폼 데이터 채우기
           setFormData({
+            // 담당자 정보
+            managerId: caseData.managerId || "",
+            managerDepartment: manager?.department || "",
+            managerPosition: manager?.position || "",
+            managerContact: manager?.contact || "",
+            // 기본 정보
             accidentDate: caseData.accidentDate || getTodayDate(),
             insuranceCompany: caseData.insuranceCompany || "",
             insurancePolicyNo: caseData.insurancePolicyNo || "",
@@ -605,7 +626,13 @@ export default function Intake() {
 
   const cleanFormData = (data: typeof formData) => {
     const cleaned: any = {};
+    // 스키마에 없는 필드 (users 테이블에서 조인하는 필드들)
+    const excludeFields = ['managerDepartment', 'managerPosition', 'managerContact'];
+    
     Object.entries(data).forEach(([key, value]) => {
+      // 제외 필드는 스킵
+      if (excludeFields.includes(key)) return;
+      
       if (value !== "" && value !== null && value !== undefined) {
         // damageItems 배열을 JSON 문자열로 변환
         if (key === "damageItems") {
@@ -838,6 +865,12 @@ export default function Intake() {
   // 초기화
   const handleReset = () => {
     const initialFormData = {
+      // 담당자 정보
+      managerId: "",
+      managerDepartment: "",
+      managerPosition: "",
+      managerContact: "",
+      // 기본 정보
       accidentDate: getTodayDate(),
       insuranceCompany: "",
       insurancePolicyNo: "",
@@ -1150,6 +1183,165 @@ export default function Intake() {
           {/* Form Sections Container */}
           <div className="flex flex-col gap-6 md:gap-8 w-full px-0 md:px-4 lg:px-8">
             
+            {/* 담당자 정보 */}
+            <div 
+              style={{
+                background: '#FFFFFF',
+                boxShadow: '0px 0px 20px #DBE9F5',
+                borderRadius: '12px',
+                overflow: 'hidden',
+              }}
+            >
+              <div 
+                className="flex items-center justify-between px-4 md:px-6 py-5 md:py-6 border-b-2"
+                style={{
+                  borderBottomColor: 'rgba(12, 12, 12, 0.1)',
+                }}
+              >
+                <h2 
+                  className="text-lg md:text-xl lg:text-2xl"
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontWeight: 600,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.02em',
+                    color: '#0C0C0C',
+                  }}
+                >
+                  담당자 정보
+                </h2>
+              </div>
+              
+              <div className="py-4 md:py-6 lg:py-8">
+                {/* 담당자, 소속부서, 직급, 연락처 (4-column on desktop) */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5">
+                  {/* 담당자 */}
+                  <div className="flex flex-col gap-2">
+                    <label 
+                      className="text-sm"
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontWeight: 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}
+                    >
+                      담당자
+                    </label>
+                    <Select
+                      value={formData.managerId}
+                      onValueChange={(value) => {
+                        const selectedAdmin = administrators?.find(a => a.id === value);
+                        setFormData(prev => ({
+                          ...prev,
+                          managerId: value,
+                          managerDepartment: selectedAdmin?.department || "",
+                          managerPosition: selectedAdmin?.position || "",
+                          managerContact: selectedAdmin?.contact || "",
+                        }));
+                      }}
+                    >
+                      <SelectTrigger 
+                        className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg border-0"
+                        style={{
+                          background: 'rgba(12, 12, 12, 0.04)',
+                        }}
+                        data-testid="select-manager"
+                      >
+                        <SelectValue placeholder="담당자명" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {administrators?.map((admin) => (
+                          <SelectItem key={admin.id} value={admin.id}>
+                            {admin.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* 소속부서 */}
+                  <div className="flex flex-col gap-2">
+                    <label 
+                      className="text-sm"
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontWeight: 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}
+                    >
+                      소속부서
+                    </label>
+                    <Input
+                      value={formData.managerDepartment}
+                      readOnly
+                      className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg border-0"
+                      style={{
+                        background: 'rgba(12, 12, 12, 0.04)',
+                      }}
+                      placeholder="소속부서"
+                      data-testid="input-manager-department"
+                    />
+                  </div>
+
+                  {/* 직급 */}
+                  <div className="flex flex-col gap-2">
+                    <label 
+                      className="text-sm"
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontWeight: 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}
+                    >
+                      직급
+                    </label>
+                    <Input
+                      value={formData.managerPosition}
+                      readOnly
+                      className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg border-0"
+                      style={{
+                        background: 'rgba(12, 12, 12, 0.04)',
+                      }}
+                      placeholder="직급"
+                      data-testid="input-manager-position"
+                    />
+                  </div>
+
+                  {/* 연락처 */}
+                  <div className="flex flex-col gap-2">
+                    <label 
+                      className="text-sm"
+                      style={{
+                        fontFamily: 'Pretendard',
+                        fontWeight: 500,
+                        lineHeight: '128%',
+                        letterSpacing: '-0.01em',
+                        color: '#686A6E',
+                      }}
+                    >
+                      연락처
+                    </label>
+                    <Input
+                      value={formData.managerContact}
+                      readOnly
+                      className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg border-0"
+                      style={{
+                        background: 'rgba(12, 12, 12, 0.04)',
+                      }}
+                      placeholder="연락처"
+                      data-testid="input-manager-contact"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* 1. 기본 정보 */}
             <div 
               style={{

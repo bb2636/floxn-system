@@ -85,6 +85,9 @@ export const cases = pgTable("cases", {
   status: text("status").notNull().default("배당대기"),
   recoveryType: text("recovery_type"), // 복구 타입: "직접복구" | "선견적요청" | null
   
+  // 담당자 정보 (관리자)
+  managerId: varchar("manager_id").references(() => users.id),
+  
   // 기본 정보
   accidentDate: text("accident_date"),
   
