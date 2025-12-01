@@ -2596,21 +2596,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
       
-      // Calculate current month (2024-11) and last month (2024-10) ranges
+      // Calculate current month and last month ranges dynamically
       const now = new Date();
-      const currentMonth = 11; // November
-      const currentYear = 2024;
-      const lastMonth = 10; // October
-      const lastYear = 2024;
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
       
-      // Filter cases for current month (2024-11)
+      // Calculate last month (handle year boundary)
+      const lastMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+      const lastYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+      
+      // Filter cases for current month
       const currentMonthCases = filteredCases.filter(c => {
         const accidentDate = parseAccidentDate(c.accidentDate);
         if (!accidentDate) return false;
         return accidentDate.getFullYear() === currentYear && accidentDate.getMonth() + 1 === currentMonth;
       });
       
-      // Filter cases for last month (2024-10)
+      // Filter cases for last month
       const lastMonthCases = filteredCases.filter(c => {
         const accidentDate = parseAccidentDate(c.accidentDate);
         if (!accidentDate) return false;
