@@ -3496,7 +3496,7 @@ export default function Intake() {
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[600px] max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-[600px]"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -3507,10 +3507,11 @@ export default function Intake() {
               background: '#FFFFFF',
               boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
               borderRadius: '12px',
+              maxHeight: '90vh',
             }}
           >
             {/* Header */}
-            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
+            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]" style={{ flexShrink: 0 }}>
               <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#0C0C0C' }}>
                 의뢰사 검색
               </h2>
@@ -3524,7 +3525,7 @@ export default function Intake() {
             </div>
 
             {/* Content */}
-            <div className="flex flex-col items-center w-full px-5 gap-4">
+            <div className="flex flex-col items-center w-full px-5 gap-4" style={{ flexShrink: 0 }}>
               {/* Search Input */}
               <div className="flex flex-col items-start w-full gap-2">
                 <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
@@ -3551,97 +3552,97 @@ export default function Intake() {
                   </button>
                 </div>
               </div>
+            </div>
 
-              {/* Results */}
-              <div className="flex flex-col items-start w-full gap-4 overflow-y-auto" style={{ maxHeight: '400px' }}>
-                {filteredClients.length === 0 ? (
-                  <div className="flex items-center justify-center w-full py-10">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
-                      {clientSearchQuery ? "검색 결과가 없습니다" : "등록된 의뢰사가 없습니다"}
+            {/* Results - Scrollable */}
+            <div className="flex flex-col items-start w-full px-5 overflow-y-auto" style={{ flex: 1, minHeight: 0, maxHeight: '300px' }}>
+              {filteredClients.length === 0 ? (
+                <div className="flex items-center justify-center w-full py-10">
+                  <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                    {clientSearchQuery ? "검색 결과가 없습니다" : "등록된 의뢰사가 없습니다"}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-start w-full">
+                  {/* Header */}
+                  <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>의뢰사명</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', width: '60px' }}>
+                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
+                    </div>
+                  </div>
+                  {/* Data Rows */}
+                  {filteredClients.map((client) => (
+                    <div 
+                      key={client.name} 
+                      className="flex flex-row items-center w-full h-[50px]"
+                      style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                          {client.name}
+                        </span>
+                      </div>
+                      <div 
+                        onClick={() => setTempSelectedClient(client)}
+                        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
+                        data-testid={`radio-client-${client.name}`}
+                      >
+                        <div style={{ position: 'relative', width: '18px', height: '18px' }}>
+                          <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedClient?.name === client.name ? '#008FED' : '#FDFDFD', border: tempSelectedClient?.name === client.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
+                          {tempSelectedClient?.name === client.name && (
+                            <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Selected Card - Fixed at bottom */}
+            {tempSelectedClient && (
+              <div className="w-full px-5" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
+                    <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
+                      {tempSelectedClient.name}
                     </span>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-start w-full">
-                    {/* Header */}
-                    <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>의뢰사명</span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', width: '60px' }}>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
-                      </div>
-                    </div>
-                    {/* Data Rows */}
-                    {filteredClients.map((client) => (
-                      <div 
-                        key={client.name} 
-                        className="flex flex-row items-center w-full h-[50px]"
-                        style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
-                      >
-                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
-                          <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
-                            {client.name}
-                          </span>
-                        </div>
-                        <div 
-                          onClick={() => setTempSelectedClient(client)}
-                          style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
-                          data-testid={`radio-client-${client.name}`}
-                        >
-                          <div style={{ position: 'relative', width: '18px', height: '18px' }}>
-                            <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedClient?.name === client.name ? '#008FED' : '#FDFDFD', border: tempSelectedClient?.name === client.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
-                            {tempSelectedClient?.name === client.name && (
-                              <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Selected Card */}
-                {tempSelectedClient && (
-                  <div className="w-full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
-                        <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
-                          {tempSelectedClient.name}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Buttons */}
-                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px', gap: '8px', width: '100%', height: '40px' }}>
-                      <button
-                        onClick={() => setTempSelectedClient(null)}
-                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
-                        data-testid="button-reset-client"
-                      >
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.3)' }}>
-                          초기화
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleInputChange("clientResidence", tempSelectedClient.name);
-                          setIsClientSearchOpen(false);
-                          setTempSelectedClient(null);
-                          setClientSearchQuery("");
-                        }}
-                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
-                        data-testid="button-apply-client"
-                      >
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
-                          적용
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                </div>
+                
+                {/* Buttons */}
+                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px', gap: '8px', width: '100%', height: '40px' }}>
+                  <button
+                    onClick={() => setTempSelectedClient(null)}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                    data-testid="button-reset-client"
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.3)' }}>
+                      초기화
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleInputChange("clientResidence", tempSelectedClient.name);
+                      setIsClientSearchOpen(false);
+                      setTempSelectedClient(null);
+                      setClientSearchQuery("");
+                    }}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+                    data-testid="button-apply-client"
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                      적용
+                    </span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -3666,7 +3667,7 @@ export default function Intake() {
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[600px] max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-[600px]"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -3677,10 +3678,11 @@ export default function Intake() {
               background: '#FFFFFF',
               boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
               borderRadius: '12px',
+              maxHeight: '90vh',
             }}
           >
             {/* Header */}
-            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
+            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]" style={{ flexShrink: 0 }}>
               <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#0C0C0C' }}>
                 심사사 검색
               </h2>
@@ -3694,7 +3696,7 @@ export default function Intake() {
             </div>
 
             {/* Content */}
-            <div className="flex flex-col items-center w-full px-5 gap-4">
+            <div className="flex flex-col items-center w-full px-5 gap-4" style={{ flexShrink: 0 }}>
               {/* Search Input */}
               <div className="flex flex-col items-start w-full gap-2">
                 <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
@@ -3721,97 +3723,97 @@ export default function Intake() {
                   </button>
                 </div>
               </div>
+            </div>
 
-              {/* Results */}
-              <div className="flex flex-col items-start w-full gap-4 overflow-y-auto" style={{ maxHeight: '400px' }}>
-                {filteredAssessors.length === 0 ? (
-                  <div className="flex items-center justify-center w-full py-10">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
-                      {assessorSearchQuery ? "검색 결과가 없습니다" : "등록된 심사사가 없습니다"}
+            {/* Results - Scrollable */}
+            <div className="flex flex-col items-start w-full px-5 overflow-y-auto" style={{ flex: 1, minHeight: 0, maxHeight: '300px' }}>
+              {filteredAssessors.length === 0 ? (
+                <div className="flex items-center justify-center w-full py-10">
+                  <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                    {assessorSearchQuery ? "검색 결과가 없습니다" : "등록된 심사사가 없습니다"}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-start w-full">
+                  {/* Header */}
+                  <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>심사사명</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', width: '60px' }}>
+                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
+                    </div>
+                  </div>
+                  {/* Data Rows */}
+                  {filteredAssessors.map((assessor) => (
+                    <div 
+                      key={assessor.name} 
+                      className="flex flex-row items-center w-full h-[50px]"
+                      style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                          {assessor.name}
+                        </span>
+                      </div>
+                      <div 
+                        onClick={() => setTempSelectedAssessor(assessor)}
+                        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
+                        data-testid={`radio-assessor-${assessor.name}`}
+                      >
+                        <div style={{ position: 'relative', width: '18px', height: '18px' }}>
+                          <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedAssessor?.name === assessor.name ? '#008FED' : '#FDFDFD', border: tempSelectedAssessor?.name === assessor.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
+                          {tempSelectedAssessor?.name === assessor.name && (
+                            <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Selected Card - Fixed at bottom */}
+            {tempSelectedAssessor && (
+              <div className="w-full px-5" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
+                    <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
+                      {tempSelectedAssessor.name}
                     </span>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-start w-full">
-                    {/* Header */}
-                    <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>심사사명</span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', width: '60px' }}>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
-                      </div>
-                    </div>
-                    {/* Data Rows */}
-                    {filteredAssessors.map((assessor) => (
-                      <div 
-                        key={assessor.name} 
-                        className="flex flex-row items-center w-full h-[50px]"
-                        style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
-                      >
-                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
-                          <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
-                            {assessor.name}
-                          </span>
-                        </div>
-                        <div 
-                          onClick={() => setTempSelectedAssessor(assessor)}
-                          style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
-                          data-testid={`radio-assessor-${assessor.name}`}
-                        >
-                          <div style={{ position: 'relative', width: '18px', height: '18px' }}>
-                            <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedAssessor?.name === assessor.name ? '#008FED' : '#FDFDFD', border: tempSelectedAssessor?.name === assessor.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
-                            {tempSelectedAssessor?.name === assessor.name && (
-                              <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Selected Card */}
-                {tempSelectedAssessor && (
-                  <div className="w-full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
-                        <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
-                          {tempSelectedAssessor.name}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Buttons */}
-                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px', gap: '8px', width: '100%', height: '40px' }}>
-                      <button
-                        onClick={() => setTempSelectedAssessor(null)}
-                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
-                        data-testid="button-reset-assessor"
-                      >
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.3)' }}>
-                          초기화
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleInputChange("assessorId", tempSelectedAssessor.name);
-                          setIsAssessorSearchOpen(false);
-                          setTempSelectedAssessor(null);
-                          setAssessorSearchQuery("");
-                        }}
-                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
-                        data-testid="button-apply-assessor"
-                      >
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
-                          적용
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                </div>
+                
+                {/* Buttons */}
+                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px', gap: '8px', width: '100%', height: '40px' }}>
+                  <button
+                    onClick={() => setTempSelectedAssessor(null)}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                    data-testid="button-reset-assessor"
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.3)' }}>
+                      초기화
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleInputChange("assessorId", tempSelectedAssessor.name);
+                      setIsAssessorSearchOpen(false);
+                      setTempSelectedAssessor(null);
+                      setAssessorSearchQuery("");
+                    }}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+                    data-testid="button-apply-assessor"
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                      적용
+                    </span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -3836,7 +3838,7 @@ export default function Intake() {
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-[600px] max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-[600px]"
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -3847,10 +3849,11 @@ export default function Intake() {
               background: '#FFFFFF',
               boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
               borderRadius: '12px',
+              maxHeight: '90vh',
             }}
           >
             {/* Header */}
-            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]">
+            <div className="flex flex-row justify-between items-center w-full px-5 h-[60px]" style={{ flexShrink: 0 }}>
               <h2 style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#0C0C0C' }}>
                 손사명 검색
               </h2>
@@ -3864,7 +3867,7 @@ export default function Intake() {
             </div>
 
             {/* Content */}
-            <div className="flex flex-col items-center w-full px-5 gap-4">
+            <div className="flex flex-col items-center w-full px-5 gap-4" style={{ flexShrink: 0 }}>
               {/* Search Input */}
               <div className="flex flex-col items-start w-full gap-2">
                 <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
@@ -3891,97 +3894,97 @@ export default function Intake() {
                   </button>
                 </div>
               </div>
+            </div>
 
-              {/* Results */}
-              <div className="flex flex-col items-start w-full gap-4 overflow-y-auto" style={{ maxHeight: '400px' }}>
-                {filteredInvestigators.length === 0 ? (
-                  <div className="flex items-center justify-center w-full py-10">
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
-                      {investigatorSearchQuery ? "검색 결과가 없습니다" : "등록된 손사명이 없습니다"}
+            {/* Results - Scrollable */}
+            <div className="flex flex-col items-start w-full px-5 overflow-y-auto" style={{ flex: 1, minHeight: 0, maxHeight: '300px' }}>
+              {filteredInvestigators.length === 0 ? (
+                <div className="flex items-center justify-center w-full py-10">
+                  <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                    {investigatorSearchQuery ? "검색 결과가 없습니다" : "등록된 손사명이 없습니다"}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-start w-full">
+                  {/* Header */}
+                  <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>손사명</span>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', width: '60px' }}>
+                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
+                    </div>
+                  </div>
+                  {/* Data Rows */}
+                  {filteredInvestigators.map((investigator) => (
+                    <div 
+                      key={investigator.name} 
+                      className="flex flex-row items-center w-full h-[50px]"
+                      style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                          {investigator.name}
+                        </span>
+                      </div>
+                      <div 
+                        onClick={() => setTempSelectedInvestigator(investigator)}
+                        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
+                        data-testid={`radio-investigator-${investigator.name}`}
+                      >
+                        <div style={{ position: 'relative', width: '18px', height: '18px' }}>
+                          <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedInvestigator?.name === investigator.name ? '#008FED' : '#FDFDFD', border: tempSelectedInvestigator?.name === investigator.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
+                          {tempSelectedInvestigator?.name === investigator.name && (
+                            <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Selected Card - Fixed at bottom */}
+            {tempSelectedInvestigator && (
+              <div className="w-full px-5" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
+                    <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
+                      {tempSelectedInvestigator.name}
                     </span>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-start w-full">
-                    {/* Header */}
-                    <div className="flex flex-row items-center w-full h-[39px]" style={{ background: '#F5F5F5' }}>
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>손사명</span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', width: '60px' }}>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>선택</span>
-                      </div>
-                    </div>
-                    {/* Data Rows */}
-                    {filteredInvestigators.map((investigator) => (
-                      <div 
-                        key={investigator.name} 
-                        className="flex flex-row items-center w-full h-[50px]"
-                        style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
-                      >
-                        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
-                          <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
-                            {investigator.name}
-                          </span>
-                        </div>
-                        <div 
-                          onClick={() => setTempSelectedInvestigator(investigator)}
-                          style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
-                          data-testid={`radio-investigator-${investigator.name}`}
-                        >
-                          <div style={{ position: 'relative', width: '18px', height: '18px' }}>
-                            <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedInvestigator?.name === investigator.name ? '#008FED' : '#FDFDFD', border: tempSelectedInvestigator?.name === investigator.name ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
-                            {tempSelectedInvestigator?.name === investigator.name && (
-                              <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Selected Card */}
-                {tempSelectedInvestigator && (
-                  <div className="w-full" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
-                        <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
-                          {tempSelectedInvestigator.name}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Buttons */}
-                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px', gap: '8px', width: '100%', height: '40px' }}>
-                      <button
-                        onClick={() => setTempSelectedInvestigator(null)}
-                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
-                        data-testid="button-reset-investigator"
-                      >
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.3)' }}>
-                          초기화
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          handleInputChange("investigatorTeam", tempSelectedInvestigator.name);
-                          setIsInvestigatorSearchOpen(false);
-                          setTempSelectedInvestigator(null);
-                          setInvestigatorSearchQuery("");
-                        }}
-                        style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
-                        data-testid="button-apply-investigator"
-                      >
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
-                          적용
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                </div>
+                
+                {/* Buttons */}
+                <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px', gap: '8px', width: '100%', height: '40px' }}>
+                  <button
+                    onClick={() => setTempSelectedInvestigator(null)}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', borderRadius: '8px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                    data-testid="button-reset-investigator"
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.3)' }}>
+                      초기화
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleInputChange("investigatorTeam", tempSelectedInvestigator.name);
+                      setIsInvestigatorSearchOpen(false);
+                      setTempSelectedInvestigator(null);
+                      setInvestigatorSearchQuery("");
+                    }}
+                    style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '10px', gap: '10px', width: '88px', height: '40px', background: '#008FED', borderRadius: '6px', border: 'none', cursor: 'pointer' }}
+                    data-testid="button-apply-investigator"
+                  >
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', lineHeight: '128%', letterSpacing: '-0.02em', color: '#FDFDFD' }}>
+                      적용
+                    </span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       )}
