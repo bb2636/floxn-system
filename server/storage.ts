@@ -109,6 +109,10 @@ export interface IStorage {
   // Same accident number methods (for field survey sync)
   getCasesByAccidentNo(accidentNo: string, excludeCaseId?: string): Promise<Case[]>;
   syncFieldSurveyToRelatedCases(sourceCaseId: string, fieldData: Partial<InsertCase>): Promise<number>;
+  // Real-time sync methods for all field survey data (drawing, documents, estimates)
+  syncDrawingToRelatedCases(sourceCaseId: string): Promise<number>;
+  syncDocumentsToRelatedCases(sourceCaseId: string, newDocument: CaseDocument): Promise<number>;
+  syncEstimateToRelatedCases(sourceCaseId: string): Promise<number>;
   // Case number helpers
   getPreventionCaseByPrefix(prefix: string): Promise<Case | null>;
   getNextVictimSuffix(prefix: string): Promise<number>;
@@ -2022,6 +2026,18 @@ export class MemStorage implements IStorage {
 
   async syncFieldSurveyToRelatedCases(sourceCaseId: string, fieldData: Partial<InsertCase>): Promise<number> {
     throw new Error("Same accident number methods not implemented in MemStorage");
+  }
+
+  async syncDrawingToRelatedCases(sourceCaseId: string): Promise<number> {
+    throw new Error("Sync drawing to related cases not implemented in MemStorage");
+  }
+
+  async syncDocumentsToRelatedCases(sourceCaseId: string, newDocument: CaseDocument): Promise<number> {
+    throw new Error("Sync documents to related cases not implemented in MemStorage");
+  }
+
+  async syncEstimateToRelatedCases(sourceCaseId: string): Promise<number> {
+    throw new Error("Sync estimate to related cases not implemented in MemStorage");
   }
 
   // Case number helpers (stub)
@@ -4120,6 +4136,185 @@ export class DbStorage implements IStorage {
     }
 
     return updatedCount;
+  }
+
+  // Real-time sync for drawings to all related cases (same accident number)
+  async syncDrawingToRelatedCases(sourceCaseId: string): Promise<number> {
+    const sourceCase = await this.getCaseById(sourceCaseId);
+    if (!sourceCase || !sourceCase.insuranceAccidentNo) {
+      return 0;
+    }
+
+    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, sourceCaseId);
+    if (relatedCases.length === 0) {
+      return 0;
+    }
+
+    // Get source drawing
+    const sourceDrawing = await this.getDrawingByCaseId(sourceCaseId);
+    if (!sourceDrawing) {
+      return 0;
+    }
+
+    let syncedCount = 0;
+    for (const relatedCase of relatedCases) {
+      try {
+        // Check if related case already has a drawing
+        const existingDrawing = await this.getDrawingByCaseId(relatedCase.id);
+        
+        if (existingDrawing) {
+          // Update existing drawing with source data
+          await db
+            .update(drawings)
+            .set({
+              uploadedImages: sourceDrawing.uploadedImages,
+              rectangles: sourceDrawing.rectangles,
+              accidentAreas: sourceDrawing.accidentAreas,
+              leakMarkers: sourceDrawing.leakMarkers,
+            })
+            .where(eq(drawings.id, existingDrawing.id));
+        } else {
+          // Create new drawing for related case
+          await db.insert(drawings).values({
+            id: randomUUID(),
+            caseId: relatedCase.id,
+            uploadedImages: sourceDrawing.uploadedImages,
+            rectangles: sourceDrawing.rectangles,
+            accidentAreas: sourceDrawing.accidentAreas,
+            leakMarkers: sourceDrawing.leakMarkers,
+            createdBy: sourceDrawing.createdBy,
+            createdAt: getKSTDate(),
+          });
+        }
+        syncedCount++;
+      } catch (error) {
+        console.error(`Failed to sync drawing to case ${relatedCase.id}:`, error);
+      }
+    }
+
+    console.log(`[Drawing Sync] Synced drawing from case ${sourceCaseId} to ${syncedCount} related cases`);
+    return syncedCount;
+  }
+
+  // Real-time sync for new documents to all related cases (same accident number)
+  async syncDocumentsToRelatedCases(sourceCaseId: string, newDocument: CaseDocument): Promise<number> {
+    const sourceCase = await this.getCaseById(sourceCaseId);
+    if (!sourceCase || !sourceCase.insuranceAccidentNo) {
+      return 0;
+    }
+
+    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, sourceCaseId);
+    if (relatedCases.length === 0) {
+      return 0;
+    }
+
+    let syncedCount = 0;
+    for (const relatedCase of relatedCases) {
+      try {
+        // Create the same document for related case (duplicate with new id)
+        await db.insert(caseDocuments).values({
+          id: randomUUID(),
+          caseId: relatedCase.id,
+          category: newDocument.category,
+          fileName: newDocument.fileName,
+          fileType: newDocument.fileType,
+          fileSize: newDocument.fileSize,
+          base64Data: newDocument.base64Data,
+          description: newDocument.description,
+          uploadedBy: newDocument.uploadedBy,
+          uploadedAt: getKSTDate(),
+        });
+        syncedCount++;
+      } catch (error) {
+        console.error(`Failed to sync document to case ${relatedCase.id}:`, error);
+      }
+    }
+
+    console.log(`[Document Sync] Synced document "${newDocument.fileName}" from case ${sourceCaseId} to ${syncedCount} related cases`);
+    return syncedCount;
+  }
+
+  // Real-time sync for estimates to all related cases (same accident number)
+  async syncEstimateToRelatedCases(sourceCaseId: string): Promise<number> {
+    const sourceCase = await this.getCaseById(sourceCaseId);
+    if (!sourceCase || !sourceCase.insuranceAccidentNo) {
+      return 0;
+    }
+
+    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, sourceCaseId);
+    if (relatedCases.length === 0) {
+      return 0;
+    }
+
+    // Get source estimate with rows
+    const sourceEstimate = await this.getLatestEstimate(sourceCaseId);
+    if (!sourceEstimate) {
+      return 0;
+    }
+
+    let syncedCount = 0;
+    for (const relatedCase of relatedCases) {
+      try {
+        // Get next version for related case
+        const existingVersions = await db
+          .select({ version: estimates.version })
+          .from(estimates)
+          .where(eq(estimates.caseId, relatedCase.id))
+          .orderBy(desc(estimates.version))
+          .limit(1);
+        
+        const nextVersion = (existingVersions[0]?.version || 0) + 1;
+        const newEstimateId = randomUUID();
+
+        // Create new estimate version for related case
+        await db.insert(estimates).values({
+          id: newEstimateId,
+          caseId: relatedCase.id,
+          version: nextVersion,
+          createdBy: sourceEstimate.estimate.createdBy,
+          createdAt: getKSTDate(),
+          laborCostData: sourceEstimate.estimate.laborCostData,
+          materialCostData: sourceEstimate.estimate.materialCostData,
+          vatIncluded: sourceEstimate.estimate.vatIncluded,
+        });
+
+        // Copy all rows
+        for (let i = 0; i < sourceEstimate.rows.length; i++) {
+          const row = sourceEstimate.rows[i];
+          await db.insert(estimateRows).values({
+            id: randomUUID(),
+            estimateId: newEstimateId,
+            rowOrder: i + 1,
+            category: row.category,
+            location: row.location,
+            workType: row.workType,
+            workName: row.workName,
+            damageWidthMm: row.damageWidthMm,
+            damageHeightMm: row.damageHeightMm,
+            damageAreaMm2: row.damageAreaMm2,
+            repairWidthMm: row.repairWidthMm,
+            repairHeightMm: row.repairHeightMm,
+            repairAreaMm2: row.repairAreaMm2,
+            note: row.note,
+          });
+        }
+
+        // Update case's estimate amount if available
+        if (sourceCase.estimateAmount) {
+          await db
+            .update(cases)
+            .set({ estimateAmount: sourceCase.estimateAmount })
+            .where(eq(cases.id, relatedCase.id));
+        }
+
+        syncedCount++;
+      } catch (error) {
+        console.error(`Failed to sync estimate to case ${relatedCase.id}:`, error);
+      }
+    }
+
+    console.log(`[Estimate Sync] Synced estimate from case ${sourceCaseId} to ${syncedCount} related cases`);
+    return syncedCount;
   }
 
   // Case number helpers
