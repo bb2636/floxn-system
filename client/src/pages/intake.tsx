@@ -398,13 +398,13 @@ export default function Intake() {
     return Array.from(new Set(companies));
   }, [investigators]);
 
-  // 의뢰사 회사명 목록 (중복 제거)
+  // 의뢰사 회사명 목록 (중복 제거) - 관리자와 협력사 제외
   const clientCompanies = useMemo(() => {
     if (!allUsers) {
       return [];
     }
     const companies = allUsers
-      .filter(u => u.role === "의뢰사")
+      .filter(u => u.role !== "관리자" && u.role !== "협력사")
       .map(u => u.company)
       .filter((company): company is string => !!company);
     return Array.from(new Set(companies));
