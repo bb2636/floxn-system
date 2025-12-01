@@ -827,7 +827,10 @@ export default function FieldManagement() {
                 피보험자 주소
               </Label>
               <Input
-                value={selectedCaseData?.insuredAddress || ""}
+                value={[
+                  selectedCaseData?.insuredAddress,
+                  (selectedCaseData as any)?.insuredAddressDetail
+                ].filter(Boolean).join(" ") || ""}
                 readOnly
                 placeholder="도로명 주소, 동/호수 포함"
                 className={intakeFieldClass}
