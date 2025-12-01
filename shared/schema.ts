@@ -268,6 +268,7 @@ export type CaseWithLatestProgress = Case & {
     content: string;
     createdAt: string;
   } | null;
+  managerName?: string | null;
 };
 
 // 진행상황 업데이트 테이블

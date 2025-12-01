@@ -400,7 +400,7 @@ export default function ComprehensiveProgress() {
     const insuranceAccidentNo = (caseItem.insuranceAccidentNo || "").toLowerCase();
     const caseNumber = (caseItem.caseNumber || "").toLowerCase();
     const insuredName = (caseItem.insuredName || "").toLowerCase();
-    const assignedPartnerManager = (caseItem.assignedPartnerManager || "").toLowerCase();
+    const managerName = (caseItem.managerName || "").toLowerCase();
     const insuredAddress = (caseItem.insuredAddress || "").toLowerCase();
     const insuredAddressDetail = ((caseItem as any).insuredAddressDetail || "").toLowerCase();
     
@@ -409,7 +409,7 @@ export default function ComprehensiveProgress() {
       insuranceAccidentNo.includes(normalizedQuery) ||
       caseNumber.includes(normalizedQuery) ||
       insuredName.includes(normalizedQuery) ||
-      assignedPartnerManager.includes(normalizedQuery) ||
+      managerName.includes(normalizedQuery) ||
       insuredAddress.includes(normalizedQuery) ||
       insuredAddressDetail.includes(normalizedQuery)
     );
@@ -1048,7 +1048,7 @@ export default function ComprehensiveProgress() {
                     {caseItem.insuredName || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    {caseItem.assignedPartnerManager || "-"}
+                    {caseItem.managerName || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     {caseItem.assignedPartner || "-"}
@@ -1348,7 +1348,7 @@ export default function ComprehensiveProgress() {
                             </div>
                           </div>
 
-                          {/* 입사 담당자 */}
+                          {/* 당사 담당자 */}
                           <div style={{
                             display: "flex",
                             flexDirection: "row",
@@ -1363,7 +1363,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.6)",
                             }}>
-                              입사 담당자
+                              당사 담당자
                             </div>
                             <div style={{
                               fontFamily: "Pretendard",
@@ -1371,7 +1371,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              {selectedCase.assignedPartnerManager || "-"}
+                              {selectedCase.managerName || "-"}
                             </div>
                           </div>
 
