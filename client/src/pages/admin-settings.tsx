@@ -1995,7 +1995,15 @@ export default function AdminSettings() {
                           
                           if (jsonData.length > 0) {
                             const headers = jsonData[0] as string[];
-                            const rows = jsonData.slice(1) as any[];
+                            // 셀 내 줄바꿈 정리 - 첫 번째 줄만 사용
+                            const rows = (jsonData.slice(1) as any[]).map(row => 
+                              Array.isArray(row) ? row.map(cell => {
+                                if (typeof cell === 'string' && (cell.includes('\n') || cell.includes('\r'))) {
+                                  return cell.split(/\r?\n|\r/)[0].trim();
+                                }
+                                return cell;
+                              }) : row
+                            );
                             
                             setHeaders(headers);
                             setData(rows);
