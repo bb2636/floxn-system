@@ -697,6 +697,7 @@ export default function Intake({ isModal = false, onClose, onSuccess }: IntakePr
   }, [sameAsPolicyHolder, formData.policyHolderName, formData.policyHolderIdNumber, formData.policyHolderAddress]);
 
   const cleanFormData = (data: typeof formData) => {
+    console.log("🧹 cleanFormData - 입력 데이터 managerId:", data.managerId);
     const cleaned: any = {};
     // 스키마에 없는 필드 (users 테이블에서 조인하는 필드들)
     const excludeFields = ['managerDepartment', 'managerPosition', 'managerContact'];
@@ -729,6 +730,7 @@ export default function Intake({ isModal = false, onClose, onSuccess }: IntakePr
     if (additionalVictims.length > 0) {
       cleaned.additionalVictims = JSON.stringify(additionalVictims);
     }
+    console.log("🧹 cleanFormData - 출력 데이터 managerId:", cleaned.managerId);
     return cleaned;
   };
 
@@ -746,12 +748,9 @@ export default function Intake({ isModal = false, onClose, onSuccess }: IntakePr
       });
       
       // 임시저장 시: caseNumber 없이 전송 (서버에서 DRAFT-{timestamp} 자동 생성)
-      const cleanedFormData = cleanFormData(data);
       const cleanedData = { 
-        ...cleanedFormData, 
+        ...cleanFormData(data), 
         status,
-        // 담당자가 선택되지 않으면 현재 로그인한 사용자로 설정
-        managerId: cleanedFormData.managerId || user?.id || null,
         // editCaseId를 포함하여 백엔드에서 draft 삭제 가능하도록
         ...(editCaseId ? { id: editCaseId } : {})
       };
@@ -805,19 +804,20 @@ export default function Intake({ isModal = false, onClose, onSuccess }: IntakePr
         damagePreventionCost: data.damagePreventionCost,
         victimIncidentAssistance: data.victimIncidentAssistance,
         editCaseId: editCaseId,
-        sameAsPolicyHolder: cleanedData.sameAsPolicyHolder
+        sameAsPolicyHolder: cleanedData.sameAsPolicyHolder,
+        managerId_from_formData: data.managerId,
+        managerId_in_cleanedData: cleanedData.managerId,
       });
       
       // 백엔드가 자동으로 다중 케이스 생성 및 접수번호 생성 처리
       // editCaseId를 포함하여 백엔드에서 draft 삭제 가능하도록
-      // assignedTo: 현재 로그인한 사용자를 담당자로 설정
-      // managerId: 담당자가 선택되지 않으면 현재 로그인한 사용자로 설정
+      // assignedTo: 현재 로그인한 사용자
+      // managerId: 드롭다운에서 선택한 당사 담당자 (선택 안하면 null)
       const payload = {
         ...cleanedData,
         status: "접수완료",
         receptionDate: data.accidentDate || getTodayDate(),
         assignedTo: user?.id || null,
-        managerId: cleanedData.managerId || user?.id || null,
         ...(editCaseId ? { id: editCaseId } : {})
       };
       
@@ -1326,7 +1326,9 @@ export default function Intake({ isModal = false, onClose, onSuccess }: IntakePr
                     <Select
                       value={formData.managerId}
                       onValueChange={(value) => {
+                        console.log("👤 담당자 선택:", value);
                         const selectedAdmin = administrators?.find(a => a.id === value);
+                        console.log("👤 선택된 관리자:", selectedAdmin);
                         setFormData(prev => ({
                           ...prev,
                           managerId: value,
