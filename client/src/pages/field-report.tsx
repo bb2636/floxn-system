@@ -1089,7 +1089,7 @@ export default function FieldReport() {
                       color: "#0C0C0C",
                     }}
                   >
-                    {caseData.insuredAddress || "-"}
+                    {[caseData.insuredAddress, (caseData as any).insuredAddressDetail].filter(Boolean).join(" ") || "-"}
                   </span>
                 </div>
               </CardContent>

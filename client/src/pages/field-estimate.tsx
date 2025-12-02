@@ -2182,7 +2182,7 @@ export default function FieldEstimate() {
                     }}
                     data-testid="text-address"
                   >
-                    {estimateCase?.insuredAddress || "-"}
+                    {[estimateCase?.insuredAddress, (estimateCase as any)?.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
                   </div>
                 </div>
               </div>
