@@ -421,7 +421,7 @@ export default function FieldManagement() {
     setDispatchLocation(selectedCaseData.dispatchLocation || "");
 
     // 사고 정보
-    setAccidentCategory(selectedCaseData.accidentType || "배관");
+    setAccidentCategory(selectedCaseData.accidentCategory || "배관");
     setAccidentCause(selectedCaseData.accidentCause || "");
     setSpecialNotes(selectedCaseData.specialNotes || "");
 
@@ -445,6 +445,20 @@ export default function FieldManagement() {
 
     // VOC 정보
     setVoc(selectedCaseData.specialRequests || "");
+
+    // 처리유형 정보 (JSON 파싱)
+    if (selectedCaseData.processingTypes) {
+      try {
+        const parsed = JSON.parse(selectedCaseData.processingTypes);
+        setProcessingTypes(new Set(Array.isArray(parsed) ? parsed : []));
+      } catch (e) {
+        console.error("Error parsing processingTypes:", e);
+        setProcessingTypes(new Set());
+      }
+    } else {
+      setProcessingTypes(new Set());
+    }
+    setProcessingTypeOther(selectedCaseData.processingTypeOther || "");
 
   }, [selectedCase]); // selectedCase ID만 감지 - ref로 입력 보호
 
