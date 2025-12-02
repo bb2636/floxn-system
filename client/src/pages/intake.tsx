@@ -746,9 +746,12 @@ export default function Intake({ isModal = false, onClose, onSuccess }: IntakePr
       });
       
       // 임시저장 시: caseNumber 없이 전송 (서버에서 DRAFT-{timestamp} 자동 생성)
+      const cleanedFormData = cleanFormData(data);
       const cleanedData = { 
-        ...cleanFormData(data), 
+        ...cleanedFormData, 
         status,
+        // 담당자가 선택되지 않으면 현재 로그인한 사용자로 설정
+        managerId: cleanedFormData.managerId || user?.id || null,
         // editCaseId를 포함하여 백엔드에서 draft 삭제 가능하도록
         ...(editCaseId ? { id: editCaseId } : {})
       };
@@ -808,11 +811,13 @@ export default function Intake({ isModal = false, onClose, onSuccess }: IntakePr
       // 백엔드가 자동으로 다중 케이스 생성 및 접수번호 생성 처리
       // editCaseId를 포함하여 백엔드에서 draft 삭제 가능하도록
       // assignedTo: 현재 로그인한 사용자를 담당자로 설정
+      // managerId: 담당자가 선택되지 않으면 현재 로그인한 사용자로 설정
       const payload = {
         ...cleanedData,
         status: "접수완료",
         receptionDate: data.accidentDate || getTodayDate(),
         assignedTo: user?.id || null,
+        managerId: cleanedData.managerId || user?.id || null,
         ...(editCaseId ? { id: editCaseId } : {})
       };
       
