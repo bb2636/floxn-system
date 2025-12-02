@@ -65,6 +65,9 @@ type ToolType = "pointer" | "upload" | "rectangle" | "leak" | "accident-area";
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w';
 type EntityType = 'image' | 'rectangle' | 'accident-area';
 
+// 도면 표시 스케일: 10mm = 1px (4000mm → 400px로 표시)
+const DISPLAY_SCALE = 0.1;
+
 interface ActiveTransform {
   entityType: EntityType;
   entityId: string;
@@ -267,9 +270,9 @@ export default function FieldDrawing() {
       const x = e.clientX - canvasRect.left;
       const y = e.clientY - canvasRect.top;
 
-      // Handle drag or resize
-      const deltaX = e.clientX - transform.startX;
-      const deltaY = e.clientY - transform.startY;
+      // Handle drag or resize (픽셀 이동을 mm 단위로 변환)
+      const deltaX = (e.clientX - transform.startX) / DISPLAY_SCALE;
+      const deltaY = (e.clientY - transform.startY) / DISPLAY_SCALE;
 
         if (transform.mode === 'drag') {
           // Drag mode - 자유롭게 아무 곳에서나 이동 가능
@@ -333,7 +336,8 @@ export default function FieldDrawing() {
           }
 
           // Minimum size constraint only (no boundary clamping - 자유롭게 리사이즈)
-          const minSize = 20;
+          // 최소 500mm (표시상 50px)
+          const minSize = 500;
           if (newWidth < minSize) {
             newWidth = minSize;
             // For west handles, preserve the right edge (if possible)
@@ -465,13 +469,16 @@ export default function FieldDrawing() {
     const img = new Image();
     img.onload = () => {
       saveToHistory(); // 이미지 추가 전 히스토리 저장
+      // 이미지 크기를 mm 단위로 저장 (화면에 약 300px로 표시되도록 3000mm)
+      const displayWidth = 3000; // mm (화면에 300px로 표시됨)
+      const aspectRatio = img.height / img.width;
       const newImage: UploadedImage = {
         id: `img-${Date.now()}`,
         src: dataUrl,
-        x: 50,
-        y: 50,
-        width: Math.min(img.width, 300),
-        height: (Math.min(img.width, 300) * img.height) / img.width,
+        x: 500, // mm
+        y: 500, // mm
+        width: displayWidth,
+        height: displayWidth * aspectRatio,
         locked: false,
       };
       setUploadedImages(prev => [...prev, newImage]);
@@ -632,11 +639,11 @@ export default function FieldDrawing() {
 
     if (selectedTool === "leak") {
       saveToHistory(); // 누수마커 추가 전 히스토리 저장
-      // 누수 지점 마커 추가
+      // 누수 지점 마커 추가 (픽셀 좌표를 mm 단위로 변환)
       const newMarker: LeakMarker = {
         id: `leak-${Date.now()}`,
-        x,
-        y,
+        x: x / DISPLAY_SCALE,
+        y: y / DISPLAY_SCALE,
       };
       setLeakMarkers(prev => [...prev, newMarker]);
       toast({
@@ -945,17 +952,18 @@ export default function FieldDrawing() {
       const endX = e.clientX - canvasRect.left;
       const endY = e.clientY - canvasRect.top;
       
-      const width = Math.abs(endX - drawStart.x);
-      const height = Math.abs(endY - drawStart.y);
+      const widthPx = Math.abs(endX - drawStart.x);
+      const heightPx = Math.abs(endY - drawStart.y);
       
-      if (width > 10 && height > 10) {
+      if (widthPx > 10 && heightPx > 10) {
         saveToHistory(); // 사각형 추가 전 히스토리 저장
+        // 픽셀 좌표를 mm 단위로 변환
         const newRectangle: DrawnRectangle = {
           id: `rect-${Date.now()}`,
-          x: Math.min(drawStart.x, endX),
-          y: Math.min(drawStart.y, endY),
-          width,
-          height,
+          x: Math.min(drawStart.x, endX) / DISPLAY_SCALE,
+          y: Math.min(drawStart.y, endY) / DISPLAY_SCALE,
+          width: widthPx / DISPLAY_SCALE,
+          height: heightPx / DISPLAY_SCALE,
           text: "",
           locked: false,
           backgroundColor: "#FFFFFF", // 기본 흰색
@@ -976,17 +984,18 @@ export default function FieldDrawing() {
       const endX = e.clientX - canvasRect.left;
       const endY = e.clientY - canvasRect.top;
       
-      const width = Math.abs(endX - drawStart.x);
-      const height = Math.abs(endY - drawStart.y);
+      const widthPx = Math.abs(endX - drawStart.x);
+      const heightPx = Math.abs(endY - drawStart.y);
       
-      if (width > 10 && height > 10) {
+      if (widthPx > 10 && heightPx > 10) {
         saveToHistory(); // 피해면적 추가 전 히스토리 저장
+        // 픽셀 좌표를 mm 단위로 변환
         const newArea: AccidentArea = {
           id: `area-${Date.now()}`,
-          x: Math.min(drawStart.x, endX),
-          y: Math.min(drawStart.y, endY),
-          width,
-          height,
+          x: Math.min(drawStart.x, endX) / DISPLAY_SCALE,
+          y: Math.min(drawStart.y, endY) / DISPLAY_SCALE,
+          width: widthPx / DISPLAY_SCALE,
+          height: heightPx / DISPLAY_SCALE,
           locked: false,
         };
         setAccidentAreas(prev => [...prev, newArea]);
@@ -1327,8 +1336,8 @@ export default function FieldDrawing() {
               className="absolute z-10"
               data-ui="control-panel"
               style={{
-                left: `calc(${selectedRectangle.x}px + 180px)`,
-                top: `${Math.max(selectedRectangle.y - 60, 80)}px`,
+                left: `calc(${selectedRectangle.x * DISPLAY_SCALE}px + 180px)`,
+                top: `${Math.max(selectedRectangle.y * DISPLAY_SCALE - 60, 80)}px`,
               }}
             >
               <div 
@@ -1515,10 +1524,10 @@ export default function FieldDrawing() {
                     onMouseDown={(e) => handleImageMouseDown(e, image)}
                     style={{
                       position: "absolute",
-                      left: `${image.x}px`,
-                      top: `${image.y}px`,
-                      width: `${image.width}px`,
-                      height: `${image.height}px`,
+                      left: `${image.x * DISPLAY_SCALE}px`,
+                      top: `${image.y * DISPLAY_SCALE}px`,
+                      width: `${image.width * DISPLAY_SCALE}px`,
+                      height: `${image.height * DISPLAY_SCALE}px`,
                       border: selectedImageId === image.id ? "2px solid #008FED" : "none",
                       cursor: selectedTool === "pointer" && !image.locked ? "move" : "pointer",
                       zIndex: selectedImageId === image.id ? 10 : 1,
@@ -1561,10 +1570,10 @@ export default function FieldDrawing() {
                     onMouseDown={(e) => handleRectangleMouseDown(e, rect)}
                     style={{
                       position: "absolute",
-                      left: `${rect.x}px`,
-                      top: `${rect.y}px`,
-                      width: `${rect.width}px`,
-                      height: `${rect.height}px`,
+                      left: `${rect.x * DISPLAY_SCALE}px`,
+                      top: `${rect.y * DISPLAY_SCALE}px`,
+                      width: `${rect.width * DISPLAY_SCALE}px`,
+                      height: `${rect.height * DISPLAY_SCALE}px`,
                       border: selectedRectangleId === rect.id 
                         ? `2px solid #0C0C0C` 
                         : `1px solid #0C0C0C`,
@@ -1675,10 +1684,10 @@ export default function FieldDrawing() {
                     onMouseDown={(e) => handleAccidentAreaMouseDown(e, area)}
                     style={{
                       position: "absolute",
-                      left: `${area.x}px`,
-                      top: `${area.y}px`,
-                      width: `${area.width}px`,
-                      height: `${area.height}px`,
+                      left: `${area.x * DISPLAY_SCALE}px`,
+                      top: `${area.y * DISPLAY_SCALE}px`,
+                      width: `${area.width * DISPLAY_SCALE}px`,
+                      height: `${area.height * DISPLAY_SCALE}px`,
                       border: selectedAccidentAreaId === area.id ? "2px dashed #008FED" : "2px dashed #9E9E9E",
                       background: "rgba(189, 189, 189, 0.3)",
                       cursor: selectedTool === "pointer" && !area.locked ? "move" : "pointer",
@@ -1735,8 +1744,8 @@ export default function FieldDrawing() {
                     onClick={(e) => handleLeakMarkerClick(e, marker.id)}
                     style={{
                       position: "absolute",
-                      left: `${marker.x - 15}px`,
-                      top: `${marker.y - 15}px`,
+                      left: `${marker.x * DISPLAY_SCALE - 15}px`,
+                      top: `${marker.y * DISPLAY_SCALE - 15}px`,
                       width: "30px",
                       height: "30px",
                       cursor: "pointer",
