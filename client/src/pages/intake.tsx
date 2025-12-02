@@ -52,7 +52,13 @@ const extractCityFromAddress = (address: string): string => {
   return address.trim();
 };
 
-export default function Intake() {
+interface IntakeProps {
+  isModal?: boolean;
+  onClose?: () => void;
+  onSuccess?: () => void;
+}
+
+export default function Intake({ isModal = false, onClose, onSuccess }: IntakeProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("접수하기");
@@ -832,9 +838,15 @@ export default function Intake() {
       localStorage.removeItem('intakeFormDraft');
       localStorage.removeItem('editCaseId');
       setEditCaseId(null);
-      setTimeout(() => {
-        setLocation("/dashboard");
-      }, 1000);
+      
+      // 모달 모드인 경우 onSuccess 콜백 호출
+      if (isModal && onSuccess) {
+        onSuccess();
+      } else {
+        setTimeout(() => {
+          setLocation("/dashboard");
+        }, 1000);
+      }
     },
     onError: (error: Error) => {
       toast({ description: error.message, variant: "destructive" });
@@ -1165,59 +1177,70 @@ export default function Intake() {
   }
 
   return (
-    <div className="relative" style={{ minHeight: '100vh', background: 'linear-gradient(0deg, #E7EDFE, #E7EDFE)' }}>
-      {/* Blur Background Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Ellipse 3 - Orange/Cream */}
-        <div 
-          className="absolute"
-          style={{
-            width: '1095px',
-            height: '777px',
-            left: '97px',
-            bottom: '1169px',
-            background: 'rgba(254, 240, 230, 0.4)',
-            borderRadius: '9999px',
-            filter: 'blur(212px)',
-            transform: 'rotate(-35.25deg)',
-          }}
-        />
-        {/* Ellipse 2 - Purple */}
-        <div 
-          className="absolute"
-          style={{
-            width: '1335px',
-            height: '1323px',
-            right: '0px',
-            bottom: '0px',
-            background: 'rgba(234, 230, 254, 0.5)',
-            borderRadius: '9999px',
-            filter: 'blur(212px)',
-          }}
-        />
-        {/* Ellipse 4 - Purple Left */}
-        <div 
-          className="absolute"
-          style={{
-            width: '348px',
-            height: '1323px',
-            left: '0px',
-            bottom: '189px',
-            background: 'rgba(234, 230, 254, 0.5)',
-            borderRadius: '9999px',
-            filter: 'blur(212px)',
-          }}
-        />
-      </div>
-      <GlobalHeader />
+    <div className="relative" style={{ minHeight: isModal ? 'auto' : '100vh', background: isModal ? '#F5F7FA' : 'linear-gradient(0deg, #E7EDFE, #E7EDFE)' }}>
+      {/* Blur Background Orbs - Only show in page mode */}
+      {!isModal && (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Ellipse 3 - Orange/Cream */}
+          <div 
+            className="absolute"
+            style={{
+              width: '1095px',
+              height: '777px',
+              left: '97px',
+              bottom: '1169px',
+              background: 'rgba(254, 240, 230, 0.4)',
+              borderRadius: '9999px',
+              filter: 'blur(212px)',
+              transform: 'rotate(-35.25deg)',
+            }}
+          />
+          {/* Ellipse 2 - Purple */}
+          <div 
+            className="absolute"
+            style={{
+              width: '1335px',
+              height: '1323px',
+              right: '0px',
+              bottom: '0px',
+              background: 'rgba(234, 230, 254, 0.5)',
+              borderRadius: '9999px',
+              filter: 'blur(212px)',
+            }}
+          />
+          {/* Ellipse 4 - Purple Left */}
+          <div 
+            className="absolute"
+            style={{
+              width: '348px',
+              height: '1323px',
+              left: '0px',
+              bottom: '189px',
+              background: 'rgba(234, 230, 254, 0.5)',
+              borderRadius: '9999px',
+              filter: 'blur(212px)',
+            }}
+          />
+        </div>
+      )}
+      {!isModal && <GlobalHeader />}
       {/* Main Content */}
-      <main className="relative flex items-center justify-center px-4 md:px-6 lg:px-8 pb-10">
+      <main className={`relative flex items-center justify-center ${isModal ? 'px-0' : 'px-4 md:px-6 lg:px-8'} pb-10`}>
         {/* Responsive Container */}
-        <div className="w-full max-w-[1660px]">
+        <div className={`w-full ${isModal ? 'max-w-full' : 'max-w-[1660px]'}`}>
           {/* Page Title */}
           <div 
-            className="flex items-center gap-3 md:gap-4 px-4 md:px-8 py-6 md:py-9"
+            className={`flex items-center gap-3 md:gap-4 ${isModal ? 'px-4 py-4' : 'px-4 md:px-8 py-6 md:py-9'}`}
           >
+            {isModal && onClose && (
+              <button
+                onClick={onClose}
+                className="mr-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                data-testid="button-close-intake-modal"
+              >
+                <X size={24} color="#686A6E" />
+              </button>
+            )}
             <h1 
               className="text-xl md:text-2xl lg:text-[26px]"
               style={{
