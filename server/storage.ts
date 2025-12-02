@@ -2097,6 +2097,7 @@ export class DbStorage implements IStorage {
   }
 
   private async ensureEssentialAccounts() {
+    console.log("[Essential Accounts] Checking and creating essential accounts...");
     const currentDate = getKSTDate();
     const hashedPassword = await bcrypt.hash("1234", SALT_ROUNDS);
     
@@ -2141,16 +2142,28 @@ export class DbStorage implements IStorage {
     ];
     
     // 각 계정이 존재하지 않으면 생성
+    let createdCount = 0;
+    let existingCount = 0;
+    
     for (const account of essentialAccounts) {
-      const existing = await db.select().from(users).where(eq(users.username, account.username));
-      if (existing.length === 0) {
-        await db.insert(users).values({
-          id: randomUUID(),
-          ...account,
-        });
-        console.log(`Created essential account: ${account.username}`);
+      try {
+        const existing = await db.select().from(users).where(eq(users.username, account.username));
+        if (existing.length === 0) {
+          await db.insert(users).values({
+            id: randomUUID(),
+            ...account,
+          });
+          console.log(`[Essential Accounts] Created: ${account.username} (${account.role})`);
+          createdCount++;
+        } else {
+          existingCount++;
+        }
+      } catch (error) {
+        console.error(`[Essential Accounts] Error creating ${account.username}:`, error);
       }
     }
+    
+    console.log(`[Essential Accounts] Summary: ${createdCount} created, ${existingCount} already exist`);
   }
 
   private async seedTestCases() {
