@@ -7,15 +7,15 @@ neonConfig.webSocketConstructor = ws;
 
 // 환경에 따라 적절한 DB URL 선택
 const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+
+// 환경별 DB URL 선택 (환경변수가 없으면 공통 DATABASE_URL 사용)
 const databaseUrl = isProduction 
-  ? process.env.PROD_DATABASE_URL 
-  : process.env.DEV_DATABASE_URL;
+  ? (process.env.PROD_DATABASE_URL || process.env.DATABASE_URL)
+  : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
 
 if (!databaseUrl) {
   throw new Error(
-    isProduction 
-      ? "PROD_DATABASE_URL must be set for production environment."
-      : "DEV_DATABASE_URL must be set for development environment.",
+    "DATABASE_URL must be set. Please configure the database connection.",
   );
 }
 
