@@ -65,8 +65,8 @@ type ToolType = "pointer" | "upload" | "rectangle" | "leak" | "accident-area";
 type ResizeHandle = 'nw' | 'ne' | 'sw' | 'se' | 'n' | 's' | 'e' | 'w';
 type EntityType = 'image' | 'rectangle' | 'accident-area';
 
-// 도면 표시 스케일: 10mm = 1px (4000mm → 400px로 표시)
-const DISPLAY_SCALE = 0.1;
+// 도면 표시 스케일: 20mm = 1px (4000mm → 200px로 표시)
+const DISPLAY_SCALE = 0.05;
 
 interface ActiveTransform {
   entityType: EntityType;
