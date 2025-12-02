@@ -2331,21 +2331,28 @@ export default function AdminSettings() {
                               borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                             }}
                           >
-                            {Array.isArray(row) && row.map((cell: any, cellIdx: number) => (
-                              <td
-                                key={cellIdx}
-                                className="px-4 py-4"
-                                style={{
-                                  fontFamily: "Pretendard",
-                                  fontSize: "14px",
-                                  fontWeight: 400,
-                                  color: "#0C0C0C",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {cell}
-                              </td>
-                            ))}
+                            {Array.isArray(row) && row.map((cell: any, cellIdx: number) => {
+                              // 숫자인 경우 반올림해서 표시
+                              let displayValue = cell;
+                              if (typeof cell === 'number' && !Number.isInteger(cell)) {
+                                displayValue = Math.round(cell);
+                              }
+                              return (
+                                <td
+                                  key={cellIdx}
+                                  className="px-4 py-4"
+                                  style={{
+                                    fontFamily: "Pretendard",
+                                    fontSize: "14px",
+                                    fontWeight: 400,
+                                    color: "#0C0C0C",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {displayValue}
+                                </td>
+                              );
+                            })}
                           </tr>
                         ))
                       ) : (
