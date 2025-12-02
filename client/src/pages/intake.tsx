@@ -1727,7 +1727,8 @@ export default function Intake() {
                       </div>
                       <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
-                        <input type="text" placeholder="손사명을 선택하면 자동으로 입력됩니다" value={formData.investigatorDepartment} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-department" />
+                        <input type="text" placeholder="
+                          손사명을 선택하면 자동으로 입력됩니다" value={formData.investigatorDepartment} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-department" />
                       </div>
                       <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자</label>
