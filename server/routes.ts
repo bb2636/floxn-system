@@ -2172,14 +2172,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Master Data endpoints
   // Get master data (optionally filtered by category)
+  // includeInactive=true for admin management view
   app.get("/api/master-data", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     try {
-      const { category } = req.query;
-      const data = await storage.getMasterData(category as string | undefined);
+      const { category, includeInactive } = req.query;
+      const includeAll = includeInactive === "true";
+      const data = await storage.getMasterData(category as string | undefined, includeAll);
       res.json(data);
     } catch (error) {
       console.error("Get master data error:", error);

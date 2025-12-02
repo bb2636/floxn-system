@@ -344,9 +344,16 @@ export default function AdminSettings() {
     "피해유형": "damage_type",
   };
 
-  // DB 연동 마스터 데이터 조회
+  // DB 연동 마스터 데이터 조회 (관리자용: 비활성 데이터 포함)
   const { data: masterDataList = [], refetch: refetchMasterData } = useQuery<MasterData[]>({
-    queryKey: ["/api/master-data"],
+    queryKey: ["/api/master-data", { includeInactive: "true" }],
+    queryFn: async () => {
+      const response = await fetch("/api/master-data?includeInactive=true", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch master data");
+      return response.json();
+    },
     enabled: !!user && user.role === "관리자",
   });
 

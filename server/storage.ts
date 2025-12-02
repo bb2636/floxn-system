@@ -130,7 +130,7 @@ export interface IStorage {
   getEstimateVersion(caseId: string, version: number): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
   listEstimateVersions(caseId: string): Promise<Estimate[]>;
   // Master data methods
-  getMasterData(category?: string): Promise<MasterData[]>;
+  getMasterData(category?: string, includeInactive?: boolean): Promise<MasterData[]>;
   createMasterData(data: InsertMasterData): Promise<MasterData>;
   deleteMasterData(id: string): Promise<void>;
   updateMasterData(id: string, data: Partial<InsertMasterData>): Promise<MasterData | null>;
@@ -1886,7 +1886,7 @@ export class MemStorage implements IStorage {
     throw new Error("Estimate methods not implemented in MemStorage");
   }
 
-  async getMasterData(category?: string): Promise<MasterData[]> {
+  async getMasterData(category?: string, includeInactive?: boolean): Promise<MasterData[]> {
     throw new Error("Master data methods not implemented in MemStorage");
   }
 
@@ -3596,24 +3596,41 @@ export class DbStorage implements IStorage {
   }
 
   // Master data methods
-  async getMasterData(category?: string): Promise<MasterData[]> {
+  async getMasterData(category?: string, includeInactive: boolean = false): Promise<MasterData[]> {
     if (category) {
-      // 특정 카테고리의 활성 데이터만 조회 (displayOrder 순서로)
-      return await db
-        .select()
-        .from(masterData)
-        .where(and(
-          eq(masterData.category, category),
-          eq(masterData.isActive, "true")
-        ))
-        .orderBy(asc(masterData.displayOrder), asc(masterData.value));
+      if (includeInactive) {
+        // 특정 카테고리의 모든 데이터 조회 (관리자용)
+        return await db
+          .select()
+          .from(masterData)
+          .where(eq(masterData.category, category))
+          .orderBy(asc(masterData.displayOrder), asc(masterData.value));
+      } else {
+        // 특정 카테고리의 활성 데이터만 조회 (displayOrder 순서로)
+        return await db
+          .select()
+          .from(masterData)
+          .where(and(
+            eq(masterData.category, category),
+            eq(masterData.isActive, "true")
+          ))
+          .orderBy(asc(masterData.displayOrder), asc(masterData.value));
+      }
     } else {
-      // 모든 활성 데이터 조회
-      return await db
-        .select()
-        .from(masterData)
-        .where(eq(masterData.isActive, "true"))
-        .orderBy(asc(masterData.category), asc(masterData.displayOrder), asc(masterData.value));
+      if (includeInactive) {
+        // 모든 데이터 조회 (관리자용)
+        return await db
+          .select()
+          .from(masterData)
+          .orderBy(asc(masterData.category), asc(masterData.displayOrder), asc(masterData.value));
+      } else {
+        // 모든 활성 데이터 조회
+        return await db
+          .select()
+          .from(masterData)
+          .where(eq(masterData.isActive, "true"))
+          .orderBy(asc(masterData.category), asc(masterData.displayOrder), asc(masterData.value));
+      }
     }
   }
 
