@@ -477,8 +477,9 @@ export default function FieldEstimate() {
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
   const isReadOnly = isPartner && isSubmitted;
   
-  // 손해방지 공종 목록 (하드코딩 - 손해방지에만 해당하는 공종)
-  const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지비용', '코킹공사', '배관공사', '방수공사', '기타공사', '철거공사'];
+  // 손해방지 공종 목록 (손해방지 케이스에만 해당하는 공종)
+  // 누수탐지, 코킹, 배관, 방수, 기타, 원인철거공사
+  const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지비용', '코킹공사', '배관공사', '방수공사', '기타공사', '원인철거공사'];
   
   // 공종 목록 (케이스 번호로 유형 구분, 노무비 카탈로그 기반)
   // 접수번호에 -1, -2 등이 붙어있으면 피해복구, 없으면 손해방지
