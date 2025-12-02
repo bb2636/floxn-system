@@ -153,7 +153,8 @@ export function LaborCostSection({
     const selectedGroup = groupedAreaRows.find(g => g.key === selectedGroupKey);
     if (!selectedGroup) return;
     
-    const damageArea = selectedGroup.totalRepairArea;
+    // 소수점 1자리로 반올림
+    const damageArea = Math.round(selectedGroup.totalRepairArea * 10) / 10;
     
     // 현재 노무비 행의 공종 가져오기
     const currentRow = rows.find(r => r.id === areaPopupRowId);
@@ -717,12 +718,13 @@ export function LaborCostSection({
                 {(row.pricePerSqm ?? 0).toLocaleString()}
               </td>
               
-              {/* 피해면적 - Editable Input */}
+              {/* 피해면적 - Editable Input (소수점 1자리 표시) */}
               <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
                 <Input
                   type="number"
-                  value={row.damageArea}
-                  onChange={(e) => updateRow(row.id, 'damageArea', Number(e.target.value) || 0)}
+                  step="0.1"
+                  value={Number(row.damageArea.toFixed(1))}
+                  onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
                   className="h-9 border-0 bg-transparent text-right"
                   style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                   data-testid={`input-damageArea-${index}`}
