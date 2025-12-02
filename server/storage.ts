@@ -2100,52 +2100,56 @@ export class DbStorage implements IStorage {
     const currentDate = getKSTDate();
     const hashedPassword = await bcrypt.hash("1234", SALT_ROUNDS);
     
-    // Check if admin01 exists
-    const admin01 = await db.select().from(users).where(eq(users.username, "admin01"));
-    if (admin01.length === 0) {
-      await db.insert(users).values({
-        id: randomUUID(),
-        username: "admin01",
-        password: hashedPassword,
-        role: "관리자",
-        name: "김블락",
-        company: "플록슨",
-        department: "개발팀",
-        position: "팀장",
-        email: "admin01@floxn.com",
-        phone: "010-1001-1001",
-        office: "02-1001-1001",
-        address: "서울 강남구",
-        status: "active",
-        createdAt: currentDate,
-      });
-      console.log("Created essential account: admin01");
-    }
+    // 모든 필수 계정 목록 (개발/프로덕션 동일하게 유지)
+    const essentialAccounts = [
+      // 관리자
+      { username: "admin01", password: hashedPassword, role: "관리자", name: "김블락", company: "플록슨", department: "개발팀", position: "팀장", email: "admin01@floxn.com", phone: "010-1001-1001", office: "02-1001-1001", address: "서울 강남구", status: "active", createdAt: currentDate },
+      { username: "admin02", password: hashedPassword, role: "관리자", name: "박영희", company: "플록슨", department: "기획팀", position: "부장", email: "admin02@floxn.com", phone: "010-1002-1002", office: "02-1002-1002", address: "서울 송파구", status: "active", createdAt: currentDate },
+      { username: "admin03", password: hashedPassword, role: "관리자", name: "이현우", company: "플록슨", department: "인사팀", position: "차장", email: "admin03@floxn.com", phone: "010-1003-1003", office: "02-1003-1003", address: "서울 종로구", status: "active", createdAt: currentDate },
+      { username: "admin04", password: hashedPassword, role: "관리자", name: "최지원", company: "플록슨", department: "운영팀", position: "과장", email: "admin04@floxn.com", phone: "010-1004-1004", office: "02-1004-1004", address: "서울 마포구", status: "active", createdAt: currentDate },
+      { username: "admin05", password: hashedPassword, role: "관리자", name: "정수현", company: "플록슨", department: "총무팀", position: "대리", email: "admin05@floxn.com", phone: "010-1005-1005", office: "02-1005-1005", address: "서울 서초구", status: "active", createdAt: currentDate },
+      // 보험사
+      { username: "insure01", password: hashedPassword, role: "보험사", name: "김민준", company: "삼성화재", department: "사고접수팀", position: "팀장", email: "insure01@samsung.com", phone: "010-2001-2001", office: "02-2001-2001", address: "서울 강남구", status: "active", createdAt: currentDate },
+      { username: "insure02", password: hashedPassword, role: "보험사", name: "이서윤", company: "현대해상", department: "보상팀", position: "과장", email: "insure02@hyundai.com", phone: "010-2002-2002", office: "02-2002-2002", address: "서울 서초구", status: "active", createdAt: currentDate },
+      { username: "insure03", password: hashedPassword, role: "보험사", name: "박도현", company: "DB손해보험", department: "보상팀", position: "대리", email: "insure03@db.com", phone: "010-2003-2003", office: "02-2003-2003", address: "서울 송파구", status: "active", createdAt: currentDate },
+      { username: "insure04", password: hashedPassword, role: "보험사", name: "최하은", company: "KB손해보험", department: "사고접수팀", position: "사원", email: "insure04@kb.com", phone: "010-2004-2004", office: "02-2004-2004", address: "서울 영등포구", status: "active", createdAt: currentDate },
+      { username: "insure05", password: hashedPassword, role: "보험사", name: "정예준", company: "MG손해보험", department: "보상팀", position: "차장", email: "insure05@mg.com", phone: "010-2005-2005", office: "02-2005-2005", address: "서울 강동구", status: "active", createdAt: currentDate },
+      // 협력사
+      { username: "partner01", password: hashedPassword, role: "협력사", name: "강지훈", company: "우리수리", department: "현장팀", position: "팀장", email: "partner01@woori.com", phone: "010-3001-3001", office: "02-3001-3001", address: "서울 마포구", bankName: "국민은행", accountNumber: "123-456-789", accountHolder: "우리수리", serviceRegions: ["서울", "경기"], status: "active", createdAt: currentDate },
+      { username: "partner02", password: hashedPassword, role: "협력사", name: "윤소희", company: "복구마스터", department: "시공팀", position: "실장", email: "partner02@master.com", phone: "010-3002-3002", office: "02-3002-3002", address: "서울 강서구", bankName: "신한은행", accountNumber: "567-890-001", accountHolder: "복구마스터", serviceRegions: ["서울/강서구", "양천구", "영등포구"], status: "active", createdAt: currentDate },
+      { username: "partner03", password: hashedPassword, role: "협력사", name: "장민서", company: "누수박사", department: "영업팀", position: "과장", email: "partner03@nusoo.com", phone: "010-3003-3003", office: "02-3003-3003", address: "경기 수원시", bankName: "우리은행", accountNumber: "567-890-000003", accountHolder: "누수박사", serviceRegions: ["경기/수원시", "화성시", "용인시"], status: "active", createdAt: currentDate },
+      { username: "partner04", password: hashedPassword, role: "협력사", name: "임채원", company: "스피드복구", department: "현장팀", position: "대리", email: "partner04@speed.com", phone: "010-3004-3004", office: "02-3004-3004", address: "서울 노원구", bankName: "하나은행", accountNumber: "567-890-000004", accountHolder: "스피드복구", serviceRegions: ["서울/노원구", "도봉구", "강북구"], status: "active", createdAt: currentDate },
+      { username: "partner05", password: hashedPassword, role: "협력사", name: "한유진", company: "복구전문가", department: "견적팀", position: "부장", email: "partner05@expert.com", phone: "010-3005-3005", office: "02-3005-3005", address: "경기 성남시", bankName: "농협은행", accountNumber: "567-890-000005", accountHolder: "한유진", serviceRegions: ["경기/성남시", "분당구", "수정구"], status: "active", createdAt: currentDate },
+      // 심사사
+      { username: "assessor01", password: hashedPassword, role: "심사사", name: "신동욱", company: "플록슨", department: "심사팀", position: "수석심사사", email: "assessor01@floxn.com", phone: "010-4001-4001", office: "02-4001-4001", address: "서울 강남구", status: "active", createdAt: currentDate },
+      { username: "assessor02", password: hashedPassword, role: "심사사", name: "오서현", company: "플록슨", department: "심사팀", position: "책임심사사", email: "assessor02@floxn.com", phone: "010-4002-4002", office: "02-4002-4002", address: "서울 서초구", status: "active", createdAt: currentDate },
+      { username: "assessor03", password: hashedPassword, role: "심사사", name: "배준영", company: "플록슨", department: "심사팀", position: "선임심사사", email: "assessor03@floxn.com", phone: "010-4003-4003", office: "02-4003-4003", address: "서울 송파구", status: "active", createdAt: currentDate },
+      { username: "assessor04", password: hashedPassword, role: "심사사", name: "황시우", company: "플록슨", department: "심사팀", position: "심사사", email: "assessor04@floxn.com", phone: "010-4004-4004", office: "02-4004-4004", address: "서울 마포구", status: "active", createdAt: currentDate },
+      { username: "assessor05", password: hashedPassword, role: "심사사", name: "서은비", company: "플록슨", department: "심사팀", position: "심사사", email: "assessor05@floxn.com", phone: "010-4005-4005", office: "02-4005-4005", address: "서울 강동구", status: "active", createdAt: currentDate },
+      // 조사사
+      { username: "investigator01", password: hashedPassword, role: "조사사", name: "안재현", company: "플록슨", department: "조사팀", position: "수석조사사", email: "investigator01@floxn.com", phone: "010-5001-5001", office: "02-5001-5001", address: "서울 강남구", status: "active", createdAt: currentDate },
+      { username: "investigator02", password: hashedPassword, role: "조사사", name: "조아라", company: "플록슨", department: "조사팀", position: "책임조사사", email: "investigator02@floxn.com", phone: "010-5002-5002", office: "02-5002-5002", address: "서울 서초구", status: "active", createdAt: currentDate },
+      { username: "investigator03", password: hashedPassword, role: "조사사", name: "홍민재", company: "플록슨", department: "조사팀", position: "선임조사사", email: "investigator03@floxn.com", phone: "010-5003-5003", office: "02-5003-5003", address: "서울 송파구", status: "active", createdAt: currentDate },
+      { username: "investigator04", password: hashedPassword, role: "조사사", name: "허지안", company: "플록슨", department: "조사팀", position: "조사사", email: "investigator04@floxn.com", phone: "010-5004-5004", office: "02-5004-5004", address: "서울 마포구", status: "active", createdAt: currentDate },
+      { username: "investigator05", password: hashedPassword, role: "조사사", name: "송다빈", company: "플록슨", department: "조사팀", position: "조사사", email: "investigator05@floxn.com", phone: "010-5005-5005", office: "02-5005-5005", address: "서울 강동구", status: "active", createdAt: currentDate },
+      // 의뢰사
+      { username: "client01", password: hashedPassword, role: "의뢰사", name: "김대한", company: "대한아파트관리", department: "관리팀", position: "팀장", email: "client01@daehan.com", phone: "010-6001-6001", office: "02-6001-6001", address: "서울 강남구", status: "active", createdAt: currentDate },
+      { username: "client02", password: hashedPassword, role: "의뢰사", name: "이한나", company: "한나빌딩관리", department: "관리팀", position: "과장", email: "client02@hanna.com", phone: "010-6002-6002", office: "02-6002-6002", address: "서울 서초구", status: "active", createdAt: currentDate },
+      { username: "client03", password: hashedPassword, role: "의뢰사", name: "박종합", company: "종합부동산", department: "영업팀", position: "대리", email: "client03@jonghap.com", phone: "010-6003-6003", office: "02-6003-6003", address: "서울 송파구", status: "active", createdAt: currentDate },
+      { username: "client04", password: hashedPassword, role: "의뢰사", name: "최민지", company: "민지시설관리", department: "관리팀", position: "실장", email: "client04@minji.com", phone: "010-6004-6004", office: "02-6004-6004", address: "서울 마포구", status: "active", createdAt: currentDate },
+      { username: "client05", password: hashedPassword, role: "의뢰사", name: "정서울", company: "서울건물관리", department: "관리팀", position: "부장", email: "client05@seoul.com", phone: "010-6005-6005", office: "02-6005-6005", address: "서울 강동구", status: "active", createdAt: currentDate },
+    ];
     
-    // Check if partner01 exists
-    const partner01 = await db.select().from(users).where(eq(users.username, "partner01"));
-    if (partner01.length === 0) {
-      await db.insert(users).values({
-        id: randomUUID(),
-        username: "partner01",
-        password: hashedPassword,
-        role: "협력사",
-        name: "최진우",
-        company: "우리수리",
-        department: "현장팀",
-        position: "팀장",
-        email: "partner01@woori.com",
-        phone: "010-3001-3001",
-        office: "02-3001-3001",
-        address: "서울 마포구",
-        bankName: "국민은행",
-        accountNumber: "123-456-789",
-        accountHolder: "우리수리",
-        serviceRegions: ["서울", "경기"],
-        status: "active",
-        createdAt: currentDate,
-      });
-      console.log("Created essential account: partner01");
+    // 각 계정이 존재하지 않으면 생성
+    for (const account of essentialAccounts) {
+      const existing = await db.select().from(users).where(eq(users.username, account.username));
+      if (existing.length === 0) {
+        await db.insert(users).values({
+          id: randomUUID(),
+          ...account,
+        });
+        console.log(`Created essential account: ${account.username}`);
+      }
     }
   }
 
