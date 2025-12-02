@@ -496,10 +496,11 @@ export default function Intake({ isModal = false, onClose, onSuccess }: IntakePr
   }, [loadedCaseNumber, predictedPrefix, predictedSuffix, formData.damagePreventionCost, formData.victimIncidentAssistance]);
 
   useEffect(() => {
-    if (!userLoading && !user) {
+    // 모달 모드에서는 리다이렉트하지 않음 (모달을 닫으면 됨)
+    if (!isModal && !userLoading && !user) {
       setLocation("/");
     }
-  }, [user, userLoading, setLocation]);
+  }, [user, userLoading, setLocation, isModal]);
 
   // 다음 포스트코드 스크립트 로드
   useEffect(() => {

@@ -65,16 +65,17 @@ export function FloatingIntakeButton() {
         <Plus size={20} color="#FFFFFF" />
       </button>
 
-      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <Sheet open={isOpen} onOpenChange={setIsOpen} modal={true}>
         <SheetContent 
           side="right" 
-          className="w-full sm:max-w-full md:max-w-[90vw] lg:max-w-[85vw] xl:max-w-[80vw] p-0 overflow-y-auto"
+          className="w-full sm:max-w-full md:max-w-[90vw] lg:max-w-[85vw] xl:max-w-[80vw] p-0 flex flex-col"
           style={{ 
             maxWidth: '1400px',
             background: '#F5F7FA',
+            height: '100vh',
           }}
         >
-          <div className="h-full overflow-y-auto">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden">
             <Intake 
               isModal={true} 
               onClose={handleClose} 
