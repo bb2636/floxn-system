@@ -478,27 +478,26 @@ export default function FieldEstimate() {
   const isReadOnly = isPartner && isSubmitted;
   
   // 손해방지 공종 목록 (손해방지 케이스에만 해당하는 공종)
-  // 누수탐지, 코킹, 배관, 방수, 기타, 원인철거공사
   const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지비용', '코킹공사', '배관공사', '방수공사', '기타공사', '원인철거공사'];
   
-  // 공종 목록 (케이스 번호로 유형 구분, 노무비 카탈로그 기반)
+  // 피해복구 공종 목록 (피해복구 케이스에만 해당하는 공종)
+  const VICTIM_RECOVERY_WORK_TYPES = ['가설공사', '수장공사', '목공사', '도장공사', '전기공사', '타일공사', '가구공사', '기타공사', '피해철거공사'];
+  
+  // 공종 목록 (케이스 번호로 유형 구분)
   // 접수번호에 -1, -2 등이 붙어있으면 피해복구, 없으면 손해방지
   const workTypes = useMemo(() => {
     const caseNumber = selectedCase?.caseNumber || '';
     // -숫자 패턴이 있으면 피해복구
     const isVictimRecovery = /-\d+$/.test(caseNumber);
     
-    // 노무비 카탈로그에서 공종 목록 추출
-    const allLaborWorkTypes = Array.from(new Set(laborCatalog.map(item => item.공종))).sort();
-    
     if (isVictimRecovery) {
-      // 피해복구 케이스: 노무비 DB의 공종 중 손해방지 공종을 제외한 나머지
-      return allLaborWorkTypes.filter(wt => !DAMAGE_PREVENTION_WORK_TYPES.includes(wt));
+      // 피해복구 케이스: 피해복구 공종만
+      return VICTIM_RECOVERY_WORK_TYPES;
     } else {
-      // 손해방지 케이스: 손해방지 공종만 (노무비 DB에 있는 것 중)
-      return allLaborWorkTypes.filter(wt => DAMAGE_PREVENTION_WORK_TYPES.includes(wt));
+      // 손해방지 케이스: 손해방지 공종만
+      return DAMAGE_PREVENTION_WORK_TYPES;
     }
-  }, [laborCatalog, selectedCase?.caseNumber]);
+  }, [selectedCase?.caseNumber]);
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
