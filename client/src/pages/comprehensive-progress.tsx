@@ -1694,7 +1694,7 @@ export default function ComprehensiveProgress() {
                   {[
                     { label: "접수일", value: selectedCase?.receptionDate },
                     { label: "배당일", value: selectedCase?.assignmentDate },
-                    { label: "현장방문일", value: selectedCase?.siteVisitDate },
+                    { label: "현장방문일", value: selectedCase?.visitDate },
                     { label: "현장자료 제출일", value: selectedCase?.siteInvestigationSubmitDate },
                     { label: "1차 승인일(내부)", value: selectedCase?.firstApprovalDate },
                     { label: "2차 승인일(복구 요청일)", value: selectedCase?.secondApprovalDate },
