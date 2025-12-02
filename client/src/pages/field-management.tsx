@@ -398,21 +398,21 @@ export default function FieldManagement() {
       setAccidentTime("");
     }
 
-    // 현장조사 정보
-    if (selectedCaseData.fieldSurveyDate) {
+    // 현장조사 정보 (방문일시)
+    if (selectedCaseData.visitDate) {
       try {
-        const [datePart, timePart] = selectedCaseData.fieldSurveyDate.split(' ');
-        if (datePart) {
-          setVisitDate(new Date(datePart));
-        }
-        if (timePart) {
-          setVisitTime(timePart);
-        }
+        setVisitDate(new Date(selectedCaseData.visitDate));
       } catch (e) {
         console.error("Error parsing visit date:", e);
+        setVisitDate(undefined);
       }
     } else {
       setVisitDate(undefined);
+    }
+    
+    if (selectedCaseData.visitTime) {
+      setVisitTime(selectedCaseData.visitTime);
+    } else {
       setVisitTime("");
     }
 
