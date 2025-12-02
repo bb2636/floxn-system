@@ -529,7 +529,7 @@ export default function FieldManagement() {
                       color: "rgba(12, 12, 12, 0.6)",
                     }}
                   >
-                    <span>접수번호 {selectedCaseData.insuranceAccidentNo || "-"}</span>
+                    <span>접수번호 {formatCaseNumber(selectedCaseData.caseNumber) || "-"}</span>
                     <span>피보험자 {selectedCaseData.policyHolderName || "-"}</span>
                     <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
                   </div>
@@ -655,7 +655,7 @@ export default function FieldManagement() {
                   접수번호
                 </Label>
                 <Input
-                  value={selectedCaseData?.insuranceAccidentNo || ""}
+                  value={formatCaseNumber(selectedCaseData?.caseNumber) || ""}
                   readOnly
                   placeholder="접수번호"
                   className={intakeFieldClass}
@@ -664,7 +664,7 @@ export default function FieldManagement() {
                     background: "rgba(12, 12, 12, 0.04)",
                     color: "rgba(12, 12, 12, 0.4)",
                   }}
-                  data-testid="input-insurance-accident-no"
+                  data-testid="input-case-number"
                 />
               </div>
               <div>
