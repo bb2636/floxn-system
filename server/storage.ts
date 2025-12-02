@@ -2808,6 +2808,10 @@ export class DbStorage implements IStorage {
     const allCases = await query.orderBy(asc(cases.createdAt));
     const allProgressUpdates = await db.select().from(progressUpdates);
     
+    // 담당자 이름 조회용 사용자 목록 가져오기
+    const allUsers = await db.select().from(users);
+    const userMap = new Map(allUsers.map(u => [u.id, u]));
+    
     // 각 케이스의 최신 진행상황 찾기
     const casesWithProgress: CaseWithLatestProgress[] = allCases.map(caseItem => {
       // 해당 케이스의 모든 진행상황 찾기
@@ -2818,12 +2822,16 @@ export class DbStorage implements IStorage {
       // 최신 진행상황
       const latestUpdate = caseUpdates[0];
       
+      // 담당자 이름 조회 (managerId로 users 테이블에서 찾기)
+      const manager = caseItem.managerId ? userMap.get(caseItem.managerId) : null;
+      
       return {
         ...caseItem,
         latestProgress: latestUpdate ? {
           content: latestUpdate.content,
           createdAt: latestUpdate.createdAt,
         } : null,
+        managerName: manager?.name || null,
       };
     });
     
