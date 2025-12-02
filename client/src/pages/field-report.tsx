@@ -30,6 +30,9 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import html2canvas from "html2canvas";
 
+// 도면 표시 스케일: field-drawing.tsx와 동일하게 적용 (20mm = 1px)
+const DISPLAY_SCALE = 0.05;
+
 interface Case {
   id: string;
   caseNumber: string;
@@ -1528,10 +1531,10 @@ export default function FieldReport() {
                         alt={`도면 이미지 ${img.id}`}
                         style={{
                           position: "absolute",
-                          left: `${img.x}px`,
-                          top: `${img.y}px`,
-                          width: `${img.width}px`,
-                          height: `${img.height}px`,
+                          left: `${img.x * DISPLAY_SCALE}px`,
+                          top: `${img.y * DISPLAY_SCALE}px`,
+                          width: `${img.width * DISPLAY_SCALE}px`,
+                          height: `${img.height * DISPLAY_SCALE}px`,
                           userSelect: "none",
                           zIndex: 1,
                         }}
@@ -1544,12 +1547,12 @@ export default function FieldReport() {
                         key={rect.id}
                         style={{
                           position: "absolute",
-                          left: `${rect.x}px`,
-                          top: `${rect.y}px`,
-                          width: `${rect.width}px`,
-                          height: `${rect.height}px`,
+                          left: `${rect.x * DISPLAY_SCALE}px`,
+                          top: `${rect.y * DISPLAY_SCALE}px`,
+                          width: `${rect.width * DISPLAY_SCALE}px`,
+                          height: `${rect.height * DISPLAY_SCALE}px`,
                           border: "1px solid #0C0C0C",
-                          background: rect.backgroundColor || "#FFFFFF",
+                          background: (rect as any).backgroundColor || "#FFFFFF",
                           zIndex: 2,
                         }}
                       >
@@ -1558,7 +1561,7 @@ export default function FieldReport() {
                           <span
                             style={{
                               fontFamily: "Pretendard",
-                              fontSize: "14px",
+                              fontSize: "10px",
                               color: "#0C0C0C",
                             }}
                           >
@@ -1570,13 +1573,13 @@ export default function FieldReport() {
                         <div
                           style={{
                             position: "absolute",
-                            bottom: "-20px",
+                            bottom: "-16px",
                             left: "50%",
                             transform: "translateX(-50%)",
                             background: "rgba(218, 218, 218, 0.9)",
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            fontSize: "11px",
+                            padding: "1px 4px",
+                            borderRadius: "2px",
+                            fontSize: "9px",
                             fontFamily: "Pretendard",
                             color: "#0C0C0C",
                             whiteSpace: "nowrap",
@@ -1589,13 +1592,13 @@ export default function FieldReport() {
                         <div
                           style={{
                             position: "absolute",
-                            right: "-50px",
+                            right: "-40px",
                             top: "50%",
                             transform: "translateY(-50%) rotate(90deg)",
                             background: "rgba(218, 218, 218, 0.9)",
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            fontSize: "11px",
+                            padding: "1px 4px",
+                            borderRadius: "2px",
+                            fontSize: "9px",
                             fontFamily: "Pretendard",
                             color: "#0C0C0C",
                             whiteSpace: "nowrap",
@@ -1612,10 +1615,10 @@ export default function FieldReport() {
                         key={area.id}
                         style={{
                           position: "absolute",
-                          left: `${area.x}px`,
-                          top: `${area.y}px`,
-                          width: `${area.width}px`,
-                          height: `${area.height}px`,
+                          left: `${area.x * DISPLAY_SCALE}px`,
+                          top: `${area.y * DISPLAY_SCALE}px`,
+                          width: `${area.width * DISPLAY_SCALE}px`,
+                          height: `${area.height * DISPLAY_SCALE}px`,
                           border: "2px dashed #9E9E9E",
                           background: "rgba(189, 189, 189, 0.3)",
                           zIndex: 1,
@@ -1629,8 +1632,8 @@ export default function FieldReport() {
                         key={marker.id}
                         style={{
                           position: "absolute",
-                          left: `${marker.x - 12}px`,
-                          top: `${marker.y - 12}px`,
+                          left: `${marker.x * DISPLAY_SCALE - 12}px`,
+                          top: `${marker.y * DISPLAY_SCALE - 12}px`,
                           width: "24px",
                           height: "24px",
                           zIndex: 4,
