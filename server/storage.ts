@@ -116,6 +116,9 @@ export interface IStorage {
   // Case number helpers
   getPreventionCaseByPrefix(prefix: string): Promise<Case | null>;
   getNextVictimSuffix(prefix: string): Promise<number>;
+  // Same prefix case sync (for intake data synchronization)
+  getCasesByPrefix(prefix: string, excludeCaseId?: string): Promise<Case[]>;
+  syncIntakeDataToRelatedCases(sourceCaseId: string): Promise<number>;
   // Case helper for drawing persistence
   getOrCreateActiveCase(userId: string): Promise<Case>;
   // Document methods
@@ -2056,6 +2059,15 @@ export class MemStorage implements IStorage {
 
   async getNextVictimSuffix(prefix: string): Promise<number> {
     throw new Error("Case number helper methods not implemented in MemStorage");
+  }
+
+  // Same prefix case sync methods (stub)
+  async getCasesByPrefix(prefix: string, excludeCaseId?: string): Promise<Case[]> {
+    throw new Error("getCasesByPrefix not implemented in MemStorage");
+  }
+
+  async syncIntakeDataToRelatedCases(sourceCaseId: string): Promise<number> {
+    throw new Error("syncIntakeDataToRelatedCases not implemented in MemStorage");
   }
 }
 
@@ -4384,6 +4396,111 @@ export class DbStorage implements IStorage {
     }
     
     return maxSuffix + 1;
+  }
+
+  // 같은 prefix를 가진 케이스들 조회 (예: 251102001, 251102001-1, 251102001-2)
+  async getCasesByPrefix(prefix: string, excludeCaseId?: string): Promise<Case[]> {
+    // Find all cases with this prefix (including prefix itself and prefix-N)
+    const allCases = await db
+      .select()
+      .from(cases)
+      .where(sql`${cases.caseNumber} = ${prefix} OR ${cases.caseNumber} LIKE ${prefix + '-%'}`);
+    
+    // Exclude the source case if specified
+    if (excludeCaseId) {
+      return allCases.filter(c => c.id !== excludeCaseId);
+    }
+    
+    return allCases;
+  }
+
+  // 접수 정보를 같은 prefix 케이스들에 동기화
+  async syncIntakeDataToRelatedCases(sourceCaseId: string): Promise<number> {
+    const sourceCase = await this.getCaseById(sourceCaseId);
+    if (!sourceCase || !sourceCase.caseNumber) {
+      return 0;
+    }
+
+    // Extract prefix from case number (e.g., "251102001" from "251102001-1")
+    const prefix = sourceCase.caseNumber.split('-')[0];
+    
+    const relatedCases = await this.getCasesByPrefix(prefix, sourceCaseId);
+    if (relatedCases.length === 0) {
+      return 0;
+    }
+
+    // 동기화할 접수 정보 필드들 (caseNumber, status, id 제외)
+    const syncData: Partial<Case> = {
+      // 담당자 정보
+      managerId: sourceCase.managerId,
+      // 기본 정보
+      accidentDate: sourceCase.accidentDate,
+      insuranceCompany: sourceCase.insuranceCompany,
+      insurancePolicyNo: sourceCase.insurancePolicyNo,
+      insuranceAccidentNo: sourceCase.insuranceAccidentNo,
+      // 의뢰사 정보
+      clientResidence: sourceCase.clientResidence,
+      clientDepartment: sourceCase.clientDepartment,
+      clientName: sourceCase.clientName,
+      clientContact: sourceCase.clientContact,
+      // 심사사 정보
+      assessorId: sourceCase.assessorId,
+      assessorDepartment: sourceCase.assessorDepartment,
+      assessorTeam: sourceCase.assessorTeam,
+      assessorContact: sourceCase.assessorContact,
+      // 조사사 정보
+      investigatorTeam: sourceCase.investigatorTeam,
+      investigatorDepartment: sourceCase.investigatorDepartment,
+      investigatorTeamName: sourceCase.investigatorTeamName,
+      investigatorContact: sourceCase.investigatorContact,
+      // 보험계약자 정보
+      policyHolderName: sourceCase.policyHolderName,
+      policyHolderIdNumber: sourceCase.policyHolderIdNumber,
+      policyHolderAddress: sourceCase.policyHolderAddress,
+      // 피보험자 정보
+      insuredName: sourceCase.insuredName,
+      insuredIdNumber: sourceCase.insuredIdNumber,
+      insuredContact: sourceCase.insuredContact,
+      insuredAddress: sourceCase.insuredAddress,
+      insuredAddressDetail: sourceCase.insuredAddressDetail,
+      sameAsPolicyHolder: sourceCase.sameAsPolicyHolder,
+      // 피해자 정보
+      victimName: sourceCase.victimName,
+      victimContact: sourceCase.victimContact,
+      victimAddress: sourceCase.victimAddress,
+      // 사고 정보
+      accidentType: sourceCase.accidentType,
+      accidentCause: sourceCase.accidentCause,
+      accidentDescription: sourceCase.accidentDescription,
+      restorationMethod: sourceCase.restorationMethod,
+      otherVendorEstimate: sourceCase.otherVendorEstimate,
+      // 협력사 배당 정보
+      assignedPartner: sourceCase.assignedPartner,
+      assignedPartnerManager: sourceCase.assignedPartnerManager,
+      assignedPartnerContact: sourceCase.assignedPartnerContact,
+      // 기타
+      urgency: sourceCase.urgency,
+      specialRequests: sourceCase.specialRequests,
+    };
+
+    let syncedCount = 0;
+    for (const relatedCase of relatedCases) {
+      try {
+        await db
+          .update(cases)
+          .set({
+            ...syncData,
+            updatedAt: getKSTDate(),
+          })
+          .where(eq(cases.id, relatedCase.id));
+        syncedCount++;
+      } catch (error) {
+        console.error(`Failed to sync intake data to case ${relatedCase.id}:`, error);
+      }
+    }
+
+    console.log(`[Intake Sync] Synced intake data from case ${sourceCaseId} (${sourceCase.caseNumber}) to ${syncedCount} related cases`);
+    return syncedCount;
   }
 
   // 기존 케이스들의 날짜를 상태 기반으로 자동 채우기

@@ -473,6 +473,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdCases.push(newCase);
         }
         
+        // 케이스 생성 후 같은 prefix를 가진 기존 케이스들에 접수 정보 동기화
+        if (createdCases.length > 0) {
+          const firstCreatedCase = createdCases[0];
+          try {
+            const syncCount = await storage.syncIntakeDataToRelatedCases(firstCreatedCase.id);
+            if (syncCount > 0) {
+              console.log(`[Case Create] Auto-synced intake data to ${syncCount} related cases`);
+            }
+          } catch (syncError) {
+            console.error("Failed to sync intake data to related cases:", syncError);
+            // Don't fail the request if sync fails
+          }
+        }
+        
         return res.status(201).json({ success: true, cases: createdCases });
       }
       
@@ -574,18 +588,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
       }
 
-      // 연결된 케이스들도 함께 업데이트 (같은 caseGroupId를 가진 케이스들)
-      // 접수번호(caseNumber)와 id는 유지하고 나머지 데이터만 동기화
-      if (existingCase.caseGroupId) {
-        const linkedCases = await storage.getCasesByGroupId(existingCase.caseGroupId);
-        const { caseNumber, id: _, ...syncData } = updateData; // 접수번호와 id는 제외
-        
-        for (const linkedCase of linkedCases) {
-          if (linkedCase.id !== id) {
-            await storage.updateCase(linkedCase.id, syncData);
-            console.log(`🔗 Synced linked case: ${linkedCase.caseNumber}`);
-          }
+      // 같은 prefix를 가진 관련 케이스들에 접수 정보 동기화
+      // (예: 251102001, 251102001-1, 251102001-2는 모두 동기화)
+      try {
+        const syncCount = await storage.syncIntakeDataToRelatedCases(id);
+        if (syncCount > 0) {
+          console.log(`[Case Update] Auto-synced intake data to ${syncCount} related cases`);
         }
+      } catch (syncError) {
+        console.error("Failed to sync intake data to related cases:", syncError);
+        // Don't fail the request if sync fails
       }
 
       res.json({ success: true, case: updatedCase });
