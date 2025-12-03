@@ -322,6 +322,56 @@ export default function FieldManagement() {
     autoUpdateToReview();
   }, [selectedCase, isAdmin]); // selectedCase ID만 감시
 
+  // 방문일시 선택 시 자동으로 '현장방문' 상태로 변경
+  const [visitStatusUpdated, setVisitStatusUpdated] = useState<Set<string>>(new Set());
+  
+  useEffect(() => {
+    const autoUpdateToVisit = async () => {
+      if (!selectedCaseData || !selectedCase) return;
+      
+      // 읽기 전용이면 상태 변경 안 함
+      if (isReadOnly) return;
+      
+      // 이미 업데이트한 케이스면 스킵
+      if (visitStatusUpdated.has(selectedCase)) return;
+      
+      // 방문일시가 모두 입력되었을 때만 상태 변경
+      if (!visitDate || !visitTime) return;
+      
+      // 상태가 "협력사 배정" 또는 아직 현장방문 전인 경우에만 변경
+      const eligibleStatuses = ["협력사 배정", "접수완료", "배당완료"];
+      if (!eligibleStatuses.includes(selectedCaseData.status || "")) return;
+      
+      try {
+        console.log(`[Auto Status] 방문일시 입력됨 - 상태를 '현장방문'으로 변경: ${selectedCaseData.caseNumber}`);
+        await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, {
+          status: "현장방문",
+          visitDate: format(visitDate, "yyyy-MM-dd"),
+          visitTime: visitTime,
+        });
+        
+        // 이 케이스를 업데이트 완료로 기록
+        setVisitStatusUpdated(prev => {
+          const updated = new Set(Array.from(prev));
+          updated.add(selectedCase);
+          return updated;
+        });
+        
+        // 케이스 목록 새로고침
+        queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+        
+        toast({
+          title: "상태 변경됨",
+          description: "방문일시 입력으로 '현장방문' 상태로 변경되었습니다.",
+        });
+      } catch (error) {
+        console.error("현장방문 상태 자동 변경 실패:", error);
+      }
+    };
+
+    autoUpdateToVisit();
+  }, [selectedCase, visitDate, visitTime, selectedCaseData?.status]);
+
   // 입력 중 상태 추적 헬퍼 (ref 사용으로 re-render 없음)
   // 데이터 자동 리로드 방지용 - 스크롤 복원은 제거됨
   const handleUserInput = () => {
