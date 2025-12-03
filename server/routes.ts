@@ -2393,11 +2393,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return isNaN(num) ? null : num;
         };
 
-        const laborPrice = parsePrice(row[4]); // 인
-        const ceilingPrice = parsePrice(row[5]); // 천장
-        const wallPrice = parsePrice(row[6]); // 벽체
-        const floorPrice = parsePrice(row[7]); // 바닥
-        const lengthPrice = parsePrice(row[8]); // 길이
+        // IMPORTANT: Headers are ["공종","공사명(품명)","세부공사",null,"인","수량","무게","천장","벽체","바닥","길이","비고"]
+        // Column indices: 0=공종, 1=공사명, 2=세부공사, 3=세부항목, 4=인, 5=수량, 6=무게, 7=천장, 8=벽체, 9=바닥, 10=길이, 11=비고
+        const laborPrice = parsePrice(row[4]); // 인 (column index 4)
+        const ceilingPrice = parsePrice(row[7]); // 천장 (column index 7)
+        const wallPrice = parsePrice(row[8]); // 벽체 (column index 8)
+        const floorPrice = parsePrice(row[9]); // 바닥 (column index 9)
+        const lengthPrice = parsePrice(row[10]); // 길이 (column index 10)
 
         // Update forward-fill values
         if (category) prevCategory = category;
