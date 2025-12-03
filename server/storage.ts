@@ -4175,19 +4175,46 @@ export class DbStorage implements IStorage {
     return result;
   }
 
+  // 접수번호 prefix를 기준으로 관련 케이스 조회 (예: 251203001 -> 251203001, 251203001-1, 251203001-2)
+  async getCasesByCaseNumberPrefix(caseNumber: string, excludeCaseId?: string): Promise<Case[]> {
+    if (!caseNumber) return [];
+    
+    // Extract prefix from case number (e.g., "251203001-1" -> "251203001")
+    const prefix = caseNumber.split('-')[0];
+    if (!prefix) return [];
+    
+    // Find all cases that start with this prefix
+    const result = await db
+      .select()
+      .from(cases)
+      .where(sql`${cases.caseNumber} LIKE ${prefix + '%'}`)
+      .orderBy(asc(cases.caseNumber));
+    
+    // Filter out the excluded case if provided
+    if (excludeCaseId) {
+      return result.filter(c => c.id !== excludeCaseId);
+    }
+    return result;
+  }
+
   async syncFieldSurveyToRelatedCases(sourceCaseId: string, fieldData: Partial<InsertCase>): Promise<number> {
-    // Get source case to find its accident number
+    // Get source case to find its case number prefix
     const sourceCase = await this.getCaseById(sourceCaseId);
-    if (!sourceCase || !sourceCase.insuranceAccidentNo) {
+    if (!sourceCase || !sourceCase.caseNumber) {
+      console.log(`[Field Survey Sync] Source case ${sourceCaseId} not found or no case number`);
       return 0;
     }
 
-    // Get all related cases (same accident number, different receipt)
-    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, sourceCaseId);
+    // Get all related cases by case number prefix (e.g., 251203001 -> 251203001, 251203001-1, 251203001-2)
+    const relatedCases = await this.getCasesByCaseNumberPrefix(sourceCase.caseNumber, sourceCaseId);
     
     if (relatedCases.length === 0) {
+      console.log(`[Field Survey Sync] No related cases found for ${sourceCase.caseNumber}`);
       return 0;
     }
+
+    console.log(`[Field Survey Sync] Syncing field data from ${sourceCase.caseNumber} to ${relatedCases.length} related cases:`, 
+      relatedCases.map(c => c.caseNumber).join(', '));
 
     // Update all related cases with the field survey data
     let updatedCount = 0;
@@ -4198,6 +4225,7 @@ export class DbStorage implements IStorage {
           .set(fieldData)
           .where(eq(cases.id, relatedCase.id));
         updatedCount++;
+        console.log(`[Field Survey Sync] Updated case ${relatedCase.caseNumber}`);
       } catch (error) {
         console.error(`Failed to sync field survey to case ${relatedCase.id}:`, error);
       }
@@ -4206,23 +4234,29 @@ export class DbStorage implements IStorage {
     return updatedCount;
   }
 
-  // Real-time sync for drawings to all related cases (same accident number)
+  // Real-time sync for drawings to all related cases (same case number prefix)
   async syncDrawingToRelatedCases(sourceCaseId: string): Promise<number> {
     const sourceCase = await this.getCaseById(sourceCaseId);
-    if (!sourceCase || !sourceCase.insuranceAccidentNo) {
+    if (!sourceCase || !sourceCase.caseNumber) {
+      console.log(`[Drawing Sync] Source case ${sourceCaseId} not found or no case number`);
       return 0;
     }
 
-    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, sourceCaseId);
+    const relatedCases = await this.getCasesByCaseNumberPrefix(sourceCase.caseNumber, sourceCaseId);
     if (relatedCases.length === 0) {
+      console.log(`[Drawing Sync] No related cases found for ${sourceCase.caseNumber}`);
       return 0;
     }
 
     // Get source drawing
     const sourceDrawing = await this.getDrawingByCaseId(sourceCaseId);
     if (!sourceDrawing) {
+      console.log(`[Drawing Sync] No drawing found for source case ${sourceCaseId}`);
       return 0;
     }
+
+    console.log(`[Drawing Sync] Syncing drawing from ${sourceCase.caseNumber} to ${relatedCases.length} related cases:`,
+      relatedCases.map(c => c.caseNumber).join(', '));
 
     let syncedCount = 0;
     for (const relatedCase of relatedCases) {
@@ -4255,26 +4289,32 @@ export class DbStorage implements IStorage {
           });
         }
         syncedCount++;
+        console.log(`[Drawing Sync] Updated case ${relatedCase.caseNumber}`);
       } catch (error) {
         console.error(`Failed to sync drawing to case ${relatedCase.id}:`, error);
       }
     }
 
-    console.log(`[Drawing Sync] Synced drawing from case ${sourceCaseId} to ${syncedCount} related cases`);
+    console.log(`[Drawing Sync] Synced drawing from case ${sourceCase.caseNumber} to ${syncedCount} related cases`);
     return syncedCount;
   }
 
-  // Real-time sync for new documents to all related cases (same accident number)
+  // Real-time sync for new documents to all related cases (same case number prefix)
   async syncDocumentsToRelatedCases(sourceCaseId: string, newDocument: CaseDocument): Promise<number> {
     const sourceCase = await this.getCaseById(sourceCaseId);
-    if (!sourceCase || !sourceCase.insuranceAccidentNo) {
+    if (!sourceCase || !sourceCase.caseNumber) {
+      console.log(`[Document Sync] Source case ${sourceCaseId} not found or no case number`);
       return 0;
     }
 
-    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, sourceCaseId);
+    const relatedCases = await this.getCasesByCaseNumberPrefix(sourceCase.caseNumber, sourceCaseId);
     if (relatedCases.length === 0) {
+      console.log(`[Document Sync] No related cases found for ${sourceCase.caseNumber}`);
       return 0;
     }
+
+    console.log(`[Document Sync] Syncing document "${newDocument.fileName}" from ${sourceCase.caseNumber} to ${relatedCases.length} related cases:`,
+      relatedCases.map(c => c.caseNumber).join(', '));
 
     let syncedCount = 0;
     for (const relatedCase of relatedCases) {
@@ -4293,23 +4333,25 @@ export class DbStorage implements IStorage {
           uploadedAt: getKSTDate(),
         });
         syncedCount++;
+        console.log(`[Document Sync] Synced to case ${relatedCase.caseNumber}`);
       } catch (error) {
         console.error(`Failed to sync document to case ${relatedCase.id}:`, error);
       }
     }
 
-    console.log(`[Document Sync] Synced document "${newDocument.fileName}" from case ${sourceCaseId} to ${syncedCount} related cases`);
+    console.log(`[Document Sync] Synced document "${newDocument.fileName}" from case ${sourceCase.caseNumber} to ${syncedCount} related cases`);
     return syncedCount;
   }
 
-  // Real-time sync for estimates to all related cases (same accident number)
+  // Real-time sync for estimates to all related cases (same case number prefix)
   async syncEstimateToRelatedCases(sourceCaseId: string): Promise<number> {
     const sourceCase = await this.getCaseById(sourceCaseId);
-    if (!sourceCase || !sourceCase.insuranceAccidentNo) {
+    if (!sourceCase || !sourceCase.caseNumber) {
+      console.log(`[Estimate Sync] Source case ${sourceCaseId} not found or no case number`);
       return 0;
     }
 
-    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, sourceCaseId);
+    const relatedCases = await this.getCasesByCaseNumberPrefix(sourceCase.caseNumber, sourceCaseId);
     if (relatedCases.length === 0) {
       return 0;
     }
