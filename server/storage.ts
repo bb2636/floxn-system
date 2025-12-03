@@ -2842,6 +2842,7 @@ export class DbStorage implements IStorage {
     // 담당자 이름 조회용 사용자 목록 가져오기
     const allUsers = await db.select().from(users);
     const userMap = new Map(allUsers.map(u => [u.id, u]));
+    console.log(`[getAllCases] Total users in userMap: ${userMap.size}`);
     
     // 각 케이스의 최신 진행상황 찾기
     const casesWithProgress: CaseWithLatestProgress[] = allCases.map(caseItem => {
@@ -2855,6 +2856,9 @@ export class DbStorage implements IStorage {
       
       // 담당자 이름 조회 (managerId로 users 테이블에서 찾기)
       const manager = caseItem.managerId ? userMap.get(caseItem.managerId) : null;
+      
+      // 디버깅 로그 - 모든 케이스에 대해 출력
+      console.log(`[getAllCases] Case ${caseItem.caseNumber}: managerId=${caseItem.managerId || 'NULL'}, found: ${manager?.name || '-'}`);
       
       return {
         ...caseItem,
