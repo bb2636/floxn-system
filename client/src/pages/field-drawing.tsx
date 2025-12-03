@@ -173,9 +173,6 @@ export default function FieldDrawing() {
     },
   });
 
-  // 자동 동기화 시도 여부 추적 (무한 루프 방지)
-  const autoSyncAttemptedRef = useRef<string | null>(null);
-
   // 로드된 도면으로 canvas state 초기화
   useEffect(() => {
     if (savedDrawing && !isLoadingDrawing) {
@@ -193,26 +190,8 @@ export default function FieldDrawing() {
     }
   }, [savedDrawing, isLoadingDrawing, selectedCaseId]);
 
-  // 관련 케이스 도면 자동 동기화
-  useEffect(() => {
-    // 조건: 로딩 완료, 저장된 도면 없음, 관련 도면 있음, 아직 시도하지 않음
-    if (
-      !isLoadingDrawing &&
-      !savedDrawing &&
-      relatedDrawingInfo?.hasRelatedDrawing &&
-      relatedDrawingInfo.sourceCaseId &&
-      autoSyncAttemptedRef.current !== selectedCaseId &&
-      !cloneDrawingMutation.isPending
-    ) {
-      // 자동 동기화 시도 기록
-      autoSyncAttemptedRef.current = selectedCaseId;
-      
-      console.log('[도면 자동 동기화] 관련 케이스 도면 발견:', relatedDrawingInfo.sourceCaseNumber);
-      
-      // 자동으로 도면 복제
-      cloneDrawingMutation.mutate(relatedDrawingInfo.sourceCaseId);
-    }
-  }, [isLoadingDrawing, savedDrawing, relatedDrawingInfo, selectedCaseId, cloneDrawingMutation.isPending]);
+  // 도면 자동 동기화 비활성화 - 각 케이스 개별 관리
+  // Auto-sync disabled - each case manages its own drawing
 
   // Check if save is ready
   const isSaveReady = Boolean(user && !isLoadingSelectedCase && selectedCase && !isLoadingDrawing);
@@ -1269,22 +1248,6 @@ export default function FieldDrawing() {
 
           {/* 저장 버튼 (우측 상단) */}
           <div className="absolute top-4 right-4 z-10 flex gap-2" data-ui="save-buttons">
-            {/* 관련 케이스 도면 자동 동기화 상태 표시 */}
-            {cloneDrawingMutation.isPending && (
-              <div
-                className="px-4 py-2.5 rounded-lg font-medium flex items-center gap-2"
-                style={{
-                  background: "#F59E0B",
-                  color: "white",
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                }}
-                data-testid="status-syncing-drawing"
-              >
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                도면 동기화 중...
-              </div>
-            )}
             <button
               onClick={handleSave}
               disabled={!isSaveReady || saveDrawingMutation.isPending || isReadOnly}

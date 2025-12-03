@@ -142,9 +142,6 @@ export default function FieldDocuments() {
     enabled: !!selectedCaseId && documents.length === 0 && !isLoading,
   });
 
-  // 자동 동기화 시도 여부 추적 (무한 루프 방지)
-  const autoSyncAttemptedRef = useRef<string | null>(null);
-
   // 문서 복제 mutation
   const cloneDocumentsMutation = useMutation({
     mutationFn: async (sourceCaseId: string) => {
@@ -174,26 +171,8 @@ export default function FieldDocuments() {
     },
   });
 
-  // 관련 케이스 문서 자동 동기화
-  useEffect(() => {
-    // 조건: 로딩 완료, 문서 없음, 관련 문서 있음, 아직 시도하지 않음
-    if (
-      !isLoading &&
-      documents.length === 0 &&
-      relatedDocumentsInfo?.hasRelatedDocuments &&
-      relatedDocumentsInfo.sourceCaseId &&
-      autoSyncAttemptedRef.current !== selectedCaseId &&
-      !cloneDocumentsMutation.isPending
-    ) {
-      // 자동 동기화 시도 기록
-      autoSyncAttemptedRef.current = selectedCaseId;
-      
-      console.log('[문서 자동 동기화] 관련 케이스 문서 발견:', relatedDocumentsInfo.sourceCaseNumber, `(${relatedDocumentsInfo.documentCount}개)`);
-      
-      // 자동으로 문서 복제
-      cloneDocumentsMutation.mutate(relatedDocumentsInfo.sourceCaseId);
-    }
-  }, [isLoading, documents.length, relatedDocumentsInfo, selectedCaseId, cloneDocumentsMutation.isPending]);
+  // 문서 자동 동기화 비활성화 - 각 케이스 개별 관리
+  // Auto-sync disabled - each case manages its own documents
 
   // 문서 업로드 mutation
   const uploadMutation = useMutation({
@@ -626,26 +605,6 @@ export default function FieldDocuments() {
           </button>
         ))}
       </div>
-
-      {/* 관련 케이스 문서 자동 동기화 상태 표시 */}
-      {cloneDocumentsMutation.isPending && (
-        <div className="mb-4">
-          <div
-            className="w-full px-6 py-4 rounded-xl font-medium flex items-center justify-center gap-3"
-            style={{
-              background: "#F59E0B",
-              color: "white",
-              fontFamily: "Pretendard",
-              fontSize: "16px",
-              fontWeight: 500,
-            }}
-            data-testid="status-syncing-documents"
-          >
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            문서 동기화 중...
-          </div>
-        </div>
-      )}
 
       {/* 파일 업로드 영역 */}
       {isReadOnly ? (
