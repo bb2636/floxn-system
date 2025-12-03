@@ -1977,7 +1977,6 @@ export default function FieldReport() {
                                   <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">단위</th>
                                   <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">기준가(원/단위)</th>
                                   <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">수량</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">적용면</th>
                                   <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">기준가(㎡)</th>
                                   <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">피해면적</th>
                                   <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">금액</th>
@@ -1985,10 +1984,7 @@ export default function FieldReport() {
                                 </tr>
                               </thead>
                               <tbody>
-                                ${checkedLaborRows.map(row => {
-                                  const rates = row.applicationRates;
-                                  const appliedSurface = rates?.ceiling ? '천장' : rates?.wall ? '벽체' : rates?.floor ? '바닥' : rates?.molding ? '길이' : '-';
-                                  return `
+                                ${checkedLaborRows.map(row => `
                                   <tr>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.category || '-'}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.workName || '-'}</td>
@@ -1998,13 +1994,12 @@ export default function FieldReport() {
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.unit || '-'}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.standardPrice || 0).toLocaleString()}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.quantity || 0}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${appliedSurface}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.pricePerSqm || 0).toLocaleString()}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.damageArea || 0).toLocaleString()}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.amount || 0).toLocaleString()}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.includeInEstimate === false ? 'O' : '-'}</td>
                                   </tr>
-                                `}).join('')}
+                                `).join('')}
                               </tbody>
                             </table>
                           `;
@@ -2275,7 +2270,6 @@ export default function FieldReport() {
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "50px" }}>단위</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>기준가(원/단위)</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "50px" }}>수량</th>
-                              <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "70px" }}>적용면</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "90px" }}>기준가(m²)</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>피해면적</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>금액(원)</th>
@@ -2283,13 +2277,7 @@ export default function FieldReport() {
                             </tr>
                           </thead>
                           <tbody>
-                            {parsedLaborCosts.map((row, index) => {
-                              const rates = row.applicationRates;
-                              const appliedSurface = rates?.ceiling ? '천장' : 
-                                                     rates?.wall ? '벽체' : 
-                                                     rates?.floor ? '바닥' : 
-                                                     rates?.molding ? '길이' : '-';
-                              return (
+                            {parsedLaborCosts.map((row, index) => (
                                 <tr key={row.id || index} style={{ borderBottom: index === parsedLaborCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
                                   <td style={{ padding: "8px", textAlign: "center" }}>
                                     <input
@@ -2307,7 +2295,6 @@ export default function FieldReport() {
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.unit || '-'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.standardPrice || 0).toLocaleString()}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.quantity || 0}</td>
-                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{appliedSurface}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.pricePerSqm || 0).toLocaleString()}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.damageArea || 0).toLocaleString()}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{(row.amount || 0).toLocaleString()}</td>
@@ -2320,8 +2307,7 @@ export default function FieldReport() {
                                     />
                                   </td>
                                 </tr>
-                              );
-                            })}
+                            ))}
                           </tbody>
                         </table>
                       </div>

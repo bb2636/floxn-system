@@ -528,7 +528,6 @@ export function LaborCostSection({
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>단위</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>기준가(원/단위)</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>수량</th>
-            <th style={{ width: "300px", padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>적용면</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>기준가(㎡/길이)</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>피해면적</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>금액(원)</th>
@@ -666,75 +665,6 @@ export function LaborCostSection({
                   style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                   data-testid={`input-quantity-${index}`}
                 />
-              </td>
-              
-              {/* 적용면 - Radio buttons (only one can be selected), 노무비일 때는 "-" 표시 */}
-              <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
-                {row.detailWork === "노무비" ? (
-                  <span style={{ 
-                    fontFamily: "Pretendard", 
-                    fontSize: "14px", 
-                    color: "rgba(12, 12, 12, 0.4)",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    height: "36px"
-                  }}>
-                    -
-                  </span>
-                ) : (
-                  <RadioGroup
-                    value={
-                      row.applicationRates?.ceiling ? 'ceiling' :
-                      row.applicationRates?.wall ? 'wall' :
-                      row.applicationRates?.floor ? 'floor' :
-                      row.applicationRates?.molding ? 'molding' : ''
-                    }
-                    onValueChange={(value) => {
-                      updateRow(row.id, 'applicationRates', {
-                        ceiling: value === 'ceiling',
-                        wall: value === 'wall',
-                        floor: value === 'floor',
-                        molding: value === 'molding'
-                      });
-                    }}
-                    className="flex gap-4"
-                  >
-                    {[
-                      { key: 'ceiling' as const, label: '천장' },
-                      { key: 'wall' as const, label: '벽체' },
-                      { key: 'floor' as const, label: '바닥' },
-                      { key: 'molding' as const, label: '길이' }
-                    ].map(({ key, label }) => {
-                      const isSelected = 
-                        (key === 'ceiling' && row.applicationRates?.ceiling) ||
-                        (key === 'wall' && row.applicationRates?.wall) ||
-                        (key === 'floor' && row.applicationRates?.floor) ||
-                        (key === 'molding' && row.applicationRates?.molding);
-                      const radioId = `radio-${row.id}-${key}`;
-                      return (
-                        <div key={key} className="flex items-center gap-1">
-                          <RadioGroupItem
-                            id={radioId}
-                            value={key}
-                            data-testid={`radio-applicationRate-${key}-${index}`}
-                          />
-                          <label 
-                            htmlFor={radioId}
-                            style={{ 
-                              fontFamily: "Pretendard", 
-                              fontSize: "13px", 
-                              cursor: "pointer",
-                              color: isSelected ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)"
-                            }}
-                          >
-                            {label}
-                          </label>
-                        </div>
-                      );
-                    })}
-                  </RadioGroup>
-                )}
               </td>
               
               {/* 기준가(㎡/길이) - Readonly */}
