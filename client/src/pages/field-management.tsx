@@ -1409,8 +1409,15 @@ export default function FieldManagement() {
                       onClick={async () => {
                         if (newVictimName && newVictimContact && newVictimAddress && selectedCaseData) {
                           try {
+                            // 원본 케이스 접수번호에서 prefix 추출 (예: "251203001-1" -> "251203001")
+                            const parentCaseNumber = selectedCaseData.caseNumber || "";
+                            const casePrefix = parentCaseNumber.split('-')[0];
+                            
                             // 새 피해세대 케이스 생성 (spread 사용 안 함 - 필요한 필드만 명시적으로 복사)
                             const newCasePayload = {
+                              // 원본 케이스 번호 prefix 전달 (서버에서 다음 suffix 계산)
+                              parentCasePrefix: casePrefix,
+                              
                               // 기본 정보 (복사)
                               receptionDate: selectedCaseData.receptionDate,
                               accidentDate: selectedCaseData.accidentDate,
