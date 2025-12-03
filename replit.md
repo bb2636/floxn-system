@@ -43,8 +43,8 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Reception Management**: New water damage case registration and management, including assigning repair companies.
 - **Field Survey Workflow**: A sequential process for managing field investigations for a selected case.
   - **Field Survey Management**: Input and manage field investigation data.
-  - **Drawing Creation**: Digital drawing workspace for damage scope with tools for images, rectangles, and leak markers, supporting high-resolution PNG export.
-  - **Documents Upload**: Document and photo upload system with persistent storage, categorization, download, and delete functionalities.
+  - **Drawing Creation**: Digital drawing workspace for damage scope with tools for images, rectangles, and leak markers, supporting high-resolution PNG export. Each case manages its own drawing individually (no auto-sync between related cases).
+  - **Documents Upload**: Document and photo upload system with persistent storage, categorization, download, and delete functionalities. Each case manages its own documents individually (no auto-sync between related cases).
   - **Estimate Management**: Create and submit restoration cost estimates with dynamic calculation tables linked to master data, version tracking, and PDF/Excel export.
   - **Field Reports**: Generate comprehensive reports integrating all collected field survey data.
 - **Master Data Management**: Administrator-only feature for managing dropdown options (e.g., room categories, locations, work names) used throughout the system, with API endpoints for management and real-time updates.
