@@ -1470,6 +1470,9 @@ export default function FieldManagement() {
                               victimIncidentAssistance: "true",  // schema는 text 타입 ("true" | "false" | null)
                               damagePreventionCost: "false",     // schema는 text 타입 ("true" | "false" | null)
                               
+                              // 당사 담당자 정보 (복사)
+                              managerId: selectedCaseData.managerId,
+                              
                               // 배당 정보 (복사 - 같은 업체에 배당)
                               assignedPartner: selectedCaseData.assignedPartner,
                               assignmentDate: selectedCaseData.assignmentDate,
