@@ -1571,16 +1571,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Auto-sync drawing to all related cases (same insuranceAccidentNo)
-      try {
-        const syncCount = await storage.syncDrawingToRelatedCases(validatedData.caseId);
-        if (syncCount > 0) {
-          console.log(`[Drawing] Auto-synced to ${syncCount} related cases`);
-        }
-      } catch (syncError) {
-        console.error("Failed to sync drawing to related cases:", syncError);
-        // Don't fail the request if sync fails
-      }
+      // 도면 자동 동기화 비활성화 - 각 케이스 개별 관리
+      // Auto-sync drawing disabled - each case manages its own drawing
       
       res.json(drawing);
     } catch (error) {
@@ -1840,18 +1832,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Auto-sync document to all related cases (same insuranceAccidentNo)
-      try {
-        if (validatedData.caseId) {
-          const syncCount = await storage.syncDocumentsToRelatedCases(validatedData.caseId, document);
-          if (syncCount > 0) {
-            console.log(`[Document] Auto-synced "${document.fileName}" to ${syncCount} related cases`);
-          }
-        }
-      } catch (syncError) {
-        console.error("Failed to sync document to related cases:", syncError);
-        // Don't fail the request if sync fails
-      }
+      // 문서 자동 동기화 비활성화 - 각 케이스 개별 관리
+      // Auto-sync document disabled - each case manages its own documents
       
       res.json(document);
     } catch (error) {
