@@ -1455,6 +1455,7 @@ export default function FieldManagement() {
                               insuredIdNumber: selectedCaseData.insuredIdNumber,
                               insuredContact: selectedCaseData.insuredContact,
                               insuredAddress: selectedCaseData.insuredAddress,
+                              insuredAddressDetail: selectedCaseData.insuredAddressDetail,
                               sameAsPolicyHolder: selectedCaseData.sameAsPolicyHolder,
                               
                               // 새 피해자 정보 (신규 입력)
