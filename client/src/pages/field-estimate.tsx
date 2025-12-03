@@ -583,11 +583,14 @@ export default function FieldEstimate() {
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
   const isReadOnly = isPartner && isSubmitted;
   
-  // 손해방지 공종 목록 (손해방지 케이스에만 해당하는 공종)
+  // 손해방지 공종 목록 (노무비 탭에서 사용)
   const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지비용', '코킹공사', '배관공사', '방수공사', '기타공사', '원인철거공사'];
   
-  // 피해복구 공종 목록 (복구면적 산출표에서 사용 - 도장, 목공, 수장공사만)
+  // 피해복구 공종 목록 (노무비 탭에서 사용)
   const VICTIM_RECOVERY_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
+  
+  // 복구면적 산출표 전용 공종 목록 (케이스 유형과 관계없이 항상 도장/목공/수장만)
+  const AREA_CALCULATION_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
   
   // 손해방지 vs 피해복구 케이스 판별
   // 접수번호에 -1, -2 등이 붙어있으면 피해복구, 없으면 손해방지
@@ -1795,7 +1798,7 @@ export default function FieldEstimate() {
                             <SelectValue placeholder="공종 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            {workTypes.filter(wt => wt && wt.trim() !== '').map(wt => (
+                            {AREA_CALCULATION_WORK_TYPES.map(wt => (
                               <SelectItem key={wt} value={wt}>
                                 {wt}
                               </SelectItem>
@@ -2475,7 +2478,7 @@ export default function FieldEstimate() {
                               }}
                             >
                               <option value="">공종 선택</option>
-                              {workTypes.map((wt) => (
+                              {AREA_CALCULATION_WORK_TYPES.map((wt) => (
                                 <option key={wt} value={wt}>{wt}</option>
                               ))}
                             </select>
