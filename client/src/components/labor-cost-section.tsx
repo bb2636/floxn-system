@@ -85,6 +85,7 @@ interface LaborCostSectionProps {
   filteredWorkTypes?: string[]; // 케이스 유형에 따라 필터링된 공종 목록
   isReadOnly?: boolean; // 읽기 전용 모드
   onAreaImportToMaterial?: (workType: string, totalArea: number) => void; // 피해면적 산출표 불러오기 시 자재비 수량 업데이트 콜백
+  enableAreaImport?: boolean; // 피해면적 불러오기 활성화 (손해방지 케이스만 true)
 }
 
 export function LaborCostSection({
@@ -99,6 +100,7 @@ export function LaborCostSection({
   filteredWorkTypes,
   isReadOnly = false,
   onAreaImportToMaterial,
+  enableAreaImport = true, // 기본값 true (하위 호환)
 }: LaborCostSectionProps) {
   // 공사명 선택 팝업 상태
   const [areaPopupOpen, setAreaPopupOpen] = useState(false);
@@ -110,6 +112,9 @@ export function LaborCostSection({
   const handleWorkNameChange = (rowId: string, workName: string) => {
     // 먼저 workName 업데이트
     updateRow(rowId, 'workName', workName);
+    
+    // 피해면적 불러오기 비활성화 시 팝업 열지 않음 (손해방지 케이스만 활성화)
+    if (!enableAreaImport) return;
     
     // 해당 공사명과 일치하는 복구면적 산출표 데이터가 있으면 팝업 열기
     const matchingRows = areaCalculationRows.filter(ar => ar.workName === workName);
@@ -125,6 +130,9 @@ export function LaborCostSection({
   const handleWorkNameSelectClose = (rowId: string, open: boolean) => {
     // Select가 닫힐 때만 처리
     if (open) return;
+    
+    // 피해면적 불러오기 비활성화 시 팝업 열지 않음 (손해방지 케이스만 활성화)
+    if (!enableAreaImport) return;
     
     const row = rows.find(r => r.id === rowId);
     if (!row?.workName) return;

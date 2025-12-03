@@ -492,21 +492,24 @@ export default function FieldEstimate() {
   // 피해복구 공종 목록 (복구면적 산출표에서 사용 - 도장, 목공, 수장공사만)
   const VICTIM_RECOVERY_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
   
-  // 공종 목록 (케이스 번호로 유형 구분)
+  // 손해방지 vs 피해복구 케이스 판별
   // 접수번호에 -1, -2 등이 붙어있으면 피해복구, 없으면 손해방지
-  const workTypes = useMemo(() => {
+  const isLossPreventionCase = useMemo(() => {
     const caseNumber = selectedCase?.caseNumber || '';
-    // -숫자 패턴이 있으면 피해복구
-    const isVictimRecovery = /-\d+$/.test(caseNumber);
-    
-    if (isVictimRecovery) {
-      // 피해복구 케이스: 피해복구 공종만
-      return VICTIM_RECOVERY_WORK_TYPES;
-    } else {
+    // -숫자 패턴이 없으면 손해방지
+    return !/-\d+$/.test(caseNumber);
+  }, [selectedCase?.caseNumber]);
+  
+  // 공종 목록 (케이스 번호로 유형 구분)
+  const workTypes = useMemo(() => {
+    if (isLossPreventionCase) {
       // 손해방지 케이스: 손해방지 공종만
       return DAMAGE_PREVENTION_WORK_TYPES;
+    } else {
+      // 피해복구 케이스: 피해복구 공종만
+      return VICTIM_RECOVERY_WORK_TYPES;
     }
-  }, [selectedCase?.caseNumber]);
+  }, [isLossPreventionCase]);
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
@@ -2554,6 +2557,7 @@ export default function FieldEstimate() {
                 filteredWorkTypes={workTypes}
                 isReadOnly={isReadOnly}
                 onAreaImportToMaterial={handleAreaImportToMaterial}
+                enableAreaImport={isLossPreventionCase}
               />
             </div>
 
@@ -3017,6 +3021,7 @@ export default function FieldEstimate() {
                 filteredWorkTypes={workTypes}
                 isReadOnly={isReadOnly}
                 onAreaImportToMaterial={handleAreaImportToMaterial}
+                enableAreaImport={isLossPreventionCase}
               />
             </div>
 
