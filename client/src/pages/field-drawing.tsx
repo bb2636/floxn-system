@@ -781,6 +781,48 @@ export default function FieldDrawing() {
     }
   };
 
+  // 누수 마커 드래그 핸들러
+  const handleLeakMarkerMouseDown = (e: React.MouseEvent, marker: LeakMarker) => {
+    if (selectedTool !== "pointer") return;
+    
+    e.stopPropagation();
+    
+    setSelectedLeakId(marker.id);
+    setSelectedImageId(null);
+    setSelectedRectangleId(null);
+    setSelectedAccidentAreaId(null);
+    
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (!canvasRect) return;
+    
+    // 드래그 시작 위치 저장
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startMarkerX = marker.x;
+    const startMarkerY = marker.y;
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = (moveEvent.clientX - startX) / DISPLAY_SCALE;
+      const deltaY = (moveEvent.clientY - startY) / DISPLAY_SCALE;
+      
+      setLeakMarkers(prev =>
+        prev.map(m =>
+          m.id === marker.id
+            ? { ...m, x: startMarkerX + deltaX, y: startMarkerY + deltaY }
+            : m
+        )
+      );
+    };
+    
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
   // 삭제 핸들러
   const handleDelete = () => {
     saveToHistory(); // 삭제 전 히스토리 저장
@@ -1434,18 +1476,14 @@ export default function FieldDrawing() {
             </div>
           )}
 
-          {/* 선택된 이미지/누수 마커의 컨트롤 */}
-          {(selectedImage || selectedLeakId) && selectedTool === "pointer" && (
+          {/* 선택된 이미지의 컨트롤 */}
+          {selectedImage && selectedTool === "pointer" && (
             <div 
               className="absolute z-10"
               data-ui="control-panel"
               style={{
-                left: selectedImage 
-                  ? `calc(${selectedImage.x * DISPLAY_SCALE}px + 180px)` 
-                  : `calc(${(leakMarkers.find(l => l.id === selectedLeakId)?.x || 0) * DISPLAY_SCALE}px + 180px - 20px)`,
-                top: selectedImage 
-                  ? `${Math.max(selectedImage.y * DISPLAY_SCALE - 50, 80)}px` 
-                  : `${Math.max((leakMarkers.find(l => l.id === selectedLeakId)?.y || 0) * DISPLAY_SCALE - 50, 80)}px`,
+                left: `calc(${selectedImage.x * DISPLAY_SCALE}px + 180px)`,
+                top: `${Math.max(selectedImage.y * DISPLAY_SCALE - 50, 80)}px`,
               }}
             >
               <div 
@@ -1454,15 +1492,13 @@ export default function FieldDrawing() {
                   background: "#2C2C2C",
                 }}
               >
-                {selectedImage && (
-                  <button
-                    onClick={handleToggleLock}
-                    className="p-2 rounded hover:bg-white/10"
-                    data-testid="button-toggle-lock-image"
-                  >
-                    <Lock className="w-5 h-5 text-white" />
-                  </button>
-                )}
+                <button
+                  onClick={handleToggleLock}
+                  className="p-2 rounded hover:bg-white/10"
+                  data-testid="button-toggle-lock-image"
+                >
+                  <Lock className="w-5 h-5 text-white" />
+                </button>
                 <button
                   onClick={handleDelete}
                   className="p-2 rounded hover:bg-white/10"
@@ -1473,6 +1509,37 @@ export default function FieldDrawing() {
               </div>
             </div>
           )}
+
+          {/* 선택된 누수 마커의 컨트롤 - 마커 바로 위에 표시 */}
+          {selectedLeakId && selectedTool === "pointer" && (() => {
+            const selectedMarker = leakMarkers.find(l => l.id === selectedLeakId);
+            if (!selectedMarker) return null;
+            return (
+              <div 
+                className="absolute z-20"
+                data-ui="control-panel-leak"
+                style={{
+                  left: `calc(${selectedMarker.x * DISPLAY_SCALE}px + 180px - 18px)`,
+                  top: `${Math.max(selectedMarker.y * DISPLAY_SCALE - 55, 80)}px`,
+                }}
+              >
+                <div 
+                  className="flex items-center px-2 py-2 rounded-lg shadow-lg"
+                  style={{
+                    background: "#2C2C2C",
+                  }}
+                >
+                  <button
+                    onClick={handleDelete}
+                    className="p-1 rounded hover:bg-white/10"
+                    data-testid="button-delete-leak"
+                  >
+                    <Trash2 className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 선택된 피해면적의 컨트롤 (삭제 버튼) */}
           {selectedAccidentArea && selectedTool === "pointer" && (
@@ -1747,14 +1814,14 @@ export default function FieldDrawing() {
                 {leakMarkers.map((marker) => (
                   <div
                     key={marker.id}
-                    onClick={(e) => handleLeakMarkerClick(e, marker.id)}
+                    onMouseDown={(e) => handleLeakMarkerMouseDown(e, marker)}
                     style={{
                       position: "absolute",
                       left: `${marker.x * DISPLAY_SCALE - 15}px`,
                       top: `${marker.y * DISPLAY_SCALE - 15}px`,
                       width: "30px",
                       height: "30px",
-                      cursor: "pointer",
+                      cursor: selectedTool === "pointer" ? "move" : "pointer",
                       zIndex: selectedLeakId === marker.id ? 10 : 4,
                     }}
                     data-testid={`leak-marker-${marker.id}`}
