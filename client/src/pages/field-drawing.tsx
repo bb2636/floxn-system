@@ -8,6 +8,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -1280,37 +1285,49 @@ export default function FieldDrawing() {
               }}
             >
               {/* 되돌리기 버튼 */}
-              <button
-                onClick={handleUndo}
-                data-testid="button-undo"
-                disabled={isReadOnly}
-                className="p-3 rounded-lg transition-all hover:bg-gray-100"
-                style={{
-                  background: "transparent",
-                  color: isReadOnly ? "#CCCCCC" : (history.length > 0 ? "#0C0C0C" : "#CCCCCC"),
-                  cursor: isReadOnly ? "not-allowed" : "pointer",
-                }}
-                title="되돌리기 (Ctrl+Z)"
-              >
-                <Undo2 className="w-6 h-6" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleUndo}
+                    data-testid="button-undo"
+                    disabled={isReadOnly}
+                    className="p-3 rounded-lg transition-all hover:bg-gray-100"
+                    style={{
+                      background: "transparent",
+                      color: isReadOnly ? "#CCCCCC" : (history.length > 0 ? "#0C0C0C" : "#CCCCCC"),
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <Undo2 className="w-6 h-6" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="bg-gray-900 text-white px-3 py-1.5 text-sm rounded-md">
+                  되돌리기 (Ctrl+Z)
+                </TooltipContent>
+              </Tooltip>
               <div className="w-px h-8 bg-gray-200 mx-1" />
               {tools.map((tool) => (
-                <button
-                  key={tool.id}
-                  onClick={() => !isReadOnly && handleToolClick(tool.id)}
-                  data-testid={`tool-${tool.id}`}
-                  disabled={isReadOnly}
-                  className="p-3 rounded-lg transition-all"
-                  style={{
-                    background: selectedTool === tool.id ? "#008FED" : "transparent",
-                    color: isReadOnly ? "#CCCCCC" : (selectedTool === tool.id ? "white" : "#0C0C0C"),
-                    cursor: isReadOnly ? "not-allowed" : "pointer",
-                    opacity: isReadOnly ? 0.5 : 1,
-                  }}
-                >
-                  <tool.icon className="w-6 h-6" />
-                </button>
+                <Tooltip key={tool.id}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => !isReadOnly && handleToolClick(tool.id)}
+                      data-testid={`tool-${tool.id}`}
+                      disabled={isReadOnly}
+                      className="p-3 rounded-lg transition-all"
+                      style={{
+                        background: selectedTool === tool.id ? "#008FED" : "transparent",
+                        color: isReadOnly ? "#CCCCCC" : (selectedTool === tool.id ? "white" : "#0C0C0C"),
+                        cursor: isReadOnly ? "not-allowed" : "pointer",
+                        opacity: isReadOnly ? 0.5 : 1,
+                      }}
+                    >
+                      <tool.icon className="w-6 h-6" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="bg-gray-900 text-white px-3 py-1.5 text-sm rounded-md">
+                    {tool.label}
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
           </div>
