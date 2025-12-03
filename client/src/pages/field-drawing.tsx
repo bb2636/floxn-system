@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, Drawing, Case } from "@shared/schema";
-import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus, Copy, ChevronDown, Undo2 } from "lucide-react";
+import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus, ChevronDown, Undo2 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -12,17 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import html2canvas from "html2canvas";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { formatCaseNumber } from "@/lib/utils";
 
 interface UploadedImage {
@@ -179,6 +168,9 @@ export default function FieldDrawing() {
     },
   });
 
+  // 자동 동기화 시도 여부 추적 (무한 루프 방지)
+  const autoSyncAttemptedRef = useRef<string | null>(null);
+
   // 로드된 도면으로 canvas state 초기화
   useEffect(() => {
     if (savedDrawing && !isLoadingDrawing) {
@@ -195,6 +187,27 @@ export default function FieldDrawing() {
       setLeakMarkers([]);
     }
   }, [savedDrawing, isLoadingDrawing, selectedCaseId]);
+
+  // 관련 케이스 도면 자동 동기화
+  useEffect(() => {
+    // 조건: 로딩 완료, 저장된 도면 없음, 관련 도면 있음, 아직 시도하지 않음
+    if (
+      !isLoadingDrawing &&
+      !savedDrawing &&
+      relatedDrawingInfo?.hasRelatedDrawing &&
+      relatedDrawingInfo.sourceCaseId &&
+      autoSyncAttemptedRef.current !== selectedCaseId &&
+      !cloneDrawingMutation.isPending
+    ) {
+      // 자동 동기화 시도 기록
+      autoSyncAttemptedRef.current = selectedCaseId;
+      
+      console.log('[도면 자동 동기화] 관련 케이스 도면 발견:', relatedDrawingInfo.sourceCaseNumber);
+      
+      // 자동으로 도면 복제
+      cloneDrawingMutation.mutate(relatedDrawingInfo.sourceCaseId);
+    }
+  }, [isLoadingDrawing, savedDrawing, relatedDrawingInfo, selectedCaseId, cloneDrawingMutation.isPending]);
 
   // Check if save is ready
   const isSaveReady = Boolean(user && !isLoadingSelectedCase && selectedCase && !isLoadingDrawing);
@@ -1209,49 +1222,21 @@ export default function FieldDrawing() {
 
           {/* 저장 버튼 (우측 상단) */}
           <div className="absolute top-4 right-4 z-10 flex gap-2" data-ui="save-buttons">
-            {/* 관련 케이스에서 도면 복제 버튼 */}
-            {relatedDrawingInfo?.hasRelatedDrawing && !savedDrawing && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button
-                    className="px-6 py-2.5 rounded-lg font-medium transition-all hover-elevate active-elevate-2 flex items-center gap-2"
-                    style={{
-                      background: "#F59E0B",
-                      color: "white",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                    }}
-                    data-testid="button-clone-drawing"
-                    disabled={cloneDrawingMutation.isPending}
-                  >
-                    <Copy className="w-4 h-4" />
-                    {cloneDrawingMutation.isPending ? "복제 중..." : "관련 도면 가져오기"}
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>관련 케이스에서 도면 복제</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      <span className="font-semibold">{formatCaseNumber(relatedDrawingInfo.sourceCaseNumber)}</span> 케이스의 도면을 복제하시겠습니까?
-                      <br />
-                      복제 후에도 개별적으로 수정할 수 있습니다.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>취소</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        if (relatedDrawingInfo.sourceCaseId) {
-                          cloneDrawingMutation.mutate(relatedDrawingInfo.sourceCaseId);
-                        }
-                      }}
-                      data-testid="button-confirm-clone-drawing"
-                    >
-                      복제하기
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+            {/* 관련 케이스 도면 자동 동기화 상태 표시 */}
+            {cloneDrawingMutation.isPending && (
+              <div
+                className="px-4 py-2.5 rounded-lg font-medium flex items-center gap-2"
+                style={{
+                  background: "#F59E0B",
+                  color: "white",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                }}
+                data-testid="status-syncing-drawing"
+              >
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                도면 동기화 중...
+              </div>
             )}
             <button
               onClick={handleSave}
