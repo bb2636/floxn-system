@@ -48,6 +48,7 @@ export interface LaborCatalogItem {
 // 노무비 테이블 행
 export interface LaborCostRow {
   id: string;
+  sourceAreaRowId?: string; // 복구면적 산출표 행 ID (연동 추적용)
   place: string; // 장소 - 복구면적 산출표에서 가져옴 (읽기전용)
   position: string; // 위치 - 복구면적 산출표에서 가져옴 (읽기전용)
   category: string; // 공종 - select
