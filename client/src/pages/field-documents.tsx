@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Case, CaseDocument } from "@shared/schema";
-import { Upload, X, Check, Download, Search, Copy } from "lucide-react";
+import { Upload, X, Check, Download, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,17 +11,6 @@ import { Button } from "@/components/ui/button";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { formatCaseNumber } from "@/lib/utils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 type DocumentCategory = "전체" | "현장" | "수리중" | "복구완료" | "청구";
 
@@ -153,6 +142,9 @@ export default function FieldDocuments() {
     enabled: !!selectedCaseId && documents.length === 0 && !isLoading,
   });
 
+  // 자동 동기화 시도 여부 추적 (무한 루프 방지)
+  const autoSyncAttemptedRef = useRef<string | null>(null);
+
   // 문서 복제 mutation
   const cloneDocumentsMutation = useMutation({
     mutationFn: async (sourceCaseId: string) => {
@@ -169,18 +161,39 @@ export default function FieldDocuments() {
       queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
       queryClient.invalidateQueries({ queryKey: ["/api/cases", selectedCaseId, "related-documents"] });
       toast({
-        title: "문서 복제 완료",
-        description: "관련 케이스의 문서들이 복제되었습니다.",
+        title: "문서 동기화 완료",
+        description: "관련 케이스의 문서들이 동기화되었습니다.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "문서 복제 실패",
+        title: "문서 동기화 실패",
         description: error.message || "알 수 없는 오류가 발생했습니다.",
         variant: "destructive",
       });
     },
   });
+
+  // 관련 케이스 문서 자동 동기화
+  useEffect(() => {
+    // 조건: 로딩 완료, 문서 없음, 관련 문서 있음, 아직 시도하지 않음
+    if (
+      !isLoading &&
+      documents.length === 0 &&
+      relatedDocumentsInfo?.hasRelatedDocuments &&
+      relatedDocumentsInfo.sourceCaseId &&
+      autoSyncAttemptedRef.current !== selectedCaseId &&
+      !cloneDocumentsMutation.isPending
+    ) {
+      // 자동 동기화 시도 기록
+      autoSyncAttemptedRef.current = selectedCaseId;
+      
+      console.log('[문서 자동 동기화] 관련 케이스 문서 발견:', relatedDocumentsInfo.sourceCaseNumber, `(${relatedDocumentsInfo.documentCount}개)`);
+      
+      // 자동으로 문서 복제
+      cloneDocumentsMutation.mutate(relatedDocumentsInfo.sourceCaseId);
+    }
+  }, [isLoading, documents.length, relatedDocumentsInfo, selectedCaseId, cloneDocumentsMutation.isPending]);
 
   // 문서 업로드 mutation
   const uploadMutation = useMutation({
@@ -614,55 +627,23 @@ export default function FieldDocuments() {
         ))}
       </div>
 
-      {/* 관련 케이스에서 문서 복제 버튼 */}
-      {relatedDocumentsInfo?.hasRelatedDocuments && documents.length === 0 && (
+      {/* 관련 케이스 문서 자동 동기화 상태 표시 */}
+      {cloneDocumentsMutation.isPending && (
         <div className="mb-4">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <button
-                disabled={cloneDocumentsMutation.isPending}
-                className="w-full px-6 py-4 rounded-xl font-medium transition-all hover-elevate active-elevate-2 flex items-center justify-center gap-3"
-                style={{
-                  background: cloneDocumentsMutation.isPending ? "#ccc" : "#F59E0B",
-                  color: "white",
-                  border: "none",
-                  fontFamily: "Pretendard",
-                  fontSize: "16px",
-                  fontWeight: 500,
-                  cursor: cloneDocumentsMutation.isPending ? "not-allowed" : "pointer",
-                }}
-                data-testid="button-clone-documents"
-              >
-                <Copy className="w-5 h-5" />
-                {cloneDocumentsMutation.isPending 
-                  ? "복제 중..." 
-                  : `관련 케이스에서 문서 가져오기 (${relatedDocumentsInfo.documentCount || 0}개)`}
-              </button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>관련 케이스에서 문서 복제</AlertDialogTitle>
-                <AlertDialogDescription>
-                  <span className="font-semibold">{formatCaseNumber(relatedDocumentsInfo.sourceCaseNumber)}</span> 케이스의 문서 {relatedDocumentsInfo.documentCount || 0}개를 복제하시겠습니까?
-                  <br />
-                  복제 후에도 개별적으로 수정/삭제할 수 있습니다.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>취소</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => {
-                    if (relatedDocumentsInfo.sourceCaseId) {
-                      cloneDocumentsMutation.mutate(relatedDocumentsInfo.sourceCaseId);
-                    }
-                  }}
-                  data-testid="button-confirm-clone-documents"
-                >
-                  복제하기
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <div
+            className="w-full px-6 py-4 rounded-xl font-medium flex items-center justify-center gap-3"
+            style={{
+              background: "#F59E0B",
+              color: "white",
+              fontFamily: "Pretendard",
+              fontSize: "16px",
+              fontWeight: 500,
+            }}
+            data-testid="status-syncing-documents"
+          >
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            문서 동기화 중...
+          </div>
         </div>
       )}
 
