@@ -15,6 +15,7 @@ export interface MaterialCatalogItem {
 
 export interface MaterialRow {
   id: string;
+  공사명: string; // 노무비에서 가져온 공사명 (읽기전용)
   공종: string; // 노무비에서 가져온 공종
   자재: string; // 드롭다운
   규격: string; // 입력 필드
@@ -157,6 +158,7 @@ export function MaterialCostSection({
                 data-testid="checkbox-select-all-material"
               />
             </th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>공사명</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>공종</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>자재</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>규격</th>
@@ -190,6 +192,11 @@ export function MaterialCostSection({
                     onChange={() => onSelectRow(row.id)}
                     data-testid={`checkbox-material-${index}`}
                   />
+                </td>
+                
+                {/* 공사명 - Readonly (노무비에서 가져옴) */}
+                <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "left" }}>
+                  {row.공사명 || '-'}
                 </td>
                 
                 {/* 공종 - Select (자재비 카탈로그에 있는 공종만 표시) */}

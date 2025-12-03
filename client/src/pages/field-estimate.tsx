@@ -29,7 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LaborCostSection, type LaborCatalogItem, type LaborCostRow } from "@/components/labor-cost-section";
-import { MaterialCostSection, type MaterialCatalogItem } from "@/components/material-cost-section";
+import { MaterialCostSection, type MaterialCatalogItem, type MaterialRow } from "@/components/material-cost-section";
 
 interface AreaCalculationRow {
   id: string;
@@ -60,19 +60,7 @@ interface Material {
   updatedAt: string; // ISO timestamp string from API
 }
 
-// 자재비 테이블 행 (새 UI 구조)
-interface MaterialRow {
-  id: string;
-  공종: string; // 노무비에서 가져온 공종 (드롭다운)
-  자재: string; // 자재명 (드롭다운)
-  규격: string; // 규격 (드롭다운)
-  단위: string; // 단위 (읽기전용)
-  기준단가: number; // 기준단가 (읽기전용)
-  수량: number; // 수량 (입력)
-  금액: number; // 금액 (계산값)
-  비고: string; // 비고 (입력)
-  sourceLaborRowId?: string; // 노무비 행 ID 추적
-}
+// MaterialRow는 "@/components/material-cost-section"에서 import
 
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
 
@@ -123,9 +111,10 @@ export default function FieldEstimate() {
   }, []); // dependency 제거 (한 번만 설정)
 
   // 빈 자재비 행 생성 함수
-  const createBlankMaterialRow = (공종 = '', sourceLaborRowId?: string): MaterialRow => {
+  const createBlankMaterialRow = (공종 = '', 공사명 = '', sourceLaborRowId?: string): MaterialRow => {
     return {
       id: `material-${Date.now()}-${Math.random()}`,
+      공사명,
       공종,
       자재: '',
       규격: '',
@@ -218,24 +207,42 @@ export default function FieldEstimate() {
         // sourceLaborRowId가 있으면 해당 노무비 행과 동기화
         if (matRow.sourceLaborRowId) {
           const linkedLaborRow = laborCostRows.find(lr => lr.id === matRow.sourceLaborRowId);
-          if (linkedLaborRow && linkedLaborRow.category !== matRow.공종) {
-            // 노무비 공종이 자재비 DB에 있을 때만 동기화
-            const newCategory = materialWorkTypes.has(linkedLaborRow.category) 
-              ? linkedLaborRow.category 
-              : '';
-            return { ...matRow, 공종: newCategory };
+          if (linkedLaborRow) {
+            const needsCategoryUpdate = linkedLaborRow.category !== matRow.공종;
+            const needsWorkNameUpdate = linkedLaborRow.workName !== matRow.공사명;
+            
+            if (needsCategoryUpdate || needsWorkNameUpdate) {
+              // 노무비 공종이 자재비 DB에 있을 때만 동기화
+              const newCategory = materialWorkTypes.has(linkedLaborRow.category) 
+                ? linkedLaborRow.category 
+                : '';
+              return { 
+                ...matRow, 
+                공종: needsCategoryUpdate ? newCategory : matRow.공종,
+                공사명: linkedLaborRow.workName || ''
+              };
+            }
           }
           return matRow;
         }
         
         // sourceLaborRowId가 없으면 같은 인덱스의 노무비 행과 동기화
         const correspondingLaborRow = laborCostRows[index];
-        if (correspondingLaborRow && correspondingLaborRow.category !== matRow.공종) {
-          // 노무비 공종이 자재비 DB에 있을 때만 동기화
-          const newCategory = materialWorkTypes.has(correspondingLaborRow.category) 
-            ? correspondingLaborRow.category 
-            : '';
-          return { ...matRow, 공종: newCategory };
+        if (correspondingLaborRow) {
+          const needsCategoryUpdate = correspondingLaborRow.category !== matRow.공종;
+          const needsWorkNameUpdate = correspondingLaborRow.workName !== matRow.공사명;
+          
+          if (needsCategoryUpdate || needsWorkNameUpdate) {
+            // 노무비 공종이 자재비 DB에 있을 때만 동기화
+            const newCategory = materialWorkTypes.has(correspondingLaborRow.category) 
+              ? correspondingLaborRow.category 
+              : '';
+            return { 
+              ...matRow, 
+              공종: needsCategoryUpdate ? newCategory : matRow.공종,
+              공사명: correspondingLaborRow.workName || ''
+            };
+          }
         }
         return matRow;
       });
@@ -243,7 +250,7 @@ export default function FieldEstimate() {
       // 새로운 자재비 행 추가 (노무비 공종이 자재비 DB에 있을 때만 공종 설정)
       const newRows = laborRowsNeedingMaterial.map(laborRow => {
         const category = materialWorkTypes.has(laborRow.category) ? laborRow.category : '';
-        return createBlankMaterialRow(category, laborRow.id);
+        return createBlankMaterialRow(category, laborRow.workName || '', laborRow.id);
       });
       
       return [...updatedRows, ...newRows];
@@ -889,6 +896,7 @@ export default function FieldEstimate() {
 
     const newRow: MaterialRow = {
       id: `material-${Date.now()}-${Math.random()}`,
+      공사명: '', // 수동 추가 시 공사명은 빈 값
       공종: selectedMaterialName, // 선택된 공종 사용
       자재: selectedMaterial.materialName,
       규격: selectedMaterial.specification,
