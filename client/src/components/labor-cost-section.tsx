@@ -48,6 +48,8 @@ export interface LaborCatalogItem {
 // 노무비 테이블 행
 export interface LaborCostRow {
   id: string;
+  place: string; // 장소 - 복구면적 산출표에서 가져옴 (읽기전용)
+  position: string; // 위치 - 복구면적 산출표에서 가져옴 (읽기전용)
   category: string; // 공종 - select
   workName: string; // 공사명 - select (filtered by category)
   detailWork: string; // 세부공사 - select (filtered by workName)
@@ -156,13 +158,23 @@ export function LaborCostSection({
     // 소수점 1자리로 반올림
     const damageArea = Math.round(selectedGroup.totalRepairArea * 10) / 10;
     
+    // 장소는 그룹의 category에서 가져옴
+    const place = selectedGroup.category || '';
+    
+    // 위치는 천장/벽체/바닥 중 면적이 있는 것들을 조합
+    const positionParts: string[] = [];
+    if (selectedGroup.천장 > 0) positionParts.push('천장');
+    if (selectedGroup.벽체 > 0) positionParts.push('벽체');
+    if (selectedGroup.바닥 > 0) positionParts.push('바닥');
+    const position = positionParts.join('/') || '';
+    
     // 현재 노무비 행의 공종 가져오기
     const currentRow = rows.find(r => r.id === areaPopupRowId);
     const workType = currentRow?.category || '';
     
     onRowsChange(rows.map(row => {
       if (row.id === areaPopupRowId) {
-        const updated = { ...row, damageArea };
+        const updated = { ...row, damageArea, place, position };
         // 금액 재계산
         const standardPrice = Number(updated.standardPrice) || 0;
         const quantity = Number(updated.quantity) || 0;
@@ -507,6 +519,8 @@ export function LaborCostSection({
                 data-testid="checkbox-select-all-labor" 
               />
             </th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>장소</th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>위치</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>공종</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>공사명</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>세부공사</th>
@@ -532,6 +546,16 @@ export function LaborCostSection({
                   onCheckedChange={() => onSelectRow(row.id)}
                   data-testid={`checkbox-labor-${index}`}
                 />
+              </td>
+              
+              {/* 장소 - Readonly (복구면적 산출표에서 가져옴) */}
+              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "left" }}>
+                {row.place || '-'}
+              </td>
+              
+              {/* 위치 - Readonly (복구면적 산출표에서 가져옴) */}
+              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "left" }}>
+                {row.position || '-'}
               </td>
               
               {/* 공종 - Select */}

@@ -142,6 +142,8 @@ export default function FieldEstimate() {
     // 빈 행 생성 (사용자가 직접 선택하도록)
     return {
       id: `labor-${Date.now()}-${Math.random()}`,
+      place: '', // 장소 - 복구면적 산출표에서 가져옴
+      position: '', // 위치 - 복구면적 산출표에서 가져옴
       category: '',
       workName: '',
       detailWork: '',
