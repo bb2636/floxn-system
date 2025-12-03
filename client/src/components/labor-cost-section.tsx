@@ -622,11 +622,15 @@ export function LaborCostSection({
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                     data-testid={`select-detailWork-${index}`}
                   >
-                    <SelectValue placeholder="선택" />
+                    <SelectValue placeholder="선택">
+                      {row.detailWork === '노무비' ? '노임단가' : row.detailWork}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {getDetailWorkOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      <SelectItem key={opt} value={opt}>
+                        {opt === '노무비' ? '노임단가' : opt}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
