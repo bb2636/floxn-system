@@ -269,6 +269,15 @@ export default function FieldEstimate() {
   // 자동 연동 대상 공종 목록 (도장, 목공, 수장공사만)
   const AUTO_SYNC_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
 
+  // 노무비 공종 변환 함수 (특수 케이스 처리)
+  // 목공사 + 반자틀/석고보드 → 피해철거 공사
+  const getLaborCategory = (workType: string, workName: string): string => {
+    if (workType === '목공사' && (workName === '반자틀' || workName === '석고보드')) {
+      return '피해철거 공사';
+    }
+    return workType;
+  };
+
   // 복구면적 산출표 → 노무비 자동 연동
   // 장소, 위치, 공종, 공사명이 모두 입력되면 노무비에 자동 추가
   // 공종이 도장공사, 목공사, 수장공사인 경우에만 연동
@@ -307,7 +316,7 @@ export default function FieldEstimate() {
           sourceAreaRowId: areaRow.id,
           place: areaRow.category, // 복구면적 산출표의 장소 → 노무비 장소
           position: areaRow.location, // 복구면적 산출표의 위치 → 노무비 위치
-          category: areaRow.workType, // 복구면적 산출표의 공종 → 노무비 공종
+          category: getLaborCategory(areaRow.workType, areaRow.workName), // 공종 변환 적용
           workName: areaRow.workName, // 복구면적 산출표의 공사명 → 노무비 공사명
         })
       );
@@ -335,11 +344,14 @@ export default function FieldEstimate() {
         return laborRow;
       }
       
+      // 공종 변환 적용 (목공사 + 반자틀/석고보드 → 피해철거 공사)
+      const laborCategory = getLaborCategory(linkedAreaRow.workType, linkedAreaRow.workName);
+      
       // 데이터 변경 확인
       const needsUpdate = 
         laborRow.place !== linkedAreaRow.category ||
         laborRow.position !== linkedAreaRow.location ||
-        laborRow.category !== linkedAreaRow.workType ||
+        laborRow.category !== laborCategory ||
         laborRow.workName !== linkedAreaRow.workName;
       
       if (needsUpdate) {
@@ -347,7 +359,7 @@ export default function FieldEstimate() {
           ...laborRow,
           place: linkedAreaRow.category,
           position: linkedAreaRow.location,
-          category: linkedAreaRow.workType,
+          category: laborCategory,
           workName: linkedAreaRow.workName,
         };
       }
