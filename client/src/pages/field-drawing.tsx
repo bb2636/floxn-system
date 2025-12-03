@@ -1440,8 +1440,12 @@ export default function FieldDrawing() {
               className="absolute z-10"
               data-ui="control-panel"
               style={{
-                left: selectedImage ? `calc(${selectedImage.x}px + 180px)` : `calc(${leakMarkers.find(l => l.id === selectedLeakId)?.x}px + 180px - 40px)`,
-                top: selectedImage ? `${Math.max(selectedImage.y - 50, 80)}px` : `${Math.max((leakMarkers.find(l => l.id === selectedLeakId)?.y || 0) - 50, 80)}px`,
+                left: selectedImage 
+                  ? `calc(${selectedImage.x * DISPLAY_SCALE}px + 180px)` 
+                  : `calc(${(leakMarkers.find(l => l.id === selectedLeakId)?.x || 0) * DISPLAY_SCALE}px + 180px - 20px)`,
+                top: selectedImage 
+                  ? `${Math.max(selectedImage.y * DISPLAY_SCALE - 50, 80)}px` 
+                  : `${Math.max((leakMarkers.find(l => l.id === selectedLeakId)?.y || 0) * DISPLAY_SCALE - 50, 80)}px`,
               }}
             >
               <div 
@@ -1476,8 +1480,8 @@ export default function FieldDrawing() {
               className="absolute z-10"
               data-ui="control-panel"
               style={{
-                left: `calc(${selectedAccidentArea.x + selectedAccidentArea.width / 2}px + 180px - 20px)`,
-                top: `${Math.max(selectedAccidentArea.y - 50, 80)}px`,
+                left: `calc(${(selectedAccidentArea.x + selectedAccidentArea.width / 2) * DISPLAY_SCALE}px + 180px - 20px)`,
+                top: `${Math.max(selectedAccidentArea.y * DISPLAY_SCALE - 50, 80)}px`,
               }}
             >
               <div 
