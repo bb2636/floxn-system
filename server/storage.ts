@@ -169,6 +169,7 @@ export interface IStorage {
   deleteNotice(id: string): Promise<void>;
   // Asset cloning methods (for syncing from related cases)
   getRelatedCaseWithDrawing(caseId: string): Promise<{ caseId: string; caseNumber: string } | null>;
+  getAllRelatedCasesWithDrawings(caseId: string): Promise<Array<{ caseId: string; caseNumber: string }>>;
   getRelatedCaseWithEstimate(caseId: string): Promise<{ caseId: string; caseNumber: string } | null>;
   getRelatedCaseWithDocuments(caseId: string): Promise<{ caseId: string; caseNumber: string; documentCount: number } | null>;
   cloneDrawingFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<Drawing | null>;
@@ -1977,6 +1978,10 @@ export class MemStorage implements IStorage {
 
   // Asset cloning methods (stub)
   async getRelatedCaseWithDrawing(caseId: string): Promise<{ caseId: string; caseNumber: string } | null> {
+    throw new Error("Asset cloning methods not implemented in MemStorage");
+  }
+
+  async getAllRelatedCasesWithDrawings(caseId: string): Promise<Array<{ caseId: string; caseNumber: string }>> {
     throw new Error("Asset cloning methods not implemented in MemStorage");
   }
 
@@ -3965,6 +3970,25 @@ export class DbStorage implements IStorage {
       }
     }
     return null;
+  }
+
+  async getAllRelatedCasesWithDrawings(caseId: string): Promise<Array<{ caseId: string; caseNumber: string }>> {
+    // Get the source case to find its accident number
+    const sourceCase = await this.getCaseById(caseId);
+    if (!sourceCase || !sourceCase.insuranceAccidentNo) return [];
+
+    // Find related cases with the same accident number
+    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, caseId);
+    
+    // Find ALL related cases that have drawings
+    const casesWithDrawings: Array<{ caseId: string; caseNumber: string }> = [];
+    for (const relatedCase of relatedCases) {
+      const drawing = await this.getDrawingByCaseId(relatedCase.id);
+      if (drawing) {
+        casesWithDrawings.push({ caseId: relatedCase.id, caseNumber: relatedCase.caseNumber || '' });
+      }
+    }
+    return casesWithDrawings;
   }
 
   async getRelatedCaseWithEstimate(caseId: string): Promise<{ caseId: string; caseNumber: string } | null> {

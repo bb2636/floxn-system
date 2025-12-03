@@ -1668,6 +1668,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get ALL related cases with drawings (for manual copy selection)
+  app.get("/api/cases/:caseId/related-drawings", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const relatedCases = await storage.getAllRelatedCasesWithDrawings(caseId);
+      res.json({ relatedCases });
+    } catch (error) {
+      console.error("Get all related drawings error:", error);
+      res.status(500).json({ error: "관련 도면 목록을 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Clone drawing from related case
   app.post("/api/cases/:caseId/clone-drawing", async (req, res) => {
     if (!req.session?.userId) {

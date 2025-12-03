@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, Drawing, Case } from "@shared/schema";
-import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus, ChevronDown, Undo2 } from "lucide-react";
+import { MousePointer2, ImagePlus, Square, Target, Lock, Trash2, Focus, ChevronDown, Undo2, Copy } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -128,15 +128,16 @@ export default function FieldDrawing() {
     staleTime: 0,
   });
 
-  // 관련 케이스 도면 확인 (같은 사고번호의 다른 케이스에 도면이 있는지)
-  const { data: relatedDrawingInfo } = useQuery<{
-    hasRelatedDrawing: boolean;
-    sourceCaseId?: string;
-    sourceCaseNumber?: string;
+  // 관련 케이스 도면 목록 가져오기 (수동 복사용)
+  const { data: relatedCasesWithDrawings } = useQuery<{
+    relatedCases: Array<{ caseId: string; caseNumber: string }>;
   }>({
-    queryKey: ["/api/cases", selectedCaseId, "related-drawing"],
-    enabled: !!selectedCaseId && !savedDrawing && !isLoadingDrawing,
+    queryKey: ["/api/cases", selectedCaseId, "related-drawings"],
+    enabled: !!selectedCaseId,
   });
+
+  // 도면 가져오기 팝오버 상태
+  const [isImportPopoverOpen, setIsImportPopoverOpen] = useState(false);
 
   // 도면 복제 mutation
   const cloneDrawingMutation = useMutation({
@@ -158,10 +159,11 @@ export default function FieldDrawing() {
         setLeakMarkers(data.drawing.leakMarkers || []);
       }
       queryClient.invalidateQueries({ queryKey: ["/api/drawings", "case", selectedCaseId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cases", selectedCaseId, "related-drawing"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cases", selectedCaseId, "related-drawings"] });
+      setIsImportPopoverOpen(false);
       toast({
-        title: "도면 복제 완료",
-        description: "관련 케이스의 도면이 복제되었습니다.",
+        title: "도면 가져오기 완료",
+        description: "관련 케이스의 도면을 가져왔습니다. 수정 후 저장해주세요.",
       });
     },
     onError: (error: Error) => {
@@ -1248,6 +1250,91 @@ export default function FieldDrawing() {
 
           {/* 저장 버튼 (우측 상단) */}
           <div className="absolute top-4 right-4 z-10 flex gap-2" data-ui="save-buttons">
+            {/* 관련접수건 도면 가져오기 버튼 */}
+            {relatedCasesWithDrawings?.relatedCases && relatedCasesWithDrawings.relatedCases.length > 0 && !isReadOnly && (
+              <Popover open={isImportPopoverOpen} onOpenChange={setIsImportPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    className="px-4 py-2.5 rounded-lg font-medium transition-all hover-elevate active-elevate-2 flex items-center gap-2"
+                    style={{
+                      background: "#F59E0B",
+                      color: "white",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                    }}
+                    data-testid="button-import-drawing"
+                  >
+                    <Copy className="w-4 h-4" />
+                    관련접수건 도면 가져오기
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-64 p-0" 
+                  align="end"
+                  style={{
+                    background: "white",
+                    border: "1px solid rgba(0, 0, 0, 0.1)",
+                    borderRadius: "12px",
+                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
+                  }}
+                >
+                  <div className="p-3 border-b" style={{ borderColor: "rgba(0, 0, 0, 0.06)" }}>
+                    <p
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#0C0C0C",
+                      }}
+                    >
+                      도면 가져오기
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "11px",
+                        color: "rgba(12, 12, 12, 0.5)",
+                        marginTop: "4px",
+                      }}
+                    >
+                      관련 접수건의 도면을 복사합니다
+                    </p>
+                  </div>
+                  <div className="p-2 max-h-48 overflow-y-auto">
+                    {relatedCasesWithDrawings.relatedCases.map((relatedCase) => (
+                      <button
+                        key={relatedCase.caseId}
+                        onClick={() => cloneDrawingMutation.mutate(relatedCase.caseId)}
+                        disabled={cloneDrawingMutation.isPending}
+                        className="w-full text-left px-3 py-2 rounded-lg hover-elevate active-elevate-2 transition-all"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "13px",
+                          color: "#0C0C0C",
+                          opacity: cloneDrawingMutation.isPending ? 0.6 : 1,
+                        }}
+                        data-testid={`button-import-from-${relatedCase.caseNumber}`}
+                      >
+                        <span style={{ fontWeight: 500 }}>
+                          {formatCaseNumber(relatedCase.caseNumber)}
+                        </span>
+                        {cloneDrawingMutation.isPending && (
+                          <span 
+                            className="ml-2"
+                            style={{ 
+                              fontSize: "11px", 
+                              color: "#F59E0B" 
+                            }}
+                          >
+                            복사 중...
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
             <button
               onClick={handleSave}
               disabled={!isSaveReady || saveDrawingMutation.isPending || isReadOnly}
