@@ -132,6 +132,7 @@ export const cases = pgTable("cases", {
   victimName: text("victim_name"),
   victimContact: text("victim_contact"),
   victimAddress: text("victim_address"),
+  victimAddressDetail: text("victim_address_detail"),
   additionalVictims: text("additional_victims"), // JSON string of additional victims array
   
   // 현장조사 정보 (향후 fieldSurveyData 테이블로 이동 예정, 현재는 호환성 유지)

@@ -131,6 +131,7 @@ export default function FieldManagement() {
   const [newVictimName, setNewVictimName] = useState("");
   const [newVictimContact, setNewVictimContact] = useState("");
   const [newVictimAddress, setNewVictimAddress] = useState("");
+  const [newVictimAddressDetail, setNewVictimAddressDetail] = useState("");
   const [sameAsInsured, setSameAsInsured] = useState(false);
   
   // 피해 복구 방식 및 차액 유형 관련 상태
@@ -1364,7 +1365,7 @@ export default function FieldManagement() {
                         <Input
                           value={newVictimAddress}
                           onChange={(e) => { handleUserInput(); setNewVictimAddress(e.target.value); }}
-                          placeholder="상세주소"
+                          placeholder="주소"
                           className={intakeFieldClass}
                           style={{
                             ...intakeFieldStyle,
@@ -1372,6 +1373,18 @@ export default function FieldManagement() {
                           }}
                           disabled={sameAsInsured}
                           data-testid="input-new-victim-address"
+                        />
+                        <Input
+                          value={newVictimAddressDetail}
+                          onChange={(e) => { handleUserInput(); setNewVictimAddressDetail(e.target.value); }}
+                          placeholder="상세주소"
+                          className={intakeFieldClass}
+                          style={{
+                            ...intakeFieldStyle,
+                            flex: 1,
+                          }}
+                          disabled={sameAsInsured}
+                          data-testid="input-new-victim-address-detail"
                         />
                         <div className="flex items-center gap-2">
                           <Checkbox
@@ -1381,8 +1394,10 @@ export default function FieldManagement() {
                               setSameAsInsured(checked === true);
                               if (checked === true) {
                                 setNewVictimAddress(selectedCaseData?.insuredAddress || "");
+                                setNewVictimAddressDetail(selectedCaseData?.insuredAddressDetail || "");
                               } else {
                                 setNewVictimAddress("");
+                                setNewVictimAddressDetail("");
                               }
                             }}
                             data-testid="checkbox-same-as-insured"
@@ -1398,7 +1413,7 @@ export default function FieldManagement() {
                               cursor: "pointer",
                             }}
                           >
-                            주소지 등일
+                            주소지 동일
                           </label>
                         </div>
                       </div>
@@ -1462,6 +1477,7 @@ export default function FieldManagement() {
                               victimName: newVictimName,
                               victimContact: newVictimContact,
                               victimAddress: newVictimAddress,
+                              victimAddressDetail: newVictimAddressDetail,
                               
                               // 피해사항 정보 (빈 배열로 초기화 - 새 피해자는 자신의 피해사항 입력)
                               damageItems: "[]",
@@ -1566,6 +1582,7 @@ export default function FieldManagement() {
                             setNewVictimName("");
                             setNewVictimContact("");
                             setNewVictimAddress("");
+                            setNewVictimAddressDetail("");
                             setSameAsInsured(false);
                             
                             // 케이스 목록 새로고침
