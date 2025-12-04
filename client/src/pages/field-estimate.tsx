@@ -120,6 +120,8 @@ export default function FieldEstimate() {
       자재 = '각재';
     } else if (공종 === '목공사' && 공사명 === '걸레받이') {
       자재 = '걸레받이';
+    } else if (공종 === '목공사' && 공사명 === '몰딩') {
+      자재 = '몰딩';
     }
     
     return {
@@ -668,6 +670,13 @@ export default function FieldEstimate() {
         });
         // 복구면적 → 피해면적 복사 (숫자로 변환)
         mainRow.damageArea = Number(areaRow.repairArea) || 0;
+        
+        // 목공사 특정 공사명에 대한 자동 선택 (세부공사: 일위대가, 세부항목: 공사명과 동일)
+        if (areaRow.workType === '목공사' && (areaRow.workName === '걸레받이' || areaRow.workName === '몰딩')) {
+          mainRow.detailWork = '일위대가';
+          mainRow.detailItem = areaRow.workName; // 걸레받이 또는 몰딩
+        }
+        
         newLaborRows.push(mainRow);
         
         // 목공사 + 반자틀/석고보드인 경우 피해철거공사 행 추가

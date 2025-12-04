@@ -116,6 +116,8 @@ export function MaterialCostSection({
             autoMaterial = '각재';
           } else if (value === '목공사' && updated.공사명 === '걸레받이') {
             autoMaterial = '걸레받이';
+          } else if (value === '목공사' && updated.공사명 === '몰딩') {
+            autoMaterial = '몰딩';
           }
           updated.자재 = autoMaterial;
           updated.규격 = '';
