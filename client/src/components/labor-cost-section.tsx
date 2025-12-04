@@ -360,6 +360,12 @@ export function LaborCostSection({
     return categories;
   }, [catalog, filteredWorkTypes]);
 
+  // 걸레받이 -> 목공사 역변환 (노무비 카탈로그 조회용)
+  const mapWorkNameForLookup = (workName: string) => {
+    if (workName === '걸레받이') return '목공사';
+    return workName;
+  };
+
   const getWorkNameOptions = (category: string, currentValue?: string) => {
     if (!category) return currentValue ? [currentValue] : [];
     // 누수탐지비용 특수 케이스
@@ -368,7 +374,13 @@ export function LaborCostSection({
     }
     if (!catalog.length) return currentValue ? [currentValue] : [];
     const filtered = catalog.filter(item => item.공종 === category);
-    const unique = new Set(filtered.map(item => item.공사명));
+    const unique = new Set(filtered.map(item => {
+      // 목공사 공종의 공사명 "목공사"를 "걸레받이"로 변경
+      if (category === '목공사' && item.공사명 === '목공사') {
+        return '걸레받이';
+      }
+      return item.공사명;
+    }));
     const options = Array.from(unique);
     // 현재 값이 옵션에 없으면 추가
     if (currentValue && !options.includes(currentValue)) {
@@ -384,8 +396,10 @@ export function LaborCostSection({
       return ["1회", "2회", "3회 이상"];
     }
     if (!catalog.length) return currentValue ? [currentValue] : [];
+    // 걸레받이 -> 목공사 변환하여 조회
+    const lookupWorkName = mapWorkNameForLookup(workName);
     const filtered = catalog.filter(item => 
-      item.공종 === category && item.공사명 === workName
+      item.공종 === category && item.공사명 === lookupWorkName
     );
     const unique = new Set(filtered.map(item => item.세부공사));
     // 현재 값이 옵션에 없으면 추가
@@ -397,9 +411,11 @@ export function LaborCostSection({
 
   const getDetailItemOptions = (category: string, workName: string, detailWork: string) => {
     if (!catalog.length || !category || !workName || !detailWork) return [];
+    // 걸레받이 -> 목공사 변환하여 조회
+    const lookupWorkName = mapWorkNameForLookup(workName);
     const filtered = catalog.filter(item => 
       item.공종 === category && 
-      item.공사명 === workName && 
+      item.공사명 === lookupWorkName && 
       item.세부공사 === detailWork
     );
     return filtered.map(item => item.세부항목);
@@ -407,10 +423,12 @@ export function LaborCostSection({
 
   const getApplicationRateOptions = (category: string, workName: string, detailWork: string, detailItem: string) => {
     if (!catalog.length || !category || !workName || !detailWork || !detailItem) return [];
+    // 걸레받이 -> 목공사 변환하여 조회
+    const lookupWorkName = mapWorkNameForLookup(workName);
     // 동일한 세부항목이 여러 개 있을 수 있으므로 모든 항목 찾기
     const items = catalog.filter(i => 
       i.공종 === category && 
-      i.공사명 === workName && 
+      i.공사명 === lookupWorkName && 
       i.세부공사 === detailWork && 
       i.세부항목 === detailItem
     );
@@ -610,9 +628,11 @@ export function LaborCostSection({
 
         // detailItem 변경 시 카탈로그에서 데이터 채우기
         if (field === 'detailItem') {
+          // 걸레받이 -> 목공사 변환하여 조회
+          const lookupWorkName = mapWorkNameForLookup(updated.workName);
           const catalogItem = catalog.find(item =>
             item.공종 === updated.category &&
-            item.공사명 === updated.workName &&
+            item.공사명 === lookupWorkName &&
             item.세부공사 === updated.detailWork &&
             item.세부항목 === value
           );
@@ -661,9 +681,11 @@ export function LaborCostSection({
 
         // applicationRates 변경 시 pricePerSqm 업데이트
         if (field === 'applicationRates') {
+          // 걸레받이 -> 목공사 변환하여 조회
+          const lookupWorkName = mapWorkNameForLookup(updated.workName);
           const catalogItem = catalog.find(item =>
             item.공종 === updated.category &&
-            item.공사명 === updated.workName &&
+            item.공사명 === lookupWorkName &&
             item.세부공사 === updated.detailWork &&
             item.세부항목 === updated.detailItem
           );

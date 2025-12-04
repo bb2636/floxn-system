@@ -446,7 +446,12 @@ export default function FieldEstimate() {
       if (!mapping[item.공종]) {
         mapping[item.공종] = new Set();
       }
-      mapping[item.공종].add(item.공사명);
+      // 목공사 공종의 공사명 "목공사"를 "걸레받이"로 변경
+      if (item.공종 === '목공사' && item.공사명 === '목공사') {
+        mapping[item.공종].add('걸레받이');
+      } else {
+        mapping[item.공종].add(item.공사명);
+      }
     });
     // Set을 배열로 변환하고 정렬
     const result: Record<string, string[]> = {};
