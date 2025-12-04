@@ -395,6 +395,10 @@ export function LaborCostSection({
     if (category === "누수탐지비용" && workName === "종합검사") {
       return ["1회", "2회", "3회 이상"];
     }
+    // 목공사-걸레받이 특수 케이스: 일위대가만 표시
+    if (category === '목공사' && workName === '걸레받이') {
+      return ['일위대가'];
+    }
     if (!catalog.length) return currentValue ? [currentValue] : [];
     // 걸레받이 -> 목공사 변환하여 조회
     const lookupWorkName = mapWorkNameForLookup(workName);
@@ -410,7 +414,12 @@ export function LaborCostSection({
   };
 
   const getDetailItemOptions = (category: string, workName: string, detailWork: string) => {
-    if (!catalog.length || !category || !workName || !detailWork) return [];
+    if (!category || !workName || !detailWork) return [];
+    // 목공사-걸레받이 특수 케이스: 걸레받이만 표시
+    if (category === '목공사' && workName === '걸레받이' && detailWork === '일위대가') {
+      return ['걸레받이'];
+    }
+    if (!catalog.length) return [];
     // 걸레받이 -> 목공사 변환하여 조회
     const lookupWorkName = mapWorkNameForLookup(workName);
     const filtered = catalog.filter(item => 
@@ -422,7 +431,12 @@ export function LaborCostSection({
   };
 
   const getApplicationRateOptions = (category: string, workName: string, detailWork: string, detailItem: string) => {
-    if (!catalog.length || !category || !workName || !detailWork || !detailItem) return [];
+    if (!category || !workName || !detailWork || !detailItem) return [];
+    // 목공사-걸레받이 특수 케이스: 길이(molding)만 표시
+    if (category === '목공사' && workName === '걸레받이' && detailWork === '일위대가' && detailItem === '걸레받이') {
+      return ['molding'] as Array<'ceiling' | 'wall' | 'floor' | 'molding'>;
+    }
+    if (!catalog.length) return [];
     // 걸레받이 -> 목공사 변환하여 조회
     const lookupWorkName = mapWorkNameForLookup(workName);
     // 동일한 세부항목이 여러 개 있을 수 있으므로 모든 항목 찾기
