@@ -56,9 +56,11 @@ interface IntakeProps {
   isModal?: boolean;
   onClose?: () => void;
   onSuccess?: () => void;
+  initialCaseId?: string | null;
+  readOnly?: boolean;
 }
 
-export default function Intake({ isModal = false, onClose, onSuccess }: IntakeProps) {
+export default function Intake({ isModal = false, onClose, onSuccess, initialCaseId = null, readOnly = false }: IntakeProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("접수하기");
@@ -539,8 +541,123 @@ export default function Intake({ isModal = false, onClose, onSuccess }: IntakePr
     fetchPredictedCaseNumber();
   }, [formData.accidentDate, formData.insuranceAccidentNo]);
 
+  // initialCaseId prop으로 케이스 로드 (접수건 상세보기용)
+  useEffect(() => {
+    if (!initialCaseId) return;
+    
+    console.log("📥 Loading case from initialCaseId:", initialCaseId);
+    setEditCaseId(initialCaseId);
+    
+    apiRequest("GET", `/api/cases/${initialCaseId}`)
+      .then((res) => res.json())
+      .then((caseData: any) => {
+        console.log("✅ Case loaded from initialCaseId:", caseData);
+        
+        if (caseData.caseNumber) {
+          setLoadedCaseNumber(caseData.caseNumber);
+        }
+        
+        const manager = administrators?.find(a => a.id === caseData.managerId);
+        
+        setFormData({
+          managerId: caseData.managerId || "",
+          managerDepartment: manager?.department || "",
+          managerPosition: manager?.position || "",
+          managerContact: manager?.contact || "",
+          accidentDate: caseData.accidentDate || getTodayDate(),
+          insuranceCompany: caseData.insuranceCompany || "",
+          insurancePolicyNo: caseData.insurancePolicyNo || "",
+          insuranceAccidentNo: caseData.insuranceAccidentNo || "",
+          clientResidence: caseData.clientResidence || "",
+          clientDepartment: caseData.clientDepartment || "",
+          clientName: caseData.clientName || "",
+          clientContact: caseData.clientContact || "",
+          assessorId: caseData.assessorId || "",
+          assessorDepartment: caseData.assessorDepartment || "",
+          assessorTeam: caseData.assessorTeam || "",
+          assessorContact: caseData.assessorContact || "",
+          investigatorTeam: caseData.investigatorTeam || "",
+          investigatorDepartment: caseData.investigatorDepartment || "",
+          investigatorTeamName: caseData.investigatorTeamName || "",
+          investigatorContact: caseData.investigatorContact || "",
+          policyHolderName: caseData.policyHolderName || "",
+          policyHolderIdNumber: caseData.policyHolderIdNumber || "",
+          policyHolderAddress: caseData.policyHolderAddress || "",
+          insuredName: caseData.insuredName || "",
+          insuredIdNumber: caseData.insuredIdNumber || "",
+          insuredContact: caseData.insuredContact || "",
+          insuredAddress: caseData.insuredAddress || "",
+          insuredAddressDetail: caseData.insuredAddressDetail || "",
+          victimName: caseData.victimName || "",
+          victimContact: caseData.victimContact || "",
+          victimAddress: caseData.victimAddress || "",
+          accompaniedPerson: caseData.accompaniedPerson || "",
+          accidentType: caseData.accidentType || "",
+          accidentCause: caseData.accidentCause || "",
+          restorationMethod: caseData.restorationMethod || "",
+          otherVendorEstimate: caseData.otherVendorEstimate || "",
+          accidentDescription: caseData.accidentDescription || "",
+          damageItem: "",
+          damageType: "",
+          damageQuantity: "1",
+          damageDetails: "",
+          damageItems: caseData.damageItems ? JSON.parse(caseData.damageItems) : [],
+          damagePreventionCost: caseData.damagePreventionCost === "true" || 
+            (!caseData.damagePreventionCost && caseData.caseNumber && !caseData.caseNumber.includes('-')),
+          victimIncidentAssistance: caseData.victimIncidentAssistance === "true" || 
+            (!caseData.victimIncidentAssistance && caseData.caseNumber && caseData.caseNumber.includes('-')),
+          assignedPartner: caseData.assignedPartner || "",
+          assignedPartnerManager: caseData.assignedPartnerManager || "",
+          assignedPartnerContact: caseData.assignedPartnerContact || "",
+          urgency: caseData.urgency || "",
+          specialRequests: caseData.specialRequests || "",
+        });
+
+        if (caseData.sameAsPolicyHolder === "true") {
+          setSameAsPolicyHolder(true);
+        }
+
+        if (caseData.additionalVictims) {
+          try {
+            setAdditionalVictims(JSON.parse(caseData.additionalVictims));
+          } catch (e) {
+            console.error("Failed to parse additionalVictims:", e);
+          }
+        }
+
+        if (caseData.assignedPartner) {
+          setSelectedPartner({
+            name: caseData.assignedPartner,
+            dailyCount: 0,
+            monthlyCount: 0,
+            inProgressCount: 0,
+            pendingCount: 0,
+            region: "",
+          });
+        }
+
+        if (caseData.accidentDate) {
+          const dateParts = caseData.accidentDate.split('-');
+          if (dateParts.length === 3) {
+            const parsedDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+            setAccidentDate(parsedDate);
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("❌ Failed to load case:", error);
+        toast({
+          description: `케이스 정보를 불러오는 데 실패했습니다.`,
+          variant: "destructive",
+        });
+      });
+  }, [initialCaseId, administrators]);
+
   // 임시 저장 건 불러오기
   useEffect(() => {
+    // initialCaseId가 있으면 localStorage 로드 건너뛰기
+    if (initialCaseId) return;
+    
     const storedEditCaseId = localStorage.getItem('editCaseId');
     console.log("🔍 Checking for draft case, editCaseId:", storedEditCaseId);
     

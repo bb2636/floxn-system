@@ -8,6 +8,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { GlobalHeader } from "@/components/global-header";
+import IntakePage from "@/pages/intake";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -2170,147 +2171,32 @@ export default function ComprehensiveProgress() {
         </DialogContent>
       </Dialog>
 
-      {/* 접수건 상세보기 Dialog */}
+      {/* 접수건 상세보기 Dialog - IntakePage 재사용 */}
       <Dialog open={showReceptionDetailDialog} onOpenChange={setShowReceptionDetailDialog}>
-        <DialogContent style={{
-          maxWidth: "800px",
-          maxHeight: "90vh",
-          overflow: "auto",
-          background: "rgba(253, 253, 253, 0.98)",
-          backdropFilter: "blur(17px)",
-          border: "none",
-          boxShadow: "0px 0px 60px rgba(170, 177, 194, 0.3), 6px 0px 40px rgba(219, 233, 245, 0.3)",
-          borderRadius: "24px",
-        }}>
-          <DialogHeader>
-            <DialogTitle style={{
-              fontFamily: "Pretendard",
-              fontWeight: 600,
-              fontSize: "20px",
-              color: "#0C0C0C",
-            }}>
-              접수건 상세보기
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedCaseId && (() => {
-            const caseData = cases?.find(c => c.id === selectedCaseId);
-            if (!caseData) return null;
-
-            const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
-              <div style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "flex-start",
-                padding: "10px 0",
-                borderBottom: "1px solid rgba(12, 12, 12, 0.05)",
-              }}>
-                <div style={{
-                  width: "140px",
-                  flexShrink: 0,
-                  fontFamily: "Pretendard",
-                  fontWeight: 500,
-                  fontSize: "14px",
-                  color: "rgba(12, 12, 12, 0.6)",
-                }}>
-                  {label}
-                </div>
-                <div style={{
-                  fontFamily: "Pretendard",
-                  fontWeight: 400,
-                  fontSize: "14px",
-                  color: "rgba(12, 12, 12, 0.9)",
-                  flex: 1,
-                  wordBreak: "break-word",
-                }}>
-                  {value || "-"}
-                </div>
-              </div>
-            );
-
-            const SectionTitle = ({ title }: { title: string }) => (
-              <div style={{
-                fontFamily: "Pretendard",
-                fontWeight: 600,
-                fontSize: "16px",
-                color: "#0C0C0C",
-                padding: "16px 0 8px 0",
-                borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
-                marginTop: "16px",
-              }}>
-                {title}
-              </div>
-            );
-
-            return (
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                {/* 기본 정보 */}
-                <SectionTitle title="기본 정보" />
-                <InfoRow label="접수번호" value={formatCaseNumber(caseData.caseNumber)} />
-                <InfoRow label="접수일자" value={caseData.receptionDate} />
-                <InfoRow label="보험사" value={caseData.insuranceCompany} />
-                <InfoRow label="증권번호" value={caseData.insurancePolicyNo} />
-                <InfoRow label="사고번호" value={caseData.insuranceAccidentNo} />
-
-                {/* 의뢰사/의뢰자 정보 */}
-                <SectionTitle title="의뢰사/의뢰자 정보" />
-                <InfoRow label="의뢰사" value={caseData.clientResidence} />
-                <InfoRow label="의뢰부서" value={caseData.clientDepartment} />
-                <InfoRow label="의뢰자" value={caseData.clientName} />
-                <InfoRow label="의뢰자 연락처" value={caseData.clientContact} />
-
-                {/* 보험계약자 정보 */}
-                <SectionTitle title="보험계약자 정보" />
-                <InfoRow label="성명" value={caseData.policyHolderName} />
-                <InfoRow label="주민등록번호" value={caseData.policyHolderIdNumber} />
-                <InfoRow label="주소" value={caseData.policyHolderAddress} />
-
-                {/* 피보험자 정보 */}
-                <SectionTitle title="피보험자 정보" />
-                <InfoRow label="성명" value={caseData.insuredName} />
-                <InfoRow label="주민등록번호" value={caseData.insuredIdNumber} />
-                <InfoRow label="연락처" value={caseData.insuredContact} />
-                <InfoRow label="주소" value={caseData.insuredAddress} />
-                <InfoRow label="상세주소" value={caseData.insuredAddressDetail} />
-
-                {/* 피해자 정보 */}
-                <SectionTitle title="피해자 정보" />
-                <InfoRow label="성명" value={caseData.victimName} />
-                <InfoRow label="연락처" value={caseData.victimContact} />
-                <InfoRow label="주소" value={caseData.victimAddress} />
-
-                {/* 사고/피해 정보 */}
-                <SectionTitle title="사고/피해 정보" />
-                <InfoRow label="사고유형" value={caseData.accidentType} />
-                <InfoRow label="사고원인" value={caseData.accidentCause} />
-                <InfoRow label="복구방법" value={caseData.restorationMethod} />
-                <InfoRow label="사고 설명" value={caseData.accidentDescription} />
-                <InfoRow label="손해방지비용" value={caseData.damagePreventionCost === "true" ? "해당" : "해당없음"} />
-                <InfoRow label="피해세대복구" value={caseData.victimIncidentAssistance === "true" ? "해당" : "해당없음"} />
-
-                {/* 협력사 정보 */}
-                <SectionTitle title="협력사 정보" />
-                <InfoRow label="협력사" value={caseData.assignedPartner} />
-                <InfoRow label="협력사 담당자" value={caseData.assignedPartnerManager} />
-                <InfoRow label="협력사 연락처" value={caseData.assignedPartnerContact} />
-
-                {/* 요청사항 */}
-                <SectionTitle title="요청사항" />
-                <InfoRow label="긴급도" value={caseData.urgency} />
-                <InfoRow label="특별요청사항" value={caseData.specialRequests} />
-              </div>
-            );
-          })()}
-
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "20px" }}>
-            <Button
-              variant="outline"
-              onClick={() => setShowReceptionDetailDialog(false)}
-              data-testid="button-close-reception-detail"
-            >
-              닫기
-            </Button>
-          </div>
+        <DialogContent 
+          style={{
+            maxWidth: "95vw",
+            width: "1700px",
+            maxHeight: "95vh",
+            overflow: "auto",
+            padding: 0,
+            background: "#F5F7FA",
+            border: "none",
+            borderRadius: "16px",
+          }}
+          data-testid="dialog-reception-detail"
+        >
+          {selectedCaseId && (
+            <IntakePage 
+              isModal={true}
+              initialCaseId={selectedCaseId}
+              onClose={() => setShowReceptionDetailDialog(false)}
+              onSuccess={() => {
+                setShowReceptionDetailDialog(false);
+                queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+              }}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
