@@ -592,7 +592,47 @@ export function LaborCostSection({
             if (!existingDemolition) {
               demolitionRowToAdd = createDemolitionRow({ ...updated }, '반자틀해체');
             }
-          } 
+          }
+          // 목공사-걸레받이 선택 시 자동으로 일위대가-걸레받이 설정
+          else if (updated.category === '목공사' && value === '걸레받이') {
+            updated.detailWork = '일위대가';
+            updated.detailItem = '걸레받이';
+            
+            // 카탈로그에서 데이터 가져오기 (걸레받이 → 목공사로 변환하여 조회)
+            const catalogItem = catalog.find(item =>
+              item.공종 === '목공사' &&
+              item.공사명 === '목공사' &&
+              item.세부공사 === '일위대가' &&
+              item.세부항목 === '걸레받이'
+            );
+            
+            if (catalogItem) {
+              updated.unit = catalogItem.단위 || '';
+              updated.standardPrice = catalogItem.단가_인 || 0;
+              
+              // applicationRates 기본값 설정 (걸레받이는 길이 기준)
+              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+              if (catalogItem.단가_길이 !== null) {
+                updated.applicationRates.molding = true;
+                updated.pricePerSqm = catalogItem.단가_길이;
+              } else if (catalogItem.단가_천장 !== null) {
+                updated.applicationRates.ceiling = true;
+                updated.pricePerSqm = catalogItem.단가_천장;
+              } else if (catalogItem.단가_벽체 !== null) {
+                updated.applicationRates.wall = true;
+                updated.pricePerSqm = catalogItem.단가_벽체;
+              } else if (catalogItem.단가_바닥 !== null) {
+                updated.applicationRates.floor = true;
+                updated.pricePerSqm = catalogItem.단가_바닥;
+              }
+            } else {
+              updated.unit = '';
+              updated.standardPrice = 0;
+              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+              updated.pricePerSqm = 0;
+            }
+            // 걸레받이는 피해철거공사 자동 추가 없음
+          }
           // 그 외 모든 공사명 선택 시 기본으로 일위대가 설정
           else {
             updated.detailWork = '일위대가';
