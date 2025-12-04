@@ -157,7 +157,7 @@ export default function FieldEstimate() {
     category?: string;
     workName?: string;
   }): LaborCostRow => {
-    // 빈 행 생성 (사용자가 직접 선택하도록)
+    // 빈 행 생성 (세부공사는 기본값 일위대가)
     return {
       id: `labor-${Date.now()}-${Math.random()}`,
       sourceAreaRowId: options?.sourceAreaRowId,
@@ -165,7 +165,7 @@ export default function FieldEstimate() {
       position: options?.position || '', // 위치 - 복구면적 산출표에서 가져옴
       category: options?.category || '',
       workName: options?.workName || '',
-      detailWork: '',
+      detailWork: '일위대가', // 기본값: 일위대가
       detailItem: '',
       priceStandard: '',
       unit: '',
