@@ -710,14 +710,22 @@ export function LaborCostSection({
                 {row.place || '-'}
               </td>
               
-              {/* 위치 - 그룹 첫 행에만 표시 (나머지는 비움) */}
-              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "left" }}>
-                {isFirstInGroup || groupRowCount <= 1 ? (row.position || '-') : ''}
-              </td>
+              {/* 위치 - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "left", verticalAlign: "middle" }}
+                >
+                  {row.position || '-'}
+                </td>
+              )}
               
-              {/* 공종 - 그룹 첫 행에만 표시 */}
-              <td style={{ padding: "0 8px" }}>
-                {isFirstInGroup || groupRowCount <= 1 ? (
+              {/* 공종 - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 8px", verticalAlign: "middle" }}
+                >
                   <Select 
                     value={row.category || undefined} 
                     onValueChange={(value) => updateRow(row.id, 'category', value)}
@@ -735,12 +743,15 @@ export function LaborCostSection({
                       ))}
                     </SelectContent>
                   </Select>
-                ) : null}
-              </td>
+                </td>
+              )}
               
-              {/* 공사명 - 그룹 첫 행에만 표시 */}
-              <td style={{ padding: "0 8px" }}>
-                {isFirstInGroup || groupRowCount <= 1 ? (
+              {/* 공사명 - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 8px", verticalAlign: "middle" }}
+                >
                   <Select 
                     value={row.workName || undefined} 
                     onValueChange={(value) => handleWorkNameChange(row.id, value)}
@@ -760,12 +771,15 @@ export function LaborCostSection({
                       ))}
                     </SelectContent>
                   </Select>
-                ) : null}
-              </td>
+                </td>
+              )}
               
-              {/* 세부공사 - 그룹 첫 행에만 표시 */}
-              <td style={{ padding: "0 8px" }}>
-                {isFirstInGroup || groupRowCount <= 1 ? (
+              {/* 세부공사 - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 8px", verticalAlign: "middle" }}
+                >
                   <Select 
                     value={row.detailWork || undefined} 
                     onValueChange={(value) => updateRow(row.id, 'detailWork', value)}
@@ -788,12 +802,15 @@ export function LaborCostSection({
                       ))}
                     </SelectContent>
                   </Select>
-                ) : null}
-              </td>
+                </td>
+              )}
               
-              {/* 세부항목 - 그룹 첫 행에만 표시 */}
-              <td style={{ padding: "0 8px" }}>
-                {isFirstInGroup || groupRowCount <= 1 ? (
+              {/* 세부항목 - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 8px", verticalAlign: "middle" }}
+                >
                   <Select 
                     value={row.detailItem || undefined} 
                     onValueChange={(value) => updateRow(row.id, 'detailItem', value)}
@@ -812,13 +829,18 @@ export function LaborCostSection({
                       ))}
                     </SelectContent>
                   </Select>
-                ) : null}
-              </td>
+                </td>
+              )}
               
-              {/* 단위 - Readonly */}
-              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.6)", textAlign: "left" }}>
-                {row.unit || '-'}
-              </td>
+              {/* 단위 - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.6)", textAlign: "left", verticalAlign: "middle" }}
+                >
+                  {row.unit || '-'}
+                </td>
+              )}
               
               {/* 기준가(원/단위) - Readonly */}
               <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
