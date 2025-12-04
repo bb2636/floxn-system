@@ -586,6 +586,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function for field labels (for change logs)
+  const getFieldLabel = (field: string): string => {
+    const fieldLabels: Record<string, string> = {
+      accidentDate: "사고일",
+      insuranceCompany: "보험사",
+      insurancePolicyNo: "증권번호",
+      insuranceAccidentNo: "사고번호",
+      clientResidence: "의뢰자 거주지",
+      clientDepartment: "의뢰자 부서",
+      clientName: "의뢰자명",
+      clientContact: "의뢰자 연락처",
+      assessorId: "심사사",
+      assessorDepartment: "심사사 부서",
+      assessorTeam: "심사사 팀",
+      assessorContact: "심사사 연락처",
+      investigatorTeam: "조사사 회사",
+      investigatorDepartment: "조사사 부서",
+      investigatorTeamName: "조사사 팀명",
+      investigatorContact: "조사사 연락처",
+      policyHolderName: "보험계약자명",
+      policyHolderIdNumber: "보험계약자 주민번호",
+      policyHolderAddress: "보험계약자 주소",
+      insuredName: "피보험자명",
+      insuredIdNumber: "피보험자 주민번호",
+      insuredAddress: "피보험자 주소",
+      victimName: "피해자명",
+      victimIdNumber: "피해자 주민번호",
+      victimAddress: "피해자 주소",
+      victimPhone: "피해자 연락처",
+      perpetratorName: "가해자명",
+      perpetratorIdNumber: "가해자 주민번호",
+      perpetratorAddress: "가해자 주소",
+      perpetratorPhone: "가해자 연락처",
+      status: "상태",
+      recoveryType: "복구 타입",
+      specialNotes: "특이사항",
+      additionalNotes: "추가 메모",
+      buildingType: "건물 유형",
+      buildingStructure: "건물 구조",
+      accidentLocation: "사고 위치",
+      accidentType: "사고 유형",
+      causeOfDamage: "피해 원인",
+      partnerCompany: "협력업체",
+    };
+    return fieldLabels[field] || field;
+  };
+
   // Update case endpoint
   app.patch("/api/cases/:id", async (req, res) => {
     // Check authentication
@@ -603,11 +650,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
+      // 변경 사항 추적
+      const changes: Array<{field: string; fieldLabel: string; before: string | null; after: string | null}> = [];
+      const trackedFields = [
+        "accidentDate", "insuranceCompany", "insurancePolicyNo", "insuranceAccidentNo",
+        "clientResidence", "clientDepartment", "clientName", "clientContact",
+        "assessorId", "assessorDepartment", "assessorTeam", "assessorContact",
+        "investigatorTeam", "investigatorDepartment", "investigatorTeamName", "investigatorContact",
+        "policyHolderName", "policyHolderIdNumber", "policyHolderAddress",
+        "insuredName", "insuredIdNumber", "insuredAddress",
+        "victimName", "victimIdNumber", "victimAddress", "victimPhone",
+        "perpetratorName", "perpetratorIdNumber", "perpetratorAddress", "perpetratorPhone",
+        "status", "recoveryType", "specialNotes", "additionalNotes",
+        "buildingType", "buildingStructure", "accidentLocation", "accidentType", "causeOfDamage", "partnerCompany"
+      ];
+
+      for (const field of trackedFields) {
+        const oldValue = (existingCase as any)[field];
+        const newValue = updateData[field];
+        
+        // Only track if the field is being updated and the value actually changed
+        if (field in updateData && oldValue !== newValue) {
+          changes.push({
+            field,
+            fieldLabel: getFieldLabel(field),
+            before: oldValue ?? null,
+            after: newValue ?? null,
+          });
+        }
+      }
+
       // 케이스 업데이트
       const updatedCase = await storage.updateCase(id, updateData);
       
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+      }
+
+      // 변경 로그 저장 (변경 사항이 있을 때만)
+      if (changes.length > 0) {
+        try {
+          const user = await storage.getUser(req.session.userId);
+          await storage.createCaseChangeLog({
+            caseId: id,
+            changedBy: req.session.userId,
+            changedByName: user?.name || "알 수 없음",
+            changeType: "update",
+            changes,
+            note: null,
+          });
+          console.log(`[Change Log] Recorded ${changes.length} changes for case ${id}`);
+        } catch (logError) {
+          console.error("Failed to create change log:", logError);
+          // Don't fail the request if logging fails
+        }
       }
 
       // 같은 prefix를 가진 관련 케이스들에 접수 정보 동기화
@@ -2957,6 +3053,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete notice error:", error);
       res.status(500).json({ error: "공지사항을 삭제하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get change logs for a specific case
+  app.get("/api/cases/:caseId/change-logs", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      const logs = await storage.getCaseChangeLogs(caseId);
+      res.json(logs);
+    } catch (error) {
+      console.error("Get case change logs error:", error);
+      res.status(500).json({ error: "변경 로그를 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get all change logs (admin only)
+  app.get("/api/case-change-logs", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check if user is admin
+    const user = await storage.getUser(req.session.userId);
+    if (!user || user.role !== "관리자") {
+      return res.status(403).json({ error: "관리자만 변경 로그를 조회할 수 있습니다" });
+    }
+
+    try {
+      const { caseNumber, changedBy, dateFrom, dateTo } = req.query;
+      
+      const logs = await storage.getAllCaseChangeLogs({
+        caseNumber: caseNumber as string | undefined,
+        changedBy: changedBy as string | undefined,
+        dateFrom: dateFrom as string | undefined,
+        dateTo: dateTo as string | undefined,
+      });
+      
+      res.json(logs);
+    } catch (error) {
+      console.error("Get all change logs error:", error);
+      res.status(500).json({ error: "변경 로그를 불러오는 중 오류가 발생했습니다" });
     }
   });
 

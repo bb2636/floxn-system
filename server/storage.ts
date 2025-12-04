@@ -1,4 +1,4 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type SharedDrawing, type InsertSharedDrawing, sharedDrawings, type FieldSurveyData, type InsertFieldSurveyData, fieldSurveyData, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts, type Material, type InsertMaterial, materials, type UserFavorite, type InsertUserFavorite, userFavorites, type Notice, type InsertNotice, notices } from "@shared/schema";
+import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type SharedDrawing, type InsertSharedDrawing, sharedDrawings, type FieldSurveyData, type InsertFieldSurveyData, fieldSurveyData, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts, type Material, type InsertMaterial, materials, type UserFavorite, type InsertUserFavorite, userFavorites, type Notice, type InsertNotice, notices, type CaseChangeLog, type InsertCaseChangeLog, caseChangeLogs } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -175,6 +175,10 @@ export interface IStorage {
   cloneDrawingFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<Drawing | null>;
   cloneEstimateFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
   cloneDocumentsFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<CaseDocument[]>;
+  // Case change log methods
+  createCaseChangeLog(data: InsertCaseChangeLog): Promise<CaseChangeLog>;
+  getCaseChangeLogs(caseId: string): Promise<CaseChangeLog[]>;
+  getAllCaseChangeLogs(filters?: { caseNumber?: string; changedBy?: string; dateFrom?: string; dateTo?: string }): Promise<(CaseChangeLog & { caseNumber: string })[]>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -2003,6 +2007,19 @@ export class MemStorage implements IStorage {
 
   async cloneDocumentsFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<CaseDocument[]> {
     throw new Error("Asset cloning methods not implemented in MemStorage");
+  }
+
+  // Case change log methods (stub)
+  async createCaseChangeLog(data: InsertCaseChangeLog): Promise<CaseChangeLog> {
+    throw new Error("Case change log methods not implemented in MemStorage");
+  }
+
+  async getCaseChangeLogs(caseId: string): Promise<CaseChangeLog[]> {
+    throw new Error("Case change log methods not implemented in MemStorage");
+  }
+
+  async getAllCaseChangeLogs(filters?: { caseNumber?: string; changedBy?: string; dateFrom?: string; dateTo?: string }): Promise<(CaseChangeLog & { caseNumber: string })[]> {
+    throw new Error("Case change log methods not implemented in MemStorage");
   }
 
   // Field Survey Data methods (stub)
@@ -4663,6 +4680,68 @@ export class DbStorage implements IStorage {
 
     console.log(`[Date Migration] Updated ${updatedCount} cases with auto-populated dates`);
     return updatedCount;
+  }
+
+  // Case change log methods
+  async createCaseChangeLog(data: InsertCaseChangeLog): Promise<CaseChangeLog> {
+    const [log] = await db.insert(caseChangeLogs).values(data).returning();
+    return log;
+  }
+
+  async getCaseChangeLogs(caseId: string): Promise<CaseChangeLog[]> {
+    return await db
+      .select()
+      .from(caseChangeLogs)
+      .where(eq(caseChangeLogs.caseId, caseId))
+      .orderBy(desc(caseChangeLogs.changedAt));
+  }
+
+  async getAllCaseChangeLogs(filters?: { 
+    caseNumber?: string; 
+    changedBy?: string; 
+    dateFrom?: string; 
+    dateTo?: string 
+  }): Promise<(CaseChangeLog & { caseNumber: string })[]> {
+    const conditions: any[] = [];
+    
+    if (filters?.changedBy) {
+      conditions.push(eq(caseChangeLogs.changedBy, filters.changedBy));
+    }
+    
+    if (filters?.dateFrom) {
+      conditions.push(sql`${caseChangeLogs.changedAt}::date >= ${filters.dateFrom}::date`);
+    }
+    
+    if (filters?.dateTo) {
+      conditions.push(sql`${caseChangeLogs.changedAt}::date <= ${filters.dateTo}::date`);
+    }
+    
+    // Join with cases to get caseNumber and filter by it
+    const query = db
+      .select({
+        id: caseChangeLogs.id,
+        caseId: caseChangeLogs.caseId,
+        changedBy: caseChangeLogs.changedBy,
+        changedByName: caseChangeLogs.changedByName,
+        changedAt: caseChangeLogs.changedAt,
+        changeType: caseChangeLogs.changeType,
+        changes: caseChangeLogs.changes,
+        note: caseChangeLogs.note,
+        caseNumber: cases.caseNumber,
+      })
+      .from(caseChangeLogs)
+      .innerJoin(cases, eq(caseChangeLogs.caseId, cases.id))
+      .orderBy(desc(caseChangeLogs.changedAt));
+    
+    if (filters?.caseNumber) {
+      conditions.push(like(cases.caseNumber, `%${filters.caseNumber}%`));
+    }
+    
+    if (conditions.length > 0) {
+      return await query.where(and(...conditions));
+    }
+    
+    return await query;
   }
 }
 
