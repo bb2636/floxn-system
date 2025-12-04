@@ -360,29 +360,38 @@ export function LaborCostSection({
     return categories;
   }, [catalog, filteredWorkTypes]);
 
-  const getWorkNameOptions = (category: string) => {
-    if (!category) return [];
+  const getWorkNameOptions = (category: string, currentValue?: string) => {
+    if (!category) return currentValue ? [currentValue] : [];
     // 누수탐지비용 특수 케이스
     if (category === "누수탐지비용") {
       return ["종합검사"];
     }
-    if (!catalog.length) return [];
+    if (!catalog.length) return currentValue ? [currentValue] : [];
     const filtered = catalog.filter(item => item.공종 === category);
     const unique = new Set(filtered.map(item => item.공사명));
-    return Array.from(unique);
+    const options = Array.from(unique);
+    // 현재 값이 옵션에 없으면 추가
+    if (currentValue && !options.includes(currentValue)) {
+      options.unshift(currentValue);
+    }
+    return options;
   };
 
-  const getDetailWorkOptions = (category: string, workName: string) => {
-    if (!category || !workName) return [];
+  const getDetailWorkOptions = (category: string, workName: string, currentValue?: string) => {
+    if (!category || !workName) return currentValue ? [currentValue] : [];
     // 누수탐지비용 특수 케이스
     if (category === "누수탐지비용" && workName === "종합검사") {
       return ["1회", "2회", "3회 이상"];
     }
-    if (!catalog.length) return [];
+    if (!catalog.length) return currentValue ? [currentValue] : [];
     const filtered = catalog.filter(item => 
       item.공종 === category && item.공사명 === workName
     );
     const unique = new Set(filtered.map(item => item.세부공사));
+    // 현재 값이 옵션에 없으면 추가
+    if (currentValue && !unique.has(currentValue)) {
+      unique.add(currentValue);
+    }
     return Array.from(unique);
   };
 
@@ -893,10 +902,12 @@ export function LaborCostSection({
                       style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                       data-testid={`select-workName-${index}`}
                     >
-                      <SelectValue placeholder="선택" />
+                      <SelectValue placeholder="선택">
+                        {row.workName || "선택"}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {getWorkNameOptions(row.category).filter(opt => opt && opt.trim() !== '').map(opt => (
+                      {getWorkNameOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
                         <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                       ))}
                     </SelectContent>
@@ -921,11 +932,11 @@ export function LaborCostSection({
                       data-testid={`select-detailWork-${index}`}
                     >
                       <SelectValue placeholder="선택">
-                        {row.detailWork === '노무비' ? '노임단가' : row.detailWork}
+                        {row.detailWork ? (row.detailWork === '노무비' ? '노임단가' : row.detailWork) : "선택"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {getDetailWorkOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
+                      {getDetailWorkOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
                         <SelectItem key={opt} value={opt}>
                           {opt === '노무비' ? '노임단가' : opt}
                         </SelectItem>
@@ -951,7 +962,9 @@ export function LaborCostSection({
                       style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                       data-testid={`select-detailItem-${index}`}
                     >
-                      <SelectValue placeholder="선택" />
+                      <SelectValue placeholder="선택">
+                        {row.detailItem || "선택"}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {getDetailItemOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
