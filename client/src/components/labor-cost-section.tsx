@@ -10,13 +10,24 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Copy, Search } from "lucide-react";
+import { Copy, Search, ChevronDown, ChevronRight } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+// 그룹화된 노무비 데이터 타입
+interface GroupedLaborData {
+  groupKey: string; // position|category|workName
+  position: string;
+  category: string;
+  workName: string;
+  totalDamageArea: number; // 피해면적 합계
+  totalAmount: number; // 금액 합계
+  rows: LaborCostRow[]; // 그룹에 속한 원본 행들
+}
 
 // 복구면적 산출표 행 인터페이스
 export interface AreaCalculationRowForLabor {
@@ -263,6 +274,75 @@ export function LaborCostSection({
     
     return Object.values(groups);
   }, [matchingAreaRows]);
+  // 노무비 행 그룹화: 위치 + 공종 + 공사명이 같은 행들을 그룹화하고 피해면적 합계 계산
+  const groupedLaborRows = useMemo((): GroupedLaborData[] => {
+    const groupMap: Record<string, GroupedLaborData> = {};
+    
+    rows.forEach(row => {
+      // 위치, 공종, 공사명이 모두 있는 경우에만 그룹화
+      const position = row.position || '';
+      const category = row.category || '';
+      const workName = row.workName || '';
+      
+      // 그룹 키 생성 (비어있는 값도 포함하여 구분)
+      const groupKey = `${position}|${category}|${workName}`;
+      
+      if (!groupMap[groupKey]) {
+        groupMap[groupKey] = {
+          groupKey,
+          position,
+          category,
+          workName,
+          totalDamageArea: 0,
+          totalAmount: 0,
+          rows: [],
+        };
+      }
+      
+      groupMap[groupKey].totalDamageArea += Number(row.damageArea) || 0;
+      groupMap[groupKey].totalAmount += Number(row.amount) || 0;
+      groupMap[groupKey].rows.push(row);
+    });
+    
+    return Object.values(groupMap);
+  }, [rows]);
+
+  // 그룹화된 행 표시를 위한 데이터 생성 (원본 행 순서 유지하면서 그룹 첫 행에 요약 정보 추가)
+  const rowsWithGroupInfo = useMemo(() => {
+    // 각 행에 그룹 정보 추가
+    const result: Array<{
+      row: LaborCostRow;
+      isFirstInGroup: boolean;
+      groupInfo: GroupedLaborData | null;
+      groupRowCount: number;
+    }> = [];
+    
+    const processedGroupKeys = new Set<string>();
+    
+    rows.forEach(row => {
+      const position = row.position || '';
+      const category = row.category || '';
+      const workName = row.workName || '';
+      const groupKey = `${position}|${category}|${workName}`;
+      
+      const groupInfo = groupedLaborRows.find(g => g.groupKey === groupKey);
+      const isFirstInGroup = !processedGroupKeys.has(groupKey);
+      
+      if (isFirstInGroup) {
+        processedGroupKeys.add(groupKey);
+      }
+      
+      result.push({
+        row,
+        isFirstInGroup,
+        groupInfo: isFirstInGroup ? groupInfo || null : null,
+        groupRowCount: groupInfo?.rows.length || 1,
+      });
+    });
+    
+    return result;
+  }, [rows, groupedLaborRows]);
+
   // 캐스케이딩 옵션 생성 - filteredWorkTypes가 제공되면 우선 사용
   const categoryOptions = useMemo(() => {
     // filteredWorkTypes가 제공되면 그것을 사용
@@ -545,8 +625,77 @@ export function LaborCostSection({
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, index) => (
-            <tr key={row.id} style={{ height: "56px", borderBottom: "1px solid #E5E7EB" }}>
+          {rowsWithGroupInfo.map(({ row, isFirstInGroup, groupInfo, groupRowCount }, index) => (
+            <>
+              {/* 그룹 요약 행 (그룹 첫 번째 행 위에 표시, 2개 이상 행이 있는 그룹만) */}
+              {isFirstInGroup && groupInfo && groupRowCount > 1 && (
+                <tr 
+                  key={`group-summary-${groupInfo.groupKey}`}
+                  style={{ 
+                    height: "40px", 
+                    background: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
+                    borderBottom: "2px solid #0ea5e9"
+                  }}
+                >
+                  <td colSpan={2} style={{ padding: "0 12px" }}></td>
+                  <td 
+                    colSpan={3} 
+                    style={{ 
+                      padding: "0 12px", 
+                      fontFamily: "Pretendard", 
+                      fontSize: "13px", 
+                      fontWeight: 600, 
+                      color: "#0369a1"
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ 
+                        background: "#0ea5e9", 
+                        color: "white", 
+                        padding: "2px 8px", 
+                        borderRadius: "4px", 
+                        fontSize: "11px" 
+                      }}>
+                        그룹 ({groupRowCount}건)
+                      </span>
+                      <span>{groupInfo.position || '-'}</span>
+                      <span style={{ color: "#64748b" }}>|</span>
+                      <span>{groupInfo.category || '-'}</span>
+                      <span style={{ color: "#64748b" }}>|</span>
+                      <span>{groupInfo.workName || '-'}</span>
+                    </div>
+                  </td>
+                  <td colSpan={6} style={{ padding: "0 12px" }}></td>
+                  <td 
+                    style={{ 
+                      padding: "0 12px", 
+                      fontFamily: "Pretendard", 
+                      fontSize: "13px", 
+                      fontWeight: 700, 
+                      color: "#0369a1",
+                      textAlign: "right"
+                    }}
+                  >
+                    합계: {groupInfo.totalDamageArea.toFixed(1)} ㎡
+                  </td>
+                  <td 
+                    style={{ 
+                      padding: "0 12px", 
+                      fontFamily: "Pretendard", 
+                      fontSize: "13px", 
+                      fontWeight: 700, 
+                      color: "#0369a1",
+                      textAlign: "right"
+                    }}
+                  >
+                    {groupInfo.totalAmount.toLocaleString()}원
+                  </td>
+                  <td colSpan={2}></td>
+                </tr>
+              )}
+              
+              {/* 개별 행 */}
+              <tr key={row.id} style={{ height: "56px", borderBottom: "1px solid #E5E7EB" }}>
               {/* 체크박스 */}
               <td style={{ padding: "0 12px", textAlign: "center" }}>
                 <Checkbox 
@@ -735,6 +884,7 @@ export function LaborCostSection({
                 </div>
               </td>
             </tr>
+            </>
           ))}
         </tbody>
       </table>
