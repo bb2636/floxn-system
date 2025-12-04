@@ -543,12 +543,18 @@ export default function FieldEstimate() {
     };
 
     setMaterialRows(prev => {
-      // 1. 먼저 목공사-반자틀로 변경된 노무비 행에 연결된 자재비 행 제거
+      // 현재 노무비 행 ID 목록
+      const currentLaborRowIds = new Set(laborCostRows.map(lr => lr.id));
+      
+      // 1. 먼저 삭제된 노무비 행에 연결된 자재비 행 제거 + 목공사-반자틀 제거
       const filteredRows = prev.filter(matRow => {
         if (!matRow.sourceLaborRowId) return true;
         
+        // 연결된 노무비 행이 삭제되었으면 자재비 행도 제거
+        if (!currentLaborRowIds.has(matRow.sourceLaborRowId)) return false;
+        
         const linkedLaborRow = laborCostRows.find(lr => lr.id === matRow.sourceLaborRowId);
-        if (!linkedLaborRow) return true;
+        if (!linkedLaborRow) return false; // 노무비 행이 없으면 자재비 행도 제거
         
         // 연결된 노무비 행이 목공사-반자틀이면 자재비 행 제거
         return !shouldExcludeFromMaterialSync(linkedLaborRow.category || '', linkedLaborRow.workName || '');
@@ -728,8 +734,24 @@ export default function FieldEstimate() {
 
     // 이미 연동된 행의 데이터 업데이트 (변경 시 동기화)
     setLaborCostRows(prev => {
-      // 1. 먼저 더 이상 필요하지 않은 피해철거공사 행 제거
-      const filteredRows = prev.filter(laborRow => {
+      // 현재 복구면적 산출표의 행 ID 목록
+      const currentAreaRowIds = new Set(rows.map(r => r.id));
+      
+      // 0. 먼저 삭제된 복구면적 산출표 행에 연결된 노무비 행 제거
+      const afterDeletedRemoval = prev.filter(laborRow => {
+        if (!laborRow.sourceAreaRowId) return true;
+        
+        // demolition- 접두사 처리
+        const originalAreaRowId = laborRow.sourceAreaRowId.startsWith('demolition-') 
+          ? laborRow.sourceAreaRowId.replace('demolition-', '')
+          : laborRow.sourceAreaRowId;
+        
+        // 원본 복구면적 산출표 행이 아직 존재하는지 확인
+        return currentAreaRowIds.has(originalAreaRowId);
+      });
+      
+      // 1. 더 이상 필요하지 않은 피해철거공사 행 제거
+      const filteredRows = afterDeletedRemoval.filter(laborRow => {
         if (!laborRow.sourceAreaRowId) return true;
         
         // 피해철거공사 행인지 확인 (demolition- 접두사)
@@ -740,8 +762,8 @@ export default function FieldEstimate() {
         const originalAreaRowId = laborRow.sourceAreaRowId.replace('demolition-', '');
         const linkedAreaRow = rows.find(r => r.id === originalAreaRowId);
         
-        // 원본 행이 없으면 피해철거공사 행 유지
-        if (!linkedAreaRow) return true;
+        // 원본 행이 없으면 이미 위에서 제거됨
+        if (!linkedAreaRow) return false;
         
         // 원본 행이 더 이상 피해철거공사가 필요 없는 공사명이면 제거
         // 반자틀, 석고보드만 피해철거공사가 필요
