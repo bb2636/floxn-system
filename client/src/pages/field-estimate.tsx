@@ -573,12 +573,22 @@ export default function FieldEstimate() {
             const needsCategoryUpdate = linkedLaborRow.category !== matRow.공종;
             const needsWorkNameUpdate = linkedLaborRow.workName !== matRow.공사명;
             
-            if (needsCategoryUpdate || needsWorkNameUpdate) {
-              // 공종, 공사명 그대로 복사
+            // 몰딩/걸레받이 수량 계산
+            let newQuantity = matRow.수량;
+            if (linkedLaborRow.workName === '몰딩' || linkedLaborRow.workName === '걸레받이') {
+              const damageArea = linkedLaborRow.damageArea || 0;
+              const calculatedQty = Math.ceil(damageArea / 2.44);
+              newQuantity = calculatedQty > 0 ? calculatedQty : 1;
+            }
+            const needsQuantityUpdate = newQuantity !== matRow.수량;
+            
+            if (needsCategoryUpdate || needsWorkNameUpdate || needsQuantityUpdate) {
+              // 공종, 공사명, 수량 동기화
               return { 
                 ...matRow, 
                 공종: linkedLaborRow.category || '',
-                공사명: linkedLaborRow.workName || ''
+                공사명: linkedLaborRow.workName || '',
+                수량: newQuantity
               };
             }
           }
@@ -596,12 +606,22 @@ export default function FieldEstimate() {
           const needsCategoryUpdate = correspondingLaborRow.category !== matRow.공종;
           const needsWorkNameUpdate = correspondingLaborRow.workName !== matRow.공사명;
           
-          if (needsCategoryUpdate || needsWorkNameUpdate) {
-            // 공종, 공사명 그대로 복사
+          // 몰딩/걸레받이 수량 계산
+          let newQuantity = matRow.수량;
+          if (correspondingLaborRow.workName === '몰딩' || correspondingLaborRow.workName === '걸레받이') {
+            const damageArea = correspondingLaborRow.damageArea || 0;
+            const calculatedQty = Math.ceil(damageArea / 2.44);
+            newQuantity = calculatedQty > 0 ? calculatedQty : 1;
+          }
+          const needsQuantityUpdate = newQuantity !== matRow.수량;
+          
+          if (needsCategoryUpdate || needsWorkNameUpdate || needsQuantityUpdate) {
+            // 공종, 공사명, 수량 동기화
             return { 
               ...matRow, 
               공종: correspondingLaborRow.category || '',
-              공사명: correspondingLaborRow.workName || ''
+              공사명: correspondingLaborRow.workName || '',
+              수량: newQuantity
             };
           }
         }
@@ -610,7 +630,16 @@ export default function FieldEstimate() {
       
       // 새로운 자재비 행 추가 (공종, 공사명 그대로 복사)
       const newRows = laborRowsNeedingMaterial.map(laborRow => {
-        return createBlankMaterialRow(laborRow.category || '', laborRow.workName || '', laborRow.id);
+        const newMatRow = createBlankMaterialRow(laborRow.category || '', laborRow.workName || '', laborRow.id);
+        
+        // 몰딩, 걸레받이인 경우: 복구면적(피해면적) / 2.44 올림하여 수량 설정
+        if (laborRow.workName === '몰딩' || laborRow.workName === '걸레받이') {
+          const damageArea = laborRow.damageArea || 0;
+          const quantity = Math.ceil(damageArea / 2.44);
+          newMatRow.수량 = quantity > 0 ? quantity : 1;
+        }
+        
+        return newMatRow;
       });
       
       return [...updatedRows, ...newRows];
