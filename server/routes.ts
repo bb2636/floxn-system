@@ -589,21 +589,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Helper function for field labels (for change logs)
   const getFieldLabel = (field: string): string => {
     const fieldLabels: Record<string, string> = {
+      managerId: "당사 담당자",
+      managerDepartment: "담당자 부서",
+      managerPosition: "담당자 직급",
+      managerContact: "담당자 연락처",
       accidentDate: "사고일",
       insuranceCompany: "보험사",
       insurancePolicyNo: "증권번호",
       insuranceAccidentNo: "사고번호",
-      clientResidence: "의뢰자 거주지",
+      clientResidence: "의뢰사",
       clientDepartment: "의뢰자 부서",
       clientName: "의뢰자명",
       clientContact: "의뢰자 연락처",
       assessorId: "심사사",
       assessorDepartment: "심사사 부서",
-      assessorTeam: "심사사 팀",
+      assessorTeam: "심사자",
       assessorContact: "심사사 연락처",
-      investigatorTeam: "조사사 회사",
+      investigatorTeam: "손사명",
       investigatorDepartment: "조사사 부서",
-      investigatorTeamName: "조사사 팀명",
+      investigatorTeamName: "조사자",
       investigatorContact: "조사사 연락처",
       policyHolderName: "보험계약자명",
       policyHolderIdNumber: "보험계약자 주민번호",
@@ -611,10 +615,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       insuredName: "피보험자명",
       insuredIdNumber: "피보험자 주민번호",
       insuredAddress: "피보험자 주소",
+      insuredAddressDetail: "피보험자 상세주소",
+      insuredContact: "피보험자 연락처",
       victimName: "피해자명",
       victimIdNumber: "피해자 주민번호",
       victimAddress: "피해자 주소",
+      victimAddressDetail: "피해자 상세주소",
       victimPhone: "피해자 연락처",
+      victimContact: "피해자 연락처",
       perpetratorName: "가해자명",
       perpetratorIdNumber: "가해자 주민번호",
       perpetratorAddress: "가해자 주소",
@@ -629,6 +637,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       accidentType: "사고 유형",
       causeOfDamage: "피해 원인",
       partnerCompany: "협력업체",
+      assignedPartner: "배정 협력사",
+      assignedPartnerManager: "협력사 담당자",
+      assignedPartnerContact: "협력사 연락처",
+      damagePreventionCost: "손해방지비용",
+      victimIncidentAssistance: "피해자사고부담금",
+      damageQuantity: "피해 수량",
     };
     return fieldLabels[field] || field;
   };
@@ -653,16 +667,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 변경 사항 추적
       const changes: Array<{field: string; fieldLabel: string; before: string | null; after: string | null}> = [];
       const trackedFields = [
+        // 담당자 정보
+        "managerId", "managerDepartment", "managerPosition", "managerContact",
+        // 기본 정보
         "accidentDate", "insuranceCompany", "insurancePolicyNo", "insuranceAccidentNo",
         "clientResidence", "clientDepartment", "clientName", "clientContact",
         "assessorId", "assessorDepartment", "assessorTeam", "assessorContact",
         "investigatorTeam", "investigatorDepartment", "investigatorTeamName", "investigatorContact",
+        // 보험계약자/피보험자/피해자/가해자 정보
         "policyHolderName", "policyHolderIdNumber", "policyHolderAddress",
-        "insuredName", "insuredIdNumber", "insuredAddress",
-        "victimName", "victimIdNumber", "victimAddress", "victimPhone",
+        "insuredName", "insuredIdNumber", "insuredAddress", "insuredAddressDetail", "insuredContact",
+        "victimName", "victimIdNumber", "victimAddress", "victimAddressDetail", "victimPhone", "victimContact",
         "perpetratorName", "perpetratorIdNumber", "perpetratorAddress", "perpetratorPhone",
+        // 상태 및 기타 정보
         "status", "recoveryType", "specialNotes", "additionalNotes",
-        "buildingType", "buildingStructure", "accidentLocation", "accidentType", "causeOfDamage", "partnerCompany"
+        "buildingType", "buildingStructure", "accidentLocation", "accidentType", "causeOfDamage", "partnerCompany",
+        // 협력사 정보
+        "assignedPartner", "assignedPartnerManager", "assignedPartnerContact",
+        // 처리 유형
+        "damagePreventionCost", "victimIncidentAssistance", "damageQuantity"
       ];
 
       for (const field of trackedFields) {
