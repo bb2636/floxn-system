@@ -976,6 +976,42 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
     },
   });
 
+  // 기존 케이스 수정 mutation (PATCH)
+  const updateMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      if (!initialCaseId) {
+        throw new Error("케이스 ID가 필요합니다");
+      }
+      const cleanedData = cleanFormData(data);
+      cleanedData.sameAsPolicyHolder = sameAsPolicyHolder ? "true" : "false";
+      
+      console.log("📝 updateMutation - Updating case:", initialCaseId, cleanedData);
+      
+      const result = await apiRequest("PATCH", `/api/cases/${initialCaseId}`, cleanedData);
+      return result;
+    },
+    onSuccess: () => {
+      toast({ 
+        description: "수정이 완료되었습니다.",
+        duration: 3000,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      
+      // 모달 모드인 경우 onSuccess 콜백 호출
+      if (isModal && onSuccess) {
+        onSuccess();
+      }
+    },
+    onError: (error: Error) => {
+      toast({ description: error.message, variant: "destructive" });
+    },
+  });
+
+  // 수정하기 핸들러 (기존 케이스 업데이트)
+  const handleUpdateCase = () => {
+    updateMutation.mutate(formData);
+  };
+
   const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value };
@@ -3347,63 +3383,88 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             <div 
               className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end w-full px-4 md:px-6 lg:px-8 mt-6 md:mt-8 gap-3"
             >
-              <button
-                onClick={handleReset}
-                className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontWeight: 600,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#EF4444',
-                  cursor: 'pointer',
-                }}
-                data-testid="button-reset"
-              >
-                초기화
-              </button>
-              
-              <button
-                onClick={handleSave}
-                disabled={saveMutation.isPending}
-                className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontWeight: 600,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  background: saveMutation.isPending ? 'rgba(0, 143, 237, 0.5)' : '#008FED',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  cursor: saveMutation.isPending ? 'not-allowed' : 'pointer',
-                  opacity: saveMutation.isPending ? 0.6 : 1,
-                }}
-                data-testid="button-save"
-              >
-                {saveMutation.isPending ? '저장 중...' : '저장'}
-              </button>
-              
-              <button
-                onClick={handleSubmit}
-                disabled={!isFormValid || submitMutation.isPending}
-                className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
-                style={{
-                  fontFamily: 'Pretendard',
-                  fontWeight: 600,
-                  lineHeight: '128%',
-                  letterSpacing: '-0.01em',
-                  background: !isFormValid || submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : '#008FED',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  cursor: !isFormValid || submitMutation.isPending ? 'not-allowed' : 'pointer',
-                  opacity: !isFormValid || submitMutation.isPending ? 0.5 : 1,
-                }}
-                data-testid="button-submit"
-              >
-                {submitMutation.isPending ? '접수 중...' : '접수완료'}
-              </button>
+              {/* 모달에서 기존 케이스 수정 시: 수정하기 버튼만 표시 */}
+              {isModal && initialCaseId ? (
+                <button
+                  onClick={handleUpdateCase}
+                  disabled={updateMutation.isPending}
+                  className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontWeight: 600,
+                    lineHeight: '128%',
+                    letterSpacing: '-0.01em',
+                    background: updateMutation.isPending ? 'rgba(0, 143, 237, 0.5)' : '#008FED',
+                    border: 'none',
+                    color: '#FFFFFF',
+                    cursor: updateMutation.isPending ? 'not-allowed' : 'pointer',
+                    opacity: updateMutation.isPending ? 0.6 : 1,
+                  }}
+                  data-testid="button-update-case"
+                >
+                  {updateMutation.isPending ? '수정 중...' : '수정하기'}
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={handleReset}
+                    className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
+                    style={{
+                      fontFamily: 'Pretendard',
+                      fontWeight: 600,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.01em',
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#EF4444',
+                      cursor: 'pointer',
+                    }}
+                    data-testid="button-reset"
+                  >
+                    초기화
+                  </button>
+                  
+                  <button
+                    onClick={handleSave}
+                    disabled={saveMutation.isPending}
+                    className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
+                    style={{
+                      fontFamily: 'Pretendard',
+                      fontWeight: 600,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.01em',
+                      background: saveMutation.isPending ? 'rgba(0, 143, 237, 0.5)' : '#008FED',
+                      border: 'none',
+                      color: '#FFFFFF',
+                      cursor: saveMutation.isPending ? 'not-allowed' : 'pointer',
+                      opacity: saveMutation.isPending ? 0.6 : 1,
+                    }}
+                    data-testid="button-save"
+                  >
+                    {saveMutation.isPending ? '저장 중...' : '저장'}
+                  </button>
+                  
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!isFormValid || submitMutation.isPending}
+                    className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
+                    style={{
+                      fontFamily: 'Pretendard',
+                      fontWeight: 600,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.01em',
+                      background: !isFormValid || submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : '#008FED',
+                      border: 'none',
+                      color: '#FFFFFF',
+                      cursor: !isFormValid || submitMutation.isPending ? 'not-allowed' : 'pointer',
+                      opacity: !isFormValid || submitMutation.isPending ? 0.5 : 1,
+                    }}
+                    data-testid="button-submit"
+                  >
+                    {submitMutation.isPending ? '접수 중...' : '접수완료'}
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
