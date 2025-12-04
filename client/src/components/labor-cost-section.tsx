@@ -429,10 +429,70 @@ export function LaborCostSection({
     return options;
   };
 
+  // 피해철거공사 행 자동 생성 함수
+  const createDemolitionRow = (sourceRow: LaborCostRow, demolitionDetailItem: string): LaborCostRow => {
+    // 피해철거공사 카탈로그 항목 찾기
+    const demolitionCatalogItem = catalog.find(item =>
+      item.공종 === '피해철거공사' &&
+      item.공사명 === '피해철거' &&
+      item.세부공사 === '일위대가' &&
+      item.세부항목 === demolitionDetailItem
+    );
+    
+    const newRow: LaborCostRow = {
+      id: `labor-demolition-${sourceRow.id}-${Date.now()}`,
+      sourceAreaRowId: `demolition-${sourceRow.id}`, // 중복 방지를 위한 추적 ID
+      place: sourceRow.place,
+      position: sourceRow.position,
+      category: '피해철거공사',
+      workName: '피해철거',
+      detailWork: '일위대가',
+      detailItem: demolitionDetailItem,
+      priceStandard: sourceRow.priceStandard,
+      unit: demolitionCatalogItem?.단위 || 'm²',
+      standardPrice: demolitionCatalogItem?.단가_인 || 0,
+      quantity: 1,
+      applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
+      salesMarkupRate: 0,
+      pricePerSqm: 0,
+      damageArea: sourceRow.damageArea,
+      deduction: 0,
+      includeInEstimate: true,
+      request: '',
+      amount: 0,
+    };
+    
+    // 적용면 및 기준가 설정
+    if (demolitionCatalogItem) {
+      if (demolitionCatalogItem.단가_천장 !== null) {
+        newRow.applicationRates.ceiling = true;
+        newRow.pricePerSqm = demolitionCatalogItem.단가_천장;
+      } else if (demolitionCatalogItem.단가_벽체 !== null) {
+        newRow.applicationRates.wall = true;
+        newRow.pricePerSqm = demolitionCatalogItem.단가_벽체;
+      } else if (demolitionCatalogItem.단가_바닥 !== null) {
+        newRow.applicationRates.floor = true;
+        newRow.pricePerSqm = demolitionCatalogItem.단가_바닥;
+      } else if (demolitionCatalogItem.단가_길이 !== null) {
+        newRow.applicationRates.molding = true;
+        newRow.pricePerSqm = demolitionCatalogItem.단가_길이;
+      }
+    }
+    
+    // 금액 계산 (일위대가: 기준가(m²) * 피해면적 * 수량)
+    newRow.amount = Math.round(newRow.pricePerSqm * newRow.damageArea * newRow.quantity);
+    
+    return newRow;
+  };
+
   // 행 업데이트
   const updateRow = (rowId: string, field: keyof LaborCostRow, value: any) => {
     if (isReadOnly) return;
-    onRowsChange(rows.map(row => {
+    
+    let demolitionRowToAdd: LaborCostRow | null = null;
+    const currentRow = rows.find(r => r.id === rowId);
+    
+    const updatedRows = rows.map(row => {
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
 
@@ -525,6 +585,19 @@ export function LaborCostSection({
               updated.pricePerSqm = catalogItem.단가_길이;
             }
           }
+          
+          // 반자틀설치 또는 석고보드설치 선택 시 피해철거공사 행 자동 추가
+          if (updated.category === '목공사' && (value === '반자틀설치' || value === '석고보드설치')) {
+            const demolitionDetailItem = value === '반자틀설치' ? '반자틀해체' : '석고보드해체';
+            const demolitionSourceId = `demolition-${rowId}`;
+            
+            // 이미 해당 행에 대한 피해철거공사 행이 있는지 확인
+            const existingDemolition = rows.find(r => r.sourceAreaRowId === demolitionSourceId);
+            if (!existingDemolition) {
+              // 업데이트된 행 정보로 피해철거공사 행 생성
+              demolitionRowToAdd = createDemolitionRow({ ...updated }, demolitionDetailItem);
+            }
+          }
         }
 
         // applicationRates 변경 시 pricePerSqm 업데이트
@@ -567,7 +640,14 @@ export function LaborCostSection({
         return updated;
       }
       return row;
-    }));
+    });
+    
+    // 피해철거공사 행 추가
+    if (demolitionRowToAdd) {
+      updatedRows.push(demolitionRowToAdd);
+    }
+    
+    onRowsChange(updatedRows);
   };
 
   // 행 복제
