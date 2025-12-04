@@ -195,69 +195,7 @@ export default function FieldEstimate() {
     return workTypes;
   }, [materialCatalog]);
 
-  // 노무비 행 변화 감지 및 자재비 행 동기화 (공종, 공사명 그대로 복사)
-  useEffect(() => {
-    // Hydration 완료 전에는 동기화 건너뛰기 (중복 행 방지)
-    if (!isHydratedRef.current) {
-      return;
-    }
-
-    setMaterialRows(prev => {
-      // 이미 연결된 노무비 행 ID 목록
-      const existingSourceIds = new Set(prev.map(row => row.sourceLaborRowId).filter(Boolean));
-      
-      // 자재비 행이 없는 노무비 행 찾기
-      const laborRowsNeedingMaterial = laborCostRows.filter(laborRow => 
-        laborRow.id && !existingSourceIds.has(laborRow.id)
-      );
-      
-      // 기존 행 업데이트 + 새 행 추가 (한 번에 처리)
-      const updatedRows = prev.map((matRow, index) => {
-        // sourceLaborRowId가 있으면 해당 노무비 행과 동기화
-        if (matRow.sourceLaborRowId) {
-          const linkedLaborRow = laborCostRows.find(lr => lr.id === matRow.sourceLaborRowId);
-          if (linkedLaborRow) {
-            const needsCategoryUpdate = linkedLaborRow.category !== matRow.공종;
-            const needsWorkNameUpdate = linkedLaborRow.workName !== matRow.공사명;
-            
-            if (needsCategoryUpdate || needsWorkNameUpdate) {
-              // 공종, 공사명 그대로 복사
-              return { 
-                ...matRow, 
-                공종: linkedLaborRow.category || '',
-                공사명: linkedLaborRow.workName || ''
-              };
-            }
-          }
-          return matRow;
-        }
-        
-        // sourceLaborRowId가 없으면 같은 인덱스의 노무비 행과 동기화
-        const correspondingLaborRow = laborCostRows[index];
-        if (correspondingLaborRow) {
-          const needsCategoryUpdate = correspondingLaborRow.category !== matRow.공종;
-          const needsWorkNameUpdate = correspondingLaborRow.workName !== matRow.공사명;
-          
-          if (needsCategoryUpdate || needsWorkNameUpdate) {
-            // 공종, 공사명 그대로 복사
-            return { 
-              ...matRow, 
-              공종: correspondingLaborRow.category || '',
-              공사명: correspondingLaborRow.workName || ''
-            };
-          }
-        }
-        return matRow;
-      });
-      
-      // 새로운 자재비 행 추가 (공종, 공사명 그대로 복사)
-      const newRows = laborRowsNeedingMaterial.map(laborRow => {
-        return createBlankMaterialRow(laborRow.category || '', laborRow.workName || '', laborRow.id);
-      });
-      
-      return [...updatedRows, ...newRows];
-    });
-  }, [laborCostRows]);
+  // 노무비 → 자재비 동기화는 isLossPreventionCase 정의 이후에 실행 (아래에 위치)
 
   // 자동 연동 대상 공종 목록 (도장, 목공, 수장공사만)
   const AUTO_SYNC_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
@@ -526,12 +464,87 @@ export default function FieldEstimate() {
     }
   }, [isLossPreventionCase]);
 
-  // 복구면적 산출표 → 노무비 자동 연동
-  // 장소, 위치, 공종, 공사명이 모두 입력되면 노무비에 그대로 복사
-  // 피해복구 케이스인 경우 복구면적 → 피해면적 추가 복사
+  // 노무비 행 변화 감지 및 자재비 행 동기화 (공종, 공사명 그대로 복사)
+  // 피해복구 케이스에서만 작동 (손해방지 케이스 제외)
   useEffect(() => {
     // Hydration 완료 전에는 동기화 건너뛰기 (중복 행 방지)
     if (!isHydratedRef.current) {
+      return;
+    }
+    
+    // 손해방지 케이스면 자동 연동하지 않음
+    if (isLossPreventionCase) {
+      return;
+    }
+
+    setMaterialRows(prev => {
+      // 이미 연결된 노무비 행 ID 목록
+      const existingSourceIds = new Set(prev.map(row => row.sourceLaborRowId).filter(Boolean));
+      
+      // 자재비 행이 없는 노무비 행 찾기
+      const laborRowsNeedingMaterial = laborCostRows.filter(laborRow => 
+        laborRow.id && !existingSourceIds.has(laborRow.id)
+      );
+      
+      // 기존 행 업데이트 + 새 행 추가 (한 번에 처리)
+      const updatedRows = prev.map((matRow, index) => {
+        // sourceLaborRowId가 있으면 해당 노무비 행과 동기화
+        if (matRow.sourceLaborRowId) {
+          const linkedLaborRow = laborCostRows.find(lr => lr.id === matRow.sourceLaborRowId);
+          if (linkedLaborRow) {
+            const needsCategoryUpdate = linkedLaborRow.category !== matRow.공종;
+            const needsWorkNameUpdate = linkedLaborRow.workName !== matRow.공사명;
+            
+            if (needsCategoryUpdate || needsWorkNameUpdate) {
+              // 공종, 공사명 그대로 복사
+              return { 
+                ...matRow, 
+                공종: linkedLaborRow.category || '',
+                공사명: linkedLaborRow.workName || ''
+              };
+            }
+          }
+          return matRow;
+        }
+        
+        // sourceLaborRowId가 없으면 같은 인덱스의 노무비 행과 동기화
+        const correspondingLaborRow = laborCostRows[index];
+        if (correspondingLaborRow) {
+          const needsCategoryUpdate = correspondingLaborRow.category !== matRow.공종;
+          const needsWorkNameUpdate = correspondingLaborRow.workName !== matRow.공사명;
+          
+          if (needsCategoryUpdate || needsWorkNameUpdate) {
+            // 공종, 공사명 그대로 복사
+            return { 
+              ...matRow, 
+              공종: correspondingLaborRow.category || '',
+              공사명: correspondingLaborRow.workName || ''
+            };
+          }
+        }
+        return matRow;
+      });
+      
+      // 새로운 자재비 행 추가 (공종, 공사명 그대로 복사)
+      const newRows = laborRowsNeedingMaterial.map(laborRow => {
+        return createBlankMaterialRow(laborRow.category || '', laborRow.workName || '', laborRow.id);
+      });
+      
+      return [...updatedRows, ...newRows];
+    });
+  }, [laborCostRows, isLossPreventionCase]);
+
+  // 복구면적 산출표 → 노무비 자동 연동 (피해복구 케이스에서만)
+  // 장소, 위치, 공종, 공사명이 모두 입력되면 노무비에 그대로 복사
+  // 복구면적 → 피해면적 추가 복사
+  useEffect(() => {
+    // Hydration 완료 전에는 동기화 건너뛰기 (중복 행 방지)
+    if (!isHydratedRef.current) {
+      return;
+    }
+
+    // 피해복구 케이스가 아니면 연동하지 않음 (손해방지 케이스 제외)
+    if (isLossPreventionCase) {
       return;
     }
 
@@ -554,22 +567,20 @@ export default function FieldEstimate() {
       return hasAllFields && notYetSynced;
     });
 
-    // 피해복구 케이스 여부 (손해방지가 아님)
-    const isPihaeCase = !isLossPreventionCase;
-
     // 연동할 행이 있으면 노무비에 추가 (그대로 복사)
     if (completedAreaRows.length > 0) {
-      const newLaborRows = completedAreaRows.map(areaRow => 
-        createBlankLaborRow({
+      const newLaborRows = completedAreaRows.map(areaRow => {
+        const newRow = createBlankLaborRow({
           sourceAreaRowId: areaRow.id,
           place: areaRow.category, // 복구면적 산출표의 장소 → 노무비 장소
           position: areaRow.location, // 복구면적 산출표의 위치 → 노무비 위치
           category: getLaborCategory(areaRow.workType, areaRow.workName), // 공종 (특수 케이스 변환 적용)
           workName: areaRow.workName, // 복구면적 산출표의 공사명 → 노무비 공사명
-          // 피해복구 케이스인 경우 복구면적 → 피해면적 복사
-          damageArea: isPihaeCase ? (areaRow.repairArea || '0') : '0',
-        })
-      );
+        });
+        // 복구면적 → 피해면적 복사 (숫자로 변환)
+        newRow.damageArea = Number(areaRow.repairArea) || 0;
+        return newRow;
+      });
 
       // 빈 행 하나만 있는 경우 제거하고 새 행 추가
       setLaborCostRows(prev => {
@@ -592,11 +603,8 @@ export default function FieldEstimate() {
       // 공종 변환 적용 (목공사 + 반자틀/석고보드 → 피해철거 공사)
       const laborCategory = getLaborCategory(linkedAreaRow.workType, linkedAreaRow.workName);
       
-      // 피해복구 케이스 여부
-      const isPihae = !isLossPreventionCase;
-      
-      // 피해복구 케이스인 경우 복구면적 값
-      const damageAreaValue = isPihae ? (linkedAreaRow.repairArea || '0') : laborRow.damageArea;
+      // 복구면적 값 (숫자로 변환)
+      const damageAreaValue = Number(linkedAreaRow.repairArea) || 0;
       
       // 데이터 변경 확인
       const needsUpdate = 
@@ -604,7 +612,7 @@ export default function FieldEstimate() {
         laborRow.position !== linkedAreaRow.location ||
         laborRow.category !== laborCategory ||
         laborRow.workName !== linkedAreaRow.workName ||
-        (isPihae && laborRow.damageArea !== damageAreaValue);
+        laborRow.damageArea !== damageAreaValue;
       
       if (needsUpdate) {
         return {
