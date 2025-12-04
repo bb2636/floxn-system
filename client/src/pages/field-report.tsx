@@ -247,6 +247,16 @@ export default function FieldReport() {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
   
+  // PDF 다운로드 다이얼로그 상태
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
+  const [downloadSections, setDownloadSections] = useState({
+    현장입력: true,
+    도면: true,
+    증빙자료: true,
+    견적서: true,
+    기타사항: true,
+  });
+  
   // 테이블 체크박스 상태 관리
   const [areaChecked, setAreaChecked] = useState<Record<number, boolean>>({});
   const [laborChecked, setLaborChecked] = useState<Record<number, boolean>>({});
@@ -904,6 +914,308 @@ export default function FieldReport() {
         </DialogContent>
       </Dialog>
 
+      {/* PDF 다운로드 Dialog */}
+      <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
+        <DialogContent
+          style={{
+            maxWidth: "500px",
+            background: "rgba(253, 253, 253, 0.95)",
+            backdropFilter: "blur(17px)",
+            border: "none",
+            borderRadius: "12px",
+            padding: "32px",
+          }}
+        >
+          <div style={{
+            fontFamily: "Pretendard",
+            fontWeight: 600,
+            fontSize: "18px",
+            color: "#0C0C0C",
+            textAlign: "center",
+            marginBottom: "24px",
+          }}>
+            PDF 다운로드
+          </div>
+          
+          <div style={{ marginBottom: "24px" }}>
+            <div style={{
+              fontFamily: "Pretendard",
+              fontSize: "14px",
+              fontWeight: 500,
+              color: "rgba(12, 12, 12, 0.6)",
+              marginBottom: "16px",
+            }}>
+              포함 내용 선택
+            </div>
+            
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+              {Object.entries(downloadSections).map(([key, value]) => (
+                <label 
+                  key={key}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    cursor: "pointer",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: "#0C0C0C",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={value}
+                    onChange={(e) => setDownloadSections(prev => ({ ...prev, [key]: e.target.checked }))}
+                    style={{ 
+                      width: "18px", 
+                      height: "18px", 
+                      accentColor: "#008FED",
+                      cursor: "pointer",
+                    }}
+                  />
+                  {key}
+                </label>
+              ))}
+            </div>
+          </div>
+          
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={() => setShowDownloadDialog(false)}
+              style={{
+                flex: 1,
+                padding: "14px",
+                background: "transparent",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "14px",
+                color: "#008FED",
+                cursor: "pointer",
+              }}
+            >
+              취소
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  toast({
+                    title: "PDF 생성 중",
+                    description: "보고서를 생성하고 있습니다...",
+                  });
+
+                  const pdf = new jsPDF('p', 'mm', 'a4');
+                  const pageWidth = pdf.internal.pageSize.getWidth();
+                  let yPosition = 20;
+
+                  // 제목
+                  pdf.setFontSize(18);
+                  pdf.text('현장출동보고서', pageWidth / 2, yPosition, { align: 'center' });
+                  yPosition += 15;
+
+                  // 기본 정보
+                  pdf.setFontSize(10);
+                  pdf.text(`보험사: ${caseData.insuranceCompany || '-'}`, 14, yPosition);
+                  pdf.text(`사고번호: ${caseData.insuranceAccidentNo || '-'}`, 100, yPosition);
+                  yPosition += 6;
+                  pdf.text(`접수번호: ${formatCaseNumber(caseData.caseNumber)}`, 14, yPosition);
+                  pdf.text(`피보험자: ${caseData.policyHolderName || '-'}`, 100, yPosition);
+                  yPosition += 10;
+
+                  // 현장입력 섹션
+                  if (downloadSections.현장입력) {
+                    pdf.setFontSize(14);
+                    pdf.text('현장조사 정보', 14, yPosition);
+                    yPosition += 8;
+                    
+                    pdf.setFontSize(9);
+                    const fieldInfo = [
+                      ['방문일시', caseData.visitDate ? `${caseData.visitDate} ${caseData.visitTime || ''}` : '-'],
+                      ['출동지역', caseData.dispatchLocation || '-'],
+                      ['동행자', caseData.accompaniedPerson || '-'],
+                      ['사고구분', caseData.accidentCategory || '-'],
+                      ['사고원인', caseData.accidentCause || '-'],
+                      ['특이사항', caseData.specialNotes || '-'],
+                    ];
+                    
+                    fieldInfo.forEach(([label, value]) => {
+                      pdf.text(`${label}: ${value}`, 14, yPosition);
+                      yPosition += 5;
+                    });
+                    yPosition += 5;
+                  }
+
+                  // 견적서 섹션
+                  if (downloadSections.견적서 && reportData?.estimate) {
+                    if (yPosition > 250) {
+                      pdf.addPage();
+                      yPosition = 20;
+                    }
+                    
+                    pdf.setFontSize(14);
+                    pdf.text('견적서', 14, yPosition);
+                    yPosition += 10;
+
+                    // 복구면적 산출표
+                    if (reportData.estimate.rows && reportData.estimate.rows.length > 0) {
+                      pdf.setFontSize(11);
+                      pdf.text('복구면적 산출표', 14, yPosition);
+                      yPosition += 6;
+
+                      autoTable(pdf, {
+                        startY: yPosition,
+                        head: [['장소', '위치', '공사내용', '피해면적(㎡)', '복구면적(㎡)']],
+                        body: reportData.estimate.rows.map(row => [
+                          row.category || '-',
+                          row.location || '-',
+                          row.workName || '-',
+                          row.damageArea ? (row.damageArea / 1_000_000).toFixed(2) : '0',
+                          row.repairArea ? (row.repairArea / 1_000_000).toFixed(2) : '0',
+                        ]),
+                        styles: { fontSize: 8 },
+                        headStyles: { fillColor: [0, 143, 237] },
+                      });
+                      yPosition = (pdf as any).lastAutoTable.finalY + 10;
+                    }
+
+                    // 노무비
+                    if (parsedLaborCosts.length > 0) {
+                      if (yPosition > 230) {
+                        pdf.addPage();
+                        yPosition = 20;
+                      }
+                      
+                      pdf.setFontSize(11);
+                      pdf.text('노무비', 14, yPosition);
+                      yPosition += 6;
+
+                      autoTable(pdf, {
+                        startY: yPosition,
+                        head: [['공종', '공사명', '세부공사', '단위', '기준가', '수량', '금액']],
+                        body: parsedLaborCosts.map(row => [
+                          row.category || '-',
+                          row.workName || '-',
+                          row.detailWork || '-',
+                          row.unit || '-',
+                          (row.standardPrice || 0).toLocaleString(),
+                          row.quantity || 0,
+                          (row.amount || 0).toLocaleString(),
+                        ]),
+                        styles: { fontSize: 8 },
+                        headStyles: { fillColor: [0, 143, 237] },
+                      });
+                      yPosition = (pdf as any).lastAutoTable.finalY + 10;
+                    }
+
+                    // 자재비
+                    if (parsedMaterialCosts.length > 0) {
+                      if (yPosition > 230) {
+                        pdf.addPage();
+                        yPosition = 20;
+                      }
+                      
+                      pdf.setFontSize(11);
+                      pdf.text('자재비', 14, yPosition);
+                      yPosition += 6;
+
+                      autoTable(pdf, {
+                        startY: yPosition,
+                        head: [['공종', '자재명', '규격', '단위', '기준단가', '수량', '금액']],
+                        body: parsedMaterialCosts.map(row => [
+                          row.공종 || '-',
+                          row.자재 || '-',
+                          row.규격 || '-',
+                          row.단위 || '-',
+                          (row.기준단가 || 0).toLocaleString(),
+                          row.수량 || 0,
+                          (row.금액 || 0).toLocaleString(),
+                        ]),
+                        styles: { fontSize: 8 },
+                        headStyles: { fillColor: [0, 143, 237] },
+                      });
+                      yPosition = (pdf as any).lastAutoTable.finalY + 10;
+                    }
+
+                    // 합계
+                    if (yPosition > 250) {
+                      pdf.addPage();
+                      yPosition = 20;
+                    }
+                    
+                    pdf.setFontSize(10);
+                    pdf.text(`소계: ${calculateTotals.subtotal.toLocaleString()}원`, 14, yPosition);
+                    yPosition += 5;
+                    pdf.text(`일반관리비 (6%): ${calculateTotals.managementFee.toLocaleString()}원`, 14, yPosition);
+                    yPosition += 5;
+                    pdf.text(`이윤 (15%): ${calculateTotals.profit.toLocaleString()}원`, 14, yPosition);
+                    yPosition += 5;
+                    pdf.text(`VAT (10%): ${calculateTotals.vat.toLocaleString()}원`, 14, yPosition);
+                    yPosition += 6;
+                    pdf.setFontSize(12);
+                    pdf.text(`총 합계: ${calculateTotals.total.toLocaleString()}원`, 14, yPosition);
+                    yPosition += 10;
+                  }
+
+                  // 기타사항 섹션
+                  if (downloadSections.기타사항 && additionalNotes) {
+                    if (yPosition > 250) {
+                      pdf.addPage();
+                      yPosition = 20;
+                    }
+                    
+                    pdf.setFontSize(14);
+                    pdf.text('기타사항', 14, yPosition);
+                    yPosition += 8;
+                    
+                    pdf.setFontSize(9);
+                    const splitText = pdf.splitTextToSize(additionalNotes, pageWidth - 28);
+                    pdf.text(splitText, 14, yPosition);
+                  }
+
+                  // PDF 저장
+                  const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                  pdf.save(fileName);
+
+                  toast({
+                    title: "PDF 다운로드 완료",
+                    description: "보고서가 성공적으로 다운로드되었습니다.",
+                  });
+
+                  setShowDownloadDialog(false);
+                } catch (error) {
+                  console.error('PDF 생성 오류:', error);
+                  toast({
+                    title: "PDF 생성 실패",
+                    description: "보고서 생성 중 오류가 발생했습니다.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: "14px",
+                background: "#008FED",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "14px",
+                color: "#FFFFFF",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+              data-testid="button-confirm-download"
+            >
+              다운 ↓
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* 작성중인 건 */}
       <div className="mb-6">
         <div
@@ -963,15 +1275,51 @@ export default function FieldReport() {
         </div>
       </div>
 
-      {/* 탭 메뉴 */}
+      {/* 탭 메뉴 + 다운로드/이메일 버튼 */}
       <Tabs defaultValue="현장조사" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="현장조사">현장조사</TabsTrigger>
-          <TabsTrigger value="도면">도면</TabsTrigger>
-          <TabsTrigger value="증빙자료">증빙자료</TabsTrigger>
-          <TabsTrigger value="견적서">견적서</TabsTrigger>
-          <TabsTrigger value="기타사항/원인">기타사항/원인</TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between mb-6">
+          <TabsList>
+            <TabsTrigger value="현장조사">현장조사</TabsTrigger>
+            <TabsTrigger value="도면">도면</TabsTrigger>
+            <TabsTrigger value="증빙자료">증빙자료</TabsTrigger>
+            <TabsTrigger value="견적서">견적서</TabsTrigger>
+            <TabsTrigger value="기타사항/원인">기타사항/원인</TabsTrigger>
+          </TabsList>
+          
+          {/* 다운로드/이메일 버튼 - 항상 표시 */}
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowDownloadDialog(true)}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+              data-testid="button-download-report"
+            >
+              ↓ 다운로드
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowEmailDialog(true)}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+              data-testid="button-email-report"
+            >
+              ✉ 이메일 전송
+            </Button>
+          </div>
+        </div>
 
         {/* 현장조사 탭 */}
         <TabsContent value="현장조사" className="space-y-6">
