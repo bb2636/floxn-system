@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -626,7 +626,7 @@ export function LaborCostSection({
         </thead>
         <tbody>
           {rowsWithGroupInfo.map(({ row, isFirstInGroup, groupInfo, groupRowCount }, index) => (
-            <>
+            <Fragment key={`row-fragment-${row.id}`}>
               {/* 그룹 요약 행 (그룹 첫 번째 행 위에 표시, 2개 이상 행이 있는 그룹만) */}
               {isFirstInGroup && groupInfo && groupRowCount > 1 && (
                 <tr 
@@ -884,7 +884,7 @@ export function LaborCostSection({
                 </div>
               </td>
             </tr>
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>
