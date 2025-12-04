@@ -1454,6 +1454,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           managerContact: selectedAdmin?.contact || "",
                         }));
                       }}
+                      disabled={readOnly}
                     >
                       <SelectTrigger 
                         className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg border-0"
@@ -1647,11 +1648,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                         >
                           접수일자
                         </label>
-                        <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
+                        <Popover open={datePickerOpen && !readOnly} onOpenChange={(open) => !readOnly && setDatePickerOpen(open)} modal={false}>
                           <PopoverTrigger asChild>
                             <Button
                               type="button"
                               variant="outline"
+                              disabled={readOnly}
                               className="w-full h-14 md:h-[68px] px-4 md:px-5 text-sm md:text-base rounded-lg"
                               style={{
                                 justifyContent: 'flex-start',
@@ -1661,6 +1663,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                                 fontWeight: 600,
                                 letterSpacing: '-0.02em',
                                 color: '#0C0C0C',
+                                cursor: readOnly ? 'not-allowed' : 'pointer',
+                                opacity: readOnly ? 0.6 : 1,
                               }}
                               data-testid="button-accident-date"
                             >
@@ -1728,7 +1732,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                     <div className="flex flex-col md:flex-row gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
                       <div className="flex-1 flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사</label>
-                        <Select value={formData.insuranceCompany} onValueChange={(value) => handleInputChange("insuranceCompany", value)}>
+                        <Select value={formData.insuranceCompany} onValueChange={(value) => handleInputChange("insuranceCompany", value)} disabled={readOnly}>
                           <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-insurance-company">
                             <SelectValue placeholder="보험사 선택" />
                           </SelectTrigger>
@@ -1741,11 +1745,11 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       </div>
                       <div className="flex-1 flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 증권번호</label>
-                        <input type="text" placeholder="증권번호 입력" value={formData.insurancePolicyNo} onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-policy-no" />
+                        <input type="text" placeholder="증권번호 입력" value={formData.insurancePolicyNo} onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)} disabled={readOnly} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-policy-no" />
                       </div>
                       <div className="flex-1 flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 사고번호</label>
-                        <input type="text" placeholder="사고번호 입력" value={formData.insuranceAccidentNo} onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-accident-no" />
+                        <input type="text" placeholder="사고번호 입력" value={formData.insuranceAccidentNo} onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)} disabled={readOnly} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-accident-no" />
                       </div>
                     </div>
 
@@ -1759,9 +1763,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       <div className="flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰사</label>
                         <div
-                          onClick={() => setIsClientSearchOpen(true)}
+                          onClick={() => !readOnly && setIsClientSearchOpen(true)}
                           className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
-                          style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.clientResidence ? '#0C0C0C' : '#A0A0A0'}}
+                          style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.clientResidence ? '#0C0C0C' : '#A0A0A0', opacity: readOnly ? 0.6 : 1, cursor: readOnly ? 'not-allowed' : 'pointer'}}
                           data-testid="button-client-search"
                         >
                           {formData.clientResidence || "의뢰사 선택"}
@@ -1776,7 +1780,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                         <Select 
                           value={formData.clientName} 
                           onValueChange={(value) => handleInputChange("clientName", value)}
-                          disabled={!formData.clientResidence}
+                          disabled={readOnly || !formData.clientResidence}
                         >
                           <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-client-name">
                             <SelectValue placeholder={formData.clientResidence ? "담당자 선택" : "의뢰사를 먼저 선택해주세요"} />
@@ -1812,9 +1816,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       <div className="flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사사</label>
                         <div
-                          onClick={() => setIsAssessorSearchOpen(true)}
+                          onClick={() => !readOnly && setIsAssessorSearchOpen(true)}
                           className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
-                          style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.assessorId ? '#0C0C0C' : '#A0A0A0'}}
+                          style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.assessorId ? '#0C0C0C' : '#A0A0A0', opacity: readOnly ? 0.6 : 1, cursor: readOnly ? 'not-allowed' : 'pointer'}}
                           data-testid="button-assessor-search"
                         >
                           {formData.assessorId || "심사사 선택"}
@@ -1829,7 +1833,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                         <Select 
                           value={formData.assessorTeam} 
                           onValueChange={(value) => handleInputChange("assessorTeam", value)}
-                          disabled={!formData.assessorId}
+                          disabled={readOnly || !formData.assessorId}
                         >
                           <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-assessor-name">
                             <SelectValue placeholder={formData.assessorId ? "심사자 선택" : "심사사를 먼저 선택해주세요"} />
@@ -1865,9 +1869,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       <div className="flex flex-col gap-2" style={{ flex: 1 }}>
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>손사명</label>
                         <div
-                          onClick={() => setIsInvestigatorSearchOpen(true)}
+                          onClick={() => !readOnly && setIsInvestigatorSearchOpen(true)}
                           className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
-                          style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.investigatorTeam ? '#0C0C0C' : '#A0A0A0'}}
+                          style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.investigatorTeam ? '#0C0C0C' : '#A0A0A0', opacity: readOnly ? 0.6 : 1, cursor: readOnly ? 'not-allowed' : 'pointer'}}
                           data-testid="button-investigator-search"
                         >
                           {formData.investigatorTeam || "선택해주세요"}
@@ -1883,7 +1887,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                         <Select 
                           value={formData.investigatorTeamName} 
                           onValueChange={(value) => handleInputChange("investigatorTeamName", value)}
-                          disabled={!formData.investigatorTeam}
+                          disabled={readOnly || !formData.investigatorTeam}
                         >
                           <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-investigator">
                             <SelectValue placeholder={formData.investigatorTeam ? "조사자 선택" : "손사명을 먼저 선택해주세요"} />
@@ -2013,6 +2017,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           id="same-as-policy-holder"
                           checked={sameAsPolicyHolder}
                           onCheckedChange={(checked) => setSameAsPolicyHolder(checked as boolean)}
+                          disabled={readOnly}
                           data-testid="checkbox-same-as-policy-holder"
                           className="w-6 h-6"
                         />
@@ -2055,6 +2060,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             placeholder="보험자 성명"
                             value={formData.policyHolderName}
                             onChange={(e) => handleInputChange("policyHolderName", e.target.value)}
+                            disabled={readOnly}
                             style={{
                               height: '68px',
                               padding: '10px 20px',
@@ -2090,6 +2096,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             placeholder="피보험자 성명"
                             value={formData.insuredName}
                             onChange={(e) => handleInputChange("insuredName", e.target.value)}
+                            disabled={readOnly}
                             style={{
                               height: '68px',
                               padding: '10px 20px',
@@ -2125,6 +2132,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             placeholder="피보험자 연락처"
                             value={formData.insuredContact}
                             onChange={(e) => handleInputChange("insuredContact", e.target.value)}
+                            disabled={readOnly}
                             style={{
                               height: '68px',
                               padding: '10px 20px',
@@ -2162,8 +2170,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           type="text"
                           placeholder="클릭하여 주소 검색"
                           value={formData.insuredAddress}
-                          onClick={() => setShowInsuredAddressSearch(true)}
+                          onClick={() => !readOnly && setShowInsuredAddressSearch(true)}
                           readOnly
+                          disabled={readOnly}
                           style={{
                             height: '68px',
                             padding: '10px 20px',
@@ -2175,7 +2184,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             fontSize: '16px',
                             letterSpacing: '-0.02em',
                             color: '#0C0C0C',
-                            cursor: 'pointer',
+                            cursor: readOnly ? 'not-allowed' : 'pointer',
                           }}
                           data-testid="input-insured-address"
                         />
@@ -2248,6 +2257,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           placeholder="상세주소 입력 (동/호수 등)"
                           value={formData.insuredAddressDetail}
                           onChange={(e) => handleInputChange("insuredAddressDetail", e.target.value)}
+                          disabled={readOnly}
                           style={{
                             marginTop: '8px',
                             height: '68px',
@@ -2304,6 +2314,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             placeholder="피해자 성명"
                             value={formData.victimName}
                             onChange={(e) => handleInputChange("victimName", e.target.value)}
+                            disabled={readOnly}
                             style={{
                             height: '68px',
                             padding: '10px 20px',
@@ -2339,6 +2350,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             placeholder="피해자 연락처"
                             value={formData.victimContact}
                             onChange={(e) => handleInputChange("victimContact", e.target.value)}
+                            disabled={readOnly}
                             style={{
                               height: '68px',
                               padding: '10px 20px',
@@ -2506,6 +2518,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                               <Checkbox
                                 checked={formData.damagePreventionCost}
                                 onCheckedChange={(checked) => handleInputChange("damagePreventionCost", checked as boolean)}
+                                disabled={readOnly}
                                 className="w-6 h-6"
                                 data-testid="checkbox-damage-prevention"
                               />
@@ -2533,6 +2546,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                               <Checkbox
                                 checked={formData.victimIncidentAssistance}
                                 onCheckedChange={(checked) => handleInputChange("victimIncidentAssistance", checked as boolean)}
+                                disabled={readOnly}
                                 className="w-6 h-6"
                                 data-testid="checkbox-victim-incident"
                               />
@@ -2562,6 +2576,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             <Select 
                               value={formData.accidentType} 
                               onValueChange={(value) => handleInputChange("accidentType", value)}
+                              disabled={readOnly}
                             >
                               <SelectTrigger 
                                 className="h-12 md:h-14 lg:h-[68px] px-3 md:px-4 lg:px-5 text-sm md:text-base"
@@ -2602,6 +2617,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             <Select 
                               value={formData.accidentCause} 
                               onValueChange={(value) => handleInputChange("accidentCause", value)}
+                              disabled={readOnly}
                             >
                               <SelectTrigger 
                                 className="h-12 md:h-14 lg:h-[68px] px-3 md:px-4 lg:px-5 text-sm md:text-base"
@@ -2643,6 +2659,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             <Select 
                               value={formData.restorationMethod} 
                               onValueChange={(value) => handleInputChange("restorationMethod", value)}
+                              disabled={readOnly}
                             >
                               <SelectTrigger 
                                 className="h-12 md:h-14 lg:h-[68px] px-3 md:px-4 lg:px-5 text-sm md:text-base"
@@ -2682,6 +2699,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             <Select 
                               value={formData.otherVendorEstimate} 
                               onValueChange={(value) => handleInputChange("otherVendorEstimate", value)}
+                              disabled={readOnly}
                             >
                               <SelectTrigger 
                                 className="h-12 md:h-14 lg:h-[68px] px-3 md:px-4 lg:px-5 text-sm md:text-base"
@@ -2732,6 +2750,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                               placeholder="사고내용을 입력해 주세요"
                               value={formData.accidentDescription}
                               onChange={(e) => handleInputChange("accidentDescription", e.target.value)}
+                              disabled={readOnly}
                               maxLength={800}
                               style={{
                                 width: '100%',
@@ -2831,7 +2850,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               피해 품목
                             </label>
-                            <Select value={formData.damageItem} onValueChange={(value) => handleInputChange("damageItem", value)}>
+                            <Select value={formData.damageItem} onValueChange={(value) => handleInputChange("damageItem", value)} disabled={readOnly}>
                               <SelectTrigger 
                                 style={{ height: '68px', padding: '10px 20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em' }}
                                 data-testid="select-damage-item"
@@ -2861,7 +2880,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             <label style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '14px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
                               피해 유형
                             </label>
-                            <Select value={formData.damageType} onValueChange={(value) => handleInputChange("damageType", value)}>
+                            <Select value={formData.damageType} onValueChange={(value) => handleInputChange("damageType", value)} disabled={readOnly}>
                               <SelectTrigger 
                                 style={{ height: '68px', padding: '10px 20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em' }}
                                 data-testid="select-damage-type"
@@ -2894,6 +2913,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                                 type="number"
                                 value={formData.damageQuantity}
                                 onChange={(e) => handleInputChange("damageQuantity", e.target.value)}
+                                disabled={readOnly}
                                 style={{
                                   width: '100%',
                                   border: 'none',
@@ -2909,7 +2929,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                               />
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 <button
-                                  onClick={() => handleInputChange("damageQuantity", String(Math.max(0, Number(formData.damageQuantity || 0) + 1)))}
+                                  onClick={() => !readOnly && handleInputChange("damageQuantity", String(Math.max(0, Number(formData.damageQuantity || 0) + 1)))}
+                                  disabled={readOnly}
                                   style={{
                                     width: '48px',
                                     height: '18px',
@@ -2919,14 +2940,16 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                                     background: 'rgba(12, 12, 12, 0.06)',
                                     borderRadius: '4px',
                                     border: 'none',
-                                    cursor: 'pointer',
+                                    cursor: readOnly ? 'not-allowed' : 'pointer',
+                                    opacity: readOnly ? 0.6 : 1,
                                   }}
                                   data-testid="button-quantity-increment"
                                 >
                                   <ChevronUp style={{ width: '12px', height: '12px', color: '#008FED' }} />
                                 </button>
                                 <button
-                                  onClick={() => handleInputChange("damageQuantity", String(Math.max(0, Number(formData.damageQuantity || 0) - 1)))}
+                                  onClick={() => !readOnly && handleInputChange("damageQuantity", String(Math.max(0, Number(formData.damageQuantity || 0) - 1)))}
+                                  disabled={readOnly}
                                   style={{
                                     width: '48px',
                                     height: '18px',
@@ -2936,7 +2959,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                                     background: 'rgba(12, 12, 12, 0.06)',
                                     borderRadius: '4px',
                                     border: 'none',
-                                    cursor: 'pointer',
+                                    cursor: readOnly ? 'not-allowed' : 'pointer',
+                                    opacity: readOnly ? 0.6 : 1,
                                   }}
                                   data-testid="button-quantity-decrement"
                                 >
@@ -2956,6 +2980,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                               placeholder="피해 내용 입력"
                               value={formData.damageDetails}
                               onChange={(e) => handleInputChange("damageDetails", e.target.value)}
+                              disabled={readOnly}
                               style={{ height: '68px', padding: '10px 20px', background: '#FDFDFD', border: '2px solid rgba(12, 12, 12, 0.08)', borderRadius: '8px', fontFamily: 'Pretendard', fontWeight: 600, fontSize: '16px', letterSpacing: '-0.02em', color: '#0C0C0C' }}
                               data-testid="input-damage-details"
                             />
@@ -2966,7 +2991,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '26px 0px 0px', gap: '10px', width: '100px', height: '94px' }}>
                           <button
                             onClick={handleAddDamageItem}
-                            disabled={!formData.damageItem || !formData.damageType || !formData.damageQuantity}
+                            disabled={readOnly || !formData.damageItem || !formData.damageType || !formData.damageQuantity}
                             style={{
                               display: 'flex',
                               flexDirection: 'row',
@@ -2975,12 +3000,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                               padding: '0px 24px',
                               width: '100px',
                               height: '68px',
-                              background: (formData.damageItem && formData.damageType && formData.damageQuantity) 
+                              background: (!readOnly && formData.damageItem && formData.damageType && formData.damageQuantity) 
                                 ? '#008FED' 
                                 : 'rgba(12, 12, 12, 0.08)',
                               borderRadius: '6px',
                               border: 'none',
-                              cursor: (formData.damageItem && formData.damageType && formData.damageQuantity) 
+                              cursor: (!readOnly && formData.damageItem && formData.damageType && formData.damageQuantity) 
                                 ? 'pointer' 
                                 : 'not-allowed',
                               whiteSpace: 'nowrap',
@@ -2993,7 +3018,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                               fontSize: '15px', 
                               lineHeight: '128%', 
                               letterSpacing: '-0.02em', 
-                              color: (formData.damageItem && formData.damageType && formData.damageQuantity) 
+                              color: (!readOnly && formData.damageItem && formData.damageType && formData.damageQuantity) 
                                 ? '#FDFDFD' 
                                 : 'rgba(12, 12, 12, 0.4)'
                             }}>
@@ -3053,8 +3078,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                                 </div>
                               </div>
                               <button
-                                onClick={() => handleRemoveDamageItem(index)}
-                                style={{ width: '24px', height: '24px', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                                onClick={() => !readOnly && handleRemoveDamageItem(index)}
+                                disabled={readOnly}
+                                style={{ width: '24px', height: '24px', background: 'transparent', border: 'none', cursor: readOnly ? 'not-allowed' : 'pointer', padding: 0, opacity: readOnly ? 0.4 : 1 }}
                                 data-testid={`button-remove-damage-${index}`}
                               >
                                 <X style={{ width: '24px', height: '24px', color: 'rgba(12, 12, 12, 0.3)' }} />
@@ -3125,10 +3151,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                               />
                               <button
                                 onClick={() => {
+                                  if (readOnly) return;
                                   setTempSelectedPartner(selectedPartner);
                                   setPartnerSearchQuery("");
                                   setIsPartnerSearchOpen(true);
                                 }}
+                                disabled={readOnly}
                                 style={{ 
                                   display: 'flex', 
                                   flexDirection: 'row', 
@@ -3136,15 +3164,15 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                                   alignItems: 'center', 
                                   padding: '16px 24px',
                                   height: '56px', 
-                                  background: '#008FED', 
+                                  background: readOnly ? 'rgba(12, 12, 12, 0.1)' : '#008FED', 
                                   borderRadius: '8px', 
                                   border: 'none', 
-                                  cursor: 'pointer',
+                                  cursor: readOnly ? 'not-allowed' : 'pointer',
                                   fontFamily: 'Pretendard',
                                   fontWeight: 600,
                                   fontSize: '14px',
                                   letterSpacing: '-0.01em',
-                                  color: '#FFFFFF',
+                                  color: readOnly ? 'rgba(12, 12, 12, 0.4)' : '#FFFFFF',
                                 }}
                                 data-testid="button-search-partner"
                               >
@@ -3161,7 +3189,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             <Select
                               value={formData.assignedPartnerManager}
                               onValueChange={(value) => handleInputChange("assignedPartnerManager", value)}
-                              disabled={!selectedPartner || partnerManagers.length === 0}
+                              disabled={readOnly || !selectedPartner || partnerManagers.length === 0}
                             >
                               <SelectTrigger 
                                 style={{ 
@@ -3232,6 +3260,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           <Select
                             value={formData.urgency || ''}
                             onValueChange={(value) => handleInputChange("urgency", value)}
+                            disabled={readOnly}
                           >
                             <SelectTrigger 
                               style={{ 
@@ -3272,6 +3301,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                                   handleInputChange("specialRequests", e.target.value);
                                 }
                               }}
+                              disabled={readOnly}
                               maxLength={800}
                               style={{ 
                                 width: '100%', 
@@ -3313,68 +3343,70 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             </div>
           </div>
 
-          {/* Bottom Action Buttons */}
-          <div 
-            className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end w-full px-4 md:px-6 lg:px-8 mt-6 md:mt-8 gap-3"
-          >
-            <button
-              onClick={handleReset}
-              className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
-              style={{
-                fontFamily: 'Pretendard',
-                fontWeight: 600,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                background: 'transparent',
-                border: 'none',
-                color: '#EF4444',
-                cursor: 'pointer',
-              }}
-              data-testid="button-reset"
+          {/* Bottom Action Buttons - Hidden when readOnly */}
+          {!readOnly && (
+            <div 
+              className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end w-full px-4 md:px-6 lg:px-8 mt-6 md:mt-8 gap-3"
             >
-              초기화
-            </button>
-            
-            <button
-              onClick={handleSave}
-              disabled={saveMutation.isPending}
-              className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
-              style={{
-                fontFamily: 'Pretendard',
-                fontWeight: 600,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                background: saveMutation.isPending ? 'rgba(0, 143, 237, 0.5)' : '#008FED',
-                border: 'none',
-                color: '#FFFFFF',
-                cursor: saveMutation.isPending ? 'not-allowed' : 'pointer',
-                opacity: saveMutation.isPending ? 0.6 : 1,
-              }}
-              data-testid="button-save"
-            >
-              {saveMutation.isPending ? '저장 중...' : '저장'}
-            </button>
-            
-            <button
-              onClick={handleSubmit}
-              disabled={!isFormValid || submitMutation.isPending}
-              className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
-              style={{
-                fontFamily: 'Pretendard',
-                fontWeight: 600,
-                lineHeight: '128%',
-                letterSpacing: '-0.01em',
-                background: !isFormValid || submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : '#008FED',
-                border: 'none',
-                color: '#FFFFFF',
-                cursor: !isFormValid || submitMutation.isPending ? 'not-allowed' : 'pointer',
-                opacity: !isFormValid || submitMutation.isPending ? 0.5 : 1,
-              }}
-              data-testid="button-submit"
-            >
-              {submitMutation.isPending ? '접수 중...' : '접수완료'}
-            </button>
-          </div>
+              <button
+                onClick={handleReset}
+                className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
+                style={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.01em',
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#EF4444',
+                  cursor: 'pointer',
+                }}
+                data-testid="button-reset"
+              >
+                초기화
+              </button>
+              
+              <button
+                onClick={handleSave}
+                disabled={saveMutation.isPending}
+                className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
+                style={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.01em',
+                  background: saveMutation.isPending ? 'rgba(0, 143, 237, 0.5)' : '#008FED',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  cursor: saveMutation.isPending ? 'not-allowed' : 'pointer',
+                  opacity: saveMutation.isPending ? 0.6 : 1,
+                }}
+                data-testid="button-save"
+              >
+                {saveMutation.isPending ? '저장 중...' : '저장'}
+              </button>
+              
+              <button
+                onClick={handleSubmit}
+                disabled={!isFormValid || submitMutation.isPending}
+                className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
+                style={{
+                  fontFamily: 'Pretendard',
+                  fontWeight: 600,
+                  lineHeight: '128%',
+                  letterSpacing: '-0.01em',
+                  background: !isFormValid || submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : '#008FED',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  cursor: !isFormValid || submitMutation.isPending ? 'not-allowed' : 'pointer',
+                  opacity: !isFormValid || submitMutation.isPending ? 0.5 : 1,
+                }}
+                data-testid="button-submit"
+              >
+                {submitMutation.isPending ? '접수 중...' : '접수완료'}
+              </button>
+            </div>
+          )}
         </div>
       </main>
       {/* 협력사 검색 팝업 */}

@@ -41,6 +41,7 @@ The system is a full-stack web application utilizing a React-based frontend and 
 ### Feature Specifications
 - **Home**: Overview of progress, key metrics, and quick navigation for all users.
 - **Reception Management**: New water damage case registration and management, including assigning repair companies.
+  - **Read-Only Mode**: Case details open in read-only mode by default; a "수정" button enables editing. Edit mode resets when closing the dialog or switching cases. All form fields, Select dropdowns, input fields, buttons, checkboxes, textareas, and clickable elements respect the readOnly prop.
 - **Field Survey Workflow**: A sequential process for managing field investigations for a selected case.
   - **Field Survey Management**: Input and manage field investigation data.
   - **Drawing Creation**: Digital drawing workspace for damage scope with tools for images, rectangles, and leak markers, supporting high-resolution PNG export. Each case manages its own drawing individually (no auto-sync between related cases).
