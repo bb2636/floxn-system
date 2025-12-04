@@ -1424,8 +1424,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               </div>
               
               <div className="py-4 md:py-6 lg:py-8">
-                {/* 담당자, 소속부서, 직급, 연락처 (4-column on desktop) */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5">
+                {/* 담당자, 소속부서, 직급, 연락처 (4-column on desktop, 2-column in modal) */}
+                <div className={`grid grid-cols-1 md:grid-cols-2 ${isModal ? '' : 'lg:grid-cols-4'} gap-4 md:gap-5 px-4 md:px-5`}>
                   {/* 담당자 */}
                   <div className="flex flex-col gap-2">
                     <label 
@@ -1728,8 +1728,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       </p>
                     </div>
 
-                    {/* 보험 정보 3-column on desktop, 1-column on mobile */}
-                    <div className="flex flex-col md:flex-row gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                    {/* 보험 정보 3-column on desktop, 1-column on mobile, wraps in modal */}
+                    <div className={`grid grid-cols-1 ${isModal ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8`}>
                       <div className="flex-1 flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사</label>
                         <Select value={formData.insuranceCompany} onValueChange={(value) => handleInputChange("insuranceCompany", value)} disabled={readOnly}>
@@ -1758,8 +1758,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       <h3 className="text-lg md:text-xl" style={{fontFamily: 'Pretendard',fontWeight: 600,lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>의뢰자 정보</h3>
                     </div>
 
-                    {/* 의뢰자 정보 - responsive grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                    {/* 의뢰자 정보 - responsive grid (2-column in modal) */}
+                    <div className={`grid grid-cols-1 md:grid-cols-2 ${isModal ? '' : 'lg:grid-cols-4'} gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8`}>
                       <div className="flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰사</label>
                         <div
@@ -1811,8 +1811,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       <h3 className="text-lg md:text-xl" style={{fontFamily: 'Pretendard',fontWeight: 600,lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>심사자 정보</h3>
                     </div>
 
-                    {/* 심사자 정보 - responsive grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                    {/* 심사자 정보 - responsive grid (2-column in modal) */}
+                    <div className={`grid grid-cols-1 md:grid-cols-2 ${isModal ? '' : 'lg:grid-cols-4'} gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8`}>
                       <div className="flex flex-col gap-2">
                         <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사사</label>
                         <div
