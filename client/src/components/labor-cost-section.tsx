@@ -565,6 +565,15 @@ export function LaborCostSection({
             if (!existingDemolition) {
               demolitionRowToAdd = createDemolitionRow({ ...updated }, '반자틀해체');
             }
+          } 
+          // 목공사-석고보드 선택 시 자동으로 일위대가 설정 (세부항목은 사용자가 선택)
+          else if (updated.category === '목공사' && value === '석고보드') {
+            updated.detailWork = '일위대가';
+            updated.detailItem = '';
+            updated.unit = '';
+            updated.standardPrice = 0;
+            updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+            updated.pricePerSqm = 0;
           } else {
             updated.detailWork = '';
             updated.detailItem = '';
