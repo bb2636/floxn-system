@@ -2891,7 +2891,7 @@ export default function AdminSettings() {
                 </div>
               </div>
             </>
-          ) : (
+          ) : activeMenu === "사용자 계정 관리" ? (
             <>
               {/* Title */}
               <div className="flex items-center mb-6">
@@ -3475,9 +3475,7 @@ export default function AdminSettings() {
             </div>
           </div>
           </>
-          )}
-
-          {activeMenu === "변경 로그 관리" && (
+          ) : activeMenu === "변경 로그 관리" ? (
             <>
               {/* Title */}
               <div className="flex items-center justify-between mb-6">
@@ -3805,7 +3803,7 @@ export default function AdminSettings() {
                 </div>
               </div>
             </>
-          )}
+          ) : null}
         </div>
       </div>
 
