@@ -532,18 +532,36 @@ export default function FieldEstimate() {
     if (isLossPreventionCase) {
       return;
     }
+    
+    // 자재비 연동 제외 대상 확인 함수 (목공사-반자틀은 자재비 연동 제외)
+    const shouldExcludeFromMaterialSync = (category: string, workName: string): boolean => {
+      return category === '목공사' && workName === '반자틀';
+    };
 
     setMaterialRows(prev => {
-      // 이미 연결된 노무비 행 ID 목록
-      const existingSourceIds = new Set(prev.map(row => row.sourceLaborRowId).filter(Boolean));
+      // 1. 먼저 목공사-반자틀로 변경된 노무비 행에 연결된 자재비 행 제거
+      const filteredRows = prev.filter(matRow => {
+        if (!matRow.sourceLaborRowId) return true;
+        
+        const linkedLaborRow = laborCostRows.find(lr => lr.id === matRow.sourceLaborRowId);
+        if (!linkedLaborRow) return true;
+        
+        // 연결된 노무비 행이 목공사-반자틀이면 자재비 행 제거
+        return !shouldExcludeFromMaterialSync(linkedLaborRow.category || '', linkedLaborRow.workName || '');
+      });
       
-      // 자재비 행이 없는 노무비 행 찾기
+      // 이미 연결된 노무비 행 ID 목록
+      const existingSourceIds = new Set(filteredRows.map(row => row.sourceLaborRowId).filter(Boolean));
+      
+      // 자재비 행이 없는 노무비 행 찾기 (목공사-반자틀 제외)
       const laborRowsNeedingMaterial = laborCostRows.filter(laborRow => 
-        laborRow.id && !existingSourceIds.has(laborRow.id)
+        laborRow.id && 
+        !existingSourceIds.has(laborRow.id) &&
+        !shouldExcludeFromMaterialSync(laborRow.category || '', laborRow.workName || '')
       );
       
       // 기존 행 업데이트 + 새 행 추가 (한 번에 처리)
-      const updatedRows = prev.map((matRow, index) => {
+      const updatedRows = filteredRows.map((matRow, index) => {
         // sourceLaborRowId가 있으면 해당 노무비 행과 동기화
         if (matRow.sourceLaborRowId) {
           const linkedLaborRow = laborCostRows.find(lr => lr.id === matRow.sourceLaborRowId);
@@ -566,6 +584,11 @@ export default function FieldEstimate() {
         // sourceLaborRowId가 없으면 같은 인덱스의 노무비 행과 동기화
         const correspondingLaborRow = laborCostRows[index];
         if (correspondingLaborRow) {
+          // 연결된 노무비 행이 목공사-반자틀이면 동기화 건너뛰기
+          if (shouldExcludeFromMaterialSync(correspondingLaborRow.category || '', correspondingLaborRow.workName || '')) {
+            return matRow;
+          }
+          
           const needsCategoryUpdate = correspondingLaborRow.category !== matRow.공종;
           const needsWorkNameUpdate = correspondingLaborRow.workName !== matRow.공사명;
           
