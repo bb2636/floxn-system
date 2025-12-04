@@ -706,3 +706,23 @@ export const insertNoticeSchema = createInsertSchema(notices).omit({
 
 export type Notice = typeof notices.$inferSelect;
 export type InsertNotice = z.infer<typeof insertNoticeSchema>;
+
+// 케이스 변경 로그 테이블
+export const caseChangeLogs = pgTable("case_change_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseId: varchar("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  changedBy: varchar("changed_by").references(() => users.id), // 변경자 (사용자 ID)
+  changedByName: text("changed_by_name"), // 변경자 이름 (조회 편의용)
+  changedAt: timestamp("changed_at").defaultNow().notNull(), // 변경 시간
+  changeType: text("change_type").notNull(), // 변경 유형: "create" | "update" | "status_change"
+  changes: json("changes").$type<Array<{field: string; fieldLabel: string; before: string | null; after: string | null}>>(), // 변경 내용
+  note: text("note"), // 변경 사유/메모
+});
+
+export const insertCaseChangeLogSchema = createInsertSchema(caseChangeLogs).omit({
+  id: true,
+  changedAt: true,
+});
+
+export type CaseChangeLog = typeof caseChangeLogs.$inferSelect;
+export type InsertCaseChangeLog = z.infer<typeof insertCaseChangeLogSchema>;
