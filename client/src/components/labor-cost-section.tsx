@@ -520,12 +520,59 @@ export function LaborCostSection({
 
         // workName 변경 시 하위 필드 리셋
         if (field === 'workName') {
-          updated.detailWork = '';
-          updated.detailItem = '';
-          updated.unit = '';
-          updated.standardPrice = 0;
-          updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
-          updated.pricePerSqm = 0;
+          // 목공사-반자틀 선택 시 자동으로 일위대가-반자틀설치 설정
+          if (updated.category === '목공사' && value === '반자틀') {
+            updated.detailWork = '일위대가';
+            updated.detailItem = '반자틀설치';
+            
+            // 카탈로그에서 데이터 가져오기
+            const catalogItem = catalog.find(item =>
+              item.공종 === '목공사' &&
+              item.공사명 === '반자틀' &&
+              item.세부공사 === '일위대가' &&
+              item.세부항목 === '반자틀설치'
+            );
+            
+            if (catalogItem) {
+              updated.unit = catalogItem.단위 || '';
+              updated.standardPrice = catalogItem.단가_인 || 0;
+              
+              // applicationRates 기본값 설정
+              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+              if (catalogItem.단가_천장 !== null) {
+                updated.applicationRates.ceiling = true;
+                updated.pricePerSqm = catalogItem.단가_천장;
+              } else if (catalogItem.단가_벽체 !== null) {
+                updated.applicationRates.wall = true;
+                updated.pricePerSqm = catalogItem.단가_벽체;
+              } else if (catalogItem.단가_바닥 !== null) {
+                updated.applicationRates.floor = true;
+                updated.pricePerSqm = catalogItem.단가_바닥;
+              } else if (catalogItem.단가_길이 !== null) {
+                updated.applicationRates.molding = true;
+                updated.pricePerSqm = catalogItem.단가_길이;
+              }
+            } else {
+              updated.unit = '';
+              updated.standardPrice = 0;
+              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+              updated.pricePerSqm = 0;
+            }
+            
+            // 반자틀설치에 대한 피해철거공사(반자틀해체) 행 자동 추가
+            const demolitionSourceId = `demolition-${rowId}`;
+            const existingDemolition = rows.find(r => r.sourceAreaRowId === demolitionSourceId);
+            if (!existingDemolition) {
+              demolitionRowToAdd = createDemolitionRow({ ...updated }, '반자틀해체');
+            }
+          } else {
+            updated.detailWork = '';
+            updated.detailItem = '';
+            updated.unit = '';
+            updated.standardPrice = 0;
+            updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+            updated.pricePerSqm = 0;
+          }
         }
 
         // detailWork 변경 시 하위 필드 리셋
