@@ -97,6 +97,7 @@ export default function ComprehensiveProgress() {
   const [selectedCaseIds, setSelectedCaseIds] = useState<string[]>([]);
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
   const [showReceptionDetailDialog, setShowReceptionDetailDialog] = useState(false);
+  const [isReceptionEditMode, setIsReceptionEditMode] = useState(false);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -1209,34 +1210,55 @@ export default function ComprehensiveProgress() {
                     </div>
                   )}
                   <div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (caseItem.status === "배당대기") {
-                          // 임시 저장 건 - 접수 페이지로 이동
+                    {caseItem.status === "배당대기" ? (
+                      // 배당대기 상태 - 임시 저장 건이므로 이어서 작성하기 버튼
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
                           localStorage.setItem('editCaseId', caseItem.id);
                           setLocation('/intake');
-                        } else {
-                          // 완료 건 - 상세보기 Sheet 열기
+                        }}
+                        style={{
+                          padding: "6px 12px",
+                          background: "#EFF6FF",
+                          border: "1px solid #008FED",
+                          borderRadius: "6px",
+                          fontFamily: "Pretendard",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "#008FED",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                        data-testid={`button-continue-draft-${caseItem.id}`}
+                      >
+                        이어서 작성하기
+                      </button>
+                    ) : (
+                      // 접수완료 이후 상태 - 상세보기 버튼
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsReceptionEditMode(false); // 새 케이스 열 때 수정모드 리셋
                           setSelectedCaseId(caseItem.id);
-                        }
-                      }}
-                      style={{
-                        padding: "6px 12px",
-                        background: caseItem.status === "배당대기" ? "#EFF6FF" : "#FFFFFF",
-                        border: caseItem.status === "배당대기" ? "1px solid #008FED" : "1px solid rgba(12, 12, 12, 0.2)",
-                        borderRadius: "6px",
-                        fontFamily: "Pretendard",
-                        fontSize: "12px",
-                        fontWeight: 500,
-                        color: caseItem.status === "배당대기" ? "#008FED" : "rgba(12, 12, 12, 0.7)",
-                        cursor: "pointer",
-                        whiteSpace: "nowrap",
-                      }}
-                      data-testid={`button-detail-${caseItem.id}`}
-                    >
-                      {caseItem.status === "배당대기" ? "이어서 작성하기" : "자세히 보기"}
-                    </button>
+                        }}
+                        style={{
+                          padding: "6px 12px",
+                          background: "#FFFFFF",
+                          border: "1px solid rgba(12, 12, 12, 0.2)",
+                          borderRadius: "6px",
+                          fontFamily: "Pretendard",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          color: "rgba(12, 12, 12, 0.7)",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                        data-testid={`button-detail-${caseItem.id}`}
+                      >
+                        자세히 보기
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -1275,7 +1297,10 @@ export default function ComprehensiveProgress() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setShowReceptionDetailDialog(true)}
+                  onClick={() => {
+                    setIsReceptionEditMode(false); // 수정모드 리셋
+                    setShowReceptionDetailDialog(true);
+                  }}
                   data-testid="button-reception-detail"
                 >
                   접수건 상세보기
@@ -1371,7 +1396,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "#FFFFFF",
                             }}>
-                              {selectedCase.status || "배당대기"}
+                              {selectedCase.status || "접수완료"}
                             </div>
                           </div>
 
@@ -2172,7 +2197,15 @@ export default function ComprehensiveProgress() {
       </Dialog>
 
       {/* 접수건 상세보기 Dialog - IntakePage 재사용 */}
-      <Dialog open={showReceptionDetailDialog} onOpenChange={setShowReceptionDetailDialog}>
+      <Dialog 
+        open={showReceptionDetailDialog} 
+        onOpenChange={(open) => {
+          setShowReceptionDetailDialog(open);
+          if (!open) {
+            setIsReceptionEditMode(false); // 닫을 때 수정 모드 리셋
+          }
+        }}
+      >
         <DialogContent 
           style={{
             maxWidth: "95vw",
@@ -2186,13 +2219,56 @@ export default function ComprehensiveProgress() {
           }}
           data-testid="dialog-reception-detail"
         >
+          {/* 수정 버튼 - 다이얼로그 상단 우측 */}
+          <div style={{ 
+            position: "absolute", 
+            top: "16px", 
+            right: "56px", 
+            zIndex: 10,
+            display: "flex",
+            gap: "8px",
+          }}>
+            {!isReceptionEditMode ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsReceptionEditMode(true)}
+                style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 500,
+                }}
+                data-testid="button-enable-edit-mode"
+              >
+                수정
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsReceptionEditMode(false)}
+                style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+                data-testid="button-cancel-edit-mode"
+              >
+                수정 취소
+              </Button>
+            )}
+          </div>
           {selectedCaseId && (
             <IntakePage 
               isModal={true}
               initialCaseId={selectedCaseId}
-              onClose={() => setShowReceptionDetailDialog(false)}
+              readOnly={!isReceptionEditMode}
+              onClose={() => {
+                setShowReceptionDetailDialog(false);
+                setIsReceptionEditMode(false);
+              }}
               onSuccess={() => {
                 setShowReceptionDetailDialog(false);
+                setIsReceptionEditMode(false);
                 queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
               }}
             />
