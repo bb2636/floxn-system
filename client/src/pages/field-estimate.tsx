@@ -279,8 +279,7 @@ export default function FieldEstimate() {
   };
 
   // 복구면적 산출표 → 노무비 자동 연동
-  // 장소, 위치, 공종, 공사명이 모두 입력되면 노무비에 자동 추가
-  // 공종이 도장공사, 목공사, 수장공사인 경우에만 연동
+  // 장소, 위치, 공종, 공사명이 모두 입력되면 노무비에 그대로 복사
   useEffect(() => {
     // Hydration 완료 전에는 동기화 건너뛰기 (중복 행 방지)
     if (!isHydratedRef.current) {
@@ -300,23 +299,20 @@ export default function FieldEstimate() {
         row.workType && row.workType !== '' &&
         row.workName && row.workName !== '선택';
       
-      // 공종이 도장/목공/수장 인 경우에만 연동
-      const isAutoSyncWorkType = AUTO_SYNC_WORK_TYPES.includes(row.workType);
-      
       // 아직 연동되지 않은 행만
       const notYetSynced = !existingSourceAreaIds.has(row.id);
       
-      return hasAllFields && isAutoSyncWorkType && notYetSynced;
+      return hasAllFields && notYetSynced;
     });
 
-    // 연동할 행이 있으면 노무비에 추가
+    // 연동할 행이 있으면 노무비에 추가 (그대로 복사)
     if (completedAreaRows.length > 0) {
       const newLaborRows = completedAreaRows.map(areaRow => 
         createBlankLaborRow({
           sourceAreaRowId: areaRow.id,
           place: areaRow.category, // 복구면적 산출표의 장소 → 노무비 장소
           position: areaRow.location, // 복구면적 산출표의 위치 → 노무비 위치
-          category: getLaborCategory(areaRow.workType, areaRow.workName), // 공종 변환 적용
+          category: getLaborCategory(areaRow.workType, areaRow.workName), // 공종 (특수 케이스 변환 적용)
           workName: areaRow.workName, // 복구면적 산출표의 공사명 → 노무비 공사명
         })
       );
@@ -332,17 +328,12 @@ export default function FieldEstimate() {
       });
     }
 
-    // 이미 연동된 행의 데이터 업데이트 (공종, 공사명 변경 시 동기화)
+    // 이미 연동된 행의 데이터 업데이트 (변경 시 동기화)
     setLaborCostRows(prev => prev.map(laborRow => {
       if (!laborRow.sourceAreaRowId) return laborRow;
       
       const linkedAreaRow = rows.find(r => r.id === laborRow.sourceAreaRowId);
       if (!linkedAreaRow) return laborRow;
-      
-      // 공종이 자동 연동 대상이 아니면 연동 해제 (행은 유지)
-      if (!AUTO_SYNC_WORK_TYPES.includes(linkedAreaRow.workType)) {
-        return laborRow;
-      }
       
       // 공종 변환 적용 (목공사 + 반자틀/석고보드 → 피해철거 공사)
       const laborCategory = getLaborCategory(linkedAreaRow.workType, linkedAreaRow.workName);
