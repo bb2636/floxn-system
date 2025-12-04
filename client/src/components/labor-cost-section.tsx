@@ -763,52 +763,56 @@ export function LaborCostSection({
                 ) : null}
               </td>
               
-              {/* 세부공사 - Select */}
+              {/* 세부공사 - 그룹 첫 행에만 표시 */}
               <td style={{ padding: "0 8px" }}>
-                <Select 
-                  value={row.detailWork || undefined} 
-                  onValueChange={(value) => updateRow(row.id, 'detailWork', value)}
-                  disabled={!row.workName}
-                >
-                  <SelectTrigger 
-                    className="h-9 border-0" 
-                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    data-testid={`select-detailWork-${index}`}
+                {isFirstInGroup || groupRowCount <= 1 ? (
+                  <Select 
+                    value={row.detailWork || undefined} 
+                    onValueChange={(value) => updateRow(row.id, 'detailWork', value)}
+                    disabled={!row.workName}
                   >
-                    <SelectValue placeholder="선택">
-                      {row.detailWork === '노무비' ? '노임단가' : row.detailWork}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getDetailWorkOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt === '노무비' ? '노임단가' : opt}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger 
+                      className="h-9 border-0" 
+                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                      data-testid={`select-detailWork-${index}`}
+                    >
+                      <SelectValue placeholder="선택">
+                        {row.detailWork === '노무비' ? '노임단가' : row.detailWork}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getDetailWorkOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt === '노무비' ? '노임단가' : opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : null}
               </td>
               
-              {/* 세부항목 - Select */}
+              {/* 세부항목 - 그룹 첫 행에만 표시 */}
               <td style={{ padding: "0 8px" }}>
-                <Select 
-                  value={row.detailItem || undefined} 
-                  onValueChange={(value) => updateRow(row.id, 'detailItem', value)}
-                  disabled={!row.detailWork}
-                >
-                  <SelectTrigger 
-                    className="h-9 border-0" 
-                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    data-testid={`select-detailItem-${index}`}
+                {isFirstInGroup || groupRowCount <= 1 ? (
+                  <Select 
+                    value={row.detailItem || undefined} 
+                    onValueChange={(value) => updateRow(row.id, 'detailItem', value)}
+                    disabled={!row.detailWork}
                   >
-                    <SelectValue placeholder="선택" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getDetailItemOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
-                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger 
+                      className="h-9 border-0" 
+                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                      data-testid={`select-detailItem-${index}`}
+                    >
+                      <SelectValue placeholder="선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getDetailItemOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : null}
               </td>
               
               {/* 단위 - Readonly */}
