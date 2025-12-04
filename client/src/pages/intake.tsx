@@ -816,8 +816,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
   const cleanFormData = (data: typeof formData) => {
     console.log("🧹 cleanFormData - 입력 데이터 managerId:", data.managerId);
     const cleaned: any = {};
-    // 스키마에 없는 필드 (users 테이블에서 조인하는 필드들)
-    const excludeFields = ['managerDepartment', 'managerPosition', 'managerContact'];
+    // 스키마에 없는 필드 (users 테이블에서 조인하는 필드, 임시 입력 필드 등)
+    const excludeFields = [
+      'managerDepartment', 'managerPosition', 'managerContact',
+      // 피해물품 추가를 위한 임시 입력 필드 (damageItems 배열에 저장됨)
+      'damageItem', 'damageType', 'damageQuantity', 'damageDetails'
+    ];
     
     Object.entries(data).forEach(([key, value]) => {
       // 제외 필드는 스킵

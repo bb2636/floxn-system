@@ -642,7 +642,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       assignedPartnerContact: "협력사 연락처",
       damagePreventionCost: "손해방지비용",
       victimIncidentAssistance: "피해자사고부담금",
-      damageQuantity: "피해 수량",
     };
     return fieldLabels[field] || field;
   };
@@ -685,7 +684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 협력사 정보
         "assignedPartner", "assignedPartnerManager", "assignedPartnerContact",
         // 처리 유형
-        "damagePreventionCost", "victimIncidentAssistance", "damageQuantity"
+        "damagePreventionCost", "victimIncidentAssistance"
       ];
 
       // Helper function to normalize values for comparison
