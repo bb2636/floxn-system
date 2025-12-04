@@ -688,18 +688,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "damagePreventionCost", "victimIncidentAssistance", "damageQuantity"
       ];
 
+      // Helper function to normalize values for comparison
+      const normalizeValue = (value: any): string | null => {
+        if (value === null || value === undefined || value === '') {
+          return null;
+        }
+        return String(value).trim();
+      };
+
+      // Get all users for resolving managerId to names
+      const allUsers = await storage.getAllUsers();
+      const userMap = new Map(allUsers.map(u => [u.id, u.name]));
+
       for (const field of trackedFields) {
         const oldValue = (existingCase as any)[field];
         const newValue = updateData[field];
         
+        // Normalize values for comparison
+        const normalizedOld = normalizeValue(oldValue);
+        const normalizedNew = normalizeValue(newValue);
+        
         // Only track if the field is being updated and the value actually changed
-        if (field in updateData && oldValue !== newValue) {
-          changes.push({
-            field,
-            fieldLabel: getFieldLabel(field),
-            before: oldValue ?? null,
-            after: newValue ?? null,
-          });
+        if (field in updateData && normalizedOld !== normalizedNew) {
+          // Special handling for managerId - resolve to user names
+          if (field === 'managerId') {
+            const oldUserName = normalizedOld ? (userMap.get(normalizedOld) || '(알수없음)') : null;
+            const newUserName = normalizedNew ? (userMap.get(normalizedNew) || '(알수없음)') : null;
+            changes.push({
+              field,
+              fieldLabel: getFieldLabel(field),
+              before: oldUserName,
+              after: newUserName,
+            });
+          } else {
+            changes.push({
+              field,
+              fieldLabel: getFieldLabel(field),
+              before: normalizedOld,
+              after: normalizedNew,
+            });
+          }
         }
       }
 
@@ -722,7 +750,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             changes,
             note: null,
           });
-          console.log(`[Change Log] Recorded ${changes.length} changes for case ${id}`);
+          console.log(`[Change Log] Recorded ${changes.length} changes for case ${id}:`, changes.map(c => `${c.fieldLabel}: ${c.before} → ${c.after}`).join(', '));
         } catch (logError) {
           console.error("Failed to create change log:", logError);
           // Don't fail the request if logging fails
