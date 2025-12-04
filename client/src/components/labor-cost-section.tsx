@@ -690,7 +690,7 @@ export function LaborCostSection({
                 <Input
                   type="number"
                   step="0.1"
-                  value={Number(row.damageArea.toFixed(1))}
+                  value={Number(Number(row.damageArea || 0).toFixed(1))}
                   onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
                   className="h-9 border-0 bg-transparent text-right"
                   style={{ fontFamily: "Pretendard", fontSize: "14px" }}
