@@ -116,7 +116,7 @@ export default function FieldEstimate() {
     let 자재 = '';
     if (공종 === '도장공사') {
       자재 = '페인트';
-    } else if (공종 === '목공사' && 공사명 === '반자틀') {
+    } else if (공종 === '걸레받이' && 공사명 === '반자틀') {
       자재 = '각재';
     }
     
@@ -205,19 +205,19 @@ export default function FieldEstimate() {
 
   // 노무비 → 자재비 동기화는 isLossPreventionCase 정의 이후에 실행 (아래에 위치)
 
-  // 자동 연동 대상 공종 목록 (도장, 목공, 수장공사만)
-  const AUTO_SYNC_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
+  // 자동 연동 대상 공종 목록 (도장, 걸레받이, 수장공사만)
+  const AUTO_SYNC_WORK_TYPES = ['도장공사', '걸레받이', '수장공사'];
 
   // 노무비 공종 변환 함수 (특수 케이스 처리)
-  // 목공사 + 반자틀/석고보드는 그대로 유지 (별도 피해철거공사 행 추가로 처리)
+  // 걸레받이 + 반자틀/석고보드는 그대로 유지 (별도 피해철거공사 행 추가로 처리)
   const getLaborCategory = (workType: string, workName: string): string => {
-    // 현재는 그대로 반환 (목공사 + 반자틀/석고보드 → 피해철거공사 자동 추가는 별도 로직에서 처리)
+    // 현재는 그대로 반환 (걸레받이 + 반자틀/석고보드 → 피해철거공사 자동 추가는 별도 로직에서 처리)
     return workType;
   };
   
   // 피해철거공사 추가 필요 여부 확인
   const needsDemolitionRow = (workType: string, workName: string): boolean => {
-    return workType === '목공사' && (workName === '반자틀' || workName === '석고보드');
+    return workType === '걸레받이' && (workName === '반자틀' || workName === '석고보드');
   };
   
   // 피해철거공사 행 생성 함수
@@ -487,14 +487,14 @@ export default function FieldEstimate() {
   const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지비용', '코킹공사', '배관공사', '방수공사', '기타공사', '원인철거공사'];
   
   // 피해복구 공종 목록 (노무비 탭에서 사용) - 전체 공종 표시
-  // 도장, 목공, 수장만 복구면적산출표와 연동됨
-  const VICTIM_RECOVERY_WORK_TYPES = ['가설공사', '수장공사', '목공사', '도장공사', '전기공사', '타일공사', '가구공사', '기타공사', '피해철거공사'];
+  // 도장, 걸레받이, 수장만 복구면적산출표와 연동됨
+  const VICTIM_RECOVERY_WORK_TYPES = ['가설공사', '수장공사', '걸레받이', '도장공사', '전기공사', '타일공사', '가구공사', '기타공사', '피해철거공사'];
   
-  // 복구면적 산출표와 연동되는 공종 목록 (피해복구에서 도장/목공/수장만 연동)
-  const AREA_LINKED_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
+  // 복구면적 산출표와 연동되는 공종 목록 (피해복구에서 도장/걸레받이/수장만 연동)
+  const AREA_LINKED_WORK_TYPES = ['도장공사', '걸레받이', '수장공사'];
   
-  // 복구면적 산출표 전용 공종 목록 (케이스 유형과 관계없이 항상 도장/목공/수장만)
-  const AREA_CALCULATION_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
+  // 복구면적 산출표 전용 공종 목록 (케이스 유형과 관계없이 항상 도장/걸레받이/수장만)
+  const AREA_CALCULATION_WORK_TYPES = ['도장공사', '걸레받이', '수장공사'];
   
   // 손해방지 vs 피해복구 케이스 판별
   // 접수번호에 -1, -2 등이 붙어있으면 피해복구, 없으면 손해방지
@@ -628,7 +628,7 @@ export default function FieldEstimate() {
       const newLaborRows: LaborCostRow[] = [];
       
       completedAreaRows.forEach(areaRow => {
-        // 기본 노무비 행 생성 (목공사 등 그대로)
+        // 기본 노무비 행 생성 (걸레받이 등 그대로)
         const mainRow = createBlankLaborRow({
           sourceAreaRowId: areaRow.id,
           place: areaRow.category, // 복구면적 산출표의 장소 → 노무비 장소
@@ -640,7 +640,7 @@ export default function FieldEstimate() {
         mainRow.damageArea = Number(areaRow.repairArea) || 0;
         newLaborRows.push(mainRow);
         
-        // 목공사 + 반자틀/석고보드인 경우 피해철거공사 행 추가
+        // 걸레받이 + 반자틀/석고보드인 경우 피해철거공사 행 추가
         if (needsDemolitionRow(areaRow.workType, areaRow.workName)) {
           const demolitionRow = createDemolitionLaborRow(areaRow);
           newLaborRows.push(demolitionRow);

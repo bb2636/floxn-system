@@ -529,14 +529,14 @@ export function LaborCostSection({
 
         // workName 변경 시 하위 필드 리셋
         if (field === 'workName') {
-          // 목공사-반자틀 선택 시 자동으로 일위대가-반자틀설치 설정
-          if (updated.category === '목공사' && value === '반자틀') {
+          // 걸레받이-반자틀 선택 시 자동으로 일위대가-반자틀설치 설정
+          if (updated.category === '걸레받이' && value === '반자틀') {
             updated.detailWork = '일위대가';
             updated.detailItem = '반자틀설치';
             
             // 카탈로그에서 데이터 가져오기
             const catalogItem = catalog.find(item =>
-              item.공종 === '목공사' &&
+              item.공종 === '걸레받이' &&
               item.공사명 === '반자틀' &&
               item.세부공사 === '일위대가' &&
               item.세부항목 === '반자틀설치'
@@ -645,7 +645,7 @@ export function LaborCostSection({
           }
           
           // 반자틀설치, 석고보드설치, 합판설치 선택 시 피해철거공사 행 자동 추가
-          if (updated.category === '목공사' && (value === '반자틀설치' || value === '석고보드설치' || value === '합판설치')) {
+          if (updated.category === '걸레받이' && (value === '반자틀설치' || value === '석고보드설치' || value === '합판설치')) {
             // 반자틀설치 → 반자틀해체, 석고보드설치/합판설치 → 석고보드해체
             const demolitionDetailItem = value === '반자틀설치' ? '반자틀해체' : '석고보드해체';
             const demolitionSourceId = `demolition-${rowId}`;

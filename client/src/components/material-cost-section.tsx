@@ -112,7 +112,7 @@ export function MaterialCostSection({
           let autoMaterial = '';
           if (value === '도장공사') {
             autoMaterial = '페인트';
-          } else if (value === '목공사' && updated.공사명 === '반자틀') {
+          } else if (value === '걸레받이' && updated.공사명 === '반자틀') {
             autoMaterial = '각재';
           }
           updated.자재 = autoMaterial;
