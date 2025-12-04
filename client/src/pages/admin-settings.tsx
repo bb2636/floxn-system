@@ -3511,13 +3511,13 @@ export default function AdminSettings() {
                         color: "#686A6E",
                       }}
                     >
-                      사건번호 검색
+                      사고 번호 검색
                     </label>
                     <input
                       type="text"
                       value={changeLogCaseNumberFilter}
                       onChange={(e) => setChangeLogCaseNumberFilter(e.target.value)}
-                      placeholder="사건번호를 입력하세요"
+                      placeholder="사고번호를 입력해주세요"
                       className="w-full px-3 py-2 outline-none"
                       style={{
                         background: "#FFFFFF",
@@ -3626,7 +3626,7 @@ export default function AdminSettings() {
                             color: "#0C0C0C",
                           }}
                         >
-                          사건번호
+                          사고번호
                         </th>
                         <th
                           className="px-4 py-3 text-left"
