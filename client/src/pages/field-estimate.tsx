@@ -112,8 +112,13 @@ export default function FieldEstimate() {
 
   // 빈 자재비 행 생성 함수
   const createBlankMaterialRow = (공종 = '', 공사명 = '', sourceLaborRowId?: string): MaterialRow => {
-    // 도장공사일 경우 자재를 '페인트'로 자동 설정
-    const 자재 = 공종 === '도장공사' ? '페인트' : '';
+    // 공종/공사명에 따른 자재 자동 설정
+    let 자재 = '';
+    if (공종 === '도장공사') {
+      자재 = '페인트';
+    } else if (공종 === '목공사' && 공사명 === '반자틀') {
+      자재 = '각재';
+    }
     
     return {
       id: `material-${Date.now()}-${Math.random()}`,
