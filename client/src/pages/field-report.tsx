@@ -2080,6 +2080,16 @@ export default function FieldReport() {
                   const categoryDocs = documents.filter(doc => doc.category === category);
                   if (categoryDocs.length === 0) return null;
 
+                  // 이미지 파일과 기타 파일 분리
+                  const imageDocs = categoryDocs.filter(doc => 
+                    doc.fileType?.startsWith('image/') || 
+                    doc.fileName?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)
+                  );
+                  const otherDocs = categoryDocs.filter(doc => 
+                    !doc.fileType?.startsWith('image/') && 
+                    !doc.fileName?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)
+                  );
+
                   return (
                     <Card key={category}>
                       <CardHeader>
@@ -2095,77 +2105,157 @@ export default function FieldReport() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-3">
-                          {categoryDocs.map((doc) => (
-                            <div
-                              key={doc.id}
-                              className="flex items-center justify-between"
-                              style={{
-                                padding: "12px",
-                                background: "rgba(12, 12, 12, 0.02)",
-                                borderRadius: "8px",
-                              }}
-                            >
-                              <div className="flex items-center gap-3">
+                        {/* 이미지 그리드 */}
+                        {imageDocs.length > 0 && (
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+                            {imageDocs.map((doc) => {
+                              const dataUrl = doc.fileData.startsWith('data:') 
+                                ? doc.fileData 
+                                : `data:${doc.fileType || 'image/jpeg'};base64,${doc.fileData}`;
+                              
+                              return (
                                 <div
+                                  key={doc.id}
+                                  className="relative group"
                                   style={{
-                                    width: "40px",
-                                    height: "40px",
-                                    borderRadius: "50%",
-                                    background: "rgba(12, 12, 12, 0.05)",
+                                    background: "rgba(12, 12, 12, 0.02)",
+                                    borderRadius: "8px",
+                                    overflow: "hidden",
+                                  }}
+                                >
+                                  <img
+                                    src={dataUrl}
+                                    alt={doc.fileName}
+                                    style={{
+                                      width: "100%",
+                                      height: "150px",
+                                      objectFit: "cover",
+                                    }}
+                                    data-testid={`image-preview-${doc.id}`}
+                                  />
+                                  <div
+                                    className="absolute bottom-0 left-0 right-0 p-2"
+                                    style={{
+                                      background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
+                                    }}
+                                  >
+                                    <p
+                                      style={{
+                                        fontFamily: "Pretendard",
+                                        fontSize: "12px",
+                                        color: "white",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      {doc.fileName}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      const link = document.createElement('a');
+                                      link.href = dataUrl;
+                                      link.download = doc.fileName;
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                    }}
+                                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    style={{
+                                      width: "28px",
+                                      height: "28px",
+                                      borderRadius: "4px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      background: "rgba(255, 255, 255, 0.9)",
+                                    }}
+                                    data-testid={`button-download-image-${doc.id}`}
+                                  >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {/* 기타 파일 목록 */}
+                        {otherDocs.length > 0 && (
+                          <div className="space-y-3">
+                            {otherDocs.map((doc) => (
+                              <div
+                                key={doc.id}
+                                className="flex items-center justify-between"
+                                style={{
+                                  padding: "12px",
+                                  background: "rgba(12, 12, 12, 0.02)",
+                                  borderRadius: "8px",
+                                }}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    style={{
+                                      width: "40px",
+                                      height: "40px",
+                                      borderRadius: "50%",
+                                      background: "rgba(12, 12, 12, 0.05)",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                  >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-7-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                      <path d="M13 2v7h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </div>
+                                  <span
+                                    style={{
+                                      fontFamily: "Pretendard",
+                                      fontSize: "14px",
+                                      fontWeight: 500,
+                                      color: "#0C0C0C",
+                                    }}
+                                  >
+                                    {doc.fileName}
+                                  </span>
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    const dataUrl = doc.fileData.startsWith('data:') 
+                                      ? doc.fileData 
+                                      : `data:${doc.fileType};base64,${doc.fileData}`;
+                                    link.href = dataUrl;
+                                    link.download = doc.fileName;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                  }}
+                                  style={{
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "4px",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
+                                    background: "rgba(0, 143, 237, 0.1)",
                                   }}
+                                  className="hover-elevate"
+                                  data-testid={`button-download-document-${doc.id}`}
                                 >
-                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-7-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    <path d="M13 2v7h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                                   </svg>
-                                </div>
-                                <span
-                                  style={{
-                                    fontFamily: "Pretendard",
-                                    fontSize: "14px",
-                                    fontWeight: 500,
-                                    color: "#0C0C0C",
-                                  }}
-                                >
-                                  {doc.fileName}
-                                </span>
+                                </button>
                               </div>
-                              <button
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  // Base64 데이터에 data URL prefix 추가
-                                  const dataUrl = doc.fileData.startsWith('data:') 
-                                    ? doc.fileData 
-                                    : `data:${doc.fileType};base64,${doc.fileData}`;
-                                  link.href = dataUrl;
-                                  link.download = doc.fileName;
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
-                                }}
-                                style={{
-                                  width: "32px",
-                                  height: "32px",
-                                  borderRadius: "4px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  background: "rgba(0, 143, 237, 0.1)",
-                                }}
-                                className="hover-elevate"
-                                data-testid={`button-download-document-${doc.id}`}
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );
