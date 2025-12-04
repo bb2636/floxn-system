@@ -209,8 +209,8 @@ export default function FieldEstimate() {
 
   // 노무비 → 자재비 동기화는 isLossPreventionCase 정의 이후에 실행 (아래에 위치)
 
-  // 자동 연동 대상 공종 목록 (도장, 목공, 수장공사만)
-  const AUTO_SYNC_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
+  // 자동 연동 대상 공종 목록 (도장, 목공, 수장, 도배, 마루)
+  const AUTO_SYNC_WORK_TYPES = ['도장공사', '목공사', '수장공사', '도배', '마루'];
 
   // 노무비 공종 변환 함수 (특수 케이스 처리)
   // 목공사 + 반자틀/석고보드는 그대로 유지 (별도 피해철거공사 행 추가로 처리)
@@ -221,15 +221,48 @@ export default function FieldEstimate() {
   
   // 피해철거공사 추가 필요 여부 확인
   const needsDemolitionRow = (workType: string, workName: string): boolean => {
-    return workType === '목공사' && (workName === '반자틀' || workName === '석고보드');
+    // 목공사: 반자틀, 석고보드
+    if (workType === '목공사' && (workName === '반자틀' || workName === '석고보드')) {
+      return true;
+    }
+    // 도배: 벽지바름
+    if (workType === '도배' && workName === '벽지바름') {
+      return true;
+    }
+    // 마루: 마루설치, 장판설치
+    if (workType === '마루' && (workName === '마루설치' || workName === '장판설치')) {
+      return true;
+    }
+    return false;
+  };
+  
+  // 피해철거공사 공사명/세부항목 매핑
+  const getDemolitionMapping = (workType: string, workName: string): { demolitionWorkName: string; detailItem: string } => {
+    // 목공사
+    if (workType === '목공사' && workName === '반자틀') {
+      return { demolitionWorkName: '반자틀해체', detailItem: '반자틀해체' };
+    }
+    if (workType === '목공사' && workName === '석고보드') {
+      return { demolitionWorkName: '석고보드해체', detailItem: '석고보드해체' };
+    }
+    // 도배
+    if (workType === '도배' && workName === '벽지바름') {
+      return { demolitionWorkName: '벽지해체', detailItem: '벽지해체' };
+    }
+    // 마루
+    if (workType === '마루' && workName === '마루설치') {
+      return { demolitionWorkName: '바닥재(강마루, 강화마루)', detailItem: '바닥재(강마루, 강화마루)' };
+    }
+    if (workType === '마루' && workName === '장판설치') {
+      return { demolitionWorkName: '바닥재(PVC계 바닥재-장판)', detailItem: '바닥재(PVC계 바닥재-장판)' };
+    }
+    // 기본값
+    return { demolitionWorkName: workName, detailItem: workName };
   };
   
   // 피해철거공사 행 생성 함수
   const createDemolitionLaborRow = (sourceAreaRow: AreaCalculationRow): LaborCostRow => {
-    const workName = sourceAreaRow.workName;
-    
-    // 반자틀 → 반자틀해체, 석고보드 → 석고보드해체
-    const detailItem = workName === '반자틀' ? '반자틀해체' : '석고보드해체';
+    const { demolitionWorkName, detailItem } = getDemolitionMapping(sourceAreaRow.workType, sourceAreaRow.workName);
     
     return {
       id: `labor-demolition-${Date.now()}-${Math.random()}`,
@@ -237,7 +270,7 @@ export default function FieldEstimate() {
       place: sourceAreaRow.category, // 장소
       position: sourceAreaRow.location, // 위치
       category: '피해철거공사', // 공종
-      workName: workName === '반자틀' ? '반자틀해체' : '석고보드해체', // 공사명
+      workName: demolitionWorkName, // 공사명
       detailWork: '일위대가', // 세부공사
       detailItem: detailItem, // 세부항목
       priceStandard: '',
