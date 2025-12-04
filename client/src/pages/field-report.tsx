@@ -1037,84 +1037,103 @@ export default function FieldReport() {
                   }
 
                   let isFirstPage = true;
+
+                  // 모든 탭 콘텐츠 요소 가져오기
+                  const allTabContents = document.querySelectorAll('[data-state]');
+                  const originalStates: Map<Element, string> = new Map();
                   
-                  // 현재 활성 탭 저장
-                  const originalTab = activeTab;
+                  // 원래 상태 저장
+                  allTabContents.forEach(el => {
+                    const state = el.getAttribute('data-state');
+                    if (state) originalStates.set(el, state);
+                  });
 
-                  // 탭 전환 함수
-                  const switchTabAndCapture = async (tabValue: string, elementId: string) => {
-                    // 탭 전환
-                    setActiveTab(tabValue);
-                    
-                    // 렌더링 대기 (탭 전환 후 컨텐츠가 렌더링될 때까지)
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    
-                    const element = document.getElementById(elementId);
-                    if (!element) {
-                      console.warn(`Element not found: ${elementId}`);
-                      return null;
-                    }
-
-                    // html2canvas로 캡처
-                    const canvas = await html2canvas(element, {
-                      scale: 2,
-                      useCORS: true,
-                      logging: false,
-                      backgroundColor: '#ffffff',
-                    });
-
-                    return canvas;
-                  };
-
-                  // 섹션과 탭 값 매핑
-                  const tabValueMap: Record<string, string> = {
-                    '현장입력': '현장조사',
-                    '도면': '도면',
-                    '증빙자료': '증빙자료',
-                    '견적서': '견적서',
-                    '기타사항': '기타사항/원인',
-                  };
+                  // 캡처용 임시 컨테이너 생성
+                  const printWrapper = document.createElement('div');
+                  printWrapper.style.cssText = `
+                    position: absolute;
+                    left: -9999px;
+                    top: 0;
+                    width: 800px;
+                    background: white;
+                    padding: 20px;
+                  `;
+                  document.body.appendChild(printWrapper);
 
                   // 각 섹션을 순차적으로 캡처
                   for (const sectionKey of selectedSections) {
                     const elementId = sectionMap[sectionKey];
-                    const tabValue = tabValueMap[sectionKey];
+                    const element = document.getElementById(elementId);
                     
-                    const canvas = await switchTabAndCapture(tabValue, elementId);
-                    
-                    if (!canvas) continue;
-
-                    // 캔버스를 PDF에 추가
-                    const imgData = canvas.toDataURL('image/png');
-                    const imgWidth = pageWidth - (margin * 2);
-                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                    
-                    // 이미지가 여러 페이지에 걸쳐야 하는 경우
-                    let heightLeft = imgHeight;
-                    let position = 0;
-                    const maxHeight = pageHeight - (margin * 2);
-
-                    if (!isFirstPage) {
-                      pdf.addPage();
+                    if (!element) {
+                      console.warn(`Element not found: ${elementId}`);
+                      continue;
                     }
-                    isFirstPage = false;
 
-                    // 첫 페이지
-                    pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
-                    heightLeft -= maxHeight;
-                    position = -maxHeight;
+                    try {
+                      // 요소를 클론하여 임시 컨테이너에 추가
+                      const clone = element.cloneNode(true) as HTMLElement;
+                      clone.style.cssText = 'display: block !important; visibility: visible !important;';
+                      clone.removeAttribute('data-state');
+                      clone.removeAttribute('hidden');
+                      
+                      // 임시 컨테이너 비우고 클론 추가
+                      printWrapper.innerHTML = '';
+                      printWrapper.appendChild(clone);
+                      
+                      // 렌더링 대기
+                      await new Promise(resolve => setTimeout(resolve, 200));
 
-                    // 추가 페이지 (이미지가 한 페이지보다 긴 경우)
-                    while (heightLeft > 0) {
-                      pdf.addPage();
-                      pdf.addImage(imgData, 'PNG', margin, position + margin, imgWidth, imgHeight);
+                      // html2canvas로 캡처
+                      const canvas = await html2canvas(printWrapper, {
+                        scale: 1.5,
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: '#ffffff',
+                        width: 800,
+                        windowWidth: 800,
+                      });
+
+                      // 캔버스 유효성 검사
+                      if (canvas.width === 0 || canvas.height === 0) {
+                        console.warn(`Empty canvas for section: ${sectionKey}`);
+                        continue;
+                      }
+
+                      // 캔버스를 PDF에 추가 (JPEG 형식 사용)
+                      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                      const imgWidth = pageWidth - (margin * 2);
+                      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                      
+                      // 이미지가 여러 페이지에 걸쳐야 하는 경우
+                      let heightLeft = imgHeight;
+                      let position = 0;
+                      const maxHeight = pageHeight - (margin * 2);
+
+                      if (!isFirstPage) {
+                        pdf.addPage();
+                      }
+                      isFirstPage = false;
+
+                      // 첫 페이지
+                      pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
                       heightLeft -= maxHeight;
-                      position -= maxHeight;
+                      position = -maxHeight;
+
+                      // 추가 페이지 (이미지가 한 페이지보다 긴 경우)
+                      while (heightLeft > 0) {
+                        pdf.addPage();
+                        pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
+                        heightLeft -= maxHeight;
+                        position -= maxHeight;
+                      }
+                    } catch (captureError) {
+                      console.error(`캡처 오류 (${sectionKey}):`, captureError);
                     }
                   }
 
-                  // 원래 탭으로 복원
-                  setActiveTab(originalTab);
+                  // 임시 컨테이너 제거
+                  document.body.removeChild(printWrapper);
 
                   // PDF 저장
                   const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
