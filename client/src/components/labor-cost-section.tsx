@@ -842,77 +842,112 @@ export function LaborCostSection({
                 </td>
               )}
               
-              {/* 기준가(원/단위) - Readonly */}
-              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
-                {(row.standardPrice ?? 0).toLocaleString()}
-              </td>
+              {/* 기준가(원/단위) - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right", verticalAlign: "middle" }}
+                >
+                  {(row.standardPrice ?? 0).toLocaleString()}
+                </td>
+              )}
               
-              {/* 수량 - Editable Input */}
-              <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
-                <Input
-                  type="number"
-                  value={row.quantity}
-                  onChange={(e) => updateRow(row.id, 'quantity', Number(e.target.value) || 0)}
-                  className="h-9 border-0 bg-transparent text-right"
-                  style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                  data-testid={`input-quantity-${index}`}
-                />
-              </td>
-              
-              {/* 기준가(㎡/길이) - Readonly */}
-              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
-                {(row.pricePerSqm ?? 0).toLocaleString()}
-              </td>
-              
-              {/* 피해면적 - Editable Input (소수점 1자리 표시) */}
-              <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={Number(Number(row.damageArea || 0).toFixed(1))}
-                  onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
-                  className="h-9 border-0 bg-transparent text-right"
-                  style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                  data-testid={`input-damageArea-${index}`}
-                />
-              </td>
-              
-              {/* 금액(원) - Readonly Calculated */}
-              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "right", background: "rgba(12, 12, 12, 0.02)" }}>
-                {(row.amount ?? 0).toLocaleString()}
-              </td>
-              
-              {/* 경비 여부 - Checkbox (체크됨 = 경비, 체크안됨 = 경비아님) */}
-              <td style={{ padding: "0 12px", textAlign: "center" }}>
-                <Checkbox
-                  checked={!row.includeInEstimate}
-                  onCheckedChange={(checked) => updateRow(row.id, 'includeInEstimate', !checked)}
-                  data-testid={`checkbox-includeInEstimate-${index}`}
-                />
-              </td>
-              
-              {/* 요청 - Editable Input with 복제 button */}
-              <td style={{ padding: "0 8px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              {/* 수량 - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 8px", background: "#EFF6FF", verticalAlign: "middle" }}
+                >
                   <Input
-                    value={row.request}
-                    onChange={(e) => updateRow(row.id, 'request', e.target.value)}
-                    className="h-9 border-0 bg-transparent flex-1"
+                    type="number"
+                    value={row.quantity}
+                    onChange={(e) => updateRow(row.id, 'quantity', Number(e.target.value) || 0)}
+                    className="h-9 border-0 bg-transparent text-right"
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    placeholder="-"
-                    data-testid={`input-request-${index}`}
+                    data-testid={`input-quantity-${index}`}
                   />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => duplicateRow(row)}
-                    className="h-8 w-8 flex-shrink-0"
-                    data-testid={`button-duplicate-${index}`}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </td>
+                </td>
+              )}
+              
+              {/* 기준가(㎡/길이) - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right", verticalAlign: "middle" }}
+                >
+                  {(row.pricePerSqm ?? 0).toLocaleString()}
+                </td>
+              )}
+              
+              {/* 피해면적 - 그룹 첫 행에서 rowSpan으로 병합 (그룹 합계 표시) */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 8px", background: "#EFF6FF", verticalAlign: "middle" }}
+                >
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={groupRowCount > 1 && groupInfo ? Number(groupInfo.totalDamageArea.toFixed(1)) : Number(Number(row.damageArea || 0).toFixed(1))}
+                    onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
+                    className="h-9 border-0 bg-transparent text-right"
+                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                    data-testid={`input-damageArea-${index}`}
+                  />
+                </td>
+              )}
+              
+              {/* 금액(원) - 그룹 첫 행에서 rowSpan으로 병합 (그룹 합계 표시) */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "right", background: "rgba(12, 12, 12, 0.02)", verticalAlign: "middle" }}
+                >
+                  {groupRowCount > 1 && groupInfo ? groupInfo.totalAmount.toLocaleString() : (row.amount ?? 0).toLocaleString()}
+                </td>
+              )}
+              
+              {/* 경비 여부 - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 12px", textAlign: "center", verticalAlign: "middle" }}
+                >
+                  <Checkbox
+                    checked={!row.includeInEstimate}
+                    onCheckedChange={(checked) => updateRow(row.id, 'includeInEstimate', !checked)}
+                    data-testid={`checkbox-includeInEstimate-${index}`}
+                  />
+                </td>
+              )}
+              
+              {/* 요청 - 그룹 첫 행에서 rowSpan으로 병합 */}
+              {(isFirstInGroup || groupRowCount <= 1) && (
+                <td 
+                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
+                  style={{ padding: "0 8px", verticalAlign: "middle" }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Input
+                      value={row.request}
+                      onChange={(e) => updateRow(row.id, 'request', e.target.value)}
+                      className="h-9 border-0 bg-transparent flex-1"
+                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                      placeholder="-"
+                      data-testid={`input-request-${index}`}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => duplicateRow(row)}
+                      className="h-8 w-8 flex-shrink-0"
+                      data-testid={`button-duplicate-${index}`}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </td>
+              )}
             </tr>
             </Fragment>
           ))}
