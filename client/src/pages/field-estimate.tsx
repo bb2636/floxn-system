@@ -195,7 +195,7 @@ export default function FieldEstimate() {
     return workTypes;
   }, [materialCatalog]);
 
-  // 노무비 행 변화 감지 및 자재비 행 동기화
+  // 노무비 행 변화 감지 및 자재비 행 동기화 (공종, 공사명 그대로 복사)
   useEffect(() => {
     // Hydration 완료 전에는 동기화 건너뛰기 (중복 행 방지)
     if (!isHydratedRef.current) {
@@ -221,13 +221,10 @@ export default function FieldEstimate() {
             const needsWorkNameUpdate = linkedLaborRow.workName !== matRow.공사명;
             
             if (needsCategoryUpdate || needsWorkNameUpdate) {
-              // 노무비 공종이 자재비 DB에 있을 때만 동기화
-              const newCategory = materialWorkTypes.has(linkedLaborRow.category) 
-                ? linkedLaborRow.category 
-                : '';
+              // 공종, 공사명 그대로 복사
               return { 
                 ...matRow, 
-                공종: needsCategoryUpdate ? newCategory : matRow.공종,
+                공종: linkedLaborRow.category || '',
                 공사명: linkedLaborRow.workName || ''
               };
             }
@@ -242,13 +239,10 @@ export default function FieldEstimate() {
           const needsWorkNameUpdate = correspondingLaborRow.workName !== matRow.공사명;
           
           if (needsCategoryUpdate || needsWorkNameUpdate) {
-            // 노무비 공종이 자재비 DB에 있을 때만 동기화
-            const newCategory = materialWorkTypes.has(correspondingLaborRow.category) 
-              ? correspondingLaborRow.category 
-              : '';
+            // 공종, 공사명 그대로 복사
             return { 
               ...matRow, 
-              공종: needsCategoryUpdate ? newCategory : matRow.공종,
+              공종: correspondingLaborRow.category || '',
               공사명: correspondingLaborRow.workName || ''
             };
           }
@@ -256,15 +250,14 @@ export default function FieldEstimate() {
         return matRow;
       });
       
-      // 새로운 자재비 행 추가 (노무비 공종이 자재비 DB에 있을 때만 공종 설정)
+      // 새로운 자재비 행 추가 (공종, 공사명 그대로 복사)
       const newRows = laborRowsNeedingMaterial.map(laborRow => {
-        const category = materialWorkTypes.has(laborRow.category) ? laborRow.category : '';
-        return createBlankMaterialRow(category, laborRow.workName || '', laborRow.id);
+        return createBlankMaterialRow(laborRow.category || '', laborRow.workName || '', laborRow.id);
       });
       
       return [...updatedRows, ...newRows];
     });
-  }, [laborCostRows, materialWorkTypes]);
+  }, [laborCostRows]);
 
   // 자동 연동 대상 공종 목록 (도장, 목공, 수장공사만)
   const AUTO_SYNC_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
