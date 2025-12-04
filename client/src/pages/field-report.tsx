@@ -257,6 +257,9 @@ export default function FieldReport() {
     기타사항: true,
   });
   
+  // 활성 탭 상태 (PDF 캡처를 위해 제어 컴포넌트로 사용)
+  const [activeTab, setActiveTab] = useState("현장조사");
+  
   // 테이블 체크박스 상태 관리
   const [areaChecked, setAreaChecked] = useState<Record<number, boolean>>({});
   const [laborChecked, setLaborChecked] = useState<Record<number, boolean>>({});
@@ -1034,58 +1037,52 @@ export default function FieldReport() {
                   }
 
                   let isFirstPage = true;
+                  
+                  // 현재 활성 탭 저장
+                  const originalTab = activeTab;
 
-                  // 캡처용 임시 컨테이너 생성
-                  const printContainer = document.createElement('div');
-                  printContainer.style.cssText = `
-                    position: fixed;
-                    left: 0;
-                    top: 0;
-                    width: 800px;
-                    background: white;
-                    z-index: -9999;
-                    opacity: 0;
-                    pointer-events: none;
-                  `;
-                  document.body.appendChild(printContainer);
-
-                  // 각 섹션을 순차적으로 캡처
-                  for (const sectionKey of selectedSections) {
-                    const elementId = sectionMap[sectionKey];
-                    const element = document.getElementById(elementId);
+                  // 탭 전환 함수
+                  const switchTabAndCapture = async (tabValue: string, elementId: string) => {
+                    // 탭 전환
+                    setActiveTab(tabValue);
                     
+                    // 렌더링 대기 (탭 전환 후 컨텐츠가 렌더링될 때까지)
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    const element = document.getElementById(elementId);
                     if (!element) {
                       console.warn(`Element not found: ${elementId}`);
-                      continue;
+                      return null;
                     }
 
-                    // 요소를 클론하여 임시 컨테이너에 추가
-                    const clone = element.cloneNode(true) as HTMLElement;
-                    clone.style.cssText = `
-                      display: block !important;
-                      visibility: visible !important;
-                      opacity: 1 !important;
-                      position: relative !important;
-                      padding: 20px;
-                      background: white;
-                    `;
-                    clone.removeAttribute('data-state');
-                    clone.removeAttribute('hidden');
-                    
-                    printContainer.innerHTML = '';
-                    printContainer.appendChild(clone);
-
-                    // 렌더링 대기
-                    await new Promise(resolve => setTimeout(resolve, 100));
-
                     // html2canvas로 캡처
-                    const canvas = await html2canvas(printContainer, {
+                    const canvas = await html2canvas(element, {
                       scale: 2,
                       useCORS: true,
                       logging: false,
                       backgroundColor: '#ffffff',
-                      width: 800,
                     });
+
+                    return canvas;
+                  };
+
+                  // 섹션과 탭 값 매핑
+                  const tabValueMap: Record<string, string> = {
+                    '현장입력': '현장조사',
+                    '도면': '도면',
+                    '증빙자료': '증빙자료',
+                    '견적서': '견적서',
+                    '기타사항': '기타사항/원인',
+                  };
+
+                  // 각 섹션을 순차적으로 캡처
+                  for (const sectionKey of selectedSections) {
+                    const elementId = sectionMap[sectionKey];
+                    const tabValue = tabValueMap[sectionKey];
+                    
+                    const canvas = await switchTabAndCapture(tabValue, elementId);
+                    
+                    if (!canvas) continue;
 
                     // 캔버스를 PDF에 추가
                     const imgData = canvas.toDataURL('image/png');
@@ -1116,8 +1113,8 @@ export default function FieldReport() {
                     }
                   }
 
-                  // 임시 컨테이너 제거
-                  document.body.removeChild(printContainer);
+                  // 원래 탭으로 복원
+                  setActiveTab(originalTab);
 
                   // PDF 저장
                   const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -1222,7 +1219,7 @@ export default function FieldReport() {
       </div>
 
       {/* 탭 메뉴 + 다운로드/이메일 버튼 */}
-      <Tabs defaultValue="현장조사" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="flex items-center justify-between mb-6">
           <TabsList>
             <TabsTrigger value="현장조사">현장조사</TabsTrigger>
