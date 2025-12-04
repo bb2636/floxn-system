@@ -5,7 +5,7 @@ import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckC
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { User, VALID_ROLES, type ExcelData, type Inquiry, type MasterData, type InsertMasterData, type Notice } from "@shared/schema";
+import { User, VALID_ROLES, type ExcelData, type Inquiry, type MasterData, type InsertMasterData, type Notice, type CaseChangeLog } from "@shared/schema";
 import {
   Select,
   SelectContent,
@@ -547,6 +547,7 @@ export default function AdminSettings() {
     { name: "공지사항 관리", active: false },
     { name: "DB 관리", active: false },
     { name: "기준정보 관리", active: false },
+    { name: "변경 로그 관리", active: false },
   ];
 
   // Excel data mutations
@@ -642,6 +643,26 @@ export default function AdminSettings() {
   const { data: notices = [], isLoading: noticesLoading } = useQuery<Notice[]>({
     queryKey: ["/api/notices"],
     enabled: !!user && activeMenu === "공지사항 관리",
+  });
+
+  // Change log state and query
+  const [changeLogCaseNumberFilter, setChangeLogCaseNumberFilter] = useState("");
+  const [changeLogDateFrom, setChangeLogDateFrom] = useState("");
+  const [changeLogDateTo, setChangeLogDateTo] = useState("");
+
+  // Fetch change logs (admin only)
+  const { data: changeLogs = [], isLoading: changeLogsLoading } = useQuery<Array<CaseChangeLog & { caseNumber: string }>>({
+    queryKey: ["/api/case-change-logs", changeLogCaseNumberFilter, changeLogDateFrom, changeLogDateTo],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (changeLogCaseNumberFilter) params.append("caseNumber", changeLogCaseNumberFilter);
+      if (changeLogDateFrom) params.append("dateFrom", changeLogDateFrom);
+      if (changeLogDateTo) params.append("dateTo", changeLogDateTo);
+      const res = await fetch(`/api/case-change-logs?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch change logs");
+      return res.json();
+    },
+    enabled: !!user && activeMenu === "변경 로그 관리",
   });
 
   // Notice mutations
@@ -3454,6 +3475,336 @@ export default function AdminSettings() {
             </div>
           </div>
           </>
+          )}
+
+          {activeMenu === "변경 로그 관리" && (
+            <>
+              {/* Title */}
+              <div className="flex items-center justify-between mb-6">
+                <h1
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "26px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                  }}
+                >
+                  변경 로그 관리
+                </h1>
+              </div>
+
+              {/* Filters */}
+              <div
+                className="rounded-xl p-6 mb-6"
+                style={{
+                  background: "#FFFFFF",
+                  boxShadow: "0px 0px 20px #DBE9F5",
+                }}
+              >
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#686A6E",
+                      }}
+                    >
+                      사건번호 검색
+                    </label>
+                    <input
+                      type="text"
+                      value={changeLogCaseNumberFilter}
+                      onChange={(e) => setChangeLogCaseNumberFilter(e.target.value)}
+                      placeholder="사건번호를 입력하세요"
+                      className="w-full px-3 py-2 outline-none"
+                      style={{
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        borderRadius: "6px",
+                        fontFamily: "Pretendard",
+                        fontSize: "13px",
+                      }}
+                      data-testid="input-changelog-case-number"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#686A6E",
+                      }}
+                    >
+                      시작일
+                    </label>
+                    <input
+                      type="date"
+                      value={changeLogDateFrom}
+                      onChange={(e) => setChangeLogDateFrom(e.target.value)}
+                      className="px-3 py-2 outline-none"
+                      style={{
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        borderRadius: "6px",
+                        fontFamily: "Pretendard",
+                        fontSize: "13px",
+                      }}
+                      data-testid="input-changelog-date-from"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className="block mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#686A6E",
+                      }}
+                    >
+                      종료일
+                    </label>
+                    <input
+                      type="date"
+                      value={changeLogDateTo}
+                      onChange={(e) => setChangeLogDateTo(e.target.value)}
+                      className="px-3 py-2 outline-none"
+                      style={{
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(12, 12, 12, 0.08)",
+                        borderRadius: "6px",
+                        fontFamily: "Pretendard",
+                        fontSize: "13px",
+                      }}
+                      data-testid="input-changelog-date-to"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      setChangeLogCaseNumberFilter("");
+                      setChangeLogDateFrom("");
+                      setChangeLogDateTo("");
+                    }}
+                    className="px-4 py-2"
+                    style={{
+                      background: "rgba(12, 12, 12, 0.08)",
+                      borderRadius: "6px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "rgba(12, 12, 12, 0.8)",
+                    }}
+                    data-testid="button-changelog-reset"
+                  >
+                    초기화
+                  </button>
+                </div>
+              </div>
+
+              {/* Change Logs Table */}
+              <div
+                className="rounded-xl overflow-hidden"
+                style={{
+                  background: "#FFFFFF",
+                  boxShadow: "0px 0px 20px #DBE9F5",
+                }}
+              >
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr style={{ background: "rgba(12, 12, 12, 0.04)" }}>
+                        <th
+                          className="px-4 py-3 text-left"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          사건번호
+                        </th>
+                        <th
+                          className="px-4 py-3 text-left"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          변경자
+                        </th>
+                        <th
+                          className="px-4 py-3 text-left"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          변경일시
+                        </th>
+                        <th
+                          className="px-4 py-3 text-left"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          변경 항목
+                        </th>
+                        <th
+                          className="px-4 py-3 text-left"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#0C0C0C",
+                          }}
+                        >
+                          변경 내용
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {changeLogsLoading ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="px-4 py-8 text-center"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 400,
+                              color: "#686A6E",
+                            }}
+                          >
+                            로딩 중...
+                          </td>
+                        </tr>
+                      ) : changeLogs.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="px-4 py-8 text-center"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 400,
+                              color: "#686A6E",
+                            }}
+                          >
+                            변경 로그가 없습니다.
+                          </td>
+                        </tr>
+                      ) : (
+                        changeLogs.map((log) => (
+                          <tr
+                            key={log.id}
+                            className="border-b hover:bg-gray-50 transition-colors"
+                            style={{ borderColor: "rgba(12, 12, 12, 0.08)" }}
+                            data-testid={`row-changelog-${log.id}`}
+                          >
+                            <td
+                              className="px-4 py-3"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 500,
+                                color: "#008FED",
+                              }}
+                            >
+                              {log.caseNumber || "-"}
+                            </td>
+                            <td
+                              className="px-4 py-3"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "rgba(12, 12, 12, 0.8)",
+                              }}
+                            >
+                              {log.changedByName || "-"}
+                            </td>
+                            <td
+                              className="px-4 py-3"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "rgba(12, 12, 12, 0.8)",
+                              }}
+                            >
+                              {log.changedAt
+                                ? new Date(log.changedAt).toLocaleString("ko-KR", {
+                                    year: "numeric",
+                                    month: "2-digit",
+                                    day: "2-digit",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })
+                                : "-"}
+                            </td>
+                            <td
+                              className="px-4 py-3"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "rgba(12, 12, 12, 0.8)",
+                              }}
+                            >
+                              {log.changes && log.changes.length > 0
+                                ? log.changes.map((c) => c.fieldLabel).join(", ")
+                                : "-"}
+                            </td>
+                            <td
+                              className="px-4 py-3"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "13px",
+                                fontWeight: 400,
+                                color: "rgba(12, 12, 12, 0.7)",
+                              }}
+                            >
+                              {log.changes && log.changes.length > 0 ? (
+                                <div className="space-y-1">
+                                  {log.changes.map((change, idx) => (
+                                    <div key={idx} className="flex items-center gap-2">
+                                      <span className="font-medium">{change.fieldLabel}:</span>
+                                      <span className="text-red-500 line-through">
+                                        {change.before || "(없음)"}
+                                      </span>
+                                      <span>→</span>
+                                      <span className="text-green-600">
+                                        {change.after || "(없음)"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
