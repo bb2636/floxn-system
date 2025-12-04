@@ -1294,17 +1294,25 @@ export default function ComprehensiveProgress() {
                 진행건 상세보기
               </SheetTitle>
               <div style={{ display: "flex", gap: "8px" }}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setIsReceptionEditMode(false); // 수정모드 리셋
-                    setShowReceptionDetailDialog(true);
-                  }}
-                  data-testid="button-reception-detail"
-                >
-                  접수건 상세보기
-                </Button>
+                {/* 접수완료 이후 상태에서만 접수건 상세보기 버튼 표시 */}
+                {(() => {
+                  const currentCase = cases?.find(c => c.id === selectedCaseId);
+                  const status = currentCase?.status || "";
+                  const isAfterReceptionComplete = status !== "배당대기";
+                  return isAfterReceptionComplete ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsReceptionEditMode(false); // 수정모드 리셋
+                        setShowReceptionDetailDialog(true);
+                      }}
+                      data-testid="button-reception-detail"
+                    >
+                      접수건 상세보기
+                    </Button>
+                  ) : null;
+                })()}
                 {user?.role === "관리자" && (
                   <Button
                     variant="destructive"
