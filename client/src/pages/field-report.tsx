@@ -1007,171 +1007,117 @@ export default function FieldReport() {
 
                   const pdf = new jsPDF('p', 'mm', 'a4');
                   const pageWidth = pdf.internal.pageSize.getWidth();
-                  let yPosition = 20;
+                  const pageHeight = pdf.internal.pageSize.getHeight();
+                  const margin = 10;
+                  
+                  // 섹션 매핑: 체크박스 키 -> DOM ID
+                  const sectionMap: Record<string, string> = {
+                    '현장입력': 'pdf-section-현장조사',
+                    '도면': 'pdf-section-도면',
+                    '증빙자료': 'pdf-section-증빙자료',
+                    '견적서': 'pdf-section-견적서',
+                    '기타사항': 'pdf-section-기타사항',
+                  };
 
-                  // 제목
-                  pdf.setFontSize(18);
-                  pdf.text('현장출동보고서', pageWidth / 2, yPosition, { align: 'center' });
-                  yPosition += 15;
+                  // 선택된 섹션들
+                  const selectedSections = Object.entries(downloadSections)
+                    .filter(([_, checked]) => checked)
+                    .map(([key]) => key);
 
-                  // 기본 정보
-                  pdf.setFontSize(10);
-                  pdf.text(`보험사: ${caseData.insuranceCompany || '-'}`, 14, yPosition);
-                  pdf.text(`사고번호: ${caseData.insuranceAccidentNo || '-'}`, 100, yPosition);
-                  yPosition += 6;
-                  pdf.text(`접수번호: ${formatCaseNumber(caseData.caseNumber)}`, 14, yPosition);
-                  pdf.text(`피보험자: ${caseData.policyHolderName || '-'}`, 100, yPosition);
-                  yPosition += 10;
-
-                  // 현장입력 섹션
-                  if (downloadSections.현장입력) {
-                    pdf.setFontSize(14);
-                    pdf.text('현장조사 정보', 14, yPosition);
-                    yPosition += 8;
-                    
-                    pdf.setFontSize(9);
-                    const fieldInfo = [
-                      ['방문일시', caseData.visitDate ? `${caseData.visitDate} ${caseData.visitTime || ''}` : '-'],
-                      ['출동지역', caseData.dispatchLocation || '-'],
-                      ['동행자', caseData.accompaniedPerson || '-'],
-                      ['사고구분', caseData.accidentCategory || '-'],
-                      ['사고원인', caseData.accidentCause || '-'],
-                      ['특이사항', caseData.specialNotes || '-'],
-                    ];
-                    
-                    fieldInfo.forEach(([label, value]) => {
-                      pdf.text(`${label}: ${value}`, 14, yPosition);
-                      yPosition += 5;
+                  if (selectedSections.length === 0) {
+                    toast({
+                      title: "섹션 선택 필요",
+                      description: "최소 1개 이상의 섹션을 선택해주세요.",
+                      variant: "destructive",
                     });
-                    yPosition += 5;
+                    return;
                   }
 
-                  // 견적서 섹션
-                  if (downloadSections.견적서 && reportData?.estimate) {
-                    if (yPosition > 250) {
-                      pdf.addPage();
-                      yPosition = 20;
-                    }
+                  let isFirstPage = true;
+
+                  // 캡처용 임시 컨테이너 생성
+                  const printContainer = document.createElement('div');
+                  printContainer.style.cssText = `
+                    position: fixed;
+                    left: 0;
+                    top: 0;
+                    width: 800px;
+                    background: white;
+                    z-index: -9999;
+                    opacity: 0;
+                    pointer-events: none;
+                  `;
+                  document.body.appendChild(printContainer);
+
+                  // 각 섹션을 순차적으로 캡처
+                  for (const sectionKey of selectedSections) {
+                    const elementId = sectionMap[sectionKey];
+                    const element = document.getElementById(elementId);
                     
-                    pdf.setFontSize(14);
-                    pdf.text('견적서', 14, yPosition);
-                    yPosition += 10;
-
-                    // 복구면적 산출표
-                    if (reportData.estimate.rows && reportData.estimate.rows.length > 0) {
-                      pdf.setFontSize(11);
-                      pdf.text('복구면적 산출표', 14, yPosition);
-                      yPosition += 6;
-
-                      autoTable(pdf, {
-                        startY: yPosition,
-                        head: [['장소', '위치', '공사내용', '피해면적(㎡)', '복구면적(㎡)']],
-                        body: reportData.estimate.rows.map(row => [
-                          row.category || '-',
-                          row.location || '-',
-                          row.workName || '-',
-                          row.damageArea ? (row.damageArea / 1_000_000).toFixed(2) : '0',
-                          row.repairArea ? (row.repairArea / 1_000_000).toFixed(2) : '0',
-                        ]),
-                        styles: { fontSize: 8 },
-                        headStyles: { fillColor: [0, 143, 237] },
-                      });
-                      yPosition = (pdf as any).lastAutoTable.finalY + 10;
+                    if (!element) {
+                      console.warn(`Element not found: ${elementId}`);
+                      continue;
                     }
 
-                    // 노무비
-                    if (parsedLaborCosts.length > 0) {
-                      if (yPosition > 230) {
-                        pdf.addPage();
-                        yPosition = 20;
-                      }
-                      
-                      pdf.setFontSize(11);
-                      pdf.text('노무비', 14, yPosition);
-                      yPosition += 6;
-
-                      autoTable(pdf, {
-                        startY: yPosition,
-                        head: [['공종', '공사명', '세부공사', '단위', '기준가', '수량', '금액']],
-                        body: parsedLaborCosts.map(row => [
-                          row.category || '-',
-                          row.workName || '-',
-                          row.detailWork || '-',
-                          row.unit || '-',
-                          (row.standardPrice || 0).toLocaleString(),
-                          row.quantity || 0,
-                          (row.amount || 0).toLocaleString(),
-                        ]),
-                        styles: { fontSize: 8 },
-                        headStyles: { fillColor: [0, 143, 237] },
-                      });
-                      yPosition = (pdf as any).lastAutoTable.finalY + 10;
-                    }
-
-                    // 자재비
-                    if (parsedMaterialCosts.length > 0) {
-                      if (yPosition > 230) {
-                        pdf.addPage();
-                        yPosition = 20;
-                      }
-                      
-                      pdf.setFontSize(11);
-                      pdf.text('자재비', 14, yPosition);
-                      yPosition += 6;
-
-                      autoTable(pdf, {
-                        startY: yPosition,
-                        head: [['공종', '자재명', '규격', '단위', '기준단가', '수량', '금액']],
-                        body: parsedMaterialCosts.map(row => [
-                          row.공종 || '-',
-                          row.자재 || '-',
-                          row.규격 || '-',
-                          row.단위 || '-',
-                          (row.기준단가 || 0).toLocaleString(),
-                          row.수량 || 0,
-                          (row.금액 || 0).toLocaleString(),
-                        ]),
-                        styles: { fontSize: 8 },
-                        headStyles: { fillColor: [0, 143, 237] },
-                      });
-                      yPosition = (pdf as any).lastAutoTable.finalY + 10;
-                    }
-
-                    // 합계
-                    if (yPosition > 250) {
-                      pdf.addPage();
-                      yPosition = 20;
-                    }
+                    // 요소를 클론하여 임시 컨테이너에 추가
+                    const clone = element.cloneNode(true) as HTMLElement;
+                    clone.style.cssText = `
+                      display: block !important;
+                      visibility: visible !important;
+                      opacity: 1 !important;
+                      position: relative !important;
+                      padding: 20px;
+                      background: white;
+                    `;
+                    clone.removeAttribute('data-state');
+                    clone.removeAttribute('hidden');
                     
-                    pdf.setFontSize(10);
-                    pdf.text(`소계: ${calculateTotals.subtotal.toLocaleString()}원`, 14, yPosition);
-                    yPosition += 5;
-                    pdf.text(`일반관리비 (6%): ${calculateTotals.managementFee.toLocaleString()}원`, 14, yPosition);
-                    yPosition += 5;
-                    pdf.text(`이윤 (15%): ${calculateTotals.profit.toLocaleString()}원`, 14, yPosition);
-                    yPosition += 5;
-                    pdf.text(`VAT (10%): ${calculateTotals.vat.toLocaleString()}원`, 14, yPosition);
-                    yPosition += 6;
-                    pdf.setFontSize(12);
-                    pdf.text(`총 합계: ${calculateTotals.total.toLocaleString()}원`, 14, yPosition);
-                    yPosition += 10;
+                    printContainer.innerHTML = '';
+                    printContainer.appendChild(clone);
+
+                    // 렌더링 대기
+                    await new Promise(resolve => setTimeout(resolve, 100));
+
+                    // html2canvas로 캡처
+                    const canvas = await html2canvas(printContainer, {
+                      scale: 2,
+                      useCORS: true,
+                      logging: false,
+                      backgroundColor: '#ffffff',
+                      width: 800,
+                    });
+
+                    // 캔버스를 PDF에 추가
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgWidth = pageWidth - (margin * 2);
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                    
+                    // 이미지가 여러 페이지에 걸쳐야 하는 경우
+                    let heightLeft = imgHeight;
+                    let position = 0;
+                    const maxHeight = pageHeight - (margin * 2);
+
+                    if (!isFirstPage) {
+                      pdf.addPage();
+                    }
+                    isFirstPage = false;
+
+                    // 첫 페이지
+                    pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+                    heightLeft -= maxHeight;
+                    position = -maxHeight;
+
+                    // 추가 페이지 (이미지가 한 페이지보다 긴 경우)
+                    while (heightLeft > 0) {
+                      pdf.addPage();
+                      pdf.addImage(imgData, 'PNG', margin, position + margin, imgWidth, imgHeight);
+                      heightLeft -= maxHeight;
+                      position -= maxHeight;
+                    }
                   }
 
-                  // 기타사항 섹션
-                  if (downloadSections.기타사항 && additionalNotes) {
-                    if (yPosition > 250) {
-                      pdf.addPage();
-                      yPosition = 20;
-                    }
-                    
-                    pdf.setFontSize(14);
-                    pdf.text('기타사항', 14, yPosition);
-                    yPosition += 8;
-                    
-                    pdf.setFontSize(9);
-                    const splitText = pdf.splitTextToSize(additionalNotes, pageWidth - 28);
-                    pdf.text(splitText, 14, yPosition);
-                  }
+                  // 임시 컨테이너 제거
+                  document.body.removeChild(printContainer);
 
                   // PDF 저장
                   const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -1322,7 +1268,7 @@ export default function FieldReport() {
         </div>
 
         {/* 현장조사 탭 */}
-        <TabsContent value="현장조사" className="space-y-6">
+        <TabsContent value="현장조사" className="space-y-6" id="pdf-section-현장조사">
           {/* 현장조사 정보 섹션 */}
           <div>
             <h2
@@ -1827,7 +1773,7 @@ export default function FieldReport() {
         </TabsContent>
 
         {/* 도면 탭 */}
-        <TabsContent value="도면">
+        <TabsContent value="도면" id="pdf-section-도면">
           <div>
             <h2
               style={{
@@ -2057,7 +2003,7 @@ export default function FieldReport() {
         </TabsContent>
 
         {/* 증빙자료 탭 */}
-        <TabsContent value="증빙자료">
+        <TabsContent value="증빙자료" id="pdf-section-증빙자료">
           <div>
             {documents && documents.length > 0 ? (
               <>
@@ -2231,7 +2177,7 @@ export default function FieldReport() {
         </TabsContent>
 
         {/* 견적서 탭 */}
-        <TabsContent value="견적서">
+        <TabsContent value="견적서" id="pdf-section-견적서">
           <div className="min-w-0">
             {estimate.estimate && estimate.rows && estimate.rows.length > 0 ? (
               <>
@@ -2776,7 +2722,7 @@ export default function FieldReport() {
         </TabsContent>
 
         {/* 기타사항/원인 탭 */}
-        <TabsContent value="기타사항/원인">
+        <TabsContent value="기타사항/원인" id="pdf-section-기타사항">
           <div
             style={{
               fontFamily: "Pretendard",
