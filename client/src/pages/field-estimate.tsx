@@ -1018,6 +1018,17 @@ export default function FieldEstimate() {
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
         
+        // 공사명이 몰딩 또는 걸레받이로 변경되면 복구면적 세로를 1로 고정
+        if (field === 'workName' && (value === '몰딩' || value === '걸레받이')) {
+          updated.repairHeight = '1';
+          // 복구면적 재계산 (가로 * 1mm = 가로/1000 m²)
+          const width = parseFloat(updated.repairWidth) || 0;
+          const widthM = width / 1000;
+          const heightM = 1 / 1000; // 1mm
+          const area = (widthM * heightM).toFixed(2);
+          updated.repairArea = area;
+        }
+        
         // 가로/세로 변경 시 면적 자동 계산
         if (field === 'damageWidth' || field === 'damageHeight') {
           const width = parseFloat(field === 'damageWidth' ? value : row.damageWidth) || 0;
