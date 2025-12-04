@@ -1424,12 +1424,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               </div>
               
               <div className="py-4 md:py-6 lg:py-8">
-                {/* 담당자, 소속부서, 직급, 연락처 (4-column on desktop, 2-column in modal) */}
-                <div className={`grid grid-cols-1 md:grid-cols-2 ${isModal ? '' : 'lg:grid-cols-4'} gap-4 md:gap-5 px-4 md:px-5`}>
+                {/* 담당자, 소속부서, 직급, 연락처 - flex wrap for responsive */}
+                <div className="flex flex-wrap gap-4 md:gap-5 px-4 md:px-5">
                   {/* 담당자 */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
                     <label 
-                      className="text-sm"
+                      className="text-sm whitespace-nowrap"
                       style={{
                         fontFamily: 'Pretendard',
                         fontWeight: 500,
@@ -1457,7 +1457,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       disabled={readOnly}
                     >
                       <SelectTrigger 
-                        className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg border-0"
+                        className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg border-0"
                         style={{
                           background: 'rgba(12, 12, 12, 0.04)',
                         }}
@@ -1476,9 +1476,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   </div>
 
                   {/* 소속부서 */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
                     <label 
-                      className="text-sm"
+                      className="text-sm whitespace-nowrap"
                       style={{
                         fontFamily: 'Pretendard',
                         fontWeight: 500,
@@ -1492,7 +1492,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                     <Input
                       value={formData.managerDepartment}
                       readOnly
-                      className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg border-0"
+                      className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg border-0"
                       style={{
                         background: 'rgba(12, 12, 12, 0.04)',
                       }}
@@ -1502,9 +1502,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   </div>
 
                   {/* 직급 */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 flex-1 min-w-[80px]">
                     <label 
-                      className="text-sm"
+                      className="text-sm whitespace-nowrap"
                       style={{
                         fontFamily: 'Pretendard',
                         fontWeight: 500,
@@ -1518,7 +1518,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                     <Input
                       value={formData.managerPosition}
                       readOnly
-                      className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg border-0"
+                      className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg border-0"
                       style={{
                         background: 'rgba(12, 12, 12, 0.04)',
                       }}
@@ -1528,9 +1528,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   </div>
 
                   {/* 연락처 */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
                     <label 
-                      className="text-sm"
+                      className="text-sm whitespace-nowrap"
                       style={{
                         fontFamily: 'Pretendard',
                         fontWeight: 500,
@@ -1544,7 +1544,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                     <Input
                       value={formData.managerContact}
                       readOnly
-                      className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg border-0"
+                      className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg border-0"
                       style={{
                         background: 'rgba(12, 12, 12, 0.04)',
                       }}
@@ -1728,12 +1728,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       </p>
                     </div>
 
-                    {/* 보험 정보 3-column on desktop, 1-column on mobile, wraps in modal */}
-                    <div className={`grid grid-cols-1 ${isModal ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8`}>
-                      <div className="flex-1 flex flex-col gap-2">
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사</label>
+                    {/* 보험 정보 - flex wrap for responsive */}
+                    <div className="flex flex-wrap gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                      <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사</label>
                         <Select value={formData.insuranceCompany} onValueChange={(value) => handleInputChange("insuranceCompany", value)} disabled={readOnly}>
-                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-insurance-company">
+                          <SelectTrigger className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-insurance-company">
                             <SelectValue placeholder="보험사 선택" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1743,13 +1743,13 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex-1 flex flex-col gap-2">
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 증권번호</label>
-                        <input type="text" placeholder="증권번호 입력" value={formData.insurancePolicyNo} onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)} disabled={readOnly} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-policy-no" />
+                      <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 증권번호</label>
+                        <input type="text" placeholder="증권번호 입력" value={formData.insurancePolicyNo} onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)} disabled={readOnly} className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-policy-no" />
                       </div>
-                      <div className="flex-1 flex flex-col gap-2">
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 사고번호</label>
-                        <input type="text" placeholder="사고번호 입력" value={formData.insuranceAccidentNo} onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)} disabled={readOnly} className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-accident-no" />
+                      <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 사고번호</label>
+                        <input type="text" placeholder="사고번호 입력" value={formData.insuranceAccidentNo} onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)} disabled={readOnly} className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-accident-no" />
                       </div>
                     </div>
 
@@ -1758,31 +1758,31 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       <h3 className="text-lg md:text-xl" style={{fontFamily: 'Pretendard',fontWeight: 600,lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>의뢰자 정보</h3>
                     </div>
 
-                    {/* 의뢰자 정보 - responsive grid (2-column in modal) */}
-                    <div className={`grid grid-cols-1 md:grid-cols-2 ${isModal ? '' : 'lg:grid-cols-4'} gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8`}>
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰사</label>
+                    {/* 의뢰자 정보 - flex wrap for responsive */}
+                    <div className="flex flex-wrap gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                      <div className="flex flex-col gap-2 flex-1 min-w-[100px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰사</label>
                         <div
                           onClick={() => !readOnly && setIsClientSearchOpen(true)}
-                          className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
+                          className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
                           style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.clientResidence ? '#0C0C0C' : '#A0A0A0', opacity: readOnly ? 0.6 : 1, cursor: readOnly ? 'not-allowed' : 'pointer'}}
                           data-testid="button-client-search"
                         >
                           {formData.clientResidence || "의뢰사 선택"}
                         </div>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
-                        <input type="text" placeholder="의뢰사를 선택하면 자동으로 입력됩니다" value={formData.clientDepartment} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-department" />
+                      <div className="flex flex-col gap-2 flex-1 min-w-[100px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
+                        <input type="text" placeholder="의뢰사를 선택하면 자동으로 입력됩니다" value={formData.clientDepartment} readOnly className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-department" />
                       </div>
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자</label>
+                      <div className="flex flex-col gap-2 flex-1 min-w-[80px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자</label>
                         <Select 
                           value={formData.clientName} 
                           onValueChange={(value) => handleInputChange("clientName", value)}
                           disabled={readOnly || !formData.clientResidence}
                         >
-                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-client-name">
+                          <SelectTrigger className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-client-name">
                             <SelectValue placeholder={formData.clientResidence ? "담당자 선택" : "의뢰사를 먼저 선택해주세요"} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1800,9 +1800,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자 담당자 연락처</label>
-                        <input type="text" placeholder="의뢰자를 선택하면 자동으로 입력됩니다" value={formData.clientContact} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-contact" />
+                      <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>의뢰자 담당자 연락처</label>
+                        <input type="text" placeholder="의뢰자를 선택하면 자동으로 입력됩니다" value={formData.clientContact} readOnly className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-client-contact" />
                       </div>
                     </div>
 
@@ -1811,31 +1811,31 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       <h3 className="text-lg md:text-xl" style={{fontFamily: 'Pretendard',fontWeight: 600,lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>심사자 정보</h3>
                     </div>
 
-                    {/* 심사자 정보 - responsive grid (2-column in modal) */}
-                    <div className={`grid grid-cols-1 md:grid-cols-2 ${isModal ? '' : 'lg:grid-cols-4'} gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8`}>
-                      <div className="flex flex-col gap-2">
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사사</label>
+                    {/* 심사자 정보 - flex wrap for responsive */}
+                    <div className="flex flex-wrap gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                      <div className="flex flex-col gap-2 flex-1 min-w-[100px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사사</label>
                         <div
                           onClick={() => !readOnly && setIsAssessorSearchOpen(true)}
-                          className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
+                          className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
                           style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.assessorId ? '#0C0C0C' : '#A0A0A0', opacity: readOnly ? 0.6 : 1, cursor: readOnly ? 'not-allowed' : 'pointer'}}
                           data-testid="button-assessor-search"
                         >
                           {formData.assessorId || "심사사 선택"}
                         </div>
                       </div>
-                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
-                        <input type="text" placeholder="심사사를 선택하면 자동으로 입력됩니다" value={formData.assessorDepartment} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-department" />
+                      <div className="flex flex-col gap-2 flex-1 min-w-[100px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
+                        <input type="text" placeholder="심사사를 선택하면 자동으로 입력됩니다" value={formData.assessorDepartment} readOnly className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-department" />
                       </div>
-                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자</label>
+                      <div className="flex flex-col gap-2 flex-1 min-w-[80px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자</label>
                         <Select 
                           value={formData.assessorTeam} 
                           onValueChange={(value) => handleInputChange("assessorTeam", value)}
                           disabled={readOnly || !formData.assessorId}
                         >
-                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-assessor-name">
+                          <SelectTrigger className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-assessor-name">
                             <SelectValue placeholder={formData.assessorId ? "심사자 선택" : "심사사를 먼저 선택해주세요"} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1853,9 +1853,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자 연락처</label>
-                        <input type="text" placeholder="심사자를 선택하면 자동으로 입력됩니다" value={formData.assessorContact} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-contact" />
+                      <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>심사자 연락처</label>
+                        <input type="text" placeholder="심사자를 선택하면 자동으로 입력됩니다" value={formData.assessorContact} readOnly className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-assessor-contact" />
                       </div>
                     </div>
 
@@ -1864,32 +1864,31 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       <h3 className="text-lg md:text-xl" style={{fontFamily: 'Pretendard',fontWeight: 600,lineHeight: '128%',letterSpacing: '-0.02em',color: 'rgba(12, 12, 12, 0.8)'}}>조사자 정보</h3>
                     </div>
 
-                    {/* 조사자 정보 4-column */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
-                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>손사명</label>
+                    {/* 조사자 정보 - flex wrap for responsive */}
+                    <div className="flex flex-wrap gap-4 md:gap-5 px-4 md:px-5 mb-6 md:mb-8">
+                      <div className="flex flex-col gap-2 flex-1 min-w-[80px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>손사명</label>
                         <div
                           onClick={() => !readOnly && setIsInvestigatorSearchOpen(true)}
-                          className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
+                          className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base flex items-center cursor-pointer"
                           style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em', color: formData.investigatorTeam ? '#0C0C0C' : '#A0A0A0', opacity: readOnly ? 0.6 : 1, cursor: readOnly ? 'not-allowed' : 'pointer'}}
                           data-testid="button-investigator-search"
                         >
                           {formData.investigatorTeam || "선택해주세요"}
                         </div>
                       </div>
-                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
-                        <input type="text" placeholder="
-                          손사명을 선택하면 자동으로 입력됩니다" value={formData.investigatorDepartment} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-department" />
+                      <div className="flex flex-col gap-2 flex-1 min-w-[100px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>소속부서</label>
+                        <input type="text" placeholder="손사명을 선택하면 자동으로 입력됩니다" value={formData.investigatorDepartment} readOnly className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-department" />
                       </div>
-                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자</label>
+                      <div className="flex flex-col gap-2 flex-1 min-w-[80px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자</label>
                         <Select 
                           value={formData.investigatorTeamName} 
                           onValueChange={(value) => handleInputChange("investigatorTeamName", value)}
                           disabled={readOnly || !formData.investigatorTeam}
                         >
-                          <SelectTrigger className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-investigator">
+                          <SelectTrigger className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: '#FDFDFD',border: '2px solid rgba(12, 12, 12, 0.08)',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em'}} data-testid="select-investigator">
                             <SelectValue placeholder={formData.investigatorTeam ? "조사자 선택" : "손사명을 먼저 선택해주세요"} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1907,9 +1906,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex flex-col gap-2" style={{ flex: 1 }}>
-                        <label className="text-sm" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자 연락처</label>
-                        <input type="text" placeholder="조사자를 선택하면 자동으로 입력됩니다" value={formData.investigatorContact} readOnly className="h-14 md:h-[68px] px-4 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-contact" />
+                      <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
+                        <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>조사자 연락처</label>
+                        <input type="text" placeholder="조사자를 선택하면 자동으로 입력됩니다" value={formData.investigatorContact} readOnly className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-investigator-contact" />
                       </div>
                     </div>
                   </div>
