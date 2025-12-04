@@ -940,9 +940,7 @@ export function LaborCostSection({
                       style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                       data-testid={`select-detailWork-${index}`}
                     >
-                      <SelectValue placeholder="선택">
-                        {row.detailWork ? (row.detailWork === '노무비' ? '노임단가' : row.detailWork) : "선택"}
-                      </SelectValue>
+                      <SelectValue placeholder="선택" />
                     </SelectTrigger>
                     <SelectContent>
                       {getDetailWorkOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
@@ -971,9 +969,7 @@ export function LaborCostSection({
                       style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                       data-testid={`select-detailItem-${index}`}
                     >
-                      <SelectValue placeholder="선택">
-                        {row.detailItem || "선택"}
-                      </SelectValue>
+                      <SelectValue placeholder="선택" />
                     </SelectTrigger>
                     <SelectContent>
                       {getDetailItemOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
