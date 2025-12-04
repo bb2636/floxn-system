@@ -2178,7 +2178,6 @@ export default function FieldReport() {
                       >
                         <thead>
                           <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
-                            <th style={{ width: "40px", padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                             <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>장소</th>
                             <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>위치</th>
                             <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>공사내용</th>
@@ -2187,7 +2186,6 @@ export default function FieldReport() {
                             <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>비고</th>
                           </tr>
                           <tr style={{ background: "rgba(12, 12, 12, 0.02)" }}>
-                            <th style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                             <th colSpan={3} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                             <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>가로(mm)</th>
                             <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>세로(mm)</th>
@@ -2201,14 +2199,6 @@ export default function FieldReport() {
                         <tbody>
                           {estimate.rows.map((row, index) => (
                             <tr key={row.id} style={{ borderBottom: index === estimate.rows.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
-                              <td style={{ padding: "8px", textAlign: "center" }}>
-                                <input
-                                  type="checkbox"
-                                  checked={areaChecked[index] ?? true}
-                                  onChange={(e) => setAreaChecked(prev => ({ ...prev, [index]: e.target.checked }))}
-                                  style={{ cursor: "pointer", accentColor: "#008FED", width: "16px", height: "16px" }}
-                                />
-                              </td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.location || '-'}</td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
@@ -2259,7 +2249,6 @@ export default function FieldReport() {
                         >
                           <thead>
                             <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
-                              <th style={{ width: "40px", padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>공종</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>공사명</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>세부공사</th>
@@ -2276,14 +2265,6 @@ export default function FieldReport() {
                           <tbody>
                             {parsedLaborCosts.map((row, index) => (
                                 <tr key={row.id || index} style={{ borderBottom: index === parsedLaborCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
-                                  <td style={{ padding: "8px", textAlign: "center" }}>
-                                    <input
-                                      type="checkbox"
-                                      checked={laborChecked[index] ?? true}
-                                      onChange={(e) => setLaborChecked(prev => ({ ...prev, [index]: e.target.checked }))}
-                                      style={{ cursor: "pointer", accentColor: "#008FED", width: "16px", height: "16px" }}
-                                    />
-                                  </td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.detailWork || '-'}</td>
@@ -2344,7 +2325,6 @@ export default function FieldReport() {
                         >
                           <thead>
                             <tr style={{ background: "rgba(12, 12, 12, 0.03)" }}>
-                              <th style={{ width: "40px", padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "80px" }}>공종</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "120px" }}>자재명</th>
                               <th style={{ padding: "12px 8px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", minWidth: "100px" }}>규격</th>
@@ -2358,14 +2338,6 @@ export default function FieldReport() {
                           <tbody>
                             {parsedMaterialCosts.map((row, index) => (
                               <tr key={row.id || index} style={{ borderBottom: index === parsedMaterialCosts.length - 1 ? "none" : "1px solid rgba(12, 12, 12, 0.06)" }}>
-                                <td style={{ padding: "8px", textAlign: "center" }}>
-                                  <input
-                                    type="checkbox"
-                                    checked={materialChecked[index] ?? true}
-                                    onChange={(e) => setMaterialChecked(prev => ({ ...prev, [index]: e.target.checked }))}
-                                    style={{ cursor: "pointer", accentColor: "#008FED", width: "16px", height: "16px" }}
-                                  />
-                                </td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.공종 || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.자재 || '-'}</td>
                                 <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.규격 || '-'}</td>
