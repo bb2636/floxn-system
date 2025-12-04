@@ -108,7 +108,8 @@ export function MaterialCostSection({
 
         // 공종 변경 시 자재/규격 리셋 (공종 정보는 노무비에서만 사용)
         if (field === '공종') {
-          updated.자재 = '';
+          // 도장공사일 경우 자재를 '페인트'로 자동 설정
+          updated.자재 = value === '도장공사' ? '페인트' : '';
           updated.규격 = '';
           updated.단위 = '';
           updated.기준단가 = 0;
