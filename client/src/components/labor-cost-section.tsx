@@ -586,8 +586,9 @@ export function LaborCostSection({
             }
           }
           
-          // 반자틀설치 또는 석고보드설치 선택 시 피해철거공사 행 자동 추가
-          if (updated.category === '목공사' && (value === '반자틀설치' || value === '석고보드설치')) {
+          // 반자틀설치, 석고보드설치, 합판설치 선택 시 피해철거공사 행 자동 추가
+          if (updated.category === '목공사' && (value === '반자틀설치' || value === '석고보드설치' || value === '합판설치')) {
+            // 반자틀설치 → 반자틀해체, 석고보드설치/합판설치 → 석고보드해체
             const demolitionDetailItem = value === '반자틀설치' ? '반자틀해체' : '석고보드해체';
             const demolitionSourceId = `demolition-${rowId}`;
             
