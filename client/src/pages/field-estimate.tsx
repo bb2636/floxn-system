@@ -118,6 +118,8 @@ export default function FieldEstimate() {
       자재 = '페인트';
     } else if (공종 === '목공사' && 공사명 === '반자틀') {
       자재 = '각재';
+    } else if (공종 === '목공사' && 공사명 === '걸레받이') {
+      자재 = '걸레받이';
     }
     
     return {
@@ -533,9 +535,9 @@ export default function FieldEstimate() {
       return;
     }
     
-    // 자재비 연동 제외 대상 확인 함수 (목공사-반자틀은 자재비 연동 제외)
+    // 자재비 연동 제외 대상 확인 함수 (목공사-반자틀, 피해철거공사는 자재비 연동 제외)
     const shouldExcludeFromMaterialSync = (category: string, workName: string): boolean => {
-      return category === '목공사' && workName === '반자틀';
+      return (category === '목공사' && workName === '반자틀') || category === '피해철거공사';
     };
 
     setMaterialRows(prev => {
