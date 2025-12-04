@@ -664,61 +664,85 @@ export default function FieldEstimate() {
     }
 
     // 이미 연동된 행의 데이터 업데이트 (변경 시 동기화)
-    setLaborCostRows(prev => prev.map(laborRow => {
-      if (!laborRow.sourceAreaRowId) return laborRow;
-      
-      // 피해철거공사 행인지 확인 (demolition- 접두사)
-      const isDemolitionRow = laborRow.sourceAreaRowId.startsWith('demolition-');
-      const originalAreaRowId = isDemolitionRow 
-        ? laborRow.sourceAreaRowId.replace('demolition-', '') 
-        : laborRow.sourceAreaRowId;
-      
-      const linkedAreaRow = rows.find(r => r.id === originalAreaRowId);
-      if (!linkedAreaRow) return laborRow;
-      
-      // 복구면적 값 (숫자로 변환)
-      const damageAreaValue = Number(linkedAreaRow.repairArea) || 0;
-      
-      if (isDemolitionRow) {
-        // 피해철거공사 행 업데이트 (장소, 위치, 피해면적만 동기화)
-        const needsUpdate = 
-          laborRow.place !== linkedAreaRow.category ||
-          laborRow.position !== linkedAreaRow.location ||
-          laborRow.damageArea !== damageAreaValue;
+    setLaborCostRows(prev => {
+      // 1. 먼저 더 이상 필요하지 않은 피해철거공사 행 제거
+      const filteredRows = prev.filter(laborRow => {
+        if (!laborRow.sourceAreaRowId) return true;
         
-        if (needsUpdate) {
-          return {
-            ...laborRow,
-            place: linkedAreaRow.category,
-            position: linkedAreaRow.location,
-            damageArea: damageAreaValue,
-          };
+        // 피해철거공사 행인지 확인 (demolition- 접두사)
+        const isDemolitionRow = laborRow.sourceAreaRowId.startsWith('demolition-');
+        if (!isDemolitionRow) return true;
+        
+        // 원본 복구면적 산출표 행 찾기
+        const originalAreaRowId = laborRow.sourceAreaRowId.replace('demolition-', '');
+        const linkedAreaRow = rows.find(r => r.id === originalAreaRowId);
+        
+        // 원본 행이 없으면 피해철거공사 행 유지
+        if (!linkedAreaRow) return true;
+        
+        // 원본 행이 더 이상 피해철거공사가 필요 없는 공사명이면 제거
+        // 반자틀, 석고보드만 피해철거공사가 필요
+        const needsDemolition = needsDemolitionRow(linkedAreaRow.workType, linkedAreaRow.workName);
+        return needsDemolition; // false면 해당 피해철거공사 행 제거
+      });
+      
+      // 2. 나머지 행 업데이트
+      return filteredRows.map(laborRow => {
+        if (!laborRow.sourceAreaRowId) return laborRow;
+        
+        // 피해철거공사 행인지 확인 (demolition- 접두사)
+        const isDemolitionRow = laborRow.sourceAreaRowId.startsWith('demolition-');
+        const originalAreaRowId = isDemolitionRow 
+          ? laborRow.sourceAreaRowId.replace('demolition-', '') 
+          : laborRow.sourceAreaRowId;
+        
+        const linkedAreaRow = rows.find(r => r.id === originalAreaRowId);
+        if (!linkedAreaRow) return laborRow;
+        
+        // 복구면적 값 (숫자로 변환)
+        const damageAreaValue = Number(linkedAreaRow.repairArea) || 0;
+        
+        if (isDemolitionRow) {
+          // 피해철거공사 행 업데이트 (장소, 위치, 피해면적만 동기화)
+          const needsUpdate = 
+            laborRow.place !== linkedAreaRow.category ||
+            laborRow.position !== linkedAreaRow.location ||
+            laborRow.damageArea !== damageAreaValue;
+          
+          if (needsUpdate) {
+            return {
+              ...laborRow,
+              place: linkedAreaRow.category,
+              position: linkedAreaRow.location,
+              damageArea: damageAreaValue,
+            };
+          }
+        } else {
+          // 일반 행 업데이트
+          const laborCategory = getLaborCategory(linkedAreaRow.workType, linkedAreaRow.workName);
+          
+          const needsUpdate = 
+            laborRow.place !== linkedAreaRow.category ||
+            laborRow.position !== linkedAreaRow.location ||
+            laborRow.category !== laborCategory ||
+            laborRow.workName !== linkedAreaRow.workName ||
+            laborRow.damageArea !== damageAreaValue;
+          
+          if (needsUpdate) {
+            return {
+              ...laborRow,
+              place: linkedAreaRow.category,
+              position: linkedAreaRow.location,
+              category: laborCategory,
+              workName: linkedAreaRow.workName,
+              damageArea: damageAreaValue,
+            };
+          }
         }
-      } else {
-        // 일반 행 업데이트
-        const laborCategory = getLaborCategory(linkedAreaRow.workType, linkedAreaRow.workName);
         
-        const needsUpdate = 
-          laborRow.place !== linkedAreaRow.category ||
-          laborRow.position !== linkedAreaRow.location ||
-          laborRow.category !== laborCategory ||
-          laborRow.workName !== linkedAreaRow.workName ||
-          laborRow.damageArea !== damageAreaValue;
-        
-        if (needsUpdate) {
-          return {
-            ...laborRow,
-            place: linkedAreaRow.category,
-            position: linkedAreaRow.location,
-            category: laborCategory,
-            workName: linkedAreaRow.workName,
-            damageArea: damageAreaValue,
-          };
-        }
-      }
-      
-      return laborRow;
-    }));
+        return laborRow;
+      });
+    });
   }, [rows, isLossPreventionCase]); // rows(복구면적 산출표) 및 케이스 타입 변경 시 실행
 
   // 최신 견적 가져오기
