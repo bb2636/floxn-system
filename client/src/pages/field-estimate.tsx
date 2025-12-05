@@ -1039,6 +1039,11 @@ export default function FieldEstimate() {
     setSelectedRows(newSelected);
   };
 
+  // 걸레받이/몰딩 여부 체크 함수
+  const isLinearWorkName = (workName: string): boolean => {
+    return workName === '걸레받이' || workName === '몰딩';
+  };
+
   // 행 업데이트
   const updateRow = (rowId: string, field: keyof AreaCalculationRow, value: string) => {
     // 읽기 전용 모드에서는 업데이트 불가
@@ -1051,25 +1056,52 @@ export default function FieldEstimate() {
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
         
+        // 공사명이 걸레받이/몰딩으로 변경되면 세로를 1로 고정
+        if (field === 'workName' && isLinearWorkName(value)) {
+          updated.damageHeight = '1';
+          updated.repairHeight = '1';
+          // 면적 재계산 (가로 값 그대로 표시)
+          const damageWidth = parseFloat(updated.damageWidth) || 0;
+          const repairWidth = parseFloat(updated.repairWidth) || 0;
+          updated.damageArea = damageWidth > 0 ? damageWidth.toString() : '0';
+          updated.repairArea = repairWidth > 0 ? repairWidth.toString() : '0';
+        }
+        
         // 가로/세로 변경 시 면적 자동 계산
         if (field === 'damageWidth' || field === 'damageHeight') {
+          const currentWorkName = updated.workName || row.workName;
           const width = parseFloat(field === 'damageWidth' ? value : row.damageWidth) || 0;
-          const height = parseFloat(field === 'damageHeight' ? value : row.damageHeight) || 0;
-          // mm -> m 변환하여 m² 계산 (1000mm = 1m)
-          const widthM = width / 1000;
-          const heightM = height / 1000;
-          const area = (widthM * heightM).toFixed(2);
-          updated.damageArea = area;
+          
+          if (isLinearWorkName(currentWorkName)) {
+            // 걸레받이/몰딩: 세로 1 고정, 면적 = 가로 값 그대로
+            updated.damageHeight = '1';
+            updated.damageArea = width > 0 ? width.toString() : '0';
+          } else {
+            // 일반: mm -> m 변환하여 m² 계산 (1000mm = 1m)
+            const height = parseFloat(field === 'damageHeight' ? value : row.damageHeight) || 0;
+            const widthM = width / 1000;
+            const heightM = height / 1000;
+            const area = (widthM * heightM).toFixed(2);
+            updated.damageArea = area;
+          }
         }
         
         if (field === 'repairWidth' || field === 'repairHeight') {
+          const currentWorkName = updated.workName || row.workName;
           const width = parseFloat(field === 'repairWidth' ? value : row.repairWidth) || 0;
-          const height = parseFloat(field === 'repairHeight' ? value : row.repairHeight) || 0;
-          // mm -> m 변환하여 m² 계산 (1000mm = 1m)
-          const widthM = width / 1000;
-          const heightM = height / 1000;
-          const area = (widthM * heightM).toFixed(2);
-          updated.repairArea = area;
+          
+          if (isLinearWorkName(currentWorkName)) {
+            // 걸레받이/몰딩: 세로 1 고정, 면적 = 가로 값 그대로
+            updated.repairHeight = '1';
+            updated.repairArea = width > 0 ? width.toString() : '0';
+          } else {
+            // 일반: mm -> m 변환하여 m² 계산 (1000mm = 1m)
+            const height = parseFloat(field === 'repairHeight' ? value : row.repairHeight) || 0;
+            const widthM = width / 1000;
+            const heightM = height / 1000;
+            const area = (widthM * heightM).toFixed(2);
+            updated.repairArea = area;
+          }
           
           // 노무비 피해면적 연동은 팝업(피해면적산출표)을 통해서만 수행됨
           // 인덱스 기반 자동 연동 제거 - 팝업에서 공사명 선택 후 불러오기로만 연동
@@ -2058,6 +2090,7 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.damageHeight}
                           onChange={(e) => updateRow(row.id, 'damageHeight', e.target.value)}
+                          readOnly={isLinearWorkName(row.workName)}
                           className="input-focus-blue"
                           style={{
                             width: "100%",
@@ -2067,6 +2100,7 @@ export default function FieldEstimate() {
                             border: "1px solid rgba(12, 12, 12, 0.1)",
                             borderRadius: "8px",
                             textAlign: "center",
+                            background: isLinearWorkName(row.workName) ? "rgba(12, 12, 12, 0.02)" : undefined,
                           }}
                           data-testid={`input-damage-height-${index}`}
                         />
@@ -2112,6 +2146,7 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.repairHeight}
                           onChange={(e) => updateRow(row.id, 'repairHeight', e.target.value)}
+                          readOnly={isLinearWorkName(row.workName)}
                           className="input-focus-blue"
                           style={{
                             width: "100%",
@@ -2121,6 +2156,7 @@ export default function FieldEstimate() {
                             border: "1px solid rgba(12, 12, 12, 0.1)",
                             borderRadius: "8px",
                             textAlign: "center",
+                            background: isLinearWorkName(row.workName) ? "rgba(12, 12, 12, 0.02)" : undefined,
                           }}
                           data-testid={`input-repair-height-${index}`}
                         />
