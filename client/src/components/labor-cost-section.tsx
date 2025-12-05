@@ -1,4 +1,4 @@
-import { useState, useMemo, Fragment } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -17,17 +17,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-// 그룹화된 노무비 데이터 타입
-interface GroupedLaborData {
-  groupKey: string; // position|category|workName
-  position: string;
-  category: string;
-  workName: string;
-  totalDamageArea: number; // 피해면적 합계
-  totalAmount: number; // 금액 합계
-  rows: LaborCostRow[]; // 그룹에 속한 원본 행들
-}
 
 // 복구면적 산출표 행 인터페이스
 export interface AreaCalculationRowForLabor {
@@ -274,74 +263,6 @@ export function LaborCostSection({
     
     return Object.values(groups);
   }, [matchingAreaRows]);
-  // 노무비 행 그룹화: 위치 + 공종 + 공사명이 같은 행들을 그룹화하고 피해면적 합계 계산
-  const groupedLaborRows = useMemo((): GroupedLaborData[] => {
-    const groupMap: Record<string, GroupedLaborData> = {};
-    
-    rows.forEach(row => {
-      // 위치, 공종, 공사명이 모두 있는 경우에만 그룹화
-      const position = row.position || '';
-      const category = row.category || '';
-      const workName = row.workName || '';
-      
-      // 그룹 키 생성 (비어있는 값도 포함하여 구분)
-      const groupKey = `${position}|${category}|${workName}`;
-      
-      if (!groupMap[groupKey]) {
-        groupMap[groupKey] = {
-          groupKey,
-          position,
-          category,
-          workName,
-          totalDamageArea: 0,
-          totalAmount: 0,
-          rows: [],
-        };
-      }
-      
-      groupMap[groupKey].totalDamageArea += Number(row.damageArea) || 0;
-      groupMap[groupKey].totalAmount += Number(row.amount) || 0;
-      groupMap[groupKey].rows.push(row);
-    });
-    
-    return Object.values(groupMap);
-  }, [rows]);
-
-  // 그룹화된 행 표시를 위한 데이터 생성 (원본 행 순서 유지하면서 그룹 첫 행에 요약 정보 추가)
-  const rowsWithGroupInfo = useMemo(() => {
-    // 각 행에 그룹 정보 추가
-    const result: Array<{
-      row: LaborCostRow;
-      isFirstInGroup: boolean;
-      groupInfo: GroupedLaborData | null;
-      groupRowCount: number;
-    }> = [];
-    
-    const processedGroupKeys = new Set<string>();
-    
-    rows.forEach(row => {
-      const position = row.position || '';
-      const category = row.category || '';
-      const workName = row.workName || '';
-      const groupKey = `${position}|${category}|${workName}`;
-      
-      const groupInfo = groupedLaborRows.find(g => g.groupKey === groupKey);
-      const isFirstInGroup = !processedGroupKeys.has(groupKey);
-      
-      if (isFirstInGroup) {
-        processedGroupKeys.add(groupKey);
-      }
-      
-      result.push({
-        row,
-        isFirstInGroup,
-        groupInfo: isFirstInGroup ? groupInfo || null : null,
-        groupRowCount: groupInfo?.rows.length || 1,
-      });
-    });
-    
-    return result;
-  }, [rows, groupedLaborRows]);
 
   // 캐스케이딩 옵션 생성 - filteredWorkTypes가 제공되면 우선 사용
   const categoryOptions = useMemo(() => {
@@ -840,10 +761,8 @@ export function LaborCostSection({
           </tr>
         </thead>
         <tbody>
-          {rowsWithGroupInfo.map(({ row, isFirstInGroup, groupInfo, groupRowCount }, index) => (
-            <Fragment key={`row-fragment-${row.id}`}>
-              {/* 개별 행 */}
-              <tr key={row.id} style={{ height: "56px", borderBottom: "1px solid #E5E7EB" }}>
+          {rows.map((row, index) => (
+            <tr key={row.id} style={{ height: "56px", borderBottom: "1px solid #E5E7EB" }}>
               {/* 체크박스 */}
               <td style={{ padding: "0 12px", textAlign: "center" }}>
                 <Checkbox 
@@ -853,251 +772,185 @@ export function LaborCostSection({
                 />
               </td>
               
-              {/* 장소 - Readonly (복구면적 산출표에서 가져옴) - 항상 표시 */}
+              {/* 장소 */}
               <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "left" }}>
                 {row.place || '-'}
               </td>
               
-              {/* 위치 - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "left", verticalAlign: "middle" }}
-                >
-                  {row.position || '-'}
-                </td>
-              )}
+              {/* 위치 */}
+              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "left" }}>
+                {row.position || '-'}
+              </td>
               
-              {/* 공종 - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 8px", verticalAlign: "middle" }}
+              {/* 공종 */}
+              <td style={{ padding: "0 8px" }}>
+                <Select 
+                  value={row.category || undefined} 
+                  onValueChange={(value) => updateRow(row.id, 'category', value)}
                 >
-                  <Select 
-                    value={row.category || undefined} 
-                    onValueChange={(value) => updateRow(row.id, 'category', value)}
-                  >
-                    <SelectTrigger 
-                      className="h-9 border-0" 
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      data-testid={`select-category-${index}`}
-                    >
-                      <SelectValue placeholder="선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categoryOptions.filter(opt => opt && opt.trim() !== '').map(opt => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-              )}
-              
-              {/* 공사명 - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 8px", verticalAlign: "middle" }}
-                >
-                  <Select 
-                    value={row.workName || undefined} 
-                    onValueChange={(value) => handleWorkNameChange(row.id, value)}
-                    onOpenChange={(open) => handleWorkNameSelectClose(row.id, open)}
-                    disabled={!row.category}
-                  >
-                    <SelectTrigger 
-                      className="h-9 border-0" 
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      data-testid={`select-workName-${index}`}
-                    >
-                      <SelectValue placeholder="선택">
-                        {row.workName || "선택"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getWorkNameOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-              )}
-              
-              {/* 세부공사 - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 8px", verticalAlign: "middle" }}
-                >
-                  <Select 
-                    value={row.detailWork || undefined} 
-                    onValueChange={(value) => updateRow(row.id, 'detailWork', value)}
-                    disabled={!row.workName}
-                  >
-                    <SelectTrigger 
-                      className="h-9 border-0" 
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      data-testid={`select-detailWork-${index}`}
-                    >
-                      <SelectValue placeholder="선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getDetailWorkOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
-                        <SelectItem key={opt} value={opt}>
-                          {opt === '노무비' ? '노임단가' : opt}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-              )}
-              
-              {/* 세부항목 - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 8px", verticalAlign: "middle" }}
-                >
-                  <Select 
-                    value={row.detailItem || undefined} 
-                    onValueChange={(value) => updateRow(row.id, 'detailItem', value)}
-                    disabled={!row.detailWork}
-                  >
-                    <SelectTrigger 
-                      className="h-9 border-0" 
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      data-testid={`select-detailItem-${index}`}
-                    >
-                      <SelectValue placeholder="선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getDetailItemOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-              )}
-              
-              {/* 단위 - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.6)", textAlign: "left", verticalAlign: "middle" }}
-                >
-                  {row.unit || '-'}
-                </td>
-              )}
-              
-              {/* 기준가(원/단위) - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right", verticalAlign: "middle" }}
-                >
-                  {(row.standardPrice ?? 0).toLocaleString()}
-                </td>
-              )}
-              
-              {/* 수량 - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 8px", background: "#EFF6FF", verticalAlign: "middle" }}
-                >
-                  <Input
-                    type="number"
-                    value={row.quantity}
-                    onChange={(e) => updateRow(row.id, 'quantity', Number(e.target.value) || 0)}
-                    className="h-9 border-0 bg-transparent text-right"
+                  <SelectTrigger 
+                    className="h-9 border-0" 
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    data-testid={`input-quantity-${index}`}
-                  />
-                </td>
-              )}
+                    data-testid={`select-category-${index}`}
+                  >
+                    <SelectValue placeholder="선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryOptions.filter(opt => opt && opt.trim() !== '').map(opt => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </td>
               
-              {/* 기준가(㎡/길이) - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right", verticalAlign: "middle" }}
+              {/* 공사명 */}
+              <td style={{ padding: "0 8px" }}>
+                <Select 
+                  value={row.workName || undefined} 
+                  onValueChange={(value) => handleWorkNameChange(row.id, value)}
+                  onOpenChange={(open) => handleWorkNameSelectClose(row.id, open)}
+                  disabled={!row.category}
                 >
-                  {(row.pricePerSqm ?? 0).toLocaleString()}
-                </td>
-              )}
-              
-              {/* 피해면적 - 그룹 첫 행에서 rowSpan으로 병합 (그룹 합계 표시) */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 8px", background: "#EFF6FF", verticalAlign: "middle" }}
-                >
-                  <Input
-                    type="number"
-                    step="0.1"
-                    value={groupRowCount > 1 && groupInfo ? Number(groupInfo.totalDamageArea.toFixed(1)) : Number(Number(row.damageArea || 0).toFixed(1))}
-                    onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
-                    className="h-9 border-0 bg-transparent text-right"
+                  <SelectTrigger 
+                    className="h-9 border-0" 
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    data-testid={`input-damageArea-${index}`}
+                    data-testid={`select-workName-${index}`}
+                  >
+                    <SelectValue placeholder="선택">
+                      {row.workName || "선택"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getWorkNameOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </td>
+              
+              {/* 세부공사 */}
+              <td style={{ padding: "0 8px" }}>
+                <Select 
+                  value={row.detailWork || undefined} 
+                  onValueChange={(value) => updateRow(row.id, 'detailWork', value)}
+                  disabled={!row.workName}
+                >
+                  <SelectTrigger 
+                    className="h-9 border-0" 
+                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                    data-testid={`select-detailWork-${index}`}
+                  >
+                    <SelectValue placeholder="선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getDetailWorkOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt === '노무비' ? '노임단가' : opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </td>
+              
+              {/* 세부항목 */}
+              <td style={{ padding: "0 8px" }}>
+                <Select 
+                  value={row.detailItem || undefined} 
+                  onValueChange={(value) => updateRow(row.id, 'detailItem', value)}
+                  disabled={!row.detailWork}
+                >
+                  <SelectTrigger 
+                    className="h-9 border-0" 
+                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                    data-testid={`select-detailItem-${index}`}
+                  >
+                    <SelectValue placeholder="선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getDetailItemOptions(row.category, row.workName, row.detailWork).filter(opt => opt && opt.trim() !== '').map(opt => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </td>
+              
+              {/* 단위 */}
+              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.6)", textAlign: "left" }}>
+                {row.unit || '-'}
+              </td>
+              
+              {/* 기준가(원/단위) */}
+              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
+                {(row.standardPrice ?? 0).toLocaleString()}
+              </td>
+              
+              {/* 수량 */}
+              <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                <Input
+                  type="number"
+                  value={row.quantity}
+                  onChange={(e) => updateRow(row.id, 'quantity', Number(e.target.value) || 0)}
+                  className="h-9 border-0 bg-transparent text-right"
+                  style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                  data-testid={`input-quantity-${index}`}
+                />
+              </td>
+              
+              {/* 기준가(㎡/길이) */}
+              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
+                {(row.pricePerSqm ?? 0).toLocaleString()}
+              </td>
+              
+              {/* 피해면적 */}
+              <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={Number(Number(row.damageArea || 0).toFixed(1))}
+                  onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
+                  className="h-9 border-0 bg-transparent text-right"
+                  style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                  data-testid={`input-damageArea-${index}`}
+                />
+              </td>
+              
+              {/* 금액(원) */}
+              <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "right", background: "rgba(12, 12, 12, 0.02)" }}>
+                {(row.amount ?? 0).toLocaleString()}
+              </td>
+              
+              {/* 경비 여부 */}
+              <td style={{ padding: "0 12px", textAlign: "center" }}>
+                <Checkbox
+                  checked={!row.includeInEstimate}
+                  onCheckedChange={(checked) => updateRow(row.id, 'includeInEstimate', !checked)}
+                  data-testid={`checkbox-includeInEstimate-${index}`}
+                />
+              </td>
+              
+              {/* 요청 */}
+              <td style={{ padding: "0 8px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  <Input
+                    value={row.request}
+                    onChange={(e) => updateRow(row.id, 'request', e.target.value)}
+                    className="h-9 border-0 bg-transparent flex-1"
+                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                    placeholder="-"
+                    data-testid={`input-request-${index}`}
                   />
-                </td>
-              )}
-              
-              {/* 금액(원) - 그룹 첫 행에서 rowSpan으로 병합 (그룹 합계 표시) */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "right", background: "rgba(12, 12, 12, 0.02)", verticalAlign: "middle" }}
-                >
-                  {groupRowCount > 1 && groupInfo ? groupInfo.totalAmount.toLocaleString() : (row.amount ?? 0).toLocaleString()}
-                </td>
-              )}
-              
-              {/* 경비 여부 - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 12px", textAlign: "center", verticalAlign: "middle" }}
-                >
-                  <Checkbox
-                    checked={!row.includeInEstimate}
-                    onCheckedChange={(checked) => updateRow(row.id, 'includeInEstimate', !checked)}
-                    data-testid={`checkbox-includeInEstimate-${index}`}
-                  />
-                </td>
-              )}
-              
-              {/* 요청 - 그룹 첫 행에서 rowSpan으로 병합 */}
-              {(isFirstInGroup || groupRowCount <= 1) && (
-                <td 
-                  rowSpan={groupRowCount > 1 ? groupRowCount : undefined}
-                  style={{ padding: "0 8px", verticalAlign: "middle" }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <Input
-                      value={row.request}
-                      onChange={(e) => updateRow(row.id, 'request', e.target.value)}
-                      className="h-9 border-0 bg-transparent flex-1"
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      placeholder="-"
-                      data-testid={`input-request-${index}`}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => duplicateRow(row)}
-                      className="h-8 w-8 flex-shrink-0"
-                      data-testid={`button-duplicate-${index}`}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </td>
-              )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => duplicateRow(row)}
+                    className="h-8 w-8 flex-shrink-0"
+                    data-testid={`button-duplicate-${index}`}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </td>
             </tr>
-            </Fragment>
           ))}
         </tbody>
       </table>
