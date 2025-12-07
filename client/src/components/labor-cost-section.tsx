@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Copy, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { Copy, Search, ChevronDown, ChevronRight, GripVertical } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -108,6 +108,56 @@ export function LaborCostSection({
   const [areaPopupRowId, setAreaPopupRowId] = useState<string | null>(null);
   const [areaPopupWorkName, setAreaPopupWorkName] = useState<string>("");
   const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null); // 팝업에서 선택된 그룹 key
+  
+  // 드래그 앤 드롭 상태
+  const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
+  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
+
+  // 드래그 앤 드롭 핸들러
+  const handleDragStart = (e: React.DragEvent, rowId: string) => {
+    if (isReadOnly) return;
+    setDraggedRowId(rowId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', rowId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, rowId: string) => {
+    e.preventDefault();
+    if (draggedRowId && draggedRowId !== rowId) {
+      setDragOverRowId(rowId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverRowId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetRowId: string) => {
+    e.preventDefault();
+    if (!draggedRowId || draggedRowId === targetRowId) {
+      setDraggedRowId(null);
+      setDragOverRowId(null);
+      return;
+    }
+
+    const newRows = [...rows];
+    const draggedIndex = newRows.findIndex(r => r.id === draggedRowId);
+    const targetIndex = newRows.findIndex(r => r.id === targetRowId);
+    
+    if (draggedIndex !== -1 && targetIndex !== -1) {
+      const [draggedRow] = newRows.splice(draggedIndex, 1);
+      newRows.splice(targetIndex, 0, draggedRow);
+      onRowsChange(newRows);
+    }
+
+    setDraggedRowId(null);
+    setDragOverRowId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedRowId(null);
+    setDragOverRowId(null);
+  };
 
   // 공사명 선택 시 팝업 열기
   const handleWorkNameChange = (rowId: string, workName: string) => {
@@ -737,6 +787,7 @@ export function LaborCostSection({
               height: "48px",
             }}
           >
+            <th style={{ width: "40px", padding: "0 4px", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}></th>
             <th style={{ width: "50px", padding: "0 12px", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>
               <Checkbox 
                 checked={selectedRows.size === rows.length && rows.length > 0}
@@ -762,7 +813,38 @@ export function LaborCostSection({
         </thead>
         <tbody>
           {rows.map((row, index) => (
-            <tr key={row.id} style={{ height: "56px", borderBottom: "1px solid #E5E7EB" }}>
+            <tr 
+              key={row.id} 
+              draggable={!isReadOnly}
+              onDragStart={(e) => handleDragStart(e, row.id)}
+              onDragOver={(e) => handleDragOver(e, row.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, row.id)}
+              onDragEnd={handleDragEnd}
+              style={{ 
+                height: "56px", 
+                borderBottom: "1px solid #E5E7EB",
+                opacity: draggedRowId === row.id ? 0.5 : 1,
+                background: dragOverRowId === row.id ? "rgba(59, 130, 246, 0.1)" : undefined,
+                transition: "background 0.2s",
+              }}
+            >
+              {/* 드래그 핸들 */}
+              <td 
+                style={{ 
+                  padding: "0 4px", 
+                  textAlign: "center",
+                  cursor: isReadOnly ? "default" : "grab",
+                }}
+              >
+                <GripVertical 
+                  className="w-4 h-4" 
+                  style={{ 
+                    color: isReadOnly ? "rgba(12, 12, 12, 0.2)" : "rgba(12, 12, 12, 0.4)",
+                    margin: "0 auto",
+                  }} 
+                />
+              </td>
               {/* 체크박스 */}
               <td style={{ padding: "0 12px", textAlign: "center" }}>
                 <Checkbox 

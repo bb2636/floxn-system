@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Case, MasterData, LaborCost, User } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Check, Search, Copy } from "lucide-react";
+import { Plus, Trash2, Check, Search, Copy, GripVertical } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -85,6 +85,10 @@ export default function FieldEstimate() {
   const [selectedCaseId, setSelectedCaseId] = useState(() => 
     localStorage.getItem('selectedFieldSurveyCaseId') || ''
   );
+  
+  // 드래그 앤 드롭 상태
+  const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
+  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
 
   // localStorage 변경 감지 (현장입력에서 케이스 선택 시)
   useEffect(() => {
@@ -1028,6 +1032,54 @@ export default function FieldEstimate() {
     setSelectedRows(new Set());
   };
 
+  // 드래그 앤 드롭 핸들러 (복구면적 산출표)
+  const handleDragStart = (e: React.DragEvent, rowId: string) => {
+    if (isReadOnly) return;
+    setDraggedRowId(rowId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', rowId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, rowId: string) => {
+    e.preventDefault();
+    if (draggedRowId && draggedRowId !== rowId) {
+      setDragOverRowId(rowId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverRowId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetRowId: string) => {
+    e.preventDefault();
+    if (!draggedRowId || draggedRowId === targetRowId) {
+      setDraggedRowId(null);
+      setDragOverRowId(null);
+      return;
+    }
+
+    setRows(prev => {
+      const newRows = [...prev];
+      const draggedIndex = newRows.findIndex(r => r.id === draggedRowId);
+      const targetIndex = newRows.findIndex(r => r.id === targetRowId);
+      
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        const [draggedRow] = newRows.splice(draggedIndex, 1);
+        newRows.splice(targetIndex, 0, draggedRow);
+      }
+      return newRows;
+    });
+
+    setDraggedRowId(null);
+    setDragOverRowId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedRowId(null);
+    setDragOverRowId(null);
+  };
+
   // 체크박스 토글
   const toggleRowSelection = (rowId: string) => {
     const newSelected = new Set(selectedRows);
@@ -1697,6 +1749,13 @@ export default function FieldEstimate() {
                   >
                     <th 
                       style={{ 
+                        width: "40px", 
+                        padding: "17.5px 4px",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                      }}
+                    ></th>
+                    <th 
+                      style={{ 
                         width: "54px", 
                         padding: "17.5px 8px",
                         borderRight: "1px solid rgba(12, 12, 12, 0.06)",
@@ -1938,10 +1997,34 @@ export default function FieldEstimate() {
                   {rows.map((row, index) => (
                     <tr
                       key={row.id}
+                      draggable={!isReadOnly}
+                      onDragStart={(e) => handleDragStart(e, row.id)}
+                      onDragOver={(e) => handleDragOver(e, row.id)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, row.id)}
+                      onDragEnd={handleDragEnd}
                       style={{
                         borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                        opacity: draggedRowId === row.id ? 0.5 : 1,
+                        background: dragOverRowId === row.id ? "rgba(59, 130, 246, 0.1)" : undefined,
+                        transition: "background 0.2s",
                       }}
                     >
+                      <td 
+                        style={{ 
+                          padding: "8px 4px", 
+                          textAlign: "center",
+                          cursor: isReadOnly ? "default" : "grab",
+                        }}
+                      >
+                        <GripVertical 
+                          className="w-4 h-4" 
+                          style={{ 
+                            color: isReadOnly ? "rgba(12, 12, 12, 0.2)" : "rgba(12, 12, 12, 0.4)",
+                            margin: "0 auto",
+                          }} 
+                        />
+                      </td>
                       <td style={{ padding: "8px", textAlign: "center" }}>
                         <input
                           type="checkbox"
