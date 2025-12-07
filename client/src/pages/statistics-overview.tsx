@@ -380,6 +380,73 @@ export default function StatisticsOverview() {
     return { ...result, 계: total };
   }, [cases, startDate, endDate]);
 
+  // 직접복구 - 종결건 진행과정별 통계 계산
+  const closedProgressStatistics = useMemo(() => {
+    const defaultStats = {
+      현장방문: 0,
+      현장정보입력: 0,
+      직접복구: 0,
+      청구자료제출: 0,
+      청구: 0,
+      입금완료: 0,
+    };
+
+    if (!cases.length) {
+      return {
+        직접복구의뢰건: { ...defaultStats },
+        선견적의뢰건: { ...defaultStats },
+      };
+    }
+
+    // 종결된 케이스만 필터링 (기간 내)
+    const closedCases = cases.filter(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        const isInPeriod = isWithinInterval(createdAt, { start: startDate, end: endDate });
+        return isClosed(c) && isInPeriod;
+      } catch {
+        return false;
+      }
+    });
+
+    // 직접복구 의뢰건 (직접복구 타입으로 종결된 건)
+    const directRecoveryClosed = closedCases.filter(isDirectRecovery);
+    const 직접복구_현장방문 = directRecoveryClosed.filter(c => c.status === "현장방문" || c.visitDate).length;
+    const 직접복구_현장정보입력 = directRecoveryClosed.filter(c => c.status === "현장정보입력" || c.fieldInfoInputDate).length;
+    const 직접복구_직접복구 = directRecoveryClosed.filter(c => c.status === "직접복구" || c.recoveryType === "직접복구").length;
+    const 직접복구_청구자료제출 = directRecoveryClosed.filter(c => c.status === "(직접복구인 경우) 청구자료제출" || c.claimSubmitDate).length;
+    const 직접복구_청구 = directRecoveryClosed.filter(c => c.status === "청구").length;
+    const 직접복구_입금완료 = directRecoveryClosed.filter(c => c.status === "입금완료" || c.status === "정산완료").length;
+
+    // 선견적 의뢰건 (선견적요청 타입으로 종결된 건)
+    const preEstimateClosed = closedCases.filter(isPreEstimate);
+    const 선견적_현장방문 = preEstimateClosed.filter(c => c.status === "현장방문" || c.visitDate).length;
+    const 선견적_현장정보입력 = preEstimateClosed.filter(c => c.status === "현장정보입력" || c.fieldInfoInputDate).length;
+    const 선견적_직접복구 = preEstimateClosed.filter(c => c.status === "직접복구" || c.recoveryType === "직접복구").length;
+    const 선견적_청구자료제출 = preEstimateClosed.filter(c => c.status === "(직접복구인 경우) 청구자료제출" || c.claimSubmitDate).length;
+    const 선견적_청구 = preEstimateClosed.filter(c => c.status === "청구").length;
+    const 선견적_입금완료 = preEstimateClosed.filter(c => c.status === "입금완료" || c.status === "정산완료").length;
+
+    return {
+      직접복구의뢰건: {
+        현장방문: 직접복구_현장방문,
+        현장정보입력: 직접복구_현장정보입력,
+        직접복구: 직접복구_직접복구,
+        청구자료제출: 직접복구_청구자료제출,
+        청구: 직접복구_청구,
+        입금완료: 직접복구_입금완료,
+      },
+      선견적의뢰건: {
+        현장방문: 선견적_현장방문,
+        현장정보입력: 선견적_현장정보입력,
+        직접복구: 선견적_직접복구,
+        청구자료제출: 선견적_청구자료제출,
+        청구: 선견적_청구,
+        입금완료: 선견적_입금완료,
+      },
+    };
+  }, [cases, startDate, endDate]);
+
   if (!user) {
     return null;
   }
@@ -631,6 +698,52 @@ export default function StatisticsOverview() {
     </div>
   );
 
+  // 직접복구 - 종결건 진행과정별 테이블 렌더링
+  const renderClosedProgressTable = () => (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1400px" }}>
+        <thead>
+          <tr>
+            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>구분값</th>
+            <th colSpan={6} style={headerStyle}>직접복구 의뢰건</th>
+            <th colSpan={6} style={headerStyle}>선견적의뢰건</th>
+          </tr>
+          <tr>
+            <th style={headerStyle}>현장방문</th>
+            <th style={headerStyle}>현장정보입력</th>
+            <th style={headerStyle}>직접복구</th>
+            <th style={headerStyle}>청구자료제출</th>
+            <th style={headerStyle}>청구</th>
+            <th style={{ ...headerStyle, background: "rgba(0, 143, 237, 0.08)" }}>입금완료</th>
+            <th style={headerStyle}>현장방문</th>
+            <th style={headerStyle}>현장정보입력</th>
+            <th style={headerStyle}>직접복구</th>
+            <th style={headerStyle}>청구자료제출</th>
+            <th style={headerStyle}>청구</th>
+            <th style={{ ...headerStyle, background: "rgba(0, 143, 237, 0.08)" }}>입금완료</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
+            <td style={cellStyle}>{closedProgressStatistics.직접복구의뢰건.현장방문}</td>
+            <td style={cellStyle}>{closedProgressStatistics.직접복구의뢰건.현장정보입력}</td>
+            <td style={cellStyle}>{closedProgressStatistics.직접복구의뢰건.직접복구}</td>
+            <td style={cellStyle}>{closedProgressStatistics.직접복구의뢰건.청구자료제출}</td>
+            <td style={cellStyle}>{closedProgressStatistics.직접복구의뢰건.청구}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{closedProgressStatistics.직접복구의뢰건.입금완료}</td>
+            <td style={cellStyle}>{closedProgressStatistics.선견적의뢰건.현장방문}</td>
+            <td style={cellStyle}>{closedProgressStatistics.선견적의뢰건.현장정보입력}</td>
+            <td style={cellStyle}>{closedProgressStatistics.선견적의뢰건.직접복구}</td>
+            <td style={cellStyle}>{closedProgressStatistics.선견적의뢰건.청구자료제출}</td>
+            <td style={cellStyle}>{closedProgressStatistics.선견적의뢰건.청구}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{closedProgressStatistics.선견적의뢰건.입금완료}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
   // 현재 탭에 따른 테이블 렌더링
   const renderTable = () => {
     if (activeTab === "수임") {
@@ -645,6 +758,11 @@ export default function StatisticsOverview() {
       }
       if (activeSubFilter === "기간별") {
         return renderPeriodTable();
+      }
+    }
+    if (activeTab === "직접복구") {
+      if (activeSubFilter === "종결건 진행과정별") {
+        return renderClosedProgressTable();
       }
     }
     return (
