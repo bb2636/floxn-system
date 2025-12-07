@@ -1,9 +1,13 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { User } from "@shared/schema";
+import { User, Case } from "@shared/schema";
 import { Search, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { format, startOfMonth, endOfMonth, parseISO, isWithinInterval, isBefore } from "date-fns";
+import { ko } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const headerStyle = {
   padding: "17.5px 8px",
@@ -25,33 +29,202 @@ const cellStyle = {
   fontSize: "15px",
   lineHeight: "128%",
   letterSpacing: "-0.02em",
-  color: "rgba(12, 12, 12, 0.6)",
+  color: "rgba(12, 12, 12, 0.8)",
   borderRight: "1px solid rgba(12, 12, 12, 0.06)",
   borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
   textAlign: "center" as const,
+};
+
+// 종결 상태 목록
+const CLOSED_STATUSES = [
+  "정산완료",
+  "입금완료",
+  "일부입금",
+  "접수취소",
+];
+
+// 직접복구 관련 상태 확인
+const isDirectRecovery = (caseItem: Case): boolean => {
+  return caseItem.recoveryType === "직접복구" || 
+         caseItem.status === "직접복구" ||
+         caseItem.status === "(직접복구인 경우) 청구자료제출";
+};
+
+// 선견적요청 관련 상태 확인
+const isPreEstimate = (caseItem: Case): boolean => {
+  return caseItem.recoveryType === "선견적요청" || 
+         caseItem.status === "선견적요청" ||
+         caseItem.status === "(선견적요청인 경우) 출동비 청구";
+};
+
+// 종결 상태인지 확인
+const isClosed = (caseItem: Case): boolean => {
+  return CLOSED_STATUSES.includes(caseItem.status);
 };
 
 export default function StatisticsOverview() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("수임");
   const [activeSubFilter, setActiveSubFilter] = useState("진행과정별");
+  
+  // 기간 설정 (기본값: 현재 월)
+  const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
+  const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
 
+  // 케이스 데이터 가져오기
+  const { data: cases = [] } = useQuery<Case[]>({
+    queryKey: ["/api/cases"],
+  });
+
+  // 통계 계산
+  const statistics = useMemo(() => {
+    if (!cases.length) {
+      return {
+        이월: { 직접복구: 0, 선견적요청: 0, 계: 0 },
+        수임: { 직접복구: 0, 선견적요청: 0, 계: 0 },
+        종결: {
+          직접복구: { 직접복구: 0, 선견적요청: 0, 접수취소: 0, 소계: 0 },
+          선견적요청: { 직접복구: 0, 선견적요청: 0, 접수취소: 0, 소계: 0 },
+          합계: { 직접복구: 0, 선견적요청: 0, 접수취소: 0, 소계: 0 },
+        },
+        처리율: 0,
+        미결: { 직접복구: 0, 선견적요청: 0, 계: 0 },
+      };
+    }
+
+    // 이월(A): 기준일 이전에 생성되었고 미종결인 케이스
+    const 이월_직접복구 = cases.filter(c => {
+      const createdAt = parseISO(c.createdAt);
+      return isBefore(createdAt, startDate) && !isClosed(c) && isDirectRecovery(c);
+    }).length;
+
+    const 이월_선견적요청 = cases.filter(c => {
+      const createdAt = parseISO(c.createdAt);
+      return isBefore(createdAt, startDate) && !isClosed(c) && isPreEstimate(c);
+    }).length;
+
+    // 수임(B): 기준일 내 수임받은 케이스 (createdAt 기준)
+    const 수임_직접복구 = cases.filter(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        return isWithinInterval(createdAt, { start: startDate, end: endDate }) && isDirectRecovery(c);
+      } catch {
+        return false;
+      }
+    }).length;
+
+    const 수임_선견적요청 = cases.filter(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        return isWithinInterval(createdAt, { start: startDate, end: endDate }) && isPreEstimate(c);
+      } catch {
+        return false;
+      }
+    }).length;
+
+    // 종결(C): 기준일 내 종결된 케이스
+    // 현재는 종결 상태인 케이스 중 기간 내 생성된 케이스로 대체 (종결일 필드가 없으므로)
+    const closedInPeriod = cases.filter(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        return isClosed(c) && isWithinInterval(createdAt, { start: startDate, end: endDate });
+      } catch {
+        return false;
+      }
+    });
+
+    // 종결 > 직접복구 카테고리
+    const 종결_직접복구_직접복구 = closedInPeriod.filter(c => 
+      isDirectRecovery(c) && c.status === "정산완료"
+    ).length;
+    const 종결_직접복구_선견적요청 = closedInPeriod.filter(c => 
+      isDirectRecovery(c) && (c.status === "입금완료" || c.status === "일부입금")
+    ).length;
+    const 종결_직접복구_접수취소 = closedInPeriod.filter(c => 
+      isDirectRecovery(c) && c.status === "접수취소"
+    ).length;
+
+    // 종결 > 선견적요청 카테고리
+    const 종결_선견적요청_직접복구 = closedInPeriod.filter(c => 
+      isPreEstimate(c) && c.status === "정산완료"
+    ).length;
+    const 종결_선견적요청_선견적요청 = closedInPeriod.filter(c => 
+      isPreEstimate(c) && (c.status === "입금완료" || c.status === "일부입금")
+    ).length;
+    const 종결_선견적요청_접수취소 = closedInPeriod.filter(c => 
+      isPreEstimate(c) && c.status === "접수취소"
+    ).length;
+
+    // 소계 계산
+    const 종결_직접복구_소계 = 종결_직접복구_직접복구 + 종결_직접복구_선견적요청 + 종결_직접복구_접수취소;
+    const 종결_선견적요청_소계 = 종결_선견적요청_직접복구 + 종결_선견적요청_선견적요청 + 종결_선견적요청_접수취소;
+
+    // 합계 계산
+    const 종결_합계_직접복구 = 종결_직접복구_직접복구 + 종결_선견적요청_직접복구;
+    const 종결_합계_선견적요청 = 종결_직접복구_선견적요청 + 종결_선견적요청_선견적요청;
+    const 종결_합계_접수취소 = 종결_직접복구_접수취소 + 종결_선견적요청_접수취소;
+    const 종결_합계_소계 = 종결_직접복구_소계 + 종결_선견적요청_소계;
+
+    // 계산
+    const 이월_계 = 이월_직접복구 + 이월_선견적요청;
+    const 수임_계 = 수임_직접복구 + 수임_선견적요청;
+    const 종결_계 = 종결_합계_소계;
+
+    // 미결(D): 기준일 현재 이월+수임-종결
+    const 미결_직접복구 = 이월_직접복구 + 수임_직접복구 - 종결_직접복구_소계;
+    const 미결_선견적요청 = 이월_선견적요청 + 수임_선견적요청 - 종결_선견적요청_소계;
+    const 미결_계 = 미결_직접복구 + 미결_선견적요청;
+
+    // 처리율 계산
+    const total = 이월_계 + 수임_계;
+    const 처리율 = total > 0 ? Math.round((종결_계 / total) * 100) : 0;
+
+    return {
+      이월: { 직접복구: 이월_직접복구, 선견적요청: 이월_선견적요청, 계: 이월_계 },
+      수임: { 직접복구: 수임_직접복구, 선견적요청: 수임_선견적요청, 계: 수임_계 },
+      종결: {
+        직접복구: { 
+          직접복구: 종결_직접복구_직접복구, 
+          선견적요청: 종결_직접복구_선견적요청, 
+          접수취소: 종결_직접복구_접수취소, 
+          소계: 종결_직접복구_소계 
+        },
+        선견적요청: { 
+          직접복구: 종결_선견적요청_직접복구, 
+          선견적요청: 종결_선견적요청_선견적요청, 
+          접수취소: 종결_선견적요청_접수취소, 
+          소계: 종결_선견적요청_소계 
+        },
+        합계: { 
+          직접복구: 종결_합계_직접복구, 
+          선견적요청: 종결_합계_선견적요청, 
+          접수취소: 종결_합계_접수취소, 
+          소계: 종결_합계_소계 
+        },
+      },
+      처리율,
+      미결: { 직접복구: 미결_직접복구, 선견적요청: 미결_선견적요청, 계: 미결_계 },
+    };
+  }, [cases, startDate, endDate]);
+
   if (!user) {
     return null;
   }
 
-  const tableRows = Array(5).fill(null);
-  
   const subFiltersMap: Record<string, string[]> = {
     "미결": ["진행과정별", "수리비 금액계층별", "기간별"],
     "직접복구": ["전체", "종결건 진행과정별", "완료건 금액계층별", "평균 수리비 항목별"],
   };
   
   const currentSubFilters = subFiltersMap[activeTab] || [];
+
+  // 기간 텍스트 생성
+  const periodText = `${format(startDate, "yyyy.MM.dd")} - ${format(endDate, "yyyy.MM.dd")}`;
 
   return (
     <div className="p-8">
@@ -122,27 +295,59 @@ export default function StatisticsOverview() {
 
       <div className="mb-6">
         <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            style={{
-              height: "40px",
-              padding: "0 16px",
-              background: "#FFFFFF",
-              border: "1px solid rgba(12, 12, 12, 0.2)",
-              borderRadius: "8px",
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "rgba(12, 12, 12, 0.7)",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-            data-testid="button-add-period"
-          >
-            <CalendarIcon size={16} style={{ color: "rgba(12, 12, 12, 0.5)" }} />
-            기간추가
-          </Button>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                style={{
+                  height: "40px",
+                  padding: "0 16px",
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(12, 12, 12, 0.2)",
+                  borderRadius: "8px",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "rgba(12, 12, 12, 0.7)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+                data-testid="button-add-period"
+              >
+                <CalendarIcon size={16} style={{ color: "rgba(12, 12, 12, 0.5)" }} />
+                {periodText}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <div className="p-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">시작일</label>
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => date && setStartDate(date)}
+                    locale={ko}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">종료일</label>
+                  <Calendar
+                    mode="single"
+                    selected={endDate}
+                    onSelect={(date) => date && setEndDate(date)}
+                    locale={ko}
+                  />
+                </div>
+                <Button 
+                  className="w-full mt-4"
+                  onClick={() => setCalendarOpen(false)}
+                >
+                  적용
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           <div
             style={{
@@ -236,7 +441,24 @@ export default function StatisticsOverview() {
           color: "rgba(12, 12, 12, 0.6)",
         }}
       >
-        총 0건의 통계
+        총 {cases.length}건의 케이스 | 기간: {periodText}
+      </div>
+
+      {/* 범례 설명 */}
+      <div
+        className="mb-4 p-4"
+        style={{
+          background: "rgba(12, 12, 12, 0.02)",
+          borderRadius: "8px",
+          border: "1px solid rgba(12, 12, 12, 0.06)",
+        }}
+      >
+        <div className="flex flex-wrap gap-6" style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.7)" }}>
+          <span><strong>이월(A)</strong>: 기준일 이전의 미결건</span>
+          <span><strong>수임(B)</strong>: 기준일 내 수임받은 미결건</span>
+          <span><strong>종결(C)</strong>: 기준일 내 종결건</span>
+          <span><strong>미결(D)</strong>: 기준일 현재 이월+수임-종결</span>
+        </div>
       </div>
 
       <div
@@ -321,48 +543,47 @@ export default function StatisticsOverview() {
               </tr>
             </thead>
             <tbody>
-              {tableRows.map((_, index) => (
-                <tr key={index}>
-                  {/* 구분값 */}
-                  <td style={cellStyle}>-</td>
-                  
-                  {/* 이월 (3) */}
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  
-                  {/* 수임 (3) */}
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  
-                  {/* 종결 > 직접복구 (4) */}
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  
-                  {/* 종결 > 선견적요청 (4) */}
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  
-                  {/* 종결 > 합계 (4) */}
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  
-                  {/* 처리율 */}
-                  <td style={cellStyle}>-</td>
-                  
-                  {/* 미결 (3) */}
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                  <td style={cellStyle}>-</td>
-                </tr>
-              ))}
+              {/* 실제 데이터 행 */}
+              <tr>
+                {/* 구분값 */}
+                <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
+                
+                {/* 이월 (3) */}
+                <td style={cellStyle}>{statistics.이월.직접복구}</td>
+                <td style={cellStyle}>{statistics.이월.선견적요청}</td>
+                <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{statistics.이월.계}</td>
+                
+                {/* 수임 (3) */}
+                <td style={cellStyle}>{statistics.수임.직접복구}</td>
+                <td style={cellStyle}>{statistics.수임.선견적요청}</td>
+                <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{statistics.수임.계}</td>
+                
+                {/* 종결 > 직접복구 (4) */}
+                <td style={cellStyle}>{statistics.종결.직접복구.직접복구}</td>
+                <td style={cellStyle}>{statistics.종결.직접복구.선견적요청}</td>
+                <td style={cellStyle}>{statistics.종결.직접복구.접수취소}</td>
+                <td style={{ ...cellStyle, fontWeight: 600 }}>{statistics.종결.직접복구.소계}</td>
+                
+                {/* 종결 > 선견적요청 (4) */}
+                <td style={cellStyle}>{statistics.종결.선견적요청.직접복구}</td>
+                <td style={cellStyle}>{statistics.종결.선견적요청.선견적요청}</td>
+                <td style={cellStyle}>{statistics.종결.선견적요청.접수취소}</td>
+                <td style={{ ...cellStyle, fontWeight: 600 }}>{statistics.종결.선견적요청.소계}</td>
+                
+                {/* 종결 > 합계 (4) */}
+                <td style={cellStyle}>{statistics.종결.합계.직접복구}</td>
+                <td style={cellStyle}>{statistics.종결.합계.선견적요청}</td>
+                <td style={cellStyle}>{statistics.종결.합계.접수취소}</td>
+                <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{statistics.종결.합계.소계}</td>
+                
+                {/* 처리율 */}
+                <td style={{ ...cellStyle, fontWeight: 600, color: "#008FED" }}>{statistics.처리율}%</td>
+                
+                {/* 미결 (3) */}
+                <td style={cellStyle}>{statistics.미결.직접복구}</td>
+                <td style={cellStyle}>{statistics.미결.선견적요청}</td>
+                <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(255, 77, 79, 0.05)", color: "#FF4D4F" }}>{statistics.미결.계}</td>
+              </tr>
             </tbody>
           </table>
         </div>
