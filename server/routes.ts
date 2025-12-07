@@ -3075,6 +3075,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 인보이스 발송 API
+  app.post("/api/invoice/send", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId, relatedCaseIds } = req.body;
+
+      if (!caseId) {
+        return res.status(400).json({ error: "케이스 ID가 필요합니다" });
+      }
+
+      // 케이스 정보 조회
+      const caseData = await storage.getCase(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 관련 케이스들의 상태를 "청구"로 변경
+      const caseIdsToUpdate = relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
+      
+      for (const id of caseIdsToUpdate) {
+        await storage.updateCase(id, { status: "청구" });
+        
+        // 진행상황 기록 추가
+        await storage.createProgress({
+          caseId: id,
+          content: "인보이스 발송 완료 - 청구 상태로 변경",
+          createdBy: req.session.userId,
+        });
+      }
+
+      // TODO: 실제 이메일 발송 로직 (SendGrid 등 연동 필요)
+      // 현재는 상태만 변경하고 성공 응답 반환
+
+      res.json({ 
+        success: true, 
+        message: "인보이스가 발송되었습니다.",
+        updatedCases: caseIdsToUpdate.length,
+      });
+    } catch (error) {
+      console.error("Invoice send error:", error);
+      res.status(500).json({ error: "인보이스 발송 중 오류가 발생했습니다" });
+    }
+  });
+
   // User favorites endpoints
   // Get user's favorites
   app.get("/api/favorites", async (req, res) => {
