@@ -4,7 +4,7 @@ import { User, Case } from "@shared/schema";
 import { Search, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { format, startOfMonth, endOfMonth, parseISO, isWithinInterval, isBefore } from "date-fns";
+import { format, startOfMonth, endOfMonth, parseISO, isWithinInterval, isBefore, differenceInDays, differenceInMonths } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -43,18 +43,6 @@ const CLOSED_STATUSES = [
   "접수취소",
 ];
 
-// 진행과정별 상태 목록 (미결건 분류용)
-const PROGRESS_STATUSES = [
-  "접수완료",
-  "현장방문",
-  "현장정보입력",
-  "현장정보제출",
-  "복구요청",
-  "출동비청구",
-  "청구",
-  "접수취소",
-];
-
 // 직접복구 관련 상태 확인
 const isDirectRecovery = (caseItem: Case): boolean => {
   return caseItem.recoveryType === "직접복구" || 
@@ -76,7 +64,6 @@ const isClosed = (caseItem: Case): boolean => {
 
 // 상태 매핑 (DB 상태 -> 표시용 상태)
 const mapStatusToProgress = (status: string): string => {
-  // 상태를 진행과정별 카테고리에 매핑
   if (status === "접수완료") return "접수완료";
   if (status === "현장방문") return "현장방문";
   if (status === "현장정보입력") return "현장정보입력";
@@ -85,7 +72,29 @@ const mapStatusToProgress = (status: string): string => {
   if (status === "선견적요청" || status === "(선견적요청인 경우) 출동비 청구") return "출동비청구";
   if (status === "청구" || status === "(직접복구인 경우) 청구자료제출") return "청구";
   if (status === "접수취소") return "접수취소";
-  return "접수완료"; // 기본값
+  return "접수완료";
+};
+
+// 수리비 금액 계층 분류
+const getRepairCostTier = (amount: number): string => {
+  if (amount < 1000000) return "1백만미만";
+  if (amount < 2000000) return "2백만미만";
+  if (amount < 3000000) return "3백만미만";
+  if (amount < 5000000) return "5백만미만";
+  if (amount < 10000000) return "1천만미만";
+  return "1천만초과";
+};
+
+// 기간 계층 분류 (현재 날짜 기준으로 케이스 생성일부터 경과된 기간)
+const getPeriodTier = (createdAt: Date, now: Date): string => {
+  const months = differenceInMonths(now, createdAt);
+  const days = differenceInDays(now, createdAt);
+  
+  if (months < 1 || days < 30) return "~1개월";
+  if (months < 3) return "~3개월";
+  if (months < 6) return "~6개월";
+  if (months < 12) return "~1년";
+  return "1년~";
 };
 
 export default function StatisticsOverview() {
@@ -93,7 +102,6 @@ export default function StatisticsOverview() {
   const [activeTab, setActiveTab] = useState("수임");
   const [activeSubFilter, setActiveSubFilter] = useState("진행과정별");
   
-  // 기간 설정 (기본값: 현재 월)
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -102,7 +110,6 @@ export default function StatisticsOverview() {
     queryKey: ["/api/user"],
   });
 
-  // 케이스 데이터 가져오기
   const { data: cases = [] } = useQuery<Case[]>({
     queryKey: ["/api/cases"],
   });
@@ -123,7 +130,6 @@ export default function StatisticsOverview() {
       };
     }
 
-    // 이월(A): 기준일 이전에 생성되었고 미종결인 케이스
     const 이월_직접복구 = cases.filter(c => {
       const createdAt = parseISO(c.createdAt);
       return isBefore(createdAt, startDate) && !isClosed(c) && isDirectRecovery(c);
@@ -134,7 +140,6 @@ export default function StatisticsOverview() {
       return isBefore(createdAt, startDate) && !isClosed(c) && isPreEstimate(c);
     }).length;
 
-    // 수임(B): 기준일 내 수임받은 케이스 (createdAt 기준)
     const 수임_직접복구 = cases.filter(c => {
       try {
         const createdAt = parseISO(c.createdAt);
@@ -153,7 +158,6 @@ export default function StatisticsOverview() {
       }
     }).length;
 
-    // 종결(C): 기준일 내 종결된 케이스
     const closedInPeriod = cases.filter(c => {
       try {
         const createdAt = parseISO(c.createdAt);
@@ -163,7 +167,6 @@ export default function StatisticsOverview() {
       }
     });
 
-    // 종결 > 직접복구 카테고리
     const 종결_직접복구_직접복구 = closedInPeriod.filter(c => 
       isDirectRecovery(c) && c.status === "정산완료"
     ).length;
@@ -174,7 +177,6 @@ export default function StatisticsOverview() {
       isDirectRecovery(c) && c.status === "접수취소"
     ).length;
 
-    // 종결 > 선견적요청 카테고리
     const 종결_선견적요청_직접복구 = closedInPeriod.filter(c => 
       isPreEstimate(c) && c.status === "정산완료"
     ).length;
@@ -185,27 +187,22 @@ export default function StatisticsOverview() {
       isPreEstimate(c) && c.status === "접수취소"
     ).length;
 
-    // 소계 계산
     const 종결_직접복구_소계 = 종결_직접복구_직접복구 + 종결_직접복구_선견적요청 + 종결_직접복구_접수취소;
     const 종결_선견적요청_소계 = 종결_선견적요청_직접복구 + 종결_선견적요청_선견적요청 + 종결_선견적요청_접수취소;
 
-    // 합계 계산
     const 종결_합계_직접복구 = 종결_직접복구_직접복구 + 종결_선견적요청_직접복구;
     const 종결_합계_선견적요청 = 종결_직접복구_선견적요청 + 종결_선견적요청_선견적요청;
     const 종결_합계_접수취소 = 종결_직접복구_접수취소 + 종결_선견적요청_접수취소;
     const 종결_합계_소계 = 종결_직접복구_소계 + 종결_선견적요청_소계;
 
-    // 계산
     const 이월_계 = 이월_직접복구 + 이월_선견적요청;
     const 수임_계 = 수임_직접복구 + 수임_선견적요청;
     const 종결_계 = 종결_합계_소계;
 
-    // 미결(D): 기준일 현재 이월+수임-종결
     const 미결_직접복구 = 이월_직접복구 + 수임_직접복구 - 종결_직접복구_소계;
     const 미결_선견적요청 = 이월_선견적요청 + 수임_선견적요청 - 종결_선견적요청_소계;
     const 미결_계 = 미결_직접복구 + 미결_선견적요청;
 
-    // 처리율 계산
     const total = 이월_계 + 수임_계;
     const 처리율 = total > 0 ? Math.round((종결_계 / total) * 100) : 0;
 
@@ -241,43 +238,12 @@ export default function StatisticsOverview() {
   const progressStatistics = useMemo(() => {
     if (!cases.length) {
       return {
-        직접복구: {
-          접수완료: 0,
-          현장방문: 0,
-          현장정보입력: 0,
-          현장정보제출: 0,
-          복구요청: 0,
-          출동비청구: 0,
-          청구: 0,
-          접수취소: 0,
-          계: 0,
-        },
-        선견적요청: {
-          접수완료: 0,
-          현장방문: 0,
-          현장정보입력: 0,
-          현장정보제출: 0,
-          복구요청: 0,
-          출동비청구: 0,
-          청구: 0,
-          접수취소: 0,
-          계: 0,
-        },
-        합계: {
-          접수완료: 0,
-          현장방문: 0,
-          현장정보입력: 0,
-          현장정보제출: 0,
-          복구요청: 0,
-          출동비청구: 0,
-          청구: 0,
-          접수취소: 0,
-          계: 0,
-        },
+        직접복구: { 접수완료: 0, 현장방문: 0, 현장정보입력: 0, 현장정보제출: 0, 복구요청: 0, 출동비청구: 0, 청구: 0, 접수취소: 0, 계: 0 },
+        선견적요청: { 접수완료: 0, 현장방문: 0, 현장정보입력: 0, 현장정보제출: 0, 복구요청: 0, 출동비청구: 0, 청구: 0, 접수취소: 0, 계: 0 },
+        합계: { 접수완료: 0, 현장방문: 0, 현장정보입력: 0, 현장정보제출: 0, 복구요청: 0, 출동비청구: 0, 청구: 0, 접수취소: 0, 계: 0 },
       };
     }
 
-    // 미결건: 종결되지 않은 케이스 (기간 내 생성 또는 이월)
     const unsettledCases = cases.filter(c => {
       try {
         const createdAt = parseISO(c.createdAt);
@@ -288,7 +254,6 @@ export default function StatisticsOverview() {
       }
     });
 
-    // 직접복구 미결건
     const directRecoveryCases = unsettledCases.filter(isDirectRecovery);
     const 직접복구_접수완료 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "접수완료").length;
     const 직접복구_현장방문 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "현장방문").length;
@@ -300,7 +265,6 @@ export default function StatisticsOverview() {
     const 직접복구_접수취소 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "접수취소").length;
     const 직접복구_계 = directRecoveryCases.length;
 
-    // 선견적요청 미결건
     const preEstimateCases = unsettledCases.filter(isPreEstimate);
     const 선견적요청_접수완료 = preEstimateCases.filter(c => mapStatusToProgress(c.status) === "접수완료").length;
     const 선견적요청_현장방문 = preEstimateCases.filter(c => mapStatusToProgress(c.status) === "현장방문").length;
@@ -313,28 +277,8 @@ export default function StatisticsOverview() {
     const 선견적요청_계 = preEstimateCases.length;
 
     return {
-      직접복구: {
-        접수완료: 직접복구_접수완료,
-        현장방문: 직접복구_현장방문,
-        현장정보입력: 직접복구_현장정보입력,
-        현장정보제출: 직접복구_현장정보제출,
-        복구요청: 직접복구_복구요청,
-        출동비청구: 직접복구_출동비청구,
-        청구: 직접복구_청구,
-        접수취소: 직접복구_접수취소,
-        계: 직접복구_계,
-      },
-      선견적요청: {
-        접수완료: 선견적요청_접수완료,
-        현장방문: 선견적요청_현장방문,
-        현장정보입력: 선견적요청_현장정보입력,
-        현장정보제출: 선견적요청_현장정보제출,
-        복구요청: 선견적요청_복구요청,
-        출동비청구: 선견적요청_출동비청구,
-        청구: 선견적요청_청구,
-        접수취소: 선견적요청_접수취소,
-        계: 선견적요청_계,
-      },
+      직접복구: { 접수완료: 직접복구_접수완료, 현장방문: 직접복구_현장방문, 현장정보입력: 직접복구_현장정보입력, 현장정보제출: 직접복구_현장정보제출, 복구요청: 직접복구_복구요청, 출동비청구: 직접복구_출동비청구, 청구: 직접복구_청구, 접수취소: 직접복구_접수취소, 계: 직접복구_계 },
+      선견적요청: { 접수완료: 선견적요청_접수완료, 현장방문: 선견적요청_현장방문, 현장정보입력: 선견적요청_현장정보입력, 현장정보제출: 선견적요청_현장정보제출, 복구요청: 선견적요청_복구요청, 출동비청구: 선견적요청_출동비청구, 청구: 선견적요청_청구, 접수취소: 선견적요청_접수취소, 계: 선견적요청_계 },
       합계: {
         접수완료: 직접복구_접수완료 + 선견적요청_접수완료,
         현장방문: 직접복구_현장방문 + 선견적요청_현장방문,
@@ -349,6 +293,93 @@ export default function StatisticsOverview() {
     };
   }, [cases, startDate, endDate]);
 
+  // 미결 - 수리비 금액계층별 통계 계산
+  const repairCostStatistics = useMemo(() => {
+    const tiers = ["1백만미만", "2백만미만", "3백만미만", "5백만미만", "1천만미만", "1천만초과"];
+    const defaultTier = { 건수: 0, 퍼센트: 0 };
+    const defaultStats = Object.fromEntries(tiers.map(t => [t, { ...defaultTier }])) as Record<string, { 건수: number; 퍼센트: number }>;
+
+    if (!cases.length) {
+      return { ...defaultStats, 계: 0 };
+    }
+
+    const unsettledCases = cases.filter(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        const isInPeriod = isWithinInterval(createdAt, { start: startDate, end: endDate }) || isBefore(createdAt, startDate);
+        return !isClosed(c) && isInPeriod;
+      } catch {
+        return false;
+      }
+    });
+
+    const total = unsettledCases.length;
+    const tierCounts = Object.fromEntries(tiers.map(t => [t, 0])) as Record<string, number>;
+
+    unsettledCases.forEach(c => {
+      const amount = c.estimateAmount ? parseInt(c.estimateAmount, 10) : 0;
+      const tier = getRepairCostTier(amount);
+      if (tierCounts[tier] !== undefined) {
+        tierCounts[tier]++;
+      }
+    });
+
+    const result = Object.fromEntries(
+      tiers.map(t => [t, {
+        건수: tierCounts[t],
+        퍼센트: total > 0 ? Math.round((tierCounts[t] / total) * 100) : 0,
+      }])
+    ) as Record<string, { 건수: number; 퍼센트: number }>;
+
+    return { ...result, 계: total };
+  }, [cases, startDate, endDate]);
+
+  // 미결 - 기간별 통계 계산
+  const periodStatistics = useMemo(() => {
+    const tiers = ["~1개월", "~3개월", "~6개월", "~1년", "1년~"];
+    const defaultTier = { 건수: 0, 퍼센트: 0 };
+    const defaultStats = Object.fromEntries(tiers.map(t => [t, { ...defaultTier }])) as Record<string, { 건수: number; 퍼센트: number }>;
+
+    if (!cases.length) {
+      return { ...defaultStats, 계: 0 };
+    }
+
+    const now = new Date();
+    const unsettledCases = cases.filter(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        const isInPeriod = isWithinInterval(createdAt, { start: startDate, end: endDate }) || isBefore(createdAt, startDate);
+        return !isClosed(c) && isInPeriod;
+      } catch {
+        return false;
+      }
+    });
+
+    const total = unsettledCases.length;
+    const tierCounts = Object.fromEntries(tiers.map(t => [t, 0])) as Record<string, number>;
+
+    unsettledCases.forEach(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        const tier = getPeriodTier(createdAt, now);
+        if (tierCounts[tier] !== undefined) {
+          tierCounts[tier]++;
+        }
+      } catch {
+        // Skip invalid dates
+      }
+    });
+
+    const result = Object.fromEntries(
+      tiers.map(t => [t, {
+        건수: tierCounts[t],
+        퍼센트: total > 0 ? Math.round((tierCounts[t] / total) * 100) : 0,
+      }])
+    ) as Record<string, { 건수: number; 퍼센트: number }>;
+
+    return { ...result, 계: total };
+  }, [cases, startDate, endDate]);
+
   if (!user) {
     return null;
   }
@@ -359,8 +390,6 @@ export default function StatisticsOverview() {
   };
   
   const currentSubFilters = subFiltersMap[activeTab] || [];
-
-  // 기간 텍스트 생성
   const periodText = `${format(startDate, "yyyy.MM.dd")} - ${format(endDate, "yyyy.MM.dd")}`;
 
   // 수임 테이블 렌더링
@@ -368,29 +397,14 @@ export default function StatisticsOverview() {
     <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1800px" }}>
         <thead>
-          {/* 1행: 최상위 헤더 */}
           <tr>
-            <th rowSpan={3} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>
-              구분값
-            </th>
-            <th colSpan={3} style={headerStyle}>
-              이월
-            </th>
-            <th colSpan={3} style={headerStyle}>
-              수임
-            </th>
-            <th colSpan={12} style={headerStyle}>
-              종결
-            </th>
-            <th rowSpan={3} style={{ ...headerStyle, width: "80px", verticalAlign: "middle" }}>
-              처리율
-            </th>
-            <th colSpan={3} style={headerStyle}>
-              미결
-            </th>
+            <th rowSpan={3} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>구분값</th>
+            <th colSpan={3} style={headerStyle}>이월</th>
+            <th colSpan={3} style={headerStyle}>수임</th>
+            <th colSpan={12} style={headerStyle}>종결</th>
+            <th rowSpan={3} style={{ ...headerStyle, width: "80px", verticalAlign: "middle" }}>처리율</th>
+            <th colSpan={3} style={headerStyle}>미결</th>
           </tr>
-
-          {/* 2행: 중간 헤더 */}
           <tr>
             <th rowSpan={2} style={headerStyle}>직접복구</th>
             <th rowSpan={2} style={headerStyle}>선견적요청</th>
@@ -405,8 +419,6 @@ export default function StatisticsOverview() {
             <th rowSpan={2} style={headerStyle}>선견적요청</th>
             <th rowSpan={2} style={headerStyle}>계</th>
           </tr>
-
-          {/* 3행: 최하위 헤더 */}
           <tr>
             <th style={headerStyle}>직접복구</th>
             <th style={headerStyle}>선견적요청</th>
@@ -458,25 +470,13 @@ export default function StatisticsOverview() {
     <div style={{ overflowX: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1400px" }}>
         <thead>
-          {/* 1행: 최상위 헤더 */}
           <tr>
-            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>
-              구분값
-            </th>
-            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>
-              유형값
-            </th>
-            <th colSpan={9} style={headerStyle}>
-              직접복구
-            </th>
-            <th colSpan={4} style={headerStyle}>
-              선견적요청
-            </th>
+            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>구분값</th>
+            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>유형값</th>
+            <th colSpan={9} style={headerStyle}>직접복구</th>
+            <th colSpan={4} style={headerStyle}>선견적요청</th>
           </tr>
-
-          {/* 2행: 세부 헤더 */}
           <tr>
-            {/* 직접복구 하위 */}
             <th style={headerStyle}>접수완료</th>
             <th style={headerStyle}>현장방문</th>
             <th style={headerStyle}>현장정보입력</th>
@@ -486,7 +486,6 @@ export default function StatisticsOverview() {
             <th style={headerStyle}>청구</th>
             <th style={headerStyle}>접수취소</th>
             <th style={{ ...headerStyle, background: "rgba(0, 143, 237, 0.08)" }}>계</th>
-            {/* 선견적요청 하위 */}
             <th style={headerStyle}>접수완료</th>
             <th style={headerStyle}>현장방문</th>
             <th style={headerStyle}>현장정보입력</th>
@@ -494,11 +493,9 @@ export default function StatisticsOverview() {
           </tr>
         </thead>
         <tbody>
-          {/* 데이터 행 */}
           <tr>
             <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
             <td style={cellStyle}>전체</td>
-            {/* 직접복구 */}
             <td style={cellStyle}>{progressStatistics.직접복구.접수완료}</td>
             <td style={cellStyle}>{progressStatistics.직접복구.현장방문}</td>
             <td style={cellStyle}>{progressStatistics.직접복구.현장정보입력}</td>
@@ -508,17 +505,14 @@ export default function StatisticsOverview() {
             <td style={cellStyle}>{progressStatistics.직접복구.청구}</td>
             <td style={cellStyle}>{progressStatistics.직접복구.접수취소}</td>
             <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{progressStatistics.직접복구.계}</td>
-            {/* 선견적요청 */}
             <td style={cellStyle}>{progressStatistics.선견적요청.접수완료}</td>
             <td style={cellStyle}>{progressStatistics.선견적요청.현장방문}</td>
             <td style={cellStyle}>{progressStatistics.선견적요청.현장정보입력}</td>
             <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{progressStatistics.선견적요청.계}</td>
           </tr>
-          {/* 합계 행 */}
           <tr style={{ background: "rgba(12, 12, 12, 0.02)" }}>
             <td style={{ ...cellStyle, fontWeight: 600 }}>합계</td>
             <td style={cellStyle}>-</td>
-            {/* 직접복구 합계 */}
             <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.접수완료}</td>
             <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.현장방문}</td>
             <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.현장정보입력}</td>
@@ -528,11 +522,109 @@ export default function StatisticsOverview() {
             <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.청구}</td>
             <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.접수취소}</td>
             <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{progressStatistics.합계.계}</td>
-            {/* 선견적요청 합계 */}
             <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.선견적요청.접수완료}</td>
             <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.선견적요청.현장방문}</td>
             <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.선견적요청.현장정보입력}</td>
             <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{progressStatistics.선견적요청.계}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // 미결 - 수리비 금액계층별 테이블 렌더링
+  const renderRepairCostTable = () => (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1200px" }}>
+        <thead>
+          <tr>
+            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>구분값</th>
+            <th colSpan={2} style={headerStyle}>1백만 미만</th>
+            <th colSpan={2} style={headerStyle}>2백만 미만</th>
+            <th colSpan={2} style={headerStyle}>3백만 미만</th>
+            <th colSpan={2} style={headerStyle}>5백만 미만</th>
+            <th colSpan={2} style={headerStyle}>1천만 미만</th>
+            <th colSpan={2} style={headerStyle}>1천만 초과</th>
+            <th rowSpan={2} style={{ ...headerStyle, width: "80px", verticalAlign: "middle", background: "rgba(0, 143, 237, 0.08)" }}>계</th>
+          </tr>
+          <tr>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
+            <td style={cellStyle}>{repairCostStatistics["1백만미만"]?.건수 || 0}</td>
+            <td style={cellStyle}>{repairCostStatistics["1백만미만"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{repairCostStatistics["2백만미만"]?.건수 || 0}</td>
+            <td style={cellStyle}>{repairCostStatistics["2백만미만"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{repairCostStatistics["3백만미만"]?.건수 || 0}</td>
+            <td style={cellStyle}>{repairCostStatistics["3백만미만"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{repairCostStatistics["5백만미만"]?.건수 || 0}</td>
+            <td style={cellStyle}>{repairCostStatistics["5백만미만"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{repairCostStatistics["1천만미만"]?.건수 || 0}</td>
+            <td style={cellStyle}>{repairCostStatistics["1천만미만"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{repairCostStatistics["1천만초과"]?.건수 || 0}</td>
+            <td style={cellStyle}>{repairCostStatistics["1천만초과"]?.퍼센트 || 0}%</td>
+            <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{repairCostStatistics.계}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // 미결 - 기간별 테이블 렌더링
+  const renderPeriodTable = () => (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1000px" }}>
+        <thead>
+          <tr>
+            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>구분값</th>
+            <th colSpan={2} style={headerStyle}>~1개월</th>
+            <th colSpan={2} style={headerStyle}>~3개월</th>
+            <th colSpan={2} style={headerStyle}>~6개월</th>
+            <th colSpan={2} style={headerStyle}>~1년</th>
+            <th colSpan={2} style={headerStyle}>1년~</th>
+            <th rowSpan={2} style={{ ...headerStyle, width: "80px", verticalAlign: "middle", background: "rgba(0, 143, 237, 0.08)" }}>계</th>
+          </tr>
+          <tr>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+            <th style={headerStyle}>건수</th>
+            <th style={headerStyle}>%</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
+            <td style={cellStyle}>{periodStatistics["~1개월"]?.건수 || 0}</td>
+            <td style={cellStyle}>{periodStatistics["~1개월"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{periodStatistics["~3개월"]?.건수 || 0}</td>
+            <td style={cellStyle}>{periodStatistics["~3개월"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{periodStatistics["~6개월"]?.건수 || 0}</td>
+            <td style={cellStyle}>{periodStatistics["~6개월"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{periodStatistics["~1년"]?.건수 || 0}</td>
+            <td style={cellStyle}>{periodStatistics["~1년"]?.퍼센트 || 0}%</td>
+            <td style={cellStyle}>{periodStatistics["1년~"]?.건수 || 0}</td>
+            <td style={cellStyle}>{periodStatistics["1년~"]?.퍼센트 || 0}%</td>
+            <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{periodStatistics.계}</td>
           </tr>
         </tbody>
       </table>
@@ -544,10 +636,17 @@ export default function StatisticsOverview() {
     if (activeTab === "수임") {
       return renderSuimTable();
     }
-    if (activeTab === "미결" && activeSubFilter === "진행과정별") {
-      return renderProgressTable();
+    if (activeTab === "미결") {
+      if (activeSubFilter === "진행과정별") {
+        return renderProgressTable();
+      }
+      if (activeSubFilter === "수리비 금액계층별") {
+        return renderRepairCostTable();
+      }
+      if (activeSubFilter === "기간별") {
+        return renderPeriodTable();
+      }
     }
-    // 다른 탭들은 기본 빈 테이블
     return (
       <div className="p-8 text-center" style={{ color: "rgba(12, 12, 12, 0.5)" }}>
         해당 탭의 데이터를 준비 중입니다.
@@ -678,20 +777,11 @@ export default function StatisticsOverview() {
             </PopoverContent>
           </Popover>
 
-          <div
-            style={{
-              width: "1px",
-              height: "24px",
-              background: "rgba(12, 12, 12, 0.1)",
-            }}
-          />
+          <div style={{ width: "1px", height: "24px", background: "rgba(12, 12, 12, 0.1)" }} />
 
           <div className="flex items-center gap-2">
             {["수임", "미결", "직접복구", "출동비 청구", "사고확인"].map((tab) => {
-              const hasSubFilters = subFiltersMap[tab];
               const isActive = activeTab === tab;
-              const showBorder = hasSubFilters && isActive;
-              
               return (
                 <button
                   key={tab}
@@ -722,16 +812,9 @@ export default function StatisticsOverview() {
             })}
           </div>
 
-          {/* 서브 필터 표시 (미결, 직접복구) */}
           {currentSubFilters.length > 0 && (
             <>
-              <div
-                style={{
-                  width: "1px",
-                  height: "24px",
-                  background: "rgba(12, 12, 12, 0.1)",
-                }}
-              />
+              <div style={{ width: "1px", height: "24px", background: "rgba(12, 12, 12, 0.1)" }} />
               <div className="flex items-center gap-2">
                 {currentSubFilters.map((filter) => (
                   <button
