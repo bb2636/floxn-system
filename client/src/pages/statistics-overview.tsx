@@ -114,6 +114,17 @@ export default function StatisticsOverview() {
     queryKey: ["/api/cases"],
   });
 
+  // 평균 수리비 항목별 통계 쿼리
+  interface AvgRepairCostByCategoryData {
+    손해정지비용: Record<string, number>;
+    대물수리비용: Record<string, number>;
+    총계: number;
+    건수: number;
+  }
+  const { data: avgRepairCostData } = useQuery<AvgRepairCostByCategoryData>({
+    queryKey: ["/api/statistics/avg-repair-cost-by-category", format(startDate, "yyyy-MM-dd"), format(endDate, "yyyy-MM-dd")],
+  });
+
   // 수임 탭 통계 계산
   const statistics = useMemo(() => {
     if (!cases.length) {
@@ -812,6 +823,72 @@ export default function StatisticsOverview() {
     );
   };
 
+  // 직접복구 - 평균 수리비 항목별 테이블 렌더링
+  const renderAvgRepairCostByCategoryTable = () => {
+    const formatNumber = (num: number) => num.toLocaleString();
+    const data = avgRepairCostData || {
+      손해정지비용: { 누수탐지비: 0, 배관공사: 0, 방수공사: 0, 코킹공사: 0, 철거공사: 0, 계: 0 },
+      대물수리비용: { 가설공사: 0, 목공사: 0, 수장공사: 0, 도장공사: 0, 욕실공사: 0, 가구공사: 0, 전기공사: 0, 철거공사: 0, 기타공사: 0, 계: 0 },
+      총계: 0,
+      건수: 0,
+    };
+    
+    return (
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1600px" }}>
+          <thead>
+            <tr>
+              <th rowSpan={2} style={{ ...headerStyle, width: "80px", verticalAlign: "middle" }}>구분값</th>
+              <th colSpan={6} style={headerStyle}>손해정지비용</th>
+              <th colSpan={10} style={headerStyle}>대물수리비용</th>
+              <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle", background: "rgba(0, 143, 237, 0.08)" }}>계</th>
+            </tr>
+            <tr>
+              <th style={headerStyle}>누수탐지비</th>
+              <th style={headerStyle}>배관공사</th>
+              <th style={headerStyle}>방수공사</th>
+              <th style={headerStyle}>코킹공사</th>
+              <th style={headerStyle}>철거공사</th>
+              <th style={{ ...headerStyle, background: "rgba(12, 12, 12, 0.06)" }}>계</th>
+              <th style={headerStyle}>가설공사</th>
+              <th style={headerStyle}>목공사</th>
+              <th style={headerStyle}>수장공사</th>
+              <th style={headerStyle}>도장공사</th>
+              <th style={headerStyle}>욕실공사</th>
+              <th style={headerStyle}>가구공사</th>
+              <th style={headerStyle}>전기공사</th>
+              <th style={headerStyle}>철거공사</th>
+              <th style={headerStyle}>기타공사</th>
+              <th style={{ ...headerStyle, background: "rgba(12, 12, 12, 0.06)" }}>계</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
+              <td style={cellStyle}>{formatNumber(data.손해정지비용.누수탐지비 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.손해정지비용.배관공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.손해정지비용.방수공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.손해정지비용.코킹공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.손해정지비용.철거공사 || 0)}</td>
+              <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(12, 12, 12, 0.03)" }}>{formatNumber(data.손해정지비용.계 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.대물수리비용.가설공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.대물수리비용.목공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.대물수리비용.수장공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.대물수리비용.도장공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.대물수리비용.욕실공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.대물수리비용.가구공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.대물수리비용.전기공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.대물수리비용.철거공사 || 0)}</td>
+              <td style={cellStyle}>{formatNumber(data.대물수리비용.기타공사 || 0)}</td>
+              <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(12, 12, 12, 0.03)" }}>{formatNumber(data.대물수리비용.계 || 0)}</td>
+              <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{formatNumber(data.총계 || 0)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   // 직접복구 - 종결건 진행과정별 테이블 렌더링
   const renderClosedProgressTable = () => (
     <div style={{ overflowX: "auto" }}>
@@ -880,6 +957,9 @@ export default function StatisticsOverview() {
       }
       if (activeSubFilter === "완료건 금액계층별") {
         return renderCompletedCostTable();
+      }
+      if (activeSubFilter === "평균 수리비 항목별") {
+        return renderAvgRepairCostByCategoryTable();
       }
     }
     return (

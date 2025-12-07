@@ -2943,6 +2943,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 평균 수리비 항목별 통계 API
+  app.get("/api/statistics/avg-repair-cost-by-category", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const startDateParam = req.query.startDate as string;
+      const endDateParam = req.query.endDate as string;
+
+      // 손해정지비용 공종
+      const damagePreventionTypes = ['누수탐지비용', '배관공사', '방수공사', '코킹공사', '철거공사', '원인철거공사'];
+      // 대물수리비용 공종
+      const propertyRepairTypes = ['가설공사', '목공사', '수장공사', '도장공사', '욕실공사', '타일공사', '가구공사', '전기공사', '피해철거공사', '기타공사'];
+
+      // 기간 필터링
+      let caseFilter = sql`1=1`;
+      if (startDateParam && endDateParam) {
+        caseFilter = sql`${cases.createdAt} >= ${startDateParam} AND ${cases.createdAt} <= ${endDateParam}`;
+      }
+
+      // 완료된 직접복구 케이스 조회
+      const completedCases = await db
+        .select()
+        .from(cases)
+        .where(sql`(${cases.status} IN ('정산완료', '입금완료', '일부입금')) AND (${cases.recoveryType} = '직접복구' OR ${cases.status} = '직접복구')`);
+
+      if (!completedCases.length) {
+        return res.json({
+          손해정지비용: { 누수탐지비: 0, 배관공사: 0, 방수공사: 0, 코킹공사: 0, 철거공사: 0, 계: 0 },
+          대물수리비용: { 가설공사: 0, 목공사: 0, 수장공사: 0, 도장공사: 0, 욕실공사: 0, 가구공사: 0, 전기공사: 0, 철거공사: 0, 기타공사: 0, 계: 0 },
+          총계: 0,
+          건수: 0,
+        });
+      }
+
+      // 케이스별 최신 견적 조회
+      const caseIds = completedCases.map(c => c.id);
+      const allEstimates = await db
+        .select()
+        .from(estimates)
+        .where(inArray(estimates.caseId, caseIds));
+
+      // 케이스별 최신 견적만 추출
+      const latestEstimatesByCaseId = new Map<string, any>();
+      allEstimates.forEach(est => {
+        const existing = latestEstimatesByCaseId.get(est.caseId);
+        if (!existing || est.version > existing.version) {
+          latestEstimatesByCaseId.set(est.caseId, est);
+        }
+      });
+
+      // 공종별 합계 계산
+      const damagePreventionTotals: Record<string, number> = {
+        누수탐지비: 0, 배관공사: 0, 방수공사: 0, 코킹공사: 0, 철거공사: 0
+      };
+      const propertyRepairTotals: Record<string, number> = {
+        가설공사: 0, 목공사: 0, 수장공사: 0, 도장공사: 0, 욕실공사: 0, 가구공사: 0, 전기공사: 0, 철거공사: 0, 기타공사: 0
+      };
+
+      let validCaseCount = 0;
+
+      latestEstimatesByCaseId.forEach((estimate) => {
+        if (!estimate.laborCostData || !Array.isArray(estimate.laborCostData)) return;
+        validCaseCount++;
+
+        estimate.laborCostData.forEach((row: any) => {
+          const category = row.category || '';
+          const amount = row.amount || 0;
+
+          // 손해정지비용 분류
+          if (category === '누수탐지비용') {
+            damagePreventionTotals['누수탐지비'] += amount;
+          } else if (category === '배관공사') {
+            damagePreventionTotals['배관공사'] += amount;
+          } else if (category === '방수공사') {
+            damagePreventionTotals['방수공사'] += amount;
+          } else if (category === '코킹공사') {
+            damagePreventionTotals['코킹공사'] += amount;
+          } else if (category === '원인철거공사' || (category.includes('철거') && damagePreventionTypes.some(t => t.includes(category)))) {
+            damagePreventionTotals['철거공사'] += amount;
+          }
+
+          // 대물수리비용 분류
+          if (category === '가설공사') {
+            propertyRepairTotals['가설공사'] += amount;
+          } else if (category === '목공사') {
+            propertyRepairTotals['목공사'] += amount;
+          } else if (category === '수장공사') {
+            propertyRepairTotals['수장공사'] += amount;
+          } else if (category === '도장공사') {
+            propertyRepairTotals['도장공사'] += amount;
+          } else if (category === '욕실공사' || category === '타일공사') {
+            propertyRepairTotals['욕실공사'] += amount;
+          } else if (category === '가구공사') {
+            propertyRepairTotals['가구공사'] += amount;
+          } else if (category === '전기공사') {
+            propertyRepairTotals['전기공사'] += amount;
+          } else if (category === '피해철거공사') {
+            propertyRepairTotals['철거공사'] += amount;
+          } else if (category === '기타공사' && !damagePreventionTypes.includes(category)) {
+            propertyRepairTotals['기타공사'] += amount;
+          }
+        });
+      });
+
+      // 평균 계산
+      const avgDivisor = validCaseCount || 1;
+      const avgDamagePrevention: Record<string, number> = {};
+      Object.keys(damagePreventionTotals).forEach(key => {
+        avgDamagePrevention[key] = Math.round(damagePreventionTotals[key] / avgDivisor);
+      });
+      avgDamagePrevention['계'] = Object.values(avgDamagePrevention).reduce((a, b) => a + b, 0);
+
+      const avgPropertyRepair: Record<string, number> = {};
+      Object.keys(propertyRepairTotals).forEach(key => {
+        avgPropertyRepair[key] = Math.round(propertyRepairTotals[key] / avgDivisor);
+      });
+      avgPropertyRepair['계'] = Object.values(avgPropertyRepair).reduce((a, b) => a + b, 0);
+
+      res.json({
+        손해정지비용: avgDamagePrevention,
+        대물수리비용: avgPropertyRepair,
+        총계: avgDamagePrevention['계'] + avgPropertyRepair['계'],
+        건수: validCaseCount,
+      });
+    } catch (error) {
+      console.error("Get avg repair cost by category error:", error);
+      res.status(500).json({ error: "평균 수리비 항목별 통계를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // User favorites endpoints
   // Get user's favorites
   app.get("/api/favorites", async (req, res) => {
