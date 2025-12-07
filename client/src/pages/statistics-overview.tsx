@@ -380,6 +380,63 @@ export default function StatisticsOverview() {
     return { ...result, 계: total };
   }, [cases, startDate, endDate]);
 
+  // 직접복구 - 완료건 금액계층별 통계 계산
+  const completedCostStatistics = useMemo(() => {
+    const tiers = ["~1,000,000", "~2,000,000", "~3,000,000", "~5,000,000", "~10,000,000", "10,000,000~"];
+    const defaultTier = { 건수: 0, 퍼센트: 0 };
+    const defaultStats = Object.fromEntries(tiers.map(t => [t, { ...defaultTier }])) as Record<string, { 건수: number; 퍼센트: number }>;
+
+    if (!cases.length) {
+      return { ...defaultStats, 총건수: 0, 평균수리비: 0 };
+    }
+
+    // 완료된 직접복구 케이스 (기간 내)
+    const completedCases = cases.filter(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        const isInPeriod = isWithinInterval(createdAt, { start: startDate, end: endDate });
+        return isClosed(c) && isDirectRecovery(c) && isInPeriod;
+      } catch {
+        return false;
+      }
+    });
+
+    const total = completedCases.length;
+    const tierCounts = Object.fromEntries(tiers.map(t => [t, 0])) as Record<string, number>;
+    let totalAmount = 0;
+
+    completedCases.forEach(c => {
+      const amount = c.estimateAmount ? parseInt(c.estimateAmount, 10) : 0;
+      totalAmount += amount;
+      
+      // 금액 계층 분류
+      if (amount < 1000000) {
+        tierCounts["~1,000,000"]++;
+      } else if (amount < 2000000) {
+        tierCounts["~2,000,000"]++;
+      } else if (amount < 3000000) {
+        tierCounts["~3,000,000"]++;
+      } else if (amount < 5000000) {
+        tierCounts["~5,000,000"]++;
+      } else if (amount < 10000000) {
+        tierCounts["~10,000,000"]++;
+      } else {
+        tierCounts["10,000,000~"]++;
+      }
+    });
+
+    const result = Object.fromEntries(
+      tiers.map(t => [t, {
+        건수: tierCounts[t],
+        퍼센트: total > 0 ? Math.round((tierCounts[t] / total) * 100) : 0,
+      }])
+    ) as Record<string, { 건수: number; 퍼센트: number }>;
+
+    const avgRepairCost = total > 0 ? Math.round(totalAmount / total) : 0;
+
+    return { ...result, 총건수: total, 평균수리비: avgRepairCost };
+  }, [cases, startDate, endDate]);
+
   // 직접복구 - 종결건 진행과정별 통계 계산
   const closedProgressStatistics = useMemo(() => {
     const defaultStats = {
@@ -698,6 +755,63 @@ export default function StatisticsOverview() {
     </div>
   );
 
+  // 직접복구 - 완료건 금액계층별 테이블 렌더링
+  const renderCompletedCostTable = () => {
+    const formatNumber = (num: number) => num.toLocaleString();
+    return (
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1400px" }}>
+          <thead>
+            <tr>
+              <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>구분값</th>
+              <th colSpan={2} style={headerStyle}>~1,000,000</th>
+              <th colSpan={2} style={headerStyle}>~2,000,000</th>
+              <th colSpan={2} style={headerStyle}>~3,000,000</th>
+              <th colSpan={2} style={headerStyle}>~5,000,000</th>
+              <th colSpan={2} style={headerStyle}>~10,000,000</th>
+              <th colSpan={2} style={headerStyle}>10,000,000~</th>
+              <th rowSpan={2} style={{ ...headerStyle, width: "80px", verticalAlign: "middle" }}>건수</th>
+              <th rowSpan={2} style={{ ...headerStyle, width: "120px", verticalAlign: "middle", background: "rgba(0, 143, 237, 0.08)" }}>평균수리비</th>
+            </tr>
+            <tr>
+              <th style={headerStyle}>건수</th>
+              <th style={headerStyle}>%</th>
+              <th style={headerStyle}>건수</th>
+              <th style={headerStyle}>%</th>
+              <th style={headerStyle}>건수</th>
+              <th style={headerStyle}>%</th>
+              <th style={headerStyle}>건수</th>
+              <th style={headerStyle}>%</th>
+              <th style={headerStyle}>건수</th>
+              <th style={headerStyle}>%</th>
+              <th style={headerStyle}>건수</th>
+              <th style={headerStyle}>%</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
+              <td style={cellStyle}>{completedCostStatistics["~1,000,000"]?.건수 || 0}</td>
+              <td style={cellStyle}>{completedCostStatistics["~1,000,000"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{completedCostStatistics["~2,000,000"]?.건수 || 0}</td>
+              <td style={cellStyle}>{completedCostStatistics["~2,000,000"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{completedCostStatistics["~3,000,000"]?.건수 || 0}</td>
+              <td style={cellStyle}>{completedCostStatistics["~3,000,000"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{completedCostStatistics["~5,000,000"]?.건수 || 0}</td>
+              <td style={cellStyle}>{completedCostStatistics["~5,000,000"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{completedCostStatistics["~10,000,000"]?.건수 || 0}</td>
+              <td style={cellStyle}>{completedCostStatistics["~10,000,000"]?.퍼센트 || 0}%</td>
+              <td style={cellStyle}>{completedCostStatistics["10,000,000~"]?.건수 || 0}</td>
+              <td style={cellStyle}>{completedCostStatistics["10,000,000~"]?.퍼센트 || 0}%</td>
+              <td style={{ ...cellStyle, fontWeight: 600 }}>{completedCostStatistics.총건수}</td>
+              <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{formatNumber(completedCostStatistics.평균수리비)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   // 직접복구 - 종결건 진행과정별 테이블 렌더링
   const renderClosedProgressTable = () => (
     <div style={{ overflowX: "auto" }}>
@@ -763,6 +877,9 @@ export default function StatisticsOverview() {
     if (activeTab === "직접복구") {
       if (activeSubFilter === "종결건 진행과정별") {
         return renderClosedProgressTable();
+      }
+      if (activeSubFilter === "완료건 금액계층별") {
+        return renderCompletedCostTable();
       }
     }
     return (
