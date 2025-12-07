@@ -515,6 +515,62 @@ export default function StatisticsOverview() {
     };
   }, [cases, startDate, endDate]);
 
+  // 출동비 청구 - 진행항목 통계 계산
+  const dispatchFeeStatistics = useMemo(() => {
+    const defaultStats = {
+      현장방문: 0,
+      현장정보입력: 0,
+      청구: 0,
+      입금완료: 0,
+    };
+
+    if (!cases.length) {
+      return {
+        직접복구진행항목: { ...defaultStats },
+        선견적의뢰건진행항목: { ...defaultStats },
+      };
+    }
+
+    // 기간 내 케이스 필터링
+    const filteredCases = cases.filter(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        return isWithinInterval(createdAt, { start: startDate, end: endDate });
+      } catch {
+        return false;
+      }
+    });
+
+    // 직접복구 케이스
+    const directRecoveryCases = filteredCases.filter(isDirectRecovery);
+    const 직접_현장방문 = directRecoveryCases.filter(c => c.visitDate || c.status === "현장방문").length;
+    const 직접_현장정보입력 = directRecoveryCases.filter(c => c.fieldInfoInputDate || c.status === "현장정보입력").length;
+    const 직접_청구 = directRecoveryCases.filter(c => c.status === "청구" || c.status === "(직접복구인 경우) 청구자료제출").length;
+    const 직접_입금완료 = directRecoveryCases.filter(c => c.status === "입금완료" || c.status === "정산완료" || c.status === "일부입금").length;
+
+    // 선견적 의뢰건 케이스
+    const preEstimateCases = filteredCases.filter(isPreEstimate);
+    const 선견적_현장방문 = preEstimateCases.filter(c => c.visitDate || c.status === "현장방문").length;
+    const 선견적_현장정보입력 = preEstimateCases.filter(c => c.fieldInfoInputDate || c.status === "현장정보입력").length;
+    const 선견적_청구 = preEstimateCases.filter(c => c.status === "청구" || c.status === "(선견적요청인 경우) 출동비 청구").length;
+    const 선견적_입금완료 = preEstimateCases.filter(c => c.status === "입금완료" || c.status === "정산완료" || c.status === "일부입금").length;
+
+    return {
+      직접복구진행항목: {
+        현장방문: 직접_현장방문,
+        현장정보입력: 직접_현장정보입력,
+        청구: 직접_청구,
+        입금완료: 직접_입금완료,
+      },
+      선견적의뢰건진행항목: {
+        현장방문: 선견적_현장방문,
+        현장정보입력: 선견적_현장정보입력,
+        청구: 선견적_청구,
+        입금완료: 선견적_입금완료,
+      },
+    };
+  }, [cases, startDate, endDate]);
+
   if (!user) {
     return null;
   }
@@ -522,6 +578,7 @@ export default function StatisticsOverview() {
   const subFiltersMap: Record<string, string[]> = {
     "미결": ["진행과정별", "수리비 금액계층별", "기간별"],
     "직접복구": ["전체", "종결건 진행과정별", "완료건 금액계층별", "평균 수리비 항목별"],
+    "출동비 청구": ["전체"],
   };
   
   const currentSubFilters = subFiltersMap[activeTab] || [];
@@ -889,6 +946,44 @@ export default function StatisticsOverview() {
     );
   };
 
+  // 출동비 청구 - 진행항목 테이블 렌더링
+  const renderDispatchFeeTable = () => (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1000px" }}>
+        <thead>
+          <tr>
+            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>구분값</th>
+            <th colSpan={4} style={headerStyle}>직접복구 진행항목</th>
+            <th colSpan={4} style={headerStyle}>선견적의뢰건 진행항목</th>
+          </tr>
+          <tr>
+            <th style={headerStyle}>현장방문</th>
+            <th style={headerStyle}>현장정보입력</th>
+            <th style={headerStyle}>청구</th>
+            <th style={{ ...headerStyle, background: "rgba(0, 143, 237, 0.08)" }}>입금완료</th>
+            <th style={headerStyle}>현장방문</th>
+            <th style={headerStyle}>현장정보입력</th>
+            <th style={headerStyle}>청구</th>
+            <th style={{ ...headerStyle, background: "rgba(0, 143, 237, 0.08)" }}>입금완료</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
+            <td style={cellStyle}>{dispatchFeeStatistics.직접복구진행항목.현장방문}</td>
+            <td style={cellStyle}>{dispatchFeeStatistics.직접복구진행항목.현장정보입력}</td>
+            <td style={cellStyle}>{dispatchFeeStatistics.직접복구진행항목.청구}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{dispatchFeeStatistics.직접복구진행항목.입금완료}</td>
+            <td style={cellStyle}>{dispatchFeeStatistics.선견적의뢰건진행항목.현장방문}</td>
+            <td style={cellStyle}>{dispatchFeeStatistics.선견적의뢰건진행항목.현장정보입력}</td>
+            <td style={cellStyle}>{dispatchFeeStatistics.선견적의뢰건진행항목.청구}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{dispatchFeeStatistics.선견적의뢰건진행항목.입금완료}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
   // 직접복구 - 종결건 진행과정별 테이블 렌더링
   const renderClosedProgressTable = () => (
     <div style={{ overflowX: "auto" }}>
@@ -961,6 +1056,9 @@ export default function StatisticsOverview() {
       if (activeSubFilter === "평균 수리비 항목별") {
         return renderAvgRepairCostByCategoryTable();
       }
+    }
+    if (activeTab === "출동비 청구") {
+      return renderDispatchFeeTable();
     }
     return (
       <div className="p-8 text-center" style={{ color: "rgba(12, 12, 12, 0.5)" }}>
