@@ -515,6 +515,50 @@ export default function StatisticsOverview() {
     };
   }, [cases, startDate, endDate]);
 
+  // 사고 원인별 통계 계산
+  const accidentCauseStatistics = useMemo(() => {
+    const result = {
+      배관: 0,
+      방수: 0,
+      코킹: 0,
+      공용부: 0,
+      복합: 0,
+      합계: 0,
+    };
+
+    if (!cases.length) {
+      return result;
+    }
+
+    // 기간 내 케이스 필터링
+    const filteredCases = cases.filter(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        return isWithinInterval(createdAt, { start: startDate, end: endDate });
+      } catch {
+        return false;
+      }
+    });
+
+    filteredCases.forEach(c => {
+      const cause = c.accidentCause || '';
+      if (cause.includes('배관')) {
+        result.배관++;
+      } else if (cause.includes('방수')) {
+        result.방수++;
+      } else if (cause.includes('코킹')) {
+        result.코킹++;
+      } else if (cause.includes('공용부')) {
+        result.공용부++;
+      } else if (cause.includes('복합')) {
+        result.복합++;
+      }
+    });
+
+    result.합계 = result.배관 + result.방수 + result.코킹 + result.공용부 + result.복합;
+    return result;
+  }, [cases, startDate, endDate]);
+
   // 출동비 청구 - 진행항목 통계 계산
   const dispatchFeeStatistics = useMemo(() => {
     const defaultStats = {
@@ -579,6 +623,7 @@ export default function StatisticsOverview() {
     "미결": ["진행과정별", "수리비 금액계층별", "기간별"],
     "직접복구": ["전체", "종결건 진행과정별", "완료건 금액계층별", "평균 수리비 항목별"],
     "출동비 청구": ["전체"],
+    "사고확인": ["사고 원인별"],
   };
   
   const currentSubFilters = subFiltersMap[activeTab] || [];
@@ -946,6 +991,39 @@ export default function StatisticsOverview() {
     );
   };
 
+  // 사고 원인별 테이블 렌더링
+  const renderAccidentCauseTable = () => (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "800px" }}>
+        <thead>
+          <tr>
+            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>구분값</th>
+            <th colSpan={5} style={headerStyle}>사고원인</th>
+            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle", background: "rgba(0, 143, 237, 0.08)" }}>합계</th>
+          </tr>
+          <tr>
+            <th style={headerStyle}>배관</th>
+            <th style={headerStyle}>방수</th>
+            <th style={headerStyle}>코킹</th>
+            <th style={headerStyle}>공용부</th>
+            <th style={headerStyle}>복합</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
+            <td style={cellStyle}>{accidentCauseStatistics.배관}</td>
+            <td style={cellStyle}>{accidentCauseStatistics.방수}</td>
+            <td style={cellStyle}>{accidentCauseStatistics.코킹}</td>
+            <td style={cellStyle}>{accidentCauseStatistics.공용부}</td>
+            <td style={cellStyle}>{accidentCauseStatistics.복합}</td>
+            <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{accidentCauseStatistics.합계}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
   // 출동비 청구 - 진행항목 테이블 렌더링
   const renderDispatchFeeTable = () => (
     <div style={{ overflowX: "auto" }}>
@@ -1059,6 +1137,11 @@ export default function StatisticsOverview() {
     }
     if (activeTab === "출동비 청구") {
       return renderDispatchFeeTable();
+    }
+    if (activeTab === "사고확인") {
+      if (activeSubFilter === "사고 원인별") {
+        return renderAccidentCauseTable();
+      }
     }
     return (
       <div className="p-8 text-center" style={{ color: "rgba(12, 12, 12, 0.5)" }}>
