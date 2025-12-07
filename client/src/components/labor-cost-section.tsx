@@ -134,14 +134,16 @@ export function LaborCostSection({
 
   const handleDrop = (e: React.DragEvent, targetRowId: string) => {
     e.preventDefault();
-    if (!draggedRowId || draggedRowId === targetRowId) {
+    const sourceRowId = e.dataTransfer.getData('text/plain');
+    
+    if (!sourceRowId || sourceRowId === targetRowId) {
       setDraggedRowId(null);
       setDragOverRowId(null);
       return;
     }
 
     const newRows = [...rows];
-    const draggedIndex = newRows.findIndex(r => r.id === draggedRowId);
+    const draggedIndex = newRows.findIndex(r => r.id === sourceRowId);
     const targetIndex = newRows.findIndex(r => r.id === targetRowId);
     
     if (draggedIndex !== -1 && targetIndex !== -1) {

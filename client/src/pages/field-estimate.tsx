@@ -1034,6 +1034,7 @@ export default function FieldEstimate() {
 
   // 드래그 앤 드롭 핸들러 (복구면적 산출표)
   const handleDragStart = (e: React.DragEvent, rowId: string) => {
+    console.log('handleDragStart called', { rowId, isReadOnly });
     if (isReadOnly) return;
     setDraggedRowId(rowId);
     e.dataTransfer.effectAllowed = 'move';
@@ -1053,7 +1054,11 @@ export default function FieldEstimate() {
 
   const handleDrop = (e: React.DragEvent, targetRowId: string) => {
     e.preventDefault();
-    if (!draggedRowId || draggedRowId === targetRowId) {
+    const sourceRowId = e.dataTransfer.getData('text/plain');
+    console.log('handleDrop called', { sourceRowId, targetRowId, draggedRowId });
+    
+    if (!sourceRowId || sourceRowId === targetRowId) {
+      console.log('handleDrop early return', { sourceRowId, targetRowId });
       setDraggedRowId(null);
       setDragOverRowId(null);
       return;
@@ -1061,8 +1066,9 @@ export default function FieldEstimate() {
 
     setRows(prev => {
       const newRows = [...prev];
-      const draggedIndex = newRows.findIndex(r => r.id === draggedRowId);
+      const draggedIndex = newRows.findIndex(r => r.id === sourceRowId);
       const targetIndex = newRows.findIndex(r => r.id === targetRowId);
+      console.log('handleDrop reordering', { draggedIndex, targetIndex, sourceRowId });
       
       if (draggedIndex !== -1 && targetIndex !== -1) {
         const [draggedRow] = newRows.splice(draggedIndex, 1);
