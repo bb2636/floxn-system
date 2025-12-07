@@ -10,9 +10,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const headerStyle = {
-  padding: "17.5px 8px",
+  padding: "12px 8px",
   fontFamily: "Pretendard",
-  fontSize: "15px",
+  fontSize: "14px",
   fontWeight: 600,
   lineHeight: "128%",
   letterSpacing: "-0.02em",
@@ -24,9 +24,9 @@ const headerStyle = {
 };
 
 const cellStyle = {
-  padding: "17.5px 8px",
+  padding: "12px 8px",
   fontFamily: "Pretendard",
-  fontSize: "15px",
+  fontSize: "14px",
   lineHeight: "128%",
   letterSpacing: "-0.02em",
   color: "rgba(12, 12, 12, 0.8)",
@@ -40,6 +40,18 @@ const CLOSED_STATUSES = [
   "정산완료",
   "입금완료",
   "일부입금",
+  "접수취소",
+];
+
+// 진행과정별 상태 목록 (미결건 분류용)
+const PROGRESS_STATUSES = [
+  "접수완료",
+  "현장방문",
+  "현장정보입력",
+  "현장정보제출",
+  "복구요청",
+  "출동비청구",
+  "청구",
   "접수취소",
 ];
 
@@ -62,6 +74,20 @@ const isClosed = (caseItem: Case): boolean => {
   return CLOSED_STATUSES.includes(caseItem.status);
 };
 
+// 상태 매핑 (DB 상태 -> 표시용 상태)
+const mapStatusToProgress = (status: string): string => {
+  // 상태를 진행과정별 카테고리에 매핑
+  if (status === "접수완료") return "접수완료";
+  if (status === "현장방문") return "현장방문";
+  if (status === "현장정보입력") return "현장정보입력";
+  if (status === "현장정보제출" || status === "검토중" || status === "1차승인") return "현장정보제출";
+  if (status === "복구요청(2차승인)" || status === "직접복구") return "복구요청";
+  if (status === "선견적요청" || status === "(선견적요청인 경우) 출동비 청구") return "출동비청구";
+  if (status === "청구" || status === "(직접복구인 경우) 청구자료제출") return "청구";
+  if (status === "접수취소") return "접수취소";
+  return "접수완료"; // 기본값
+};
+
 export default function StatisticsOverview() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("수임");
@@ -81,7 +107,7 @@ export default function StatisticsOverview() {
     queryKey: ["/api/cases"],
   });
 
-  // 통계 계산
+  // 수임 탭 통계 계산
   const statistics = useMemo(() => {
     if (!cases.length) {
       return {
@@ -128,7 +154,6 @@ export default function StatisticsOverview() {
     }).length;
 
     // 종결(C): 기준일 내 종결된 케이스
-    // 현재는 종결 상태인 케이스 중 기간 내 생성된 케이스로 대체 (종결일 필드가 없으므로)
     const closedInPeriod = cases.filter(c => {
       try {
         const createdAt = parseISO(c.createdAt);
@@ -212,6 +237,118 @@ export default function StatisticsOverview() {
     };
   }, [cases, startDate, endDate]);
 
+  // 미결 - 진행과정별 통계 계산
+  const progressStatistics = useMemo(() => {
+    if (!cases.length) {
+      return {
+        직접복구: {
+          접수완료: 0,
+          현장방문: 0,
+          현장정보입력: 0,
+          현장정보제출: 0,
+          복구요청: 0,
+          출동비청구: 0,
+          청구: 0,
+          접수취소: 0,
+          계: 0,
+        },
+        선견적요청: {
+          접수완료: 0,
+          현장방문: 0,
+          현장정보입력: 0,
+          현장정보제출: 0,
+          복구요청: 0,
+          출동비청구: 0,
+          청구: 0,
+          접수취소: 0,
+          계: 0,
+        },
+        합계: {
+          접수완료: 0,
+          현장방문: 0,
+          현장정보입력: 0,
+          현장정보제출: 0,
+          복구요청: 0,
+          출동비청구: 0,
+          청구: 0,
+          접수취소: 0,
+          계: 0,
+        },
+      };
+    }
+
+    // 미결건: 종결되지 않은 케이스 (기간 내 생성 또는 이월)
+    const unsettledCases = cases.filter(c => {
+      try {
+        const createdAt = parseISO(c.createdAt);
+        const isInPeriod = isWithinInterval(createdAt, { start: startDate, end: endDate }) || isBefore(createdAt, startDate);
+        return !isClosed(c) && isInPeriod;
+      } catch {
+        return false;
+      }
+    });
+
+    // 직접복구 미결건
+    const directRecoveryCases = unsettledCases.filter(isDirectRecovery);
+    const 직접복구_접수완료 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "접수완료").length;
+    const 직접복구_현장방문 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "현장방문").length;
+    const 직접복구_현장정보입력 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "현장정보입력").length;
+    const 직접복구_현장정보제출 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "현장정보제출").length;
+    const 직접복구_복구요청 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "복구요청").length;
+    const 직접복구_출동비청구 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "출동비청구").length;
+    const 직접복구_청구 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "청구").length;
+    const 직접복구_접수취소 = directRecoveryCases.filter(c => mapStatusToProgress(c.status) === "접수취소").length;
+    const 직접복구_계 = directRecoveryCases.length;
+
+    // 선견적요청 미결건
+    const preEstimateCases = unsettledCases.filter(isPreEstimate);
+    const 선견적요청_접수완료 = preEstimateCases.filter(c => mapStatusToProgress(c.status) === "접수완료").length;
+    const 선견적요청_현장방문 = preEstimateCases.filter(c => mapStatusToProgress(c.status) === "현장방문").length;
+    const 선견적요청_현장정보입력 = preEstimateCases.filter(c => mapStatusToProgress(c.status) === "현장정보입력").length;
+    const 선견적요청_현장정보제출 = preEstimateCases.filter(c => mapStatusToProgress(c.status) === "현장정보제출").length;
+    const 선견적요청_복구요청 = preEstimateCases.filter(c => mapStatusToProgress(c.status) === "복구요청").length;
+    const 선견적요청_출동비청구 = preEstimateCases.filter(c => mapStatusToProgress(c.status) === "출동비청구").length;
+    const 선견적요청_청구 = preEstimateCases.filter(c => mapStatusToProgress(c.status) === "청구").length;
+    const 선견적요청_접수취소 = preEstimateCases.filter(c => mapStatusToProgress(c.status) === "접수취소").length;
+    const 선견적요청_계 = preEstimateCases.length;
+
+    return {
+      직접복구: {
+        접수완료: 직접복구_접수완료,
+        현장방문: 직접복구_현장방문,
+        현장정보입력: 직접복구_현장정보입력,
+        현장정보제출: 직접복구_현장정보제출,
+        복구요청: 직접복구_복구요청,
+        출동비청구: 직접복구_출동비청구,
+        청구: 직접복구_청구,
+        접수취소: 직접복구_접수취소,
+        계: 직접복구_계,
+      },
+      선견적요청: {
+        접수완료: 선견적요청_접수완료,
+        현장방문: 선견적요청_현장방문,
+        현장정보입력: 선견적요청_현장정보입력,
+        현장정보제출: 선견적요청_현장정보제출,
+        복구요청: 선견적요청_복구요청,
+        출동비청구: 선견적요청_출동비청구,
+        청구: 선견적요청_청구,
+        접수취소: 선견적요청_접수취소,
+        계: 선견적요청_계,
+      },
+      합계: {
+        접수완료: 직접복구_접수완료 + 선견적요청_접수완료,
+        현장방문: 직접복구_현장방문 + 선견적요청_현장방문,
+        현장정보입력: 직접복구_현장정보입력 + 선견적요청_현장정보입력,
+        현장정보제출: 직접복구_현장정보제출 + 선견적요청_현장정보제출,
+        복구요청: 직접복구_복구요청 + 선견적요청_복구요청,
+        출동비청구: 직접복구_출동비청구 + 선견적요청_출동비청구,
+        청구: 직접복구_청구 + 선견적요청_청구,
+        접수취소: 직접복구_접수취소 + 선견적요청_접수취소,
+        계: 직접복구_계 + 선견적요청_계,
+      },
+    };
+  }, [cases, startDate, endDate]);
+
   if (!user) {
     return null;
   }
@@ -225,6 +362,198 @@ export default function StatisticsOverview() {
 
   // 기간 텍스트 생성
   const periodText = `${format(startDate, "yyyy.MM.dd")} - ${format(endDate, "yyyy.MM.dd")}`;
+
+  // 수임 테이블 렌더링
+  const renderSuimTable = () => (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1800px" }}>
+        <thead>
+          {/* 1행: 최상위 헤더 */}
+          <tr>
+            <th rowSpan={3} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>
+              구분값
+            </th>
+            <th colSpan={3} style={headerStyle}>
+              이월
+            </th>
+            <th colSpan={3} style={headerStyle}>
+              수임
+            </th>
+            <th colSpan={12} style={headerStyle}>
+              종결
+            </th>
+            <th rowSpan={3} style={{ ...headerStyle, width: "80px", verticalAlign: "middle" }}>
+              처리율
+            </th>
+            <th colSpan={3} style={headerStyle}>
+              미결
+            </th>
+          </tr>
+
+          {/* 2행: 중간 헤더 */}
+          <tr>
+            <th rowSpan={2} style={headerStyle}>직접복구</th>
+            <th rowSpan={2} style={headerStyle}>선견적요청</th>
+            <th rowSpan={2} style={headerStyle}>계</th>
+            <th rowSpan={2} style={headerStyle}>직접복구</th>
+            <th rowSpan={2} style={headerStyle}>선견적요청</th>
+            <th rowSpan={2} style={headerStyle}>계</th>
+            <th colSpan={4} style={headerStyle}>직접복구</th>
+            <th colSpan={4} style={headerStyle}>선견적요청</th>
+            <th colSpan={4} style={headerStyle}>합계</th>
+            <th rowSpan={2} style={headerStyle}>직접복구</th>
+            <th rowSpan={2} style={headerStyle}>선견적요청</th>
+            <th rowSpan={2} style={headerStyle}>계</th>
+          </tr>
+
+          {/* 3행: 최하위 헤더 */}
+          <tr>
+            <th style={headerStyle}>직접복구</th>
+            <th style={headerStyle}>선견적요청</th>
+            <th style={headerStyle}>접수취소</th>
+            <th style={headerStyle}>소계</th>
+            <th style={headerStyle}>직접복구</th>
+            <th style={headerStyle}>선견적요청</th>
+            <th style={headerStyle}>접수취소</th>
+            <th style={headerStyle}>소계</th>
+            <th style={headerStyle}>직접복구</th>
+            <th style={headerStyle}>선견적요청</th>
+            <th style={headerStyle}>접수취소</th>
+            <th style={headerStyle}>소계</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
+            <td style={cellStyle}>{statistics.이월.직접복구}</td>
+            <td style={cellStyle}>{statistics.이월.선견적요청}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{statistics.이월.계}</td>
+            <td style={cellStyle}>{statistics.수임.직접복구}</td>
+            <td style={cellStyle}>{statistics.수임.선견적요청}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{statistics.수임.계}</td>
+            <td style={cellStyle}>{statistics.종결.직접복구.직접복구}</td>
+            <td style={cellStyle}>{statistics.종결.직접복구.선견적요청}</td>
+            <td style={cellStyle}>{statistics.종결.직접복구.접수취소}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{statistics.종결.직접복구.소계}</td>
+            <td style={cellStyle}>{statistics.종결.선견적요청.직접복구}</td>
+            <td style={cellStyle}>{statistics.종결.선견적요청.선견적요청}</td>
+            <td style={cellStyle}>{statistics.종결.선견적요청.접수취소}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{statistics.종결.선견적요청.소계}</td>
+            <td style={cellStyle}>{statistics.종결.합계.직접복구}</td>
+            <td style={cellStyle}>{statistics.종결.합계.선견적요청}</td>
+            <td style={cellStyle}>{statistics.종결.합계.접수취소}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{statistics.종결.합계.소계}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, color: "#008FED" }}>{statistics.처리율}%</td>
+            <td style={cellStyle}>{statistics.미결.직접복구}</td>
+            <td style={cellStyle}>{statistics.미결.선견적요청}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(255, 77, 79, 0.05)", color: "#FF4D4F" }}>{statistics.미결.계}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // 미결 - 진행과정별 테이블 렌더링
+  const renderProgressTable = () => (
+    <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1400px" }}>
+        <thead>
+          {/* 1행: 최상위 헤더 */}
+          <tr>
+            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>
+              구분값
+            </th>
+            <th rowSpan={2} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>
+              유형값
+            </th>
+            <th colSpan={9} style={headerStyle}>
+              직접복구
+            </th>
+            <th colSpan={4} style={headerStyle}>
+              선견적요청
+            </th>
+          </tr>
+
+          {/* 2행: 세부 헤더 */}
+          <tr>
+            {/* 직접복구 하위 */}
+            <th style={headerStyle}>접수완료</th>
+            <th style={headerStyle}>현장방문</th>
+            <th style={headerStyle}>현장정보입력</th>
+            <th style={headerStyle}>현장정보제출</th>
+            <th style={headerStyle}>복구요청</th>
+            <th style={headerStyle}>출동비청구</th>
+            <th style={headerStyle}>청구</th>
+            <th style={headerStyle}>접수취소</th>
+            <th style={{ ...headerStyle, background: "rgba(0, 143, 237, 0.08)" }}>계</th>
+            {/* 선견적요청 하위 */}
+            <th style={headerStyle}>접수완료</th>
+            <th style={headerStyle}>현장방문</th>
+            <th style={headerStyle}>현장정보입력</th>
+            <th style={{ ...headerStyle, background: "rgba(0, 143, 237, 0.08)" }}>계</th>
+          </tr>
+        </thead>
+        <tbody>
+          {/* 데이터 행 */}
+          <tr>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
+            <td style={cellStyle}>전체</td>
+            {/* 직접복구 */}
+            <td style={cellStyle}>{progressStatistics.직접복구.접수완료}</td>
+            <td style={cellStyle}>{progressStatistics.직접복구.현장방문}</td>
+            <td style={cellStyle}>{progressStatistics.직접복구.현장정보입력}</td>
+            <td style={cellStyle}>{progressStatistics.직접복구.현장정보제출}</td>
+            <td style={cellStyle}>{progressStatistics.직접복구.복구요청}</td>
+            <td style={cellStyle}>{progressStatistics.직접복구.출동비청구}</td>
+            <td style={cellStyle}>{progressStatistics.직접복구.청구}</td>
+            <td style={cellStyle}>{progressStatistics.직접복구.접수취소}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{progressStatistics.직접복구.계}</td>
+            {/* 선견적요청 */}
+            <td style={cellStyle}>{progressStatistics.선견적요청.접수완료}</td>
+            <td style={cellStyle}>{progressStatistics.선견적요청.현장방문}</td>
+            <td style={cellStyle}>{progressStatistics.선견적요청.현장정보입력}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{progressStatistics.선견적요청.계}</td>
+          </tr>
+          {/* 합계 행 */}
+          <tr style={{ background: "rgba(12, 12, 12, 0.02)" }}>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>합계</td>
+            <td style={cellStyle}>-</td>
+            {/* 직접복구 합계 */}
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.접수완료}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.현장방문}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.현장정보입력}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.현장정보제출}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.복구요청}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.출동비청구}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.청구}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.합계.접수취소}</td>
+            <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{progressStatistics.합계.계}</td>
+            {/* 선견적요청 합계 */}
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.선견적요청.접수완료}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.선견적요청.현장방문}</td>
+            <td style={{ ...cellStyle, fontWeight: 600 }}>{progressStatistics.선견적요청.현장정보입력}</td>
+            <td style={{ ...cellStyle, fontWeight: 700, background: "rgba(0, 143, 237, 0.08)", color: "#008FED" }}>{progressStatistics.선견적요청.계}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+
+  // 현재 탭에 따른 테이블 렌더링
+  const renderTable = () => {
+    if (activeTab === "수임") {
+      return renderSuimTable();
+    }
+    if (activeTab === "미결" && activeSubFilter === "진행과정별") {
+      return renderProgressTable();
+    }
+    // 다른 탭들은 기본 빈 테이블
+    return (
+      <div className="p-8 text-center" style={{ color: "rgba(12, 12, 12, 0.5)" }}>
+        해당 탭의 데이터를 준비 중입니다.
+      </div>
+    );
+  };
 
   return (
     <div className="p-8">
@@ -294,7 +623,7 @@ export default function StatisticsOverview() {
       </div>
 
       <div className="mb-6">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -316,7 +645,7 @@ export default function StatisticsOverview() {
                 data-testid="button-add-period"
               >
                 <CalendarIcon size={16} style={{ color: "rgba(12, 12, 12, 0.5)" }} />
-                {periodText}
+                기간추가
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -375,15 +704,15 @@ export default function StatisticsOverview() {
                   style={{
                     height: "40px",
                     padding: "0 20px",
-                    background: "transparent",
-                    border: showBorder ? "1px solid rgba(12, 12, 12, 0.2)" : "none",
+                    background: isActive ? "#FFFFFF" : "transparent",
+                    border: isActive ? "1px solid rgba(12, 12, 12, 0.2)" : "none",
                     borderRadius: "8px",
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     fontWeight: 500,
                     color: isActive ? "#008FED" : "rgba(12, 12, 12, 0.5)",
                     cursor: "pointer",
-                    transition: "color 0.2s",
+                    transition: "all 0.2s",
                   }}
                   data-testid={`tab-${tab}`}
                 >
@@ -441,24 +770,7 @@ export default function StatisticsOverview() {
           color: "rgba(12, 12, 12, 0.6)",
         }}
       >
-        총 {cases.length}건의 케이스 | 기간: {periodText}
-      </div>
-
-      {/* 범례 설명 */}
-      <div
-        className="mb-4 p-4"
-        style={{
-          background: "rgba(12, 12, 12, 0.02)",
-          borderRadius: "8px",
-          border: "1px solid rgba(12, 12, 12, 0.06)",
-        }}
-      >
-        <div className="flex flex-wrap gap-6" style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.7)" }}>
-          <span><strong>이월(A)</strong>: 기준일 이전의 미결건</span>
-          <span><strong>수임(B)</strong>: 기준일 내 수임받은 미결건</span>
-          <span><strong>종결(C)</strong>: 기준일 내 종결건</span>
-          <span><strong>미결(D)</strong>: 기준일 현재 이월+수임-종결</span>
-        </div>
+        총 {cases.length}건의 통계
       </div>
 
       <div
@@ -469,124 +781,7 @@ export default function StatisticsOverview() {
           overflow: "hidden",
         }}
       >
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "1800px" }}>
-            <thead>
-              {/* 1행: 최상위 헤더 */}
-              <tr>
-                <th rowSpan={3} style={{ ...headerStyle, width: "100px", verticalAlign: "middle" }}>
-                  구분값
-                </th>
-                <th colSpan={3} style={headerStyle}>
-                  이월
-                </th>
-                <th colSpan={3} style={headerStyle}>
-                  수임
-                </th>
-                <th colSpan={12} style={headerStyle}>
-                  종결
-                </th>
-                <th rowSpan={3} style={{ ...headerStyle, width: "80px", verticalAlign: "middle" }}>
-                  처리율
-                </th>
-                <th colSpan={3} style={headerStyle}>
-                  미결
-                </th>
-              </tr>
-
-              {/* 2행: 중간 헤더 */}
-              <tr>
-                {/* 이월 하위 */}
-                <th rowSpan={2} style={headerStyle}>직접복구</th>
-                <th rowSpan={2} style={headerStyle}>선견적요청</th>
-                <th rowSpan={2} style={headerStyle}>계</th>
-                
-                {/* 수임 하위 */}
-                <th rowSpan={2} style={headerStyle}>직접복구</th>
-                <th rowSpan={2} style={headerStyle}>선견적요청</th>
-                <th rowSpan={2} style={headerStyle}>계</th>
-                
-                {/* 종결 하위 - 직접복구 */}
-                <th colSpan={4} style={headerStyle}>직접복구</th>
-                
-                {/* 종결 하위 - 선견적요청 */}
-                <th colSpan={4} style={headerStyle}>선견적요청</th>
-                
-                {/* 종결 하위 - 합계 */}
-                <th colSpan={4} style={headerStyle}>합계</th>
-                
-                {/* 미결 하위 */}
-                <th rowSpan={2} style={headerStyle}>직접복구</th>
-                <th rowSpan={2} style={headerStyle}>선견적요청</th>
-                <th rowSpan={2} style={headerStyle}>계</th>
-              </tr>
-
-              {/* 3행: 최하위 헤더 (종결 세부) */}
-              <tr>
-                {/* 종결 > 직접복구 하위 */}
-                <th style={headerStyle}>직접복구</th>
-                <th style={headerStyle}>선견적요청</th>
-                <th style={headerStyle}>접수취소</th>
-                <th style={headerStyle}>소계</th>
-                
-                {/* 종결 > 선견적요청 하위 */}
-                <th style={headerStyle}>직접복구</th>
-                <th style={headerStyle}>선견적요청</th>
-                <th style={headerStyle}>접수취소</th>
-                <th style={headerStyle}>소계</th>
-                
-                {/* 종결 > 합계 하위 */}
-                <th style={headerStyle}>직접복구</th>
-                <th style={headerStyle}>선견적요청</th>
-                <th style={headerStyle}>접수취소</th>
-                <th style={headerStyle}>소계</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* 실제 데이터 행 */}
-              <tr>
-                {/* 구분값 */}
-                <td style={{ ...cellStyle, fontWeight: 600 }}>{format(startDate, "yyyy.MM", { locale: ko })}</td>
-                
-                {/* 이월 (3) */}
-                <td style={cellStyle}>{statistics.이월.직접복구}</td>
-                <td style={cellStyle}>{statistics.이월.선견적요청}</td>
-                <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{statistics.이월.계}</td>
-                
-                {/* 수임 (3) */}
-                <td style={cellStyle}>{statistics.수임.직접복구}</td>
-                <td style={cellStyle}>{statistics.수임.선견적요청}</td>
-                <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{statistics.수임.계}</td>
-                
-                {/* 종결 > 직접복구 (4) */}
-                <td style={cellStyle}>{statistics.종결.직접복구.직접복구}</td>
-                <td style={cellStyle}>{statistics.종결.직접복구.선견적요청}</td>
-                <td style={cellStyle}>{statistics.종결.직접복구.접수취소}</td>
-                <td style={{ ...cellStyle, fontWeight: 600 }}>{statistics.종결.직접복구.소계}</td>
-                
-                {/* 종결 > 선견적요청 (4) */}
-                <td style={cellStyle}>{statistics.종결.선견적요청.직접복구}</td>
-                <td style={cellStyle}>{statistics.종결.선견적요청.선견적요청}</td>
-                <td style={cellStyle}>{statistics.종결.선견적요청.접수취소}</td>
-                <td style={{ ...cellStyle, fontWeight: 600 }}>{statistics.종결.선견적요청.소계}</td>
-                
-                {/* 종결 > 합계 (4) */}
-                <td style={cellStyle}>{statistics.종결.합계.직접복구}</td>
-                <td style={cellStyle}>{statistics.종결.합계.선견적요청}</td>
-                <td style={cellStyle}>{statistics.종결.합계.접수취소}</td>
-                <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(0, 143, 237, 0.05)" }}>{statistics.종결.합계.소계}</td>
-                
-                {/* 처리율 */}
-                <td style={{ ...cellStyle, fontWeight: 600, color: "#008FED" }}>{statistics.처리율}%</td>
-                
-                {/* 미결 (3) */}
-                <td style={cellStyle}>{statistics.미결.직접복구}</td>
-                <td style={cellStyle}>{statistics.미결.선견적요청}</td>
-                <td style={{ ...cellStyle, fontWeight: 600, background: "rgba(255, 77, 79, 0.05)", color: "#FF4D4F" }}>{statistics.미결.계}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        {renderTable()}
       </div>
     </div>
   );
