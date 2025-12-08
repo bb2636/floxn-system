@@ -3349,6 +3349,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Call Bubble workflow to send email with PDF attachment
+      // PDF를 data URI 형식으로 변환 (Bubble에서 파일로 인식)
+      const pdfDataUri = `data:application/pdf;base64,${pdfBase64}`;
+      const fileName = `현장출동보고서_${caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      
       const response = await fetch("https://sendmail-43925.bubbleapps.io/version-test/api/1.1/wf/send-mail", {
         method: "POST",
         headers: {
@@ -3356,10 +3360,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "Authorization": `Bearer ${BUBBLE_API_TOKEN}`,
         },
         body: JSON.stringify({
-          sender: "FLOXN 현장출동보고서",
+          sender: "FLOXN",
           title: `현장출동보고서 - ${caseNumber || "케이스"}`,
           to: email,
-          attachment: pdfBase64,
+          attachment: pdfDataUri,
+          filename: fileName,
         }),
       });
 
