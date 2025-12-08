@@ -632,13 +632,32 @@ export default function FieldEstimate() {
     '바닥': ['수장공사', '가설공사'],
   };
   
+  // 위치+공종별 공사명 매핑 (복구면적 산출표용 - 하드코딩)
+  const WORK_NAMES_BY_LOCATION_AND_TYPE: Record<string, Record<string, string[]>> = {
+    '천장': {
+      '목공사': ['반자틀', '합판', '석고보드', '몰딩'],
+      '수장공사': ['도배'],
+    },
+    '벽면': {
+      '목공사': ['합판', '석고보드', '걸레받이'],
+      '수장공사': ['도배'],
+    },
+    '바닥': {
+      '수장공사': ['마루', '장판'],
+      '가설공사': ['건축물현장정리'],
+    },
+  };
+  
   // 위치에 따른 공종 옵션 가져오기
   const getWorkTypesByLocation = (location: string): string[] => {
     return WORK_TYPES_BY_LOCATION[location] || AREA_CALCULATION_WORK_TYPES;
   };
   
-  // 공종에 따른 공사명 옵션 가져오기 (노무비 DB에서 가져옴)
-  const getWorkNamesByWorkType = (workType: string): string[] => {
+  // 위치+공종에 따른 공사명 옵션 가져오기 (하드코딩 매핑)
+  const getWorkNamesByWorkType = (workType: string, location?: string): string[] => {
+    if (location && WORK_NAMES_BY_LOCATION_AND_TYPE[location]?.[workType]) {
+      return WORK_NAMES_BY_LOCATION_AND_TYPE[location][workType];
+    }
     return workNamesByWorkType[workType] || [];
   };
   
@@ -2389,7 +2408,7 @@ export default function FieldEstimate() {
                             <SelectValue placeholder="공사명 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            {getWorkNamesByWorkType(row.workType).filter(wn => wn && wn.trim() !== '').map(wn => (
+                            {getWorkNamesByWorkType(row.workType, row.location).filter(wn => wn && wn.trim() !== '').map(wn => (
                               <SelectItem key={wn} value={wn}>
                                 {wn}
                               </SelectItem>
@@ -3072,7 +3091,7 @@ export default function FieldEstimate() {
                               }}
                             >
                               <option value="">공사명 선택</option>
-                              {getWorkNamesByWorkType(row.workType).map((work) => (
+                              {getWorkNamesByWorkType(row.workType, row.location).map((work) => (
                                 <option key={work} value={work}>{work}</option>
                               ))}
                             </select>
