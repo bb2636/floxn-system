@@ -3350,6 +3350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Call Bubble workflow to send email with PDF attachment
       const fileName = `현장출동보고서_${caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
       
       const response = await fetch("https://sendmail-43925.bubbleapps.io/version-test/api/1.1/wf/send-mail", {
         method: "POST",
@@ -3361,6 +3362,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sender: "FLOXN",
           title: `현장출동보고서 - ${caseNumber || "케이스"}`,
           to: email,
+          // 이메일 본문
+          body: `안녕하세요,\n\n현장출동보고서를 첨부하여 보내드립니다.\n\n- 접수번호: ${caseNumber || "N/A"}\n- 발송일: ${dateStr}\n\n첨부된 PDF 파일을 확인해 주시기 바랍니다.\n\n감사합니다.\nFLOXN 드림`,
+          content: `안녕하세요,\n\n현장출동보고서를 첨부하여 보내드립니다.\n\n- 접수번호: ${caseNumber || "N/A"}\n- 발송일: ${dateStr}\n\n첨부된 PDF 파일을 확인해 주시기 바랍니다.\n\n감사합니다.\nFLOXN 드림`,
           // SendGrid 형식의 첨부파일
           attachments: [
             {
@@ -3369,7 +3373,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: "application/pdf",
               disposition: "attachment"
             }
-          ]
+          ],
+          // 추가 파일 정보 (Bubble 호환성)
+          file: pdfBase64,
+          file_name: fileName,
+          pdf: pdfBase64,
+          pdf_filename: fileName
         }),
       });
 
