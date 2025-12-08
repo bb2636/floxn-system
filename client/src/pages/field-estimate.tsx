@@ -64,6 +64,21 @@ interface Material {
 
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
 
+// 노무비 행을 공종별로 정렬하는 헬퍼 함수 (같은 공종끼리 묶음)
+const sortLaborRowsByCategory = (rows: LaborCostRow[]): LaborCostRow[] => {
+  return [...rows].sort((a, b) => {
+    const categoryA = a.category || '';
+    const categoryB = b.category || '';
+    if (categoryA !== categoryB) {
+      return categoryA.localeCompare(categoryB, 'ko');
+    }
+    // 같은 공종 내에서는 공사명으로 정렬
+    const workNameA = a.workName || '';
+    const workNameB = b.workName || '';
+    return workNameA.localeCompare(workNameB, 'ko');
+  });
+};
+
 export default function FieldEstimate() {
   // Hydration guard: 기존 견적 복원 완료 추적 (중복 행 방지)
   const isHydratedRef = useRef(false);
@@ -3162,7 +3177,7 @@ export default function FieldEstimate() {
               {/* 노무비 테이블 - 노무비 탭과 동일한 LaborCostSection 사용 */}
               <LaborCostSection
                 rows={laborCostRows}
-                onRowsChange={setLaborCostRows}
+                onRowsChange={(newRows) => setLaborCostRows(sortLaborRowsByCategory(newRows))}
                 catalog={laborCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
@@ -3648,7 +3663,7 @@ export default function FieldEstimate() {
               {/* 노무비 테이블 컴포넌트 - 새로운 프롬프트 기반 UI */}
               <LaborCostSection
                 rows={laborCostRows}
-                onRowsChange={setLaborCostRows}
+                onRowsChange={(newRows) => setLaborCostRows(sortLaborRowsByCategory(newRows))}
                 catalog={laborCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
