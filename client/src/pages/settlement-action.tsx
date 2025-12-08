@@ -11,6 +11,16 @@ import { ko } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatCaseNumber } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function SettlementAction() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,6 +33,8 @@ export default function SettlementAction() {
   const [invoiceDate, setInvoiceDate] = useState("");
   const [useTodayInvoice, setUseTodayInvoice] = useState(false);
   const [settlementMemo, setSettlementMemo] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const { toast } = useToast();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -191,11 +203,26 @@ export default function SettlementAction() {
     console.log("Searching for:", searchQuery);
   };
 
+  // 모든 필수 값이 입력되었는지 확인
+  const isFormComplete = useMemo(() => {
+    if (!selectedCase) return false;
+    if (!settlementAmount || settlementAmount === "0") return false;
+    if (!settlementDate) return false;
+    return true;
+  }, [selectedCase, settlementAmount, settlementDate]);
+
   const handleSettlement = () => {
     if (!selectedCase) {
       console.error("No case selected for settlement");
       return;
     }
+
+    // 정산 확인 다이얼로그 열기
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSettlement = () => {
+    if (!selectedCase) return;
 
     const settlementData = {
       caseId: selectedCase.id,
@@ -211,6 +238,25 @@ export default function SettlementAction() {
     };
 
     console.log("Settlement data to submit:", settlementData);
+    
+    // TODO: API 호출하여 정산 처리
+    
+    setShowConfirmDialog(false);
+    toast({
+      title: "정산 완료",
+      description: `${selectedCase.caseNumber} 건의 정산이 완료되었습니다.`,
+    });
+    
+    // 폼 초기화
+    setSettlementAmount("");
+    setSettlementDate(undefined);
+    setCommission("0");
+    setDiscount("0");
+    setDeductible("0");
+    setInvoiceDate("");
+    setUseTodayInvoice(false);
+    setSettlementMemo("");
+    setSelectedCaseId(null);
   };
 
   return (
@@ -1416,15 +1462,18 @@ export default function SettlementAction() {
                 >초기화</Button>
                 <Button
                   onClick={handleSettlement}
+                  disabled={!isFormComplete}
                   style={{
                     height: "44px",
                     padding: "0 32px",
-                    background: "#6B7280",
+                    background: isFormComplete ? "#008FED" : "#6B7280",
                     borderRadius: "8px",
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     fontWeight: 600,
                     color: "#FFFFFF",
+                    cursor: isFormComplete ? "pointer" : "not-allowed",
+                    opacity: isFormComplete ? 1 : 0.7,
                   }}
                   data-testid="button-submit-settlement"
                 >
@@ -1435,6 +1484,111 @@ export default function SettlementAction() {
           </div>
         </div>
       )}
+
+      {/* 정산 확인 다이얼로그 */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent style={{ maxWidth: "450px", padding: "32px" }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "20px",
+                fontWeight: 600,
+                color: "#0C0C0C",
+                marginBottom: "24px",
+              }}
+            >
+              정산 확인
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          {selectedCase && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              {/* 접수건 */}
+              <div>
+                <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)", marginBottom: "8px" }}>
+                  접수건
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 16px", background: "#F8F9FA", borderRadius: "8px" }}>
+                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#008FED" }} />
+                  <div>
+                    <div style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C" }}>
+                      {selectedCase.insuranceCompany} {selectedCase.insuranceAccidentNo}
+                    </div>
+                    <div style={{ fontFamily: "Pretendard", fontSize: "12px", color: "rgba(12, 12, 12, 0.6)", marginTop: "4px" }}>
+                      접수번호 {formatCaseNumber(selectedCase.caseNumber)}　계약자 {selectedCase.contractor}　담당자 {selectedCase.clientManager}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 정산 내용 */}
+              <div>
+                <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)", marginBottom: "12px" }}>
+                  정산 내용
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>정산 금액</span>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", fontWeight: 600, color: "#0C0C0C" }}>{settlementAmount}원</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>정산일자</span>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{settlementDate ? format(settlementDate, "yyyy-MM-dd") : "-"}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>수수료</span>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{commission}원</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>입금액</span>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{discount}원</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>자기부담금</span>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{deductible}원</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>계산서 발행일</span>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceDate || (useTodayInvoice ? format(new Date(), "yyyy-MM-dd") : "-")}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <AlertDialogFooter style={{ marginTop: "24px" }}>
+            <AlertDialogCancel
+              style={{
+                flex: 1,
+                height: "44px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 600,
+                borderRadius: "8px",
+              }}
+              data-testid="button-cancel-settlement"
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmSettlement}
+              style={{
+                flex: 1,
+                height: "44px",
+                background: "#008FED",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 600,
+                borderRadius: "8px",
+              }}
+              data-testid="button-confirm-settlement"
+            >
+              확인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
