@@ -227,7 +227,7 @@ export default function SettlementsInquiry() {
         admin: assignedPartnerValue,
         depositBank,
         withdrawalDate: caseItem.completionDate || caseItem.claimDate || "-",
-        constructionStatus: caseItem.recoveryType ? "유" : "무",
+        constructionStatus: caseItem.recoveryType ? "수리" : "미수리",
         preventionEstimateAmount,
         preventionApprovedAmount,
         preventionDifference,
