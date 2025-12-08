@@ -2085,12 +2085,75 @@ export default function FieldReport() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {drawing ? (
+                {drawing ? (() => {
+                  // 도면 요소들의 경계 계산
+                  let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
+                  
+                  drawing.rectangles?.forEach((rect) => {
+                    const x = rect.x * DISPLAY_SCALE;
+                    const y = rect.y * DISPLAY_SCALE;
+                    const w = rect.width * DISPLAY_SCALE;
+                    const h = rect.height * DISPLAY_SCALE;
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x + w + 50); // 우측 mm 표시 공간
+                    maxY = Math.max(maxY, y + h + 20); // 하단 mm 표시 공간
+                  });
+                  
+                  drawing.uploadedImages?.forEach((img) => {
+                    const x = img.x * DISPLAY_SCALE;
+                    const y = img.y * DISPLAY_SCALE;
+                    const w = img.width * DISPLAY_SCALE;
+                    const h = img.height * DISPLAY_SCALE;
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x + w);
+                    maxY = Math.max(maxY, y + h);
+                  });
+                  
+                  drawing.accidentAreas?.forEach((area) => {
+                    const x = area.x * DISPLAY_SCALE;
+                    const y = area.y * DISPLAY_SCALE;
+                    const w = area.width * DISPLAY_SCALE;
+                    const h = area.height * DISPLAY_SCALE;
+                    minX = Math.min(minX, x);
+                    minY = Math.min(minY, y);
+                    maxX = Math.max(maxX, x + w);
+                    maxY = Math.max(maxY, y + h);
+                  });
+                  
+                  drawing.leakMarkers?.forEach((marker) => {
+                    const x = marker.x * DISPLAY_SCALE;
+                    const y = marker.y * DISPLAY_SCALE;
+                    minX = Math.min(minX, x - 12);
+                    minY = Math.min(minY, y - 12);
+                    maxX = Math.max(maxX, x + 12);
+                    maxY = Math.max(maxY, y + 12);
+                  });
+                  
+                  // 컨테이너 크기
+                  const containerWidth = 800;
+                  const containerHeight = 600;
+                  
+                  // 콘텐츠 크기 계산 (패딩 추가)
+                  const contentWidth = maxX - Math.min(minX, 0) + 60;
+                  const contentHeight = maxY - Math.min(minY, 0) + 40;
+                  
+                  // 스케일 계산 (전체가 보이도록 축소)
+                  const scaleX = containerWidth / contentWidth;
+                  const scaleY = containerHeight / contentHeight;
+                  const fitScale = Math.min(scaleX, scaleY, 1); // 1보다 크면 축소 안함
+                  
+                  // 오프셋 계산 (중앙 정렬)
+                  const offsetX = (containerWidth - contentWidth * fitScale) / 2;
+                  const offsetY = 20;
+                  
+                  return (
                   <div
-                    className="relative overflow-auto"
+                    className="relative overflow-hidden"
                     style={{
                       width: "100%",
-                      height: "600px",
+                      height: `${containerHeight}px`,
                       background: "white",
                       backgroundImage: `
                         linear-gradient(rgba(218, 218, 218, 0.5) 1px, transparent 1px),
@@ -2099,6 +2162,17 @@ export default function FieldReport() {
                       backgroundSize: "10px 10px",
                     }}
                   >
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: `${offsetX}px`,
+                        top: `${offsetY}px`,
+                        transform: `scale(${fitScale})`,
+                        transformOrigin: "top left",
+                        width: `${contentWidth}px`,
+                        height: `${contentHeight}px`,
+                      }}
+                    >
                     {/* 업로드된 이미지 */}
                     {drawing.uploadedImages?.map((img) => (
                       <img
@@ -2229,8 +2303,10 @@ export default function FieldReport() {
                         </svg>
                       </div>
                     ))}
+                    </div>
                   </div>
-                ) : (
+                  );
+                })() : (
                   <p
                     style={{
                       fontFamily: "Pretendard",
