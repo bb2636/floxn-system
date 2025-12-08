@@ -3397,6 +3397,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==========================================
+  // POST /send-pdf - PDF 이메일 첨부 전송 (SMTP/Nodemailer)
+  // ==========================================
+  app.post("/send-pdf", async (req, res) => {
+    try {
+      const { to, pdfUrl } = req.body;
+
+      // Validate request body
+      if (!to || typeof to !== 'string') {
+        return res.status(400).json({ ok: false, message: "수신자 이메일(to)이 필요합니다" });
+      }
+      if (!pdfUrl || typeof pdfUrl !== 'string') {
+        return res.status(400).json({ ok: false, message: "PDF URL(pdfUrl)이 필요합니다" });
+      }
+
+      // Check SMTP environment variables
+      const SMTP_HOST = process.env.SMTP_HOST;
+      const SMTP_PORT = process.env.SMTP_PORT;
+      const SMTP_USER = process.env.SMTP_USER;
+      const SMTP_PASS = process.env.SMTP_PASS;
+
+      if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+        console.error("[send-pdf] Missing SMTP configuration");
+        return res.status(500).json({ ok: false, message: "SMTP 설정이 필요합니다 (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)" });
+      }
+
+      // Download PDF from URL
+      console.log(`[send-pdf] Downloading PDF from: ${pdfUrl}`);
+      let pdfBuffer: Buffer;
+      try {
+        const pdfResponse = await fetch(pdfUrl);
+        if (!pdfResponse.ok) {
+          console.error(`[send-pdf] PDF download failed: ${pdfResponse.status} ${pdfResponse.statusText}`);
+          return res.status(500).json({ ok: false, message: `PDF 다운로드 실패: ${pdfResponse.status}` });
+        }
+        const arrayBuffer = await pdfResponse.arrayBuffer();
+        pdfBuffer = Buffer.from(arrayBuffer);
+        console.log(`[send-pdf] PDF downloaded successfully, size: ${pdfBuffer.length} bytes`);
+      } catch (downloadError) {
+        console.error("[send-pdf] PDF download error:", downloadError);
+        return res.status(500).json({ ok: false, message: "PDF 파일을 다운로드할 수 없습니다" });
+      }
+
+      // Setup Nodemailer transporter
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: parseInt(SMTP_PORT, 10),
+        secure: parseInt(SMTP_PORT, 10) === 465, // true for 465, false for other ports
+        auth: {
+          user: SMTP_USER,
+          pass: SMTP_PASS,
+        },
+      });
+
+      // Send email with PDF attachment
+      console.log(`[send-pdf] Sending email to: ${to}`);
+      try {
+        const info = await transporter.sendMail({
+          from: SMTP_USER,
+          to: to,
+          subject: "PDF 파일 전송",
+          text: "첨부된 PDF 파일을 확인해주세요.",
+          attachments: [
+            {
+              filename: "document.pdf",
+              content: pdfBuffer,
+              contentType: "application/pdf",
+            },
+          ],
+        });
+
+        console.log(`[send-pdf] Email sent successfully: ${info.messageId}`);
+        return res.json({ ok: true });
+      } catch (sendError) {
+        console.error("[send-pdf] Email send error:", sendError);
+        return res.status(500).json({ ok: false, message: `이메일 전송 실패: ${(sendError as Error).message}` });
+      }
+    } catch (error) {
+      console.error("[send-pdf] Unexpected error:", error);
+      return res.status(500).json({ ok: false, message: `서버 오류: ${(error as Error).message}` });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
