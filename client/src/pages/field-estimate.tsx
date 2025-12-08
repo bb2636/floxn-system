@@ -1579,15 +1579,9 @@ export default function FieldEstimate() {
     return (str || '').trim().toLowerCase().replace(/\s+/g, '');
   };
   
-  // 철거공사 행도 함께 생성해야 하는 공사명과 해체 공사명 매핑
-  // DB에 있는 피해철거공사 세부항목: 반자틀 해체, 석고보드 해체, 벽지 해체, 타일철거, 바닥재 등
-  const DEMOLITION_WORK_MAPPING: Record<string, string> = {
-    '반자틀': '반자틀해체',
-    '석고보드': '석고보드해체', 
-    '도배': '벽지해체',
-    '마루': '바닥재해체',
-  };
-  const DEMOLITION_REQUIRED_WORK_NAMES = Object.keys(DEMOLITION_WORK_MAPPING);
+  // 철거공사 행도 함께 생성해야 하는 공사명 목록
+  // 사용자가 이 공사명들을 선택하면 '철거공사' 공종으로 추가 행 생성
+  const DEMOLITION_REQUIRED_WORK_NAMES = ['반자틀', '석고보드', '도배', '마루'];
   
   // 노무비 행 생성 헬퍼 (중복 방지 및 정렬 포함)
   const createLaborRowIfNotExists = (
@@ -1705,27 +1699,32 @@ export default function FieldEstimate() {
     // 원래 공종 노무비 행 생성
     createLaborRowIfNotExists(workType, workName, sourceRowId, matchingLaborItems);
     
-    // 2. 특정 공사명인 경우 피해철거공사 행도 추가 생성
-    // 공사명을 해체 공사명으로 매핑 (예: 석고보드 → 석고보드해체)
-    const matchedOriginalWorkName = DEMOLITION_REQUIRED_WORK_NAMES.find(
+    // 2. 특정 공사명인 경우 철거공사 행도 추가 생성
+    const isDemolitionRequired = DEMOLITION_REQUIRED_WORK_NAMES.some(
       name => normalizeForMatch(name) === normalizedWorkName
     );
     
-    if (matchedOriginalWorkName && workType !== '피해철거공사') {
-      // 해체 공사명 가져오기 (예: 석고보드 → 석고보드해체)
-      const demolitionWorkName = DEMOLITION_WORK_MAPPING[matchedOriginalWorkName];
-      
-      // 피해철거공사 + 해체 공사명으로 노무비 DB 검색 (폴백 로직 포함)
-      const demolitionLaborItems = findLaborItemsWithFallback(
-        normalizeForMatch('피해철거공사'), 
-        normalizeForMatch(demolitionWorkName)
+    if (isDemolitionRequired && workType !== '철거공사') {
+      // 철거공사 + 같은 공사명으로 노무비 DB 검색 (폴백 로직 포함)
+      // 노무비 DB에 '철거공사'가 없으면 '피해철거공사'로 폴백
+      let demolitionLaborItems = findLaborItemsWithFallback(
+        normalizeForMatch('철거공사'), 
+        normalizedWorkName
       );
       
-      // 피해철거공사용 별도 sourceRowId 생성 (::demolition 접미사)
+      // 철거공사로 매칭 안되면 피해철거공사로 시도
+      if (demolitionLaborItems.length === 0) {
+        demolitionLaborItems = findLaborItemsWithFallback(
+          normalizeForMatch('피해철거공사'), 
+          normalizedWorkName
+        );
+      }
+      
+      // 철거공사용 별도 sourceRowId 생성 (::demolition 접미사)
       const demolitionSourceRowId = `${sourceRowId}::demolition`;
       
-      console.log('[연동] 피해철거공사 추가 생성:', '피해철거공사', demolitionWorkName);
-      createLaborRowIfNotExists('피해철거공사', demolitionWorkName, demolitionSourceRowId, demolitionLaborItems);
+      console.log('[연동] 철거공사 추가 생성:', '철거공사', workName);
+      createLaborRowIfNotExists('철거공사', workName, demolitionSourceRowId, demolitionLaborItems);
     }
     
     // 자재비 DB에서 해당 공종의 자재 찾기 (정규화된 비교)
