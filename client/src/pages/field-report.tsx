@@ -1038,6 +1038,40 @@ export default function FieldReport() {
 
                   let isFirstPage = true;
 
+                  // 모든 선택된 섹션의 hidden 속성 제거하고 강제 표시
+                  const elementsToRestore: { element: HTMLElement; hadHidden: boolean; hadAriaHidden: string | null; originalStyle: string }[] = [];
+                  
+                  for (const sectionKey of selectedSections) {
+                    const elementId = sectionMap[sectionKey];
+                    const element = document.getElementById(elementId);
+                    
+                    if (element) {
+                      elementsToRestore.push({
+                        element,
+                        hadHidden: element.hasAttribute('hidden'),
+                        hadAriaHidden: element.getAttribute('aria-hidden'),
+                        originalStyle: element.getAttribute('style') || '',
+                      });
+                      
+                      // hidden 및 aria-hidden 속성 제거
+                      element.removeAttribute('hidden');
+                      element.removeAttribute('aria-hidden');
+                      element.setAttribute('data-state', 'active');
+                      
+                      // 강제로 표시
+                      element.style.display = 'block';
+                      element.style.visibility = 'visible';
+                      element.style.opacity = '1';
+                      element.style.position = 'absolute';
+                      element.style.left = '-9999px';
+                      element.style.width = '800px';
+                    }
+                  }
+                  
+                  // 레이아웃 재계산 대기 (requestAnimationFrame 2회)
+                  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                  await new Promise(resolve => setTimeout(resolve, 100));
+
                   // 각 섹션을 순차적으로 캡처
                   for (const sectionKey of selectedSections) {
                     const elementId = sectionMap[sectionKey];
@@ -1049,7 +1083,7 @@ export default function FieldReport() {
                     }
 
                     try {
-                      // html2canvas로 원본 요소 직접 캡처 (onclone에서 강제 표시)
+                      // html2canvas로 캡처
                       const canvas = await html2canvas(element, {
                         scale: 2,
                         useCORS: true,
@@ -1057,33 +1091,6 @@ export default function FieldReport() {
                         logging: false,
                         backgroundColor: '#ffffff',
                         windowWidth: 1200,
-                        onclone: (clonedDoc, clonedElement) => {
-                          // 클론된 요소를 강제로 표시
-                          clonedElement.style.display = 'block';
-                          clonedElement.style.visibility = 'visible';
-                          clonedElement.style.opacity = '1';
-                          clonedElement.style.position = 'static';
-                          clonedElement.style.width = '800px';
-                          clonedElement.style.padding = '20px';
-                          clonedElement.style.background = '#ffffff';
-                          clonedElement.setAttribute('data-state', 'active');
-                          
-                          // 모든 자식 요소도 표시
-                          const allElements = clonedElement.querySelectorAll('*');
-                          allElements.forEach((el) => {
-                            if (el instanceof HTMLElement) {
-                              el.style.visibility = 'visible';
-                              el.style.opacity = '1';
-                              // data-state가 inactive인 요소들 활성화
-                              if (el.getAttribute('data-state') === 'inactive') {
-                                el.setAttribute('data-state', 'active');
-                                el.style.display = 'block';
-                              }
-                              // hidden 속성 제거
-                              el.removeAttribute('hidden');
-                            }
-                          });
-                        }
                       });
 
                       // 캔버스 유효성 검사
@@ -1123,6 +1130,18 @@ export default function FieldReport() {
                       console.error(`캡처 오류 (${sectionKey}):`, captureError);
                     }
                   }
+                  
+                  // 원래 상태로 복원
+                  elementsToRestore.forEach(({ element, hadHidden, hadAriaHidden, originalStyle }) => {
+                    if (hadHidden) {
+                      element.setAttribute('hidden', '');
+                    }
+                    if (hadAriaHidden !== null) {
+                      element.setAttribute('aria-hidden', hadAriaHidden);
+                    }
+                    element.setAttribute('style', originalStyle);
+                    element.removeAttribute('data-state');
+                  });
 
                   // PDF 저장
                   const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
