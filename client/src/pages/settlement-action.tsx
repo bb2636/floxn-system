@@ -225,7 +225,6 @@ export default function SettlementAction() {
           }}
         />
       </div>
-
       {/* Search and Results Section - Combined */}
       <div
         className="mb-6"
@@ -658,7 +657,6 @@ export default function SettlementAction() {
           </div>
         </div>
       </div>
-
       {/* Detail Section */}
       {selectedCase && (
         <div
@@ -1242,9 +1240,7 @@ export default function SettlementAction() {
                     display: "block",
                     marginBottom: "8px",
                   }}
-                >
-                  할구
-                </label>
+                >입금액</label>
                 <Input
                   type="text"
                   value={discount}
