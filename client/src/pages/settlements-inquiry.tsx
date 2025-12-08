@@ -64,7 +64,7 @@ export default function SettlementsInquiry() {
     return null;
   }
 
-  // Create maps for quick user lookup by both ID and username
+  // Create maps for quick user lookup by ID, username, and company name
   const usersByIdMap = useMemo(() => {
     const map = new Map<string, User>();
     allUsers.forEach(u => map.set(u.id, u));
@@ -74,6 +74,14 @@ export default function SettlementsInquiry() {
   const usersByUsernameMap = useMemo(() => {
     const map = new Map<string, User>();
     allUsers.forEach(u => map.set(u.username, u));
+    return map;
+  }, [allUsers]);
+
+  const usersByCompanyMap = useMemo(() => {
+    const map = new Map<string, User>();
+    allUsers.forEach(u => {
+      if (u.company) map.set(u.company, u);
+    });
     return map;
   }, [allUsers]);
 
@@ -214,7 +222,9 @@ export default function SettlementsInquiry() {
       // Get assigned partner's bank information
       // Try both ID and username lookup for backward compatibility
       const assignedPartnerValue = caseItem.assignedPartner || user.username;
-      const partnerUser = usersByIdMap.get(assignedPartnerValue) || usersByUsernameMap.get(assignedPartnerValue);
+      const partnerUser = usersByIdMap.get(assignedPartnerValue) 
+        || usersByUsernameMap.get(assignedPartnerValue)
+        || usersByCompanyMap.get(assignedPartnerValue);
       const depositBank = partnerUser?.bankName || "-";
 
       return {
@@ -239,7 +249,7 @@ export default function SettlementsInquiry() {
         claimAmount: estimateTotal,
       };
     });
-  }, [claimCases, estimatesMap, user, usersByIdMap, usersByUsernameMap]);
+  }, [claimCases, estimatesMap, user, usersByIdMap, usersByUsernameMap, usersByCompanyMap]);
 
   const isLoading = casesLoading || estimatesLoading || usersLoading;
 

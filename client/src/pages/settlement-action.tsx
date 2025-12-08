@@ -40,7 +40,7 @@ export default function SettlementAction() {
     return null;
   }
 
-  // Create maps for quick user lookup by both ID and username
+  // Create maps for quick user lookup by ID, username, and company name
   const usersByIdMap = useMemo(() => {
     const map = new Map<string, User>();
     allUsers.forEach(u => map.set(u.id, u));
@@ -50,6 +50,14 @@ export default function SettlementAction() {
   const usersByUsernameMap = useMemo(() => {
     const map = new Map<string, User>();
     allUsers.forEach(u => map.set(u.username, u));
+    return map;
+  }, [allUsers]);
+
+  const usersByCompanyMap = useMemo(() => {
+    const map = new Map<string, User>();
+    allUsers.forEach(u => {
+      if (u.company) map.set(u.company, u);
+    });
     return map;
   }, [allUsers]);
 
@@ -133,9 +141,11 @@ export default function SettlementAction() {
     return claimCases.map((caseItem) => {
       const approvedAmount = calculateApprovedAmount(caseItem.id, caseItem);
       
-      // Get partner user - try both ID and username lookup
+      // Get partner user - try ID, username, and company name lookup
       const assignedPartnerValue = caseItem.assignedPartner || "";
-      const partnerUser = usersByIdMap.get(assignedPartnerValue) || usersByUsernameMap.get(assignedPartnerValue);
+      const partnerUser = usersByIdMap.get(assignedPartnerValue) 
+        || usersByUsernameMap.get(assignedPartnerValue)
+        || usersByCompanyMap.get(assignedPartnerValue);
       
       // Get review user (심사 담당자) - reviewedBy is user ID
       const reviewUser = caseItem.reviewedBy ? usersByIdMap.get(caseItem.reviewedBy) : null;
@@ -162,7 +172,7 @@ export default function SettlementAction() {
         caseData: caseItem,
       };
     });
-  }, [claimCases, usersByIdMap, usersByUsernameMap, estimatesMap]);
+  }, [claimCases, usersByIdMap, usersByUsernameMap, usersByCompanyMap, estimatesMap]);
 
   // Filter settlements based on search query
   const filteredSettlements = searchQuery.trim()
