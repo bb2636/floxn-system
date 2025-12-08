@@ -1067,6 +1067,8 @@ export default function FieldReport() {
                     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                     
                     const element = document.getElementById(elementId);
+                    console.log(`Processing section: ${sectionKey}, tabValue: ${tabValue}, elementId: ${elementId}`);
+                    console.log(`Element found: ${!!element}`, element);
                     
                     if (!element) {
                       console.warn(`Element not found: ${elementId}`);
