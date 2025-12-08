@@ -1059,7 +1059,7 @@ export default function FieldEstimate() {
             ...rest,
           };
         });
-        setLaborCostRows(loadedLaborRows);
+        setLaborCostRows(sortLaborRowsByCategory(loadedLaborRows));
         
         // 자재비 데이터 불러오기 (노무비 ID 매핑 후)
         // materialCostData가 객체(새 형식: {rows, vatIncluded}) 또는 배열(기존 형식)일 수 있음
