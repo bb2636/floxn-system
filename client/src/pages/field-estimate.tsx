@@ -429,6 +429,74 @@ export default function FieldEstimate() {
     setSelectedLaborRows(new Set());
   };
 
+  // 복구면적 산출표에서 노무비로 동기화 (공종/공사명 기준)
+  const syncLaborFromRecoveryArea = () => {
+    if (isReadOnly || rows.length === 0) return;
+    
+    // 복구면적 산출표에서 고유한 공종+공사명 조합 추출 및 면적 합산
+    const workTypeMap = new Map<string, Map<string, { totalArea: number; rowIds: string[] }>>();
+    
+    rows.forEach(row => {
+      const workType = row.workType || '';
+      const workName = row.workName || '';
+      if (!workType) return; // 공종이 없으면 건너뜀
+      
+      if (!workTypeMap.has(workType)) {
+        workTypeMap.set(workType, new Map());
+      }
+      
+      const workNameMap = workTypeMap.get(workType)!;
+      if (!workNameMap.has(workName)) {
+        workNameMap.set(workName, { totalArea: 0, rowIds: [] });
+      }
+      
+      const workNameData = workNameMap.get(workName)!;
+      workNameData.totalArea += parseFloat(row.repairArea) || 0;
+      workNameData.rowIds.push(row.id);
+    });
+    
+    // 공종별로 정렬된 노무비 행 생성
+    const newLaborRows: LaborCostRow[] = [];
+    const sortedWorkTypes = Array.from(workTypeMap.keys()).sort();
+    
+    sortedWorkTypes.forEach(workType => {
+      const workNameMap = workTypeMap.get(workType)!;
+      const sortedWorkNames = Array.from(workNameMap.keys()).sort();
+      
+      sortedWorkNames.forEach(workName => {
+        const workNameData = workNameMap.get(workName)!;
+        
+        newLaborRows.push({
+          id: `labor-${Date.now()}-${Math.random()}`,
+          sourceAreaRowId: workNameData.rowIds[0] || '',
+          place: '',
+          position: '',
+          category: workType, // 공종
+          workName: workName, // 공사명
+          detailWork: '노무비', // 기본값
+          detailItem: '',
+          priceStandard: '',
+          unit: '',
+          standardPrice: 0,
+          quantity: 1,
+          applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
+          salesMarkupRate: 0,
+          pricePerSqm: 0,
+          damageArea: Math.round(workNameData.totalArea * 10) / 10, // 복구면적 합계
+          deduction: 0,
+          includeInEstimate: false,
+          request: '',
+          amount: 0,
+        });
+      });
+    });
+    
+    if (newLaborRows.length > 0) {
+      setLaborCostRows(newLaborRows);
+      setSelectedLaborRows(new Set());
+    }
+  };
+
   // 자재비 행 추가
   const addMaterialRow = () => {
     if (isReadOnly) return;
@@ -3532,6 +3600,20 @@ export default function FieldEstimate() {
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
+                  <Button
+                    onClick={syncLaborFromRecoveryArea}
+                    variant="outline"
+                    size="sm"
+                    disabled={rows.length === 0 || isReadOnly}
+                    style={{
+                      borderColor: rows.length === 0 ? "#d1d5db" : "#10B981",
+                      color: rows.length === 0 ? "#9ca3af" : "#10B981",
+                    }}
+                    data-testid="button-sync-labor-from-recovery"
+                  >
+                    <Copy className="h-4 w-4 mr-1" />
+                    복구면적 가져오기
+                  </Button>
                   <Button
                     onClick={addLaborRow}
                     variant="outline"
