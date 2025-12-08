@@ -1294,6 +1294,17 @@ export default function FieldEstimate() {
           updated.repairArea = repairWidth > 0 ? repairWidth.toString() : '0';
         }
         
+        // 공사명 변경 시 노무비/자재비 자동 연동 (공종이 이미 설정된 경우)
+        if (field === 'workName' && updated.workType && value) {
+          // 동기 방식으로 연동 (setLaborCostRows/setMaterialRows 내부에서 중복 체크)
+          syncAreaRowToLaborAndMaterial(updated.workType, value, rowId);
+        }
+        
+        // 공종 변경 시 노무비/자재비 자동 연동 (공사명이 이미 설정된 경우)
+        if (field === 'workType' && updated.workName && value) {
+          syncAreaRowToLaborAndMaterial(value, updated.workName, rowId);
+        }
+        
         // 가로/세로 변경 시 면적 자동 계산
         if (field === 'damageWidth' || field === 'damageHeight') {
           const currentWorkName = updated.workName || row.workName;
@@ -1562,6 +1573,141 @@ export default function FieldEstimate() {
       })
     );
   };
+  
+  // 문자열 정규화 헬퍼 (공백 제거, 소문자 변환)
+  const normalizeForMatch = (str: string): string => {
+    return (str || '').trim().toLowerCase().replace(/\s+/g, '');
+  };
+  
+  // 복구면적 산출표 → 노무비/자재비 자동 연동 함수 (동기 방식)
+  const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string) => {
+    if (!workType || !workName) return;
+    
+    console.log('[연동] 복구면적 → 노무비/자재비:', workType, workName);
+    
+    const normalizedWorkType = normalizeForMatch(workType);
+    const normalizedWorkName = normalizeForMatch(workName);
+    
+    // 노무비 DB에서 해당 공종+공사명의 데이터 찾기 (정규화된 비교)
+    const matchingLaborItems = laborCatalog.filter(item => 
+      normalizeForMatch(item.공종) === normalizedWorkType && 
+      normalizeForMatch(item.공사명) === normalizedWorkName &&
+      item.세부공사 === '노무비'
+    );
+    
+    // 노무비 행 생성 (DB에 매칭이 있으면 생성, 1개면 자동완성, 여러개면 드롭다운에서 선택)
+    if (matchingLaborItems.length === 0) {
+      console.log('[연동] 노무비 매칭 없음:', workType, workName, '- 노무비 DB에 해당 항목이 없습니다');
+    }
+    if (matchingLaborItems.length > 0) {
+      // 1개면 자동 선택, 여러개면 사용자가 드롭다운에서 선택
+      const laborItem = matchingLaborItems[0];
+      const isSingleMatch = matchingLaborItems.length === 1;
+      const detailItem = isSingleMatch ? (laborItem.세부항목 || '') : '';
+      const unitPrice = isSingleMatch ? (laborItem.단가_인 || 0) : 0;
+      
+      setLaborCostRows(prev => {
+        // 이미 같은 공종+공사명 행이 있는지 최신 상태에서 확인
+        const existingRow = prev.find(r => 
+          r.category === workType && r.workName === workName
+        );
+        if (existingRow) return prev;
+        
+        const newLaborRow: LaborCostRow = {
+          id: `labor-${Date.now()}-${Math.random()}`,
+          sourceAreaRowId: sourceRowId,
+          place: '',
+          position: '',
+          category: workType,
+          workName: workName,
+          detailWork: '노무비',
+          detailItem: detailItem,
+          priceStandard: '',
+          unit: isSingleMatch ? (laborItem.단위 || '인') : '',
+          standardPrice: unitPrice,
+          quantity: 1,
+          applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
+          salesMarkupRate: 0,
+          pricePerSqm: unitPrice,
+          damageArea: 0,
+          deduction: 0,
+          includeInEstimate: false,
+          request: '',
+          amount: Math.round(unitPrice * 1),
+        };
+        
+        console.log('[연동] 노무비 행 생성:', workType, workName, 
+          isSingleMatch ? `자동: ${detailItem} ${unitPrice}원` : `수동선택필요 (${matchingLaborItems.length}개 옵션)`);
+        return sortLaborRowsByCategory([...prev, newLaborRow]);
+      });
+    }
+    
+    // 자재비 DB에서 해당 공종의 자재 찾기 (정규화된 비교)
+    // 1순위: 공종 일치 + 자재명이 공사명으로 시작하는 것
+    // 2순위: 공종 일치 + 자재명에 공사명 포함
+    // 3순위: 공종만 일치
+    const exactStartMatch = materialCatalog.filter(item => 
+      normalizeForMatch(item.workType) === normalizedWorkType && 
+      normalizeForMatch(item.materialName).startsWith(normalizedWorkName)
+    );
+    
+    const containsMatch = exactStartMatch.length === 0 
+      ? materialCatalog.filter(item => 
+          normalizeForMatch(item.workType) === normalizedWorkType && 
+          normalizeForMatch(item.materialName).includes(normalizedWorkName)
+        )
+      : [];
+    
+    const workTypeOnlyMatch = (exactStartMatch.length === 0 && containsMatch.length === 0)
+      ? materialCatalog.filter(item => normalizeForMatch(item.workType) === normalizedWorkType)
+      : [];
+    
+    const materialsToUse = exactStartMatch.length > 0 
+      ? exactStartMatch 
+      : (containsMatch.length > 0 ? containsMatch : workTypeOnlyMatch);
+    
+    // 자재 행 생성 (DB에 매칭이 있으면 생성, 1개면 자동완성, 여러개면 드롭다운에서 선택)
+    if (materialsToUse.length === 0) {
+      console.log('[연동] 자재비 매칭 없음:', workType, workName, '- 자재비 DB에 해당 항목이 없습니다');
+    }
+    if (materialsToUse.length > 0) {
+      const isSingleMatch = materialsToUse.length === 1;
+      const materialItem = materialsToUse[0];
+      const materialName = isSingleMatch ? materialItem.materialName : '';
+      const spec = isSingleMatch ? (materialItem.specification || '') : '';
+      const unit = isSingleMatch ? (materialItem.unit || 'EA') : '';
+      const unitPrice = isSingleMatch 
+        ? (typeof materialItem.standardPrice === 'number' ? materialItem.standardPrice : 0) 
+        : 0;
+      
+      setMaterialRows(prev => {
+        // 이미 같은 공종+공사명 행이 있는지 최신 상태에서 확인
+        const existingRow = prev.find(r => 
+          r.공종 === workType && r.공사명 === workName
+        );
+        if (existingRow) return prev;
+        
+        const newMaterialRow: MaterialRow = {
+          id: `material-${Date.now()}-${Math.random()}`,
+          공종: workType,
+          공사명: workName,
+          자재: materialName,
+          규격: spec,
+          단위: unit,
+          기준단가: unitPrice,
+          수량: 1,
+          금액: Math.round(unitPrice * 1),
+          비고: '',
+          sourceLaborRowId: sourceRowId,
+        };
+        
+        console.log('[연동] 자재비 행 생성:', workType, workName, 
+          isSingleMatch ? `자동: ${materialName} ${unitPrice}원` : `수동선택필요 (${materialsToUse.length}개 옵션)`);
+        return [...prev, newMaterialRow];
+      });
+    }
+  };
+  
 
   // 노무비 행 체크박스 토글
   const toggleLaborRow = (rowId: string) => {
