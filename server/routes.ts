@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
-import { estimates } from "@shared/schema";
+import { estimates, cases } from "@shared/schema";
 import { sql, inArray } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -3089,7 +3089,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 케이스 정보 조회
-      const caseData = await storage.getCase(caseId);
+      const caseData = await storage.getCaseById(caseId);
       if (!caseData) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
@@ -3101,7 +3101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateCase(id, { status: "청구" });
         
         // 진행상황 기록 추가
-        await storage.createProgress({
+        await storage.createProgressUpdate({
           caseId: id,
           content: "인보이스 발송 완료 - 청구 상태로 변경",
           createdBy: req.session.userId,
