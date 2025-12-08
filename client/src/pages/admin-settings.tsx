@@ -90,7 +90,8 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
   const columnMapping: number[] = [];
   
   requiredHeaders.forEach(headerName => {
-    for (const [colIdx, value] of headerRow.entries()) {
+    const entries = Array.from(headerRow.entries());
+    for (const [colIdx, value] of entries) {
       if (value === headerName && !columnMapping.includes(colIdx)) {
         columnMapping.push(colIdx);
         break;
@@ -109,7 +110,7 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
     });
   } else {
     // Fallback: just use raw columns in order
-    const maxCol = Math.max(...rawRows.flatMap(r => [...r.keys()]));
+    const maxCol = Math.max(...rawRows.flatMap(r => Array.from(r.keys())));
     headers = [];
     for (let i = 0; i <= maxCol; i++) {
       headers.push(headerRow.get(i)?.toString() || '');
