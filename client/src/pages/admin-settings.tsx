@@ -46,10 +46,16 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
   const rowMatches = sheetXml.match(/<(?:row|x:row)[^>]*>[\s\S]*?<\/(?:row|x:row)>/g) || [];
   
   rowMatches.forEach(rowXml => {
-    const cellMatches = rowXml.match(/<(?:c|x:c)[^>]*>[\s\S]*?<\/(?:c|x:c)>/g) || [];
+    // Parse cells by matching self-closing and content cells separately
+    // Self-closing: <x:c ... /> (empty cells)
+    const selfClosingCells = rowXml.match(/<(?:c|x:c)\s+[^>]*\/>/g) || [];
+    // Content cells: <x:c ...><x:v>...</x:v></x:c> (cells with values)
+    const contentCells = rowXml.match(/<(?:c|x:c)\s[^>]*>(?!\s*<(?:c|x:c))[^<]*<(?:v|x:v)>[^<]*<\/(?:v|x:v)><\/(?:c|x:c)>/g) || [];
+    const allCells = [...selfClosingCells, ...contentCells];
+    
     const rowMap = new Map<number, any>();
     
-    cellMatches.forEach(cellXml => {
+    allCells.forEach(cellXml => {
       const refMatch = cellXml.match(/r="([A-Z]+)\d+"/);
       if (!refMatch) return;
       
