@@ -2497,54 +2497,104 @@ export default function AdminSettings() {
                   <tbody>
                     {(() => {
                       const currentData = dbTab === "노무비" ? laborExcelData : materialExcelData;
-                      return currentData.length > 0 ? (
-                        currentData.map((row: any, rowIdx: number) => (
-                          <tr
-                            key={rowIdx}
-                            style={{
-                              borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                            }}
-                          >
-                            {Array.isArray(row) && row.map((cell: any, cellIdx: number) => {
-                              // 숫자인 경우 반올림해서 표시
-                              let displayValue = cell;
-                              if (typeof cell === 'number' && !Number.isInteger(cell)) {
-                                displayValue = Math.round(cell);
-                              }
-                              return (
-                                <td
-                                  key={cellIdx}
-                                  className="px-4 py-4"
-                                  style={{
-                                    fontFamily: "Pretendard",
-                                    fontSize: "14px",
-                                    fontWeight: 400,
-                                    color: "#0C0C0C",
-                                    whiteSpace: "nowrap",
-                                  }}
-                                >
-                                  {displayValue}
-                                </td>
-                              );
-                            })}
+                      if (currentData.length === 0) {
+                        return (
+                          <tr>
+                            <td
+                              colSpan={12}
+                              className="px-4 py-8 text-center"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 400,
+                                color: "#686A6E",
+                              }}
+                            >
+                              {dbTab} 엑셀 파일을 업로드하면 데이터가 표시됩니다.
+                            </td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td
-                            colSpan={12}
-                            className="px-4 py-8 text-center"
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              fontWeight: 400,
-                              color: "#686A6E",
-                            }}
-                          >
-                            {dbTab} 엑셀 파일을 업로드하면 데이터가 표시됩니다.
-                          </td>
+                        );
+                      }
+                      
+                      // 노무비 DB: 공종(col 0), 공사명(col 1) 컬럼에 대해 병합 정보 계산
+                      // 빈 셀(null)은 위 셀과 병합된 것으로 처리
+                      const mergeableCols = dbTab === "노무비" ? [0, 1] : [];
+                      const mergeInfo: { [rowIdx: number]: { [colIdx: number]: { skip: boolean; rowspan: number } } } = {};
+                      
+                      // 각 병합 가능 컬럼에 대해 rowspan 계산
+                      mergeableCols.forEach(colIdx => {
+                        let currentValue: any = null;
+                        let startRowIdx = 0;
+                        
+                        currentData.forEach((row: any[], rowIdx: number) => {
+                          const cellValue = Array.isArray(row) ? row[colIdx] : null;
+                          
+                          if (!mergeInfo[rowIdx]) mergeInfo[rowIdx] = {};
+                          
+                          // 값이 있는 경우 새 그룹 시작
+                          if (cellValue !== null && cellValue !== '') {
+                            // 이전 그룹 마무리
+                            if (rowIdx > 0 && mergeInfo[startRowIdx]?.[colIdx]) {
+                              mergeInfo[startRowIdx][colIdx].rowspan = rowIdx - startRowIdx;
+                            }
+                            // 새 그룹 시작
+                            currentValue = cellValue;
+                            startRowIdx = rowIdx;
+                            mergeInfo[rowIdx][colIdx] = { skip: false, rowspan: 1 };
+                          } else {
+                            // 빈 셀: 위 그룹에 병합됨
+                            mergeInfo[rowIdx][colIdx] = { skip: true, rowspan: 0 };
+                          }
+                        });
+                        
+                        // 마지막 그룹 rowspan 설정
+                        if (currentData.length > 0 && mergeInfo[startRowIdx]?.[colIdx]) {
+                          mergeInfo[startRowIdx][colIdx].rowspan = currentData.length - startRowIdx;
+                        }
+                      });
+                      
+                      return currentData.map((row: any, rowIdx: number) => (
+                        <tr
+                          key={rowIdx}
+                          style={{
+                            borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                          }}
+                        >
+                          {Array.isArray(row) && row.map((cell: any, cellIdx: number) => {
+                            // 병합 가능 컬럼: skip이면 렌더링 안함
+                            const cellMerge = mergeInfo[rowIdx]?.[cellIdx];
+                            if (cellMerge?.skip) {
+                              return null;
+                            }
+                            
+                            // 숫자인 경우 반올림해서 표시
+                            let displayValue = cell;
+                            if (typeof cell === 'number' && !Number.isInteger(cell)) {
+                              displayValue = Math.round(cell);
+                            }
+                            
+                            const rowspan = cellMerge?.rowspan || 1;
+                            return (
+                              <td
+                                key={cellIdx}
+                                className="px-4 py-4"
+                                rowSpan={rowspan > 1 ? rowspan : undefined}
+                                style={{
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  fontWeight: 400,
+                                  color: "#0C0C0C",
+                                  whiteSpace: "nowrap",
+                                  verticalAlign: rowspan > 1 ? "middle" : undefined,
+                                  borderRight: mergeableCols.includes(cellIdx) ? "1px solid rgba(12, 12, 12, 0.08)" : undefined,
+                                }}
+                              >
+                                {displayValue}
+                              </td>
+                            );
+                          })}
                         </tr>
-                      );
+                      ));
                     })()}
                   </tbody>
                 </table>
