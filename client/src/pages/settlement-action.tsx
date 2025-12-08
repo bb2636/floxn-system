@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, CaseWithLatestProgress } from "@shared/schema";
 import { Search, X, Calendar as CalendarIcon } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,10 +35,21 @@ export default function SettlementAction() {
   const [useTodayInvoice, setUseTodayInvoice] = useState(false);
   const [settlementMemo, setSettlementMemo] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
+  });
+
+  // 케이스 상태 업데이트 mutation
+  const updateCaseStatusMutation = useMutation({
+    mutationFn: async ({ caseId, status }: { caseId: number; status: string }) => {
+      return await apiRequest("PATCH", `/api/cases/${caseId}`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+    },
   });
 
   const { data: cases = [], isLoading } = useQuery<CaseWithLatestProgress[]>({
@@ -221,7 +233,7 @@ export default function SettlementAction() {
     setShowConfirmDialog(true);
   };
 
-  const handleConfirmSettlement = () => {
+  const handleConfirmSettlement = async () => {
     if (!selectedCase) return;
 
     const settlementData = {
@@ -239,24 +251,41 @@ export default function SettlementAction() {
 
     console.log("Settlement data to submit:", settlementData);
     
-    // TODO: API 호출하여 정산 처리
+    setIsSubmitting(true);
     
-    setShowConfirmDialog(false);
-    toast({
-      title: "정산 완료",
-      description: `${selectedCase.caseNumber} 건의 정산이 완료되었습니다.`,
-    });
-    
-    // 폼 초기화
-    setSettlementAmount("");
-    setSettlementDate(undefined);
-    setCommission("0");
-    setDiscount("0");
-    setDeductible("0");
-    setInvoiceDate("");
-    setUseTodayInvoice(false);
-    setSettlementMemo("");
-    setSelectedCaseId(null);
+    try {
+      // 케이스 상태를 '정산완료'로 업데이트
+      await updateCaseStatusMutation.mutateAsync({
+        caseId: selectedCase.id,
+        status: "정산완료",
+      });
+      
+      setShowConfirmDialog(false);
+      toast({
+        title: "정산 완료",
+        description: `${selectedCase.caseNumber} 건의 정산이 완료되었습니다. 상태가 '정산완료'로 변경되었습니다.`,
+      });
+      
+      // 폼 초기화
+      setSettlementAmount("");
+      setSettlementDate(undefined);
+      setCommission("0");
+      setDiscount("0");
+      setDeductible("0");
+      setInvoiceDate("");
+      setUseTodayInvoice(false);
+      setSettlementMemo("");
+      setSelectedCaseId(null);
+    } catch (error) {
+      console.error("Settlement error:", error);
+      toast({
+        title: "오류",
+        description: "정산 처리 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -1573,10 +1602,11 @@ export default function SettlementAction() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmSettlement}
+              disabled={isSubmitting}
               style={{
                 flex: 1,
                 height: "44px",
-                background: "#008FED",
+                background: isSubmitting ? "#6B7280" : "#008FED",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: 600,
@@ -1584,7 +1614,7 @@ export default function SettlementAction() {
               }}
               data-testid="button-confirm-settlement"
             >
-              확인
+              {isSubmitting ? "처리 중..." : "확인"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
