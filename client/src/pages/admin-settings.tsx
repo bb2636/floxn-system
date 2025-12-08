@@ -1987,6 +1987,7 @@ export default function AdminSettings() {
                   />
                   <button
                   onClick={() => {
+                    console.log('[DEBUG] Upload button clicked');
                     // Validate title
                     if (!uploadTitle.trim()) {
                       toast({
@@ -1996,6 +1997,7 @@ export default function AdminSettings() {
                       });
                       return;
                     }
+                    console.log('[DEBUG] Title validated:', uploadTitle);
 
                     const currentTab = dbTab;
                     const setData = currentTab === "노무비" ? setLaborExcelData : setMaterialExcelData;
@@ -2005,10 +2007,13 @@ export default function AdminSettings() {
                     input.type = 'file';
                     input.accept = '.xlsx, .xls';
                     input.onchange = (e: any) => {
+                      console.log('[DEBUG] File selected:', e.target.files);
                       const file = e.target.files[0];
                       if (file) {
+                        console.log('[DEBUG] Reading file:', file.name);
                         const reader = new FileReader();
                         reader.onload = async (event) => {
+                          console.log('[DEBUG] FileReader onload triggered');
                           const data = new Uint8Array(event.target?.result as ArrayBuffer);
                           const workbook = XLSX.read(data, { type: 'array' });
                           const sheetName = workbook.SheetNames[0];
