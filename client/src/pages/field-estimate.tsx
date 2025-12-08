@@ -3537,20 +3537,28 @@ export default function FieldEstimate() {
                     variant="outline"
                     size="sm"
                     disabled={isLoadingLaborCatalog || isReadOnly}
-                    data-testid="button-add-labor-row"
+                    style={{
+                      borderColor: "#008FED",
+                      color: "#008FED",
+                    }}
+                    data-testid="button-add-labor-category"
                   >
                     <Plus className="h-4 w-4 mr-1" />
-                    행 추가
+                    공종추가
                   </Button>
                   <Button
                     onClick={deleteSelectedLaborRows}
                     variant="outline"
                     size="sm"
                     disabled={selectedLaborRows.size === 0 || isReadOnly}
+                    style={{
+                      borderColor: selectedLaborRows.size === 0 ? "#d1d5db" : "#FF4D4F",
+                      color: selectedLaborRows.size === 0 ? "#9ca3af" : "#FF4D4F",
+                    }}
                     data-testid="button-delete-labor-rows"
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    행 삭제
+                    삭제
                   </Button>
                 </div>
               </div>
