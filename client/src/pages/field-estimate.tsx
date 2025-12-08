@@ -1018,13 +1018,63 @@ export default function FieldEstimate() {
     note: "",
   });
 
-  // 행 추가
+  // 행 추가 (기존 호환성 유지)
   const addRow = () => {
     if (isReadOnly) return;
     setRows(prev => [...prev, createBlankRow()]);
   };
 
-  // 선택된 행 삭제
+  // 장소 그룹화 헬퍼 함수 - 연속된 동일 장소를 그룹으로 묶음
+  const groupRowsByCategory = (rowList: AreaCalculationRow[]) => {
+    const groups: { category: string; rows: AreaCalculationRow[]; startIndex: number }[] = [];
+    let currentGroup: { category: string; rows: AreaCalculationRow[]; startIndex: number } | null = null;
+    
+    rowList.forEach((row, index) => {
+      if (!currentGroup || currentGroup.category !== row.category) {
+        // 새 그룹 시작
+        currentGroup = { category: row.category, rows: [row], startIndex: index };
+        groups.push(currentGroup);
+      } else {
+        // 기존 그룹에 추가
+        currentGroup.rows.push(row);
+      }
+    });
+    
+    return groups;
+  };
+
+  // 장소 추가 (새 장소 그룹 추가)
+  const addLocation = () => {
+    if (isReadOnly) return;
+    setRows(prev => [...prev, createBlankRow()]);
+  };
+
+  // 특정 장소 그룹 내에 행 추가 (같은 장소 값으로)
+  const addRowInCategory = (categoryValue: string, afterRowId: string) => {
+    if (isReadOnly) return;
+    const newRow = createBlankRow();
+    newRow.category = categoryValue; // 같은 장소 값 설정
+    
+    setRows(prev => {
+      const newRows = [...prev];
+      const insertIndex = newRows.findIndex(r => r.id === afterRowId);
+      if (insertIndex !== -1) {
+        // 해당 행 뒤에 삽입
+        newRows.splice(insertIndex + 1, 0, newRow);
+      } else {
+        newRows.push(newRow);
+      }
+      return newRows;
+    });
+  };
+
+  // 특정 행 삭제 (장소 그룹 내 행 삭제)
+  const deleteRowById = (rowId: string) => {
+    if (isReadOnly) return;
+    setRows(prev => prev.filter(row => row.id !== rowId));
+  };
+
+  // 선택된 행 삭제 (체크박스 기반)
   const deleteSelectedRows = () => {
     if (isReadOnly) return;
     if (selectedRows.size === 0) return;
@@ -1686,7 +1736,7 @@ export default function FieldEstimate() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={addRow}
+                  onClick={addLocation}
                   disabled={masterDataList.length === 0 || isReadOnly}
                   className="px-4 py-2 rounded-md flex items-center gap-2 hover-elevate active-elevate-2"
                   style={{
@@ -1699,9 +1749,9 @@ export default function FieldEstimate() {
                     cursor: (masterDataList.length === 0 || isReadOnly) ? "not-allowed" : "pointer",
                     opacity: (masterDataList.length === 0 || isReadOnly) ? 0.6 : 1,
                   }}
-                  data-testid="button-add-row"
+                  data-testid="button-add-location"
                 >
-                  항목 추가
+                  장소추가
                 </button>
                 <button
                   type="button"
@@ -1720,7 +1770,7 @@ export default function FieldEstimate() {
                   }}
                   data-testid="button-delete-rows"
                 >
-                  행 삭제
+                  삭제
                 </button>
               </div>
             </div>
@@ -1751,20 +1801,6 @@ export default function FieldEstimate() {
                   >
                     <th 
                       style={{ 
-                        width: "40px", 
-                        padding: "17.5px 4px",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
-                      }}
-                    ></th>
-                    <th 
-                      style={{ 
-                        width: "54px", 
-                        padding: "17.5px 8px",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
-                      }}
-                    ></th>
-                    <th 
-                      style={{ 
                         width: "140px", 
                         padding: "17.5px 8px", 
                         fontFamily: "Pretendard", 
@@ -1779,7 +1815,21 @@ export default function FieldEstimate() {
                     </th>
                     <th 
                       style={{ 
-                        width: "140px", 
+                        width: "60px", 
+                        padding: "17.5px 4px",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                        fontFamily: "Pretendard", 
+                        fontSize: "12px", 
+                        fontWeight: 500, 
+                        color: "rgba(12, 12, 12, 0.4)", 
+                        textAlign: "center",
+                      }}
+                    >
+                      +/-
+                    </th>
+                    <th 
+                      style={{ 
+                        width: "120px", 
                         padding: "17.5px 8px", 
                         fontFamily: "Pretendard", 
                         fontSize: "15px", 
@@ -1996,106 +2046,174 @@ export default function FieldEstimate() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row, index) => (
-                    <tr
-                      key={row.id}
-                      draggable={!isReadOnly}
-                      onDragStart={(e) => handleDragStart(e, row.id)}
-                      onDragOver={(e) => handleDragOver(e, row.id)}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, row.id)}
-                      onDragEnd={handleDragEnd}
-                      style={{
-                        borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
-                        opacity: draggedRowId === row.id ? 0.5 : 1,
-                        background: dragOverRowId === row.id ? "rgba(59, 130, 246, 0.1)" : undefined,
-                        transition: "background 0.2s",
-                      }}
-                    >
-                      <td 
-                        style={{ 
-                          padding: "8px 4px", 
-                          textAlign: "center",
-                          cursor: isReadOnly ? "default" : "grab",
-                        }}
-                      >
-                        <GripVertical 
-                          className="w-4 h-4" 
-                          style={{ 
-                            color: isReadOnly ? "rgba(12, 12, 12, 0.2)" : "rgba(12, 12, 12, 0.4)",
-                            margin: "0 auto",
-                          }} 
-                        />
-                      </td>
-                      <td style={{ padding: "8px", textAlign: "center" }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedRows.has(row.id)}
-                          onChange={() => toggleRowSelection(row.id)}
-                          style={{ width: "16px", height: "16px", cursor: "pointer" }}
-                          data-testid={`checkbox-row-${index}`}
-                        />
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <Select
-                          value={row.category}
-                          onValueChange={(value) => updateRow(row.id, 'category', value)}
+                  {groupRowsByCategory(rows).map((group, groupIndex) => (
+                    group.rows.map((row, rowIndexInGroup) => {
+                      const globalIndex = group.startIndex + rowIndexInGroup;
+                      const isFirstRowInGroup = rowIndexInGroup === 0;
+                      const isLastRowInGroup = rowIndexInGroup === group.rows.length - 1;
+                      
+                      return (
+                        <tr
+                          key={row.id}
+                          draggable={!isReadOnly}
+                          onDragStart={(e) => handleDragStart(e, row.id)}
+                          onDragOver={(e) => handleDragOver(e, row.id)}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, row.id)}
+                          onDragEnd={handleDragEnd}
+                          style={{
+                            borderBottom: isLastRowInGroup ? "2px solid rgba(12, 12, 12, 0.15)" : "1px solid rgba(12, 12, 12, 0.06)",
+                            opacity: draggedRowId === row.id ? 0.5 : 1,
+                            background: dragOverRowId === row.id ? "rgba(59, 130, 246, 0.1)" : undefined,
+                            transition: "background 0.2s",
+                          }}
                         >
-                          <SelectTrigger 
-                            className="border focus:ring-0"
-                            style={{
-                              width: "100%",
-                              height: "40px",
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              borderColor: "rgba(12, 12, 12, 0.2)",
-                              borderRadius: "6px",
-                            }}
-                            data-testid={`select-category-${index}`}
-                          >
-                            <SelectValue>
-                              {row.category}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roomCategories.filter(cat => cat && cat.trim() !== '').map(cat => (
-                              <SelectItem key={cat} value={cat}>
-                                {cat}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td style={{ padding: "8px" }}>
-                        <Select
-                          value={row.location}
-                          onValueChange={(value) => updateRow(row.id, 'location', value)}
-                        >
-                          <SelectTrigger 
-                            className="border focus:ring-0"
-                            style={{
-                              width: "100%",
-                              height: "40px",
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              borderColor: "rgba(12, 12, 12, 0.2)",
-                              borderRadius: "6px",
-                            }}
-                            data-testid={`select-location-${index}`}
-                          >
-                            <SelectValue>
-                              {row.location}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {locations.filter(loc => loc && loc.trim() !== '').map(loc => (
-                              <SelectItem key={loc} value={loc}>
-                                {loc}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
+                          {/* 장소 컬럼 - 그룹 첫 번째 행에만 rowspan 적용 */}
+                          {isFirstRowInGroup && (
+                            <td 
+                              rowSpan={group.rows.length}
+                              style={{ 
+                                padding: "8px",
+                                verticalAlign: "top",
+                                borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                                background: "rgba(12, 12, 12, 0.02)",
+                              }}
+                            >
+                              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={group.rows.every(r => selectedRows.has(r.id))}
+                                  onChange={() => {
+                                    const allSelected = group.rows.every(r => selectedRows.has(r.id));
+                                    const newSelected = new Set(selectedRows);
+                                    group.rows.forEach(r => {
+                                      if (allSelected) {
+                                        newSelected.delete(r.id);
+                                      } else {
+                                        newSelected.add(r.id);
+                                      }
+                                    });
+                                    setSelectedRows(newSelected);
+                                  }}
+                                  style={{ width: "16px", height: "16px", cursor: "pointer", marginBottom: "4px" }}
+                                  data-testid={`checkbox-group-${groupIndex}`}
+                                />
+                                <Select
+                                  value={row.category}
+                                  onValueChange={(value) => {
+                                    group.rows.forEach(r => updateRow(r.id, 'category', value));
+                                  }}
+                                >
+                                  <SelectTrigger 
+                                    className="border focus:ring-0"
+                                    style={{
+                                      width: "100%",
+                                      height: "40px",
+                                      fontFamily: "Pretendard",
+                                      fontSize: "14px",
+                                      fontWeight: 600,
+                                      borderColor: "rgba(12, 12, 12, 0.2)",
+                                      borderRadius: "6px",
+                                    }}
+                                    data-testid={`select-category-${globalIndex}`}
+                                  >
+                                    <SelectValue>
+                                      {row.category || "장소 선택"}
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {roomCategories.filter(cat => cat && cat.trim() !== '').map(cat => (
+                                      <SelectItem key={cat} value={cat}>
+                                        {cat}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </td>
+                          )}
+                          
+                          {/* +/- 버튼 컬럼 */}
+                          <td style={{ padding: "4px", textAlign: "center", width: "60px" }}>
+                            <div style={{ display: "flex", gap: "2px", justifyContent: "center" }}>
+                              <button
+                                type="button"
+                                onClick={() => addRowInCategory(row.category, row.id)}
+                                disabled={isReadOnly}
+                                style={{
+                                  width: "24px",
+                                  height: "24px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  background: isReadOnly ? "#f5f5f5" : "#008FED",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  cursor: isReadOnly ? "not-allowed" : "pointer",
+                                  fontSize: "16px",
+                                  fontWeight: "bold",
+                                }}
+                                data-testid={`button-add-row-${globalIndex}`}
+                              >
+                                +
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => deleteRowById(row.id)}
+                                disabled={isReadOnly || group.rows.length <= 1}
+                                style={{
+                                  width: "24px",
+                                  height: "24px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  background: (isReadOnly || group.rows.length <= 1) ? "#f5f5f5" : "#FF4D4F",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  cursor: (isReadOnly || group.rows.length <= 1) ? "not-allowed" : "pointer",
+                                  fontSize: "16px",
+                                  fontWeight: "bold",
+                                }}
+                                data-testid={`button-delete-row-${globalIndex}`}
+                              >
+                                −
+                              </button>
+                            </div>
+                          </td>
+                          
+                          {/* 위치 */}
+                          <td style={{ padding: "8px" }}>
+                            <Select
+                              value={row.location}
+                              onValueChange={(value) => updateRow(row.id, 'location', value)}
+                            >
+                              <SelectTrigger 
+                                className="border focus:ring-0"
+                                style={{
+                                  width: "100%",
+                                  height: "40px",
+                                  fontFamily: "Pretendard",
+                                  fontSize: "14px",
+                                  borderColor: "rgba(12, 12, 12, 0.2)",
+                                  borderRadius: "6px",
+                                }}
+                                data-testid={`select-location-${globalIndex}`}
+                              >
+                                <SelectValue>
+                                  {row.location || "위치 선택"}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {locations.filter(loc => loc && loc.trim() !== '').map(loc => (
+                                  <SelectItem key={loc} value={loc}>
+                                    {loc}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
                       <td style={{ padding: "8px" }}>
                         <Select
                           value={row.workType || undefined}
@@ -2111,7 +2229,7 @@ export default function FieldEstimate() {
                               borderColor: "rgba(12, 12, 12, 0.2)",
                               borderRadius: "6px",
                             }}
-                            data-testid={`select-worktype-${index}`}
+                            data-testid={`select-worktype-${globalIndex}`}
                           >
                             <SelectValue placeholder="공종 선택" />
                           </SelectTrigger>
@@ -2139,7 +2257,7 @@ export default function FieldEstimate() {
                               borderColor: "rgba(12, 12, 12, 0.2)",
                               borderRadius: "6px",
                             }}
-                            data-testid={`select-workname-${index}`}
+                            data-testid={`select-workname-${globalIndex}`}
                           >
                             <SelectValue placeholder="공사명 선택" />
                           </SelectTrigger>
@@ -2167,7 +2285,7 @@ export default function FieldEstimate() {
                             borderRadius: "8px",
                             textAlign: "center",
                           }}
-                          data-testid={`input-damage-width-${index}`}
+                          data-testid={`input-damage-width-${globalIndex}`}
                         />
                       </td>
                       <td style={{ padding: "8px" }}>
@@ -2187,7 +2305,7 @@ export default function FieldEstimate() {
                             textAlign: "center",
                             background: isLinearWorkName(row.workName) ? "rgba(12, 12, 12, 0.02)" : undefined,
                           }}
-                          data-testid={`input-damage-height-${index}`}
+                          data-testid={`input-damage-height-${globalIndex}`}
                         />
                       </td>
                       <td style={{ padding: "8px" }}>
@@ -2205,7 +2323,7 @@ export default function FieldEstimate() {
                             textAlign: "center",
                             background: "rgba(12, 12, 12, 0.02)",
                           }}
-                          data-testid={`input-damage-area-${index}`}
+                          data-testid={`input-damage-area-${globalIndex}`}
                         />
                       </td>
                       <td style={{ padding: "8px" }}>
@@ -2223,7 +2341,7 @@ export default function FieldEstimate() {
                             borderRadius: "8px",
                             textAlign: "center",
                           }}
-                          data-testid={`input-repair-width-${index}`}
+                          data-testid={`input-repair-width-${globalIndex}`}
                         />
                       </td>
                       <td style={{ padding: "8px" }}>
@@ -2243,7 +2361,7 @@ export default function FieldEstimate() {
                             textAlign: "center",
                             background: isLinearWorkName(row.workName) ? "rgba(12, 12, 12, 0.02)" : undefined,
                           }}
-                          data-testid={`input-repair-height-${index}`}
+                          data-testid={`input-repair-height-${globalIndex}`}
                         />
                       </td>
                       <td style={{ padding: "8px" }}>
@@ -2261,7 +2379,7 @@ export default function FieldEstimate() {
                             textAlign: "center",
                             background: "rgba(12, 12, 12, 0.02)",
                           }}
-                          data-testid={`input-repair-area-${index}`}
+                          data-testid={`input-repair-area-${globalIndex}`}
                         />
                       </td>
                       <td style={{ padding: "8px" }}>
@@ -2278,10 +2396,12 @@ export default function FieldEstimate() {
                             border: "1px solid rgba(12, 12, 12, 0.1)",
                             borderRadius: "8px",
                           }}
-                          data-testid={`input-note-${index}`}
+                          data-testid={`input-note-${globalIndex}`}
                         />
-                      </td>
-                    </tr>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ))}
                 </tbody>
               </table>
