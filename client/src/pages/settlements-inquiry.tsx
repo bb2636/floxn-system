@@ -152,39 +152,53 @@ export default function SettlementsInquiry() {
         estimateTotal = parseAmount(caseItem.estimateAmount);
       }
 
-      // Parse and validate processingTypes
-      let processingTypes: string[] = [];
-      try {
-        if (caseItem.processingTypes) {
-          const parsed = JSON.parse(caseItem.processingTypes);
-          // Validate that it's an array
-          if (Array.isArray(parsed)) {
-            // Filter to known processing types
-            processingTypes = parsed.filter(type => 
-              typeof type === 'string' && 
-              ["손해방지", "피해세대복구"].includes(type)
-            );
-          } else {
-            console.warn(`Invalid processingTypes format for case ${caseItem.id}:`, parsed);
-          }
+      // Check processing types from individual fields (damagePreventionCost, victimIncidentAssistance)
+      // and also from processingTypes JSON array for backward compatibility
+      let hasPreventionCost = caseItem.damagePreventionCost === "true";
+      let hasPropertyCost = caseItem.victimIncidentAssistance === "true";
+      
+      // Also check case number pattern: if case number contains "-" it's 피해세대복구, otherwise 손해방지
+      if (!hasPreventionCost && !hasPropertyCost && caseItem.caseNumber) {
+        if (caseItem.caseNumber.includes('-')) {
+          hasPropertyCost = true;
+        } else {
+          hasPreventionCost = true;
         }
-      } catch (error) {
-        console.error(`Error parsing processingTypes for case ${caseItem.id}:`, error);
       }
-
-      const hasPreventionCost = processingTypes.includes("손해방지");
-      const hasPropertyCost = processingTypes.includes("피해세대복구");
+      
+      // Fallback to processingTypes JSON array if still not determined
+      if (!hasPreventionCost && !hasPropertyCost && caseItem.processingTypes) {
+        try {
+          const parsed = JSON.parse(caseItem.processingTypes);
+          if (Array.isArray(parsed)) {
+            hasPreventionCost = parsed.includes("손해방지");
+            hasPropertyCost = parsed.includes("피해세대복구");
+          }
+        } catch (error) {
+          console.error(`Error parsing processingTypes for case ${caseItem.id}:`, error);
+        }
+      }
 
       // Calculate estimate amounts
       const preventionEstimateAmount = (hasPreventionCost && estimateTotal > 0) ? estimateTotal : 0;
       const propertyEstimateAmount = (hasPropertyCost && estimateTotal > 0) ? estimateTotal : 0;
 
-      // Calculate approved amounts
-      // If reviewDecision is "승인", approved amount equals estimate amount
-      // Otherwise, approved amount is 0
-      const isApproved = caseItem.reviewDecision === "승인";
-      const preventionApprovedAmount = (hasPreventionCost && estimateTotal > 0 && isApproved) ? estimateTotal : 0;
-      const propertyApprovedAmount = (hasPropertyCost && estimateTotal > 0 && isApproved) ? estimateTotal : 0;
+      // Helper function for parsing amounts (reuse if defined above)
+      const parseAmountValue = (value: string | number | null | undefined): number => {
+        if (value === null || value === undefined) return 0;
+        if (typeof value === 'number') return isNaN(value) ? 0 : value;
+        const cleaned = String(value).replace(/,/g, '');
+        const parsed = Number(cleaned);
+        return isNaN(parsed) ? 0 : parsed;
+      };
+      
+      // Use approvedAmount field if available, otherwise fall back to estimate if approved
+      const caseApprovedAmount = parseAmountValue(caseItem.approvedAmount);
+      const isApproved = caseItem.reviewDecision === "승인" || caseApprovedAmount > 0;
+      const approvedValue = caseApprovedAmount > 0 ? caseApprovedAmount : (isApproved ? estimateTotal : 0);
+      
+      const preventionApprovedAmount = (hasPreventionCost && approvedValue > 0) ? approvedValue : 0;
+      const propertyApprovedAmount = (hasPropertyCost && approvedValue > 0) ? approvedValue : 0;
 
       // Calculate differences and adjustment rates
       const preventionDifference = preventionApprovedAmount - preventionEstimateAmount;
