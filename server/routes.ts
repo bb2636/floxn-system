@@ -2524,10 +2524,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!row || row.length === 0) continue;
 
         // Extract and forward-fill merged cells (handle both null and empty string)
-        const category: string = (row[0] && row[0].trim()) ? row[0].trim() : prevCategory;
-        const workName: string = (row[1] && row[1].trim()) ? row[1].trim() : prevWorkName;
-        const detailWork: string = (row[2] && row[2].trim()) ? row[2].trim() : prevDetailWork;
-        const detailItem: string = (row[3] && row[3].trim()) ? row[3].trim() : '';
+        // Safely convert to string first to handle numbers and other types
+        const safeString = (val: any): string => {
+          if (val === null || val === undefined) return '';
+          return String(val).trim();
+        };
+        
+        const category: string = safeString(row[0]) || prevCategory || '';
+        const workName: string = safeString(row[1]) || prevWorkName || '';
+        const detailWork: string = safeString(row[2]) || prevDetailWork || '';
+        const detailItem: string = safeString(row[3]);
         
         // Parse price columns (remove commas, convert to number)
         const parsePrice = (val: any): number | null => {
