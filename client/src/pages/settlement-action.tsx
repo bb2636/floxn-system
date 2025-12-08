@@ -140,6 +140,9 @@ export default function SettlementAction() {
       // Get review user (심사 담당자) - reviewedBy is user ID
       const reviewUser = caseItem.reviewedBy ? usersByIdMap.get(caseItem.reviewedBy) : null;
       
+      // Get manager user (당사 담당자) - managerId is user ID
+      const managerUser = caseItem.managerId ? usersByIdMap.get(caseItem.managerId) : null;
+      
       return {
         id: caseItem.id,
         date: caseItem.createdAt ? format(new Date(caseItem.createdAt), "yyyy-MM-dd") : "-",
@@ -149,11 +152,11 @@ export default function SettlementAction() {
         contractor: caseItem.policyHolderName || "-",
         assessor: caseItem.assessorId || "-",
         reviewManager: reviewUser?.name || "-", // 심사 담당자 (reviewedBy user's name)
-        partnerManager: caseItem.assignedPartnerManager || "-", // 담당자 (협력사 담당자)
+        partnerManager: managerUser?.name || "-", // 담당자 = 당사 담당자 (managerId user's name)
         partner: caseItem.assignedPartner || "-",
         partnerName: partnerUser?.company || caseItem.assignedPartner || "-", // 협력사 회사명
         partnerUser: partnerUser, // 협력사 사용자 정보
-        clientManager: caseItem.clientName || "-", // 당사 담당자
+        clientManager: managerUser?.name || "-", // 당사 담당자
         approvedAmount: formatNumberWithComma(approvedAmount), // 승인금액
         claimAmount: formatNumberWithComma(approvedAmount), // 청구액 (승인금액과 동일)
         depositAmount: "0", // TODO: Add deposit tracking
