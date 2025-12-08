@@ -553,10 +553,9 @@ export default function AdminSettings() {
   // Excel data mutations
   const saveExcelDataMutation = useMutation({
     mutationFn: async (data: { type: string; title: string; headers: string[]; data: any[][] }) => {
-      const response = await apiRequest("POST", "/api/excel-data", data);
-      return await response.json();
+      return await apiRequest("POST", "/api/excel-data", data);
     },
-    onSuccess: (result: { id: string }, variables) => {
+    onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: [`/api/excel-data/${variables.type}/versions`] });
       // Auto-select newly created version
       if (variables.type === "노무비") {
@@ -1987,7 +1986,6 @@ export default function AdminSettings() {
                   />
                   <button
                   onClick={() => {
-                    console.log('[DEBUG] Upload button clicked');
                     // Validate title
                     if (!uploadTitle.trim()) {
                       toast({
@@ -1997,7 +1995,6 @@ export default function AdminSettings() {
                       });
                       return;
                     }
-                    console.log('[DEBUG] Title validated:', uploadTitle);
 
                     const currentTab = dbTab;
                     const setData = currentTab === "노무비" ? setLaborExcelData : setMaterialExcelData;
@@ -2007,64 +2004,39 @@ export default function AdminSettings() {
                     input.type = 'file';
                     input.accept = '.xlsx, .xls';
                     input.onchange = (e: any) => {
-                      console.log('[DEBUG] File selected:', e.target.files);
                       const file = e.target.files[0];
                       if (file) {
-                        console.log('[DEBUG] Reading file:', file.name);
                         const reader = new FileReader();
                         reader.onload = async (event) => {
-                          console.log('[DEBUG] FileReader onload triggered');
-                          try {
-                            const data = new Uint8Array(event.target?.result as ArrayBuffer);
-                            console.log('[DEBUG] Reading XLSX...');
-                            const workbook = XLSX.read(data, { type: 'array' });
-                            console.log('[DEBUG] SheetNames:', workbook.SheetNames);
-                            console.log('[DEBUG] Sheets keys:', Object.keys(workbook.Sheets));
-                            const sheetName = workbook.SheetNames[0];
-                            console.log('[DEBUG] Selected sheet name:', sheetName);
-                            const worksheet = workbook.Sheets[sheetName];
-                            console.log('[DEBUG] Worksheet exists:', !!worksheet);
-                            if (!worksheet) {
-                              console.error('[DEBUG] Worksheet is undefined! Trying first available sheet...');
-                              const availableSheets = Object.keys(workbook.Sheets);
-                              if (availableSheets.length > 0) {
-                                const fallbackSheet = workbook.Sheets[availableSheets[0]];
-                                console.log('[DEBUG] Fallback sheet ref:', fallbackSheet?.['!ref']);
-                              }
-                              throw new Error('워크시트를 찾을 수 없습니다.');
-                            }
-                            console.log('[DEBUG] Worksheet ref:', worksheet['!ref']);
-                            console.log('[DEBUG] Worksheet keys:', Object.keys(worksheet).slice(0, 10));
-                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-                            console.log('[DEBUG] Rows count:', jsonData.length);
-                            console.log('[DEBUG] First 3 rows:', JSON.stringify(jsonData.slice(0, 3)));
+                          const data = new Uint8Array(event.target?.result as ArrayBuffer);
+                          const workbook = XLSX.read(data, { type: 'array' });
+                          const sheetName = workbook.SheetNames[0];
+                          const worksheet = workbook.Sheets[sheetName];
+                          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                          
+                          if (jsonData.length > 0) {
+                            const headers = jsonData[0] as string[];
+                            // 셀 내 줄바꿈 정리 - 첫 번째 줄만 사용
+                            const rows = (jsonData.slice(1) as any[]).map(row => 
+                              Array.isArray(row) ? row.map(cell => {
+                                if (typeof cell === 'string' && (cell.includes('\n') || cell.includes('\r'))) {
+                                  return cell.split(/\r?\n|\r/)[0].trim();
+                                }
+                                return cell;
+                              }) : row
+                            );
                             
-                            if (jsonData.length > 0) {
-                              const headers = jsonData[0] as string[];
-                              console.log('[DEBUG] Headers:', headers);
-                              // 셀 내 줄바꿈 정리 - 첫 번째 줄만 사용
-                              const rows = (jsonData.slice(1) as any[]).map(row => 
-                                Array.isArray(row) ? row.map(cell => {
-                                  if (typeof cell === 'string' && (cell.includes('\n') || cell.includes('\r'))) {
-                                    return cell.split(/\r?\n|\r/)[0].trim();
-                                  }
-                                  return cell;
-                                }) : row
-                              );
-                              console.log('[DEBUG] Data rows:', rows.length);
-                              
-                              setHeaders(headers);
-                              setData(rows);
-                              
-                              // Save to database
-                              console.log('[DEBUG] Calling API...');
+                            setHeaders(headers);
+                            setData(rows);
+                            
+                            // Save to database
+                            try {
                               await saveExcelDataMutation.mutateAsync({
                                 type: currentTab,
                                 title: uploadTitle.trim(),
                                 headers,
                                 data: rows,
                               });
-                              console.log('[DEBUG] API call success!');
                               
                               toast({
                                 title: "업로드 완료",
@@ -2073,22 +2045,21 @@ export default function AdminSettings() {
                               
                               // Clear title input
                               setUploadTitle("");
-                            }
-                          } catch (error: any) {
-                            console.error('[DEBUG] Error:', error);
-                            // Check for duplicate title error (409)
-                            if (error?.status === 409 || error?.response?.status === 409) {
-                              toast({
-                                title: "중복된 제목",
-                                description: "이미 같은 제목의 버전이 존재합니다. 다른 제목을 사용해주세요.",
-                                variant: "destructive",
-                              });
-                            } else {
-                              toast({
-                                title: "저장 실패",
-                                description: "데이터베이스 저장 중 오류가 발생했습니다.",
-                                variant: "destructive",
-                              });
+                            } catch (error: any) {
+                              // Check for duplicate title error (409)
+                              if (error?.status === 409 || error?.response?.status === 409) {
+                                toast({
+                                  title: "중복된 제목",
+                                  description: "이미 같은 제목의 버전이 존재합니다. 다른 제목을 사용해주세요.",
+                                  variant: "destructive",
+                                });
+                              } else {
+                                toast({
+                                  title: "저장 실패",
+                                  description: "데이터베이스 저장 중 오류가 발생했습니다.",
+                                  variant: "destructive",
+                                });
+                              }
                             }
                           }
                         };
