@@ -652,9 +652,16 @@ export function LaborCostSection({
               if (catalogItem) {
                 updated.unit = catalogItem.단위 || '인';
                 updated.standardPrice = catalogItem.단가_인 || 0;
+                updated.pricePerSqm = catalogItem.단가_인 || 0; // 적용단가도 설정
               }
+              console.log('[노무비 자동선택]', updated.category, '->', value, '->', updated.detailItem, '단가:', updated.pricePerSqm);
+            } else if (uniqueDetailItems.length > 1) {
+              // 노임항목이 여러 개면 선택 대기
+              updated.detailItem = '';
+              console.log('[노무비 다중옵션]', updated.category, '->', value, '옵션:', uniqueDetailItems);
             } else {
               updated.detailItem = '';
+              console.log('[노무비 옵션없음]', updated.category, '->', value, '매칭항목:', matchingItems.length);
             }
           }
         }
