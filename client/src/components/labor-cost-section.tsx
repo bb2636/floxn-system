@@ -387,7 +387,7 @@ export function LaborCostSection({
   };
 
   const getDetailItemOptions = (category: string, workName: string, detailWork: string) => {
-    if (!category || !workName || !detailWork) return [];
+    if (!category || !workName) return [];
     // 목공사-걸레받이 특수 케이스: 걸레받이만 표시
     if (category === '목공사' && workName === '걸레받이' && detailWork === '일위대가') {
       return ['걸레받이'];
@@ -395,12 +395,21 @@ export function LaborCostSection({
     if (!catalog.length) return [];
     // 걸레받이 -> 목공사 변환하여 조회
     const lookupWorkName = mapWorkNameForLookup(workName);
-    const filtered = catalog.filter(item => 
+    
+    // 공종+공사명으로 필터링 (세부공사 필터는 선택적)
+    let filtered = catalog.filter(item => 
       item.공종 === category && 
-      item.공사명 === lookupWorkName && 
-      item.세부공사 === detailWork
+      item.공사명 === lookupWorkName
     );
-    return filtered.map(item => item.세부항목);
+    
+    // 세부공사가 지정되어 있으면 추가 필터링
+    if (detailWork && filtered.some(item => item.세부공사 === detailWork)) {
+      filtered = filtered.filter(item => item.세부공사 === detailWork);
+    }
+    
+    // 세부항목에서 중복 제거
+    const unique = new Set(filtered.map(item => item.세부항목).filter(Boolean));
+    return Array.from(unique);
   };
 
   const getApplicationRateOptions = (category: string, workName: string, detailWork: string, detailItem: string) => {
