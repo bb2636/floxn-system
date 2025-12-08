@@ -2021,8 +2021,11 @@ export default function AdminSettings() {
                             const sheetName = workbook.SheetNames[0];
                             console.log('[DEBUG] Sheet name:', sheetName);
                             const worksheet = workbook.Sheets[sheetName];
-                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                            console.log('[DEBUG] Worksheet ref:', worksheet['!ref']);
+                            console.log('[DEBUG] Worksheet keys:', Object.keys(worksheet).slice(0, 10));
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
                             console.log('[DEBUG] Rows count:', jsonData.length);
+                            console.log('[DEBUG] First 3 rows:', JSON.stringify(jsonData.slice(0, 3)));
                             
                             if (jsonData.length > 0) {
                               const headers = jsonData[0] as string[];
