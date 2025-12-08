@@ -764,10 +764,22 @@ export function LaborCostSection({
     onRowsChange([...rows, newRow]);
   };
 
-  // 공종별 그룹화 함수
-  const groupRowsByCategory = (rows: LaborCostRow[]) => {
-    const groups: { category: string; rows: LaborCostRow[]; startIndex: number }[] = [];
-    let currentGroup: { category: string; rows: LaborCostRow[]; startIndex: number } | null = null;
+  // 공종별 + 공사명별 그룹화 함수 (이미지와 같이 공종과 공사명 모두 rowspan 적용)
+  interface WorkNameSubGroup {
+    workName: string;
+    rows: LaborCostRow[];
+    startIndexInCategory: number;
+  }
+  interface CategoryGroup {
+    category: string;
+    rows: LaborCostRow[];
+    workNameSubGroups: WorkNameSubGroup[];
+    startIndex: number;
+  }
+  
+  const groupRowsByCategory = (rows: LaborCostRow[]): CategoryGroup[] => {
+    const groups: CategoryGroup[] = [];
+    let currentGroup: CategoryGroup | null = null;
     let globalIndex = 0;
 
     rows.forEach((row) => {
@@ -778,6 +790,7 @@ export function LaborCostSection({
         currentGroup = {
           category: row.category || "미지정",
           rows: [row],
+          workNameSubGroups: [],
           startIndex: globalIndex,
         };
       } else {
@@ -790,7 +803,53 @@ export function LaborCostSection({
       groups.push(currentGroup);
     }
 
+    // 각 공종 그룹 내에서 공사명별 서브그룹 생성
+    groups.forEach(group => {
+      let currentSubGroup: WorkNameSubGroup | null = null;
+      let indexInCategory = 0;
+      
+      group.rows.forEach((row) => {
+        if (!currentSubGroup || currentSubGroup.workName !== row.workName) {
+          if (currentSubGroup) {
+            group.workNameSubGroups.push(currentSubGroup);
+          }
+          currentSubGroup = {
+            workName: row.workName || "",
+            rows: [row],
+            startIndexInCategory: indexInCategory,
+          };
+        } else {
+          currentSubGroup.rows.push(row);
+        }
+        indexInCategory++;
+      });
+      
+      if (currentSubGroup) {
+        group.workNameSubGroups.push(currentSubGroup);
+      }
+    });
+
     return groups;
+  };
+  
+  // 특정 행이 공사명 서브그룹의 첫 번째 행인지 확인하는 헬퍼
+  const isFirstRowInWorkNameSubGroup = (group: CategoryGroup, rowId: string): boolean => {
+    for (const subGroup of group.workNameSubGroups) {
+      if (subGroup.rows[0]?.id === rowId) {
+        return true;
+      }
+    }
+    return false;
+  };
+  
+  // 특정 행이 속한 공사명 서브그룹의 행 수 반환
+  const getWorkNameSubGroupRowCount = (group: CategoryGroup, rowId: string): number => {
+    for (const subGroup of group.workNameSubGroups) {
+      if (subGroup.rows.some(r => r.id === rowId)) {
+        return subGroup.rows.length;
+      }
+    }
+    return 1;
   };
 
   // 공종 그룹 내 행 추가
@@ -1032,30 +1091,54 @@ export function LaborCostSection({
                     </div>
                   </td>
                   
-                  {/* 공사명 */}
-                  <td style={{ padding: "0 8px" }}>
-                    <Select 
-                      value={row.workName || undefined} 
-                      onValueChange={(value) => handleWorkNameChange(row.id, value)}
-                      onOpenChange={(open) => handleWorkNameSelectClose(row.id, open)}
-                      disabled={!row.category}
+                  {/* 공사명 - 같은 공사명끼리 rowspan 적용 */}
+                  {isFirstRowInWorkNameSubGroup(group, row.id) && (
+                    <td 
+                      rowSpan={getWorkNameSubGroupRowCount(group, row.id)}
+                      style={{ 
+                        padding: "8px",
+                        verticalAlign: "middle",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                        background: "rgba(12, 12, 12, 0.01)",
+                      }}
                     >
-                      <SelectTrigger 
-                        className="h-9 border-0" 
-                        style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                        data-testid={`select-workName-labor-${globalIndex}`}
+                      <Select 
+                        value={row.workName || undefined} 
+                        onValueChange={(value) => {
+                          // 같은 서브그룹의 모든 행 업데이트
+                          const subGroup = group.workNameSubGroups.find(sg => sg.rows.some(r => r.id === row.id));
+                          if (subGroup) {
+                            subGroup.rows.forEach(r => handleWorkNameChange(r.id, value));
+                          } else {
+                            handleWorkNameChange(row.id, value);
+                          }
+                        }}
+                        onOpenChange={(open) => handleWorkNameSelectClose(row.id, open)}
+                        disabled={!row.category}
                       >
-                        <SelectValue placeholder="공사명 선택">
-                          {row.workName || "공사명 선택"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getWorkNameOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
+                        <SelectTrigger 
+                          className="h-9 border focus:ring-0" 
+                          style={{ 
+                            fontFamily: "Pretendard", 
+                            fontSize: "14px",
+                            fontWeight: 500,
+                            borderColor: "rgba(12, 12, 12, 0.15)",
+                            borderRadius: "6px",
+                          }}
+                          data-testid={`select-workName-labor-${globalIndex}`}
+                        >
+                          <SelectValue placeholder="공사명 선택">
+                            {row.workName || "공사명 선택"}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getWorkNameOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                  )}
                   
                   {/* 노임항목 */}
                   <td style={{ padding: "0 8px" }}>
