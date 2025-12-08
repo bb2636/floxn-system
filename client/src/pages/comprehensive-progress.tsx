@@ -104,6 +104,7 @@ export default function ComprehensiveProgress() {
   const [isReceptionEditMode, setIsReceptionEditMode] = useState(false);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
+  const [submissionDate, setSubmissionDate] = useState<Date>(new Date());
   const [taxInvoiceDate, setTaxInvoiceDate] = useState<Date | undefined>(undefined);
   const [invoiceConfirmDate, setInvoiceConfirmDate] = useState<Date | undefined>(undefined);
   const [depositType, setDepositType] = useState<string>("청구변경");
@@ -2412,9 +2413,35 @@ export default function ComprehensiveProgress() {
                     기본정보
                   </h3>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>제출일</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>날짜 선택</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            style={{ 
+                              fontFamily: "Pretendard", 
+                              fontSize: "12px",
+                              gap: "6px",
+                              height: "28px",
+                              padding: "0 10px",
+                            }}
+                            data-testid="button-submission-date"
+                          >
+                            <CalendarIcon style={{ width: "14px", height: "14px" }} />
+                            {format(submissionDate, "yyyy-MM-dd", { locale: ko })}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                          <Calendar
+                            mode="single"
+                            selected={submissionDate}
+                            onSelect={(date) => date && setSubmissionDate(date)}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>수임일</span>
