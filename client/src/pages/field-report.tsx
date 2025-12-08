@@ -1038,8 +1038,8 @@ export default function FieldReport() {
 
                   let isFirstPage = true;
 
-                  // 탭 트리거 값과 체크박스 키 매핑
-                  const tabTriggerMap: Record<string, string> = {
+                  // 탭 트리거 텍스트와 체크박스 키 매핑
+                  const tabTriggerTextMap: Record<string, string> = {
                     '현장입력': '현장조사',
                     '도면': '도면',
                     '증빙자료': '증빙자료',
@@ -1050,13 +1050,16 @@ export default function FieldReport() {
                   // 현재 활성 탭 저장
                   const currentActiveTab = document.querySelector('[role="tablist"] [data-state="active"]') as HTMLElement | null;
                   
+                  // 모든 탭 트리거 버튼 가져오기
+                  const allTabTriggers = Array.from(document.querySelectorAll('[role="tab"]')) as HTMLElement[];
+                  
                   // 각 섹션을 순차적으로 캡처 (탭 클릭 방식)
                   for (const sectionKey of selectedSections) {
-                    const tabValue = tabTriggerMap[sectionKey];
+                    const tabText = tabTriggerTextMap[sectionKey];
                     const elementId = sectionMap[sectionKey];
                     
-                    // 해당 탭 트리거 찾기
-                    const tabTrigger = document.querySelector(`[role="tab"][data-value="${tabValue}"]`) as HTMLElement | null;
+                    // 해당 탭 트리거 찾기 (텍스트 내용으로 검색)
+                    const tabTrigger = allTabTriggers.find(tab => tab.textContent?.trim() === tabText);
                     
                     if (tabTrigger) {
                       // 탭 클릭하여 활성화
@@ -1064,7 +1067,9 @@ export default function FieldReport() {
                       
                       // 레이아웃 재계산 대기
                       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                      await new Promise(resolve => setTimeout(resolve, 200));
+                      await new Promise(resolve => setTimeout(resolve, 300));
+                    } else {
+                      console.warn(`Tab trigger not found: ${tabText}`);
                     }
                     
                     const element = document.getElementById(elementId);
