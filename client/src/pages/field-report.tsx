@@ -1038,27 +1038,34 @@ export default function FieldReport() {
 
                   let isFirstPage = true;
 
-                  // 모든 탭 콘텐츠 요소 가져오기
-                  const allTabContents = document.querySelectorAll('[data-state]');
-                  const originalStates: Map<Element, string> = new Map();
+                  // 모든 탭 콘텐츠 요소의 원래 스타일 저장 및 강제 표시
+                  const elementsToShow: { element: HTMLElement; originalDisplay: string; originalVisibility: string; originalPosition: string; originalLeft: string; originalOpacity: string }[] = [];
                   
-                  // 원래 상태 저장
-                  allTabContents.forEach(el => {
-                    const state = el.getAttribute('data-state');
-                    if (state) originalStates.set(el, state);
-                  });
-
-                  // 캡처용 임시 컨테이너 생성
-                  const printWrapper = document.createElement('div');
-                  printWrapper.style.cssText = `
-                    position: absolute;
-                    left: -9999px;
-                    top: 0;
-                    width: 800px;
-                    background: white;
-                    padding: 20px;
-                  `;
-                  document.body.appendChild(printWrapper);
+                  // 선택된 모든 섹션을 강제로 표시
+                  for (const sectionKey of selectedSections) {
+                    const elementId = sectionMap[sectionKey];
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                      elementsToShow.push({
+                        element,
+                        originalDisplay: element.style.display,
+                        originalVisibility: element.style.visibility,
+                        originalPosition: element.style.position,
+                        originalLeft: element.style.left,
+                        originalOpacity: element.style.opacity,
+                      });
+                      // 강제로 표시하되 화면 밖으로 이동
+                      element.style.display = 'block';
+                      element.style.visibility = 'visible';
+                      element.style.position = 'absolute';
+                      element.style.left = '-9999px';
+                      element.style.opacity = '1';
+                      element.setAttribute('data-state', 'active');
+                    }
+                  }
+                  
+                  // 렌더링 대기
+                  await new Promise(resolve => setTimeout(resolve, 300));
 
                   // 각 섹션을 순차적으로 캡처
                   for (const sectionKey of selectedSections) {
@@ -1071,28 +1078,48 @@ export default function FieldReport() {
                     }
 
                     try {
-                      // 요소를 클론하여 임시 컨테이너에 추가
-                      const clone = element.cloneNode(true) as HTMLElement;
-                      clone.style.cssText = 'display: block !important; visibility: visible !important;';
-                      clone.removeAttribute('data-state');
-                      clone.removeAttribute('hidden');
+                      // 캡처용 임시 컨테이너 생성
+                      const printWrapper = document.createElement('div');
+                      printWrapper.style.cssText = `
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 800px;
+                        background: white;
+                        padding: 20px;
+                        z-index: 9999;
+                      `;
                       
-                      // 임시 컨테이너 비우고 클론 추가
-                      printWrapper.innerHTML = '';
-                      printWrapper.appendChild(clone);
+                      // 요소 내용을 복사
+                      printWrapper.innerHTML = element.innerHTML;
+                      document.body.appendChild(printWrapper);
                       
                       // 렌더링 대기
                       await new Promise(resolve => setTimeout(resolve, 200));
 
                       // html2canvas로 캡처
                       const canvas = await html2canvas(printWrapper, {
-                        scale: 1.5,
+                        scale: 2,
                         useCORS: true,
+                        allowTaint: true,
                         logging: false,
                         backgroundColor: '#ffffff',
                         width: 800,
                         windowWidth: 800,
+                        onclone: (clonedDoc) => {
+                          // 클론된 문서의 모든 요소 표시
+                          const allElements = clonedDoc.querySelectorAll('*');
+                          allElements.forEach((el) => {
+                            if (el instanceof HTMLElement) {
+                              el.style.visibility = 'visible';
+                              el.style.display = el.style.display === 'none' ? 'block' : el.style.display;
+                            }
+                          });
+                        }
                       });
+                      
+                      // 임시 컨테이너 제거
+                      document.body.removeChild(printWrapper);
 
                       // 캔버스 유효성 검사
                       if (canvas.width === 0 || canvas.height === 0) {
@@ -1132,8 +1159,15 @@ export default function FieldReport() {
                     }
                   }
 
-                  // 임시 컨테이너 제거
-                  document.body.removeChild(printWrapper);
+                  // 원래 스타일 복원
+                  elementsToShow.forEach(({ element, originalDisplay, originalVisibility, originalPosition, originalLeft, originalOpacity }) => {
+                    element.style.display = originalDisplay;
+                    element.style.visibility = originalVisibility;
+                    element.style.position = originalPosition;
+                    element.style.left = originalLeft;
+                    element.style.opacity = originalOpacity;
+                    element.removeAttribute('data-state');
+                  });
 
                   // PDF 저장
                   const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
