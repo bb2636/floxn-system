@@ -213,6 +213,15 @@ export const cases = pgTable("cases", {
   estimateAmount: text("estimate_amount"), // 견적금액 (최종 총액)
   approvedAmount: text("approved_amount"), // 승인금액 (2차승인 시점의 견적금액)
   
+  // 정산 관련 필드
+  settlementAmount: text("settlement_amount"), // 정산금액
+  settlementDate: text("settlement_date"), // 정산일자
+  settlementCommission: text("settlement_commission"), // 수수료
+  settlementDeposit: text("settlement_deposit"), // 입금액
+  settlementDeductible: text("settlement_deductible"), // 자기부담금
+  settlementInvoiceDate: text("settlement_invoice_date"), // 계산서 발행일
+  settlementMemo: text("settlement_memo"), // 정산 메모
+  
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),

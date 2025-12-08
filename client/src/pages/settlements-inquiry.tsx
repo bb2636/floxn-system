@@ -36,6 +36,15 @@ interface SettlementRow {
   propertyAdjustmentRate: string;
   // 청구액
   claimAmount: number;
+  // 정산 데이터
+  settlementAmount: number;
+  settlementDate: string;
+  settlementCommission: number;
+  settlementDeposit: number;
+  settlementDeductible: number;
+  settlementInvoiceDate: string;
+  settlementMemo: string;
+  status: string;
 }
 
 export default function SettlementsInquiry() {
@@ -227,6 +236,12 @@ export default function SettlementsInquiry() {
         || usersByCompanyMap.get(assignedPartnerValue);
       const depositBank = partnerUser?.bankName || "-";
 
+      // 정산 데이터 파싱
+      const settlementAmount = parseAmountValue(caseItem.settlementAmount);
+      const settlementCommission = parseAmountValue(caseItem.settlementCommission);
+      const settlementDeposit = parseAmountValue(caseItem.settlementDeposit);
+      const settlementDeductible = parseAmountValue(caseItem.settlementDeductible);
+
       return {
         id: caseItem.id,
         caseNumber: caseItem.caseNumber,
@@ -247,6 +262,15 @@ export default function SettlementsInquiry() {
         propertyDifference,
         propertyAdjustmentRate,
         claimAmount: estimateTotal,
+        // 정산 데이터 추가
+        settlementAmount,
+        settlementDate: caseItem.settlementDate || "-",
+        settlementCommission,
+        settlementDeposit,
+        settlementDeductible,
+        settlementInvoiceDate: caseItem.settlementInvoiceDate || "-",
+        settlementMemo: caseItem.settlementMemo || "",
+        status: caseItem.status,
       };
     });
   }, [claimCases, estimatesMap, user, usersByIdMap, usersByUsernameMap, usersByCompanyMap]);
@@ -1462,12 +1486,12 @@ export default function SettlementsInquiry() {
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      color: row.settlementDeductible > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                      textAlign: "center",
+                      textAlign: "right",
                     }}
                   >
-                    -
+                    {row.settlementDeductible > 0 ? row.settlementDeductible.toLocaleString() + "원" : "-"}
                   </td>
                   {/* 청구액 */}
                   <td
@@ -1495,44 +1519,44 @@ export default function SettlementsInquiry() {
                   >
                     {row.depositBank}
                   </td>
-                  {/* 입금액 */}
+                  {/* 입금액 (정산 입금액) */}
                   <td
                     style={{
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      color: row.settlementDeposit > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                      textAlign: "center",
+                      textAlign: "right",
                     }}
                   >
-                    2025-00-00
+                    {row.settlementDeposit > 0 ? row.settlementDeposit.toLocaleString() + "원" : "-"}
                   </td>
-                  {/* 입금일 */}
+                  {/* 입금일 (정산일자) */}
                   <td
                     style={{
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      color: row.settlementDate !== "-" ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
                     }}
                   >
-                    -
+                    {row.settlementDate}
                   </td>
-                  {/* 계산서 */}
+                  {/* 계산서 (계산서 발행일) */}
                   <td
                     style={{
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      color: row.settlementInvoiceDate !== "-" ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
                     }}
                   >
-                    -
+                    {row.settlementInvoiceDate}
                   </td>
                   {/* 관리 */}
                   <td
