@@ -625,6 +625,44 @@ export default function FieldEstimate() {
   // 복구면적 산출표 전용 공종 목록 (케이스 유형과 관계없이 항상 도장/목공/수장만)
   const AREA_CALCULATION_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
   
+  // 위치별 공종 매핑 (복구면적 산출표용)
+  const WORK_TYPES_BY_LOCATION: Record<string, string[]> = {
+    '천장': ['목공사', '수장공사'],
+    '벽면': ['목공사', '수장공사'],
+    '바닥': ['수장공사', '가설공사'],
+  };
+  
+  // 위치+공종별 공사명 매핑 (복구면적 산출표용)
+  const WORK_NAMES_BY_LOCATION_AND_TYPE: Record<string, Record<string, string[]>> = {
+    '천장': {
+      '목공사': ['반자틀', '합판', '석고보드', '몰딩'],
+      '수장공사': ['도배'],
+    },
+    '벽면': {
+      '목공사': ['합판', '석고보드', '걸레받이'],
+      '수장공사': ['도배'],
+    },
+    '바닥': {
+      '수장공사': ['마루', '장판'],
+      '가설공사': ['건축물현장정리'],
+    },
+  };
+  
+  // 위치에 따른 공종 옵션 가져오기
+  const getWorkTypesByLocation = (location: string): string[] => {
+    return WORK_TYPES_BY_LOCATION[location] || AREA_CALCULATION_WORK_TYPES;
+  };
+  
+  // 위치+공종에 따른 공사명 옵션 가져오기
+  const getWorkNamesByLocationAndType = (location: string, workType: string): string[] => {
+    const byLocation = WORK_NAMES_BY_LOCATION_AND_TYPE[location];
+    if (byLocation && byLocation[workType]) {
+      return byLocation[workType];
+    }
+    // 매핑에 없으면 기존 workNamesByWorkType 사용
+    return workNamesByWorkType[workType] || [];
+  };
+  
   // 손해방지 vs 피해복구 케이스 판별
   // 접수번호에 -1, -2 등이 붙어있으면 피해복구, 없으면 손해방지
   const isLossPreventionCase = useMemo(() => {
@@ -2321,7 +2359,12 @@ export default function FieldEstimate() {
                       <td style={{ padding: "8px" }}>
                         <Select
                           value={row.workType || undefined}
-                          onValueChange={(value) => updateRow(row.id, 'workType', value)}
+                          onValueChange={(value) => {
+                            // 공종 변경 시 공사명도 초기화
+                            updateRow(row.id, 'workType', value);
+                            updateRow(row.id, 'workName', '');
+                          }}
+                          disabled={!row.location}
                         >
                           <SelectTrigger 
                             className="border focus:ring-0"
@@ -2338,7 +2381,7 @@ export default function FieldEstimate() {
                             <SelectValue placeholder="공종 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            {AREA_CALCULATION_WORK_TYPES.map(wt => (
+                            {getWorkTypesByLocation(row.location).map(wt => (
                               <SelectItem key={wt} value={wt}>
                                 {wt}
                               </SelectItem>
@@ -2350,6 +2393,7 @@ export default function FieldEstimate() {
                         <Select
                           value={row.workName || undefined}
                           onValueChange={(value) => updateRow(row.id, 'workName', value)}
+                          disabled={!row.workType}
                         >
                           <SelectTrigger 
                             className="border focus:ring-0"
@@ -2366,7 +2410,7 @@ export default function FieldEstimate() {
                             <SelectValue placeholder="공사명 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            {(workNamesByWorkType[row.workType] || []).filter(wn => wn && wn.trim() !== '').map(wn => (
+                            {getWorkNamesByLocationAndType(row.location, row.workType).filter(wn => wn && wn.trim() !== '').map(wn => (
                               <SelectItem key={wn} value={wn}>
                                 {wn}
                               </SelectItem>
@@ -3012,7 +3056,11 @@ export default function FieldEstimate() {
                           <td style={{ padding: "8px" }}>
                             <select
                               value={row.workType || ""}
-                              onChange={(e) => updateRow(row.id, 'workType', e.target.value)}
+                              onChange={(e) => {
+                                updateRow(row.id, 'workType', e.target.value);
+                                updateRow(row.id, 'workName', '');
+                              }}
+                              disabled={!row.location}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -3024,7 +3072,7 @@ export default function FieldEstimate() {
                               }}
                             >
                               <option value="">공종 선택</option>
-                              {AREA_CALCULATION_WORK_TYPES.map((wt) => (
+                              {getWorkTypesByLocation(row.location).map((wt) => (
                                 <option key={wt} value={wt}>{wt}</option>
                               ))}
                             </select>
@@ -3033,6 +3081,7 @@ export default function FieldEstimate() {
                             <select
                               value={row.workName || ""}
                               onChange={(e) => updateRow(row.id, 'workName', e.target.value)}
+                              disabled={!row.workType}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -3044,7 +3093,7 @@ export default function FieldEstimate() {
                               }}
                             >
                               <option value="">공사명 선택</option>
-                              {(workNamesByWorkType[row.workType] || []).map((work) => (
+                              {getWorkNamesByLocationAndType(row.location, row.workType).map((work) => (
                                 <option key={work} value={work}>{work}</option>
                               ))}
                             </select>
