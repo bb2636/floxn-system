@@ -2449,7 +2449,7 @@ export default function AdminSettings() {
 
               {/* Table */}
               <div className="overflow-x-auto" style={{ background: "#FFFFFF", borderRadius: "8px", padding: "16px" }}>
-                <table className="w-full">
+                <table className="w-full" style={{ borderCollapse: "collapse", border: "1px solid rgba(12, 12, 12, 0.08)" }}>
                   <thead
                     style={{
                       background: "rgba(248, 248, 248, 1)",
@@ -2470,6 +2470,8 @@ export default function AdminSettings() {
                                 letterSpacing: "-0.01em",
                                 color: "#686A6E",
                                 whiteSpace: "nowrap",
+                                borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                                borderBottom: "2px solid rgba(12, 12, 12, 0.15)",
                               }}
                             >
                               {header}
@@ -2516,9 +2518,9 @@ export default function AdminSettings() {
                         );
                       }
                       
-                      // 노무비 DB: 공종(col 0), 공사명(col 1) 컬럼에 대해 병합 정보 계산
+                      // 노무비 DB: 모든 4개 컬럼(공종, 공사명, 노임항목, 금액)에 대해 병합 정보 계산
                       // 빈 셀(null)은 위 셀과 병합된 것으로 처리
-                      const mergeableCols = dbTab === "노무비" ? [0, 1] : [];
+                      const mergeableCols = dbTab === "노무비" ? [0, 1, 2, 3] : [];
                       const mergeInfo: { [rowIdx: number]: { [colIdx: number]: { skip: boolean; rowspan: number } } } = {};
                       
                       // 각 병합 가능 컬럼에 대해 rowspan 계산
@@ -2554,12 +2556,7 @@ export default function AdminSettings() {
                       });
                       
                       return currentData.map((row: any, rowIdx: number) => (
-                        <tr
-                          key={rowIdx}
-                          style={{
-                            borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                          }}
-                        >
+                        <tr key={rowIdx}>
                           {Array.isArray(row) && row.map((cell: any, cellIdx: number) => {
                             // 병합 가능 컬럼: skip이면 렌더링 안함
                             const cellMerge = mergeInfo[rowIdx]?.[cellIdx];
@@ -2586,7 +2583,9 @@ export default function AdminSettings() {
                                   color: "#0C0C0C",
                                   whiteSpace: "nowrap",
                                   verticalAlign: rowspan > 1 ? "middle" : undefined,
-                                  borderRight: mergeableCols.includes(cellIdx) ? "1px solid rgba(12, 12, 12, 0.08)" : undefined,
+                                  borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                                  borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                                  background: rowspan > 1 ? "rgba(248, 248, 248, 0.5)" : undefined,
                                 }}
                               >
                                 {displayValue}
