@@ -3456,7 +3456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[send-pdf] Sending email to: ${to}`);
       try {
         const info = await transporter.sendMail({
-          from: SMTP_USER,
+          from: `FLOXN <${SMTP_USER}>`,
           to: to,
           subject: "PDF 파일 전송",
           text: "첨부된 PDF 파일을 확인해주세요.",
