@@ -42,21 +42,11 @@ export default function SettlementAction() {
     queryKey: ["/api/user"],
   });
 
-  // 케이스 상태 및 정산 데이터 업데이트 mutation
+  // 케이스 상태 업데이트 mutation
   const updateCaseStatusMutation = useMutation({
-    mutationFn: async (data: { 
-      caseId: number; 
-      status: string;
-      settlementAmount?: string;
-      settlementDate?: string;
-      settlementCommission?: string;
-      settlementDeposit?: string;
-      settlementDeductible?: string;
-      settlementInvoiceDate?: string;
-      settlementMemo?: string;
-    }) => {
-      const { caseId, ...updateData } = data;
-      return await apiRequest("PATCH", `/api/cases/${caseId}`, updateData);
+    mutationFn: async (data: { caseId: number; status: string }) => {
+      const { caseId, status } = data;
+      return await apiRequest("PATCH", `/api/cases/${caseId}`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
@@ -247,7 +237,8 @@ export default function SettlementAction() {
   const handleConfirmSettlement = async () => {
     if (!selectedCase) return;
 
-    const settlementData = {
+    // 정산 데이터 로깅 (UI에서 입력한 값들)
+    console.log("Settlement data:", {
       caseId: selectedCase.id,
       caseNumber: selectedCase.caseNumber,
       settlementAmount: parseFloat(settlementAmount.replace(/,/g, "")) || 0,
@@ -258,24 +249,15 @@ export default function SettlementAction() {
       invoiceDate,
       useTodayInvoice,
       settlementMemo,
-    };
-
-    console.log("Settlement data to submit:", settlementData);
+    });
     
     setIsSubmitting(true);
     
     try {
-      // 케이스 상태를 '정산완료'로 업데이트하고 정산 데이터 저장
+      // 케이스 상태를 '정산완료'로 업데이트
       await updateCaseStatusMutation.mutateAsync({
         caseId: selectedCase.id,
         status: "정산완료",
-        settlementAmount: settlementData.settlementAmount.toString(),
-        settlementDate: settlementData.settlementDate,
-        settlementCommission: settlementData.commission.toString(),
-        settlementDeposit: settlementData.discount.toString(),
-        settlementDeductible: settlementData.deductible.toString(),
-        settlementInvoiceDate: settlementData.invoiceDate || (useTodayInvoice ? format(new Date(), "yyyy-MM-dd") : ""),
-        settlementMemo: settlementData.settlementMemo,
       });
       
       setShowConfirmDialog(false);
