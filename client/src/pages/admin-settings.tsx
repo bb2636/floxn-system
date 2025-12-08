@@ -16,6 +16,84 @@ import {
 import { GlobalHeader } from "@/components/global-header";
 import { AccessControlPanel } from "@/components/access-control-panel";
 import * as XLSX from "xlsx";
+import JSZip from "jszip";
+
+// Fallback xlsx parser for files with XML namespace prefixes that xlsx library can't handle
+async function parseXlsxFallback(file: File): Promise<{ headers: string[], data: any[][] }> {
+  const arrayBuffer = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(arrayBuffer);
+  
+  // Get shared strings
+  const sharedStringsFile = zip.file('xl/sharedStrings.xml');
+  const sharedStrings: string[] = [];
+  if (sharedStringsFile) {
+    const ssXml = await sharedStringsFile.async('string');
+    const siMatches = ssXml.match(/<(?:si|x:si)>[\s\S]*?<\/(?:si|x:si)>/g) || [];
+    siMatches.forEach(si => {
+      const tMatch = si.match(/<(?:t|x:t)[^>]*>([^<]*)<\/(?:t|x:t)>/);
+      sharedStrings.push(tMatch ? tMatch[1] : '');
+    });
+  }
+  
+  // Get sheet data
+  const sheetFile = zip.file('xl/worksheets/sheet1.xml');
+  if (!sheetFile) {
+    throw new Error('Sheet1 not found in xlsx file');
+  }
+  
+  const sheetXml = await sheetFile.async('string');
+  const rows: any[][] = [];
+  const rowMatches = sheetXml.match(/<(?:row|x:row)[^>]*>[\s\S]*?<\/(?:row|x:row)>/g) || [];
+  
+  rowMatches.forEach(rowXml => {
+    const cellMatches = rowXml.match(/<(?:c|x:c)[^>]*>[\s\S]*?<\/(?:c|x:c)>/g) || [];
+    const row: any[] = new Array(20).fill(null);
+    
+    cellMatches.forEach(cellXml => {
+      // Get cell reference
+      const refMatch = cellXml.match(/r="([A-Z]+)\d+"/);
+      if (!refMatch) return;
+      
+      const colLetter = refMatch[1];
+      let colIdx = 0;
+      for (let i = 0; i < colLetter.length; i++) {
+        colIdx = colIdx * 26 + (colLetter.charCodeAt(i) - 64);
+      }
+      colIdx -= 1;
+      
+      // Get cell type
+      const typeMatch = cellXml.match(/t="([^"]+)"/);
+      const cellType = typeMatch ? typeMatch[1] : 'n';
+      
+      // Get value
+      const valMatch = cellXml.match(/<(?:v|x:v)>([^<]*)<\/(?:v|x:v)>/);
+      let value: any = valMatch ? valMatch[1] : null;
+      
+      if (cellType === 's' && value !== null) {
+        const idx = parseInt(value);
+        value = sharedStrings[idx] || '';
+      } else if (value !== null) {
+        const num = parseFloat(value);
+        value = isNaN(num) ? value : num;
+      }
+      
+      row[colIdx] = value;
+    });
+    
+    // Trim trailing nulls
+    while (row.length > 0 && row[row.length - 1] === null) row.pop();
+    if (row.length > 0) rows.push(row);
+  });
+  
+  if (rows.length === 0) {
+    throw new Error('No data found in xlsx file');
+  }
+  
+  const headers = rows[0].map((h: any) => h?.toString() || '');
+  const data = rows.slice(1);
+  
+  return { headers, data };
+}
 
 // 한국 행정구역 데이터
 const KOREA_REGIONS: Record<string, string[]> = {
@@ -2012,67 +2090,87 @@ export default function AdminSettings() {
                     const input = document.createElement('input');
                     input.type = 'file';
                     input.accept = '.xlsx, .xls';
-                    input.onchange = (e: any) => {
+                    input.onchange = async (e: any) => {
                       const file = e.target.files[0];
                       if (file) {
-                        const reader = new FileReader();
-                        reader.onload = async (event) => {
-                          const data = new Uint8Array(event.target?.result as ArrayBuffer);
+                        try {
+                          let headers: string[] = [];
+                          let rows: any[][] = [];
+                          
+                          // Try xlsx library first
+                          const arrayBuffer = await file.arrayBuffer();
+                          const data = new Uint8Array(arrayBuffer);
                           const workbook = XLSX.read(data, { type: 'array' });
                           const sheetName = workbook.SheetNames[0];
                           const worksheet = workbook.Sheets[sheetName];
-                          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
                           
-                          if (jsonData.length > 0) {
-                            const headers = jsonData[0] as string[];
-                            // 셀 내 줄바꿈 정리 - 첫 번째 줄만 사용
-                            const rows = (jsonData.slice(1) as any[]).map(row => 
-                              Array.isArray(row) ? row.map(cell => {
-                                if (typeof cell === 'string' && (cell.includes('\n') || cell.includes('\r'))) {
-                                  return cell.split(/\r?\n|\r/)[0].trim();
-                                }
-                                return cell;
-                              }) : row
-                            );
-                            
+                          // Check if xlsx library successfully parsed the data
+                          if (worksheet && Object.keys(worksheet).length > 0) {
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                            if (jsonData.length > 0) {
+                              headers = jsonData[0] as string[];
+                              rows = (jsonData.slice(1) as any[]).map(row => 
+                                Array.isArray(row) ? row.map(cell => {
+                                  if (typeof cell === 'string' && (cell.includes('\n') || cell.includes('\r'))) {
+                                    return cell.split(/\r?\n|\r/)[0].trim();
+                                  }
+                                  return cell;
+                                }) : row
+                              );
+                            }
+                          }
+                          
+                          // Fallback parser for files with XML namespace prefixes
+                          if (headers.length === 0 || rows.length === 0) {
+                            console.log('Using fallback xlsx parser...');
+                            const parsed = await parseXlsxFallback(file);
+                            headers = parsed.headers;
+                            rows = parsed.data;
+                          }
+                          
+                          if (headers.length > 0) {
                             setHeaders(headers);
                             setData(rows);
                             
                             // Save to database
-                            try {
-                              await saveExcelDataMutation.mutateAsync({
-                                type: currentTab,
-                                title: uploadTitle.trim(),
-                                headers,
-                                data: rows,
-                              });
-                              
-                              toast({
-                                title: "업로드 완료",
-                                description: `${currentTab} 엑셀 파일이 성공적으로 업로드되어 저장되었습니다.`,
-                              });
-                              
-                              // Clear title input
-                              setUploadTitle("");
-                            } catch (error: any) {
-                              // Check for duplicate title error (409)
-                              if (error?.status === 409 || error?.response?.status === 409) {
-                                toast({
-                                  title: "중복된 제목",
-                                  description: "이미 같은 제목의 버전이 존재합니다. 다른 제목을 사용해주세요.",
-                                  variant: "destructive",
-                                });
-                              } else {
-                                toast({
-                                  title: "저장 실패",
-                                  description: "데이터베이스 저장 중 오류가 발생했습니다.",
-                                  variant: "destructive",
-                                });
-                              }
-                            }
+                            await saveExcelDataMutation.mutateAsync({
+                              type: currentTab,
+                              title: uploadTitle.trim(),
+                              headers,
+                              data: rows,
+                            });
+                            
+                            toast({
+                              title: "업로드 완료",
+                              description: `${currentTab} 엑셀 파일이 성공적으로 업로드되어 저장되었습니다.`,
+                            });
+                            
+                            // Clear title input
+                            setUploadTitle("");
+                          } else {
+                            toast({
+                              title: "파싱 실패",
+                              description: "엑셀 파일에서 데이터를 읽을 수 없습니다.",
+                              variant: "destructive",
+                            });
                           }
-                        };
-                        reader.readAsArrayBuffer(file);
+                        } catch (error: any) {
+                          console.error('Excel upload error:', error);
+                          // Check for duplicate title error (409)
+                          if (error?.status === 409 || error?.response?.status === 409) {
+                            toast({
+                              title: "중복된 제목",
+                              description: "이미 같은 제목의 버전이 존재합니다. 다른 제목을 사용해주세요.",
+                              variant: "destructive",
+                            });
+                          } else {
+                            toast({
+                              title: "저장 실패",
+                              description: error?.message || "데이터베이스 저장 중 오류가 발생했습니다.",
+                              variant: "destructive",
+                            });
+                          }
+                        }
                       }
                     };
                     input.click();
