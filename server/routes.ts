@@ -2511,80 +2511,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json([]);
       }
 
-      // Parse excel data into structured catalog
-      // Actual columns: 공종, 공사명(품명), 세부공사, 세부항목, 인, 천장, 벽체, 바닥, 길이, ...
       const catalog: any[] = [];
-      let prevCategory: string | null = null;
-      let prevWorkName: string | null = null;
-      let prevDetailWork: string | null = null;
+      
+      // Helper functions
+      const safeString = (val: any): string => {
+        if (val === null || val === undefined) return '';
+        return String(val).trim();
+      };
+      
+      const parsePrice = (val: any): number | null => {
+        if (val === null || val === undefined || val === '') return null;
+        if (typeof val === 'number') return val;
+        const cleaned = String(val).replace(/,/g, '').trim();
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? null : num;
+      };
 
-      // Start from index 0 - NO header row in this data
-      for (let i = 0; i < excelData.data.length; i++) {
-        const row = excelData.data[i];
-        if (!row || row.length === 0) continue;
+      // Detect format by checking headers
+      const headers = excelData.headers || [];
+      const isNewFormat = headers.some((h: string) => h && h.includes('노임항목'));
+      
+      console.log('Labor catalog headers:', headers);
+      console.log('Is new format:', isNewFormat);
 
-        // Extract and forward-fill merged cells (handle both null and empty string)
-        // Safely convert to string first to handle numbers and other types
-        const safeString = (val: any): string => {
-          if (val === null || val === undefined) return '';
-          return String(val).trim();
-        };
-        
-        const category: string = safeString(row[0]) || prevCategory || '';
-        const workName: string = safeString(row[1]) || prevWorkName || '';
-        const detailWork: string = safeString(row[2]) || prevDetailWork || '';
-        const detailItem: string = safeString(row[3]);
-        
-        // Parse price columns (remove commas, convert to number)
-        const parsePrice = (val: any): number | null => {
-          if (val === null || val === undefined || val === '') return null;
-          if (typeof val === 'number') return val;
-          const cleaned = String(val).replace(/,/g, '').trim();
-          const num = parseFloat(cleaned);
-          return isNaN(num) ? null : num;
-        };
-
-        // IMPORTANT: Headers are ["공종","공사명(품명)","세부공사",null,"인","수량","무게","천장","벽체","바닥","길이","비고"]
-        // Column indices: 0=공종, 1=공사명, 2=세부공사, 3=세부항목, 4=인, 5=수량, 6=무게, 7=천장, 8=벽체, 9=바닥, 10=길이, 11=비고
-        const laborPrice = parsePrice(row[4]); // 인 (column index 4)
-        const ceilingPrice = parsePrice(row[7]); // 천장 (column index 7)
-        const wallPrice = parsePrice(row[8]); // 벽체 (column index 8)
-        const floorPrice = parsePrice(row[9]); // 바닥 (column index 9)
-        const lengthPrice = parsePrice(row[10]); // 길이 (column index 10)
-
-        // Update forward-fill values
-        if (category) prevCategory = category;
-        if (workName) prevWorkName = workName;
-        if (detailWork) prevDetailWork = detailWork;
-
-        // Skip rows without enough data
-        if (!category || !workName || !detailWork) continue;
-
-        // Determine unit based on detailWork (세부공사)
-        // For 노무비, unit is '인', otherwise use '㎡' or 'm' as default
-        let unit = 'm';
-        if (detailWork === '노무비') {
-          unit = '인';
-        } else if (ceilingPrice || wallPrice || floorPrice) {
-          unit = '㎡';
-        } else if (lengthPrice) {
-          unit = 'm';
-        }
-
-        catalog.push({
-          공종: category,
-          공사명: workName,
-          세부공사: detailWork,
-          세부항목: detailItem,
-          단위: unit,
-          단가_인: laborPrice,
-          단가_천장: ceilingPrice,
-          단가_벽체: wallPrice,
-          단가_바닥: floorPrice,
-          단가_길이: lengthPrice,
+      if (isNewFormat) {
+        // NEW FORMAT: 공종, 공사명, 노임항목DB, 금액
+        // Find column indices by header names
+        let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = 3;
+        headers.forEach((h: string, idx: number) => {
+          if (h && h.includes('공종')) categoryIdx = idx;
+          if (h && (h.includes('공사명') || h.includes('품명'))) workNameIdx = idx;
+          if (h && h.includes('노임항목')) laborItemIdx = idx;
+          if (h && h.includes('금액')) priceIdx = idx;
         });
+
+        let prevCategory: string | null = null;
+        let prevWorkName: string | null = null;
+
+        for (let i = 0; i < excelData.data.length; i++) {
+          const row = excelData.data[i];
+          if (!row || row.length === 0) continue;
+
+          const category: string = safeString(row[categoryIdx]) || prevCategory || '';
+          const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
+          const laborItem: string = safeString(row[laborItemIdx]);
+          const price = parsePrice(row[priceIdx]);
+
+          // Update forward-fill values
+          if (safeString(row[categoryIdx])) prevCategory = category;
+          if (safeString(row[workNameIdx])) prevWorkName = workName;
+
+          // Skip rows without essential data
+          if (!category || !laborItem) continue;
+
+          catalog.push({
+            공종: category,
+            공사명: workName,
+            세부공사: '노무비', // 새 형식은 모두 노무비로 간주
+            세부항목: laborItem, // 노임항목DB 값
+            단위: '인',
+            단가_인: price,
+            단가_천장: null,
+            단가_벽체: null,
+            단가_바닥: null,
+            단가_길이: null,
+          });
+        }
+      } else {
+        // OLD FORMAT: 공종, 공사명(품명), 세부공사, 세부항목, 인, 수량, 무게, 천장, 벽체, 바닥, 길이, 비고
+        let prevCategory: string | null = null;
+        let prevWorkName: string | null = null;
+        let prevDetailWork: string | null = null;
+
+        for (let i = 0; i < excelData.data.length; i++) {
+          const row = excelData.data[i];
+          if (!row || row.length === 0) continue;
+
+          const category: string = safeString(row[0]) || prevCategory || '';
+          const workName: string = safeString(row[1]) || prevWorkName || '';
+          const detailWork: string = safeString(row[2]) || prevDetailWork || '';
+          const detailItem: string = safeString(row[3]);
+
+          // Column indices for old format
+          const laborPrice = parsePrice(row[4]); // 인
+          const ceilingPrice = parsePrice(row[7]); // 천장
+          const wallPrice = parsePrice(row[8]); // 벽체
+          const floorPrice = parsePrice(row[9]); // 바닥
+          const lengthPrice = parsePrice(row[10]); // 길이
+
+          // Update forward-fill values
+          if (safeString(row[0])) prevCategory = category;
+          if (safeString(row[1])) prevWorkName = workName;
+          if (safeString(row[2])) prevDetailWork = detailWork;
+
+          // Skip rows without enough data
+          if (!category || !workName || !detailWork) continue;
+
+          let unit = 'm';
+          if (detailWork === '노무비') {
+            unit = '인';
+          } else if (ceilingPrice || wallPrice || floorPrice) {
+            unit = '㎡';
+          } else if (lengthPrice) {
+            unit = 'm';
+          }
+
+          catalog.push({
+            공종: category,
+            공사명: workName,
+            세부공사: detailWork,
+            세부항목: detailItem,
+            단위: unit,
+            단가_인: laborPrice,
+            단가_천장: ceilingPrice,
+            단가_벽체: wallPrice,
+            단가_바닥: floorPrice,
+            단가_길이: lengthPrice,
+          });
+        }
       }
 
+      console.log('Parsed catalog items:', catalog.length);
       res.json(catalog);
     } catch (error) {
       console.error("Get labor catalog error:", error);
