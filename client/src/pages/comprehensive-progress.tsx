@@ -106,6 +106,7 @@ export default function ComprehensiveProgress() {
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
   const [taxInvoiceDate, setTaxInvoiceDate] = useState<Date | undefined>(undefined);
   const [invoiceConfirmDate, setInvoiceConfirmDate] = useState<Date | undefined>(undefined);
+  const [depositType, setDepositType] = useState<string>("청구변경");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -2616,9 +2617,39 @@ export default function ComprehensiveProgress() {
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>입금일</span>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>2025-00-00</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gridColumn: "1 / -1" }}>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>입금 구분</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>정산 / 부분입금 / 청구변경</span>
+                      <div style={{ display: "flex", gap: "16px" }}>
+                        {["정산", "부분입금", "청구변경"].map((type) => (
+                          <label 
+                            key={type} 
+                            style={{ 
+                              display: "flex", 
+                              alignItems: "center", 
+                              gap: "6px", 
+                              cursor: "pointer",
+                              fontFamily: "Pretendard",
+                              fontSize: "13px",
+                              color: depositType === type ? "#008FED" : "rgba(12, 12, 12, 0.6)",
+                            }}
+                          >
+                            <input
+                              type="radio"
+                              name="depositType"
+                              value={type}
+                              checked={depositType === type}
+                              onChange={(e) => setDepositType(e.target.value)}
+                              style={{ 
+                                width: "16px", 
+                                height: "16px",
+                                accentColor: "#008FED",
+                              }}
+                              data-testid={`radio-deposit-${type}`}
+                            />
+                            {type}
+                          </label>
+                        ))}
+                      </div>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>총 승인 금액</span>
