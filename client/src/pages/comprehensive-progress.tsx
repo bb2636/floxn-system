@@ -108,6 +108,11 @@ export default function ComprehensiveProgress() {
   const [taxInvoiceDate, setTaxInvoiceDate] = useState<Date | undefined>(undefined);
   const [invoiceConfirmDate, setInvoiceConfirmDate] = useState<Date | undefined>(undefined);
   const [depositType, setDepositType] = useState<string>("청구변경");
+  // 금액 상태 (손해방지비용, 대물비용)
+  const [damagePreventionEstimate, setDamagePreventionEstimate] = useState<number>(0);
+  const [damagePreventionApproved, setDamagePreventionApproved] = useState<number>(0);
+  const [propertyEstimate, setPropertyEstimate] = useState<number>(0);
+  const [propertyApproved, setPropertyApproved] = useState<number>(0);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -1326,6 +1331,16 @@ export default function ComprehensiveProgress() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              // 케이스 번호 prefix로 연관 케이스 찾아 총 견적금액 계산
+                              const casePrefix = getCaseNumberPrefix(caseItem.caseNumber);
+                              const relatedCasesForEstimate = casePrefix 
+                                ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === casePrefix) || []
+                                : [caseItem];
+                              const totalEstimate = relatedCasesForEstimate.reduce((sum, c) => sum + (Number(c.estimateAmount) || 0), 0);
+                              setDamagePreventionEstimate(totalEstimate);
+                              setDamagePreventionApproved(0);
+                              setPropertyEstimate(0);
+                              setPropertyApproved(0);
                               setInvoiceCaseId(caseItem.id);
                               setShowInvoiceDialog(true);
                             }}
@@ -2601,37 +2616,116 @@ export default function ComprehensiveProgress() {
                   <h4 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", marginBottom: "12px", color: "#0C0C0C" }}>
                     금액
                   </h4>
-                  <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "24px" }}>
-                    <thead>
-                      <tr style={{ background: "rgba(12, 12, 12, 0.04)" }}>
-                        <th style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left" }}></th>
-                        <th style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>손해방지비용</th>
-                        <th style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>대물비용</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>견적금액(원)</td>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{totalEstimateAmount.toLocaleString()}원</td>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>0원</td>
-                      </tr>
-                      <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>승인금액(원)</td>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>0원</td>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>0원</td>
-                      </tr>
-                      <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>차액(원)</td>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>0원</td>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>0원</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>수정률(%)</td>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>00%</td>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>00%</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  {(() => {
+                    // 차액 계산 (견적 - 승인)
+                    const damagePreventionDiff = damagePreventionEstimate - damagePreventionApproved;
+                    const propertyDiff = propertyEstimate - propertyApproved;
+                    // 수정률 계산 ((견적 - 승인) / 견적 * 100)
+                    const damagePreventionRate = damagePreventionEstimate > 0 
+                      ? ((damagePreventionDiff / damagePreventionEstimate) * 100).toFixed(1) 
+                      : "0.0";
+                    const propertyRate = propertyEstimate > 0 
+                      ? ((propertyDiff / propertyEstimate) * 100).toFixed(1) 
+                      : "0.0";
+                    
+                    return (
+                      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "24px" }}>
+                        <thead>
+                          <tr style={{ background: "rgba(12, 12, 12, 0.04)" }}>
+                            <th style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left" }}></th>
+                            <th style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>손해방지비용</th>
+                            <th style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>대물비용</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
+                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>견적금액(원)</td>
+                            <td style={{ padding: "10px", textAlign: "center" }}>
+                              <input
+                                type="number"
+                                value={damagePreventionEstimate}
+                                onChange={(e) => setDamagePreventionEstimate(Number(e.target.value) || 0)}
+                                style={{
+                                  width: "100px",
+                                  padding: "6px 8px",
+                                  border: "1px solid rgba(12, 12, 12, 0.2)",
+                                  borderRadius: "4px",
+                                  fontFamily: "Pretendard",
+                                  fontSize: "13px",
+                                  textAlign: "right",
+                                }}
+                                data-testid="input-damage-prevention-estimate"
+                              />
+                            </td>
+                            <td style={{ padding: "10px", textAlign: "center" }}>
+                              <input
+                                type="number"
+                                value={propertyEstimate}
+                                onChange={(e) => setPropertyEstimate(Number(e.target.value) || 0)}
+                                style={{
+                                  width: "100px",
+                                  padding: "6px 8px",
+                                  border: "1px solid rgba(12, 12, 12, 0.2)",
+                                  borderRadius: "4px",
+                                  fontFamily: "Pretendard",
+                                  fontSize: "13px",
+                                  textAlign: "right",
+                                }}
+                                data-testid="input-property-estimate"
+                              />
+                            </td>
+                          </tr>
+                          <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
+                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>승인금액(원)</td>
+                            <td style={{ padding: "10px", textAlign: "center" }}>
+                              <input
+                                type="number"
+                                value={damagePreventionApproved}
+                                onChange={(e) => setDamagePreventionApproved(Number(e.target.value) || 0)}
+                                style={{
+                                  width: "100px",
+                                  padding: "6px 8px",
+                                  border: "1px solid rgba(12, 12, 12, 0.2)",
+                                  borderRadius: "4px",
+                                  fontFamily: "Pretendard",
+                                  fontSize: "13px",
+                                  textAlign: "right",
+                                }}
+                                data-testid="input-damage-prevention-approved"
+                              />
+                            </td>
+                            <td style={{ padding: "10px", textAlign: "center" }}>
+                              <input
+                                type="number"
+                                value={propertyApproved}
+                                onChange={(e) => setPropertyApproved(Number(e.target.value) || 0)}
+                                style={{
+                                  width: "100px",
+                                  padding: "6px 8px",
+                                  border: "1px solid rgba(12, 12, 12, 0.2)",
+                                  borderRadius: "4px",
+                                  fontFamily: "Pretendard",
+                                  fontSize: "13px",
+                                  textAlign: "right",
+                                }}
+                                data-testid="input-property-approved"
+                              />
+                            </td>
+                          </tr>
+                          <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
+                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>차액(원)</td>
+                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{damagePreventionDiff.toLocaleString()}원</td>
+                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{propertyDiff.toLocaleString()}원</td>
+                          </tr>
+                          <tr>
+                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>수정률(%)</td>
+                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{damagePreventionRate}%</td>
+                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{propertyRate}%</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    );
+                  })()}
                 </div>
 
                 {/* 정산 */}
