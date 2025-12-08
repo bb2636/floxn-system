@@ -1390,9 +1390,7 @@ export default function SettlementAction() {
                   fontSize: "14px",
                   color: "rgba(12, 12, 12, 0.6)",
                 }}
-              >
-                정산 요 관례 0건
-              </span>
+              >정산 후 잔액 0원</span>
               <div className="flex gap-3">
                 <Button
                   variant="outline"
