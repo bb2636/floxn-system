@@ -468,9 +468,7 @@ export default function SettlementAction() {
                       textAlign: "center",
                       minWidth: "60px",
                     }}
-                  >
-                    오픈
-                  </th>
+                  >요청</th>
                 </tr>
               </thead>
               <tbody>

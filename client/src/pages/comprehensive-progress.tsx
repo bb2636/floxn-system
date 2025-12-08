@@ -2797,6 +2797,36 @@ export default function ComprehensiveProgress() {
                   </div>
                 </div>
 
+                {/* 협력사 계좌 정보 */}
+                <div style={{ background: "#F8F9FA", borderRadius: "8px", padding: "20px" }}>
+                  <h4 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", marginBottom: "12px", color: "#0C0C0C" }}>
+                    협력사 계좌 정보
+                  </h4>
+                  {(() => {
+                    // 협력사 사용자 정보 조회
+                    const partnerUser = invoiceCase?.assignedTo ? allUsers.find(u => u.id === invoiceCase.assignedTo) : null;
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>은행명</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{partnerUser?.bankName || "-"}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>계좌번호</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{partnerUser?.accountNumber || "-"}</span>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>예금주</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{partnerUser?.name || "-"}</span>
+                        </div>
+                        <p style={{ fontFamily: "Pretendard", fontSize: "11px", color: "rgba(12, 12, 12, 0.4)", marginTop: "4px" }}>
+                          * 협력사 계좌가 등록된 정보로 자동입력됩니다
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+
                 {/* 비고 */}
                 <div>
                   <h4 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", marginBottom: "8px", color: "#0C0C0C" }}>
