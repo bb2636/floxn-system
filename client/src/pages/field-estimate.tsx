@@ -1579,8 +1579,15 @@ export default function FieldEstimate() {
     return (str || '').trim().toLowerCase().replace(/\s+/g, '');
   };
   
-  // 철거공사 행도 함께 생성해야 하는 공사명 목록
-  const DEMOLITION_REQUIRED_WORK_NAMES = ['반자틀', '석고보드', '도배', '마루'];
+  // 철거공사 행도 함께 생성해야 하는 공사명과 해체 공사명 매핑
+  // DB에 있는 피해철거공사 세부항목: 반자틀 해체, 석고보드 해체, 벽지 해체, 타일철거, 바닥재 등
+  const DEMOLITION_WORK_MAPPING: Record<string, string> = {
+    '반자틀': '반자틀해체',
+    '석고보드': '석고보드해체', 
+    '도배': '벽지해체',
+    '마루': '바닥재해체',
+  };
+  const DEMOLITION_REQUIRED_WORK_NAMES = Object.keys(DEMOLITION_WORK_MAPPING);
   
   // 노무비 행 생성 헬퍼 (중복 방지 및 정렬 포함)
   const createLaborRowIfNotExists = (
@@ -1636,6 +1643,7 @@ export default function FieldEstimate() {
   // 노무비 DB에서 해당 공종의 노무비 항목 찾기 (폴백 로직 포함)
   // OLD 형식 Excel에서는 개별 공사명(몰딩, 반자틀 등)이 세부공사='일위대가'로 되어 있고,
   // 노무비 항목은 '공종-공종-노무비' 구조로 되어 있음 (예: 목공사-목공사-노무비)
+  // 예외: 피해철거공사-피해철거-노무비 (공사명이 공종과 다름)
   const findLaborItemsWithFallback = (
     normalizedWorkType: string, 
     normalizedWorkName: string
@@ -1665,6 +1673,19 @@ export default function FieldEstimate() {
       return items;
     }
     
+    // 3순위: 공종이 공사명으로 시작하는 경우 (예: 피해철거공사 → 피해철거공사-피해철거-노무비)
+    items = laborCatalog.filter(item => 
+      normalizeForMatch(item.공종) === normalizedWorkType && 
+      normalizedWorkType.startsWith(normalizeForMatch(item.공사명)) && // 공종이 공사명으로 시작
+      item.세부공사 === '노무비'
+    );
+    
+    if (items.length > 0) {
+      console.log('[연동] 부분 매칭 노무비로 폴백:', normalizedWorkType, normalizedWorkName, 
+        `→ ${items[0].공종}-${items[0].공사명}-${items[0].세부공사} (${items.length}개 옵션)`);
+      return items;
+    }
+    
     console.log('[연동] 노무비 매칭 없음:', normalizedWorkType, normalizedWorkName);
     return [];
   };
@@ -1684,23 +1705,27 @@ export default function FieldEstimate() {
     // 원래 공종 노무비 행 생성
     createLaborRowIfNotExists(workType, workName, sourceRowId, matchingLaborItems);
     
-    // 2. 특정 공사명인 경우 철거공사 행도 추가 생성
-    const isDemolitionRequired = DEMOLITION_REQUIRED_WORK_NAMES.some(
+    // 2. 특정 공사명인 경우 피해철거공사 행도 추가 생성
+    // 공사명을 해체 공사명으로 매핑 (예: 석고보드 → 석고보드해체)
+    const matchedOriginalWorkName = DEMOLITION_REQUIRED_WORK_NAMES.find(
       name => normalizeForMatch(name) === normalizedWorkName
     );
     
-    if (isDemolitionRequired && workType !== '철거공사') {
-      // 철거공사 + 같은 공사명으로 노무비 DB 검색 (폴백 로직 포함)
+    if (matchedOriginalWorkName && workType !== '피해철거공사') {
+      // 해체 공사명 가져오기 (예: 석고보드 → 석고보드해체)
+      const demolitionWorkName = DEMOLITION_WORK_MAPPING[matchedOriginalWorkName];
+      
+      // 피해철거공사 + 해체 공사명으로 노무비 DB 검색 (폴백 로직 포함)
       const demolitionLaborItems = findLaborItemsWithFallback(
-        normalizeForMatch('철거공사'), 
-        normalizedWorkName
+        normalizeForMatch('피해철거공사'), 
+        normalizeForMatch(demolitionWorkName)
       );
       
-      // 철거공사용 별도 sourceRowId 생성 (::demolition 접미사)
+      // 피해철거공사용 별도 sourceRowId 생성 (::demolition 접미사)
       const demolitionSourceRowId = `${sourceRowId}::demolition`;
       
-      console.log('[연동] 철거공사 추가 생성:', '철거공사', workName);
-      createLaborRowIfNotExists('철거공사', workName, demolitionSourceRowId, demolitionLaborItems);
+      console.log('[연동] 피해철거공사 추가 생성:', '피해철거공사', demolitionWorkName);
+      createLaborRowIfNotExists('피해철거공사', demolitionWorkName, demolitionSourceRowId, demolitionLaborItems);
     }
     
     // 자재비 DB에서 해당 공종의 자재 찾기 (정규화된 비교)
