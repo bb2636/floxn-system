@@ -1038,35 +1038,6 @@ export default function FieldReport() {
 
                   let isFirstPage = true;
 
-                  // 모든 탭 콘텐츠 요소의 원래 스타일 저장 및 강제 표시
-                  const elementsToShow: { element: HTMLElement; originalDisplay: string; originalVisibility: string; originalPosition: string; originalLeft: string; originalOpacity: string }[] = [];
-                  
-                  // 선택된 모든 섹션을 강제로 표시
-                  for (const sectionKey of selectedSections) {
-                    const elementId = sectionMap[sectionKey];
-                    const element = document.getElementById(elementId);
-                    if (element) {
-                      elementsToShow.push({
-                        element,
-                        originalDisplay: element.style.display,
-                        originalVisibility: element.style.visibility,
-                        originalPosition: element.style.position,
-                        originalLeft: element.style.left,
-                        originalOpacity: element.style.opacity,
-                      });
-                      // 강제로 표시하되 화면 밖으로 이동
-                      element.style.display = 'block';
-                      element.style.visibility = 'visible';
-                      element.style.position = 'absolute';
-                      element.style.left = '-9999px';
-                      element.style.opacity = '1';
-                      element.setAttribute('data-state', 'active');
-                    }
-                  }
-                  
-                  // 렌더링 대기
-                  await new Promise(resolve => setTimeout(resolve, 300));
-
                   // 각 섹션을 순차적으로 캡처
                   for (const sectionKey of selectedSections) {
                     const elementId = sectionMap[sectionKey];
@@ -1078,48 +1049,42 @@ export default function FieldReport() {
                     }
 
                     try {
-                      // 캡처용 임시 컨테이너 생성
-                      const printWrapper = document.createElement('div');
-                      printWrapper.style.cssText = `
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 800px;
-                        background: white;
-                        padding: 20px;
-                        z-index: 9999;
-                      `;
-                      
-                      // 요소 내용을 복사
-                      printWrapper.innerHTML = element.innerHTML;
-                      document.body.appendChild(printWrapper);
-                      
-                      // 렌더링 대기
-                      await new Promise(resolve => setTimeout(resolve, 200));
-
-                      // html2canvas로 캡처
-                      const canvas = await html2canvas(printWrapper, {
+                      // html2canvas로 원본 요소 직접 캡처 (onclone에서 강제 표시)
+                      const canvas = await html2canvas(element, {
                         scale: 2,
                         useCORS: true,
                         allowTaint: true,
                         logging: false,
                         backgroundColor: '#ffffff',
-                        width: 800,
-                        windowWidth: 800,
-                        onclone: (clonedDoc) => {
-                          // 클론된 문서의 모든 요소 표시
-                          const allElements = clonedDoc.querySelectorAll('*');
+                        windowWidth: 1200,
+                        onclone: (clonedDoc, clonedElement) => {
+                          // 클론된 요소를 강제로 표시
+                          clonedElement.style.display = 'block';
+                          clonedElement.style.visibility = 'visible';
+                          clonedElement.style.opacity = '1';
+                          clonedElement.style.position = 'static';
+                          clonedElement.style.width = '800px';
+                          clonedElement.style.padding = '20px';
+                          clonedElement.style.background = '#ffffff';
+                          clonedElement.setAttribute('data-state', 'active');
+                          
+                          // 모든 자식 요소도 표시
+                          const allElements = clonedElement.querySelectorAll('*');
                           allElements.forEach((el) => {
                             if (el instanceof HTMLElement) {
                               el.style.visibility = 'visible';
-                              el.style.display = el.style.display === 'none' ? 'block' : el.style.display;
+                              el.style.opacity = '1';
+                              // data-state가 inactive인 요소들 활성화
+                              if (el.getAttribute('data-state') === 'inactive') {
+                                el.setAttribute('data-state', 'active');
+                                el.style.display = 'block';
+                              }
+                              // hidden 속성 제거
+                              el.removeAttribute('hidden');
                             }
                           });
                         }
                       });
-                      
-                      // 임시 컨테이너 제거
-                      document.body.removeChild(printWrapper);
 
                       // 캔버스 유효성 검사
                       if (canvas.width === 0 || canvas.height === 0) {
@@ -1158,16 +1123,6 @@ export default function FieldReport() {
                       console.error(`캡처 오류 (${sectionKey}):`, captureError);
                     }
                   }
-
-                  // 원래 스타일 복원
-                  elementsToShow.forEach(({ element, originalDisplay, originalVisibility, originalPosition, originalLeft, originalOpacity }) => {
-                    element.style.display = originalDisplay;
-                    element.style.visibility = originalVisibility;
-                    element.style.position = originalPosition;
-                    element.style.left = originalLeft;
-                    element.style.opacity = originalOpacity;
-                    element.removeAttribute('data-state');
-                  });
 
                   // PDF 저장
                   const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
