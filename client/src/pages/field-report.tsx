@@ -1133,30 +1133,63 @@ export default function FieldReport() {
 
                       // 캔버스를 PDF에 추가 (JPEG 형식 사용)
                       const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                      const imgWidth = pageWidth - (margin * 2);
-                      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                      
-                      // 이미지가 여러 페이지에 걸쳐야 하는 경우
-                      let heightLeft = imgHeight;
-                      let position = 0;
+                      const maxWidth = pageWidth - (margin * 2);
                       const maxHeight = pageHeight - (margin * 2);
+                      
+                      // 이미지 비율 계산
+                      const imgAspectRatio = canvas.width / canvas.height;
+                      const pageAspectRatio = maxWidth / maxHeight;
+                      
+                      let imgWidth: number;
+                      let imgHeight: number;
+                      
+                      // 도면 섹션은 한 페이지에 맞게 축소
+                      if (sectionKey === '도면') {
+                        // 이미지를 페이지에 맞게 축소 (비율 유지)
+                        if (imgAspectRatio > pageAspectRatio) {
+                          // 이미지가 더 넓음 - 너비에 맞춤
+                          imgWidth = maxWidth;
+                          imgHeight = maxWidth / imgAspectRatio;
+                        } else {
+                          // 이미지가 더 높음 - 높이에 맞춤
+                          imgHeight = maxHeight;
+                          imgWidth = maxHeight * imgAspectRatio;
+                        }
+                        
+                        if (!isFirstPage) {
+                          pdf.addPage();
+                        }
+                        isFirstPage = false;
+                        
+                        // 중앙 정렬
+                        const xOffset = margin + (maxWidth - imgWidth) / 2;
+                        const yOffset = margin + (maxHeight - imgHeight) / 2;
+                        pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
+                      } else {
+                        // 다른 섹션은 기존 방식대로 처리
+                        imgWidth = maxWidth;
+                        imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        
+                        let heightLeft = imgHeight;
+                        let position = 0;
 
-                      if (!isFirstPage) {
-                        pdf.addPage();
-                      }
-                      isFirstPage = false;
+                        if (!isFirstPage) {
+                          pdf.addPage();
+                        }
+                        isFirstPage = false;
 
-                      // 첫 페이지
-                      pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
-                      heightLeft -= maxHeight;
-                      position = -maxHeight;
-
-                      // 추가 페이지 (이미지가 한 페이지보다 긴 경우)
-                      while (heightLeft > 0) {
-                        pdf.addPage();
-                        pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
+                        // 첫 페이지
+                        pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
                         heightLeft -= maxHeight;
-                        position -= maxHeight;
+                        position = -maxHeight;
+
+                        // 추가 페이지 (이미지가 한 페이지보다 긴 경우)
+                        while (heightLeft > 0) {
+                          pdf.addPage();
+                          pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
+                          heightLeft -= maxHeight;
+                          position -= maxHeight;
+                        }
                       }
                     } catch (captureError) {
                       console.error(`캡처 오류 (${sectionKey}):`, captureError);
