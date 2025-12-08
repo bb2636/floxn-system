@@ -1073,6 +1073,30 @@ export default function FieldReport() {
                       continue;
                     }
 
+                    // 도면 섹션의 경우 스크롤 컨테이너의 높이 제한 제거
+                    let drawingContainer: HTMLElement | null = null;
+                    let originalDrawingStyles = { height: '', overflow: '', maxHeight: '' };
+                    
+                    if (sectionKey === '도면') {
+                      // overflow-auto가 있는 도면 컨테이너 찾기
+                      drawingContainer = element.querySelector('.overflow-auto') as HTMLElement;
+                      if (drawingContainer) {
+                        // 원래 스타일 저장
+                        originalDrawingStyles = {
+                          height: drawingContainer.style.height,
+                          overflow: drawingContainer.style.overflow,
+                          maxHeight: drawingContainer.style.maxHeight,
+                        };
+                        // 높이 제한 제거하여 전체 컨텐츠 표시
+                        drawingContainer.style.height = 'auto';
+                        drawingContainer.style.maxHeight = 'none';
+                        drawingContainer.style.overflow = 'visible';
+                        
+                        // 스타일 적용 대기
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                      }
+                    }
+
                     try {
                       // html2canvas로 현재 화면에 표시된 요소 캡처
                       const canvas = await html2canvas(element, {
@@ -1082,6 +1106,8 @@ export default function FieldReport() {
                         logging: false,
                         backgroundColor: '#ffffff',
                         windowWidth: 1200,
+                        scrollX: 0,
+                        scrollY: 0,
                       });
 
                       // 캔버스 유효성 검사
@@ -1119,6 +1145,13 @@ export default function FieldReport() {
                       }
                     } catch (captureError) {
                       console.error(`캡처 오류 (${sectionKey}):`, captureError);
+                    } finally {
+                      // 도면 섹션 스타일 복원
+                      if (drawingContainer) {
+                        drawingContainer.style.height = originalDrawingStyles.height || '600px';
+                        drawingContainer.style.overflow = originalDrawingStyles.overflow || 'auto';
+                        drawingContainer.style.maxHeight = originalDrawingStyles.maxHeight || '';
+                      }
                     }
                   }
                   
