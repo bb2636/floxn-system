@@ -1075,27 +1075,40 @@ export default function FieldReport() {
                       continue;
                     }
 
-                    // 도면 섹션의 경우 스크롤 컨테이너의 높이 제한 제거
+                    // 도면 섹션의 경우 스크롤 컨테이너를 실제 컨텐츠 크기로 확장
                     let drawingContainer: HTMLElement | null = null;
-                    let originalDrawingStyles = { height: '', overflow: '', maxHeight: '' };
+                    let originalDrawingStyles = { height: '', width: '', overflow: '', maxHeight: '', maxWidth: '', minHeight: '' };
                     
                     if (sectionKey === '도면') {
                       // overflow-auto가 있는 도면 컨테이너 찾기
                       drawingContainer = element.querySelector('.overflow-auto') as HTMLElement;
                       if (drawingContainer) {
+                        // 실제 컨텐츠 크기 측정
+                        const scrollW = Math.max(drawingContainer.scrollWidth, 1200);
+                        const scrollH = Math.max(drawingContainer.scrollHeight, 800);
+                        
+                        console.log(`Drawing container scroll size: ${scrollW}x${scrollH}`);
+                        
                         // 원래 스타일 저장
                         originalDrawingStyles = {
                           height: drawingContainer.style.height,
+                          width: drawingContainer.style.width,
                           overflow: drawingContainer.style.overflow,
                           maxHeight: drawingContainer.style.maxHeight,
+                          maxWidth: drawingContainer.style.maxWidth,
+                          minHeight: drawingContainer.style.minHeight,
                         };
-                        // 높이 제한 제거하여 전체 컨텐츠 표시
-                        drawingContainer.style.height = 'auto';
+                        
+                        // 컨테이너를 실제 컨텐츠 크기로 확장
+                        drawingContainer.style.height = `${scrollH}px`;
+                        drawingContainer.style.width = `${scrollW}px`;
+                        drawingContainer.style.minHeight = `${scrollH}px`;
                         drawingContainer.style.maxHeight = 'none';
+                        drawingContainer.style.maxWidth = 'none';
                         drawingContainer.style.overflow = 'visible';
                         
                         // 스타일 적용 대기
-                        await new Promise(resolve => setTimeout(resolve, 100));
+                        await new Promise(resolve => setTimeout(resolve, 200));
                       }
                     }
 
@@ -1151,8 +1164,11 @@ export default function FieldReport() {
                       // 도면 섹션 스타일 복원
                       if (drawingContainer) {
                         drawingContainer.style.height = originalDrawingStyles.height || '600px';
-                        drawingContainer.style.overflow = originalDrawingStyles.overflow || 'auto';
+                        drawingContainer.style.width = originalDrawingStyles.width || '100%';
+                        drawingContainer.style.minHeight = originalDrawingStyles.minHeight || '';
                         drawingContainer.style.maxHeight = originalDrawingStyles.maxHeight || '';
+                        drawingContainer.style.maxWidth = originalDrawingStyles.maxWidth || '';
+                        drawingContainer.style.overflow = originalDrawingStyles.overflow || 'auto';
                       }
                     }
                   }
