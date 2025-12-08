@@ -113,6 +113,8 @@ export default function ComprehensiveProgress() {
   const [damagePreventionApproved, setDamagePreventionApproved] = useState<number>(0);
   const [propertyEstimate, setPropertyEstimate] = useState<number>(0);
   const [propertyApproved, setPropertyApproved] = useState<number>(0);
+  // 공사유무 상태
+  const [constructionStatus, setConstructionStatus] = useState<string>("수리");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -2511,9 +2513,35 @@ export default function ComprehensiveProgress() {
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>사고유형</span>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.accidentType || "수리"}</span>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>공사유무</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.recoveryType || "수리"}</span>
+                        <Select
+                          value={constructionStatus}
+                          onValueChange={(value) => {
+                            setConstructionStatus(value);
+                            // 수리 선택 시 최종승인금액을 견적금액에 자동 입력
+                            if (value === "수리") {
+                              setDamagePreventionEstimate(damagePreventionApproved);
+                              setPropertyEstimate(propertyApproved);
+                            }
+                          }}
+                        >
+                          <SelectTrigger 
+                            style={{ 
+                              width: "100px", 
+                              height: "28px",
+                              fontFamily: "Pretendard",
+                              fontSize: "13px",
+                            }}
+                            data-testid="select-construction-status"
+                          >
+                            <SelectValue placeholder="선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="수리">수리</SelectItem>
+                            <SelectItem value="미수리">미수리</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
