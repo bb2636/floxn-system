@@ -46,6 +46,7 @@ const CLOSED_STATUSES = [
 // 직접복구 관련 상태 확인
 const isDirectRecovery = (caseItem: Case): boolean => {
   return caseItem.recoveryType === "직접복구" || 
+         caseItem.restorationMethod === "직접복구" ||
          caseItem.status === "직접복구" ||
          caseItem.status === "(직접복구인 경우) 청구자료제출";
 };
@@ -53,6 +54,7 @@ const isDirectRecovery = (caseItem: Case): boolean => {
 // 선견적요청 관련 상태 확인
 const isPreEstimate = (caseItem: Case): boolean => {
   return caseItem.recoveryType === "선견적요청" || 
+         caseItem.restorationMethod === "선견적요청" ||
          caseItem.status === "선견적요청" ||
          caseItem.status === "(선견적요청인 경우) 출동비 청구";
 };
