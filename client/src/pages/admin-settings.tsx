@@ -554,15 +554,23 @@ export default function AdminSettings() {
   const saveExcelDataMutation = useMutation({
     mutationFn: async (data: { type: string; title: string; headers: string[]; data: any[][] }) => {
       const response = await apiRequest("POST", "/api/excel-data", data);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const error = new Error(errorData.error || "업로드 실패") as any;
+        error.status = response.status;
+        throw error;
+      }
       return await response.json();
     },
     onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: [`/api/excel-data/${variables.type}/versions`] });
       // Auto-select newly created version
-      if (variables.type === "노무비") {
-        setSelectedLaborVersionId(result.id);
-      } else {
-        setSelectedMaterialVersionId(result.id);
+      if (result && result.id) {
+        if (variables.type === "노무비") {
+          setSelectedLaborVersionId(result.id);
+        } else {
+          setSelectedMaterialVersionId(result.id);
+        }
       }
     },
   });
