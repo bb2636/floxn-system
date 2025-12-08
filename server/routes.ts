@@ -3330,6 +3330,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Send field report email endpoint
+  app.post("/api/send-field-report-email", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { email, pdfBase64, caseNumber, caseId } = req.body;
+
+      if (!email || !pdfBase64) {
+        return res.status(400).json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
+      }
+
+      const BUBBLE_API_TOKEN = process.env.BUBBLE_API_TOKEN;
+      if (!BUBBLE_API_TOKEN) {
+        return res.status(500).json({ error: "이메일 서비스 설정이 필요합니다" });
+      }
+
+      // Call Bubble workflow to send email with PDF attachment
+      const response = await fetch("https://sendmail-43925.bubbleapps.io/version-test/api/1.1/wf/send-mail", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${BUBBLE_API_TOKEN}`,
+        },
+        body: JSON.stringify({
+          sender: "FLOXN 현장출동보고서",
+          title: `현장출동보고서 - ${caseNumber || "케이스"}`,
+          to: email,
+          attachment: pdfBase64,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || data?.status === "error") {
+        console.error("Bubble email API error:", data);
+        return res.status(500).json({ error: "이메일 전송에 실패했습니다" });
+      }
+
+      console.log(`[Email] Field report sent successfully to ${email} for case ${caseNumber || caseId}`);
+      res.json({ success: true, message: "이메일이 전송되었습니다" });
+    } catch (error) {
+      console.error("Send field report email error:", error);
+      res.status(500).json({ error: "이메일 전송 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

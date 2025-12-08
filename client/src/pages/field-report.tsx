@@ -246,6 +246,7 @@ export default function FieldReport() {
   // 이메일 전송 다이얼로그 상태
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   
   // PDF 다운로드 다이얼로그 상태
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
@@ -877,7 +878,7 @@ export default function FieldReport() {
               취소
             </button>
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (!emailAddress || !emailAddress.includes("@")) {
                   toast({
                     title: "입력 오류",
@@ -887,31 +888,208 @@ export default function FieldReport() {
                   return;
                 }
                 
-                // 이메일 전송 로직 (API 호출)
+                setIsSendingEmail(true);
+                
                 toast({
                   title: "전송 중",
                   description: "보고서를 이메일로 전송하고 있습니다...",
                 });
                 
-                // TODO: 실제 API 호출 구현
-                setShowEmailDialog(false);
-                setEmailAddress("");
+                try {
+                  // PDF 생성 (동일한 로직 사용)
+                  const jsPDF = (await import('jspdf')).default;
+                  const html2canvas = (await import('html2canvas')).default;
+                  
+                  const pdf = new jsPDF('p', 'mm', 'a4');
+                  const pageWidth = pdf.internal.pageSize.getWidth();
+                  const pageHeight = pdf.internal.pageSize.getHeight();
+                  const margin = 10;
+                  let isFirstPage = true;
+                  
+                  // 모든 섹션 캡처
+                  const sectionOrder = ['현장입력', '도면', '증빙자료', '견적서', '기타사항'];
+                  const tabMapping: Record<string, string> = {
+                    '현장입력': '현장조사',
+                    '도면': '도면',
+                    '증빙자료': '증빙자료',
+                    '견적서': '견적서',
+                    '기타사항': '기타사항/원인',
+                  };
+                  
+                  for (const sectionKey of sectionOrder) {
+                    const tabValue = tabMapping[sectionKey];
+                    setActiveTab(tabValue);
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    let sectionElement: HTMLElement | null = null;
+                    
+                    if (sectionKey === '도면') {
+                      sectionElement = document.querySelector('.drawing-workspace') as HTMLElement
+                        || document.getElementById('pdf-section-도면')
+                        || document.querySelector('[id*="도면"]') as HTMLElement;
+                    } else if (sectionKey === '현장입력') {
+                      sectionElement = document.getElementById('pdf-section-현장조사');
+                    } else {
+                      sectionElement = document.getElementById(`pdf-section-${tabValue}`);
+                    }
+                    
+                    if (!sectionElement) continue;
+                    
+                    try {
+                      // 도면 섹션 스타일 저장 및 수정
+                      let originalStyles: { transform: string; width: string; height: string; overflow: string } | null = null;
+                      if (sectionKey === '도면') {
+                        const layoutWrapper = sectionElement.querySelector('[style*="transform"]') as HTMLElement;
+                        if (layoutWrapper) {
+                          originalStyles = {
+                            transform: layoutWrapper.style.transform,
+                            width: layoutWrapper.style.width,
+                            height: layoutWrapper.style.height,
+                            overflow: layoutWrapper.style.overflow,
+                          };
+                          layoutWrapper.style.transform = 'none';
+                          layoutWrapper.style.width = 'auto';
+                          layoutWrapper.style.height = 'auto';
+                          layoutWrapper.style.overflow = 'visible';
+                        }
+                        sectionElement.style.width = `${sectionElement.scrollWidth}px`;
+                        sectionElement.style.height = `${sectionElement.scrollHeight}px`;
+                        sectionElement.style.overflow = 'visible';
+                      }
+                      
+                      const canvas = await html2canvas(sectionElement, {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        logging: false,
+                        backgroundColor: '#FFFFFF',
+                        width: sectionElement.scrollWidth,
+                        height: sectionElement.scrollHeight,
+                      });
+                      
+                      // 도면 섹션 스타일 복원
+                      if (sectionKey === '도면') {
+                        const layoutWrapper = sectionElement.querySelector('[style*="transform"]') as HTMLElement || sectionElement.querySelector('div') as HTMLElement;
+                        if (layoutWrapper && originalStyles) {
+                          layoutWrapper.style.transform = originalStyles.transform;
+                          layoutWrapper.style.width = originalStyles.width;
+                          layoutWrapper.style.height = originalStyles.height;
+                          layoutWrapper.style.overflow = originalStyles.overflow;
+                        }
+                        sectionElement.style.width = '';
+                        sectionElement.style.height = '';
+                        sectionElement.style.overflow = '';
+                      }
+                      
+                      if (!canvas || canvas.width === 0 || canvas.height === 0) continue;
+                      
+                      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                      const maxWidth = pageWidth - (margin * 2);
+                      const maxHeight = pageHeight - (margin * 2);
+                      
+                      const imgAspectRatio = canvas.width / canvas.height;
+                      const pageAspectRatio = maxWidth / maxHeight;
+                      
+                      let imgWidth: number;
+                      let imgHeight: number;
+                      
+                      if (sectionKey === '도면') {
+                        if (imgAspectRatio > pageAspectRatio) {
+                          imgWidth = maxWidth;
+                          imgHeight = maxWidth / imgAspectRatio;
+                        } else {
+                          imgHeight = maxHeight;
+                          imgWidth = maxHeight * imgAspectRatio;
+                        }
+                        
+                        if (!isFirstPage) pdf.addPage();
+                        isFirstPage = false;
+                        
+                        const xOffset = margin + (maxWidth - imgWidth) / 2;
+                        const yOffset = margin + (maxHeight - imgHeight) / 2;
+                        pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
+                      } else {
+                        imgWidth = maxWidth;
+                        imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        
+                        let heightLeft = imgHeight;
+                        let position = 0;
+                        
+                        if (!isFirstPage) pdf.addPage();
+                        isFirstPage = false;
+                        
+                        pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
+                        heightLeft -= maxHeight;
+                        position = -maxHeight;
+                        
+                        while (heightLeft > 0) {
+                          pdf.addPage();
+                          pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
+                          heightLeft -= maxHeight;
+                          position -= maxHeight;
+                        }
+                      }
+                    } catch (captureError) {
+                      console.error(`캡처 오류 (${sectionKey}):`, captureError);
+                    }
+                  }
+                  
+                  // PDF를 Base64로 변환
+                  const pdfBase64 = pdf.output('datauristring').split(',')[1];
+                  
+                  // API 호출하여 이메일 전송
+                  const response = await fetch('/api/send-field-report-email', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                      email: emailAddress,
+                      pdfBase64,
+                      caseNumber: caseData?.caseNumber,
+                      caseId: selectedCaseId,
+                    }),
+                  });
+                  
+                  const result = await response.json();
+                  
+                  if (response.ok) {
+                    toast({
+                      title: "전송 완료",
+                      description: `${emailAddress}로 보고서가 전송되었습니다.`,
+                    });
+                    setShowEmailDialog(false);
+                    setEmailAddress("");
+                  } else {
+                    throw new Error(result.error || "이메일 전송에 실패했습니다");
+                  }
+                } catch (error) {
+                  console.error("이메일 전송 오류:", error);
+                  toast({
+                    title: "전송 실패",
+                    description: error instanceof Error ? error.message : "이메일 전송 중 오류가 발생했습니다.",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setIsSendingEmail(false);
+                }
               }}
+              disabled={isSendingEmail}
               style={{
                 flex: 1,
                 padding: "14px",
-                background: "#008FED",
+                background: isSendingEmail ? "rgba(0, 143, 237, 0.5)" : "#008FED",
                 borderRadius: "8px",
                 border: "none",
                 fontFamily: "Pretendard",
                 fontWeight: 600,
                 fontSize: "14px",
                 color: "#FFFFFF",
-                cursor: "pointer",
+                cursor: isSendingEmail ? "not-allowed" : "pointer",
               }}
               data-testid="button-confirm-email-send"
             >
-              전송
+              {isSendingEmail ? "전송 중..." : "전송"}
             </button>
           </div>
         </DialogContent>
