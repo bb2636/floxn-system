@@ -2014,35 +2014,42 @@ export default function AdminSettings() {
                         const reader = new FileReader();
                         reader.onload = async (event) => {
                           console.log('[DEBUG] FileReader onload triggered');
-                          const data = new Uint8Array(event.target?.result as ArrayBuffer);
-                          const workbook = XLSX.read(data, { type: 'array' });
-                          const sheetName = workbook.SheetNames[0];
-                          const worksheet = workbook.Sheets[sheetName];
-                          const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                          
-                          if (jsonData.length > 0) {
-                            const headers = jsonData[0] as string[];
-                            // 셀 내 줄바꿈 정리 - 첫 번째 줄만 사용
-                            const rows = (jsonData.slice(1) as any[]).map(row => 
-                              Array.isArray(row) ? row.map(cell => {
-                                if (typeof cell === 'string' && (cell.includes('\n') || cell.includes('\r'))) {
-                                  return cell.split(/\r?\n|\r/)[0].trim();
-                                }
-                                return cell;
-                              }) : row
-                            );
+                          try {
+                            const data = new Uint8Array(event.target?.result as ArrayBuffer);
+                            console.log('[DEBUG] Reading XLSX...');
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const sheetName = workbook.SheetNames[0];
+                            console.log('[DEBUG] Sheet name:', sheetName);
+                            const worksheet = workbook.Sheets[sheetName];
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                            console.log('[DEBUG] Rows count:', jsonData.length);
                             
-                            setHeaders(headers);
-                            setData(rows);
-                            
-                            // Save to database
-                            try {
+                            if (jsonData.length > 0) {
+                              const headers = jsonData[0] as string[];
+                              console.log('[DEBUG] Headers:', headers);
+                              // 셀 내 줄바꿈 정리 - 첫 번째 줄만 사용
+                              const rows = (jsonData.slice(1) as any[]).map(row => 
+                                Array.isArray(row) ? row.map(cell => {
+                                  if (typeof cell === 'string' && (cell.includes('\n') || cell.includes('\r'))) {
+                                    return cell.split(/\r?\n|\r/)[0].trim();
+                                  }
+                                  return cell;
+                                }) : row
+                              );
+                              console.log('[DEBUG] Data rows:', rows.length);
+                              
+                              setHeaders(headers);
+                              setData(rows);
+                              
+                              // Save to database
+                              console.log('[DEBUG] Calling API...');
                               await saveExcelDataMutation.mutateAsync({
                                 type: currentTab,
                                 title: uploadTitle.trim(),
                                 headers,
                                 data: rows,
                               });
+                              console.log('[DEBUG] API call success!');
                               
                               toast({
                                 title: "업로드 완료",
@@ -2051,21 +2058,22 @@ export default function AdminSettings() {
                               
                               // Clear title input
                               setUploadTitle("");
-                            } catch (error: any) {
-                              // Check for duplicate title error (409)
-                              if (error?.status === 409 || error?.response?.status === 409) {
-                                toast({
-                                  title: "중복된 제목",
-                                  description: "이미 같은 제목의 버전이 존재합니다. 다른 제목을 사용해주세요.",
-                                  variant: "destructive",
-                                });
-                              } else {
-                                toast({
-                                  title: "저장 실패",
-                                  description: "데이터베이스 저장 중 오류가 발생했습니다.",
-                                  variant: "destructive",
-                                });
-                              }
+                            }
+                          } catch (error: any) {
+                            console.error('[DEBUG] Error:', error);
+                            // Check for duplicate title error (409)
+                            if (error?.status === 409 || error?.response?.status === 409) {
+                              toast({
+                                title: "중복된 제목",
+                                description: "이미 같은 제목의 버전이 존재합니다. 다른 제목을 사용해주세요.",
+                                variant: "destructive",
+                              });
+                            } else {
+                              toast({
+                                title: "저장 실패",
+                                description: "데이터베이스 저장 중 오류가 발생했습니다.",
+                                variant: "destructive",
+                              });
                             }
                           }
                         };
