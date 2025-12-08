@@ -386,6 +386,15 @@ export function LaborCostSection({
     return Array.from(unique);
   };
 
+  // 공종 매핑: 복구면적 공종 -> 노무비 DB 공종
+  const mapCategoryForLaborLookup = (category: string): string => {
+    // 피해철거공사, 원인철거공사 → 철거공사로 매핑
+    if (category === '피해철거공사' || category === '원인철거공사') {
+      return '철거공사';
+    }
+    return category;
+  };
+
   const getDetailItemOptions = (category: string, workName: string, detailWork: string) => {
     if (!category) return [];
     // 목공사-걸레받이 특수 케이스: 걸레받이만 표시
@@ -394,9 +403,12 @@ export function LaborCostSection({
     }
     if (!catalog.length) return [];
     
+    // 공종 매핑 적용 (피해철거공사/원인철거공사 → 철거공사)
+    const lookupCategory = mapCategoryForLaborLookup(category);
+    
     // 공종으로 필터링해서 세부공사가 "노무비"인 항목의 세부항목(노임항목) 추출
     const filtered = catalog.filter(item => 
-      item.공종 === category && 
+      item.공종 === lookupCategory && 
       item.세부공사 === '노무비'
     );
     
