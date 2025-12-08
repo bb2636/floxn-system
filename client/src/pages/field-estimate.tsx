@@ -1801,7 +1801,15 @@ export default function FieldEstimate() {
                   >
                     <th 
                       style={{ 
-                        width: "140px", 
+                        width: "40px", 
+                        padding: "17.5px 8px",
+                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                      }}
+                    >
+                    </th>
+                    <th 
+                      style={{ 
+                        width: "120px", 
                         padding: "17.5px 8px", 
                         fontFamily: "Pretendard", 
                         fontSize: "15px", 
@@ -2068,6 +2076,39 @@ export default function FieldEstimate() {
                             transition: "background 0.2s",
                           }}
                         >
+                          {/* 체크박스 컬럼 - 그룹 첫 번째 행에만 rowspan 적용 */}
+                          {isFirstRowInGroup && (
+                            <td 
+                              rowSpan={group.rows.length}
+                              style={{ 
+                                padding: "8px",
+                                verticalAlign: "middle",
+                                borderRight: "1px solid rgba(12, 12, 12, 0.06)",
+                                background: "rgba(12, 12, 12, 0.02)",
+                                textAlign: "center",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={group.rows.every(r => selectedRows.has(r.id))}
+                                onChange={() => {
+                                  const allSelected = group.rows.every(r => selectedRows.has(r.id));
+                                  const newSelected = new Set(selectedRows);
+                                  group.rows.forEach(r => {
+                                    if (allSelected) {
+                                      newSelected.delete(r.id);
+                                    } else {
+                                      newSelected.add(r.id);
+                                    }
+                                  });
+                                  setSelectedRows(newSelected);
+                                }}
+                                style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                                data-testid={`checkbox-group-${groupIndex}`}
+                              />
+                            </td>
+                          )}
+                          
                           {/* 장소 컬럼 - 그룹 첫 번째 행에만 rowspan 적용 */}
                           {isFirstRowInGroup && (
                             <td 
@@ -2079,57 +2120,37 @@ export default function FieldEstimate() {
                                 background: "rgba(12, 12, 12, 0.02)",
                               }}
                             >
-                              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                <input
-                                  type="checkbox"
-                                  checked={group.rows.every(r => selectedRows.has(r.id))}
-                                  onChange={() => {
-                                    const allSelected = group.rows.every(r => selectedRows.has(r.id));
-                                    const newSelected = new Set(selectedRows);
-                                    group.rows.forEach(r => {
-                                      if (allSelected) {
-                                        newSelected.delete(r.id);
-                                      } else {
-                                        newSelected.add(r.id);
-                                      }
-                                    });
-                                    setSelectedRows(newSelected);
+                              <Select
+                                value={row.category}
+                                onValueChange={(value) => {
+                                  group.rows.forEach(r => updateRow(r.id, 'category', value));
+                                }}
+                              >
+                                <SelectTrigger 
+                                  className="border focus:ring-0"
+                                  style={{
+                                    width: "100%",
+                                    height: "40px",
+                                    fontFamily: "Pretendard",
+                                    fontSize: "14px",
+                                    fontWeight: 600,
+                                    borderColor: "rgba(12, 12, 12, 0.2)",
+                                    borderRadius: "6px",
                                   }}
-                                  style={{ width: "16px", height: "16px", cursor: "pointer", marginBottom: "4px" }}
-                                  data-testid={`checkbox-group-${groupIndex}`}
-                                />
-                                <Select
-                                  value={row.category}
-                                  onValueChange={(value) => {
-                                    group.rows.forEach(r => updateRow(r.id, 'category', value));
-                                  }}
+                                  data-testid={`select-category-${globalIndex}`}
                                 >
-                                  <SelectTrigger 
-                                    className="border focus:ring-0"
-                                    style={{
-                                      width: "100%",
-                                      height: "40px",
-                                      fontFamily: "Pretendard",
-                                      fontSize: "14px",
-                                      fontWeight: 600,
-                                      borderColor: "rgba(12, 12, 12, 0.2)",
-                                      borderRadius: "6px",
-                                    }}
-                                    data-testid={`select-category-${globalIndex}`}
-                                  >
-                                    <SelectValue>
-                                      {row.category || "장소 선택"}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {roomCategories.filter(cat => cat && cat.trim() !== '').map(cat => (
-                                      <SelectItem key={cat} value={cat}>
-                                        {cat}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
+                                  <SelectValue>
+                                    {row.category || "장소 선택"}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {roomCategories.filter(cat => cat && cat.trim() !== '').map(cat => (
+                                    <SelectItem key={cat} value={cat}>
+                                      {cat}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </td>
                           )}
                           
