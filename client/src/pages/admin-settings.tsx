@@ -92,15 +92,61 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
                            headerRow['F'] === '금액';
   
   if (isNewLaborFormat) {
-    // New labor DB format: use only columns A, B, E, F
-    console.log('Detected new labor DB format (A, B, E, F)');
+    // New labor DB format: smart mapping based on row structure
+    // The Excel file stores data in unexpected columns:
+    // - "Full" rows have A, B, C, E, F (where A=공종, B=공사명, E=노임항목)
+    // - "Child" rows may have 노임항목 stored in A or C instead of E
+    console.log('Detected new labor DB format - applying smart mapping');
+    
     const headers = ['공종', '공사명', '노임항목', '금액'];
-    const data = rawRows.slice(1).map(row => [
-      row['A'] ?? null,
-      row['B'] ?? null,
-      row['E'] ?? null,
-      row['F'] ?? null,
-    ]);
+    
+    // List of known 공종 (work type) values for pattern detection
+    const knownWorkTypes = ['누수탐지', '원인철거', '원인공사', '철거공사', '가설공사', 
+                            '목공사', '수장공사', '도장공사', '전기공사', '타일공사', 
+                            '가구공사', '욕실공사', '폐기물', '기타'];
+    
+    let currentWorkType = '';
+    
+    const data = rawRows.slice(1).map(row => {
+      const valA = row['A'] ?? null;
+      const valB = row['B'] ?? null;
+      const valC = row['C'] ?? null;
+      const valE = row['E'] ?? null;
+      const valF = row['F'] ?? null;
+      
+      // Determine if this is a "parent" row (has 공종) or "child" row (노임항목 only)
+      const aIsWorkType = knownWorkTypes.some(wt => valA?.toString().startsWith(wt));
+      const hasFullData = valA && valB && (valE || valC);
+      
+      if (aIsWorkType && hasFullData) {
+        // Full parent row: A=공종, B=공사명, E=노임항목 (or C if E empty)
+        currentWorkType = valA;
+        return [valA, valB, valE || valC, valF];
+      } else if (aIsWorkType && !valB && !valE) {
+        // Child row where 노임항목 is mistakenly in column A
+        // (공사명 sub-items without their own 공종)
+        const laborItem = valC || valA;  // Use C if available, else A is the labor item
+        if (!valC) {
+          // A contains the labor item, not the work type
+          return [null, null, valA, valF];
+        } else {
+          // A might be 공사명, C is 노임항목
+          return [null, valA, valC, valF];
+        }
+      } else if (valA && !valB && valC && valF) {
+        // Row like: A=배관, C=배관공, F=229664
+        // A is 공사명, C is 노임항목
+        return [null, valA, valC, valF];
+      } else if (valA && !valB && !valC && !valE && valF) {
+        // Row like: A=누수탐지1회, F=300000
+        // A is actually the 노임항목
+        return [null, null, valA, valF];
+      } else {
+        // Default mapping
+        return [valA, valB, valE || valC, valF];
+      }
+    });
+    
     return { headers, data };
   }
   
