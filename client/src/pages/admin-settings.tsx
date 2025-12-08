@@ -553,9 +553,10 @@ export default function AdminSettings() {
   // Excel data mutations
   const saveExcelDataMutation = useMutation({
     mutationFn: async (data: { type: string; title: string; headers: string[]; data: any[][] }) => {
-      return await apiRequest("POST", "/api/excel-data", data);
+      const response = await apiRequest("POST", "/api/excel-data", data);
+      return await response.json();
     },
-    onSuccess: (result, variables) => {
+    onSuccess: (result: { id: string }, variables) => {
       queryClient.invalidateQueries({ queryKey: [`/api/excel-data/${variables.type}/versions`] });
       // Auto-select newly created version
       if (variables.type === "노무비") {
