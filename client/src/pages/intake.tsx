@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -3473,8 +3474,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
           )}
         </div>
       </main>
-      {/* 협력사 검색 팝업 */}
-      {isPartnerSearchOpen && (
+      {/* 협력사 검색 팝업 - Portal로 body에 직접 렌더링 */}
+      {isPartnerSearchOpen && createPortal(
         <div 
           style={{
             position: 'fixed',
@@ -3486,7 +3487,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 99999,
             padding: '16px',
           }}
           onClick={() => setIsPartnerSearchOpen(false)}
@@ -3718,11 +3719,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* 의뢰사 검색 팝업 */}
-      {isClientSearchOpen && (
+      {/* 의뢰사 검색 팝업 - Portal로 body에 직접 렌더링 */}
+      {isClientSearchOpen && createPortal(
         <div 
           style={{
             position: 'fixed',
@@ -3734,7 +3736,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 99999,
             padding: '16px',
           }}
           onClick={() => setIsClientSearchOpen(false)}
@@ -3889,11 +3891,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* 심사사 검색 팝업 */}
-      {isAssessorSearchOpen && (
+      {/* 심사사 검색 팝업 - Portal로 body에 직접 렌더링 */}
+      {isAssessorSearchOpen && createPortal(
         <div 
           style={{
             position: 'fixed',
@@ -3905,7 +3908,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 99999,
             padding: '16px',
           }}
           onClick={() => setIsAssessorSearchOpen(false)}
@@ -4060,11 +4063,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* 조사사(손사명) 검색 팝업 */}
-      {isInvestigatorSearchOpen && (
+      {/* 조사사(손사명) 검색 팝업 - Portal로 body에 직접 렌더링 */}
+      {isInvestigatorSearchOpen && createPortal(
         <div 
           style={{
             position: 'fixed',
@@ -4076,7 +4080,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
+            zIndex: 99999,
             padding: '16px',
           }}
           onClick={() => setIsInvestigatorSearchOpen(false)}
@@ -4231,7 +4235,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
