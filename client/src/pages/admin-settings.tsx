@@ -42,19 +42,24 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
   }
   
   const sheetXml = await sheetFile.async('string');
-  const rawRows: Record<string, any>[] = [];
+  const rows: any[][] = [];
   const rowMatches = sheetXml.match(/<(?:row|x:row)[^>]*>[\s\S]*?<\/(?:row|x:row)>/g) || [];
   
   rowMatches.forEach(rowXml => {
     const cellMatches = rowXml.match(/<(?:c|x:c)[^>]*>[\s\S]*?<\/(?:c|x:c)>/g) || [];
-    const rowData: Record<string, any> = {};
+    const row: any[] = new Array(20).fill(null);
     
     cellMatches.forEach(cellXml => {
-      // Get cell reference (e.g., A1, B2, E3)
+      // Get cell reference
       const refMatch = cellXml.match(/r="([A-Z]+)\d+"/);
       if (!refMatch) return;
       
       const colLetter = refMatch[1];
+      let colIdx = 0;
+      for (let i = 0; i < colLetter.length; i++) {
+        colIdx = colIdx * 26 + (colLetter.charCodeAt(i) - 64);
+      }
+      colIdx -= 1;
       
       // Get cell type
       const typeMatch = cellXml.match(/t="([^"]+)"/);
@@ -72,95 +77,20 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
         value = isNaN(num) ? value : num;
       }
       
-      rowData[colLetter] = value;
+      row[colIdx] = value;
     });
     
-    if (Object.keys(rowData).length > 0) {
-      rawRows.push(rowData);
-    }
+    // Trim trailing nulls
+    while (row.length > 0 && row[row.length - 1] === null) row.pop();
+    if (row.length > 0) rows.push(row);
   });
   
-  if (rawRows.length === 0) {
+  if (rows.length === 0) {
     throw new Error('No data found in xlsx file');
   }
   
-  // Check if this is the new labor DB format (columns A, B, E, F with hidden C, D)
-  const headerRow = rawRows[0];
-  const isNewLaborFormat = headerRow['A'] === '공종' && 
-                           (headerRow['B']?.includes('공사명') || headerRow['B'] === '공사명') &&
-                           (headerRow['E']?.includes('노임항목') || headerRow['E'] === '노임항목') &&
-                           headerRow['F'] === '금액';
-  
-  if (isNewLaborFormat) {
-    // New labor DB format: smart mapping based on row structure
-    // The Excel file stores data in unexpected columns:
-    // - "Full" rows have A, B, C, E, F (where A=공종, B=공사명, E=노임항목)
-    // - "Child" rows may have 노임항목 stored in A or C instead of E
-    console.log('Detected new labor DB format - applying smart mapping');
-    
-    const headers = ['공종', '공사명', '노임항목', '금액'];
-    
-    // List of known 공종 (work type) values for pattern detection
-    const knownWorkTypes = ['누수탐지', '원인철거', '원인공사', '철거공사', '가설공사', 
-                            '목공사', '수장공사', '도장공사', '전기공사', '타일공사', 
-                            '가구공사', '욕실공사', '폐기물', '기타'];
-    
-    let currentWorkType = '';
-    
-    const data = rawRows.slice(1).map(row => {
-      const valA = row['A'] ?? null;
-      const valB = row['B'] ?? null;
-      const valC = row['C'] ?? null;
-      const valE = row['E'] ?? null;
-      const valF = row['F'] ?? null;
-      
-      // Determine if this is a "parent" row (has 공종) or "child" row (노임항목 only)
-      const aIsWorkType = knownWorkTypes.some(wt => valA?.toString().startsWith(wt));
-      const hasFullData = valA && valB && (valE || valC);
-      
-      if (aIsWorkType && hasFullData) {
-        // Full parent row: A=공종, B=공사명, E=노임항목 (or C if E empty)
-        currentWorkType = valA;
-        return [valA, valB, valE || valC, valF];
-      } else if (aIsWorkType && !valB && !valE) {
-        // Child row where 노임항목 is mistakenly in column A
-        // (공사명 sub-items without their own 공종)
-        const laborItem = valC || valA;  // Use C if available, else A is the labor item
-        if (!valC) {
-          // A contains the labor item, not the work type
-          return [null, null, valA, valF];
-        } else {
-          // A might be 공사명, C is 노임항목
-          return [null, valA, valC, valF];
-        }
-      } else if (valA && !valB && valC && valF) {
-        // Row like: A=배관, C=배관공, F=229664
-        // A is 공사명, C is 노임항목
-        return [null, valA, valC, valF];
-      } else if (valA && !valB && !valC && !valE && valF) {
-        // Row like: A=누수탐지1회, F=300000
-        // A is actually the 노임항목
-        return [null, null, valA, valF];
-      } else {
-        // Default mapping
-        return [valA, valB, valE || valC, valF];
-      }
-    });
-    
-    return { headers, data };
-  }
-  
-  // Default: convert to array format using all columns
-  const allCols = new Set<string>();
-  rawRows.forEach(row => Object.keys(row).forEach(col => allCols.add(col)));
-  const sortedCols = Array.from(allCols).sort((a, b) => {
-    const aIdx = a.split('').reduce((acc, ch) => acc * 26 + ch.charCodeAt(0) - 64, 0);
-    const bIdx = b.split('').reduce((acc, ch) => acc * 26 + ch.charCodeAt(0) - 64, 0);
-    return aIdx - bIdx;
-  });
-  
-  const headers = sortedCols.map(col => headerRow[col]?.toString() || '');
-  const data = rawRows.slice(1).map(row => sortedCols.map(col => row[col] ?? null));
+  const headers = rows[0].map((h: any) => h?.toString() || '');
+  const data = rows.slice(1);
   
   return { headers, data };
 }
