@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, CaseWithLatestProgress, type UserFavorite } from "@shared/schema";
-import { Search, Cloud, Star, Plus } from "lucide-react";
+import { Search, Cloud, Star, Plus, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
@@ -100,6 +104,8 @@ export default function ComprehensiveProgress() {
   const [isReceptionEditMode, setIsReceptionEditMode] = useState(false);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
+  const [taxInvoiceDate, setTaxInvoiceDate] = useState<Date | undefined>(undefined);
+  const [invoiceConfirmDate, setInvoiceConfirmDate] = useState<Date | undefined>(undefined);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -2379,7 +2385,7 @@ export default function ComprehensiveProgress() {
             const relatedCases = invoiceCasePrefix 
               ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix) || []
               : invoiceCase ? [invoiceCase] : [];
-            const totalEstimateAmount = relatedCases.reduce((sum, c) => sum + (c.estimateAmount || 0), 0);
+            const totalEstimateAmount = relatedCases.reduce((sum, c) => sum + (Number(c.estimateAmount) || 0), 0);
             
             return (
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -2429,7 +2435,7 @@ export default function ComprehensiveProgress() {
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>협력업체</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.partnerCompany || "-"}</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.assignedPartner || "-"}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>담당자</span>
@@ -2450,14 +2456,66 @@ export default function ComprehensiveProgress() {
                     <h3 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "15px", marginBottom: "16px", color: "#0C0C0C" }}>
                       세금계산서/인보이스
                     </h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>세금계산서 확인</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>날짜 선택</span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              style={{ 
+                                fontFamily: "Pretendard", 
+                                fontSize: "12px",
+                                gap: "6px",
+                                height: "28px",
+                                padding: "0 10px",
+                              }}
+                              data-testid="button-tax-invoice-date"
+                            >
+                              <CalendarIcon style={{ width: "14px", height: "14px" }} />
+                              {taxInvoiceDate ? format(taxInvoiceDate, "yyyy-MM-dd", { locale: ko }) : "날짜 선택"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                              mode="single"
+                              selected={taxInvoiceDate}
+                              onSelect={setTaxInvoiceDate}
+                              locale={ko}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>인보이스 확인</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>날짜 선택</span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              style={{ 
+                                fontFamily: "Pretendard", 
+                                fontSize: "12px",
+                                gap: "6px",
+                                height: "28px",
+                                padding: "0 10px",
+                              }}
+                              data-testid="button-invoice-confirm-date"
+                            >
+                              <CalendarIcon style={{ width: "14px", height: "14px" }} />
+                              {invoiceConfirmDate ? format(invoiceConfirmDate, "yyyy-MM-dd", { locale: ko }) : "날짜 선택"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                              mode="single"
+                              selected={invoiceConfirmDate}
+                              onSelect={setInvoiceConfirmDate}
+                              locale={ko}
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>인보이스 속성</span>
