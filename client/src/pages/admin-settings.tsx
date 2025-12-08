@@ -42,24 +42,19 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
   }
   
   const sheetXml = await sheetFile.async('string');
-  const rows: any[][] = [];
+  const rawRows: Record<string, any>[] = [];
   const rowMatches = sheetXml.match(/<(?:row|x:row)[^>]*>[\s\S]*?<\/(?:row|x:row)>/g) || [];
   
   rowMatches.forEach(rowXml => {
     const cellMatches = rowXml.match(/<(?:c|x:c)[^>]*>[\s\S]*?<\/(?:c|x:c)>/g) || [];
-    const row: any[] = new Array(20).fill(null);
+    const rowData: Record<string, any> = {};
     
     cellMatches.forEach(cellXml => {
-      // Get cell reference
+      // Get cell reference (e.g., A1, B2, E3)
       const refMatch = cellXml.match(/r="([A-Z]+)\d+"/);
       if (!refMatch) return;
       
       const colLetter = refMatch[1];
-      let colIdx = 0;
-      for (let i = 0; i < colLetter.length; i++) {
-        colIdx = colIdx * 26 + (colLetter.charCodeAt(i) - 64);
-      }
-      colIdx -= 1;
       
       // Get cell type
       const typeMatch = cellXml.match(/t="([^"]+)"/);
@@ -77,20 +72,49 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
         value = isNaN(num) ? value : num;
       }
       
-      row[colIdx] = value;
+      rowData[colLetter] = value;
     });
     
-    // Trim trailing nulls
-    while (row.length > 0 && row[row.length - 1] === null) row.pop();
-    if (row.length > 0) rows.push(row);
+    if (Object.keys(rowData).length > 0) {
+      rawRows.push(rowData);
+    }
   });
   
-  if (rows.length === 0) {
+  if (rawRows.length === 0) {
     throw new Error('No data found in xlsx file');
   }
   
-  const headers = rows[0].map((h: any) => h?.toString() || '');
-  const data = rows.slice(1);
+  // Check if this is the new labor DB format (columns A, B, E, F with hidden C, D)
+  const headerRow = rawRows[0];
+  const isNewLaborFormat = headerRow['A'] === '공종' && 
+                           (headerRow['B']?.includes('공사명') || headerRow['B'] === '공사명') &&
+                           (headerRow['E']?.includes('노임항목') || headerRow['E'] === '노임항목') &&
+                           headerRow['F'] === '금액';
+  
+  if (isNewLaborFormat) {
+    // New labor DB format: use only columns A, B, E, F
+    console.log('Detected new labor DB format (A, B, E, F)');
+    const headers = ['공종', '공사명', '노임항목', '금액'];
+    const data = rawRows.slice(1).map(row => [
+      row['A'] ?? null,
+      row['B'] ?? null,
+      row['E'] ?? null,
+      row['F'] ?? null,
+    ]);
+    return { headers, data };
+  }
+  
+  // Default: convert to array format using all columns
+  const allCols = new Set<string>();
+  rawRows.forEach(row => Object.keys(row).forEach(col => allCols.add(col)));
+  const sortedCols = Array.from(allCols).sort((a, b) => {
+    const aIdx = a.split('').reduce((acc, ch) => acc * 26 + ch.charCodeAt(0) - 64, 0);
+    const bIdx = b.split('').reduce((acc, ch) => acc * 26 + ch.charCodeAt(0) - 64, 0);
+    return aIdx - bIdx;
+  });
+  
+  const headers = sortedCols.map(col => headerRow[col]?.toString() || '');
+  const data = rawRows.slice(1).map(row => sortedCols.map(col => row[col] ?? null));
   
   return { headers, data };
 }
