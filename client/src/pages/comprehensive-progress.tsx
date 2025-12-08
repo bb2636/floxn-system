@@ -2375,9 +2375,11 @@ export default function ComprehensiveProgress() {
           
           {(() => {
             const invoiceCase = cases?.find(c => c.id === invoiceCaseId);
-            const relatedCases = invoiceCase?.caseGroupId 
-              ? cases?.filter(c => c.caseGroupId === invoiceCase.caseGroupId) || []
+            const invoiceCasePrefix = getCaseNumberPrefix(invoiceCase?.caseNumber);
+            const relatedCases = invoiceCasePrefix 
+              ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix) || []
               : invoiceCase ? [invoiceCase] : [];
+            const totalEstimateAmount = relatedCases.reduce((sum, c) => sum + (c.estimateAmount || 0), 0);
             
             return (
               <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -2392,7 +2394,7 @@ export default function ComprehensiveProgress() {
                   </h3>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>계좌일</span>
+                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>제출일</span>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>날짜 선택</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -2401,11 +2403,11 @@ export default function ComprehensiveProgress() {
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>보험사</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.insuranceCompany || "-"} {invoiceCase?.insuranceTeam || ""}</span>
+                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.insuranceCompany || "-"}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>담당자</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.assignedToName || "-"}</span>
+                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.assignedTo || "-"}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>접수번호</span>
@@ -2427,11 +2429,11 @@ export default function ComprehensiveProgress() {
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>협력업체</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.repairCompany || "대성설비"}</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.partnerCompany || "-"}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>담당자</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.assignedToName || "-"}</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.assignedTo || "-"}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>사고유형</span>
@@ -2512,7 +2514,7 @@ export default function ComprehensiveProgress() {
                     <tbody>
                       <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
                         <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>견적금액(원)</td>
-                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{(invoiceCase?.estimateAmount || 0).toLocaleString()}원</td>
+                        <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{totalEstimateAmount.toLocaleString()}원</td>
                         <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>0원</td>
                       </tr>
                       <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
