@@ -394,9 +394,13 @@ export function LaborCostSection({
     }
     if (!catalog.length) return [];
     
-    // 공종으로 필터링해서 세부공사가 "노무비"인 항목의 세부항목(노임항목) 추출
+    // 걸레받이 -> 목공사 변환하여 조회
+    const lookupWorkName = mapWorkNameForLookup(workName);
+    
+    // 공종 + 공사명으로 필터링해서 노임항목(세부항목) 추출
     const filtered = catalog.filter(item => 
       item.공종 === category && 
+      item.공사명 === lookupWorkName &&
       item.세부공사 === '노무비'
     );
     
@@ -622,14 +626,36 @@ export function LaborCostSection({
             }
             // 걸레받이는 피해철거공사 자동 추가 없음
           }
-          // 그 외 모든 공사명 선택 시 기본으로 일위대가 설정
+          // 그 외 모든 공사명 선택 시 기본으로 노무비 설정 (새 DB 형식)
           else {
-            updated.detailWork = '일위대가';
-            updated.detailItem = '';
+            updated.detailWork = '노무비';
             updated.unit = '';
             updated.standardPrice = 0;
             updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
             updated.pricePerSqm = 0;
+            
+            // 해당 공종+공사명의 노임항목 옵션 확인
+            const lookupWorkName = mapWorkNameForLookup(value);
+            const matchingItems = catalog.filter(item => 
+              item.공종 === updated.category && 
+              item.공사명 === lookupWorkName &&
+              item.세부공사 === '노무비'
+            );
+            const uniqueDetailItems = Array.from(new Set(matchingItems.map(item => item.세부항목).filter(Boolean)));
+            
+            // 노임항목이 하나만 있으면 자동 선택
+            if (uniqueDetailItems.length === 1) {
+              updated.detailItem = uniqueDetailItems[0];
+              
+              // 카탈로그에서 해당 항목의 단가 가져오기
+              const catalogItem = matchingItems.find(item => item.세부항목 === uniqueDetailItems[0]);
+              if (catalogItem) {
+                updated.unit = catalogItem.단위 || '인';
+                updated.standardPrice = catalogItem.단가_인 || 0;
+              }
+            } else {
+              updated.detailItem = '';
+            }
           }
         }
 
