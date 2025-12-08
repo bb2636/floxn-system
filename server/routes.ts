@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "./db";
 import { estimates, cases } from "@shared/schema";
 import { sql, inArray } from "drizzle-orm";
+import nodemailer from "nodemailer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Login endpoint
@@ -3330,7 +3331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Send field report email endpoint
+  // Send field report email endpoint (SMTP/Nodemailer)
   app.post("/api/send-field-report-email", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
@@ -3343,53 +3344,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
       }
 
-      const BUBBLE_API_TOKEN = process.env.BUBBLE_API_TOKEN;
-      if (!BUBBLE_API_TOKEN) {
-        return res.status(500).json({ error: "이메일 서비스 설정이 필요합니다" });
+      // Check SMTP environment variables
+      const SMTP_HOST = process.env.SMTP_HOST;
+      const SMTP_PORT = process.env.SMTP_PORT;
+      const SMTP_USER = process.env.SMTP_USER;
+      const SMTP_PASS = process.env.SMTP_PASS;
+
+      if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+        console.error("[send-field-report-email] Missing SMTP configuration");
+        return res.status(500).json({ error: "SMTP 설정이 필요합니다 (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)" });
       }
 
-      // Call Bubble workflow to send email with PDF attachment
       const fileName = `현장출동보고서_${caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
       const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
       
-      const response = await fetch("https://sendmail-43925.bubbleapps.io/version-test/api/1.1/wf/send-mail", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${BUBBLE_API_TOKEN}`,
+      // Convert base64 to buffer
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+
+      // Create Nodemailer transporter
+      const transporter = nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: parseInt(SMTP_PORT, 10),
+        secure: parseInt(SMTP_PORT, 10) === 465,
+        auth: {
+          user: SMTP_USER,
+          pass: SMTP_PASS,
         },
-        body: JSON.stringify({
-          sender: "FLOXN",
-          title: `현장출동보고서 - ${caseNumber || "케이스"}`,
-          to: email,
-          // 이메일 본문
-          body: `안녕하세요,\n\n현장출동보고서를 첨부하여 보내드립니다.\n\n- 접수번호: ${caseNumber || "N/A"}\n- 발송일: ${dateStr}\n\n첨부된 PDF 파일을 확인해 주시기 바랍니다.\n\n감사합니다.\nFLOXN 드림`,
-          content: `안녕하세요,\n\n현장출동보고서를 첨부하여 보내드립니다.\n\n- 접수번호: ${caseNumber || "N/A"}\n- 발송일: ${dateStr}\n\n첨부된 PDF 파일을 확인해 주시기 바랍니다.\n\n감사합니다.\nFLOXN 드림`,
-          // SendGrid 형식의 첨부파일
-          attachments: [
-            {
-              content: pdfBase64,
-              filename: fileName,
-              type: "application/pdf",
-              disposition: "attachment"
-            }
-          ],
-          // 추가 파일 정보 (Bubble 호환성)
-          file: pdfBase64,
-          file_name: fileName,
-          pdf: pdfBase64,
-          pdf_filename: fileName
-        }),
       });
 
-      const data = await response.json().catch(() => ({}));
+      // Send email with PDF attachment
+      const mailOptions = {
+        from: `FLOXN <${SMTP_USER}>`,
+        to: email,
+        subject: `현장출동보고서 - ${caseNumber || "케이스"}`,
+        text: `안녕하세요,
 
-      if (!response.ok || data?.status === "error") {
-        console.error("Bubble email API error:", data);
-        return res.status(500).json({ error: "이메일 전송에 실패했습니다" });
-      }
+현장출동보고서를 첨부하여 보내드립니다.
 
-      console.log(`[Email] Field report sent successfully to ${email} for case ${caseNumber || caseId}`);
+- 접수번호: ${caseNumber || "N/A"}
+- 발송일: ${dateStr}
+
+첨부된 PDF 파일을 확인해 주시기 바랍니다.
+
+감사합니다.
+FLOXN 드림`,
+        attachments: [
+          {
+            filename: fileName,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          }
+        ],
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`[Email] Field report sent successfully to ${email} for case ${caseNumber || caseId}, messageId: ${info.messageId}`);
       res.json({ success: true, message: "이메일이 전송되었습니다" });
     } catch (error) {
       console.error("Send field report email error:", error);
@@ -3441,7 +3450,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Setup Nodemailer transporter
-      const nodemailer = require('nodemailer');
       const transporter = nodemailer.createTransport({
         host: SMTP_HOST,
         port: parseInt(SMTP_PORT, 10),
