@@ -1403,9 +1403,7 @@ export default function SettlementAction() {
                     fontWeight: 600,
                   }}
                   data-testid="button-add-settlement"
-                >
-                  추가하기
-                </Button>
+                >초기화</Button>
                 <Button
                   onClick={handleSettlement}
                   style={{
