@@ -1047,6 +1047,10 @@ export default function FieldReport() {
                     '기타사항': '기타사항/원인',
                   };
 
+                  // 다이얼로그 닫기 (탭 클릭을 위해)
+                  setShowDownloadDialog(false);
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                  
                   // 현재 활성 탭 저장
                   const currentActiveTab = document.querySelector('[role="tablist"] [data-state="active"]') as HTMLElement | null;
                   
@@ -1067,7 +1071,7 @@ export default function FieldReport() {
                       
                       // 레이아웃 재계산 대기
                       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                      await new Promise(resolve => setTimeout(resolve, 300));
+                      await new Promise(resolve => setTimeout(resolve, 400));
                     } else {
                       console.warn(`Tab trigger not found: ${tabText}`);
                     }
