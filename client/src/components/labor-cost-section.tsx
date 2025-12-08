@@ -1091,54 +1091,30 @@ export function LaborCostSection({
                     </div>
                   </td>
                   
-                  {/* 공사명 - 같은 공사명끼리 rowspan 적용 */}
-                  {isFirstRowInWorkNameSubGroup(group, row.id) && (
-                    <td 
-                      rowSpan={getWorkNameSubGroupRowCount(group, row.id)}
-                      style={{ 
-                        padding: "8px",
-                        verticalAlign: "middle",
-                        borderRight: "1px solid rgba(12, 12, 12, 0.06)",
-                        background: "rgba(12, 12, 12, 0.01)",
-                      }}
+                  {/* 공사명 - 각 행마다 별도 셀 (그룹화 없음) */}
+                  <td style={{ padding: "0 8px" }}>
+                    <Select 
+                      value={row.workName || undefined} 
+                      onValueChange={(value) => handleWorkNameChange(row.id, value)}
+                      onOpenChange={(open) => handleWorkNameSelectClose(row.id, open)}
+                      disabled={!row.category}
                     >
-                      <Select 
-                        value={row.workName || undefined} 
-                        onValueChange={(value) => {
-                          // 같은 서브그룹의 모든 행 업데이트
-                          const subGroup = group.workNameSubGroups.find(sg => sg.rows.some(r => r.id === row.id));
-                          if (subGroup) {
-                            subGroup.rows.forEach(r => handleWorkNameChange(r.id, value));
-                          } else {
-                            handleWorkNameChange(row.id, value);
-                          }
-                        }}
-                        onOpenChange={(open) => handleWorkNameSelectClose(row.id, open)}
-                        disabled={!row.category}
+                      <SelectTrigger 
+                        className="h-9 border-0" 
+                        style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                        data-testid={`select-workName-labor-${globalIndex}`}
                       >
-                        <SelectTrigger 
-                          className="h-9 border focus:ring-0" 
-                          style={{ 
-                            fontFamily: "Pretendard", 
-                            fontSize: "14px",
-                            fontWeight: 500,
-                            borderColor: "rgba(12, 12, 12, 0.15)",
-                            borderRadius: "6px",
-                          }}
-                          data-testid={`select-workName-labor-${globalIndex}`}
-                        >
-                          <SelectValue placeholder="공사명 선택">
-                            {row.workName || "공사명 선택"}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getWorkNameOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </td>
-                  )}
+                        <SelectValue placeholder="공사명 선택">
+                          {row.workName || "공사명 선택"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getWorkNameOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
                   
                   {/* 노임항목 */}
                   <td style={{ padding: "0 8px" }}>
