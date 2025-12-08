@@ -1579,6 +1579,60 @@ export default function FieldEstimate() {
     return (str || '').trim().toLowerCase().replace(/\s+/g, '');
   };
   
+  // 철거공사 행도 함께 생성해야 하는 공사명 목록
+  const DEMOLITION_REQUIRED_WORK_NAMES = ['반자틀', '석고보드', '도배', '마루'];
+  
+  // 노무비 행 생성 헬퍼 (중복 방지 및 정렬 포함)
+  const createLaborRowIfNotExists = (
+    workType: string,
+    workName: string,
+    sourceRowId: string,
+    matchingLaborItems: typeof laborCatalog
+  ) => {
+    if (matchingLaborItems.length === 0) {
+      console.log('[연동] 노무비 매칭 없음:', workType, workName, '- 노무비 DB에 해당 항목이 없습니다');
+      return;
+    }
+    
+    const laborItem = matchingLaborItems[0];
+    const isSingleMatch = matchingLaborItems.length === 1;
+    const detailItem = isSingleMatch ? (laborItem.세부항목 || '') : '';
+    const unitPrice = isSingleMatch ? (laborItem.단가_인 || 0) : 0;
+    
+    setLaborCostRows(prev => {
+      // 이미 같은 sourceAreaRowId를 가진 행이 있는지 확인
+      const existingRow = prev.find(r => r.sourceAreaRowId === sourceRowId);
+      if (existingRow) return prev;
+      
+      const newLaborRow: LaborCostRow = {
+        id: `labor-${Date.now()}-${Math.random()}`,
+        sourceAreaRowId: sourceRowId,
+        place: '',
+        position: '',
+        category: workType,
+        workName: workName,
+        detailWork: '노무비',
+        detailItem: detailItem,
+        priceStandard: '',
+        unit: isSingleMatch ? (laborItem.단위 || '인') : '',
+        standardPrice: unitPrice,
+        quantity: 1,
+        applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
+        salesMarkupRate: 0,
+        pricePerSqm: unitPrice,
+        damageArea: 0,
+        deduction: 0,
+        includeInEstimate: false,
+        request: '',
+        amount: Math.round(unitPrice * 1),
+      };
+      
+      console.log('[연동] 노무비 행 생성:', workType, workName, 
+        isSingleMatch ? `자동: ${detailItem} ${unitPrice}원` : `수동선택필요 (${matchingLaborItems.length}개 옵션)`);
+      return sortLaborRowsByCategory([...prev, newLaborRow]);
+    });
+  };
+  
   // 복구면적 산출표 → 노무비/자재비 자동 연동 함수 (동기 방식)
   const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string) => {
     if (!workType || !workName) return;
@@ -1588,56 +1642,34 @@ export default function FieldEstimate() {
     const normalizedWorkType = normalizeForMatch(workType);
     const normalizedWorkName = normalizeForMatch(workName);
     
-    // 노무비 DB에서 해당 공종+공사명의 데이터 찾기 (정규화된 비교)
+    // 1. 원래 공종+공사명으로 노무비 DB 검색
     const matchingLaborItems = laborCatalog.filter(item => 
       normalizeForMatch(item.공종) === normalizedWorkType && 
       normalizeForMatch(item.공사명) === normalizedWorkName &&
       item.세부공사 === '노무비'
     );
     
-    // 노무비 행 생성 (DB에 매칭이 있으면 생성, 1개면 자동완성, 여러개면 드롭다운에서 선택)
-    if (matchingLaborItems.length === 0) {
-      console.log('[연동] 노무비 매칭 없음:', workType, workName, '- 노무비 DB에 해당 항목이 없습니다');
-    }
-    if (matchingLaborItems.length > 0) {
-      // 1개면 자동 선택, 여러개면 사용자가 드롭다운에서 선택
-      const laborItem = matchingLaborItems[0];
-      const isSingleMatch = matchingLaborItems.length === 1;
-      const detailItem = isSingleMatch ? (laborItem.세부항목 || '') : '';
-      const unitPrice = isSingleMatch ? (laborItem.단가_인 || 0) : 0;
+    // 원래 공종 노무비 행 생성
+    createLaborRowIfNotExists(workType, workName, sourceRowId, matchingLaborItems);
+    
+    // 2. 특정 공사명인 경우 철거공사 행도 추가 생성
+    const isDemolitionRequired = DEMOLITION_REQUIRED_WORK_NAMES.some(
+      name => normalizeForMatch(name) === normalizedWorkName
+    );
+    
+    if (isDemolitionRequired && workType !== '철거공사') {
+      // 철거공사 + 같은 공사명으로 노무비 DB 검색
+      const demolitionLaborItems = laborCatalog.filter(item => 
+        normalizeForMatch(item.공종) === normalizeForMatch('철거공사') && 
+        normalizeForMatch(item.공사명) === normalizedWorkName &&
+        item.세부공사 === '노무비'
+      );
       
-      setLaborCostRows(prev => {
-        // 이미 같은 sourceAreaRowId를 가진 행이 있는지 확인 (각 복구면적 행당 1개의 노무비 행)
-        const existingRow = prev.find(r => r.sourceAreaRowId === sourceRowId);
-        if (existingRow) return prev;
-        
-        const newLaborRow: LaborCostRow = {
-          id: `labor-${Date.now()}-${Math.random()}`,
-          sourceAreaRowId: sourceRowId,
-          place: '',
-          position: '',
-          category: workType,
-          workName: workName,
-          detailWork: '노무비',
-          detailItem: detailItem,
-          priceStandard: '',
-          unit: isSingleMatch ? (laborItem.단위 || '인') : '',
-          standardPrice: unitPrice,
-          quantity: 1,
-          applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
-          salesMarkupRate: 0,
-          pricePerSqm: unitPrice,
-          damageArea: 0,
-          deduction: 0,
-          includeInEstimate: false,
-          request: '',
-          amount: Math.round(unitPrice * 1),
-        };
-        
-        console.log('[연동] 노무비 행 생성:', workType, workName, 
-          isSingleMatch ? `자동: ${detailItem} ${unitPrice}원` : `수동선택필요 (${matchingLaborItems.length}개 옵션)`);
-        return sortLaborRowsByCategory([...prev, newLaborRow]);
-      });
+      // 철거공사용 별도 sourceRowId 생성 (::demolition 접미사)
+      const demolitionSourceRowId = `${sourceRowId}::demolition`;
+      
+      console.log('[연동] 철거공사 추가 생성:', '철거공사', workName);
+      createLaborRowIfNotExists('철거공사', workName, demolitionSourceRowId, demolitionLaborItems);
     }
     
     // 자재비 DB에서 해당 공종의 자재 찾기 (정규화된 비교)
