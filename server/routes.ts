@@ -2632,6 +2632,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('Parsed catalog items:', catalog.length);
+      // Debug: 목공사 데이터 확인
+      const mokgongsaItems = catalog.filter((item: any) => item.공종 === '목공사');
+      console.log('목공사 items:', JSON.stringify(mokgongsaItems, null, 2));
       res.json(catalog);
     } catch (error) {
       console.error("Get labor catalog error:", error);

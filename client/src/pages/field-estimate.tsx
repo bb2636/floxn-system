@@ -1633,6 +1633,42 @@ export default function FieldEstimate() {
     });
   };
   
+  // 노무비 DB에서 해당 공종의 노무비 항목 찾기 (폴백 로직 포함)
+  // OLD 형식 Excel에서는 개별 공사명(몰딩, 반자틀 등)이 세부공사='일위대가'로 되어 있고,
+  // 노무비 항목은 '공종-공종-노무비' 구조로 되어 있음 (예: 목공사-목공사-노무비)
+  const findLaborItemsWithFallback = (
+    normalizedWorkType: string, 
+    normalizedWorkName: string
+  ): typeof laborCatalog => {
+    // 1순위: 정확한 매칭 (공종+공사명+세부공사=노무비)
+    let items = laborCatalog.filter(item => 
+      normalizeForMatch(item.공종) === normalizedWorkType && 
+      normalizeForMatch(item.공사명) === normalizedWorkName &&
+      item.세부공사 === '노무비'
+    );
+    
+    if (items.length > 0) {
+      console.log('[연동] 정확한 노무비 매칭:', normalizedWorkType, normalizedWorkName, `${items.length}개`);
+      return items;
+    }
+    
+    // 2순위: 같은 공종의 카테고리 노무비로 폴백 (예: 목공사-몰딩 → 목공사-목공사-노무비)
+    items = laborCatalog.filter(item => 
+      normalizeForMatch(item.공종) === normalizedWorkType && 
+      normalizeForMatch(item.공사명) === normalizedWorkType && // 공사명이 공종과 동일한 항목
+      item.세부공사 === '노무비'
+    );
+    
+    if (items.length > 0) {
+      console.log('[연동] 카테고리 노무비로 폴백:', normalizedWorkType, normalizedWorkName, 
+        `→ ${items[0].공종}-${items[0].공사명}-${items[0].세부공사} (${items.length}개 옵션)`);
+      return items;
+    }
+    
+    console.log('[연동] 노무비 매칭 없음:', normalizedWorkType, normalizedWorkName);
+    return [];
+  };
+  
   // 복구면적 산출표 → 노무비/자재비 자동 연동 함수 (동기 방식)
   const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string) => {
     if (!workType || !workName) return;
@@ -1642,12 +1678,8 @@ export default function FieldEstimate() {
     const normalizedWorkType = normalizeForMatch(workType);
     const normalizedWorkName = normalizeForMatch(workName);
     
-    // 1. 원래 공종+공사명으로 노무비 DB 검색
-    const matchingLaborItems = laborCatalog.filter(item => 
-      normalizeForMatch(item.공종) === normalizedWorkType && 
-      normalizeForMatch(item.공사명) === normalizedWorkName &&
-      item.세부공사 === '노무비'
-    );
+    // 1. 원래 공종+공사명으로 노무비 DB 검색 (폴백 로직 포함)
+    const matchingLaborItems = findLaborItemsWithFallback(normalizedWorkType, normalizedWorkName);
     
     // 원래 공종 노무비 행 생성
     createLaborRowIfNotExists(workType, workName, sourceRowId, matchingLaborItems);
@@ -1658,11 +1690,10 @@ export default function FieldEstimate() {
     );
     
     if (isDemolitionRequired && workType !== '철거공사') {
-      // 철거공사 + 같은 공사명으로 노무비 DB 검색
-      const demolitionLaborItems = laborCatalog.filter(item => 
-        normalizeForMatch(item.공종) === normalizeForMatch('철거공사') && 
-        normalizeForMatch(item.공사명) === normalizedWorkName &&
-        item.세부공사 === '노무비'
+      // 철거공사 + 같은 공사명으로 노무비 DB 검색 (폴백 로직 포함)
+      const demolitionLaborItems = findLaborItemsWithFallback(
+        normalizeForMatch('철거공사'), 
+        normalizedWorkName
       );
       
       // 철거공사용 별도 sourceRowId 생성 (::demolition 접미사)
