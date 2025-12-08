@@ -1038,43 +1038,35 @@ export default function FieldReport() {
 
                   let isFirstPage = true;
 
-                  // 모든 선택된 섹션의 hidden 속성 제거하고 강제 표시
-                  const elementsToRestore: { element: HTMLElement; hadHidden: boolean; hadAriaHidden: string | null; originalStyle: string }[] = [];
-                  
-                  for (const sectionKey of selectedSections) {
-                    const elementId = sectionMap[sectionKey];
-                    const element = document.getElementById(elementId);
-                    
-                    if (element) {
-                      elementsToRestore.push({
-                        element,
-                        hadHidden: element.hasAttribute('hidden'),
-                        hadAriaHidden: element.getAttribute('aria-hidden'),
-                        originalStyle: element.getAttribute('style') || '',
-                      });
-                      
-                      // hidden 및 aria-hidden 속성 제거
-                      element.removeAttribute('hidden');
-                      element.removeAttribute('aria-hidden');
-                      element.setAttribute('data-state', 'active');
-                      
-                      // 강제로 표시
-                      element.style.display = 'block';
-                      element.style.visibility = 'visible';
-                      element.style.opacity = '1';
-                      element.style.position = 'absolute';
-                      element.style.left = '-9999px';
-                      element.style.width = '800px';
-                    }
-                  }
-                  
-                  // 레이아웃 재계산 대기 (requestAnimationFrame 2회)
-                  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                  await new Promise(resolve => setTimeout(resolve, 100));
+                  // 탭 트리거 값과 체크박스 키 매핑
+                  const tabTriggerMap: Record<string, string> = {
+                    '현장입력': '현장조사',
+                    '도면': '도면',
+                    '증빙자료': '증빙자료',
+                    '견적서': '견적서',
+                    '기타사항': '기타사항/원인',
+                  };
 
-                  // 각 섹션을 순차적으로 캡처
+                  // 현재 활성 탭 저장
+                  const currentActiveTab = document.querySelector('[role="tablist"] [data-state="active"]') as HTMLElement | null;
+                  
+                  // 각 섹션을 순차적으로 캡처 (탭 클릭 방식)
                   for (const sectionKey of selectedSections) {
+                    const tabValue = tabTriggerMap[sectionKey];
                     const elementId = sectionMap[sectionKey];
+                    
+                    // 해당 탭 트리거 찾기
+                    const tabTrigger = document.querySelector(`[role="tab"][data-value="${tabValue}"]`) as HTMLElement | null;
+                    
+                    if (tabTrigger) {
+                      // 탭 클릭하여 활성화
+                      tabTrigger.click();
+                      
+                      // 레이아웃 재계산 대기
+                      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                      await new Promise(resolve => setTimeout(resolve, 200));
+                    }
+                    
                     const element = document.getElementById(elementId);
                     
                     if (!element) {
@@ -1083,7 +1075,7 @@ export default function FieldReport() {
                     }
 
                     try {
-                      // html2canvas로 캡처
+                      // html2canvas로 현재 화면에 표시된 요소 캡처
                       const canvas = await html2canvas(element, {
                         scale: 2,
                         useCORS: true,
@@ -1131,17 +1123,11 @@ export default function FieldReport() {
                     }
                   }
                   
-                  // 원래 상태로 복원
-                  elementsToRestore.forEach(({ element, hadHidden, hadAriaHidden, originalStyle }) => {
-                    if (hadHidden) {
-                      element.setAttribute('hidden', '');
-                    }
-                    if (hadAriaHidden !== null) {
-                      element.setAttribute('aria-hidden', hadAriaHidden);
-                    }
-                    element.setAttribute('style', originalStyle);
-                    element.removeAttribute('data-state');
-                  });
+                  // 원래 탭으로 복원
+                  if (currentActiveTab) {
+                    currentActiveTab.click();
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                  }
 
                   // PDF 저장
                   const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
