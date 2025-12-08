@@ -42,15 +42,14 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
   }
   
   const sheetXml = await sheetFile.async('string');
-  const rows: any[][] = [];
+  const rawRows: Map<number, any>[] = [];
   const rowMatches = sheetXml.match(/<(?:row|x:row)[^>]*>[\s\S]*?<\/(?:row|x:row)>/g) || [];
   
   rowMatches.forEach(rowXml => {
     const cellMatches = rowXml.match(/<(?:c|x:c)[^>]*>[\s\S]*?<\/(?:c|x:c)>/g) || [];
-    const row: any[] = new Array(20).fill(null);
+    const rowMap = new Map<number, any>();
     
     cellMatches.forEach(cellXml => {
-      // Get cell reference
       const refMatch = cellXml.match(/r="([A-Z]+)\d+"/);
       if (!refMatch) return;
       
@@ -61,11 +60,9 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
       }
       colIdx -= 1;
       
-      // Get cell type
       const typeMatch = cellXml.match(/t="([^"]+)"/);
       const cellType = typeMatch ? typeMatch[1] : 'n';
       
-      // Get value
       const valMatch = cellXml.match(/<(?:v|x:v)>([^<]*)<\/(?:v|x:v)>/);
       let value: any = valMatch ? valMatch[1] : null;
       
@@ -77,20 +74,54 @@ async function parseXlsxFallback(file: File): Promise<{ headers: string[], data:
         value = isNaN(num) ? value : num;
       }
       
-      row[colIdx] = value;
+      rowMap.set(colIdx, value);
     });
     
-    // Trim trailing nulls
-    while (row.length > 0 && row[row.length - 1] === null) row.pop();
-    if (row.length > 0) rows.push(row);
+    if (rowMap.size > 0) rawRows.push(rowMap);
   });
   
-  if (rows.length === 0) {
+  if (rawRows.length === 0) {
     throw new Error('No data found in xlsx file');
   }
   
-  const headers = rows[0].map((h: any) => h?.toString() || '');
-  const data = rows.slice(1);
+  // Find required header columns: 공종, 공사명, 노임항목, 금액
+  const requiredHeaders = ['공종', '공사명', '노임항목', '금액'];
+  const headerRow = rawRows[0];
+  const columnMapping: number[] = [];
+  
+  requiredHeaders.forEach(headerName => {
+    for (const [colIdx, value] of headerRow.entries()) {
+      if (value === headerName && !columnMapping.includes(colIdx)) {
+        columnMapping.push(colIdx);
+        break;
+      }
+    }
+  });
+  
+  // If we found all 4 required columns, use mapping; otherwise fallback to raw
+  let headers: string[];
+  let data: any[][];
+  
+  if (columnMapping.length === 4) {
+    headers = requiredHeaders;
+    data = rawRows.slice(1).map(rowMap => {
+      return columnMapping.map(colIdx => rowMap.get(colIdx) ?? null);
+    });
+  } else {
+    // Fallback: just use raw columns in order
+    const maxCol = Math.max(...rawRows.flatMap(r => [...r.keys()]));
+    headers = [];
+    for (let i = 0; i <= maxCol; i++) {
+      headers.push(headerRow.get(i)?.toString() || '');
+    }
+    data = rawRows.slice(1).map(rowMap => {
+      const row: any[] = [];
+      for (let i = 0; i <= maxCol; i++) {
+        row.push(rowMap.get(i) ?? null);
+      }
+      return row;
+    });
+  }
   
   return { headers, data };
 }
