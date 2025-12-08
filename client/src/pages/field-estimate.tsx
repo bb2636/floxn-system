@@ -1607,10 +1607,8 @@ export default function FieldEstimate() {
       const unitPrice = isSingleMatch ? (laborItem.단가_인 || 0) : 0;
       
       setLaborCostRows(prev => {
-        // 이미 같은 공종+공사명 행이 있는지 최신 상태에서 확인
-        const existingRow = prev.find(r => 
-          r.category === workType && r.workName === workName
-        );
+        // 이미 같은 sourceAreaRowId를 가진 행이 있는지 확인 (각 복구면적 행당 1개의 노무비 행)
+        const existingRow = prev.find(r => r.sourceAreaRowId === sourceRowId);
         if (existingRow) return prev;
         
         const newLaborRow: LaborCostRow = {
@@ -1681,10 +1679,8 @@ export default function FieldEstimate() {
         : 0;
       
       setMaterialRows(prev => {
-        // 이미 같은 공종+공사명 행이 있는지 최신 상태에서 확인
-        const existingRow = prev.find(r => 
-          r.공종 === workType && r.공사명 === workName
-        );
+        // 이미 같은 sourceRowId를 가진 행이 있는지 확인 (각 복구면적 행당 1개의 자재비 행)
+        const existingRow = prev.find(r => r.sourceLaborRowId === sourceRowId);
         if (existingRow) return prev;
         
         const newMaterialRow: MaterialRow = {
