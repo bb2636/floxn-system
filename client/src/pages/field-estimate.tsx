@@ -669,16 +669,20 @@ export default function FieldEstimate() {
     return !/-\d+$/.test(caseNumber);
   }, [selectedCase?.caseNumber]);
   
-  // 공종 목록 (케이스 번호로 유형 구분)
+  // 공종 목록 (노무비 DB에서 가져옴)
+  // 카탈로그가 비어있으면 기본 공종 목록 사용
   const workTypes = useMemo(() => {
+    // 노무비 카탈로그에서 공종 목록 가져오기
+    if (laborCategories.length > 0) {
+      return laborCategories;
+    }
+    // 카탈로그가 없으면 케이스 유형에 따른 기본값 사용
     if (isLossPreventionCase) {
-      // 손해방지 케이스: 손해방지 공종만
       return DAMAGE_PREVENTION_WORK_TYPES;
     } else {
-      // 피해복구 케이스: 피해복구 공종만
       return VICTIM_RECOVERY_WORK_TYPES;
     }
-  }, [isLossPreventionCase]);
+  }, [laborCategories, isLossPreventionCase]);
 
   // 노무비 행 변화 감지 및 자재비 행 동기화 (공종, 공사명 그대로 복사)
   // 피해복구 케이스에서만 작동 (손해방지 케이스 제외)
