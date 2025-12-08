@@ -1261,12 +1261,6 @@ export default function FieldReport() {
                       // overflow-auto가 있는 도면 컨테이너 찾기
                       drawingContainer = element.querySelector('.overflow-auto') as HTMLElement;
                       if (drawingContainer) {
-                        // 실제 컨텐츠 크기 측정
-                        const scrollW = Math.max(drawingContainer.scrollWidth, 1200);
-                        const scrollH = Math.max(drawingContainer.scrollHeight, 800);
-                        
-                        console.log(`Drawing container scroll size: ${scrollW}x${scrollH}`);
-                        
                         // 원래 스타일 저장
                         originalDrawingStyles = {
                           height: drawingContainer.style.height,
@@ -1277,16 +1271,36 @@ export default function FieldReport() {
                           minHeight: drawingContainer.style.minHeight,
                         };
                         
+                        // 절대 위치 요소들의 실제 경계 박스 계산
+                        const absoluteElements = drawingContainer.querySelectorAll('[style*="position: absolute"], [style*="position:absolute"]');
+                        let maxRight = 0;
+                        let maxBottom = 0;
+                        
+                        absoluteElements.forEach((el) => {
+                          const rect = el.getBoundingClientRect();
+                          const containerRect = drawingContainer!.getBoundingClientRect();
+                          const relativeRight = rect.right - containerRect.left + 50; // 여유 공간
+                          const relativeBottom = rect.bottom - containerRect.top + 50;
+                          maxRight = Math.max(maxRight, relativeRight);
+                          maxBottom = Math.max(maxBottom, relativeBottom);
+                        });
+                        
+                        // 최소 크기 보장
+                        const contentWidth = Math.max(maxRight, drawingContainer.scrollWidth, 1200);
+                        const contentHeight = Math.max(maxBottom, drawingContainer.scrollHeight, 800);
+                        
+                        console.log(`Drawing container actual content size: ${contentWidth}x${contentHeight}`);
+                        
                         // 컨테이너를 실제 컨텐츠 크기로 확장
-                        drawingContainer.style.height = `${scrollH}px`;
-                        drawingContainer.style.width = `${scrollW}px`;
-                        drawingContainer.style.minHeight = `${scrollH}px`;
+                        drawingContainer.style.height = `${contentHeight}px`;
+                        drawingContainer.style.width = `${contentWidth}px`;
+                        drawingContainer.style.minHeight = `${contentHeight}px`;
                         drawingContainer.style.maxHeight = 'none';
                         drawingContainer.style.maxWidth = 'none';
                         drawingContainer.style.overflow = 'visible';
                         
                         // 스타일 적용 대기
-                        await new Promise(resolve => setTimeout(resolve, 200));
+                        await new Promise(resolve => setTimeout(resolve, 300));
                       }
                     }
 
