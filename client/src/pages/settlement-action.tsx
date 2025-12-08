@@ -42,21 +42,11 @@ export default function SettlementAction() {
     queryKey: ["/api/user"],
   });
 
-  // 케이스 상태 및 정산 데이터 업데이트 mutation
+  // 케이스 상태 업데이트 mutation
   const updateCaseStatusMutation = useMutation({
-    mutationFn: async (data: { 
-      caseId: number; 
-      status: string;
-      settlementAmount?: string;
-      settlementDate?: string;
-      settlementCommission?: string;
-      settlementDeposit?: string;
-      settlementDeductible?: string;
-      settlementInvoiceDate?: string;
-      settlementMemo?: string;
-    }) => {
-      const { caseId, ...updateData } = data;
-      return await apiRequest("PATCH", `/api/cases/${caseId}`, updateData);
+    mutationFn: async (data: { caseId: number; status: string }) => {
+      const { caseId, status } = data;
+      return await apiRequest("PATCH", `/api/cases/${caseId}`, { status });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
@@ -247,25 +237,28 @@ export default function SettlementAction() {
   const handleConfirmSettlement = async () => {
     if (!selectedCase) return;
 
-    const settlementData = {
+    // 정산 데이터 로깅 (UI에서 입력한 값들)
+    console.log("Settlement data:", {
       caseId: selectedCase.id,
-      status: "정산완료",
-      settlementAmount: settlementAmount.replace(/,/g, ""), // 숫자만 저장
+      caseNumber: selectedCase.caseNumber,
+      settlementAmount: parseFloat(settlementAmount.replace(/,/g, "")) || 0,
       settlementDate: settlementDate ? format(settlementDate, "yyyy-MM-dd") : "",
-      settlementCommission: commission,
-      settlementDeposit: discount,
-      settlementDeductible: deductible,
-      settlementInvoiceDate: invoiceDate || (useTodayInvoice ? format(new Date(), "yyyy-MM-dd") : ""),
-      settlementMemo: settlementMemo,
-    };
-
-    console.log("Settlement data to save:", settlementData);
+      commission: parseFloat(commission) || 0,
+      discount: parseFloat(discount) || 0,
+      deductible: parseFloat(deductible) || 0,
+      invoiceDate,
+      useTodayInvoice,
+      settlementMemo,
+    });
     
     setIsSubmitting(true);
     
     try {
-      // 케이스 상태와 정산 데이터 업데이트
-      await updateCaseStatusMutation.mutateAsync(settlementData);
+      // 케이스 상태를 '정산완료'로 업데이트
+      await updateCaseStatusMutation.mutateAsync({
+        caseId: selectedCase.id,
+        status: "정산완료",
+      });
       
       setShowConfirmDialog(false);
       toast({
