@@ -1038,8 +1038,8 @@ export default function FieldReport() {
 
                   let isFirstPage = true;
 
-                  // 탭 트리거 텍스트와 체크박스 키 매핑
-                  const tabTriggerTextMap: Record<string, string> = {
+                  // 체크박스 키와 탭 value 매핑
+                  const tabValueMap: Record<string, string> = {
                     '현장입력': '현장조사',
                     '도면': '도면',
                     '증빙자료': '증빙자료',
@@ -1047,34 +1047,24 @@ export default function FieldReport() {
                     '기타사항': '기타사항/원인',
                   };
 
-                  // 다이얼로그 닫기 (탭 클릭을 위해)
+                  // 현재 탭 저장
+                  const originalTab = activeTab;
+                  
+                  // 다이얼로그 닫기
                   setShowDownloadDialog(false);
-                  await new Promise(resolve => setTimeout(resolve, 100));
+                  await new Promise(resolve => setTimeout(resolve, 200));
                   
-                  // 현재 활성 탭 저장
-                  const currentActiveTab = document.querySelector('[role="tablist"] [data-state="active"]') as HTMLElement | null;
-                  
-                  // 모든 탭 트리거 버튼 가져오기
-                  const allTabTriggers = Array.from(document.querySelectorAll('[role="tab"]')) as HTMLElement[];
-                  
-                  // 각 섹션을 순차적으로 캡처 (탭 클릭 방식)
+                  // 각 섹션을 순차적으로 캡처
                   for (const sectionKey of selectedSections) {
-                    const tabText = tabTriggerTextMap[sectionKey];
+                    const tabValue = tabValueMap[sectionKey];
                     const elementId = sectionMap[sectionKey];
                     
-                    // 해당 탭 트리거 찾기 (텍스트 내용으로 검색)
-                    const tabTrigger = allTabTriggers.find(tab => tab.textContent?.trim() === tabText);
+                    // React 상태로 탭 변경
+                    setActiveTab(tabValue);
                     
-                    if (tabTrigger) {
-                      // 탭 클릭하여 활성화
-                      tabTrigger.click();
-                      
-                      // 레이아웃 재계산 대기
-                      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                      await new Promise(resolve => setTimeout(resolve, 400));
-                    } else {
-                      console.warn(`Tab trigger not found: ${tabText}`);
-                    }
+                    // 렌더링 완료 대기 (충분한 시간)
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                     
                     const element = document.getElementById(elementId);
                     
@@ -1133,10 +1123,7 @@ export default function FieldReport() {
                   }
                   
                   // 원래 탭으로 복원
-                  if (currentActiveTab) {
-                    currentActiveTab.click();
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                  }
+                  setActiveTab(originalTab);
 
                   // PDF 저장
                   const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
