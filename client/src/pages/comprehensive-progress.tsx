@@ -506,18 +506,27 @@ export default function ComprehensiveProgress() {
   // 협력사가 변경 가능한 상태 목록
   const PARTNER_ALLOWED_STATUSES = ["직접복구", "선견적요청"];
 
+  // 상태 자동 전환 매핑
+  const STATUS_AUTO_TRANSITION: Record<string, string> = {
+    "직접복구": "(직접복구인 경우) 청구자료제출",
+    "선견적요청": "(선견적요청인 경우) 출동비 청구",
+  };
+
   // 상태 변경 핸들러
   const handleStatusChange = (caseId: string, status: string) => {
+    // 자동 전환이 필요한 상태인지 확인
+    const targetStatus = STATUS_AUTO_TRANSITION[status] || status;
+    
     // 관리자는 모든 상태 변경 가능
     if (user?.role === "관리자") {
-      updateStatusMutation.mutate({ caseId, status });
+      updateStatusMutation.mutate({ caseId, status: targetStatus });
       return;
     }
     
-    // 협력사는 직접복구/선견적요청만 변경 가능
+    // 협력사는 직접복구/선견적요청만 변경 가능 (자동 전환 적용)
     if (user?.role === "협력사") {
       if (PARTNER_ALLOWED_STATUSES.includes(status)) {
-        updateStatusMutation.mutate({ caseId, status });
+        updateStatusMutation.mutate({ caseId, status: targetStatus });
         return;
       } else {
         toast({
