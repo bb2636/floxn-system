@@ -164,6 +164,18 @@ export default function ComprehensiveProgress() {
     enabled: !!user,
   });
 
+  // 사용자 목록 가져오기 (담당자 이름 표시용)
+  const { data: allUsers = [] } = useQuery<Omit<User, "password">[]>({
+    queryKey: ["/api/users"],
+  });
+
+  // 사용자 ID로 이름 가져오기
+  const getUserName = (userId: string | null | undefined): string => {
+    if (!userId) return "-";
+    const foundUser = allUsers.find(u => u.id === userId);
+    return foundUser?.name || foundUser?.username || userId;
+  };
+
   const isFavorite = favorites.some((f) => f.menuName === "종합진행관리");
 
   const toggleFavoriteMutation = useMutation({
@@ -2414,7 +2426,7 @@ export default function ComprehensiveProgress() {
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>담당자</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.assignedTo || "-"}</span>
+                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{getUserName(invoiceCase?.assignedTo)}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between" }}>
                       <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>접수번호</span>
@@ -2440,7 +2452,7 @@ export default function ComprehensiveProgress() {
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>담당자</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.assignedTo || "-"}</span>
+                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{getUserName(invoiceCase?.assignedTo)}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>사고유형</span>
