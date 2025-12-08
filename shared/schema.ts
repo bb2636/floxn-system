@@ -211,7 +211,6 @@ export const cases = pgTable("cases", {
   
   // 금액 관련 필드
   estimateAmount: text("estimate_amount"), // 견적금액 (최종 총액)
-  approvedAmount: text("approved_amount"), // 승인금액 (2차 승인 시 자동 설정)
   
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),

@@ -1387,10 +1387,6 @@ export class MemStorage implements IStorage {
         if (!caseItem.secondApprovalDate) {
           dateUpdates.secondApprovalDate = currentDate;
         }
-        // 2차 승인 시 견적금액을 승인금액으로 자동 설정
-        if (caseItem.estimateAmount) {
-          dateUpdates.approvedAmount = caseItem.estimateAmount;
-        }
         break;
       case "(직접복구인 경우) 청구자료제출":
       case "(선견적요청인 경우) 출동비 청구":
@@ -2997,10 +2993,6 @@ export class DbStorage implements IStorage {
         // 2차 승인일(복구 요청일) 자동 기록 (기존 값 없을 때만)
         if (!existingCase.secondApprovalDate) {
           dateUpdates.secondApprovalDate = currentDate;
-        }
-        // 2차 승인 시 견적금액을 승인금액으로 자동 설정
-        if (existingCase.estimateAmount) {
-          dateUpdates.approvedAmount = existingCase.estimateAmount;
         }
         break;
       case "(직접복구인 경우) 청구자료제출":

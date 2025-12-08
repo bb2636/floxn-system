@@ -1331,15 +1331,14 @@ export default function ComprehensiveProgress() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              // 케이스 번호 prefix로 연관 케이스 찾아 총 견적금액 및 승인금액 계산
+                              // 케이스 번호 prefix로 연관 케이스 찾아 총 견적금액 계산
                               const casePrefix = getCaseNumberPrefix(caseItem.caseNumber);
                               const relatedCasesForEstimate = casePrefix 
                                 ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === casePrefix) || []
                                 : [caseItem];
                               const totalEstimate = relatedCasesForEstimate.reduce((sum, c) => sum + (Number(c.estimateAmount) || 0), 0);
-                              const totalApproved = relatedCasesForEstimate.reduce((sum, c) => sum + (Number(c.approvedAmount) || 0), 0);
                               setDamagePreventionEstimate(totalEstimate);
-                              setDamagePreventionApproved(totalApproved);
+                              setDamagePreventionApproved(0);
                               setPropertyEstimate(0);
                               setPropertyApproved(0);
                               setInvoiceCaseId(caseItem.id);
