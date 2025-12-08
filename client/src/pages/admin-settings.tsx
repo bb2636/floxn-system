@@ -2018,9 +2018,21 @@ export default function AdminSettings() {
                             const data = new Uint8Array(event.target?.result as ArrayBuffer);
                             console.log('[DEBUG] Reading XLSX...');
                             const workbook = XLSX.read(data, { type: 'array' });
+                            console.log('[DEBUG] SheetNames:', workbook.SheetNames);
+                            console.log('[DEBUG] Sheets keys:', Object.keys(workbook.Sheets));
                             const sheetName = workbook.SheetNames[0];
-                            console.log('[DEBUG] Sheet name:', sheetName);
+                            console.log('[DEBUG] Selected sheet name:', sheetName);
                             const worksheet = workbook.Sheets[sheetName];
+                            console.log('[DEBUG] Worksheet exists:', !!worksheet);
+                            if (!worksheet) {
+                              console.error('[DEBUG] Worksheet is undefined! Trying first available sheet...');
+                              const availableSheets = Object.keys(workbook.Sheets);
+                              if (availableSheets.length > 0) {
+                                const fallbackSheet = workbook.Sheets[availableSheets[0]];
+                                console.log('[DEBUG] Fallback sheet ref:', fallbackSheet?.['!ref']);
+                              }
+                              throw new Error('워크시트를 찾을 수 없습니다.');
+                            }
                             console.log('[DEBUG] Worksheet ref:', worksheet['!ref']);
                             console.log('[DEBUG] Worksheet keys:', Object.keys(worksheet).slice(0, 10));
                             const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
