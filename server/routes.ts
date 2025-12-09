@@ -1431,7 +1431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { type } = req.params;
-      if (type !== "노무비" && type !== "자재비") {
+      if (type !== "노무비" && type !== "자재비" && type !== "일위대가") {
         return res.status(400).json({ error: "잘못된 데이터 타입입니다" });
       }
 
@@ -1455,7 +1455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { type } = req.params;
-      if (type !== "노무비" && type !== "자재비") {
+      if (type !== "노무비" && type !== "자재비" && type !== "일위대가") {
         return res.status(400).json({ error: "잘못된 데이터 타입입니다" });
       }
 
@@ -1547,7 +1547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { type } = req.params;
-      if (type !== "노무비" && type !== "자재비") {
+      if (type !== "노무비" && type !== "자재비" && type !== "일위대가") {
         return res.status(400).json({ error: "잘못된 데이터 타입입니다" });
       }
 
