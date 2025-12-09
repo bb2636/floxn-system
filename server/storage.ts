@@ -3350,6 +3350,8 @@ export class DbStorage implements IStorage {
   }
 
   async saveExcelData(data: InsertExcelData): Promise<ExcelData> {
+    console.log('[DB] saveExcelData called with:', { type: data.type, title: data.title });
+    
     // Create new version (no longer overwrites existing)
     const created = await db.insert(excelData)
       .values({
@@ -3359,6 +3361,13 @@ export class DbStorage implements IStorage {
         data: data.data as any,
       })
       .returning();
+    
+    console.log('[DB] saveExcelData result:', { id: created[0]?.id, type: created[0]?.type });
+    
+    // Verify the insert worked
+    const verify = await db.select().from(excelData).where(eq(excelData.id, created[0].id));
+    console.log('[DB] saveExcelData verification:', verify.length > 0 ? 'EXISTS' : 'MISSING');
+    
     return created[0];
   }
 
