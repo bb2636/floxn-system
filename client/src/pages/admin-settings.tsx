@@ -2617,10 +2617,10 @@ export default function AdminSettings() {
                       }
                       
                       // 모든 DB 타입에 대해 병합 정보 계산 (같은 값을 가진 연속된 셀 병합)
-                      // 노무비: 공종(0), 공사명(1), 직종명(6), 기준노임(8) 병합
+                      // 노무비: 공종(0), 공사명(1), 직종명(2), 금액(3) 병합
                       // 자재비: 공종(0), 공사명(1) 병합
                       // 일위대가: 공종(0), 공사명(1) 병합
-                      const mergeableCols = dbTab === "노무비" ? [0, 1, 6, 8] : [0, 1];
+                      const mergeableCols = dbTab === "노무비" ? [0, 1, 2, 3] : [0, 1];
                       const mergeInfo: { [rowIdx: number]: { [colIdx: number]: { skip: boolean; rowspan: number } } } = {};
                       
                       // 각 병합 가능 컬럼에 대해 rowspan 계산 (같은 값인 경우 병합)
