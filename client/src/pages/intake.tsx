@@ -3519,7 +3519,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 99999,
+            zIndex: 999999,
             padding: '16px',
           }}
           onClick={() => setIsPartnerSearchOpen(false)}
@@ -3773,7 +3773,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 99999,
+            zIndex: 999999,
             padding: '16px',
           }}
           onClick={() => setIsClientSearchOpen(false)}
@@ -3946,7 +3946,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 99999,
+            zIndex: 999999,
             padding: '16px',
           }}
           onClick={() => setIsAssessorSearchOpen(false)}
@@ -4119,7 +4119,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 99999,
+            zIndex: 999999,
             padding: '16px',
           }}
           onClick={() => setIsInvestigatorSearchOpen(false)}
