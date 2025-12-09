@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Copy, Search, ChevronDown, ChevronRight, GripVertical } from "lucide-react";
+import { Copy, Search, ChevronDown, ChevronRight, GripVertical, Lock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -1003,11 +1003,13 @@ export function LaborCostSection({
               const globalIndex = group.startIndex + rowIndexInGroup;
               const isFirstRowInGroup = rowIndexInGroup === 0;
               const isLastRowInGroup = rowIndexInGroup === group.rows.length - 1;
+              // 연동 행인 경우 공종/공사명은 읽기 전용
+              const isLinkedRow = row.isLinkedFromRecovery === true;
               
               return (
                 <tr 
                   key={row.id} 
-                  draggable={!isReadOnly}
+                  draggable={!isReadOnly && !isLinkedRow}
                   onDragStart={(e) => handleDragStart(e, row.id)}
                   onDragOver={(e) => handleDragOver(e, row.id)}
                   onDragLeave={handleDragLeave}
@@ -1017,9 +1019,14 @@ export function LaborCostSection({
                     height: "56px", 
                     borderBottom: isLastRowInGroup ? "2px solid rgba(12, 12, 12, 0.15)" : "1px solid rgba(12, 12, 12, 0.06)",
                     opacity: draggedRowId === row.id ? 0.5 : 1,
-                    background: dragOverRowId === row.id ? "rgba(59, 130, 246, 0.1)" : undefined,
+                    background: dragOverRowId === row.id 
+                      ? "rgba(59, 130, 246, 0.1)" 
+                      : isLinkedRow 
+                        ? "rgba(59, 130, 246, 0.03)" // 연동 행 배경색
+                        : undefined,
                     transition: "background 0.2s",
                   }}
+                  title={isLinkedRow ? "복구면적에서 자동 생성된 행 (공종/공사명 수정 불가)" : undefined}
                 >
                   {/* 체크박스 컬럼 - 그룹 첫 번째 행에만 rowspan 적용 */}
                   {isFirstRowInGroup && (
@@ -1060,38 +1067,62 @@ export function LaborCostSection({
                         padding: "8px",
                         verticalAlign: "top",
                         borderRight: "1px solid rgba(12, 12, 12, 0.06)",
-                        background: "rgba(12, 12, 12, 0.02)",
+                        background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)",
                       }}
                     >
-                      <Select 
-                        value={row.category || undefined} 
-                        onValueChange={(value) => {
-                          group.rows.forEach(r => updateRow(r.id, 'category', value));
-                        }}
-                      >
-                        <SelectTrigger 
-                          className="border focus:ring-0"
+                      {/* 연동 행인 경우 읽기 전용 텍스트, 아니면 Select */}
+                      {isLinkedRow ? (
+                        <div 
                           style={{
                             width: "100%",
                             height: "40px",
+                            display: "flex",
+                            alignItems: "center",
+                            padding: "0 12px",
                             fontFamily: "Pretendard",
                             fontSize: "14px",
                             fontWeight: 600,
-                            borderColor: "rgba(12, 12, 12, 0.2)",
+                            color: "rgba(59, 130, 246, 0.9)",
+                            background: "rgba(59, 130, 246, 0.08)",
                             borderRadius: "6px",
+                            border: "1px solid rgba(59, 130, 246, 0.2)",
                           }}
-                          data-testid={`select-category-labor-${globalIndex}`}
+                          title="복구면적에서 연동된 공종 (수정 불가)"
                         >
-                          <SelectValue placeholder="공종 선택">
-                            {row.category || "공종 선택"}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categoryOptions.filter(opt => opt && opt.trim() !== '').map(opt => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                          <Lock style={{ width: "14px", height: "14px", marginRight: "6px", opacity: 0.6 }} />
+                          {row.category || ""}
+                        </div>
+                      ) : (
+                        <Select 
+                          value={row.category || undefined} 
+                          onValueChange={(value) => {
+                            group.rows.forEach(r => updateRow(r.id, 'category', value));
+                          }}
+                        >
+                          <SelectTrigger 
+                            className="border focus:ring-0"
+                            style={{
+                              width: "100%",
+                              height: "40px",
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 600,
+                              borderColor: "rgba(12, 12, 12, 0.2)",
+                              borderRadius: "6px",
+                            }}
+                            data-testid={`select-category-labor-${globalIndex}`}
+                          >
+                            <SelectValue placeholder="공종 선택">
+                              {row.category || "공종 선택"}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categoryOptions.filter(opt => opt && opt.trim() !== '').map(opt => (
+                              <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                     </td>
                   )}
                   
