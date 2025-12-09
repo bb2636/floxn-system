@@ -1493,29 +1493,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/excel-data", async (req, res) => {
+    console.log("[Excel Upload] POST /api/excel-data called");
+    
     if (!req.session?.userId) {
+      console.log("[Excel Upload] Error: 인증되지 않은 사용자");
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     if (req.session.userRole !== "관리자") {
+      console.log("[Excel Upload] Error: 관리자 권한 필요");
       return res.status(403).json({ error: "관리자 권한이 필요합니다" });
     }
 
     try {
+      console.log("[Excel Upload] Request body:", {
+        type: req.body?.type,
+        title: req.body?.title,
+        headersCount: req.body?.headers?.length,
+        dataRowsCount: req.body?.data?.length
+      });
+      
       const validatedData = insertExcelDataSchema.parse(req.body);
       const result = await storage.saveExcelData(validatedData);
+      
+      console.log("[Excel Upload] Success! Saved with ID:", result.id);
       res.json(result);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.log("[Excel Upload] Validation error:", error.errors);
         return res.status(400).json({ error: error.errors });
       }
       // Handle unique constraint violation (Postgres error code 23505)
       if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
+        console.log("[Excel Upload] Error: 동일한 제목 존재");
         return res.status(409).json({ 
           error: "동일한 제목의 데이터가 이미 존재합니다. 다른 제목을 사용해주세요." 
         });
       }
-      console.error("Save excel data error:", error);
+      console.error("[Excel Upload] Save excel data error:", error);
       res.status(500).json({ error: "데이터를 저장하는 중 오류가 발생했습니다" });
     }
   });
