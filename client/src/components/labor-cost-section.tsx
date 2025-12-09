@@ -451,23 +451,41 @@ export function LaborCostSection({
 
   // 피해철거공사 행 자동 생성 함수
   const createDemolitionRow = (sourceRow: LaborCostRow, demolitionDetailItem: string): LaborCostRow => {
-    // 피해철거공사 카탈로그 항목 찾기
-    const demolitionCatalogItem = catalog.find(item =>
-      item.공종 === '피해철거공사' &&
-      item.공사명 === '피해철거' &&
-      item.세부공사 === '일위대가' &&
-      item.세부항목 === demolitionDetailItem
+    // sourceRow의 공사명에서 철거공사 공사명 도출
+    // 예: 목공사-석고보드 → 철거공사-석고보드
+    const demolitionWorkName = sourceRow.workName;
+    
+    // 새 형식으로 먼저 검색: 철거공사-<공사명>-일위대가-<세부항목>
+    let demolitionCatalogItem = catalog.find(item =>
+      item.공종 === '철거공사' &&
+      item.공사명 === demolitionWorkName &&
+      item.세부공사 === '일위대가'
     );
+    
+    // 새 형식 없으면 기존 형식으로 검색: 피해철거공사-피해철거-일위대가-<세부항목>
+    if (!demolitionCatalogItem) {
+      demolitionCatalogItem = catalog.find(item =>
+        item.공종 === '피해철거공사' &&
+        item.공사명 === '피해철거' &&
+        item.세부공사 === '일위대가' &&
+        item.세부항목 === demolitionDetailItem
+      );
+    }
+    
+    // 사용할 카탈로그 항목에서 공종/공사명/세부항목 결정
+    const useCategory = demolitionCatalogItem?.공종 || '철거공사';
+    const useWorkName = demolitionCatalogItem?.공사명 || demolitionWorkName;
+    const useDetailItem = demolitionCatalogItem?.세부항목 || demolitionDetailItem;
     
     const newRow: LaborCostRow = {
       id: `labor-demolition-${sourceRow.id}-${Date.now()}`,
       sourceAreaRowId: `demolition-${sourceRow.id}`, // 중복 방지를 위한 추적 ID
       place: sourceRow.place,
       position: sourceRow.position,
-      category: '피해철거공사',
-      workName: '피해철거',
+      category: useCategory,
+      workName: useWorkName,
       detailWork: '일위대가',
-      detailItem: demolitionDetailItem,
+      detailItem: useDetailItem,
       priceStandard: sourceRow.priceStandard,
       unit: demolitionCatalogItem?.단위 || 'm²',
       standardPrice: demolitionCatalogItem?.단가_인 || 0,

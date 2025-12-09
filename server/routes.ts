@@ -2628,6 +2628,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
             단가_바닥: floorPrice,
             단가_길이: lengthPrice,
           });
+          
+          // 피해철거공사 항목을 철거공사로 변환하여 추가 엔트리 생성
+          // 예: 피해철거공사-피해철거-일위대가-석고보드 해체 → 철거공사-석고보드-일위대가-석고보드 해체
+          if (category === '피해철거공사' && detailWork === '일위대가' && detailItem) {
+            // 세부항목에서 공사명 추출 (예: "석고보드 해체" → "석고보드")
+            const extractedWorkName = detailItem.replace(/\s*(해체|철거)\s*$/g, '').trim();
+            if (extractedWorkName) {
+              catalog.push({
+                공종: '철거공사',
+                공사명: extractedWorkName,
+                세부공사: detailWork,
+                세부항목: detailItem,
+                단위: unit,
+                단가_인: laborPrice,
+                단가_천장: ceilingPrice,
+                단가_벽체: wallPrice,
+                단가_바닥: floorPrice,
+                단가_길이: lengthPrice,
+              });
+            }
+          }
+          
+          // 원인철거공사 항목도 철거공사로 변환
+          if (category === '원인철거공사' && detailWork === '일위대가' && detailItem) {
+            const extractedWorkName = detailItem.replace(/\s*(해체|철거|및.*|\/.*)\s*$/g, '').trim();
+            if (extractedWorkName) {
+              catalog.push({
+                공종: '철거공사',
+                공사명: extractedWorkName,
+                세부공사: detailWork,
+                세부항목: detailItem,
+                단위: unit,
+                단가_인: laborPrice,
+                단가_천장: ceilingPrice,
+                단가_벽체: wallPrice,
+                단가_바닥: floorPrice,
+                단가_길이: lengthPrice,
+              });
+            }
+          }
         }
       }
 
