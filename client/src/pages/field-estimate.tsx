@@ -757,8 +757,12 @@ export default function FieldEstimate() {
   // 노무비 공종 목록 (자재비에서 사용)
   const laborCategories = useMemo(() => {
     if (!laborCatalog.length) return [];
+    console.log('[DEBUG] laborCatalog 첫 5개 항목:', laborCatalog.slice(0, 5));
+    console.log('[DEBUG] laborCatalog 공종 필드 샘플:', laborCatalog.slice(0, 5).map(item => item.공종));
     const unique = new Set(laborCatalog.map(item => item.공종));
-    return Array.from(unique).sort();
+    const result = Array.from(unique).sort();
+    console.log('[DEBUG] 추출된 공종 목록:', result);
+    return result;
   }, [laborCatalog]);
   
   // 공종별 공사명 매핑 (복구면적 산출표에서 사용)
