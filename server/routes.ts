@@ -2708,6 +2708,175 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 일위대가DB catalog endpoint - Query by 공종 + 공사명 to get all 노임항목 rows
+  app.get("/api/ilwidaega-catalog", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      // Get latest 일위대가 data from excel_data table
+      const excelDataList = await storage.listExcelData('일위대가');
+      
+      if (!excelDataList || excelDataList.length === 0) {
+        return res.json([]);
+      }
+
+      // Use the most recent entry
+      const excelData = excelDataList[0];
+      
+      if (!excelData.data || !Array.isArray(excelData.data)) {
+        return res.json([]);
+      }
+
+      // Helper functions
+      const safeString = (val: any): string => {
+        if (val === null || val === undefined) return '';
+        return String(val).trim();
+      };
+      
+      const parsePrice = (val: any): number | null => {
+        if (val === null || val === undefined || val === '') return null;
+        if (typeof val === 'number') return val;
+        const cleaned = String(val).replace(/,/g, '').trim();
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? null : num;
+      };
+
+      const catalog: any[] = [];
+      const headers = excelData.headers || [];
+      
+      // 일위대가 format: 공종, 공사명, 노임항목, 금액
+      // Find column indices by header names
+      let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = 3;
+      headers.forEach((h: string, idx: number) => {
+        if (h && h.includes('공종')) categoryIdx = idx;
+        if (h && (h.includes('공사명') || h.includes('품명'))) workNameIdx = idx;
+        if (h && h.includes('노임항목')) laborItemIdx = idx;
+        if (h && h.includes('금액')) priceIdx = idx;
+      });
+
+      let prevCategory: string | null = null;
+      let prevWorkName: string | null = null;
+
+      for (let i = 0; i < excelData.data.length; i++) {
+        const row = excelData.data[i];
+        if (!row || row.length === 0) continue;
+
+        const category: string = safeString(row[categoryIdx]) || prevCategory || '';
+        const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
+        const laborItem: string = safeString(row[laborItemIdx]);
+        const price = parsePrice(row[priceIdx]);
+
+        // Update forward-fill values
+        if (safeString(row[categoryIdx])) prevCategory = category;
+        if (safeString(row[workNameIdx])) prevWorkName = workName;
+
+        // Skip rows without essential data
+        if (!category || !laborItem) continue;
+
+        catalog.push({
+          공종: category,
+          공사명: workName,
+          노임항목: laborItem,
+          금액: price,
+        });
+      }
+
+      console.log('Parsed 일위대가 catalog items:', catalog.length);
+      
+      res.json(catalog);
+    } catch (error) {
+      console.error("Get 일위대가 catalog error:", error);
+      res.status(500).json({ error: "일위대가 카탈로그를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // 자재비DB catalog endpoint - Query by 공사명 to get matching materials
+  app.get("/api/materials-by-workname", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      // Get latest 자재비 data from excel_data table
+      const excelDataList = await storage.listExcelData('자재비');
+      
+      if (!excelDataList || excelDataList.length === 0) {
+        return res.json([]);
+      }
+
+      // Use the most recent entry
+      const excelData = excelDataList[0];
+      
+      if (!excelData.data || !Array.isArray(excelData.data)) {
+        return res.json([]);
+      }
+
+      // Helper functions
+      const safeString = (val: any): string => {
+        if (val === null || val === undefined) return '';
+        return String(val).trim();
+      };
+      
+      const parsePrice = (val: any): number | string | null => {
+        if (val === null || val === undefined || val === '') return null;
+        if (typeof val === 'string' && val.trim() === '입력') return '입력';
+        if (typeof val === 'number') return val;
+        const cleaned = String(val).replace(/,/g, '').trim();
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? null : num;
+      };
+
+      const catalog: any[] = [];
+      const headers = excelData.headers || [];
+      
+      // 자재비 format: 공종명(공사명), 자재명, 규격, 단위, 금액
+      let workNameIdx = 0, materialIdx = 1, specIdx = 2, unitIdx = 3, priceIdx = 4;
+      headers.forEach((h: string, idx: number) => {
+        if (h && (h.includes('공종명') || h.includes('공사명'))) workNameIdx = idx;
+        if (h && h.includes('자재명')) materialIdx = idx;
+        if (h && h.includes('규격')) specIdx = idx;
+        if (h && h.includes('단위')) unitIdx = idx;
+        if (h && h.includes('금액')) priceIdx = idx;
+      });
+
+      let prevWorkName: string | null = null;
+
+      for (let i = 0; i < excelData.data.length; i++) {
+        const row = excelData.data[i];
+        if (!row || row.length === 0) continue;
+
+        const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
+        const materialName: string = safeString(row[materialIdx]);
+        const specification: string = safeString(row[specIdx]);
+        const unit: string = safeString(row[unitIdx]);
+        const price = parsePrice(row[priceIdx]);
+
+        // Update forward-fill values
+        if (safeString(row[workNameIdx])) prevWorkName = workName;
+
+        // Skip rows without essential data
+        if (!workName || !materialName) continue;
+
+        catalog.push({
+          공사명: workName,
+          자재명: materialName,
+          규격: specification,
+          단위: unit,
+          금액: price,
+        });
+      }
+
+      console.log('Parsed 자재비 catalog items:', catalog.length);
+      
+      res.json(catalog);
+    } catch (error) {
+      console.error("Get 자재비 catalog error:", error);
+      res.status(500).json({ error: "자재비 카탈로그를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Materials (자재비) endpoints
   // Get materials catalog from excel_data (all authenticated users)
   app.get("/api/materials", async (req, res) => {
