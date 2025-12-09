@@ -1786,11 +1786,43 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       </div>
                       <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
                         <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 증권번호</label>
-                        <input type="text" placeholder="증권번호 입력" value={formData.insurancePolicyNo} readOnly className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-policy-no" />
+                        <input 
+                          type="text" 
+                          placeholder="증권번호 입력" 
+                          value={formData.insurancePolicyNo} 
+                          onChange={(e) => handleInputChange("insurancePolicyNo", e.target.value)}
+                          readOnly={readOnly || !!editCaseId}
+                          className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" 
+                          style={{
+                            background: (readOnly || !!editCaseId) ? 'rgba(12, 12, 12, 0.04)' : '#FDFDFD',
+                            border: (readOnly || !!editCaseId) ? 'none' : '2px solid rgba(12, 12, 12, 0.08)',
+                            fontFamily: 'Pretendard',
+                            fontWeight: 600,
+                            letterSpacing: '-0.02em',
+                            color: '#0C0C0C'
+                          }} 
+                          data-testid="input-insurance-policy-no" 
+                        />
                       </div>
                       <div className="flex flex-col gap-2 flex-1 min-w-[120px]">
                         <label className="text-sm whitespace-nowrap" style={{fontFamily: 'Pretendard',fontWeight: 500,lineHeight: '128%',letterSpacing: '-0.01em',color: '#686A6E'}}>보험사 사고번호</label>
-                        <input type="text" placeholder="사고번호 입력" value={formData.insuranceAccidentNo} readOnly className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" style={{background: 'rgba(12, 12, 12, 0.04)',border: 'none',fontFamily: 'Pretendard',fontWeight: 600,letterSpacing: '-0.02em',color: '#0C0C0C'}} data-testid="input-insurance-accident-no" />
+                        <input 
+                          type="text" 
+                          placeholder="사고번호 입력" 
+                          value={formData.insuranceAccidentNo} 
+                          onChange={(e) => handleInputChange("insuranceAccidentNo", e.target.value)}
+                          readOnly={readOnly || !!editCaseId}
+                          className="w-full h-14 md:h-[68px] px-3 md:px-5 rounded-lg text-sm md:text-base" 
+                          style={{
+                            background: (readOnly || !!editCaseId) ? 'rgba(12, 12, 12, 0.04)' : '#FDFDFD',
+                            border: (readOnly || !!editCaseId) ? 'none' : '2px solid rgba(12, 12, 12, 0.08)',
+                            fontFamily: 'Pretendard',
+                            fontWeight: 600,
+                            letterSpacing: '-0.02em',
+                            color: '#0C0C0C'
+                          }} 
+                          data-testid="input-insurance-accident-no" 
+                        />
                       </div>
                     </div>
 
