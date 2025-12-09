@@ -3521,11 +3521,16 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             justifyContent: 'center',
             zIndex: 999999,
             padding: '16px',
+            pointerEvents: 'auto',
           }}
           onClick={() => setIsPartnerSearchOpen(false)}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
         >
           <div 
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             className="w-full max-w-[864px] max-h-[90vh] overflow-y-auto"
             style={{
               display: 'flex',
@@ -3537,6 +3542,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               background: '#FFFFFF',
               boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
               borderRadius: '12px',
+              pointerEvents: 'auto',
             }}
           >
             {/* Header */}
@@ -3775,11 +3781,16 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             justifyContent: 'center',
             zIndex: 999999,
             padding: '16px',
+            pointerEvents: 'auto',
           }}
           onClick={() => setIsClientSearchOpen(false)}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
         >
           <div 
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             className="w-full max-w-[600px]"
             style={{
               display: 'flex',
@@ -3792,6 +3803,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
               borderRadius: '12px',
               maxHeight: '90vh',
+              pointerEvents: 'auto',
             }}
           >
             {/* Header */}
@@ -3948,11 +3960,16 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             justifyContent: 'center',
             zIndex: 999999,
             padding: '16px',
+            pointerEvents: 'auto',
           }}
           onClick={() => setIsAssessorSearchOpen(false)}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
         >
           <div 
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             className="w-full max-w-[600px]"
             style={{
               display: 'flex',
@@ -3965,6 +3982,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
               borderRadius: '12px',
               maxHeight: '90vh',
+              pointerEvents: 'auto',
             }}
           >
             {/* Header */}
@@ -4121,11 +4139,16 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             justifyContent: 'center',
             zIndex: 999999,
             padding: '16px',
+            pointerEvents: 'auto',
           }}
           onClick={() => setIsInvestigatorSearchOpen(false)}
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
         >
           <div 
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             className="w-full max-w-[600px]"
             style={{
               display: 'flex',
@@ -4138,6 +4161,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               boxShadow: '0px -2px 70px rgba(179, 193, 205, 0.8)',
               borderRadius: '12px',
               maxHeight: '90vh',
+              pointerEvents: 'auto',
             }}
           >
             {/* Header */}
