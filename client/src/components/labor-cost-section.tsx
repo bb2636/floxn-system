@@ -49,6 +49,7 @@ export interface LaborCatalogItem {
 export interface LaborCostRow {
   id: string;
   sourceAreaRowId?: string; // 복구면적 산출표 행 ID (연동 추적용)
+  isLinkedFromRecovery?: boolean; // 복구면적에서 연동 생성된 행인지 (true: 수정불가, false/undefined: 수정가능)
   place: string; // 장소 - 복구면적 산출표에서 가져옴 (읽기전용)
   position: string; // 위치 - 복구면적 산출표에서 가져옴 (읽기전용)
   category: string; // 공종 - select

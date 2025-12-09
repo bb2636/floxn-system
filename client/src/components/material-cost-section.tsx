@@ -25,6 +25,8 @@ export interface MaterialRow {
   금액: number; // 계산값
   비고: string; // 입력
   sourceLaborRowId?: string; // 노무비 행 ID 추적
+  sourceAreaRowId?: string; // 복구면적 산출표 행 ID 추적
+  isLinkedFromRecovery?: boolean; // 복구면적에서 연동 생성된 행인지 (true: 수정불가, false/undefined: 수정가능)
 }
 
 interface MaterialCostSectionProps {
