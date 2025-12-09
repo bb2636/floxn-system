@@ -1191,18 +1191,49 @@ export default function FieldEstimate() {
     });
   };
 
-  // 특정 행 삭제 (장소 그룹 내 행 삭제)
+  // 특정 행 삭제 (장소 그룹 내 행 삭제) + 연동된 노무비/자재비도 삭제
   const deleteRowById = (rowId: string) => {
     if (isReadOnly) return;
+    
+    // 연동된 노무비 행 삭제 (원래 행 + 철거공사 행)
+    setLaborCostRows(prev => prev.filter(row => 
+      row.sourceAreaRowId !== rowId && row.sourceAreaRowId !== `${rowId}::demolition`
+    ));
+    
+    // 연동된 자재비 행 삭제 (sourceLaborRowId가 rowId인 것)
+    setMaterialRows(prev => prev.filter(row => row.sourceLaborRowId !== rowId));
+    
+    // 복구면적 행 삭제
     setRows(prev => prev.filter(row => row.id !== rowId));
+    
+    console.log('[연동] 복구면적 행 삭제 → 노무비/자재비 연동 삭제:', rowId);
   };
 
-  // 선택된 행 삭제 (체크박스 기반)
+  // 선택된 행 삭제 (체크박스 기반) + 연동된 노무비/자재비도 삭제
   const deleteSelectedRows = () => {
     if (isReadOnly) return;
     if (selectedRows.size === 0) return;
+    
+    const rowIdsToDelete = Array.from(selectedRows);
+    
+    // 연동된 노무비 행 삭제
+    setLaborCostRows(prev => prev.filter(row => {
+      if (!row.sourceAreaRowId) return true;
+      // 원래 행 또는 철거공사 행인지 확인
+      const baseRowId = row.sourceAreaRowId.replace('::demolition', '');
+      return !rowIdsToDelete.includes(baseRowId);
+    }));
+    
+    // 연동된 자재비 행 삭제
+    setMaterialRows(prev => prev.filter(row => 
+      !row.sourceLaborRowId || !rowIdsToDelete.includes(row.sourceLaborRowId)
+    ));
+    
+    // 복구면적 행 삭제
     setRows(prev => prev.filter(row => !selectedRows.has(row.id)));
     setSelectedRows(new Set());
+    
+    console.log('[연동] 복구면적 행 일괄 삭제 → 노무비/자재비 연동 삭제:', rowIdsToDelete);
   };
 
   // 드래그 앤 드롭 핸들러 (복구면적 산출표)
@@ -1583,28 +1614,48 @@ export default function FieldEstimate() {
   // 사용자가 이 공사명들을 선택하면 '철거공사' 공종으로 추가 행 생성
   const DEMOLITION_REQUIRED_WORK_NAMES = ['반자틀', '석고보드', '도배', '마루'];
   
-  // 노무비 행 생성 헬퍼 (중복 방지 및 정렬 포함)
-  const createLaborRowIfNotExists = (
+  // 노무비 행 생성 또는 업데이트 헬퍼 (중복 방지 및 정렬 포함)
+  const createOrUpdateLaborRow = (
     workType: string,
     workName: string,
     sourceRowId: string,
     matchingLaborItems: typeof laborCatalog
   ) => {
-    if (matchingLaborItems.length === 0) {
-      console.log('[연동] 노무비 매칭 없음:', workType, workName, '- 노무비 DB에 해당 항목이 없습니다');
-      return;
-    }
-    
-    const laborItem = matchingLaborItems[0];
+    const laborItem = matchingLaborItems.length > 0 ? matchingLaborItems[0] : null;
     const isSingleMatch = matchingLaborItems.length === 1;
-    const detailItem = isSingleMatch ? (laborItem.세부항목 || '') : '';
-    const unitPrice = isSingleMatch ? (laborItem.단가_인 || 0) : 0;
+    const detailItem = isSingleMatch && laborItem ? (laborItem.세부항목 || '') : '';
+    const unitPrice = isSingleMatch && laborItem ? (laborItem.단가_인 || 0) : 0;
     
     setLaborCostRows(prev => {
       // 이미 같은 sourceAreaRowId를 가진 행이 있는지 확인
-      const existingRow = prev.find(r => r.sourceAreaRowId === sourceRowId);
-      if (existingRow) return prev;
+      const existingRowIndex = prev.findIndex(r => r.sourceAreaRowId === sourceRowId);
       
+      if (existingRowIndex !== -1) {
+        // 기존 행이 있으면 공종/공사명만 업데이트 (사용자 입력은 유지)
+        const existingRow = prev[existingRowIndex];
+        if (existingRow.category === workType && existingRow.workName === workName) {
+          // 동일하면 변경 없음
+          return prev;
+        }
+        
+        console.log('[연동] 노무비 행 업데이트:', existingRow.category, existingRow.workName, '→', workType, workName);
+        
+        const updatedRows = [...prev];
+        updatedRows[existingRowIndex] = {
+          ...existingRow,
+          category: workType,
+          workName: workName,
+          // DB 매칭이 있으면 세부항목/단가도 업데이트
+          detailItem: matchingLaborItems.length > 0 ? detailItem : existingRow.detailItem,
+          standardPrice: matchingLaborItems.length > 0 ? unitPrice : existingRow.standardPrice,
+          unit: isSingleMatch && laborItem ? (laborItem.단위 || '인') : existingRow.unit,
+          pricePerSqm: matchingLaborItems.length > 0 ? unitPrice : existingRow.pricePerSqm,
+          amount: matchingLaborItems.length > 0 ? Math.round(unitPrice * existingRow.quantity) : existingRow.amount,
+        };
+        return sortLaborRowsByCategory(updatedRows);
+      }
+      
+      // 새 행 생성 (DB 매칭이 없어도 빈 행으로 생성)
       const newLaborRow: LaborCostRow = {
         id: `labor-${Date.now()}-${Math.random()}`,
         sourceAreaRowId: sourceRowId,
@@ -1615,7 +1666,7 @@ export default function FieldEstimate() {
         detailWork: '노무비',
         detailItem: detailItem,
         priceStandard: '',
-        unit: isSingleMatch ? (laborItem.단위 || '인') : '',
+        unit: isSingleMatch && laborItem ? (laborItem.단위 || '인') : '',
         standardPrice: unitPrice,
         quantity: 1,
         applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
@@ -1629,7 +1680,9 @@ export default function FieldEstimate() {
       };
       
       console.log('[연동] 노무비 행 생성:', workType, workName, 
-        isSingleMatch ? `자동: ${detailItem} ${unitPrice}원` : `수동선택필요 (${matchingLaborItems.length}개 옵션)`);
+        matchingLaborItems.length > 0 
+          ? (isSingleMatch ? `자동: ${detailItem} ${unitPrice}원` : `수동선택필요 (${matchingLaborItems.length}개 옵션)`)
+          : '(DB 매칭 없음)');
       return sortLaborRowsByCategory([...prev, newLaborRow]);
     });
   };
@@ -1696,13 +1749,15 @@ export default function FieldEstimate() {
     // 1. 원래 공종+공사명으로 노무비 DB 검색 (폴백 로직 포함)
     const matchingLaborItems = findLaborItemsWithFallback(normalizedWorkType, normalizedWorkName);
     
-    // 원래 공종 노무비 행 생성
-    createLaborRowIfNotExists(workType, workName, sourceRowId, matchingLaborItems);
+    // 원래 공종 노무비 행 생성/업데이트
+    createOrUpdateLaborRow(workType, workName, sourceRowId, matchingLaborItems);
     
     // 2. 특정 공사명인 경우 철거공사 행도 추가 생성
     const isDemolitionRequired = DEMOLITION_REQUIRED_WORK_NAMES.some(
       name => normalizeForMatch(name) === normalizedWorkName
     );
+    
+    const demolitionSourceRowId = `${sourceRowId}::demolition`;
     
     if (isDemolitionRequired && workType !== '철거공사') {
       // 철거공사 + 같은 공사명으로 노무비 DB 검색 (폴백 로직 포함)
@@ -1720,11 +1775,18 @@ export default function FieldEstimate() {
         );
       }
       
-      // 철거공사용 별도 sourceRowId 생성 (::demolition 접미사)
-      const demolitionSourceRowId = `${sourceRowId}::demolition`;
-      
       console.log('[연동] 철거공사 추가 생성:', '철거공사', workName);
-      createLaborRowIfNotExists('철거공사', workName, demolitionSourceRowId, demolitionLaborItems);
+      createOrUpdateLaborRow('철거공사', workName, demolitionSourceRowId, demolitionLaborItems);
+    } else {
+      // 철거공사가 필요없는 공사명으로 변경된 경우, 기존 철거공사 행 삭제
+      setLaborCostRows(prev => {
+        const demolitionRow = prev.find(r => r.sourceAreaRowId === demolitionSourceRowId);
+        if (demolitionRow) {
+          console.log('[연동] 철거공사 행 삭제 (공사명 변경):', demolitionRow.category, demolitionRow.workName);
+          return prev.filter(r => r.sourceAreaRowId !== demolitionSourceRowId);
+        }
+        return prev;
+      });
     }
     
     // 자재비 DB에서 해당 공종의 자재 찾기 (정규화된 비교)
@@ -1751,44 +1813,65 @@ export default function FieldEstimate() {
       ? exactStartMatch 
       : (containsMatch.length > 0 ? containsMatch : workTypeOnlyMatch);
     
-    // 자재 행 생성 (DB에 매칭이 있으면 생성, 1개면 자동완성, 여러개면 드롭다운에서 선택)
-    if (materialsToUse.length === 0) {
-      console.log('[연동] 자재비 매칭 없음:', workType, workName, '- 자재비 DB에 해당 항목이 없습니다');
-    }
-    if (materialsToUse.length > 0) {
-      const isSingleMatch = materialsToUse.length === 1;
-      const materialItem = materialsToUse[0];
-      const materialName = isSingleMatch ? materialItem.materialName : '';
-      const spec = isSingleMatch ? (materialItem.specification || '') : '';
-      const unit = isSingleMatch ? (materialItem.unit || 'EA') : '';
-      const unitPrice = isSingleMatch 
-        ? (typeof materialItem.standardPrice === 'number' ? materialItem.standardPrice : 0) 
-        : 0;
+    // 자재 행 생성/업데이트 (DB에 매칭이 있으면 생성, 1개면 자동완성, 여러개면 드롭다운에서 선택)
+    const isSingleMatch = materialsToUse.length === 1;
+    const materialItem = materialsToUse.length > 0 ? materialsToUse[0] : null;
+    const materialName = isSingleMatch && materialItem ? materialItem.materialName : '';
+    const spec = isSingleMatch && materialItem ? (materialItem.specification || '') : '';
+    const unit = isSingleMatch && materialItem ? (materialItem.unit || 'EA') : '';
+    const unitPrice = isSingleMatch && materialItem 
+      ? (typeof materialItem.standardPrice === 'number' ? materialItem.standardPrice : 0) 
+      : 0;
+    
+    setMaterialRows(prev => {
+      // 이미 같은 sourceRowId를 가진 행이 있는지 확인 (각 복구면적 행당 1개의 자재비 행)
+      const existingRowIndex = prev.findIndex(r => r.sourceLaborRowId === sourceRowId);
       
-      setMaterialRows(prev => {
-        // 이미 같은 sourceRowId를 가진 행이 있는지 확인 (각 복구면적 행당 1개의 자재비 행)
-        const existingRow = prev.find(r => r.sourceLaborRowId === sourceRowId);
-        if (existingRow) return prev;
+      if (existingRowIndex !== -1) {
+        // 기존 행이 있으면 공종/공사명만 업데이트 (사용자 입력은 유지)
+        const existingRow = prev[existingRowIndex];
+        if (existingRow.공종 === workType && existingRow.공사명 === workName) {
+          return prev; // 동일하면 변경 없음
+        }
         
-        const newMaterialRow: MaterialRow = {
-          id: `material-${Date.now()}-${Math.random()}`,
+        console.log('[연동] 자재비 행 업데이트:', existingRow.공종, existingRow.공사명, '→', workType, workName);
+        
+        const updatedRows = [...prev];
+        updatedRows[existingRowIndex] = {
+          ...existingRow,
           공종: workType,
           공사명: workName,
-          자재: materialName,
-          규격: spec,
-          단위: unit,
-          기준단가: unitPrice,
-          수량: 1,
-          금액: Math.round(unitPrice * 1),
-          비고: '',
-          sourceLaborRowId: sourceRowId,
+          // DB 매칭이 있으면 자재명/단가도 업데이트
+          자재: materialsToUse.length > 0 ? materialName : existingRow.자재,
+          규격: materialsToUse.length > 0 ? spec : existingRow.규격,
+          단위: materialsToUse.length > 0 ? unit : existingRow.단위,
+          기준단가: materialsToUse.length > 0 ? unitPrice : existingRow.기준단가,
+          금액: materialsToUse.length > 0 ? Math.round(unitPrice * existingRow.수량) : existingRow.금액,
         };
-        
-        console.log('[연동] 자재비 행 생성:', workType, workName, 
-          isSingleMatch ? `자동: ${materialName} ${unitPrice}원` : `수동선택필요 (${materialsToUse.length}개 옵션)`);
-        return [...prev, newMaterialRow];
-      });
-    }
+        return updatedRows;
+      }
+      
+      // 새 행 생성 (DB 매칭이 없어도 빈 행으로 생성)
+      const newMaterialRow: MaterialRow = {
+        id: `material-${Date.now()}-${Math.random()}`,
+        공종: workType,
+        공사명: workName,
+        자재: materialName,
+        규격: spec,
+        단위: unit,
+        기준단가: unitPrice,
+        수량: 1,
+        금액: Math.round(unitPrice * 1),
+        비고: '',
+        sourceLaborRowId: sourceRowId,
+      };
+      
+      console.log('[연동] 자재비 행 생성:', workType, workName, 
+        materialsToUse.length > 0
+          ? (isSingleMatch ? `자동: ${materialName} ${unitPrice}원` : `수동선택필요 (${materialsToUse.length}개 옵션)`)
+          : '(DB 매칭 없음)');
+      return [...prev, newMaterialRow];
+    });
   };
   
 
