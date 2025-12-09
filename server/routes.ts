@@ -2551,14 +2551,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (isNewFormat) {
         // NEW FORMAT: 공종, 공사명, 노임항목DB, 금액
-        // Find column indices by header names
+        // Find column indices by header names with EXACT match priority
+        // NOTE: Headers like '노임항목(공종에 종속)' contain '공종' substring, so use exact match first
         let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = 3;
+        
+        // First pass: exact or near-exact matches (priority)
         headers.forEach((h: string, idx: number) => {
-          if (h && h.includes('공종')) categoryIdx = idx;
-          if (h && (h.includes('공사명') || h.includes('품명'))) workNameIdx = idx;
-          if (h && h.includes('노임항목')) laborItemIdx = idx;
-          if (h && h.includes('금액')) priceIdx = idx;
+          const trimmed = (h || '').trim();
+          // Exact match for 공종 (not substring match to avoid '노임항목(공종에 종속)')
+          if (trimmed === '공종') categoryIdx = idx;
+          // 노임항목 must be detected before checking for 공사명
+          if (trimmed.includes('노임항목')) laborItemIdx = idx;
+          // 금액 exact or near-exact
+          if (trimmed.includes('금액')) priceIdx = idx;
         });
+        
+        // Second pass: 공사명 with more specific matching (exclude 노임항목 column)
+        headers.forEach((h: string, idx: number) => {
+          const trimmed = (h || '').trim();
+          // 공사명 match (but not if already matched as 노임항목)
+          if ((trimmed.includes('공사명') || trimmed.includes('품명')) && idx !== laborItemIdx) {
+            workNameIdx = idx;
+          }
+        });
+        
+        console.log('NEW FORMAT column indices:', { categoryIdx, workNameIdx, laborItemIdx, priceIdx });
 
         let prevCategory: string | null = null;
         let prevWorkName: string | null = null;
@@ -2742,14 +2759,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const headers = excelData.headers || [];
       
       // 일위대가 format: 공종, 공사명, 노임항목, 금액
-      // Find column indices by header names
+      // Find column indices by header names with EXACT match priority
+      // NOTE: Headers like '노임항목(공종에 종속)' contain '공종' substring, so use exact match first
       let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = 3;
+      
+      // First pass: exact or near-exact matches (priority)
       headers.forEach((h: string, idx: number) => {
-        if (h && h.includes('공종')) categoryIdx = idx;
-        if (h && (h.includes('공사명') || h.includes('품명'))) workNameIdx = idx;
-        if (h && h.includes('노임항목')) laborItemIdx = idx;
-        if (h && h.includes('금액')) priceIdx = idx;
+        const trimmed = (h || '').trim();
+        // Exact match for 공종 (not substring match to avoid '노임항목(공종에 종속)')
+        if (trimmed === '공종') categoryIdx = idx;
+        // 노임항목 must be detected before checking for 공사명
+        if (trimmed.includes('노임항목')) laborItemIdx = idx;
+        // 금액 exact or near-exact
+        if (trimmed.includes('금액')) priceIdx = idx;
       });
+      
+      // Second pass: 공사명 with more specific matching (exclude 노임항목 column)
+      headers.forEach((h: string, idx: number) => {
+        const trimmed = (h || '').trim();
+        // 공사명 match (but not if already matched as 노임항목)
+        if ((trimmed.includes('공사명') || trimmed.includes('품명')) && idx !== laborItemIdx) {
+          workNameIdx = idx;
+        }
+      });
+      
+      console.log('일위대가 column indices:', { categoryIdx, workNameIdx, laborItemIdx, priceIdx });
 
       let prevCategory: string | null = null;
       let prevWorkName: string | null = null;
