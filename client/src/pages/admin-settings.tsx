@@ -2182,42 +2182,59 @@ export default function AdminSettings() {
                           
                           // Check if xlsx library successfully parsed the data
                           if (worksheet && Object.keys(worksheet).length > 0) {
-                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                            // Use raw: false to keep formatted values (preserves decimals like 37.5)
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: null });
                             if (jsonData.length > 0) {
-                              headers = jsonData[0] as string[];
-                              const rawRows = (jsonData.slice(1) as any[]).map(row => 
-                                Array.isArray(row) ? row.map(cell => {
-                                  if (typeof cell === 'string' && (cell.includes('\n') || cell.includes('\r'))) {
-                                    return cell.split(/\r?\n|\r/)[0].trim();
+                              headers = (jsonData[0] as any[]).map(h => h?.toString() || '');
+                              const maxCols = headers.length;
+                              
+                              // Process raw rows - normalize to full-width arrays with null for missing cells
+                              const rawRows: any[][] = [];
+                              for (let i = 1; i < jsonData.length; i++) {
+                                const srcRow = jsonData[i] as any[];
+                                const normalizedRow: any[] = [];
+                                for (let j = 0; j < maxCols; j++) {
+                                  let cellValue = srcRow?.[j];
+                                  // Handle newlines in cell values
+                                  if (typeof cellValue === 'string' && (cellValue.includes('\n') || cellValue.includes('\r'))) {
+                                    cellValue = cellValue.split(/\r?\n|\r/)[0].trim();
                                   }
-                                  return cell;
-                                }) : row
-                              );
+                                  // Treat empty string as null for merge handling
+                                  if (cellValue === '' || cellValue === undefined) {
+                                    cellValue = null;
+                                  }
+                                  normalizedRow.push(cellValue);
+                                }
+                                rawRows.push(normalizedRow);
+                              }
                               
                               // Handle merged cells: fill empty cells with previous row's value
-                              // This is needed because Excel merged cells only have value in first cell
                               // Must process sequentially to correctly reference previous processed rows
-                              const maxCols = Math.max(...rawRows.map((r: any[]) => r?.length || 0), headers.length);
                               rows = [];
-                              rawRows.forEach((row: any[], rowIdx: number) => {
-                                const normalizedRow = Array(maxCols).fill(null).map((_, colIdx) => row?.[colIdx] ?? null);
-                                const processedRow = normalizedRow.map((cell, colIdx) => {
-                                  // If cell is empty/null and there's a previous row, use previous row's value
-                                  if ((cell === null || cell === undefined || cell === '') && rowIdx > 0) {
+                              for (let rowIdx = 0; rowIdx < rawRows.length; rowIdx++) {
+                                const srcRow = rawRows[rowIdx];
+                                const processedRow: any[] = [];
+                                
+                                for (let colIdx = 0; colIdx < maxCols; colIdx++) {
+                                  const cellValue = srcRow[colIdx];
+                                  
+                                  // If cell is null/empty and there's a previous row, use previous row's value
+                                  if (cellValue === null && rowIdx > 0) {
                                     const prevRow = rows[rowIdx - 1];
-                                    if (prevRow && prevRow[colIdx] !== undefined && prevRow[colIdx] !== null && prevRow[colIdx] !== '') {
-                                      return prevRow[colIdx];
+                                    if (prevRow && prevRow[colIdx] !== null) {
+                                      processedRow.push(prevRow[colIdx]);
+                                      continue;
                                     }
                                   }
-                                  return cell;
-                                });
+                                  processedRow.push(cellValue);
+                                }
                                 rows.push(processedRow);
-                              });
+                              }
                               
                               console.log('[Excel] Processed with merged cell handling:', { 
                                 headerCount: headers.length, 
                                 rowCount: rows.length,
-                                sampleRow: rows[0]
+                                sampleRows: rows.slice(0, 5)
                               });
                             }
                           }
