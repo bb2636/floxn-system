@@ -3648,9 +3648,15 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                     {/* Data Rows */}
                     <div className="flex flex-col items-start w-full overflow-y-auto" style={{ maxHeight: '334px' }}>
                       {filteredPartners.map((partner) => (
-                        <div key={partner.name} className="flex flex-row items-center w-full h-[61px]">
+                        <div 
+                          key={partner.name} 
+                          className="flex flex-row items-center w-full h-[61px]"
+                          style={{ cursor: 'pointer', backgroundColor: tempSelectedPartner?.name === partner.name ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }}
+                          onClick={() => setTempSelectedPartner(partner)}
+                          data-testid={`row-partner-${partner.name}`}
+                        >
                           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '155px', height: '39px' }}>
-                            <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                            <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: tempSelectedPartner?.name === partner.name ? '#008FED' : '#686A6E' }}>
                               {partner.name}
                             </span>
                           </div>
@@ -3680,8 +3686,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             </span>
                           </div>
                           <div 
-                            onClick={() => setTempSelectedPartner(partner)}
-                            style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '49px', height: '38px', cursor: 'pointer' }}
+                            style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '49px', height: '38px' }}
                             data-testid={`radio-partner-${partner.name}`}
                           >
                             <div style={{ position: 'relative', width: '18px', height: '18px' }}>
@@ -3857,16 +3862,17 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                     <div 
                       key={client.name} 
                       className="flex flex-row items-center w-full h-[50px]"
-                      style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
+                      style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)', cursor: 'pointer', backgroundColor: tempSelectedClient?.name === client.name ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }}
+                      onClick={() => setTempSelectedClient(client)}
+                      data-testid={`row-client-${client.name}`}
                     >
                       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: tempSelectedClient?.name === client.name ? '#008FED' : '#686A6E' }}>
                           {client.name}
                         </span>
                       </div>
                       <div 
-                        onClick={() => setTempSelectedClient(client)}
-                        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
+                        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px' }}
                         data-testid={`radio-client-${client.name}`}
                       >
                         <div style={{ position: 'relative', width: '18px', height: '18px' }}>
@@ -4029,16 +4035,17 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                     <div 
                       key={assessor.name} 
                       className="flex flex-row items-center w-full h-[50px]"
-                      style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
+                      style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)', cursor: 'pointer', backgroundColor: tempSelectedAssessor?.name === assessor.name ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }}
+                      onClick={() => setTempSelectedAssessor(assessor)}
+                      data-testid={`row-assessor-${assessor.name}`}
                     >
                       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: tempSelectedAssessor?.name === assessor.name ? '#008FED' : '#686A6E' }}>
                           {assessor.name}
                         </span>
                       </div>
                       <div 
-                        onClick={() => setTempSelectedAssessor(assessor)}
-                        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
+                        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px' }}
                         data-testid={`radio-assessor-${assessor.name}`}
                       >
                         <div style={{ position: 'relative', width: '18px', height: '18px' }}>
@@ -4201,16 +4208,17 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                     <div 
                       key={investigator.name} 
                       className="flex flex-row items-center w-full h-[50px]"
-                      style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)' }}
+                      style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)', cursor: 'pointer', backgroundColor: tempSelectedInvestigator?.name === investigator.name ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }}
+                      onClick={() => setTempSelectedInvestigator(investigator)}
+                      data-testid={`row-investigator-${investigator.name}`}
                     >
                       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
-                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: '#686A6E' }}>
+                        <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', color: tempSelectedInvestigator?.name === investigator.name ? '#008FED' : '#686A6E' }}>
                           {investigator.name}
                         </span>
                       </div>
                       <div 
-                        onClick={() => setTempSelectedInvestigator(investigator)}
-                        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px', cursor: 'pointer' }}
+                        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px' }}
                         data-testid={`radio-investigator-${investigator.name}`}
                       >
                         <div style={{ position: 'relative', width: '18px', height: '18px' }}>
