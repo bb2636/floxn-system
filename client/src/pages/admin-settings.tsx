@@ -2616,33 +2616,36 @@ export default function AdminSettings() {
                         );
                       }
                       
-                      // 노무비 DB: 모든 4개 컬럼(공종, 공사명, 노임항목, 금액)에 대해 병합 정보 계산
-                      // 빈 셀(null)은 위 셀과 병합된 것으로 처리
-                      const mergeableCols = dbTab === "노무비" ? [0, 1, 2, 3] : [];
+                      // 모든 DB 타입에 대해 병합 정보 계산 (같은 값을 가진 연속된 셀 병합)
+                      // 노무비: 공종(0), 공사명(1) 병합
+                      // 자재비: 공종(0), 공사명(1) 병합
+                      // 일위대가: 공종(0), 공사명(1) 병합
+                      const mergeableCols = [0, 1]; // 첫 두 컬럼만 병합 (공종, 공사명)
                       const mergeInfo: { [rowIdx: number]: { [colIdx: number]: { skip: boolean; rowspan: number } } } = {};
                       
-                      // 각 병합 가능 컬럼에 대해 rowspan 계산
+                      // 각 병합 가능 컬럼에 대해 rowspan 계산 (같은 값인 경우 병합)
                       mergeableCols.forEach(colIdx => {
                         let currentValue: any = null;
                         let startRowIdx = 0;
                         
                         currentData.forEach((row: any[], rowIdx: number) => {
                           const cellValue = Array.isArray(row) ? row[colIdx] : null;
+                          const cellStr = cellValue?.toString() || '';
                           
                           if (!mergeInfo[rowIdx]) mergeInfo[rowIdx] = {};
                           
-                          // 값이 있는 경우 새 그룹 시작
-                          if (cellValue !== null && cellValue !== '') {
+                          // 첫 행이거나 값이 이전 행과 다른 경우 새 그룹 시작
+                          if (rowIdx === 0 || cellStr !== currentValue) {
                             // 이전 그룹 마무리
                             if (rowIdx > 0 && mergeInfo[startRowIdx]?.[colIdx]) {
                               mergeInfo[startRowIdx][colIdx].rowspan = rowIdx - startRowIdx;
                             }
                             // 새 그룹 시작
-                            currentValue = cellValue;
+                            currentValue = cellStr;
                             startRowIdx = rowIdx;
                             mergeInfo[rowIdx][colIdx] = { skip: false, rowspan: 1 };
                           } else {
-                            // 빈 셀: 위 그룹에 병합됨
+                            // 같은 값: 위 그룹에 병합됨
                             mergeInfo[rowIdx][colIdx] = { skip: true, rowspan: 0 };
                           }
                         });
