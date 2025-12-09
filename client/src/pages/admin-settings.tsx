@@ -2196,19 +2196,22 @@ export default function AdminSettings() {
                               
                               // Handle merged cells: fill empty cells with previous row's value
                               // This is needed because Excel merged cells only have value in first cell
+                              // Must process sequentially to correctly reference previous processed rows
                               const maxCols = Math.max(...rawRows.map((r: any[]) => r?.length || 0), headers.length);
-                              rows = rawRows.map((row: any[], rowIdx: number) => {
+                              rows = [];
+                              rawRows.forEach((row: any[], rowIdx: number) => {
                                 const normalizedRow = Array(maxCols).fill(null).map((_, colIdx) => row?.[colIdx] ?? null);
-                                return normalizedRow.map((cell, colIdx) => {
+                                const processedRow = normalizedRow.map((cell, colIdx) => {
                                   // If cell is empty/null and there's a previous row, use previous row's value
                                   if ((cell === null || cell === undefined || cell === '') && rowIdx > 0) {
-                                    const prevRow = rows[rowIdx - 1] || rawRows[rowIdx - 1];
-                                    if (prevRow && prevRow[colIdx] !== undefined) {
+                                    const prevRow = rows[rowIdx - 1];
+                                    if (prevRow && prevRow[colIdx] !== undefined && prevRow[colIdx] !== null && prevRow[colIdx] !== '') {
                                       return prevRow[colIdx];
                                     }
                                   }
                                   return cell;
                                 });
+                                rows.push(processedRow);
                               });
                               
                               console.log('[Excel] Processed with merged cell handling:', { 
