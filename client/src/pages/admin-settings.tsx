@@ -388,12 +388,16 @@ export default function AdminSettings() {
   const [uploadTitle, setUploadTitle] = useState("");
   const [selectedLaborVersionId, setSelectedLaborVersionId] = useState<string | null>(null);
   const [selectedMaterialVersionId, setSelectedMaterialVersionId] = useState<string | null>(null);
+  const [selectedUnitPriceVersionId, setSelectedUnitPriceVersionId] = useState<string | null>(null);
   // 노무비 데이터
   const [laborExcelData, setLaborExcelData] = useState<any[]>([]);
   const [laborExcelHeaders, setLaborExcelHeaders] = useState<string[]>([]);
   // 자재비 데이터
   const [materialExcelData, setMaterialExcelData] = useState<any[]>([]);
   const [materialExcelHeaders, setMaterialExcelHeaders] = useState<string[]>([]);
+  // 일위대가 데이터
+  const [unitPriceExcelData, setUnitPriceExcelData] = useState<any[]>([]);
+  const [unitPriceExcelHeaders, setUnitPriceExcelHeaders] = useState<string[]>([]);
   
   // 기준정보 관리 states
   const [selectedCategory, setSelectedCategory] = useState("장소");
@@ -600,6 +604,12 @@ export default function AdminSettings() {
     enabled: !!user && activeMenu === "DB 관리",
   });
 
+  // Fetch unit price Excel versions
+  const { data: unitPriceVersions = [], isLoading: unitPriceVersionsLoading } = useQuery<ExcelData[]>({
+    queryKey: ["/api/excel-data/일위대가/versions"],
+    enabled: !!user && activeMenu === "DB 관리",
+  });
+
   // Fetch selected labor version detail
   const { data: selectedLaborVersion } = useQuery<ExcelData | null>({
     queryKey: [`/api/excel-data/detail/${selectedLaborVersionId}`],
@@ -610,6 +620,12 @@ export default function AdminSettings() {
   const { data: selectedMaterialVersion } = useQuery<ExcelData | null>({
     queryKey: [`/api/excel-data/detail/${selectedMaterialVersionId}`],
     enabled: !!selectedMaterialVersionId && activeMenu === "DB 관리",
+  });
+
+  // Fetch selected unit price version detail
+  const { data: selectedUnitPriceVersion } = useQuery<ExcelData | null>({
+    queryKey: [`/api/excel-data/detail/${selectedUnitPriceVersionId}`],
+    enabled: !!selectedUnitPriceVersionId && activeMenu === "DB 관리",
   });
 
   // Auto-select latest version when versions change (validates selection still exists)
@@ -628,6 +644,14 @@ export default function AdminSettings() {
       setSelectedMaterialVersionId(null);
     }
   }, [materialVersions, selectedMaterialVersionId]);
+
+  useEffect(() => {
+    if (unitPriceVersions.length > 0 && !unitPriceVersions.find(v => v.id === selectedUnitPriceVersionId)) {
+      setSelectedUnitPriceVersionId(unitPriceVersions[0].id);
+    } else if (unitPriceVersions.length === 0 && selectedUnitPriceVersionId !== null) {
+      setSelectedUnitPriceVersionId(null);
+    }
+  }, [unitPriceVersions, selectedUnitPriceVersionId]);
 
   // Sync selected version data to local state
   useEffect(() => {
@@ -649,6 +673,16 @@ export default function AdminSettings() {
       setMaterialExcelData([]);
     }
   }, [selectedMaterialVersion]);
+
+  useEffect(() => {
+    if (selectedUnitPriceVersion) {
+      setUnitPriceExcelHeaders(selectedUnitPriceVersion.headers);
+      setUnitPriceExcelData(selectedUnitPriceVersion.data);
+    } else {
+      setUnitPriceExcelHeaders([]);
+      setUnitPriceExcelData([]);
+    }
+  }, [selectedUnitPriceVersion]);
 
   useEffect(() => {
     if (!userLoading && !user) {
@@ -684,8 +718,10 @@ export default function AdminSettings() {
       if (result && result.id) {
         if (variables.type === "노무비") {
           setSelectedLaborVersionId(result.id);
-        } else {
+        } else if (variables.type === "자재비") {
           setSelectedMaterialVersionId(result.id);
+        } else if (variables.type === "일위대가") {
+          setSelectedUnitPriceVersionId(result.id);
         }
       }
     },
@@ -703,6 +739,8 @@ export default function AdminSettings() {
         setSelectedLaborVersionId(null);
       } else if (currentType === "자재비" && selectedMaterialVersionId === deletedId) {
         setSelectedMaterialVersionId(null);
+      } else if (currentType === "일위대가" && selectedUnitPriceVersionId === deletedId) {
+        setSelectedUnitPriceVersionId(null);
       }
       
       // Invalidate and refetch versions (useEffect will auto-select latest)
@@ -2122,8 +2160,8 @@ export default function AdminSettings() {
                     }
 
                     const currentTab = dbTab;
-                    const setData = currentTab === "노무비" ? setLaborExcelData : setMaterialExcelData;
-                    const setHeaders = currentTab === "노무비" ? setLaborExcelHeaders : setMaterialExcelHeaders;
+                    const setData = currentTab === "노무비" ? setLaborExcelData : currentTab === "자재비" ? setMaterialExcelData : setUnitPriceExcelData;
+                    const setHeaders = currentTab === "노무비" ? setLaborExcelHeaders : currentTab === "자재비" ? setMaterialExcelHeaders : setUnitPriceExcelHeaders;
                     
                     const input = document.createElement('input');
                     input.type = 'file';
@@ -2286,6 +2324,21 @@ export default function AdminSettings() {
                 >
                   자재비
                 </button>
+                <button
+                  onClick={() => setDbTab("일위대가")}
+                  className="pb-3"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: dbTab === "일위대가" ? "#008FED" : "#686A6E",
+                    borderBottom: dbTab === "일위대가" ? "3px solid #008FED" : "none",
+                    marginBottom: dbTab === "일위대가" ? "-2px" : "0",
+                  }}
+                  data-testid="tab-unit-price"
+                >
+                  일위대가
+                </button>
               </div>
 
               {/* Version Selector */}
@@ -2304,12 +2357,14 @@ export default function AdminSettings() {
                     버전 선택
                   </label>
                   <Select
-                    value={dbTab === "노무비" ? (selectedLaborVersionId || "") : (selectedMaterialVersionId || "")}
+                    value={dbTab === "노무비" ? (selectedLaborVersionId || "") : dbTab === "자재비" ? (selectedMaterialVersionId || "") : (selectedUnitPriceVersionId || "")}
                     onValueChange={(value) => {
                       if (dbTab === "노무비") {
                         setSelectedLaborVersionId(value);
-                      } else {
+                      } else if (dbTab === "자재비") {
                         setSelectedMaterialVersionId(value);
+                      } else {
+                        setSelectedUnitPriceVersionId(value);
                       }
                     }}
                   >
@@ -2326,8 +2381,8 @@ export default function AdminSettings() {
                     </SelectTrigger>
                     <SelectContent>
                       {(() => {
-                        const versions = dbTab === "노무비" ? laborVersions : materialVersions;
-                        const isLoading = dbTab === "노무비" ? laborVersionsLoading : materialVersionsLoading;
+                        const versions = dbTab === "노무비" ? laborVersions : dbTab === "자재비" ? materialVersions : unitPriceVersions;
+                        const isLoading = dbTab === "노무비" ? laborVersionsLoading : dbTab === "자재비" ? materialVersionsLoading : unitPriceVersionsLoading;
                         
                         if (isLoading) {
                           return (
@@ -2367,8 +2422,8 @@ export default function AdminSettings() {
               <div className="flex gap-3 mb-6">
                 <button
                   onClick={() => {
-                    const currentData = dbTab === "노무비" ? laborExcelData : materialExcelData;
-                    const currentHeaders = dbTab === "노무비" ? laborExcelHeaders : materialExcelHeaders;
+                    const currentData = dbTab === "노무비" ? laborExcelData : dbTab === "자재비" ? materialExcelData : unitPriceExcelData;
+                    const currentHeaders = dbTab === "노무비" ? laborExcelHeaders : dbTab === "자재비" ? materialExcelHeaders : unitPriceExcelHeaders;
                     
                     if (currentData.length === 0) {
                       toast({
@@ -2423,8 +2478,8 @@ export default function AdminSettings() {
                 </button>
                 <button
                   onClick={async () => {
-                    const selectedVersionId = dbTab === "노무비" ? selectedLaborVersionId : selectedMaterialVersionId;
-                    const versions = dbTab === "노무비" ? laborVersions : materialVersions;
+                    const selectedVersionId = dbTab === "노무비" ? selectedLaborVersionId : dbTab === "자재비" ? selectedMaterialVersionId : selectedUnitPriceVersionId;
+                    const versions = dbTab === "노무비" ? laborVersions : dbTab === "자재비" ? materialVersions : unitPriceVersions;
                     const selectedVersion = versions.find(v => v.id === selectedVersionId);
                     
                     if (!selectedVersionId || !selectedVersion) {
@@ -2480,7 +2535,7 @@ export default function AdminSettings() {
                   >
                     <tr>
                       {(() => {
-                        const currentHeaders = dbTab === "노무비" ? laborExcelHeaders : materialExcelHeaders;
+                        const currentHeaders = dbTab === "노무비" ? laborExcelHeaders : dbTab === "자재비" ? materialExcelHeaders : unitPriceExcelHeaders;
                         return currentHeaders.length > 0 ? (
                           currentHeaders.map((header: string, idx: number) => (
                             <th
@@ -2521,7 +2576,7 @@ export default function AdminSettings() {
                   </thead>
                   <tbody>
                     {(() => {
-                      const currentData = dbTab === "노무비" ? laborExcelData : materialExcelData;
+                      const currentData = dbTab === "노무비" ? laborExcelData : dbTab === "자재비" ? materialExcelData : unitPriceExcelData;
                       if (currentData.length === 0) {
                         return (
                           <tr>
