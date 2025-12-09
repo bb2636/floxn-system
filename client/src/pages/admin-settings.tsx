@@ -2624,24 +2624,33 @@ export default function AdminSettings() {
                       const mergeInfo: { [rowIdx: number]: { [colIdx: number]: { skip: boolean; rowspan: number } } } = {};
                       
                       // 각 병합 가능 컬럼에 대해 rowspan 계산 (같은 값인 경우 병합)
+                      // 숫자와 문자열 모두 정규화해서 비교
+                      const normalizeValue = (val: any): string => {
+                        if (val === null || val === undefined) return '';
+                        // 숫자인 경우 정수로 변환 후 문자열로
+                        if (typeof val === 'number') return Math.round(val).toString();
+                        // 문자열에서 콤마, 공백 제거하고 비교
+                        return val.toString().replace(/,/g, '').trim();
+                      };
+                      
                       mergeableCols.forEach(colIdx => {
-                        let currentValue: any = null;
+                        let currentValue: string = '';
                         let startRowIdx = 0;
                         
                         currentData.forEach((row: any[], rowIdx: number) => {
                           const cellValue = Array.isArray(row) ? row[colIdx] : null;
-                          const cellStr = cellValue?.toString() || '';
+                          const normalizedValue = normalizeValue(cellValue);
                           
                           if (!mergeInfo[rowIdx]) mergeInfo[rowIdx] = {};
                           
                           // 첫 행이거나 값이 이전 행과 다른 경우 새 그룹 시작
-                          if (rowIdx === 0 || cellStr !== currentValue) {
+                          if (rowIdx === 0 || normalizedValue !== currentValue) {
                             // 이전 그룹 마무리
                             if (rowIdx > 0 && mergeInfo[startRowIdx]?.[colIdx]) {
                               mergeInfo[startRowIdx][colIdx].rowspan = rowIdx - startRowIdx;
                             }
                             // 새 그룹 시작
-                            currentValue = cellStr;
+                            currentValue = normalizedValue;
                             startRowIdx = rowIdx;
                             mergeInfo[rowIdx][colIdx] = { skip: false, rowspan: 1 };
                           } else {
