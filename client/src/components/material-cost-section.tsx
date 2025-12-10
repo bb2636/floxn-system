@@ -16,13 +16,18 @@ export interface MaterialCatalogItem {
 export interface MaterialRow {
   id: string;
   공종: string; // 노무비에서 가져온 공종
-  공사명: string; // 노무비에서 가져온 공사명 (읽기전용)
-  자재: string; // 드롭다운
-  규격: string; // 입력 필드
-  단위: string; // 읽기전용
-  기준단가: number; // 읽기전용
-  수량: number; // 입력
-  금액: number; // 계산값
+  공사명: string; // 노무비에서 가져온 공사명 (읽기전용) - 내부 참조용
+  자재항목: string; // 자재명 (기존 자재 필드 대체)
+  자재: string; // 자재명 (호환용)
+  규격: string; // 규격 (내부용)
+  단위: string; // 단위 (내부용)
+  단가: number; // 단가 (기존 기준단가 대체)
+  기준단가: number; // 호환용
+  수량m2: number; // 수량(m2) - 바닥+벽체+천장
+  수량EA: number; // 수량(EA)
+  수량: number; // 호환용 (총 수량)
+  합계: number; // 합계 (기존 금액 대체)
+  금액: number; // 호환용
   비고: string; // 입력
   sourceLaborRowId?: string; // 노무비 행 ID 추적
   sourceAreaRowId?: string; // 복구면적 산출표 행 ID 추적
@@ -139,30 +144,32 @@ export function MaterialCostSection({
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
 
-        // 자재 변경 시 규격 리셋
-        if (field === '자재') {
+        // 자재항목 변경 시 (= 자재 변경)
+        if (field === '자재항목' || field === '자재') {
+          updated.자재항목 = value;
+          updated.자재 = value;
           updated.규격 = '';
           updated.단위 = '';
+          updated.단가 = 0;
           updated.기준단가 = 0;
-        }
-
-        // 규격 변경 시 카탈로그에서 단위와 가격 가져오기
-        if (field === '규격') {
-          const catalogItem = catalog.find(item =>
+          
+          // 카탈로그에서 첫 번째 규격의 단가 가져오기
+          const catalogItems = catalog.filter(item =>
             item.workType === updated.공종 &&
-            item.materialName === updated.자재 && 
-            item.specification === value
+            item.materialName === value
           );
-          if (catalogItem) {
-            updated.단위 = catalogItem.unit;
-            // standardPrice가 "입력"이면 0, 아니면 숫자 값
-            updated.기준단가 = typeof catalogItem.standardPrice === 'string' ? 0 : catalogItem.standardPrice;
+          if (catalogItems.length > 0) {
+            const first = catalogItems[0];
+            updated.규격 = first.specification;
+            updated.단위 = first.unit;
+            const price = typeof first.standardPrice === 'string' ? 0 : first.standardPrice;
+            updated.단가 = price;
+            updated.기준단가 = price;
           }
         }
 
-        // 공종 변경 시 자재/규격 리셋 (공종 정보는 노무비에서만 사용)
+        // 공종 변경 시 자재/규격 리셋
         if (field === '공종') {
-          // 공종/공사명에 따른 자재 자동 설정
           let autoMaterial = '';
           if (value === '도장공사') {
             autoMaterial = '페인트';
@@ -173,16 +180,26 @@ export function MaterialCostSection({
           } else if (value === '목공사' && updated.공사명 === '몰딩') {
             autoMaterial = '몰딩';
           }
+          updated.자재항목 = autoMaterial;
           updated.자재 = autoMaterial;
           updated.규격 = '';
           updated.단위 = '';
+          updated.단가 = 0;
           updated.기준단가 = 0;
         }
 
-        // 기준단가, 수량, 규격 변경 시 금액 재계산
-        const qty = Number(updated.수량) || 0;
-        const price = Number(updated.기준단가) || 0;
-        updated.금액 = Math.round(qty * price);
+        // 수량 변경 시 합계 재계산
+        if (field === '수량m2' || field === '수량EA' || field === '단가') {
+          const m2 = Number(updated.수량m2) || 0;
+          const ea = Number(updated.수량EA) || 0;
+          const price = Number(updated.단가) || 0;
+          
+          // 합계 = 단가 * (수량m2 + 수량EA)
+          const total = Math.round(price * (m2 + ea));
+          updated.합계 = total;
+          updated.금액 = total;
+          updated.수량 = m2 + ea;
+        }
 
         return updated;
       }
@@ -205,18 +222,19 @@ export function MaterialCostSection({
           width: "100%",
           borderCollapse: "separate",
           borderSpacing: 0,
-          minWidth: "1400px",
+          minWidth: "900px",
         }}
       >
         <thead>
+          {/* 첫 번째 행: 메인 헤더 */}
           <tr
             style={{
               background: "rgba(12, 12, 12, 0.02)",
-              height: "48px",
+              height: "32px",
             }}
           >
-            <th style={{ width: "40px", padding: "0 4px", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}></th>
-            <th style={{ width: "50px", padding: "0 12px", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>
+            <th rowSpan={2} style={{ width: "40px", padding: "0 4px", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}></th>
+            <th rowSpan={2} style={{ width: "50px", padding: "0 12px", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>
               <input 
                 type="checkbox"
                 checked={selectedRows.size === rows.length && rows.length > 0}
@@ -224,29 +242,38 @@ export function MaterialCostSection({
                 data-testid="checkbox-select-all-material"
               />
             </th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>공종</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>공사명</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>자재</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>규격</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>단위</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>기준단가</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>수량</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB" }}>금액</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB" }}>비고</th>
+            <th rowSpan={2} style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", minWidth: "100px" }}>공종</th>
+            <th rowSpan={2} style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", minWidth: "120px" }}>자재항목</th>
+            <th rowSpan={2} style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB", minWidth: "80px" }}>단가</th>
+            <th colSpan={2} style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB", minWidth: "200px" }}>수량</th>
+            <th rowSpan={2} style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB", minWidth: "100px" }}>합계</th>
+            <th rowSpan={2} style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", minWidth: "150px" }}>비고</th>
+          </tr>
+          {/* 두 번째 행: 수량 서브헤더 */}
+          <tr
+            style={{
+              background: "rgba(12, 12, 12, 0.02)",
+              height: "28px",
+            }}
+          >
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 400, color: "rgba(12, 12, 12, 0.5)", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>
+              m2<br/><span style={{ fontSize: "10px" }}>(바닥+벽체+천장)</span>
+            </th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "12px", fontWeight: 400, color: "rgba(12, 12, 12, 0.5)", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>
+              EA
+            </th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, index) => {
             const materialNamesForRow = getMaterialNamesForWorkType(row.공종);
-            const specOptions = (row.공종 && row.자재) ? getSpecificationsForMaterial(row.공종, row.자재) : [];
             
-            // 규격이 "입력"인지 확인 (기준단가가 수동 입력 가능한지)
-            const catalogItem = catalog.find(item =>
-              item.workType === row.공종 &&
-              item.materialName === row.자재 && 
-              item.specification === row.규격
-            );
-            const isManualPriceInput = catalogItem && typeof catalogItem.standardPrice === 'string';
+            // 자재항목 값 (자재항목 또는 자재 사용)
+            const materialItem = row.자재항목 || row.자재 || '';
+            // 단가 값 (단가 또는 기준단가 사용)
+            const price = row.단가 || row.기준단가 || 0;
+            // 합계 값 (합계 또는 금액 사용)
+            const total = row.합계 || row.금액 || 0;
             
             return (
               <tr 
@@ -291,11 +318,12 @@ export function MaterialCostSection({
                   />
                 </td>
                 
-                {/* 공종 - Select (자재비 카탈로그에 있는 공종만 표시) */}
+                {/* 공종 - Select */}
                 <td style={{ padding: "0 8px" }}>
                   <Select 
                     value={row.공종} 
                     onValueChange={(value) => updateRow(row.id, '공종', value)}
+                    disabled={isReadOnly}
                   >
                     <SelectTrigger 
                       className="h-9 border-0" 
@@ -312,22 +340,17 @@ export function MaterialCostSection({
                   </Select>
                 </td>
                 
-                {/* 공사명 - Readonly (노무비에서 가져옴) */}
-                <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "left" }}>
-                  {row.공사명 || '-'}
-                </td>
-                
-                {/* 자재 - Select (공종 선택 후 활성화되며, 공종별로 필터링됨) */}
+                {/* 자재항목 - Select */}
                 <td style={{ padding: "0 8px" }}>
                   <Select 
-                    value={row.자재} 
-                    onValueChange={(value) => updateRow(row.id, '자재', value)}
-                    disabled={!row.공종}
+                    value={materialItem} 
+                    onValueChange={(value) => updateRow(row.id, '자재항목', value)}
+                    disabled={!row.공종 || isReadOnly}
                   >
                     <SelectTrigger 
                       className="h-9 border-0" 
                       style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      data-testid={`select-자재-${index}`}
+                      data-testid={`select-자재항목-${index}`}
                     >
                       <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
                     </SelectTrigger>
@@ -339,72 +362,43 @@ export function MaterialCostSection({
                   </Select>
                 </td>
                 
-                {/* 규격 - Select (자재 선택 후 활성화) */}
-                <td style={{ padding: "0 8px" }}>
-                  <Select 
-                    value={row.규격} 
-                    onValueChange={(value) => updateRow(row.id, '규격', value)}
-                    disabled={!row.자재}
-                  >
-                    <SelectTrigger 
-                      className="h-9 border-0" 
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      data-testid={`select-규격-${index}`}
-                    >
-                      <SelectValue placeholder="선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {specOptions.filter(opt => opt.spec && opt.spec.trim() !== '').map((opt, idx) => (
-                        <SelectItem key={`${opt.spec}-${idx}`} value={opt.spec}>
-                          {opt.spec}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* 단가 - Readonly */}
+                <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
+                  {price.toLocaleString()}
                 </td>
                 
-                {/* 단위 - Readonly */}
-                <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.6)", textAlign: "left" }}>
-                  {row.단위 || '-'}
-                </td>
-                
-                {/* 기준단가 - 규격이 "입력"이면 수동 입력 가능, 아니면 Readonly */}
-                <td style={{ padding: "0 8px", background: isManualPriceInput ? "#EFF6FF" : "transparent" }}>
-                  {isManualPriceInput ? (
-                    <Input
-                      type="number"
-                      value={Number.isFinite(row.기준단가) ? row.기준단가 : ''}
-                      onChange={(e) => updateRow(row.id, '기준단가', Number(e.target.value) || 0)}
-                      className="h-9 border-0 bg-transparent text-right"
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      placeholder="입력"
-                      data-testid={`input-기준단가-${index}`}
-                    />
-                  ) : (
-                    <div style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.8)", textAlign: "right" }}>
-                      {row.기준단가.toLocaleString()}
-                    </div>
-                  )}
-                </td>
-                
-                {/* 수량 - Editable Input (파란색 배경) */}
+                {/* 수량(m2) - Editable Input */}
                 <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
                   <Input
                     type="number"
-                    value={row.수량 || ''}
-                    onChange={(e) => updateRow(row.id, '수량', Number(e.target.value) || 0)}
-                    className="h-9 border-0 bg-transparent text-right"
+                    value={row.수량m2 || ''}
+                    onChange={(e) => updateRow(row.id, '수량m2', Number(e.target.value) || 0)}
+                    className="h-9 border-0 bg-transparent text-center"
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    data-testid={`input-수량-material-${index}`}
+                    disabled={isReadOnly}
+                    data-testid={`input-수량m2-${index}`}
                   />
                 </td>
                 
-                {/* 금액 - Readonly Calculated */}
-                <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "right", background: "rgba(12, 12, 12, 0.02)" }}>
-                  {row.금액.toLocaleString()}
+                {/* 수량(EA) - Editable Input */}
+                <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                  <Input
+                    type="number"
+                    value={row.수량EA || ''}
+                    onChange={(e) => updateRow(row.id, '수량EA', Number(e.target.value) || 0)}
+                    className="h-9 border-0 bg-transparent text-center"
+                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                    disabled={isReadOnly}
+                    data-testid={`input-수량EA-${index}`}
+                  />
                 </td>
                 
-                {/* 비고 - Editable Input (파란색 배경) */}
+                {/* 합계 - Readonly Calculated */}
+                <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "right", background: "rgba(12, 12, 12, 0.02)" }}>
+                  {total.toLocaleString()}
+                </td>
+                
+                {/* 비고 - Editable Input */}
                 <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
                   <Input
                     value={row.비고}
@@ -412,6 +406,7 @@ export function MaterialCostSection({
                     className="h-9 border-0 bg-transparent"
                     style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                     placeholder="현장 상황에 따라 변동"
+                    disabled={isReadOnly}
                     data-testid={`input-비고-${index}`}
                   />
                 </td>

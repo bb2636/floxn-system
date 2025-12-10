@@ -50,7 +50,7 @@ export interface IlwidaegaCatalogItem {
   공종: string;
   공사명: string;
   노임항목: string;
-  금액: number;
+  금액: number | null;
 }
 
 // 노무비 테이블 행

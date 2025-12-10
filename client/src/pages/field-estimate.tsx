@@ -164,11 +164,16 @@ export default function FieldEstimate() {
       id: `material-${Date.now()}-${Math.random()}`,
       공사명,
       공종,
+      자재항목: 자재,
       자재,
       규격: '',
       단위: '',
+      단가: 0,
       기준단가: 0,
-      수량: 1,
+      수량m2: 0,
+      수량EA: 0,
+      수량: 0,
+      합계: 0,
       금액: 0,
       비고: '',
       sourceLaborRowId,
@@ -663,31 +668,44 @@ export default function FieldEstimate() {
       if (matchingMaterials.length > 0) {
         // 첫 번째 매칭 자재로 기본 행 생성 (사용자가 택1 선택 가능)
         const firstMaterial = matchingMaterials[0];
+        const unitPrice = typeof firstMaterial.금액 === 'number' ? firstMaterial.금액 : 0;
+        const totalArea = Math.round(data.totalArea * 10) / 10;
         newMaterialRows.push({
           id: `material-linked-${Date.now()}-${Math.random()}`,
           공종: data.공종,
           공사명: data.공사명,
+          자재항목: firstMaterial.자재명,
           자재: firstMaterial.자재명,
           규격: firstMaterial.규격 || '',
           단위: firstMaterial.단위 || '',
-          기준단가: typeof firstMaterial.금액 === 'number' ? firstMaterial.금액 : 0,
-          수량: Math.round(data.totalArea * 10) / 10,
-          금액: 0,
+          단가: unitPrice,
+          기준단가: unitPrice,
+          수량m2: totalArea,
+          수량EA: 0,
+          수량: totalArea,
+          합계: Math.round(unitPrice * totalArea),
+          금액: Math.round(unitPrice * totalArea),
           비고: '',
           sourceAreaRowId: data.sourceAreaRowId,
           isLinkedFromRecovery: true,
         });
       } else {
         // 매칭되는 자재가 없으면 빈 행 생성 (수동 입력용)
+        const totalArea = Math.round(data.totalArea * 10) / 10;
         newMaterialRows.push({
           id: `material-linked-${Date.now()}-${Math.random()}`,
           공종: data.공종,
           공사명: data.공사명,
+          자재항목: '',
           자재: '',
           규격: '',
           단위: '',
+          단가: 0,
           기준단가: 0,
-          수량: Math.round(data.totalArea * 10) / 10,
+          수량m2: totalArea,
+          수량EA: 0,
+          수량: totalArea,
+          합계: 0,
           금액: 0,
           비고: '',
           sourceAreaRowId: data.sourceAreaRowId,
@@ -1763,16 +1781,22 @@ export default function FieldEstimate() {
       return;
     }
 
+    const unitPrice = selectedMaterial.standardPrice || 0;
     const newRow: MaterialRow = {
       id: `material-${Date.now()}-${Math.random()}`,
       공사명: '', // 수동 추가 시 공사명은 빈 값
       공종: selectedMaterialName, // 선택된 공종 사용
+      자재항목: selectedMaterial.materialName,
       자재: selectedMaterial.materialName,
       규격: selectedMaterial.specification,
       단위: selectedMaterial.unit,
-      기준단가: selectedMaterial.standardPrice,
+      단가: unitPrice,
+      기준단가: unitPrice,
+      수량m2: 0,
+      수량EA: 1,
       수량: 1,
-      금액: selectedMaterial.standardPrice,
+      합계: unitPrice,
+      금액: unitPrice,
       비고: "",
     };
 
@@ -2216,16 +2240,22 @@ export default function FieldEstimate() {
         console.log('[연동] 자재비 행 업데이트:', existingRow.공종, existingRow.공사명, '→', workType, workName);
         
         const updatedRows = [...prev];
+        const existingM2 = existingRow.수량m2 || 0;
+        const existingEA = existingRow.수량EA || 0;
+        const newPrice = materialsToUse.length > 0 ? unitPrice : (existingRow.단가 || existingRow.기준단가 || 0);
         updatedRows[existingRowIndex] = {
           ...existingRow,
           공종: workType,
           공사명: workName,
           // DB 매칭이 있으면 자재명/단가도 업데이트
+          자재항목: materialsToUse.length > 0 ? materialName : (existingRow.자재항목 || existingRow.자재),
           자재: materialsToUse.length > 0 ? materialName : existingRow.자재,
           규격: materialsToUse.length > 0 ? spec : existingRow.규격,
           단위: materialsToUse.length > 0 ? unit : existingRow.단위,
-          기준단가: materialsToUse.length > 0 ? unitPrice : existingRow.기준단가,
-          금액: materialsToUse.length > 0 ? Math.round(unitPrice * existingRow.수량) : existingRow.금액,
+          단가: newPrice,
+          기준단가: newPrice,
+          합계: Math.round(newPrice * (existingM2 + existingEA)),
+          금액: Math.round(newPrice * (existingM2 + existingEA)),
         };
         return updatedRows;
       }
@@ -2235,12 +2265,17 @@ export default function FieldEstimate() {
         id: `material-${Date.now()}-${Math.random()}`,
         공종: workType,
         공사명: workName,
+        자재항목: materialName,
         자재: materialName,
         규격: spec,
         단위: unit,
+        단가: unitPrice,
         기준단가: unitPrice,
-        수량: 1,
-        금액: Math.round(unitPrice * 1),
+        수량m2: 0,
+        수량EA: 0,
+        수량: 0,
+        합계: 0,
+        금액: 0,
         비고: '',
         sourceLaborRowId: sourceRowId,
       };
