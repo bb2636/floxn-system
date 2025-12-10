@@ -399,9 +399,9 @@ export function LaborCostSection({
 
   const getDetailItemOptions = (category: string, workName: string, detailWork: string) => {
     if (!category) return [];
-    // 목공사-걸레받이 특수 케이스: 걸레받이만 표시
+    // 목공사-걸레받이 특수 케이스: 내장공만 표시 (일위대가DB 기준)
     if (category === '목공사' && workName === '걸레받이' && detailWork === '일위대가') {
-      return ['걸레받이'];
+      return ['내장공'];
     }
     
     // 걸레받이 -> 목공사 변환하여 조회
@@ -434,8 +434,8 @@ export function LaborCostSection({
 
   const getApplicationRateOptions = (category: string, workName: string, detailWork: string, detailItem: string) => {
     if (!category || !workName || !detailWork || !detailItem) return [];
-    // 목공사-걸레받이 특수 케이스: 길이(molding)만 표시
-    if (category === '목공사' && workName === '걸레받이' && detailWork === '일위대가' && detailItem === '걸레받이') {
+    // 목공사-걸레받이 특수 케이스: 길이(molding)만 표시 (일위대가DB 기준 내장공)
+    if (category === '목공사' && workName === '걸레받이' && detailWork === '일위대가' && detailItem === '내장공') {
       return ['molding'] as Array<'ceiling' | 'wall' | 'floor' | 'molding'>;
     }
     if (!catalog.length) return [];
@@ -627,43 +627,30 @@ export function LaborCostSection({
               demolitionRowToAdd = createDemolitionRow({ ...updated }, '반자틀해체');
             }
           }
-          // 목공사-걸레받이 선택 시 자동으로 일위대가-걸레받이 설정
+          // 목공사-걸레받이 선택 시 자동으로 일위대가-내장공 설정 (일위대가DB 기준)
           else if (updated.category === '목공사' && value === '걸레받이') {
             updated.detailWork = '일위대가';
-            updated.detailItem = '걸레받이';
+            updated.detailItem = '내장공';
             
-            // 카탈로그에서 데이터 가져오기 (걸레받이 → 목공사로 변환하여 조회)
-            const catalogItem = catalog.find(item =>
+            // 일위대가 카탈로그에서 데이터 가져오기 (목공사-걸레받이-내장공)
+            const ilwidaegaItem = ilwidaegaCatalog.find(item =>
               item.공종 === '목공사' &&
-              item.공사명 === '목공사' &&
-              item.세부공사 === '일위대가' &&
-              item.세부항목 === '걸레받이'
+              item.공사명 === '걸레받이' &&
+              item.노임항목 === '내장공'
             );
             
-            if (catalogItem) {
-              updated.unit = catalogItem.단위 || '';
-              updated.standardPrice = catalogItem.단가_인 || 0;
+            if (ilwidaegaItem) {
+              updated.unit = 'm'; // 걸레받이는 길이 단위
+              updated.standardPrice = ilwidaegaItem.금액 || 0;
+              updated.pricePerSqm = ilwidaegaItem.금액 || 0;
               
               // applicationRates 기본값 설정 (걸레받이는 길이 기준)
-              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
-              if (catalogItem.단가_길이 !== null) {
-                updated.applicationRates.molding = true;
-                updated.pricePerSqm = catalogItem.단가_길이;
-              } else if (catalogItem.단가_천장 !== null) {
-                updated.applicationRates.ceiling = true;
-                updated.pricePerSqm = catalogItem.단가_천장;
-              } else if (catalogItem.단가_벽체 !== null) {
-                updated.applicationRates.wall = true;
-                updated.pricePerSqm = catalogItem.단가_벽체;
-              } else if (catalogItem.단가_바닥 !== null) {
-                updated.applicationRates.floor = true;
-                updated.pricePerSqm = catalogItem.단가_바닥;
-              }
+              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: true };
             } else {
-              updated.unit = '';
-              updated.standardPrice = 0;
-              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
-              updated.pricePerSqm = 0;
+              updated.unit = 'm';
+              updated.standardPrice = 75; // 일위대가DB 기본값
+              updated.pricePerSqm = 75;
+              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: true };
             }
             // 걸레받이는 피해철거공사 자동 추가 없음
           }
