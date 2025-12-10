@@ -2119,6 +2119,41 @@ export default function FieldEstimate() {
     return [];
   };
   
+  // 자재비 단위 규격 상수 (공사명별 자재 규격)
+  // type: 'length' = 길이(m) 기준, 'area' = 면적(㎡) 기준
+  const MATERIAL_UNIT_RATIOS: Record<string, { type: 'length' | 'area'; unitSize: number; unit: string }> = {
+    '몰딩': { type: 'length', unitSize: 2.44, unit: 'EA' },        // 한 개 길이 2.44m
+    '걸레받이': { type: 'length', unitSize: 2.44, unit: 'EA' },   // 한 개 길이 2.44m
+    '합판': { type: 'area', unitSize: 1.65, unit: 'EA' },          // 한 장 면적 1.65㎡
+    '석고보드': { type: 'area', unitSize: 1.62, unit: 'EA' },      // 한 장 면적 1.62㎡
+    '석고': { type: 'area', unitSize: 1.62, unit: 'EA' },          // 석고보드와 동일
+  };
+  
+  // 자재비 수량 계산 헬퍼 함수
+  // workName: 공사명, totalArea: 복구면적(㎡), totalLength: 복구 길이(m, 몰딩/걸레받이용)
+  const computeMaterialQuantity = (workName: string, totalArea: number, totalLength?: number): { quantity: number; quantityEA: number; unit: string } => {
+    const ratio = MATERIAL_UNIT_RATIOS[workName];
+    
+    if (ratio) {
+      // 공사명별 단위 규격 적용
+      const baseValue = ratio.type === 'length' ? (totalLength || totalArea) : totalArea;
+      const calculatedQty = Math.ceil(baseValue / ratio.unitSize); // 올림
+      console.log(`[자재비 수량] ${workName}: ${baseValue} ÷ ${ratio.unitSize} = ${baseValue / ratio.unitSize} → 올림 → ${calculatedQty} ${ratio.unit}`);
+      return { 
+        quantity: calculatedQty, 
+        quantityEA: calculatedQty,
+        unit: ratio.unit 
+      };
+    }
+    
+    // 규격 없는 경우 면적 그대로 사용
+    return { 
+      quantity: Math.round(totalArea * 10) / 10, 
+      quantityEA: 0,
+      unit: '㎡' 
+    };
+  };
+  
   // 복구면적 산출표 → 노무비/자재비 자동 연동 함수 (일위대가DB 기반)
   // 일위대가DB에서 공종+공사명으로 조회하여 ALL matching 노임항목 행을 자동 생성
   const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string, repairArea?: number) => {
@@ -2393,13 +2428,19 @@ export default function FieldEstimate() {
         // 기존 행이 있으면 공종/공사명 및 수량 업데이트
         const existingRow = prev[existingRowIndex];
         
-        console.log('[연동] 자재비 행 업데이트:', existingRow.공종, existingRow.공사명, '→', workType, workName, `수량: ${totalMaterialArea}`);
+        // 공사명별 수량 계산 (공사명 변경 또는 면적 변경 시)
+        const { quantity: computedQty, quantityEA: computedEA, unit: computedUnit } = computeMaterialQuantity(workName, totalMaterialArea);
+        
+        console.log('[연동] 자재비 행 업데이트:', existingRow.공종, existingRow.공사명, '→', workType, workName, `면적: ${totalMaterialArea}, 계산수량: ${computedQty}`);
         
         const updatedRows = [...prev];
-        // 복구면적에서 수량 자동 업데이트 (연동 행인 경우)
-        const newM2 = totalMaterialArea > 0 ? totalMaterialArea : (existingRow.수량m2 || 0);
-        const existingEA = existingRow.수량EA || 0;
         const newPrice = materialsToUse.length > 0 ? unitPrice : (existingRow.단가 || existingRow.기준단가 || 0);
+        // EA 단위인 경우 수량EA 사용, 아닌 경우 수량m2 사용
+        const useEA = computedUnit === 'EA';
+        const newM2 = useEA ? 0 : computedQty;
+        const newEA = useEA ? computedQty : 0;
+        const totalQty = useEA ? computedQty : computedQty;
+        
         updatedRows[existingRowIndex] = {
           ...existingRow,
           공종: workType,
@@ -2410,20 +2451,23 @@ export default function FieldEstimate() {
           자재항목: materialsToUse.length > 0 ? materialName : (existingRow.자재항목 || existingRow.자재),
           자재: materialsToUse.length > 0 ? materialName : existingRow.자재,
           규격: materialsToUse.length > 0 ? spec : existingRow.규격,
-          단위: materialsToUse.length > 0 ? unit : existingRow.단위,
+          단위: materialsToUse.length > 0 ? (useEA ? 'EA' : unit) : existingRow.단위,
           단가: newPrice,
           기준단가: newPrice,
           수량m2: newM2,
-          수량: newM2 + existingEA,
-          합계: Math.round(newPrice * (newM2 + existingEA)),
-          금액: Math.round(newPrice * (newM2 + existingEA)),
+          수량EA: newEA,
+          수량: totalQty,
+          합계: Math.round(newPrice * totalQty),
+          금액: Math.round(newPrice * totalQty),
         };
         return updatedRows;
       }
       
       // 새 행 생성 (DB 매칭이 없어도 빈 행으로 생성)
-      // 복구면적에서 수량 자동 계산
-      const materialQuantity = totalMaterialArea;
+      // 공사명별 수량 계산 (몰딩/걸레받이 → 2.44m 기준, 합판 → 1.65㎡ 기준, 석고보드 → 1.62㎡ 기준)
+      const { quantity: computedQty, quantityEA: computedEA, unit: computedUnit } = computeMaterialQuantity(workName, totalMaterialArea);
+      const useEA = computedUnit === 'EA';
+      const materialQuantity = computedQty;
       const materialAmount = Math.round(unitPrice * materialQuantity);
       
       const newMaterialRow: MaterialRow = {
@@ -2433,11 +2477,11 @@ export default function FieldEstimate() {
         자재항목: materialName,
         자재: materialName,
         규격: spec,
-        단위: unit,
+        단위: useEA ? 'EA' : unit,
         단가: unitPrice,
         기준단가: unitPrice,
-        수량m2: materialQuantity,
-        수량EA: 0,
+        수량m2: useEA ? 0 : materialQuantity,
+        수량EA: useEA ? materialQuantity : 0,
         수량: materialQuantity,
         합계: materialAmount,
         금액: materialAmount,
@@ -2448,7 +2492,7 @@ export default function FieldEstimate() {
       };
       
       console.log('[연동] 자재비 행 생성:', workType, workName, 
-        `수량: ${materialQuantity}`,
+        `면적: ${totalMaterialArea}, 계산수량: ${materialQuantity} ${computedUnit}`,
         materialsToUse.length > 0
           ? (isSingleMatch ? `자동: ${materialName} ${unitPrice}원` : `수동선택필요 (${materialsToUse.length}개 옵션)`)
           : '(DB 매칭 없음)');
