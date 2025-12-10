@@ -518,9 +518,10 @@ export function MaterialCostSection({
                     )}
                   </td>
                   
-                  {/* 자재항목 */}
+                  {/* 자재항목 - 연동행이라도 여러 옵션이 있으면 드롭다운 선택 가능 */}
                   <td style={{ padding: "0 8px" }}>
-                    {isLinkedRow ? (
+                    {isLinkedRow && materialNamesForRow.length <= 1 ? (
+                      // 연동 행이면서 옵션이 1개 이하인 경우: 잠금 표시
                       <div 
                         style={{
                           display: "flex",
@@ -540,14 +541,66 @@ export function MaterialCostSection({
                         {materialItem || "-"}
                       </div>
                     ) : (
+                      // 연동 행이라도 옵션이 여러 개면 드롭다운 선택 가능
                       <Select 
                         value={materialItem} 
-                        onValueChange={(value) => updateRow(row.id, '자재항목', value)}
+                        onValueChange={(value) => {
+                          // 연동 행이라도 자재항목은 변경 가능
+                          const catalogItems = catalog.filter(item =>
+                            item.workType === row.공종 &&
+                            item.workName === row.공사명 &&
+                            item.materialName === value
+                          );
+                          
+                          onRowsChange(rows.map(r => {
+                            if (r.id === row.id) {
+                              const updated = { ...r, 자재항목: value, 자재: value };
+                              if (catalogItems.length > 0) {
+                                const first = catalogItems[0];
+                                updated.규격 = first.specification;
+                                updated.단위 = first.unit;
+                                
+                                const priceValue = first.standardPrice;
+                                const isManualEntry = typeof priceValue === 'string' && 
+                                  (priceValue.includes('입력') || priceValue === '입력' || priceValue === '직접입력');
+                                
+                                if (isManualEntry) {
+                                  updated.단가 = 0;
+                                  updated.기준단가 = 0;
+                                  updated.isManualPriceEntry = true;
+                                } else {
+                                  const price = typeof priceValue === 'number' ? priceValue : 0;
+                                  updated.단가 = price;
+                                  updated.기준단가 = price;
+                                  updated.isManualPriceEntry = false;
+                                }
+                                // 합계 재계산
+                                const qty = (updated.수량m2 || 0) + (updated.수량EA || 0);
+                                updated.수량 = qty;
+                                updated.합계 = Math.round(updated.단가 * qty);
+                                updated.금액 = updated.합계;
+                              }
+                              console.log('[자재비] 자재항목 선택:', value, '연동행:', isLinkedRow, '공종:', row.공종, '공사명:', row.공사명);
+                              return updated;
+                            }
+                            return r;
+                          }));
+                        }}
                         disabled={!row.공종 || !row.공사명 || isReadOnly}
                       >
                         <SelectTrigger 
                           className="h-9 border-0" 
-                          style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                          style={{ 
+                            fontFamily: "Pretendard", 
+                            fontSize: "14px",
+                            // 연동 행이면서 드롭다운인 경우 파란색 스타일 적용
+                            ...(isLinkedRow && materialNamesForRow.length > 1 ? {
+                              color: "rgba(59, 130, 246, 0.9)",
+                              background: "rgba(59, 130, 246, 0.08)",
+                              borderRadius: "6px",
+                              border: "1px solid rgba(59, 130, 246, 0.2)",
+                            } : {})
+                          }}
                           data-testid={`select-자재항목-${currentGlobalIndex}`}
                         >
                           <SelectValue placeholder={!row.공종 ? "공종 먼저 선택" : (!row.공사명 ? "공사명 먼저 선택" : "선택")} />
