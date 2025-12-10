@@ -6,8 +6,9 @@ import { Trash2, GripVertical, Lock, Plus, Minus } from "lucide-react";
 
 // MaterialCatalogItem matches excel_data 자재비 response
 export interface MaterialCatalogItem {
-  workType: string; // 공종명
-  materialName: string;
+  workType: string; // 공종 (원인공사, 목공사, 수장공사 등)
+  workName: string; // 공사명 (방수, 합판, 도배 등)
+  materialName: string; // 자재항목 (방수프라이머 18L, PVC배관 등)
   specification: string;
   unit: string;
   standardPrice: number | string; // number or "입력"
@@ -65,7 +66,25 @@ export function MaterialCostSection({
     return sorted;
   }, [catalog]);
 
-  // 공종별로 필터링된 자재명 옵션
+  // 공종별로 필터링된 공사명 옵션
+  const getWorkNamesForWorkType = (workType: string) => {
+    if (!workType) return [];
+    const matchingItems = catalog.filter(item => item.workType === workType);
+    const names = new Set(matchingItems.map(item => item.workName));
+    return Array.from(names).sort();
+  };
+
+  // 공종 + 공사명별로 필터링된 자재항목 옵션
+  const getMaterialNamesForWorkTypeAndWorkName = (workType: string, workName: string) => {
+    if (!workType || !workName) return [];
+    const matchingItems = catalog.filter(item => 
+      item.workType === workType && item.workName === workName
+    );
+    const names = new Set(matchingItems.map(item => item.materialName));
+    return Array.from(names).sort();
+  };
+
+  // (구버전 호환용) 공종별로 필터링된 자재명 옵션
   const getMaterialNamesForWorkType = (workType: string) => {
     if (!workType) return [];
     const matchingItems = catalog.filter(item => item.workType === workType);
@@ -73,10 +92,14 @@ export function MaterialCostSection({
     return Array.from(names).sort();
   };
 
-  // 선택된 공종과 자재명에 따른 규격 옵션
-  const getSpecificationsForMaterial = (workType: string, materialName: string) => {
+  // 선택된 공종, 공사명, 자재항목에 따른 규격/단가 가져오기
+  const getSpecificationsForMaterial = (workType: string, workName: string, materialName: string) => {
     return catalog
-      .filter(item => item.workType === workType && item.materialName === materialName)
+      .filter(item => 
+        item.workType === workType && 
+        item.workName === workName && 
+        item.materialName === materialName
+      )
       .map(item => ({
         spec: item.specification,
         unit: item.unit,
@@ -96,19 +119,30 @@ export function MaterialCostSection({
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
 
-        // 자재항목 변경 시 (= 자재 변경) → 공사명도 자동 설정
+        // 공사명 변경 시 → 자재항목 초기화
+        if (field === '공사명') {
+          updated.자재항목 = '';
+          updated.자재 = '';
+          updated.규격 = '';
+          updated.단위 = '';
+          updated.단가 = 0;
+          updated.기준단가 = 0;
+          console.log('[자재비] 공사명 선택:', value);
+        }
+
+        // 자재항목 변경 시 → 단가 자동 설정
         if (field === '자재항목' || field === '자재') {
           updated.자재항목 = value;
           updated.자재 = value;
-          updated.공사명 = value; // 자재항목 = 공사명 자동 동기화
           updated.규격 = '';
           updated.단위 = '';
           updated.단가 = 0;
           updated.기준단가 = 0;
           
-          // 카탈로그에서 첫 번째 규격의 단가 가져오기
+          // 카탈로그에서 공종+공사명+자재항목으로 단가 가져오기
           const catalogItems = catalog.filter(item =>
             item.workType === updated.공종 &&
+            item.workName === updated.공사명 &&
             item.materialName === value
           );
           if (catalogItems.length > 0) {
@@ -119,7 +153,7 @@ export function MaterialCostSection({
             updated.단가 = price;
             updated.기준단가 = price;
           }
-          console.log('[자재비] 자재항목 선택:', value, '→ 공사명 자동 설정:', updated.공사명);
+          console.log('[자재비] 자재항목 선택:', value, '공종:', updated.공종, '공사명:', updated.공사명);
         }
 
         // 수량 변경 시 합계 재계산
@@ -243,7 +277,10 @@ export function MaterialCostSection({
           {Object.entries(groupedRows).map(([workType, groupRows]) => (
             groupRows.map((row, rowIndex) => {
               const currentGlobalIndex = globalIndex++;
-              const materialNamesForRow = getMaterialNamesForWorkType(row.공종);
+              // 공종별 공사명 목록 (방수, 합판, 도배 등)
+              const workNamesForRow = getWorkNamesForWorkType(row.공종);
+              // 공종+공사명별 자재항목 목록 (방수프라이머, PVC배관 등)
+              const materialNamesForRow = getMaterialNamesForWorkTypeAndWorkName(row.공종, row.공사명);
               
               // 자재항목 값 (자재항목 또는 자재 사용)
               const materialItem = row.자재항목 || row.자재 || '';
@@ -439,24 +476,11 @@ export function MaterialCostSection({
                       <Select 
                         value={row.공사명 || ''} 
                         onValueChange={(value) => {
-                          console.log('[자재비 공사명 드롭다운] 선택됨:', value, '(자재비 DB에서)');
-                          // 공사명 선택 시 자재항목도 동일하게 설정하고 규격, 단위, 단가 자동 채우기
-                          const catalogItems = catalog.filter(item =>
-                            item.workType === row.공종 &&
-                            item.materialName === value
-                          );
-                          let 규격 = '';
-                          let 단위 = '';
-                          let 단가 = 0;
-                          if (catalogItems.length > 0) {
-                            const first = catalogItems[0];
-                            규격 = first.specification || '';
-                            단위 = first.unit || '';
-                            단가 = typeof first.standardPrice === 'string' ? 0 : first.standardPrice;
-                          }
+                          console.log('[자재비 공사명 드롭다운] 선택됨:', value, '공종:', row.공종);
+                          // 공사명 선택 시 자재항목 초기화
                           onRowsChange(rows.map(r => 
                             r.id === row.id 
-                              ? { ...r, 공사명: value, 자재항목: value, 자재: value, 규격, 단위, 단가, 기준단가: 단가 }
+                              ? { ...r, 공사명: value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
                               : r
                           ));
                         }}
@@ -470,7 +494,7 @@ export function MaterialCostSection({
                           <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {materialNamesForRow.filter(name => name && name.trim() !== '').map(name => (
+                          {workNamesForRow.filter(name => name && name.trim() !== '').map(name => (
                             <SelectItem key={name} value={name}>{name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -503,14 +527,14 @@ export function MaterialCostSection({
                       <Select 
                         value={materialItem} 
                         onValueChange={(value) => updateRow(row.id, '자재항목', value)}
-                        disabled={!row.공종 || isReadOnly}
+                        disabled={!row.공종 || !row.공사명 || isReadOnly}
                       >
                         <SelectTrigger 
                           className="h-9 border-0" 
                           style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                           data-testid={`select-자재항목-${currentGlobalIndex}`}
                         >
-                          <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
+                          <SelectValue placeholder={!row.공종 ? "공종 먼저 선택" : (!row.공사명 ? "공사명 먼저 선택" : "선택")} />
                         </SelectTrigger>
                         <SelectContent>
                           {materialNamesForRow.filter(name => name && name.trim() !== '').map(name => (

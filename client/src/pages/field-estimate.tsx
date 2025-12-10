@@ -211,6 +211,7 @@ export default function FieldEstimate() {
     // materialByWorknameCatalog.자재항목 = 자재비DB의 자재항목
     return materialByWorknameCatalog.map(item => ({
       workType: item.공종, // 공종 필드 사용
+      workName: item.공사명, // 공사명 필드 사용
       materialName: item.자재항목, // 자재항목 사용
       specification: '',
       unit: item.단위 || '',
