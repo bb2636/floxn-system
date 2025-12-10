@@ -2000,57 +2000,172 @@ export default function FieldEstimate() {
     return [];
   };
   
-  // 복구면적 산출표 → 노무비/자재비 자동 연동 함수 (동기 방식)
+  // 복구면적 산출표 → 노무비/자재비 자동 연동 함수 (일위대가DB 기반)
+  // 일위대가DB에서 공종+공사명으로 조회하여 ALL matching 노임항목 행을 자동 생성
   const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string) => {
     if (!workType || !workName) return;
     
-    console.log('[연동] 복구면적 → 노무비/자재비:', workType, workName);
+    console.log('[일위대가 연동] 복구면적 → 노무비:', workType, workName);
     
+    // 일위대가DB에서 공종+공사명으로 ALL matching 노임항목 조회
+    // 정규화된 비교 사용 (공백, 대소문자 등 무시)
     const normalizedWorkType = normalizeForMatch(workType);
     const normalizedWorkName = normalizeForMatch(workName);
     
-    // 1. 원래 공종+공사명으로 노무비 DB 검색 (폴백 로직 포함)
-    const matchingLaborItems = findLaborItemsWithFallback(normalizedWorkType, normalizedWorkName);
+    const matchingIlwidaegaItems = ilwidaegaCatalog.filter(item => {
+      const itemWorkType = normalizeForMatch(item.공종 || '');
+      const itemWorkName = normalizeForMatch(item.공사명 || '');
+      return itemWorkType === normalizedWorkType && itemWorkName === normalizedWorkName;
+    });
     
-    // 원래 공종 노무비 행 생성/업데이트
-    createOrUpdateLaborRow(workType, workName, sourceRowId, matchingLaborItems);
+    console.log('[일위대가 연동] 매칭된 노임항목:', matchingIlwidaegaItems.length, '개',
+      matchingIlwidaegaItems.map(item => `${item.노임항목}(${item.금액}원)`).join(', '));
     
-    // 2. 특정 공사명인 경우 철거공사 행도 추가 생성
-    const isDemolitionRequired = DEMOLITION_REQUIRED_WORK_NAMES.some(
-      name => normalizeForMatch(name) === normalizedWorkName
-    );
-    
-    const demolitionSourceRowId = `${sourceRowId}::demolition`;
-    
-    if (isDemolitionRequired && workType !== '철거공사') {
-      // 철거공사 + 같은 공사명으로 노무비 DB 검색 (폴백 로직 포함)
-      // 노무비 DB에 '철거공사'가 없으면 '피해철거공사'로 폴백
-      let demolitionLaborItems = findLaborItemsWithFallback(
-        normalizeForMatch('철거공사'), 
-        normalizedWorkName
+    // 노무비 행 생성/업데이트 (일위대가DB 기반)
+    setLaborCostRows(prev => {
+      // 이미 같은 sourceRowId를 가진 연동 행들 제거 (재생성을 위해)
+      const filteredRows = prev.filter(r => 
+        r.sourceAreaRowId !== sourceRowId && 
+        !r.sourceAreaRowId?.startsWith(`${sourceRowId}::`)
       );
       
-      // 철거공사로 매칭 안되면 피해철거공사로 시도
-      if (demolitionLaborItems.length === 0) {
-        demolitionLaborItems = findLaborItemsWithFallback(
-          normalizeForMatch('피해철거공사'), 
-          normalizedWorkName
-        );
+      // 독립 추가 행은 유지 (isLinkedFromRecovery = false이고 sourceAreaRowId가 없는 행)
+      const newLaborRows: LaborCostRow[] = [];
+      
+      if (matchingIlwidaegaItems.length > 0) {
+        // 일위대가DB에서 매칭된 모든 노임항목으로 행 생성
+        matchingIlwidaegaItems.forEach((catalogItem, idx) => {
+          newLaborRows.push({
+            id: `labor-ilwidaega-${Date.now()}-${Math.random()}-${idx}`,
+            sourceAreaRowId: sourceRowId,
+            isLinkedFromRecovery: true, // 복구면적에서 연동 생성된 행 (수정 불가)
+            place: '',
+            position: '',
+            category: workType,
+            workName: workName,
+            detailWork: '일위대가',
+            detailItem: catalogItem.노임항목 || '',
+            priceStandard: '',
+            unit: '㎡',
+            standardPrice: catalogItem.금액 || 0,
+            quantity: 1,
+            applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
+            salesMarkupRate: 0,
+            pricePerSqm: catalogItem.금액 || 0,
+            damageArea: 0,
+            deduction: 0,
+            includeInEstimate: true,
+            request: '',
+            amount: 0,
+          });
+        });
+        console.log('[일위대가 연동] 노무비 행 생성:', workType, workName, 
+          `${matchingIlwidaegaItems.length}개 노임항목 (${matchingIlwidaegaItems.map(i => i.노임항목).join(', ')})`);
+      } else {
+        // 일위대가DB에 없으면 빈 행 생성 (수동 입력용)
+        newLaborRows.push({
+          id: `labor-manual-${Date.now()}-${Math.random()}`,
+          sourceAreaRowId: sourceRowId,
+          isLinkedFromRecovery: true,
+          place: '',
+          position: '',
+          category: workType,
+          workName: workName,
+          detailWork: '일위대가',
+          detailItem: '',
+          priceStandard: '',
+          unit: '㎡',
+          standardPrice: 0,
+          quantity: 1,
+          applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
+          salesMarkupRate: 0,
+          pricePerSqm: 0,
+          damageArea: 0,
+          deduction: 0,
+          includeInEstimate: true,
+          request: '',
+          amount: 0,
+        });
+        console.log('[일위대가 연동] 노무비 행 생성 (DB 매칭 없음):', workType, workName);
       }
       
-      console.log('[연동] 철거공사 추가 생성:', '철거공사', workName);
-      createOrUpdateLaborRow('철거공사', workName, demolitionSourceRowId, demolitionLaborItems);
-    } else {
-      // 철거공사가 필요없는 공사명으로 변경된 경우, 기존 철거공사 행 삭제
-      setLaborCostRows(prev => {
-        const demolitionRow = prev.find(r => r.sourceAreaRowId === demolitionSourceRowId);
-        if (demolitionRow) {
-          console.log('[연동] 철거공사 행 삭제 (공사명 변경):', demolitionRow.category, demolitionRow.workName);
-          return prev.filter(r => r.sourceAreaRowId !== demolitionSourceRowId);
+      // 2. 특정 공사명인 경우 철거공사 행도 추가 생성 (반자틀, 석고보드, 도배, 마루)
+      const isDemolitionRequired = DEMOLITION_REQUIRED_WORK_NAMES.some(
+        name => normalizeForMatch(name) === normalizedWorkName
+      );
+      
+      if (isDemolitionRequired && workType !== '철거공사' && workType !== '피해철거공사') {
+        // 피해철거공사용 일위대가DB에서 매칭 아이템 찾기
+        const { demolitionWorkName } = getDemolitionMapping(workType, workName);
+        
+        const demolitionCatalogItems = ilwidaegaCatalog.filter(item => {
+          const itemWorkType = normalizeForMatch(item.공종 || '');
+          const itemWorkName = normalizeForMatch(item.공사명 || '');
+          return itemWorkType === normalizeForMatch('피해철거공사') && itemWorkName === normalizeForMatch(demolitionWorkName);
+        });
+        
+        console.log('[일위대가 연동] 철거공사 조회:', demolitionWorkName, demolitionCatalogItems.length, '개 매칭');
+        
+        if (demolitionCatalogItems.length > 0) {
+          // 일위대가DB에서 매칭된 모든 철거공사 노임항목으로 행 생성
+          demolitionCatalogItems.forEach((catItem, idx) => {
+            newLaborRows.push({
+              id: `labor-demolition-${Date.now()}-${Math.random()}-${idx}`,
+              sourceAreaRowId: `${sourceRowId}::demolition`,
+              isLinkedFromRecovery: true,
+              place: '',
+              position: '',
+              category: '피해철거공사',
+              workName: demolitionWorkName,
+              detailWork: '일위대가',
+              detailItem: catItem.노임항목 || '',
+              priceStandard: '',
+              unit: '㎡',
+              standardPrice: catItem.금액 || 0,
+              quantity: 1,
+              applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
+              salesMarkupRate: 0,
+              pricePerSqm: catItem.금액 || 0,
+              damageArea: 0,
+              deduction: 0,
+              includeInEstimate: true,
+              request: '',
+              amount: 0,
+            });
+          });
+          console.log('[일위대가 연동] 철거공사 행 생성:', '피해철거공사', demolitionWorkName,
+            `${demolitionCatalogItems.length}개 노임항목`);
+        } else {
+          // 기본 철거공사 행 생성
+          newLaborRows.push({
+            id: `labor-demolition-${Date.now()}-${Math.random()}`,
+            sourceAreaRowId: `${sourceRowId}::demolition`,
+            isLinkedFromRecovery: true,
+            place: '',
+            position: '',
+            category: '피해철거공사',
+            workName: demolitionWorkName,
+            detailWork: '일위대가',
+            detailItem: '',
+            priceStandard: '',
+            unit: '㎡',
+            standardPrice: 0,
+            quantity: 1,
+            applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
+            salesMarkupRate: 0,
+            pricePerSqm: 0,
+            damageArea: 0,
+            deduction: 0,
+            includeInEstimate: true,
+            request: '',
+            amount: 0,
+          });
+          console.log('[일위대가 연동] 철거공사 행 생성 (DB 매칭 없음):', '피해철거공사', demolitionWorkName);
         }
-        return prev;
-      });
-    }
+      }
+      
+      return [...filteredRows, ...newLaborRows];
+    });
     
     // 자재비 DB에서 해당 공종의 자재 찾기 (정규화된 비교)
     // 1순위: 공종 일치 + 자재명이 공사명으로 시작하는 것

@@ -2803,6 +2803,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Skip rows without essential data
         if (!category || !laborItem) continue;
+        
+        // Skip header rows (rows where values look like header names)
+        if (category === '공종' || laborItem === '노임항목' || laborItem.includes('노임항목')) continue;
 
         catalog.push({
           공종: category,
