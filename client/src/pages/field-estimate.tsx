@@ -3919,6 +3919,7 @@ export default function FieldEstimate() {
                 rows={laborCostRows}
                 onRowsChange={(newRows) => setLaborCostRows(sortLaborRowsByCategory(newRows))}
                 catalog={laborCatalog}
+                ilwidaegaCatalog={ilwidaegaCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
                 onSelectAll={() => {
@@ -4405,6 +4406,7 @@ export default function FieldEstimate() {
                 rows={laborCostRows}
                 onRowsChange={(newRows) => setLaborCostRows(sortLaborRowsByCategory(newRows))}
                 catalog={laborCatalog}
+                ilwidaegaCatalog={ilwidaegaCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
                 onSelectAll={() => {

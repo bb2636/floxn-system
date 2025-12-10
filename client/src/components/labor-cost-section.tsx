@@ -45,6 +45,14 @@ export interface LaborCatalogItem {
   단가_길이: number | null;
 }
 
+// 일위대가 카탈로그 항목 (복구면적 연동용)
+export interface IlwidaegaCatalogItem {
+  공종: string;
+  공사명: string;
+  노임항목: string;
+  금액: number;
+}
+
 // 노무비 테이블 행
 export interface LaborCostRow {
   id: string;
@@ -79,6 +87,7 @@ interface LaborCostSectionProps {
   rows: LaborCostRow[];
   onRowsChange: (rows: LaborCostRow[]) => void;
   catalog: LaborCatalogItem[];
+  ilwidaegaCatalog?: IlwidaegaCatalogItem[]; // 일위대가 카탈로그 (복구면적 연동용)
   selectedRows: Set<string>;
   onSelectRow: (rowId: string) => void;
   onSelectAll: () => void;
@@ -94,6 +103,7 @@ export function LaborCostSection({
   rows,
   onRowsChange,
   catalog,
+  ilwidaegaCatalog = [],
   selectedRows,
   onSelectRow,
   onSelectAll,
@@ -393,10 +403,22 @@ export function LaborCostSection({
     if (category === '목공사' && workName === '걸레받이' && detailWork === '일위대가') {
       return ['걸레받이'];
     }
-    if (!catalog.length) return [];
     
     // 걸레받이 -> 목공사 변환하여 조회
     const lookupWorkName = mapWorkNameForLookup(workName);
+    
+    // 일위대가인 경우: ilwidaegaCatalog에서 노임항목 조회
+    if (detailWork === '일위대가' && ilwidaegaCatalog.length > 0) {
+      const ilwidaegaFiltered = ilwidaegaCatalog.filter(item => 
+        item.공종 === category && 
+        item.공사명 === lookupWorkName
+      );
+      const unique = new Set(ilwidaegaFiltered.map(item => item.노임항목).filter(Boolean));
+      return Array.from(unique);
+    }
+    
+    // 노무비인 경우: 기존 catalog에서 세부항목 조회
+    if (!catalog.length) return [];
     
     // 공종 + 공사명으로 필터링해서 노임항목(세부항목) 추출
     const filtered = catalog.filter(item => 
