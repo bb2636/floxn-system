@@ -531,10 +531,10 @@ export default function FieldEstimate() {
         );
         
         // 복구면적 행에서 장소/위치 조합 추출 (모든 행의 데이터 반영)
-        const uniquePlaces = [...new Set(workNameData.areaRows.map(r => r.category).filter(Boolean))];
+        const uniquePlaces = Array.from(new Set(workNameData.areaRows.map(r => r.category).filter(Boolean)));
         const combinedPlace = uniquePlaces.join('/') || '';
         // 위치는 여러 행의 위치를 조합 (중복 제거)
-        const uniqueLocations = [...new Set(workNameData.areaRows.map(r => r.location).filter(Boolean))];
+        const uniqueLocations = Array.from(new Set(workNameData.areaRows.map(r => r.location).filter(Boolean)));
         const combinedPosition = uniqueLocations.join('/') || '';
         
         if (matchingCatalogItems.length > 0) {
