@@ -2218,7 +2218,8 @@ export default function FieldEstimate() {
     });
     
     // 자재비 연동 대상 공사명 (이 공사명만 자재비에 연동됨)
-    const MATERIAL_LINKED_WORK_NAMES = ['합판', '석고보드', '몰딩', '걸레받이', '장판'];
+    // 합판, 석고(석고보드), 몰딩, 걸레받이, 도배, 마루, 장판
+    const MATERIAL_LINKED_WORK_NAMES = ['합판', '석고보드', '석고', '몰딩', '걸레받이', '도배', '마루', '장판'];
     const isMaterialLinkedWorkName = MATERIAL_LINKED_WORK_NAMES.some(
       name => normalizeForMatch(name) === normalizedWorkName
     );
