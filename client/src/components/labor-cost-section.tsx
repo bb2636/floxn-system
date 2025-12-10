@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -11,12 +11,6 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Copy, Search, ChevronDown, ChevronRight, GripVertical, Lock } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 // 복구면적 산출표 행 인터페이스
 export interface AreaCalculationRowForLabor {
@@ -114,12 +108,6 @@ export function LaborCostSection({
   onAreaImportToMaterial,
   enableAreaImport = true, // 기본값 true (하위 호환)
 }: LaborCostSectionProps) {
-  // 공사명 선택 팝업 상태
-  const [areaPopupOpen, setAreaPopupOpen] = useState(false);
-  const [areaPopupRowId, setAreaPopupRowId] = useState<string | null>(null);
-  const [areaPopupWorkName, setAreaPopupWorkName] = useState<string>("");
-  const [selectedGroupKey, setSelectedGroupKey] = useState<string | null>(null); // 팝업에서 선택된 그룹 key
-  
   // 드래그 앤 드롭 상태
   const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
@@ -172,138 +160,22 @@ export function LaborCostSection({
     setDragOverRowId(null);
   };
 
-  // 공사명 선택 시 팝업 열기
+  // 공사명 선택 시 단순 업데이트 (팝업 제거됨)
   const handleWorkNameChange = (rowId: string, workName: string) => {
-    // 먼저 workName 업데이트
     updateRow(rowId, 'workName', workName);
-    
-    // 피해면적 불러오기 비활성화 시 팝업 열지 않음 (손해방지 케이스만 활성화)
-    if (!enableAreaImport) return;
-    
-    // 해당 공사명과 일치하는 복구면적 산출표 데이터가 있으면 팝업 열기
-    const matchingRows = areaCalculationRows.filter(ar => ar.workName === workName);
-    if (matchingRows.length > 0) {
-      setAreaPopupRowId(rowId);
-      setAreaPopupWorkName(workName);
-      setSelectedGroupKey(null); // 선택 초기화
-      setAreaPopupOpen(true);
-    }
-  };
-  
-  // 공사명 Select 닫힐 때 팝업 열기 (같은 값 재선택 시에도 팝업 열리도록)
-  const handleWorkNameSelectClose = (rowId: string, open: boolean) => {
-    // Select가 닫힐 때만 처리
-    if (open) return;
-    
-    // 피해면적 불러오기 비활성화 시 팝업 열지 않음 (손해방지 케이스만 활성화)
-    if (!enableAreaImport) return;
-    
-    const row = rows.find(r => r.id === rowId);
-    if (!row?.workName) return;
-    
-    // 해당 공사명과 일치하는 복구면적 산출표 데이터가 있으면 팝업 열기
-    const matchingRows = areaCalculationRows.filter(ar => ar.workName === row.workName);
-    if (matchingRows.length > 0) {
-      setAreaPopupRowId(rowId);
-      setAreaPopupWorkName(row.workName);
-      setSelectedGroupKey(null); // 선택 초기화
-      setAreaPopupOpen(true);
-    }
   };
 
-  // 팝업 닫기 (취소)
-  const handleAreaPopupClose = () => {
-    setAreaPopupOpen(false);
-    setAreaPopupRowId(null);
-    setAreaPopupWorkName("");
-    setSelectedGroupKey(null);
-  };
-
-  // 팝업에서 "불러오기" 클릭 시 선택된 그룹의 복구면적 합계 적용
-  const handleAreaRowImport = () => {
-    if (!areaPopupRowId || !selectedGroupKey) return;
+  // 공종별 복구면적 자동 계산 함수 (바닥 + 벽체 + 천장×1.3)
+  const calculateRecoveryAreaByWorkType = useMemo(() => {
+    // 공종별로 복구면적 산출표 데이터를 그룹화하여 합계 계산
+    const workTypeAreas: Record<string, { 천장: number; 벽체: number; 바닥: number; total: number }> = {};
     
-    // 선택된 그룹의 복구면적 합계 계산
-    const selectedGroup = groupedAreaRows.find(g => g.key === selectedGroupKey);
-    if (!selectedGroup) return;
-    
-    // 소수점 1자리로 반올림
-    const damageArea = Math.round(selectedGroup.totalRepairArea * 10) / 10;
-    
-    // 장소는 그룹의 category에서 가져옴
-    const place = selectedGroup.category || '';
-    
-    // 위치는 천장/벽체/바닥 중 면적이 있는 것들을 조합
-    const positionParts: string[] = [];
-    if (selectedGroup.천장 > 0) positionParts.push('천장');
-    if (selectedGroup.벽체 > 0) positionParts.push('벽체');
-    if (selectedGroup.바닥 > 0) positionParts.push('바닥');
-    const position = positionParts.join('/') || '';
-    
-    // 현재 노무비 행의 공종 가져오기
-    const currentRow = rows.find(r => r.id === areaPopupRowId);
-    const workType = currentRow?.category || '';
-    
-    onRowsChange(rows.map(row => {
-      if (row.id === areaPopupRowId) {
-        const updated = { ...row, damageArea, place, position };
-        // 금액 재계산
-        const standardPrice = Number(updated.standardPrice) || 0;
-        const quantity = Number(updated.quantity) || 0;
-        const pricePerSqm = Number(updated.pricePerSqm) || 0;
-        
-        if (updated.category === '누수탐지비용') {
-          updated.amount = Math.round(standardPrice * quantity);
-        } else if (updated.detailWork === '노무비') {
-          // 노무비: 기준가(단위) * 수량 (피해면적은 표시만, 곱하지 않음)
-          updated.amount = Math.round(standardPrice * quantity);
-        } else if (updated.detailWork === '일위대가') {
-          // 일위대가: 기준가(m²) * 피해면적 * 수량
-          updated.amount = Math.round(pricePerSqm * damageArea * quantity);
-        }
-        return updated;
-      }
-      return row;
-    }));
-    
-    // 자재비에 해당 공종의 수량 업데이트 (콜백이 있을 경우)
-    if (onAreaImportToMaterial && workType) {
-      onAreaImportToMaterial(workType, damageArea);
-    }
-    
-    handleAreaPopupClose();
-  };
-
-  // 팝업에 표시할 복구면적 산출표 데이터 (공사명별 필터링)
-  const matchingAreaRows = useMemo(() => {
-    return areaCalculationRows.filter(ar => ar.workName === areaPopupWorkName);
-  }, [areaCalculationRows, areaPopupWorkName]);
-
-  // 위치(방분류) + 공사명별 그룹화, 천장/벽체/바닥별 복구면적 계산
-  const groupedAreaRows = useMemo(() => {
-    // 위치(category) + 공사명(workName) 기준으로 그룹화
-    const groups: Record<string, { 
-      key: string;
-      category: string; // 위치 (주방, 발코니 등)
-      workName: string; // 공사명
-      천장: number;
-      벽체: number;
-      바닥: number;
-      totalRepairArea: number;
-    }> = {};
-    
-    matchingAreaRows.forEach(row => {
-      const key = `${row.category || ''}-${row.workName || ''}`;
-      if (!groups[key]) {
-        groups[key] = {
-          key,
-          category: row.category || '',
-          workName: row.workName || '',
-          천장: 0,
-          벽체: 0,
-          바닥: 0,
-          totalRepairArea: 0,
-        };
+    areaCalculationRows.forEach(row => {
+      const workType = row.workType || '';
+      if (!workType) return;
+      
+      if (!workTypeAreas[workType]) {
+        workTypeAreas[workType] = { 천장: 0, 벽체: 0, 바닥: 0, total: 0 };
       }
       
       const area = parseFloat(row.repairArea) || 0;
@@ -311,22 +183,68 @@ export function LaborCostSection({
       
       // location에 따라 천장/벽체/바닥 분류
       if (location.includes('천장') || location === '천장') {
-        groups[key].천장 += area;
+        workTypeAreas[workType].천장 += area;
       } else if (location.includes('벽체') || location.includes('벽') || location === '벽체') {
-        groups[key].벽체 += area;
+        workTypeAreas[workType].벽체 += area;
       } else if (location.includes('바닥') || location === '바닥') {
-        groups[key].바닥 += area;
-      } else {
-        // 기타 위치는 전체에 추가
-        groups[key].totalRepairArea += area;
+        workTypeAreas[workType].바닥 += area;
       }
-      
-      // 천장은 1.3배 가산하여 복구면적 합계 계산
-      groups[key].totalRepairArea = groups[key].바닥 + groups[key].벽체 + (groups[key].천장 * 1.3);
     });
     
-    return Object.values(groups);
-  }, [matchingAreaRows]);
+    // 각 공종별 총 복구면적 계산 (천장 × 1.3 적용)
+    Object.keys(workTypeAreas).forEach(workType => {
+      const areas = workTypeAreas[workType];
+      areas.total = areas.바닥 + areas.벽체 + (areas.천장 * 1.3);
+    });
+    
+    return workTypeAreas;
+  }, [areaCalculationRows]);
+
+  // 연동된 행의 복구면적 자동 업데이트 (공종 기준)
+  useEffect(() => {
+    if (!enableAreaImport) return;
+    
+    // 연동된 행 중 복구면적이 업데이트 필요한 행 찾기
+    const updatedRows = rows.map(row => {
+      // 연동된 행만 대상
+      if (!row.isLinkedFromRecovery) return row;
+      
+      // 공종이 없으면 업데이트하지 않음
+      if (!row.category) return row;
+      
+      // 해당 공종의 복구면적 계산값 가져오기
+      const areaData = calculateRecoveryAreaByWorkType[row.category];
+      const newDamageArea = areaData ? Math.round(areaData.total * 10) / 10 : 0;
+      
+      // 기존 값과 동일하면 업데이트하지 않음
+      if (row.damageArea === newDamageArea) return row;
+      
+      // 금액 재계산
+      const standardPrice = Number(row.standardPrice) || 0;
+      const quantity = Number(row.quantity) || 0;
+      const pricePerSqm = Number(row.pricePerSqm) || 0;
+      
+      let newAmount = row.amount;
+      if (row.detailWork === '일위대가') {
+        newAmount = Math.round(pricePerSqm * newDamageArea * quantity);
+      }
+      
+      return { 
+        ...row, 
+        damageArea: newDamageArea,
+        amount: newAmount
+      };
+    });
+    
+    // 변경된 행이 있으면 업데이트
+    const hasChanges = updatedRows.some((row, idx) => 
+      row.damageArea !== rows[idx].damageArea || row.amount !== rows[idx].amount
+    );
+    
+    if (hasChanges) {
+      onRowsChange(updatedRows);
+    }
+  }, [calculateRecoveryAreaByWorkType, enableAreaImport]);
 
   // 캐스케이딩 옵션 생성 - filteredWorkTypes가 제공되면 우선 사용
   const categoryOptions = useMemo(() => {
@@ -1214,7 +1132,6 @@ export function LaborCostSection({
                       <Select 
                         value={row.workName || undefined} 
                         onValueChange={(value) => handleWorkNameChange(row.id, value)}
-                        onOpenChange={(open) => handleWorkNameSelectClose(row.id, open)}
                         disabled={!row.category}
                       >
                         <SelectTrigger 
@@ -1379,276 +1296,6 @@ export function LaborCostSection({
         </tbody>
       </table>
 
-      {/* 피해면적산출표 데이터 선택 팝업 - 이미지 UI에 맞게 구현 */}
-      <Dialog open={areaPopupOpen} onOpenChange={(open) => !open && handleAreaPopupClose()}>
-        <DialogContent 
-          className="max-w-3xl p-0 gap-0 overflow-hidden"
-          style={{ borderRadius: "12px" }}
-        >
-          {/* 헤더 */}
-          <div 
-            className="text-center py-5 border-b"
-            style={{ 
-              background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"
-            }}
-          >
-            <DialogTitle 
-              style={{ 
-                fontFamily: "Pretendard",
-                fontWeight: 700,
-                fontSize: "20px",
-                color: "#1a1a1a"
-              }}
-            >
-              피해면적산출표
-            </DialogTitle>
-          </div>
-
-          {/* 본문 */}
-          <div className="p-6">
-            {/* 서브헤더 */}
-            <div 
-              style={{ 
-                fontFamily: "Pretendard",
-                fontWeight: 500,
-                fontSize: "14px",
-                color: "#495057",
-                marginBottom: "16px"
-              }}
-            >
-              피해면적산출표
-            </div>
-
-            {/* 테이블 - 위치/공사명별 그룹화, 천장/벽체/바닥 표시 */}
-            <div className="text-right mb-2" style={{ fontFamily: "Pretendard", fontSize: "12px", color: "#6c757d" }}>
-              (단위 : ㎡)
-            </div>
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full" style={{ borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ backgroundColor: "#f8f9fa" }}>
-                    <th 
-                      className="px-3 py-3 text-center" 
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "13px", 
-                        fontWeight: 500, 
-                        color: "#495057",
-                        width: "70px",
-                        borderBottom: "1px solid #e9ecef",
-                        borderRight: "1px solid #e9ecef"
-                      }}
-                    >
-                      반영
-                    </th>
-                    <th 
-                      className="px-3 py-3 text-center" 
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "13px", 
-                        fontWeight: 500, 
-                        color: "#495057",
-                        width: "80px",
-                        borderBottom: "1px solid #e9ecef",
-                        borderRight: "1px solid #e9ecef"
-                      }}
-                    >
-                      위치
-                    </th>
-                    <th 
-                      className="px-3 py-3 text-center" 
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "13px", 
-                        fontWeight: 500, 
-                        color: "#495057",
-                        width: "100px",
-                        borderBottom: "1px solid #e9ecef",
-                        borderRight: "1px solid #e9ecef"
-                      }}
-                    >
-                      공사명
-                    </th>
-                    <th 
-                      className="px-3 py-3 text-center" 
-                      colSpan={3}
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "13px", 
-                        fontWeight: 500, 
-                        color: "#495057",
-                        borderBottom: "1px solid #e9ecef"
-                      }}
-                    >
-                      복구면적
-                    </th>
-                  </tr>
-                  <tr style={{ backgroundColor: "#f8f9fa" }}>
-                    <th style={{ borderBottom: "1px solid #e9ecef", borderRight: "1px solid #e9ecef" }}></th>
-                    <th style={{ borderBottom: "1px solid #e9ecef", borderRight: "1px solid #e9ecef" }}></th>
-                    <th style={{ borderBottom: "1px solid #e9ecef", borderRight: "1px solid #e9ecef" }}></th>
-                    <th 
-                      className="px-2 py-2 text-center" 
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "12px", 
-                        fontWeight: 400, 
-                        color: "#6c757d",
-                        width: "70px",
-                        borderBottom: "1px solid #e9ecef",
-                        borderRight: "1px solid #e9ecef"
-                      }}
-                    >
-                      천장
-                    </th>
-                    <th 
-                      className="px-2 py-2 text-center" 
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "12px", 
-                        fontWeight: 400, 
-                        color: "#6c757d",
-                        width: "70px",
-                        borderBottom: "1px solid #e9ecef",
-                        borderRight: "1px solid #e9ecef"
-                      }}
-                    >
-                      벽체
-                    </th>
-                    <th 
-                      className="px-2 py-2 text-center" 
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "12px", 
-                        fontWeight: 400, 
-                        color: "#6c757d",
-                        width: "70px",
-                        borderBottom: "1px solid #e9ecef"
-                      }}
-                    >
-                      바닥
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {groupedAreaRows.map((group, idx) => (
-                    <tr 
-                      key={group.key} 
-                      className="cursor-pointer transition-colors"
-                      style={{ 
-                        backgroundColor: selectedGroupKey === group.key ? "#e7f5ff" : "white",
-                        borderBottom: "1px solid #e9ecef"
-                      }}
-                      onClick={() => setSelectedGroupKey(group.key)}
-                    >
-                      <td className="px-3 py-3 text-center" style={{ borderRight: "1px solid #e9ecef" }}>
-                        <div className="flex justify-center">
-                          <div
-                            className="w-5 h-5 rounded-full border-2 flex items-center justify-center cursor-pointer"
-                            style={{
-                              borderColor: selectedGroupKey === group.key ? "#228be6" : "#ced4da",
-                              backgroundColor: selectedGroupKey === group.key ? "#228be6" : "white"
-                            }}
-                            data-testid={`radio-area-group-${idx}`}
-                          >
-                            {selectedGroupKey === group.key && (
-                              <div 
-                                className="w-2 h-2 rounded-full" 
-                                style={{ backgroundColor: "white" }}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td 
-                        className="px-3 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a", borderRight: "1px solid #e9ecef" }}
-                      >
-                        {group.category || '-'}
-                      </td>
-                      <td 
-                        className="px-3 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a", borderRight: "1px solid #e9ecef" }}
-                      >
-                        {group.workName || '-'}
-                      </td>
-                      <td 
-                        className="px-2 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a", borderRight: "1px solid #e9ecef" }}
-                      >
-                        {group.천장 > 0 ? group.천장.toFixed(2) : ''}
-                      </td>
-                      <td 
-                        className="px-2 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a", borderRight: "1px solid #e9ecef" }}
-                      >
-                        {group.벽체 > 0 ? group.벽체.toFixed(2) : ''}
-                      </td>
-                      <td 
-                        className="px-2 py-3 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#1a1a1a" }}
-                      >
-                        {group.바닥 > 0 ? group.바닥.toFixed(2) : ''}
-                      </td>
-                    </tr>
-                  ))}
-                  {groupedAreaRows.length === 0 && (
-                    <tr>
-                      <td 
-                        colSpan={6} 
-                        className="px-4 py-8 text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#868e96" }}
-                      >
-                        일치하는 데이터가 없습니다.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* 하단 버튼 */}
-          <div 
-            className="flex border-t"
-            style={{ minHeight: "56px" }}
-          >
-            <button
-              onClick={handleAreaPopupClose}
-              className="flex-1 py-4 text-center transition-colors hover:bg-gray-50"
-              style={{
-                fontFamily: "Pretendard",
-                fontWeight: 500,
-                fontSize: "16px",
-                color: "#228be6",
-                backgroundColor: "white",
-                border: "none",
-                cursor: "pointer"
-              }}
-              data-testid="button-area-cancel"
-            >
-              취소
-            </button>
-            <button
-              onClick={handleAreaRowImport}
-              disabled={!selectedGroupKey}
-              className="flex-1 py-4 text-center transition-colors"
-              style={{
-                fontFamily: "Pretendard",
-                fontWeight: 500,
-                fontSize: "16px",
-                color: "white",
-                backgroundColor: selectedGroupKey ? "#228be6" : "#adb5bd",
-                border: "none",
-                cursor: selectedGroupKey ? "pointer" : "not-allowed"
-              }}
-              data-testid="button-area-import"
-            >
-              불러오기
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
