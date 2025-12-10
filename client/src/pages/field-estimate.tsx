@@ -677,7 +677,16 @@ export default function FieldEstimate() {
     const independentRows = materialRows.filter(row => !row.isLinkedFromRecovery);
     
     // 복구면적 산출표에서 고유한 공종+공사명 조합 추출 및 면적 합산
-    const workMap = new Map<string, { 공종: string; 공사명: string; totalArea: number; sourceAreaRowId: string }>();
+    // 도배, 마루, 장판의 경우 바닥+천장+벽체 전체 면적을 계산
+    const workMap = new Map<string, { 
+      공종: string; 
+      공사명: string; 
+      totalArea: number; 
+      floorArea: number;  // 바닥 면적
+      ceilingArea: number; // 천장 면적
+      wallArea: number;   // 벽체 면적
+      sourceAreaRowId: string 
+    }>();
     
     rows.forEach(row => {
       const workType = row.workType || '';
@@ -690,12 +699,41 @@ export default function FieldEstimate() {
           공종: workType, 
           공사명: workName, 
           totalArea: 0,
+          floorArea: 0,
+          ceilingArea: 0,
+          wallArea: 0,
           sourceAreaRowId: row.id
         });
       }
       
       const data = workMap.get(key)!;
-      data.totalArea += parseFloat(row.repairArea) || 0;
+      const repairArea = parseFloat(row.repairArea) || 0;
+      const location = (row.location || '').toLowerCase();
+      
+      // 위치별 면적 합산
+      if (location.includes('천장')) {
+        data.ceilingArea += repairArea;
+      } else if (location.includes('벽') || location.includes('벽체')) {
+        data.wallArea += repairArea;
+      } else if (location.includes('바닥')) {
+        data.floorArea += repairArea;
+      }
+      
+      data.totalArea += repairArea;
+    });
+    
+    // 도배, 마루, 장판 공사명의 경우 바닥+천장+벽체 합계 계산
+    const surfaceFinishWorkNames = ['도배', '마루', '장판'];
+    workMap.forEach((data, key) => {
+      if (surfaceFinishWorkNames.includes(data.공사명)) {
+        // 바닥+천장+벽체 합계 (천장은 ×1.3 적용하지 않음 - 자재비는 실면적 기준)
+        const combinedArea = data.floorArea + data.ceilingArea + data.wallArea;
+        // 개별 위치 면적이 있으면 combinedArea 사용, 없으면 totalArea 사용
+        if (combinedArea > 0) {
+          data.totalArea = combinedArea;
+        }
+        console.log(`[자재비] ${data.공사명} 수량 계산: 바닥(${data.floorArea}) + 천장(${data.ceilingArea}) + 벽체(${data.wallArea}) = ${data.totalArea}`);
+      }
     });
     
     // 공사명 기준으로 자재비DB에서 매칭되는 항목 조회 및 행 생성
