@@ -414,7 +414,7 @@ export function MaterialCostSection({
                     </td>
                   ) : null}
                   
-                  {/* 공사명 */}
+                  {/* 공사명 - 자재비 DB의 자재명을 드롭다운으로 표시 */}
                   <td style={{ padding: "0 8px" }}>
                     {isLinkedRow ? (
                       <div 
@@ -436,17 +436,45 @@ export function MaterialCostSection({
                         {row.공사명 || "-"}
                       </div>
                     ) : (
-                      <Input
-                        value={row.공사명 || ''}
-                        onChange={(e) => {
-                          onRowsChange(rows.map(r => r.id === row.id ? { ...r, 공사명: e.target.value } : r));
+                      <Select 
+                        value={row.공사명 || ''} 
+                        onValueChange={(value) => {
+                          console.log('[자재비 공사명 드롭다운] 선택됨:', value, '(자재비 DB에서)');
+                          // 공사명 선택 시 자재항목도 동일하게 설정하고 규격, 단위, 단가 자동 채우기
+                          const catalogItems = catalog.filter(item =>
+                            item.workType === row.공종 &&
+                            item.materialName === value
+                          );
+                          let 규격 = '';
+                          let 단위 = '';
+                          let 단가 = 0;
+                          if (catalogItems.length > 0) {
+                            const first = catalogItems[0];
+                            규격 = first.specification || '';
+                            단위 = first.unit || '';
+                            단가 = typeof first.standardPrice === 'string' ? 0 : first.standardPrice;
+                          }
+                          onRowsChange(rows.map(r => 
+                            r.id === row.id 
+                              ? { ...r, 공사명: value, 자재항목: value, 자재: value, 규격, 단위, 단가, 기준단가: 단가 }
+                              : r
+                          ));
                         }}
-                        className="h-9 border-0"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                        placeholder="-"
-                        disabled={isReadOnly}
-                        data-testid={`input-공사명-material-${currentGlobalIndex}`}
-                      />
+                        disabled={!row.공종 || isReadOnly}
+                      >
+                        <SelectTrigger 
+                          className="h-9 border-0" 
+                          style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                          data-testid={`select-공사명-material-${currentGlobalIndex}`}
+                        >
+                          <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {materialNamesForRow.filter(name => name && name.trim() !== '').map(name => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     )}
                   </td>
                   
