@@ -831,12 +831,12 @@ export default function FieldEstimate() {
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
   const isReadOnly = isPartner && isSubmitted;
   
-  // 손해방지 공종 목록 (노무비 탭에서 사용)
-  const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지비용', '코킹공사', '배관공사', '방수공사', '기타공사', '원인철거공사'];
+  // 손해방지 공종 목록 (노무비 탭에서 사용) - 원인세대 항목
+  const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지', '원인철거', '원인공사'];
   
-  // 피해복구 공종 목록 (노무비 탭에서 사용) - 전체 공종 표시
+  // 피해복구 공종 목록 (노무비 탭에서 사용) - 피해세대 항목
   // 도장, 목공, 수장만 복구면적산출표와 연동됨
-  const VICTIM_RECOVERY_WORK_TYPES = ['가설공사', '수장공사', '목공사', '도장공사', '전기공사', '타일공사', '가구공사', '기타공사', '철거공사'];
+  const VICTIM_RECOVERY_WORK_TYPES = ['철거공사', '가설공사', '목공사', '수장공사', '도장공사', '전기공사', '타일공사', '가구공사', '욕실공사', '폐기물', '기타'];
   
   // 복구면적 산출표와 연동되는 공종 목록 (피해복구에서 도장/목공/수장만 연동)
   const AREA_LINKED_WORK_TYPES = ['도장공사', '목공사', '수장공사'];
