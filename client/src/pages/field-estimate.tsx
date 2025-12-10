@@ -70,9 +70,9 @@ interface IlwidaegaCatalogItem {
 
 // 자재비 카탈로그 아이템 (공사명 기준 조회용)
 interface MaterialByWorknameCatalogItem {
-  공사명: string;
+  공종: string; // 공종: 원인공사, 목공사, 수장공사 등
+  공사명: string; // 공사명: 방수, 합판, 도배 등
   자재항목: string; // 자재비DB의 자재항목 컬럼
-  규격: string;
   단위: string;
   금액: number | string | null;
 }
@@ -206,12 +206,13 @@ export default function FieldEstimate() {
     if (materialCatalog.length > 0) {
       return materialCatalog;
     }
-    // materialByWorknameCatalog.공사명 = 공종 (도장공사, 목공사 등)
+    // materialByWorknameCatalog.공종 = 공종 (원인공사, 목공사, 수장공사 등)
+    // materialByWorknameCatalog.공사명 = 공사명 (방수, 합판, 도배 등)
     // materialByWorknameCatalog.자재항목 = 자재비DB의 자재항목
     return materialByWorknameCatalog.map(item => ({
-      workType: item.공사명, // 공사명이 실제로는 공종
+      workType: item.공종, // 공종 필드 사용
       materialName: item.자재항목, // 자재항목 사용
-      specification: item.규격 || '',
+      specification: '',
       unit: item.단위 || '',
       standardPrice: item.금액 ?? 0, // null이면 0으로 변환
     }));
