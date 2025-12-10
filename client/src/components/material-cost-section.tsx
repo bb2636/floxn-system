@@ -108,13 +108,13 @@ export function MaterialCostSection({
       }));
   };
 
-  // 행 업데이트
+  // 행 업데이트 (자재비는 연동 행도 수정 가능)
   const updateRow = (rowId: string, field: keyof MaterialRow, value: any) => {
     if (isReadOnly) return;
     
-    // 연동 행은 수정 불가
-    const targetRow = rows.find(r => r.id === rowId);
-    if (targetRow?.isLinkedFromRecovery) return;
+    // 자재비는 연동 행도 수정 가능 (노무비와 다르게 처리)
+    // const targetRow = rows.find(r => r.id === rowId);
+    // if (targetRow?.isLinkedFromRecovery) return;
     
     onRowsChange(rows.map(row => {
       if (row.id === rowId) {
@@ -467,82 +467,49 @@ export function MaterialCostSection({
                     </td>
                   ) : null}
                   
-                  {/* 공사명 - 자재비 DB의 자재명을 드롭다운으로 표시 */}
+                  {/* 공사명 - 자재비는 연동 행도 수정 가능 */}
                   <td style={{ padding: "0 8px" }}>
-                    {isLinkedRow ? (
-                      <div 
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          height: "36px",
-                          padding: "0 8px",
-                          fontFamily: "Pretendard",
+                    <Select 
+                      value={row.공사명 || ''} 
+                      onValueChange={(value) => {
+                        console.log('[자재비 공사명 드롭다운] 선택됨:', value, '공종:', row.공종, '연동행:', isLinkedRow);
+                        // 공사명 선택 시 자재항목 초기화
+                        onRowsChange(rows.map(r => 
+                          r.id === row.id 
+                            ? { ...r, 공사명: value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
+                            : r
+                        ));
+                      }}
+                      disabled={!row.공종 || isReadOnly}
+                    >
+                      <SelectTrigger 
+                        className="h-9 border-0" 
+                        style={{ 
+                          fontFamily: "Pretendard", 
                           fontSize: "14px",
-                          color: "rgba(59, 130, 246, 0.9)",
-                          background: "rgba(59, 130, 246, 0.08)",
-                          borderRadius: "6px",
-                          border: "1px solid rgba(59, 130, 246, 0.2)",
+                          // 연동 행이면 파란색 스타일 적용
+                          ...(isLinkedRow ? {
+                            color: "rgba(59, 130, 246, 0.9)",
+                            background: "rgba(59, 130, 246, 0.08)",
+                            borderRadius: "6px",
+                            border: "1px solid rgba(59, 130, 246, 0.2)",
+                          } : {})
                         }}
-                        title="복구면적에서 연동됨"
+                        data-testid={`select-공사명-material-${currentGlobalIndex}`}
                       >
-                        <Lock style={{ width: "12px", height: "12px", marginRight: "6px", opacity: 0.6 }} />
-                        {row.공사명 || "-"}
-                      </div>
-                    ) : (
-                      <Select 
-                        value={row.공사명 || ''} 
-                        onValueChange={(value) => {
-                          console.log('[자재비 공사명 드롭다운] 선택됨:', value, '공종:', row.공종);
-                          // 공사명 선택 시 자재항목 초기화
-                          onRowsChange(rows.map(r => 
-                            r.id === row.id 
-                              ? { ...r, 공사명: value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
-                              : r
-                          ));
-                        }}
-                        disabled={!row.공종 || isReadOnly}
-                      >
-                        <SelectTrigger 
-                          className="h-9 border-0" 
-                          style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                          data-testid={`select-공사명-material-${currentGlobalIndex}`}
-                        >
-                          <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {workNamesForRow.filter(name => name && name.trim() !== '').map(name => (
-                            <SelectItem key={name} value={name}>{name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                        <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {workNamesForRow.filter(name => name && name.trim() !== '').map(name => (
+                          <SelectItem key={name} value={name}>{name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </td>
                   
-                  {/* 자재항목 - 연동행이라도 여러 옵션이 있으면 드롭다운 선택 가능 */}
+                  {/* 자재항목 - 자재비는 연동 행도 수정 가능 */}
                   <td style={{ padding: "0 8px" }}>
-                    {isLinkedRow && materialNamesForRow.length <= 1 ? (
-                      // 연동 행이면서 옵션이 1개 이하인 경우: 잠금 표시
-                      <div 
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          height: "36px",
-                          padding: "0 8px",
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          color: "rgba(59, 130, 246, 0.9)",
-                          background: "rgba(59, 130, 246, 0.08)",
-                          borderRadius: "6px",
-                          border: "1px solid rgba(59, 130, 246, 0.2)",
-                        }}
-                        title="복구면적에서 연동됨 (수정 불가)"
-                      >
-                        <Lock style={{ width: "12px", height: "12px", marginRight: "6px", opacity: 0.6 }} />
-                        {materialItem || "-"}
-                      </div>
-                    ) : (
-                      // 연동 행이라도 옵션이 여러 개면 드롭다운 선택 가능
-                      <Select 
+                    <Select 
                         value={materialItem} 
                         onValueChange={(value) => {
                           // 연동 행이라도 자재항목은 변경 가능
@@ -593,8 +560,8 @@ export function MaterialCostSection({
                           style={{ 
                             fontFamily: "Pretendard", 
                             fontSize: "14px",
-                            // 연동 행이면서 드롭다운인 경우 파란색 스타일 적용
-                            ...(isLinkedRow && materialNamesForRow.length > 1 ? {
+                            // 연동 행이면 파란색 스타일 적용
+                            ...(isLinkedRow ? {
                               color: "rgba(59, 130, 246, 0.9)",
                               background: "rgba(59, 130, 246, 0.08)",
                               borderRadius: "6px",
@@ -611,7 +578,6 @@ export function MaterialCostSection({
                           ))}
                         </SelectContent>
                       </Select>
-                    )}
                   </td>
                   
                   {/* 단가 */}
@@ -640,7 +606,7 @@ export function MaterialCostSection({
                         className="h-9 border-0 bg-yellow-50 text-right"
                         style={{ fontFamily: "Pretendard", fontSize: "14px", minWidth: "80px" }}
                         placeholder="직접입력"
-                        disabled={isReadOnly || isLinkedRow}
+                        disabled={isReadOnly}
                         data-testid={`input-단가-${currentGlobalIndex}`}
                       />
                     ) : (
