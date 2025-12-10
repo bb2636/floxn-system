@@ -420,10 +420,9 @@ export function LaborCostSection({
     // 노무비인 경우: 기존 catalog에서 세부항목 조회
     if (!catalog.length) return [];
     
-    // 공종 + 공사명으로 필터링해서 노임항목(세부항목) 추출
+    // 노무비 DB는 공종만으로 필터링 (공사명과 무관하게 해당 공종의 모든 노임항목 표시)
     const filtered = catalog.filter(item => 
       item.공종 === category && 
-      item.공사명 === lookupWorkName &&
       item.세부공사 === '노무비'
     );
     
