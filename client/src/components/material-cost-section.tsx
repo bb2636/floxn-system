@@ -96,10 +96,11 @@ export function MaterialCostSection({
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
 
-        // 자재항목 변경 시 (= 자재 변경)
+        // 자재항목 변경 시 (= 자재 변경) → 공사명도 자동 설정
         if (field === '자재항목' || field === '자재') {
           updated.자재항목 = value;
           updated.자재 = value;
+          updated.공사명 = value; // 자재항목 = 공사명 자동 동기화
           updated.규격 = '';
           updated.단위 = '';
           updated.단가 = 0;
@@ -118,6 +119,7 @@ export function MaterialCostSection({
             updated.단가 = price;
             updated.기준단가 = price;
           }
+          console.log('[자재비] 자재항목 선택:', value, '→ 공사명 자동 설정:', updated.공사명);
         }
 
         // 수량 변경 시 합계 재계산
@@ -314,10 +316,23 @@ export function MaterialCostSection({
                           value={row.공종 || ''} 
                           onValueChange={(value) => {
                             console.log('[자재비 공종 드롭다운] 선택됨:', value);
-                            // 해당 그룹 내 모든 행의 공종을 업데이트
+                            // 해당 그룹 내 모든 행의 공종을 업데이트하고 공사명도 초기화
                             onRowsChange(rows.map(r => {
                               if (groupRows.some(gr => gr.id === r.id)) {
-                                return { ...r, 공종: value };
+                                return { 
+                                  ...r, 
+                                  공종: value,
+                                  공사명: '-', // 공종 선택 시 공사명 초기화 (자재항목 선택 시 자동 갱신)
+                                  자재항목: '', // 자재항목 초기화
+                                  자재: '',
+                                  규격: '',
+                                  단위: '',
+                                  단가: 0,
+                                  기준단가: 0,
+                                  수량: 0,
+                                  합계: 0,
+                                  금액: 0,
+                                };
                               }
                               return r;
                             }));
