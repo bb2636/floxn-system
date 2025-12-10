@@ -45,6 +45,7 @@ export interface IlwidaegaCatalogItem {
   공사명: string;
   노임항목: string;
   금액: number | null;
+  기준작업량: number | null;
 }
 
 // 노무비 테이블 행
@@ -62,7 +63,8 @@ export interface LaborCostRow {
   priceStandard: string; // 단가 기준 - select (민/위/기/JV)
   unit: string; // 단위 - readonly
   standardPrice: number; // 기준가(단위) - readonly (단가_인 for 노무비)
-  quantity: number; // 수량 - editable
+  standardWorkQuantity?: number; // 기준작업량 - 일위대가DB에서 가져옴
+  quantity: number; // 수량 - 자동계산 (복구면적 ÷ 기준작업량)
   applicationRates: { // 적용면 - radio buttons (only one can be selected)
     ceiling: boolean; // 천장
     wall: boolean; // 벽체
@@ -196,12 +198,13 @@ export function LaborCostSection({
     return workNameAreas;
   }, [areaCalculationRows]);
 
-  // 연동된 행의 복구면적 자동 업데이트 (공사명 기준)
+  // 연동된 행의 복구면적 및 수량 자동 업데이트 (공사명 기준)
+  // 수량 = 복구면적 ÷ 기준작업량
   useEffect(() => {
     if (!enableAreaImport) return;
     if (rows.length === 0) return;
     
-    // 연동된 행 중 복구면적이 업데이트 필요한 행 찾기
+    // 연동된 행 중 복구면적/수량이 업데이트 필요한 행 찾기
     let hasChanges = false;
     const updatedRows = rows.map(row => {
       // 연동된 행만 대상
@@ -213,23 +216,29 @@ export function LaborCostSection({
       // 공사명으로 복구면적 조회
       const newDamageArea = calculateRecoveryAreaByWorkName[row.workName] || 0;
       
+      // 수량 계산: 복구면적 ÷ 기준작업량
+      const standardWorkQty = row.standardWorkQuantity || 0;
+      const newQuantity = standardWorkQty > 0 
+        ? Math.round((newDamageArea / standardWorkQty) * 100) / 100 
+        : row.quantity;
+      
       // 기존 값과 동일하면 업데이트하지 않음
-      if (row.damageArea === newDamageArea) return row;
+      if (row.damageArea === newDamageArea && row.quantity === newQuantity) return row;
       
       hasChanges = true;
       
-      // 금액 재계산
+      // 금액 재계산: 적용단가 × 수량
       const pricePerSqm = Number(row.pricePerSqm) || 0;
-      const quantity = Number(row.quantity) || 0;
       
       let newAmount = row.amount;
       if (row.detailWork === '일위대가') {
-        newAmount = Math.round(pricePerSqm * newDamageArea * quantity);
+        newAmount = Math.round(pricePerSqm * newQuantity);
       }
       
       return { 
         ...row, 
         damageArea: newDamageArea,
+        quantity: newQuantity,
         amount: newAmount
       };
     });

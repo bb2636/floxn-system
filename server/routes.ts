@@ -2807,10 +2807,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const catalog: any[] = [];
       const headers = excelData.headers || [];
       
-      // 일위대가 format: 공종, 공사명, 노임항목, 금액
+      // 일위대가 format: 공종, 공사명, 노임항목, 금액, 기준작업량
       // Find column indices by header names with EXACT match priority
       // NOTE: Headers like '노임항목(공종에 종속)' contain '공종' substring, so use exact match first
-      let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = 3;
+      let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = 3, standardWorkQuantityIdx = -1;
       
       // First pass: exact or near-exact matches (priority)
       headers.forEach((h: string, idx: number) => {
@@ -2821,6 +2821,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (trimmed.includes('노임항목')) laborItemIdx = idx;
         // 금액 exact or near-exact
         if (trimmed.includes('금액')) priceIdx = idx;
+        // 기준작업량
+        if (trimmed.includes('기준작업량')) standardWorkQuantityIdx = idx;
       });
       
       // Second pass: 공사명 with more specific matching (exclude 노임항목 column)
@@ -2832,7 +2834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      console.log('일위대가 column indices:', { categoryIdx, workNameIdx, laborItemIdx, priceIdx });
+      console.log('일위대가 column indices:', { categoryIdx, workNameIdx, laborItemIdx, priceIdx, standardWorkQuantityIdx });
 
       let prevCategory: string | null = null;
       let prevWorkName: string | null = null;
@@ -2845,6 +2847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
         const laborItem: string = safeString(row[laborItemIdx]);
         const price = parsePrice(row[priceIdx]);
+        const standardWorkQuantity = standardWorkQuantityIdx >= 0 ? parsePrice(row[standardWorkQuantityIdx]) : null;
 
         // Update forward-fill values
         if (safeString(row[categoryIdx])) prevCategory = category;
@@ -2861,6 +2864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           공사명: workName,
           노임항목: laborItem,
           금액: price,
+          기준작업량: standardWorkQuantity,
         });
       }
 
