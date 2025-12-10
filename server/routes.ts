@@ -2807,10 +2807,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const catalog: any[] = [];
       const headers = excelData.headers || [];
       
-      // 일위대가 format: 공종, 공사명, 노임항목, 금액, 기준작업량
+      // 일위대가 format: 공종, 공사명, 노임항목, 기준작업량, 노임단가(인당), 일위대가(노임단가/기준작업량)
       // Find column indices by header names with EXACT match priority
       // NOTE: Headers like '노임항목(공종에 종속)' contain '공종' substring, so use exact match first
-      let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = 3, standardWorkQuantityIdx = -1;
+      let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = -1, standardWorkQuantityIdx = -1;
       
       // First pass: exact or near-exact matches (priority)
       headers.forEach((h: string, idx: number) => {
@@ -2819,8 +2819,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (trimmed === '공종') categoryIdx = idx;
         // 노임항목 must be detected before checking for 공사명
         if (trimmed.includes('노임항목')) laborItemIdx = idx;
-        // 금액 exact or near-exact
-        if (trimmed.includes('금액')) priceIdx = idx;
+        // 금액 또는 일위대가 (금액 컬럼)
+        if (trimmed.includes('금액') || trimmed.includes('일위대가') || trimmed.includes('노임단가')) {
+          // 일위대가 컬럼이 금액으로 사용됨 (우선순위: 일위대가 > 금액)
+          if (trimmed.includes('일위대가')) {
+            priceIdx = idx;
+          } else if (priceIdx < 0) {
+            priceIdx = idx;
+          }
+        }
         // 기준작업량
         if (trimmed.includes('기준작업량')) standardWorkQuantityIdx = idx;
       });
@@ -2834,6 +2841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
+      console.log('일위대가 headers:', headers);
       console.log('일위대가 column indices:', { categoryIdx, workNameIdx, laborItemIdx, priceIdx, standardWorkQuantityIdx });
 
       let prevCategory: string | null = null;
