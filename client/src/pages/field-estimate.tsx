@@ -2166,38 +2166,40 @@ export default function FieldEstimate() {
       return [...filteredRows, ...newLaborRows];
     });
     
-    // 자재비 DB에서 해당 공종의 자재 찾기 (정규화된 비교)
-    // 1순위: 공종 일치 + 자재명이 공사명으로 시작하는 것
-    // 2순위: 공종 일치 + 자재명에 공사명 포함
-    // 3순위: 공종만 일치
-    const exactStartMatch = materialCatalog.filter(item => 
-      normalizeForMatch(item.workType) === normalizedWorkType && 
-      normalizeForMatch(item.materialName).startsWith(normalizedWorkName)
+    // 자재비 DB에서 해당 공종+공사명의 자재 찾기 (materialByWorknameCatalog 사용)
+    // 1순위: 공종(공사명) 일치 + 자재명이 공사명으로 시작하는 것
+    // 2순위: 공종(공사명) 일치 + 자재명이 공사명과 일치하는 것
+    // 3순위: 공종(공사명)만 일치
+    const exactStartMatch = materialByWorknameCatalog.filter(item => 
+      normalizeForMatch(item.공사명) === normalizedWorkType && 
+      normalizeForMatch(item.자재명).startsWith(normalizedWorkName)
     );
     
-    const containsMatch = exactStartMatch.length === 0 
-      ? materialCatalog.filter(item => 
-          normalizeForMatch(item.workType) === normalizedWorkType && 
-          normalizeForMatch(item.materialName).includes(normalizedWorkName)
+    const exactMatch = exactStartMatch.length === 0 
+      ? materialByWorknameCatalog.filter(item => 
+          normalizeForMatch(item.공사명) === normalizedWorkType && 
+          normalizeForMatch(item.자재명) === normalizedWorkName
         )
       : [];
     
-    const workTypeOnlyMatch = (exactStartMatch.length === 0 && containsMatch.length === 0)
-      ? materialCatalog.filter(item => normalizeForMatch(item.workType) === normalizedWorkType)
+    const workTypeOnlyMatch = (exactStartMatch.length === 0 && exactMatch.length === 0)
+      ? materialByWorknameCatalog.filter(item => normalizeForMatch(item.공사명) === normalizedWorkType)
       : [];
     
     const materialsToUse = exactStartMatch.length > 0 
       ? exactStartMatch 
-      : (containsMatch.length > 0 ? containsMatch : workTypeOnlyMatch);
+      : (exactMatch.length > 0 ? exactMatch : workTypeOnlyMatch);
+    
+    console.log('[연동] 자재비 DB 조회:', workType, workName, '→ 매칭:', materialsToUse.length, '개');
     
     // 자재 행 생성/업데이트 (DB에 매칭이 있으면 생성, 1개면 자동완성, 여러개면 드롭다운에서 선택)
     const isSingleMatch = materialsToUse.length === 1;
     const materialItem = materialsToUse.length > 0 ? materialsToUse[0] : null;
-    const materialName = isSingleMatch && materialItem ? materialItem.materialName : '';
-    const spec = isSingleMatch && materialItem ? (materialItem.specification || '') : '';
-    const unit = isSingleMatch && materialItem ? (materialItem.unit || 'EA') : '';
+    const materialName = isSingleMatch && materialItem ? materialItem.자재명 : '';
+    const spec = isSingleMatch && materialItem ? (materialItem.규격 || '') : '';
+    const unit = isSingleMatch && materialItem ? (materialItem.단위 || 'EA') : '';
     const unitPrice = isSingleMatch && materialItem 
-      ? (typeof materialItem.standardPrice === 'number' ? materialItem.standardPrice : 0) 
+      ? (typeof materialItem.금액 === 'number' ? materialItem.금액 : 0) 
       : 0;
     
     setMaterialRows(prev => {
