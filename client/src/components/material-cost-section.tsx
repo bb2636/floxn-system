@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, GripVertical } from "lucide-react";
+import { Trash2, GripVertical, Lock } from "lucide-react";
 
 // MaterialCatalogItem matches excel_data 자재비 response
 export interface MaterialCatalogItem {
@@ -140,6 +140,11 @@ export function MaterialCostSection({
   // 행 업데이트
   const updateRow = (rowId: string, field: keyof MaterialRow, value: any) => {
     if (isReadOnly) return;
+    
+    // 연동 행은 수정 불가
+    const targetRow = rows.find(r => r.id === rowId);
+    if (targetRow?.isLinkedFromRecovery) return;
+    
     onRowsChange(rows.map(row => {
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
@@ -274,11 +279,13 @@ export function MaterialCostSection({
             const price = row.단가 || row.기준단가 || 0;
             // 합계 값 (합계 또는 금액 사용)
             const total = row.합계 || row.금액 || 0;
+            // 연동 행인지 확인 (복구면적에서 자동 생성된 행)
+            const isLinkedRow = row.isLinkedFromRecovery === true;
             
             return (
               <tr 
                 key={row.id} 
-                draggable={!isReadOnly}
+                draggable={!isReadOnly && !isLinkedRow}
                 onDragStart={(e) => handleDragStart(e, row.id)}
                 onDragOver={(e) => handleDragOver(e, row.id)}
                 onDragLeave={handleDragLeave}
@@ -288,9 +295,14 @@ export function MaterialCostSection({
                   height: "56px", 
                   borderBottom: "1px solid #E5E7EB",
                   opacity: draggedRowId === row.id ? 0.5 : 1,
-                  background: dragOverRowId === row.id ? "rgba(59, 130, 246, 0.1)" : undefined,
+                  background: dragOverRowId === row.id 
+                    ? "rgba(59, 130, 246, 0.1)" 
+                    : isLinkedRow 
+                      ? "rgba(59, 130, 246, 0.03)" // 연동 행 배경색
+                      : undefined,
                   transition: "background 0.2s",
                 }}
+                title={isLinkedRow ? "복구면적에서 자동 생성된 행 (수정 불가)" : undefined}
               >
                 {/* 드래그 핸들 */}
                 <td 
@@ -318,48 +330,90 @@ export function MaterialCostSection({
                   />
                 </td>
                 
-                {/* 공종 - Select */}
+                {/* 공종 - Select 또는 잠금 표시 */}
                 <td style={{ padding: "0 8px" }}>
-                  <Select 
-                    value={row.공종} 
-                    onValueChange={(value) => updateRow(row.id, '공종', value)}
-                    disabled={isReadOnly}
-                  >
-                    <SelectTrigger 
-                      className="h-9 border-0" 
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      data-testid={`select-공종-material-${index}`}
+                  {isLinkedRow ? (
+                    <div 
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        height: "36px",
+                        padding: "0 8px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        color: "rgba(59, 130, 246, 0.9)",
+                        background: "rgba(59, 130, 246, 0.08)",
+                        borderRadius: "6px",
+                        border: "1px solid rgba(59, 130, 246, 0.2)",
+                      }}
+                      title="복구면적에서 연동됨 (수정 불가)"
                     >
-                      <SelectValue placeholder="선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materialCategoryOptions.filter(cat => cat && cat.trim() !== '').map(cat => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      <Lock style={{ width: "12px", height: "12px", marginRight: "6px", opacity: 0.6 }} />
+                      {row.공종 || ""}
+                    </div>
+                  ) : (
+                    <Select 
+                      value={row.공종} 
+                      onValueChange={(value) => updateRow(row.id, '공종', value)}
+                      disabled={isReadOnly}
+                    >
+                      <SelectTrigger 
+                        className="h-9 border-0" 
+                        style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                        data-testid={`select-공종-material-${index}`}
+                      >
+                        <SelectValue placeholder="선택" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {materialCategoryOptions.filter(cat => cat && cat.trim() !== '').map(cat => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </td>
                 
-                {/* 자재항목 - Select */}
+                {/* 자재항목 - Select 또는 잠금 표시 */}
                 <td style={{ padding: "0 8px" }}>
-                  <Select 
-                    value={materialItem} 
-                    onValueChange={(value) => updateRow(row.id, '자재항목', value)}
-                    disabled={!row.공종 || isReadOnly}
-                  >
-                    <SelectTrigger 
-                      className="h-9 border-0" 
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      data-testid={`select-자재항목-${index}`}
+                  {isLinkedRow ? (
+                    <div 
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        height: "36px",
+                        padding: "0 8px",
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        color: "rgba(59, 130, 246, 0.9)",
+                        background: "rgba(59, 130, 246, 0.08)",
+                        borderRadius: "6px",
+                        border: "1px solid rgba(59, 130, 246, 0.2)",
+                      }}
+                      title="복구면적에서 연동됨 (수정 불가)"
                     >
-                      <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {materialNamesForRow.filter(name => name && name.trim() !== '').map(name => (
-                        <SelectItem key={name} value={name}>{name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      <Lock style={{ width: "12px", height: "12px", marginRight: "6px", opacity: 0.6 }} />
+                      {materialItem || ""}
+                    </div>
+                  ) : (
+                    <Select 
+                      value={materialItem} 
+                      onValueChange={(value) => updateRow(row.id, '자재항목', value)}
+                      disabled={!row.공종 || isReadOnly}
+                    >
+                      <SelectTrigger 
+                        className="h-9 border-0" 
+                        style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                        data-testid={`select-자재항목-${index}`}
+                      >
+                        <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {materialNamesForRow.filter(name => name && name.trim() !== '').map(name => (
+                          <SelectItem key={name} value={name}>{name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 </td>
                 
                 {/* 단가 - Readonly */}
@@ -367,46 +421,66 @@ export function MaterialCostSection({
                   {price.toLocaleString()}
                 </td>
                 
-                {/* 수량(m2) - Editable Input */}
-                <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                {/* 수량(m2) - Editable Input (연동 행은 수정 불가) */}
+                <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF" }}>
                   <Input
                     type="number"
                     value={row.수량m2 || ''}
                     onChange={(e) => updateRow(row.id, '수량m2', Number(e.target.value) || 0)}
                     className="h-9 border-0 bg-transparent text-center"
-                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    disabled={isReadOnly}
+                    style={{ 
+                      fontFamily: "Pretendard", 
+                      fontSize: "14px",
+                      color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                    }}
+                    disabled={isReadOnly || isLinkedRow}
                     data-testid={`input-수량m2-${index}`}
                   />
                 </td>
                 
-                {/* 수량(EA) - Editable Input */}
-                <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                {/* 수량(EA) - Editable Input (연동 행은 수정 불가) */}
+                <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF" }}>
                   <Input
                     type="number"
                     value={row.수량EA || ''}
                     onChange={(e) => updateRow(row.id, '수량EA', Number(e.target.value) || 0)}
                     className="h-9 border-0 bg-transparent text-center"
-                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    disabled={isReadOnly}
+                    style={{ 
+                      fontFamily: "Pretendard", 
+                      fontSize: "14px",
+                      color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                    }}
+                    disabled={isReadOnly || isLinkedRow}
                     data-testid={`input-수량EA-${index}`}
                   />
                 </td>
                 
                 {/* 합계 - Readonly Calculated */}
-                <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "right", background: "rgba(12, 12, 12, 0.02)" }}>
+                <td style={{ 
+                  padding: "0 12px", 
+                  fontFamily: "Pretendard", 
+                  fontSize: "14px", 
+                  fontWeight: 600, 
+                  color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "#0C0C0C", 
+                  textAlign: "right", 
+                  background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)" 
+                }}>
                   {total.toLocaleString()}
                 </td>
                 
-                {/* 비고 - Editable Input */}
-                <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                {/* 비고 - Editable Input (연동 행은 수정 불가) */}
+                <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF" }}>
                   <Input
                     value={row.비고}
                     onChange={(e) => updateRow(row.id, '비고', e.target.value)}
                     className="h-9 border-0 bg-transparent"
-                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                    placeholder="현장 상황에 따라 변동"
-                    disabled={isReadOnly}
+                    style={{ 
+                      fontFamily: "Pretendard", 
+                      fontSize: "14px",
+                      color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                    }}
+                    placeholder={isLinkedRow ? "복구면적에서 연동됨" : "현장 상황에 따라 변동"}
+                    disabled={isReadOnly || isLinkedRow}
                     data-testid={`input-비고-${index}`}
                   />
                 </td>

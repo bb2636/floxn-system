@@ -550,6 +550,10 @@ export function LaborCostSection({
   const updateRow = (rowId: string, field: keyof LaborCostRow, value: any) => {
     if (isReadOnly) return;
     
+    // 연동 행은 수정 불가 (복구면적에서 자동 생성된 행)
+    const targetRow = rows.find(r => r.id === rowId);
+    if (targetRow?.isLinkedFromRecovery) return;
+    
     let demolitionRowToAdd: LaborCostRow | null = null;
     const currentRow = rows.find(r => r.id === rowId);
     
@@ -1185,113 +1189,184 @@ export function LaborCostSection({
                     </div>
                   </td>
                   
-                  {/* 공사명 - 각 행마다 별도 셀 (그룹화 없음) */}
+                  {/* 공사명 - 각 행마다 별도 셀 (연동 행은 잠금 표시) */}
                   <td style={{ padding: "0 8px" }}>
-                    <Select 
-                      value={row.workName || undefined} 
-                      onValueChange={(value) => handleWorkNameChange(row.id, value)}
-                      onOpenChange={(open) => handleWorkNameSelectClose(row.id, open)}
-                      disabled={!row.category}
-                    >
-                      <SelectTrigger 
-                        className="h-9 border-0" 
-                        style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                        data-testid={`select-workName-labor-${globalIndex}`}
+                    {isLinkedRow ? (
+                      <div 
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          height: "36px",
+                          padding: "0 8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "rgba(59, 130, 246, 0.9)",
+                          background: "rgba(59, 130, 246, 0.08)",
+                          borderRadius: "6px",
+                          border: "1px solid rgba(59, 130, 246, 0.2)",
+                        }}
+                        title="복구면적에서 연동됨 (수정 불가)"
                       >
-                        <SelectValue placeholder="공사명 선택">
-                          {row.workName || "공사명 선택"}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getWorkNameOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <Lock style={{ width: "12px", height: "12px", marginRight: "6px", opacity: 0.6 }} />
+                        {row.workName || ""}
+                      </div>
+                    ) : (
+                      <Select 
+                        value={row.workName || undefined} 
+                        onValueChange={(value) => handleWorkNameChange(row.id, value)}
+                        onOpenChange={(open) => handleWorkNameSelectClose(row.id, open)}
+                        disabled={!row.category}
+                      >
+                        <SelectTrigger 
+                          className="h-9 border-0" 
+                          style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                          data-testid={`select-workName-labor-${globalIndex}`}
+                        >
+                          <SelectValue placeholder="공사명 선택">
+                            {row.workName || "공사명 선택"}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getWorkNameOptions(row.category, row.workName).filter(opt => opt && opt.trim() !== '').map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </td>
                   
-                  {/* 노임항목 */}
+                  {/* 노임항목 - 연동 행은 잠금 표시 */}
                   <td style={{ padding: "0 8px" }}>
-                    <Select 
-                      value={row.detailItem || undefined} 
-                      onValueChange={(value) => updateRow(row.id, 'detailItem', value)}
-                      disabled={!row.workName}
-                    >
-                      <SelectTrigger 
-                        className="h-9 border-0" 
-                        style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                        data-testid={`select-laborItem-${globalIndex}`}
+                    {isLinkedRow ? (
+                      <div 
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          height: "36px",
+                          padding: "0 8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "rgba(59, 130, 246, 0.9)",
+                          background: "rgba(59, 130, 246, 0.08)",
+                          borderRadius: "6px",
+                          border: "1px solid rgba(59, 130, 246, 0.2)",
+                        }}
+                        title="복구면적에서 연동됨 (수정 불가)"
                       >
-                        <SelectValue placeholder="선택" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getDetailItemOptions(row.category, row.workName, row.detailWork || '노무비').filter(opt => opt && opt.trim() !== '').map(opt => (
-                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <Lock style={{ width: "12px", height: "12px", marginRight: "6px", opacity: 0.6 }} />
+                        {row.detailItem || ""}
+                      </div>
+                    ) : (
+                      <Select 
+                        value={row.detailItem || undefined} 
+                        onValueChange={(value) => updateRow(row.id, 'detailItem', value)}
+                        disabled={!row.workName}
+                      >
+                        <SelectTrigger 
+                          className="h-9 border-0" 
+                          style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                          data-testid={`select-laborItem-${globalIndex}`}
+                        >
+                          <SelectValue placeholder="선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getDetailItemOptions(row.category, row.workName, row.detailWork || '노무비').filter(opt => opt && opt.trim() !== '').map(opt => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </td>
                   
-                  {/* 복구면적 */}
-                  <td style={{ padding: "0 8px" }}>
+                  {/* 복구면적 - 연동 행은 수정 불가 */}
+                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
                     <Input
                       type="number"
                       step="0.1"
                       value={Number(Number(row.damageArea || 0).toFixed(1))}
                       onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
                       className="h-9 border text-center"
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "14px",
+                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                      }}
+                      disabled={isLinkedRow}
                       data-testid={`input-recoveryArea-labor-${globalIndex}`}
                     />
                   </td>
                   
-                  {/* 적용단가 */}
-                  <td style={{ padding: "0 8px" }}>
+                  {/* 적용단가 - 연동 행은 수정 불가 */}
+                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
                     <Input
                       type="number"
                       value={row.pricePerSqm || 0}
                       onChange={(e) => updateRow(row.id, 'pricePerSqm', Number(e.target.value) || 0)}
                       className="h-9 border text-center"
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "14px",
+                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                      }}
+                      disabled={isLinkedRow}
                       data-testid={`input-unitPrice-labor-${globalIndex}`}
                     />
                   </td>
                   
-                  {/* 수량(인) */}
-                  <td style={{ padding: "0 8px" }}>
+                  {/* 수량(인) - 연동 행은 수정 불가 */}
+                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
                     <Input
                       type="number"
                       step="0.01"
                       value={row.quantity}
                       onChange={(e) => updateRow(row.id, 'quantity', Number(e.target.value) || 0)}
                       className="h-9 border text-center"
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "14px",
+                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                      }}
+                      disabled={isLinkedRow}
                       data-testid={`input-quantity-labor-${globalIndex}`}
                     />
                   </td>
                   
                   {/* 합계 */}
-                  <td style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C", textAlign: "center", background: "rgba(12, 12, 12, 0.02)" }}>
+                  <td style={{ 
+                    padding: "0 12px", 
+                    fontFamily: "Pretendard", 
+                    fontSize: "14px", 
+                    fontWeight: 600, 
+                    color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "#0C0C0C", 
+                    textAlign: "center", 
+                    background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)" 
+                  }}>
                     {(row.amount ?? 0).toLocaleString()}
                   </td>
                   
-                  {/* 경비 여부 */}
-                  <td style={{ padding: "0 12px", textAlign: "center" }}>
+                  {/* 경비 여부 - 연동 행은 수정 불가 */}
+                  <td style={{ padding: "0 12px", textAlign: "center", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
                     <Checkbox
                       checked={!row.includeInEstimate}
                       onCheckedChange={(checked) => updateRow(row.id, 'includeInEstimate', !checked)}
+                      disabled={isLinkedRow}
                       data-testid={`checkbox-expense-labor-${globalIndex}`}
                     />
                   </td>
                   
-                  {/* 비고 */}
-                  <td style={{ padding: "0 8px" }}>
+                  {/* 비고 - 연동 행은 수정 불가 */}
+                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
                     <Input
                       value={row.request}
                       onChange={(e) => updateRow(row.id, 'request', e.target.value)}
                       className="h-9 border"
-                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                      placeholder=""
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "14px",
+                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                      }}
+                      placeholder={isLinkedRow ? "복구면적에서 연동됨" : ""}
+                      disabled={isLinkedRow}
                       data-testid={`input-note-labor-${globalIndex}`}
                     />
                   </td>
