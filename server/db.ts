@@ -20,6 +20,7 @@ if (!databaseUrl) {
 }
 
 console.log(`[DB] Connected to ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} database`);
+console.log(`[DB] Using database URL starting with: ${databaseUrl?.substring(0, 50)}...`);
 
 export const pool = new Pool({ connectionString: databaseUrl });
 export const db = drizzle({ client: pool, schema });

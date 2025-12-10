@@ -1418,6 +1418,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint: List all excel data records (temporary - no auth required)
+  app.get("/api/debug/excel-data-list", async (req, res) => {
+    try {
+      const types = ['노무비', '자재비', '일위대가'];
+      const result: any = {};
+      for (const type of types) {
+        const dataList = await storage.listExcelData(type);
+        result[type] = dataList.map(d => ({
+          id: d.id,
+          title: d.title,
+          headers: d.headers,
+          rowCount: Array.isArray(d.data) ? d.data.length : 0,
+          uploadedAt: d.uploadedAt
+        }));
+      }
+      console.log('[DEBUG] Excel data list:', JSON.stringify(result, null, 2));
+      res.json(result);
+    } catch (error) {
+      console.error("Debug excel data list error:", error);
+      res.status(500).json({ error: "조회 중 오류" });
+    }
+  });
+
   // Excel Data APIs (노무비/자재비)
   // Get latest version for a type (backward compatibility - original behavior)
   app.get("/api/excel-data/:type", async (req, res) => {
