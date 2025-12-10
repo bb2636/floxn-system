@@ -1694,13 +1694,16 @@ export default function FieldEstimate() {
         
         // 공사명 변경 시 노무비/자재비 자동 연동 (공종이 이미 설정된 경우)
         if (field === 'workName' && updated.workType && value) {
+          // 복구면적 값 가져오기
+          const repairAreaValue = parseFloat(updated.repairArea) || 0;
           // 동기 방식으로 연동 (setLaborCostRows/setMaterialRows 내부에서 중복 체크)
-          syncAreaRowToLaborAndMaterial(updated.workType, value, rowId);
+          syncAreaRowToLaborAndMaterial(updated.workType, value, rowId, repairAreaValue);
         }
         
         // 공종 변경 시 노무비/자재비 자동 연동 (공사명이 이미 설정된 경우)
         if (field === 'workType' && updated.workName && value) {
-          syncAreaRowToLaborAndMaterial(value, updated.workName, rowId);
+          const repairAreaValue = parseFloat(updated.repairArea) || 0;
+          syncAreaRowToLaborAndMaterial(value, updated.workName, rowId, repairAreaValue);
         }
         
         // 가로/세로 변경 시 면적 자동 계산
@@ -1739,8 +1742,14 @@ export default function FieldEstimate() {
             updated.repairArea = area;
           }
           
-          // 노무비 피해면적 연동은 팝업(피해면적산출표)을 통해서만 수행됨
-          // 인덱스 기반 자동 연동 제거 - 팝업에서 공사명 선택 후 불러오기로만 연동
+          // 복구면적 변경 시 자재비 수량 업데이트 (공종과 공사명이 설정된 경우)
+          if (updated.workType && updated.workName) {
+            const repairAreaValue = parseFloat(updated.repairArea) || 0;
+            // setTimeout으로 비동기 호출하여 rows 상태 업데이트 후 실행
+            setTimeout(() => {
+              syncAreaRowToLaborAndMaterial(updated.workType, updated.workName, rowId, repairAreaValue);
+            }, 0);
+          }
         }
         
         return updated;
@@ -2112,8 +2121,27 @@ export default function FieldEstimate() {
   
   // 복구면적 산출표 → 노무비/자재비 자동 연동 함수 (일위대가DB 기반)
   // 일위대가DB에서 공종+공사명으로 조회하여 ALL matching 노임항목 행을 자동 생성
-  const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string) => {
+  const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string, repairArea?: number) => {
     if (!workType || !workName) return;
+    
+    // 도배, 마루, 장판의 경우 모든 위치(바닥+천장+벽면)의 면적 합계 계산
+    const surfaceFinishWorkNames = ['도배', '마루', '장판'];
+    let totalMaterialArea = repairArea || 0;
+    
+    if (surfaceFinishWorkNames.includes(workName)) {
+      // 같은 공사명의 모든 행에서 면적 합산 (천장 ×1.3 적용 안 함 - 자재비는 실면적 기준)
+      let sumArea = 0;
+      rows.forEach(row => {
+        if (row.workName === workName) {
+          const rowArea = parseFloat(row.repairArea) || 0;
+          sumArea += rowArea;
+        }
+      });
+      if (sumArea > 0) {
+        totalMaterialArea = Math.round(sumArea * 10) / 10;
+      }
+      console.log(`[자재비 수량] ${workName} 전체 면적 합계: ${totalMaterialArea}`);
+    }
     
     console.log('[일위대가 연동] 복구면적 → 노무비:', workType, workName);
     
@@ -2362,16 +2390,14 @@ export default function FieldEstimate() {
       const existingRowIndex = prev.findIndex(r => r.sourceAreaRowId === sourceRowId);
       
       if (existingRowIndex !== -1) {
-        // 기존 행이 있으면 공종/공사명만 업데이트 (사용자 입력은 유지)
+        // 기존 행이 있으면 공종/공사명 및 수량 업데이트
         const existingRow = prev[existingRowIndex];
-        if (existingRow.공종 === workType && existingRow.공사명 === workName) {
-          return prev; // 동일하면 변경 없음
-        }
         
-        console.log('[연동] 자재비 행 업데이트:', existingRow.공종, existingRow.공사명, '→', workType, workName);
+        console.log('[연동] 자재비 행 업데이트:', existingRow.공종, existingRow.공사명, '→', workType, workName, `수량: ${totalMaterialArea}`);
         
         const updatedRows = [...prev];
-        const existingM2 = existingRow.수량m2 || 0;
+        // 복구면적에서 수량 자동 업데이트 (연동 행인 경우)
+        const newM2 = totalMaterialArea > 0 ? totalMaterialArea : (existingRow.수량m2 || 0);
         const existingEA = existingRow.수량EA || 0;
         const newPrice = materialsToUse.length > 0 ? unitPrice : (existingRow.단가 || existingRow.기준단가 || 0);
         updatedRows[existingRowIndex] = {
@@ -2387,13 +2413,19 @@ export default function FieldEstimate() {
           단위: materialsToUse.length > 0 ? unit : existingRow.단위,
           단가: newPrice,
           기준단가: newPrice,
-          합계: Math.round(newPrice * (existingM2 + existingEA)),
-          금액: Math.round(newPrice * (existingM2 + existingEA)),
+          수량m2: newM2,
+          수량: newM2 + existingEA,
+          합계: Math.round(newPrice * (newM2 + existingEA)),
+          금액: Math.round(newPrice * (newM2 + existingEA)),
         };
         return updatedRows;
       }
       
       // 새 행 생성 (DB 매칭이 없어도 빈 행으로 생성)
+      // 복구면적에서 수량 자동 계산
+      const materialQuantity = totalMaterialArea;
+      const materialAmount = Math.round(unitPrice * materialQuantity);
+      
       const newMaterialRow: MaterialRow = {
         id: `material-linked-${Date.now()}-${Math.random()}`,
         공종: workType,
@@ -2404,11 +2436,11 @@ export default function FieldEstimate() {
         단위: unit,
         단가: unitPrice,
         기준단가: unitPrice,
-        수량m2: 0,
+        수량m2: materialQuantity,
         수량EA: 0,
-        수량: 0,
-        합계: 0,
-        금액: 0,
+        수량: materialQuantity,
+        합계: materialAmount,
+        금액: materialAmount,
         비고: '',
         sourceAreaRowId: sourceRowId, // 복구면적 행 ID로 연결
         isLinkedFromRecovery: true, // 복구면적 연동 표시
@@ -2416,6 +2448,7 @@ export default function FieldEstimate() {
       };
       
       console.log('[연동] 자재비 행 생성:', workType, workName, 
+        `수량: ${materialQuantity}`,
         materialsToUse.length > 0
           ? (isSingleMatch ? `자동: ${materialName} ${unitPrice}원` : `수동선택필요 (${materialsToUse.length}개 옵션)`)
           : '(DB 매칭 없음)');
