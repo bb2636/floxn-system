@@ -321,7 +321,8 @@ export function LaborCostSection({
         groups[key].totalRepairArea += area;
       }
       
-      groups[key].totalRepairArea = groups[key].천장 + groups[key].벽체 + groups[key].바닥;
+      // 천장은 1.3배 가산하여 복구면적 합계 계산
+      groups[key].totalRepairArea = groups[key].바닥 + groups[key].벽체 + (groups[key].천장 * 1.3);
     });
     
     return Object.values(groups);
@@ -1277,8 +1278,8 @@ export function LaborCostSection({
                     )}
                   </td>
                   
-                  {/* 복구면적 - 연동 행은 수정 불가 */}
-                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
+                  {/* 복구면적 - 항상 수정 불가 (연동 행: 자동계산, 개별 행: 입력 불가) */}
+                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)" }}>
                     <Input
                       type="number"
                       step="0.1"
@@ -1288,9 +1289,11 @@ export function LaborCostSection({
                       style={{ 
                         fontFamily: "Pretendard", 
                         fontSize: "14px",
-                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.5)",
+                        backgroundColor: isLinkedRow ? undefined : "rgba(12, 12, 12, 0.03)",
                       }}
-                      disabled={isLinkedRow}
+                      disabled={true}
+                      title={isLinkedRow ? "복구면적에서 자동 계산됨" : "개별 행은 복구면적 입력 불가"}
                       data-testid={`input-recoveryArea-labor-${globalIndex}`}
                     />
                   </td>
