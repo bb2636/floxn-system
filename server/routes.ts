@@ -2828,8 +2828,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             priceIdx = idx;
           }
         }
-        // 기준작업량
-        if (trimmed.includes('기준작업량')) standardWorkQuantityIdx = idx;
+        // 기준작업량 - '일위대가(노임단가/기준작업량)' 같은 복합 헤더 제외 (정확히 '기준작업량'만 매칭)
+        if (trimmed.includes('기준작업량') && !trimmed.includes('일위대가') && !trimmed.includes('노임단가')) {
+          standardWorkQuantityIdx = idx;
+        }
       });
       
       // Second pass: 공사명 with more specific matching (exclude 노임항목 column)
