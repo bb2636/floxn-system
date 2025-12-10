@@ -2874,15 +2874,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const catalog: any[] = [];
       const headers = excelData.headers || [];
       
-      // 자재비 format: 공종명(공사명), 자재명, 규격, 단위, 금액
-      let workNameIdx = 0, materialIdx = 1, specIdx = 2, unitIdx = 3, priceIdx = 4;
+      // 자재비 format: 공종명(공사명), 자재항목, 규격, 단위, 금액
+      console.log('[자재비 API] 헤더:', headers);
+      let workNameIdx = 0, materialItemIdx = 1, specIdx = 2, unitIdx = 3, priceIdx = 4;
       headers.forEach((h: string, idx: number) => {
+        const hLower = h?.toLowerCase() || '';
         if (h && (h.includes('공종명') || h.includes('공사명'))) workNameIdx = idx;
-        if (h && h.includes('자재명')) materialIdx = idx;
+        if (h && (h.includes('자재항목') || h.includes('자재명'))) materialItemIdx = idx;
         if (h && h.includes('규격')) specIdx = idx;
         if (h && h.includes('단위')) unitIdx = idx;
         if (h && h.includes('금액')) priceIdx = idx;
       });
+      console.log('[자재비 API] 인덱스:', { workNameIdx, materialItemIdx, specIdx, unitIdx, priceIdx });
 
       let prevWorkName: string | null = null;
 
@@ -2891,7 +2894,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!row || row.length === 0) continue;
 
         const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
-        const materialName: string = safeString(row[materialIdx]);
+        const materialItem: string = safeString(row[materialItemIdx]); // 자재항목
         const specification: string = safeString(row[specIdx]);
         const unit: string = safeString(row[unitIdx]);
         const price = parsePrice(row[priceIdx]);
@@ -2900,11 +2903,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (safeString(row[workNameIdx])) prevWorkName = workName;
 
         // Skip rows without essential data
-        if (!workName || !materialName) continue;
+        if (!workName || !materialItem) continue;
 
         catalog.push({
           공사명: workName,
-          자재명: materialName,
+          자재항목: materialItem, // 자재명 → 자재항목으로 변경
           규격: specification,
           단위: unit,
           금액: price,

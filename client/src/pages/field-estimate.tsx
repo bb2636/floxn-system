@@ -71,7 +71,7 @@ interface IlwidaegaCatalogItem {
 // 자재비 카탈로그 아이템 (공사명 기준 조회용)
 interface MaterialByWorknameCatalogItem {
   공사명: string;
-  자재명: string;
+  자재항목: string; // 자재비DB의 자재항목 컬럼
   규격: string;
   단위: string;
   금액: number | string | null;
@@ -207,10 +207,10 @@ export default function FieldEstimate() {
       return materialCatalog;
     }
     // materialByWorknameCatalog.공사명 = 공종 (도장공사, 목공사 등)
-    // materialByWorknameCatalog.자재명 = 자재항목
+    // materialByWorknameCatalog.자재항목 = 자재비DB의 자재항목
     return materialByWorknameCatalog.map(item => ({
       workType: item.공사명, // 공사명이 실제로는 공종
-      materialName: item.자재명,
+      materialName: item.자재항목, // 자재항목 사용
       specification: item.규격 || '',
       unit: item.단위 || '',
       standardPrice: item.금액 ?? 0, // null이면 0으로 변환
@@ -695,8 +695,8 @@ export default function FieldEstimate() {
           id: `material-linked-${Date.now()}-${Math.random()}`,
           공종: data.공종,
           공사명: data.공사명,
-          자재항목: firstMaterial.자재명,
-          자재: firstMaterial.자재명,
+          자재항목: firstMaterial.자재항목, // 자재항목 사용
+          자재: firstMaterial.자재항목, // 자재항목 사용
           규격: firstMaterial.규격 || '',
           단위: firstMaterial.단위 || '',
           단가: unitPrice,
@@ -2232,10 +2232,10 @@ export default function FieldEstimate() {
       normalizeForMatch(item.공사명) === normalizedWorkType
     );
     
-    // 공사명(workName)과 자재명이 일치하거나 포함관계인 것 우선
+    // 공사명(workName)과 자재항목이 일치하거나 포함관계인 것 우선
     const exactStartMatch = matchByWorkType.filter(item => 
-      normalizeForMatch(item.자재명).startsWith(normalizedWorkName) ||
-      normalizedWorkName.includes(normalizeForMatch(item.자재명))
+      normalizeForMatch(item.자재항목).startsWith(normalizedWorkName) ||
+      normalizedWorkName.includes(normalizeForMatch(item.자재항목))
     );
     
     const materialsToUse = exactStartMatch.length > 0 ? exactStartMatch : matchByWorkType;
@@ -2246,7 +2246,7 @@ export default function FieldEstimate() {
     // 자재 행 생성/업데이트 (1개면 자동완성, 여러개면 드롭다운에서 선택)
     const isSingleMatch = materialsToUse.length === 1;
     const materialItem = materialsToUse.length > 0 ? materialsToUse[0] : null;
-    const materialName = isSingleMatch && materialItem ? materialItem.자재명 : '';
+    const materialName = isSingleMatch && materialItem ? materialItem.자재항목 : '';
     const spec = isSingleMatch && materialItem ? (materialItem.규격 || '') : '';
     const unit = isSingleMatch && materialItem ? (materialItem.단위 || 'EA') : '';
     const unitPrice = isSingleMatch && materialItem 
