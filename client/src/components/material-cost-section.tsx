@@ -33,6 +33,7 @@ export interface MaterialRow {
   sourceLaborRowId?: string; // 노무비 행 ID 추적
   sourceAreaRowId?: string; // 복구면적 산출표 행 ID 추적
   isLinkedFromRecovery?: boolean; // 복구면적에서 연동 생성된 행인지 (true: 수정불가, false/undefined: 수정가능)
+  isManualPriceEntry?: boolean; // 단가 직접입력 필요 여부 (DB에서 '입력' 또는 '직접입력'인 경우)
 }
 
 interface MaterialCostSectionProps {
@@ -138,6 +139,7 @@ export function MaterialCostSection({
           updated.단위 = '';
           updated.단가 = 0;
           updated.기준단가 = 0;
+          updated.isManualPriceEntry = false;
           
           // 카탈로그에서 공종+공사명+자재항목으로 단가 가져오기
           const catalogItems = catalog.filter(item =>
@@ -149,11 +151,25 @@ export function MaterialCostSection({
             const first = catalogItems[0];
             updated.규격 = first.specification;
             updated.단위 = first.unit;
-            const price = typeof first.standardPrice === 'string' ? 0 : first.standardPrice;
-            updated.단가 = price;
-            updated.기준단가 = price;
+            
+            // 단가가 '입력', '직접입력' 문자열인 경우 직접 입력 필요
+            const priceValue = first.standardPrice;
+            const isManualEntry = typeof priceValue === 'string' && 
+              (priceValue.includes('입력') || priceValue === '입력' || priceValue === '직접입력');
+            
+            if (isManualEntry) {
+              updated.단가 = 0;
+              updated.기준단가 = 0;
+              updated.isManualPriceEntry = true;
+              console.log('[자재비] 직접입력 필요:', value, '원본값:', priceValue);
+            } else {
+              const price = typeof priceValue === 'number' ? priceValue : 0;
+              updated.단가 = price;
+              updated.기준단가 = price;
+              updated.isManualPriceEntry = false;
+            }
           }
-          console.log('[자재비] 자재항목 선택:', value, '공종:', updated.공종, '공사명:', updated.공사명);
+          console.log('[자재비] 자재항목 선택:', value, '공종:', updated.공종, '공사명:', updated.공사명, '직접입력:', updated.isManualPriceEntry);
         }
 
         // 수량 변경 시 합계 재계산
@@ -547,13 +563,36 @@ export function MaterialCostSection({
                   
                   {/* 단가 */}
                   <td style={{ 
-                    padding: "0 12px", 
+                    padding: "0 8px", 
                     fontFamily: "Pretendard", 
                     fontSize: "14px", 
                     color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.8)", 
                     textAlign: "right" 
                   }}>
-                    {price > 0 ? price.toLocaleString() : "-"}
+                    {row.isManualPriceEntry || (price === 0 && row.자재항목) ? (
+                      <Input
+                        type="number"
+                        value={price || ''}
+                        onChange={(e) => {
+                          const val = Number(e.target.value) || 0;
+                          onRowsChange(rows.map(r => {
+                            if (r.id === row.id) {
+                              const qty = (r.수량m2 || 0) + (r.수량EA || 0);
+                              const newTotal = Math.round(val * qty);
+                              return { ...r, 단가: val, 기준단가: val, 합계: newTotal, 금액: newTotal };
+                            }
+                            return r;
+                          }));
+                        }}
+                        className="h-9 border-0 bg-yellow-50 text-right"
+                        style={{ fontFamily: "Pretendard", fontSize: "14px", minWidth: "80px" }}
+                        placeholder="직접입력"
+                        disabled={isReadOnly || isLinkedRow}
+                        data-testid={`input-단가-${currentGlobalIndex}`}
+                      />
+                    ) : (
+                      <span>{price > 0 ? price.toLocaleString() : "-"}</span>
+                    )}
                   </td>
                   
                   {/* 수량 - 연동 행은 수식 표시, 수동 행은 입력 */}

@@ -2273,7 +2273,12 @@ export default function FieldEstimate() {
     const materialName = isSingleMatch && materialItem ? materialItem.자재항목 : '';
     const spec = isSingleMatch && materialItem ? (materialItem.규격 || '') : '';
     const unit = isSingleMatch && materialItem ? (materialItem.단위 || 'EA') : '';
-    const unitPrice = isSingleMatch && materialItem 
+    
+    // 단가 처리: '입력', '직접입력' 문자열인 경우 직접입력 필요
+    const priceValue = isSingleMatch && materialItem ? materialItem.금액 : null;
+    const isManualPriceEntry = typeof priceValue === 'string' && 
+      (priceValue.includes('입력') || priceValue === '입력' || priceValue === '직접입력');
+    const unitPrice = isSingleMatch && materialItem && !isManualPriceEntry
       ? (typeof materialItem.금액 === 'number' ? materialItem.금액 : 0) 
       : 0;
     
@@ -2299,6 +2304,7 @@ export default function FieldEstimate() {
           공종: workType,
           공사명: workName,
           isLinkedFromRecovery: true, // 복구면적 연동 표시
+          isManualPriceEntry: materialsToUse.length > 0 ? isManualPriceEntry : existingRow.isManualPriceEntry,
           // DB 매칭이 있으면 자재명/단가도 업데이트
           자재항목: materialsToUse.length > 0 ? materialName : (existingRow.자재항목 || existingRow.자재),
           자재: materialsToUse.length > 0 ? materialName : existingRow.자재,
@@ -2331,6 +2337,7 @@ export default function FieldEstimate() {
         비고: '',
         sourceAreaRowId: sourceRowId, // 복구면적 행 ID로 연결
         isLinkedFromRecovery: true, // 복구면적 연동 표시
+        isManualPriceEntry: isManualPriceEntry, // DB에서 '입력'/'직접입력'인 경우
       };
       
       console.log('[연동] 자재비 행 생성:', workType, workName, 
