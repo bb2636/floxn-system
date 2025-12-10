@@ -2815,9 +2815,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log('Parsed 일위대가 catalog items:', catalog.length);
+      // Remove duplicate entries (based on 공종+공사명+노임항목 combination)
+      const seen = new Set<string>();
+      const uniqueCatalog = catalog.filter(item => {
+        const key = `${item.공종}|${item.공사명}|${item.노임항목}`;
+        if (seen.has(key)) {
+          return false; // Duplicate
+        }
+        seen.add(key);
+        return true;
+      });
       
-      res.json(catalog);
+      console.log('Parsed 일위대가 catalog items:', catalog.length, '→ 중복 제거 후:', uniqueCatalog.length);
+      
+      res.json(uniqueCatalog);
     } catch (error) {
       console.error("Get 일위대가 catalog error:", error);
       res.status(500).json({ error: "일위대가 카탈로그를 조회하는 중 오류가 발생했습니다" });
