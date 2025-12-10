@@ -1535,6 +1535,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Re-parse headers for existing data (one-time fix)
+  app.patch("/api/excel-data/:id/reparse-headers", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      const existing = await storage.getExcelDataById(id);
+      
+      if (!existing) {
+        return res.status(404).json({ error: "데이터를 찾을 수 없습니다" });
+      }
+
+      // Combine current headers and data to re-detect the correct header row
+      const allRows = [existing.headers, ...existing.data];
+      
+      // Find header row: look for row containing both "공종" and "공사명"
+      let headerRowIdx = 0;
+      for (let i = 0; i < Math.min(allRows.length, 10); i++) {
+        const row = allRows[i] as any[];
+        if (!row) continue;
+        const rowStr = row.map((c: any) => c?.toString() || '').join('|');
+        if (rowStr.includes('공종') && rowStr.includes('공사명')) {
+          headerRowIdx = i;
+          console.log('[Reparse] Found header row at index:', i, 'Row:', row);
+          break;
+        }
+      }
+
+      const newHeaders = (allRows[headerRowIdx] as any[]).map((h: any) => h?.toString() || '');
+      const newData = allRows.slice(headerRowIdx + 1);
+
+      console.log('[Reparse] Original headers:', existing.headers);
+      console.log('[Reparse] New headers:', newHeaders);
+      console.log('[Reparse] New data rows:', newData.length);
+
+      const updated = await storage.updateExcelData(id, newHeaders, newData);
+      res.json(updated);
+    } catch (error) {
+      console.error("Reparse headers error:", error);
+      res.status(500).json({ error: "헤더 재인식 중 오류가 발생했습니다" });
+    }
+  });
+
   // Delete all versions by type (original behavior - backward compatibility)
   app.delete("/api/excel-data/:type", async (req, res) => {
     if (!req.session?.userId) {

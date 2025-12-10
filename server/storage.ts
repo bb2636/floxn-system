@@ -83,6 +83,7 @@ export interface IStorage {
   listExcelData(type: string): Promise<ExcelData[]>;
   getExcelDataById(id: string): Promise<ExcelData | null>;
   saveExcelData(data: InsertExcelData): Promise<ExcelData>;
+  updateExcelData(id: string, headers: string[], data: any[][]): Promise<ExcelData | null>;
   deleteExcelDataById(id: string): Promise<boolean>;
   // Legacy methods (deprecated, for backward compatibility during migration)
   getExcelData(type: string): Promise<ExcelData | null>;
@@ -1662,6 +1663,19 @@ export class MemStorage implements IStorage {
     };
     this.excelData.set(newData.id, newData);
     return newData;
+  }
+
+  async updateExcelData(id: string, headers: string[], data: any[][]): Promise<ExcelData | null> {
+    const existing = this.excelData.get(id);
+    if (!existing) return null;
+    const updated: ExcelData = {
+      ...existing,
+      headers: headers as any,
+      data: data as any,
+      updatedAt: new Date(),
+    };
+    this.excelData.set(id, updated);
+    return updated;
   }
 
   // Legacy methods
@@ -3369,6 +3383,18 @@ export class DbStorage implements IStorage {
     console.log('[DB] saveExcelData verification:', verify.length > 0 ? 'EXISTS' : 'MISSING');
     
     return created[0];
+  }
+
+  async updateExcelData(id: string, headers: string[], newData: any[][]): Promise<ExcelData | null> {
+    const updated = await db.update(excelData)
+      .set({
+        headers: headers as any,
+        data: newData as any,
+        updatedAt: new Date(),
+      })
+      .where(eq(excelData.id, id))
+      .returning();
+    return updated[0] || null;
   }
 
   // Legacy methods (deprecated, for backward compatibility during migration)
