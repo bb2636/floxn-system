@@ -2931,41 +2931,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const catalog: any[] = [];
       const headers = excelData.headers || [];
       
-      // 자재비 format: 공종명(공사명), 자재명/자재항목, 규격, 단위, 단가/금액
+      // 자재비 format: 공종, 공사명, 자재항목(공사명에 종속), 단위, 단가
       console.log('[자재비 API] 헤더:', headers);
-      let workNameIdx = 0, materialItemIdx = 1, specIdx = 2, unitIdx = 3, priceIdx = 4;
+      let categoryIdx = 0, workNameIdx = 1, materialItemIdx = 2, unitIdx = 3, priceIdx = 4;
+      
+      // First pass: find 자재항목 column (to exclude it from 공사명 matching)
       headers.forEach((h: string, idx: number) => {
         if (!h) return;
-        if (h.includes('공종명') || h.includes('공사명') || h.includes('공종')) workNameIdx = idx;
         if (h.includes('자재항목') || h.includes('자재명')) materialItemIdx = idx;
-        if (h.includes('규격')) specIdx = idx;
-        if (h.includes('단위')) unitIdx = idx;
-        if (h.includes('금액') || h.includes('단가')) priceIdx = idx; // 단가도 확인
       });
-      console.log('[자재비 API] 인덱스:', { workNameIdx, materialItemIdx, specIdx, unitIdx, priceIdx });
+      
+      // Second pass: find other columns (excluding 자재항목 from 공사명 match)
+      headers.forEach((h: string, idx: number) => {
+        if (!h) return;
+        // 공종 (exact match or column name that is just "공종")
+        if (h.trim() === '공종' || h.includes('공종명')) categoryIdx = idx;
+        // 공사명 - but NOT if it's the 자재항목 column
+        if ((h.includes('공사명') || h.includes('품명')) && idx !== materialItemIdx && !h.includes('자재')) {
+          workNameIdx = idx;
+        }
+        if (h.includes('단위')) unitIdx = idx;
+        if (h.includes('금액') || h.includes('단가')) priceIdx = idx;
+      });
+      console.log('[자재비 API] 인덱스:', { categoryIdx, workNameIdx, materialItemIdx, unitIdx, priceIdx });
 
+      let prevCategory: string | null = null;
       let prevWorkName: string | null = null;
 
       for (let i = 0; i < excelData.data.length; i++) {
         const row = excelData.data[i];
         if (!row || row.length === 0) continue;
 
+        const category: string = safeString(row[categoryIdx]) || prevCategory || '';
         const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
         const materialItem: string = safeString(row[materialItemIdx]); // 자재항목
-        const specification: string = safeString(row[specIdx]);
         const unit: string = safeString(row[unitIdx]);
         const price = parsePrice(row[priceIdx]);
 
         // Update forward-fill values
+        if (safeString(row[categoryIdx])) prevCategory = category;
         if (safeString(row[workNameIdx])) prevWorkName = workName;
 
         // Skip rows without essential data
-        if (!workName || !materialItem) continue;
+        if (!category || !workName || !materialItem) continue;
 
         catalog.push({
+          공종: category,
           공사명: workName,
-          자재항목: materialItem, // 자재명 → 자재항목으로 변경
-          규격: specification,
+          자재항목: materialItem,
           단위: unit,
           금액: price,
         });
