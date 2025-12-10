@@ -2211,6 +2211,18 @@ export default function FieldEstimate() {
       return [...filteredRows, ...newLaborRows];
     });
     
+    // 자재비 연동 대상 공사명 (이 공사명만 자재비에 연동됨)
+    const MATERIAL_LINKED_WORK_NAMES = ['합판', '석고보드', '몰딩', '걸레받이', '장판'];
+    const isMaterialLinkedWorkName = MATERIAL_LINKED_WORK_NAMES.some(
+      name => normalizeForMatch(name) === normalizedWorkName
+    );
+    
+    // 자재비 연동 대상 공사명이 아니면 자재비 생성 스킵
+    if (!isMaterialLinkedWorkName) {
+      console.log('[연동] 자재비 스킵 (연동 대상 아님):', workType, workName);
+      return; // 자재비 생성하지 않음
+    }
+    
     // 자재비 DB에서 해당 공종의 자재 찾기 (materialByWorknameCatalog 사용)
     // materialByWorknameCatalog.공사명 = 공종 (도장공사, 목공사 등)
     // 1순위: 공종 일치 + 자재명이 복구면적 공사명으로 시작하는 것
