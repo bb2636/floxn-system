@@ -66,11 +66,8 @@ export function MaterialCostSection({
   // 공종별로 필터링된 자재명 옵션
   const getMaterialNamesForWorkType = (workType: string) => {
     if (!workType) return [];
-    const names = new Set(
-      catalog
-        .filter(item => item.workType === workType)
-        .map(item => item.materialName)
-    );
+    const matchingItems = catalog.filter(item => item.workType === workType);
+    const names = new Set(matchingItems.map(item => item.materialName));
     return Array.from(names).sort();
   };
 
