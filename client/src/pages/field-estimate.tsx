@@ -2190,33 +2190,27 @@ export default function FieldEstimate() {
       return [...filteredRows, ...newLaborRows];
     });
     
-    // 자재비 DB에서 해당 공종+공사명의 자재 찾기 (materialByWorknameCatalog 사용)
-    // 1순위: 공종(공사명) 일치 + 자재명이 공사명으로 시작하는 것
-    // 2순위: 공종(공사명) 일치 + 자재명이 공사명과 일치하는 것
-    // 3순위: 공종(공사명)만 일치
-    const exactStartMatch = materialByWorknameCatalog.filter(item => 
-      normalizeForMatch(item.공사명) === normalizedWorkType && 
-      normalizeForMatch(item.자재명).startsWith(normalizedWorkName)
+    // 자재비 DB에서 해당 공종의 자재 찾기 (materialByWorknameCatalog 사용)
+    // materialByWorknameCatalog.공사명 = 공종 (도장공사, 목공사 등)
+    // 1순위: 공종 일치 + 자재명이 복구면적 공사명으로 시작하는 것
+    // 2순위: 공종 일치 + 자재명이 복구면적 공사명과 일치하는 것
+    // 3순위: 공종만 일치
+    const matchByWorkType = materialByWorknameCatalog.filter(item => 
+      normalizeForMatch(item.공사명) === normalizedWorkType
     );
     
-    const exactMatch = exactStartMatch.length === 0 
-      ? materialByWorknameCatalog.filter(item => 
-          normalizeForMatch(item.공사명) === normalizedWorkType && 
-          normalizeForMatch(item.자재명) === normalizedWorkName
-        )
-      : [];
+    // 공사명(workName)과 자재명이 일치하거나 포함관계인 것 우선
+    const exactStartMatch = matchByWorkType.filter(item => 
+      normalizeForMatch(item.자재명).startsWith(normalizedWorkName) ||
+      normalizedWorkName.includes(normalizeForMatch(item.자재명))
+    );
     
-    const workTypeOnlyMatch = (exactStartMatch.length === 0 && exactMatch.length === 0)
-      ? materialByWorknameCatalog.filter(item => normalizeForMatch(item.공사명) === normalizedWorkType)
-      : [];
+    const materialsToUse = exactStartMatch.length > 0 ? exactStartMatch : matchByWorkType;
     
-    const materialsToUse = exactStartMatch.length > 0 
-      ? exactStartMatch 
-      : (exactMatch.length > 0 ? exactMatch : workTypeOnlyMatch);
+    console.log('[연동] 자재비 DB 조회:', workType, workName, '→ 매칭:', materialsToUse.length, '개',
+      exactStartMatch.length > 0 ? '(공사명 매칭)' : '(공종만 매칭)');
     
-    console.log('[연동] 자재비 DB 조회:', workType, workName, '→ 매칭:', materialsToUse.length, '개');
-    
-    // 자재 행 생성/업데이트 (DB에 매칭이 있으면 생성, 1개면 자동완성, 여러개면 드롭다운에서 선택)
+    // 자재 행 생성/업데이트 (1개면 자동완성, 여러개면 드롭다운에서 선택)
     const isSingleMatch = materialsToUse.length === 1;
     const materialItem = materialsToUse.length > 0 ? materialsToUse[0] : null;
     const materialName = isSingleMatch && materialItem ? materialItem.자재명 : '';
@@ -2227,8 +2221,8 @@ export default function FieldEstimate() {
       : 0;
     
     setMaterialRows(prev => {
-      // 이미 같은 sourceRowId를 가진 행이 있는지 확인 (각 복구면적 행당 1개의 자재비 행)
-      const existingRowIndex = prev.findIndex(r => r.sourceLaborRowId === sourceRowId);
+      // 이미 같은 sourceAreaRowId를 가진 행이 있는지 확인 (각 복구면적 행당 1개의 자재비 행)
+      const existingRowIndex = prev.findIndex(r => r.sourceAreaRowId === sourceRowId);
       
       if (existingRowIndex !== -1) {
         // 기존 행이 있으면 공종/공사명만 업데이트 (사용자 입력은 유지)
@@ -2247,6 +2241,7 @@ export default function FieldEstimate() {
           ...existingRow,
           공종: workType,
           공사명: workName,
+          isLinkedFromRecovery: true, // 복구면적 연동 표시
           // DB 매칭이 있으면 자재명/단가도 업데이트
           자재항목: materialsToUse.length > 0 ? materialName : (existingRow.자재항목 || existingRow.자재),
           자재: materialsToUse.length > 0 ? materialName : existingRow.자재,
@@ -2262,7 +2257,7 @@ export default function FieldEstimate() {
       
       // 새 행 생성 (DB 매칭이 없어도 빈 행으로 생성)
       const newMaterialRow: MaterialRow = {
-        id: `material-${Date.now()}-${Math.random()}`,
+        id: `material-linked-${Date.now()}-${Math.random()}`,
         공종: workType,
         공사명: workName,
         자재항목: materialName,
@@ -2277,7 +2272,8 @@ export default function FieldEstimate() {
         합계: 0,
         금액: 0,
         비고: '',
-        sourceLaborRowId: sourceRowId,
+        sourceAreaRowId: sourceRowId, // 복구면적 행 ID로 연결
+        isLinkedFromRecovery: true, // 복구면적 연동 표시
       };
       
       console.log('[연동] 자재비 행 생성:', workType, workName, 
