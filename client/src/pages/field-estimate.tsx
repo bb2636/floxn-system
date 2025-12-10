@@ -200,6 +200,23 @@ export default function FieldEstimate() {
     queryKey: ['/api/materials-by-workname'],
   });
 
+  // materialByWorknameCatalog를 MaterialCatalogItem 형식으로 변환 (materialCatalog가 비어있을 때 대체)
+  const transformedMaterialCatalog: MaterialCatalogItem[] = useMemo(() => {
+    // materialCatalog가 있으면 그것을 사용, 없으면 materialByWorknameCatalog에서 변환
+    if (materialCatalog.length > 0) {
+      return materialCatalog;
+    }
+    // materialByWorknameCatalog.공사명 = 공종 (도장공사, 목공사 등)
+    // materialByWorknameCatalog.자재명 = 자재항목
+    return materialByWorknameCatalog.map(item => ({
+      workType: item.공사명, // 공사명이 실제로는 공종
+      materialName: item.자재명,
+      specification: item.규격 || '',
+      unit: item.단위 || '',
+      standardPrice: item.금액 ?? 0, // null이면 0으로 변환
+    }));
+  }, [materialCatalog, materialByWorknameCatalog]);
+
   // 빈 노무비 행 생성 함수
   const createBlankLaborRow = (options?: {
     sourceAreaRowId?: string;
@@ -261,6 +278,10 @@ export default function FieldEstimate() {
   // 자재비 DB에 있는 공종 목록 추출
   const materialWorkTypes = useMemo(() => {
     const workTypes = new Set(materialCatalog.map(item => item.workType));
+    console.log('[DEBUG] materialCatalog 공종 목록:', Array.from(workTypes));
+    if (materialCatalog.length > 0) {
+      console.log('[DEBUG] materialCatalog 첫 5개 항목:', materialCatalog.slice(0, 5));
+    }
     return workTypes;
   }, [materialCatalog]);
 
@@ -4021,7 +4042,7 @@ export default function FieldEstimate() {
               <MaterialCostSection
                 rows={materialRows}
                 onRowsChange={setMaterialRows}
-                catalog={materialCatalog}
+                catalog={transformedMaterialCatalog}
                 laborCategories={workTypes}
                 selectedRows={selectedMaterialRows}
                 onSelectRow={toggleSelectMaterialRow}
@@ -4798,7 +4819,7 @@ export default function FieldEstimate() {
             <MaterialCostSection
               rows={materialRows}
               onRowsChange={setMaterialRows}
-              catalog={materialCatalog}
+              catalog={transformedMaterialCatalog}
               laborCategories={workTypes}
               selectedRows={selectedMaterialRows}
               onSelectRow={toggleSelectMaterialRow}
