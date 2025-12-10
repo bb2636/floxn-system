@@ -1344,29 +1344,29 @@ export function LaborCostSection({
                     {(row.amount ?? 0).toLocaleString()}
                   </td>
                   
-                  {/* 경비 여부 - 연동 행은 수정 불가 */}
-                  <td style={{ padding: "0 12px", textAlign: "center", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
+                  {/* 경비 여부 - 연동 행도 수정 가능 */}
+                  <td style={{ padding: "0 12px", textAlign: "center" }}>
                     <Checkbox
                       checked={!row.includeInEstimate}
-                      onCheckedChange={(checked) => updateRow(row.id, 'includeInEstimate', !checked)}
-                      disabled={isLinkedRow}
+                      onCheckedChange={(checked) => {
+                        // 연동 행이어도 경비 여부는 수정 가능
+                        onRowsChange(rows.map(r => r.id === row.id ? { ...r, includeInEstimate: !checked } : r));
+                      }}
                       data-testid={`checkbox-expense-labor-${globalIndex}`}
                     />
                   </td>
                   
-                  {/* 비고 - 연동 행은 수정 불가 */}
-                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
+                  {/* 비고 - 연동 행도 수정 가능 */}
+                  <td style={{ padding: "0 8px" }}>
                     <Input
                       value={row.request}
-                      onChange={(e) => updateRow(row.id, 'request', e.target.value)}
-                      className="h-9 border"
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "14px",
-                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                      onChange={(e) => {
+                        // 연동 행이어도 비고는 수정 가능
+                        onRowsChange(rows.map(r => r.id === row.id ? { ...r, request: e.target.value } : r));
                       }}
-                      placeholder={isLinkedRow ? "복구면적에서 연동됨" : ""}
-                      disabled={isLinkedRow}
+                      className="h-9 border"
+                      style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                      placeholder=""
                       data-testid={`input-note-labor-${globalIndex}`}
                     />
                   </td>

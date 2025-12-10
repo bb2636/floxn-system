@@ -468,19 +468,18 @@ export function MaterialCostSection({
                   {total.toLocaleString()}
                 </td>
                 
-                {/* 비고 - Editable Input (연동 행은 수정 불가) */}
-                <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF" }}>
+                {/* 비고 - Editable Input (연동 행도 수정 가능) */}
+                <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
                   <Input
                     value={row.비고}
-                    onChange={(e) => updateRow(row.id, '비고', e.target.value)}
-                    className="h-9 border-0 bg-transparent"
-                    style={{ 
-                      fontFamily: "Pretendard", 
-                      fontSize: "14px",
-                      color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                    onChange={(e) => {
+                      // 연동 행이어도 비고는 수정 가능
+                      onRowsChange(rows.map(r => r.id === row.id ? { ...r, 비고: e.target.value } : r));
                     }}
-                    placeholder={isLinkedRow ? "복구면적에서 연동됨" : "현장 상황에 따라 변동"}
-                    disabled={isReadOnly || isLinkedRow}
+                    className="h-9 border-0 bg-transparent"
+                    style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                    placeholder="현장 상황에 따라 변동"
+                    disabled={isReadOnly}
                     data-testid={`input-비고-${index}`}
                   />
                 </td>
