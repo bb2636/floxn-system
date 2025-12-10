@@ -189,17 +189,6 @@ export default function FieldEstimate() {
   const { data: ilwidaegaCatalog = [] } = useQuery<IlwidaegaCatalogItem[]>({
     queryKey: ['/api/ilwidaega-catalog'],
   });
-  
-  // DEBUG: 일위대가 전체 데이터 출력
-  useEffect(() => {
-    if (ilwidaegaCatalog.length > 0) {
-      console.log('[DEBUG] 일위대가 전체 데이터 (' + ilwidaegaCatalog.length + '개):');
-      console.table(ilwidaegaCatalog);
-      // 목공사 관련 항목만 필터
-      const mokgongItems = ilwidaegaCatalog.filter(item => item.공종 === '목공사');
-      console.log('[DEBUG] 목공사 항목:', mokgongItems);
-    }
-  }, [ilwidaegaCatalog]);
 
   // 자재비 카탈로그 조회 (공사명 기준) - 복구면적 → 자재비 자동생성용
   const { data: materialByWorknameCatalog = [] } = useQuery<MaterialByWorknameCatalogItem[]>({
