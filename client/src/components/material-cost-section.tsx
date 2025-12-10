@@ -614,20 +614,39 @@ export function MaterialCostSection({
                     )}
                   </td>
                   
-                  {/* 수량 - 연동 행은 수식 표시, 수동 행은 입력 */}
-                  <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                  {/* 수량 - 연동 행도 입력 가능 */}
+                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF" }}>
                     {isLinkedRow ? (
-                      <div 
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "12px",
-                          color: "rgba(59, 130, 246, 0.9)",
-                          textAlign: "center",
-                          padding: "4px 8px",
-                        }}
-                        title="바닥+벽체+천장 면적 합계"
-                      >
-                        ({row.수량m2 || 0}바닥+벽체+천장)
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <Input
+                          type="number"
+                          value={row.수량m2 || ''}
+                          onChange={(e) => {
+                            const val = Number(e.target.value) || 0;
+                            onRowsChange(rows.map(r => {
+                              if (r.id === row.id) {
+                                const newTotal = Math.round((r.단가 || r.기준단가 || 0) * val);
+                                return { ...r, 수량m2: val, 수량EA: 0, 수량: val, 합계: newTotal, 금액: newTotal };
+                              }
+                              return r;
+                            }));
+                          }}
+                          className="h-9 border-0 bg-transparent text-center"
+                          style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(59, 130, 246, 0.9)" }}
+                          placeholder="0"
+                          disabled={isReadOnly}
+                          data-testid={`input-수량-linked-${currentGlobalIndex}`}
+                        />
+                        <span 
+                          style={{ 
+                            fontSize: "10px", 
+                            color: "rgba(59, 130, 246, 0.6)",
+                            marginTop: "-4px"
+                          }}
+                          title="바닥+벽체+천장 면적 합계"
+                        >
+                          (바닥+벽체+천장)
+                        </span>
                       </div>
                     ) : (
                       <Input

@@ -709,13 +709,20 @@ export default function FieldEstimate() {
       const data = workMap.get(key)!;
       const repairArea = parseFloat(row.repairArea) || 0;
       const location = (row.location || '').toLowerCase();
+      const category = (row.category || '').toLowerCase(); // 장소 필드도 확인
       
-      // 위치별 면적 합산
-      if (location.includes('천장')) {
+      console.log(`[자재비 면적계산] 공사명: ${workName}, location: ${row.location}, category: ${row.category}, repairArea: ${repairArea}`);
+      
+      // 위치별 면적 합산 (location 또는 category에서 위치 정보 추출)
+      const locationOrCategory = location || category;
+      if (locationOrCategory.includes('천장')) {
         data.ceilingArea += repairArea;
-      } else if (location.includes('벽') || location.includes('벽체')) {
+      } else if (locationOrCategory.includes('벽') || locationOrCategory.includes('벽체') || locationOrCategory.includes('벽면')) {
         data.wallArea += repairArea;
-      } else if (location.includes('바닥')) {
+      } else if (locationOrCategory.includes('바닥')) {
+        data.floorArea += repairArea;
+      } else {
+        // 위치 정보가 없으면 바닥으로 간주
         data.floorArea += repairArea;
       }
       
