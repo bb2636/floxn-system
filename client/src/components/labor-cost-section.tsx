@@ -203,8 +203,10 @@ export function LaborCostSection({
   // 연동된 행의 복구면적 자동 업데이트 (공종 기준)
   useEffect(() => {
     if (!enableAreaImport) return;
+    if (rows.length === 0) return;
     
     // 연동된 행 중 복구면적이 업데이트 필요한 행 찾기
+    let hasChanges = false;
     const updatedRows = rows.map(row => {
       // 연동된 행만 대상
       if (!row.isLinkedFromRecovery) return row;
@@ -219,10 +221,11 @@ export function LaborCostSection({
       // 기존 값과 동일하면 업데이트하지 않음
       if (row.damageArea === newDamageArea) return row;
       
+      hasChanges = true;
+      
       // 금액 재계산
-      const standardPrice = Number(row.standardPrice) || 0;
-      const quantity = Number(row.quantity) || 0;
       const pricePerSqm = Number(row.pricePerSqm) || 0;
+      const quantity = Number(row.quantity) || 0;
       
       let newAmount = row.amount;
       if (row.detailWork === '일위대가') {
@@ -237,14 +240,10 @@ export function LaborCostSection({
     });
     
     // 변경된 행이 있으면 업데이트
-    const hasChanges = updatedRows.some((row, idx) => 
-      row.damageArea !== rows[idx].damageArea || row.amount !== rows[idx].amount
-    );
-    
     if (hasChanges) {
       onRowsChange(updatedRows);
     }
-  }, [calculateRecoveryAreaByWorkType, enableAreaImport]);
+  }, [calculateRecoveryAreaByWorkType, enableAreaImport, rows, onRowsChange]);
 
   // 캐스케이딩 옵션 생성 - filteredWorkTypes가 제공되면 우선 사용
   const categoryOptions = useMemo(() => {

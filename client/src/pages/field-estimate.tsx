@@ -73,6 +73,7 @@ interface MaterialByWorknameCatalogItem {
   공종: string; // 공종: 원인공사, 목공사, 수장공사 등
   공사명: string; // 공사명: 방수, 합판, 도배 등
   자재항목: string; // 자재비DB의 자재항목 컬럼
+  규격?: string; // 규격 (선택 필드)
   단위: string;
   금액: number | string | null;
 }
@@ -2225,25 +2226,46 @@ export default function FieldEstimate() {
       return; // 자재비 생성하지 않음
     }
     
-    // 자재비 DB에서 해당 공종의 자재 찾기 (materialByWorknameCatalog 사용)
-    // materialByWorknameCatalog.공사명 = 공종 (도장공사, 목공사 등)
-    // 1순위: 공종 일치 + 자재명이 복구면적 공사명으로 시작하는 것
-    // 2순위: 공종 일치 + 자재명이 복구면적 공사명과 일치하는 것
+    // 자재비 DB에서 해당 공종+공사명의 자재 찾기 (materialByWorknameCatalog 사용)
+    // materialByWorknameCatalog 구조:
+    //   - 공종 = 원인공사, 목공사, 수장공사 등 (workType과 매칭)
+    //   - 공사명 = 방수, 합판, 도배 등 (workName과 매칭)
+    //   - 자재항목 = 실제 자재 이름
+    
+    // 1순위: 공종 + 공사명 모두 일치
+    const exactMatch = materialByWorknameCatalog.filter(item => 
+      normalizeForMatch(item.공종) === normalizedWorkType &&
+      normalizeForMatch(item.공사명) === normalizedWorkName
+    );
+    
+    // 2순위: 공종 일치 + 공사명이 부분 일치 (예: 석고보드 -> 석고) - exactMatch 제외
+    const exactMatchIds = new Set(exactMatch.map(m => `${m.공종}|${m.공사명}|${m.자재항목}`));
+    const partialWorkNameMatch = materialByWorknameCatalog.filter(item => {
+      const itemWorkType = normalizeForMatch(item.공종);
+      const itemWorkName = normalizeForMatch(item.공사명);
+      const itemKey = `${item.공종}|${item.공사명}|${item.자재항목}`;
+      
+      // exactMatch에 포함된 항목은 제외
+      if (exactMatchIds.has(itemKey)) return false;
+      
+      return itemWorkType === normalizedWorkType && (
+        itemWorkName.includes(normalizedWorkName) ||
+        normalizedWorkName.includes(itemWorkName)
+      );
+    });
+    
     // 3순위: 공종만 일치
     const matchByWorkType = materialByWorknameCatalog.filter(item => 
-      normalizeForMatch(item.공사명) === normalizedWorkType
+      normalizeForMatch(item.공종) === normalizedWorkType
     );
     
-    // 공사명(workName)과 자재항목이 일치하거나 포함관계인 것 우선
-    const exactStartMatch = matchByWorkType.filter(item => 
-      normalizeForMatch(item.자재항목).startsWith(normalizedWorkName) ||
-      normalizedWorkName.includes(normalizeForMatch(item.자재항목))
-    );
-    
-    const materialsToUse = exactStartMatch.length > 0 ? exactStartMatch : matchByWorkType;
+    // 우선순위 적용
+    const materialsToUse = exactMatch.length > 0 ? exactMatch :
+                           partialWorkNameMatch.length > 0 ? partialWorkNameMatch :
+                           matchByWorkType;
     
     console.log('[연동] 자재비 DB 조회:', workType, workName, '→ 매칭:', materialsToUse.length, '개',
-      exactStartMatch.length > 0 ? '(공사명 매칭)' : '(공종만 매칭)');
+      exactMatch.length > 0 ? '(정확 매칭)' : partialWorkNameMatch.length > 0 ? '(부분 매칭)' : '(공종만 매칭)');
     
     // 자재 행 생성/업데이트 (1개면 자동완성, 여러개면 드롭다운에서 선택)
     const isSingleMatch = materialsToUse.length === 1;
