@@ -2852,6 +2852,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the most recent entry
       const excelData = excelDataList[0];
       
+      console.log('[자재비 API] Excel 데이터:', {
+        id: excelData.id,
+        title: excelData.title,
+        headerType: typeof excelData.headers,
+        headersRaw: JSON.stringify(excelData.headers),
+        dataRows: excelData.data?.length || 0
+      });
+      
       if (!excelData.data || !Array.isArray(excelData.data)) {
         return res.json([]);
       }
@@ -2874,16 +2882,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const catalog: any[] = [];
       const headers = excelData.headers || [];
       
-      // 자재비 format: 공종명(공사명), 자재항목, 규격, 단위, 금액
+      // 자재비 format: 공종명(공사명), 자재명/자재항목, 규격, 단위, 단가/금액
       console.log('[자재비 API] 헤더:', headers);
       let workNameIdx = 0, materialItemIdx = 1, specIdx = 2, unitIdx = 3, priceIdx = 4;
       headers.forEach((h: string, idx: number) => {
-        const hLower = h?.toLowerCase() || '';
-        if (h && (h.includes('공종명') || h.includes('공사명'))) workNameIdx = idx;
-        if (h && (h.includes('자재항목') || h.includes('자재명'))) materialItemIdx = idx;
-        if (h && h.includes('규격')) specIdx = idx;
-        if (h && h.includes('단위')) unitIdx = idx;
-        if (h && h.includes('금액')) priceIdx = idx;
+        if (!h) return;
+        if (h.includes('공종명') || h.includes('공사명') || h.includes('공종')) workNameIdx = idx;
+        if (h.includes('자재항목') || h.includes('자재명')) materialItemIdx = idx;
+        if (h.includes('규격')) specIdx = idx;
+        if (h.includes('단위')) unitIdx = idx;
+        if (h.includes('금액') || h.includes('단가')) priceIdx = idx; // 단가도 확인
       });
       console.log('[자재비 API] 인덱스:', { workNameIdx, materialItemIdx, specIdx, unitIdx, priceIdx });
 

@@ -309,9 +309,38 @@ export function MaterialCostSection({
                           <Lock style={{ width: "12px", height: "12px", marginRight: "6px", opacity: 0.6 }} />
                           {row.공종 || ""}
                         </div>
+                      ) : workType === '미분류' || !row.공종 ? (
+                        // 미분류 그룹 또는 공종이 없는 행: 드롭다운으로 공종 선택 가능
+                        <Select 
+                          value={row.공종 || ''} 
+                          onValueChange={(value) => {
+                            // 해당 그룹 내 모든 행의 공종을 업데이트
+                            onRowsChange(rows.map(r => {
+                              if (groupRows.some(gr => gr.id === r.id)) {
+                                return { ...r, 공종: value };
+                              }
+                              return r;
+                            }));
+                          }}
+                          disabled={isReadOnly}
+                        >
+                          <SelectTrigger 
+                            className="h-9 mb-2" 
+                            style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                            data-testid={`select-공종-group-${rowIndex}`}
+                          >
+                            <SelectValue placeholder="공종 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {materialCategoryOptions.map(cat => (
+                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       ) : (
+                        // 공종이 이미 설정된 경우: 텍스트로 표시
                         <div style={{ fontFamily: "Pretendard", fontSize: "14px", marginBottom: "8px" }}>
-                          {row.공종 || "미분류"}
+                          {row.공종}
                         </div>
                       )}
                       
