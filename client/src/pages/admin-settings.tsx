@@ -2223,15 +2223,14 @@ export default function AdminSettings() {
                             // Use raw: false to keep formatted values (preserves decimals like 37.5)
                             const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: null });
                             if (jsonData.length > 0) {
-                              // Find header row: look for row containing "공종" and ("공사명" or "자재" or "노임")
+                              // Find header row: look for row containing both "공종" and "공사명"
                               let headerRowIdx = 0;
                               for (let i = 0; i < Math.min(jsonData.length, 10); i++) {
                                 const row = jsonData[i] as any[];
                                 if (!row) continue;
-                                const rowStr = row.map(c => c?.toString() || '').join('|').toLowerCase();
-                                // Check for header keywords
-                                if ((rowStr.includes('공종') && (rowStr.includes('공사명') || rowStr.includes('자재') || rowStr.includes('노임'))) ||
-                                    (rowStr.includes('공종명') && rowStr.includes('자재명'))) {
+                                const rowStr = row.map(c => c?.toString() || '').join('|');
+                                // Header row must contain both "공종" and "공사명"
+                                if (rowStr.includes('공종') && rowStr.includes('공사명')) {
                                   headerRowIdx = i;
                                   console.log('[Excel] Found header row at index:', i, 'Row:', row);
                                   break;
