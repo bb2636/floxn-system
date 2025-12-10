@@ -60,7 +60,9 @@ export function MaterialCostSection({
   // 자재비 카탈로그에서 공종 목록 추출 (자재비 DB에 있는 공종만 표시)
   const materialCategoryOptions = useMemo(() => {
     const categories = new Set(catalog.map(item => item.workType));
-    return Array.from(categories).sort();
+    const sorted = Array.from(categories).sort();
+    console.log('[자재비 공종 드롭다운] catalog 개수:', catalog.length, '공종 목록:', sorted);
+    return sorted;
   }, [catalog]);
 
   // 공종별로 필터링된 자재명 옵션
@@ -311,6 +313,7 @@ export function MaterialCostSection({
                         <Select 
                           value={row.공종 || ''} 
                           onValueChange={(value) => {
+                            console.log('[자재비 공종 드롭다운] 선택됨:', value);
                             // 해당 그룹 내 모든 행의 공종을 업데이트
                             onRowsChange(rows.map(r => {
                               if (groupRows.some(gr => gr.id === r.id)) {
@@ -319,19 +322,25 @@ export function MaterialCostSection({
                               return r;
                             }));
                           }}
-                          disabled={isReadOnly}
+                          disabled={isReadOnly || isLoading}
                         >
                           <SelectTrigger 
                             className="h-9 mb-2" 
                             style={{ fontFamily: "Pretendard", fontSize: "14px" }}
                             data-testid={`select-공종-group-${rowIndex}`}
                           >
-                            <SelectValue placeholder="공종 선택" />
+                            <SelectValue placeholder={isLoading ? "로딩 중..." : "공종 선택"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {materialCategoryOptions.map(cat => (
-                              <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                            ))}
+                            {isLoading ? (
+                              <SelectItem value="_loading" disabled>로딩 중...</SelectItem>
+                            ) : materialCategoryOptions.length === 0 ? (
+                              <SelectItem value="_empty" disabled>공종 데이터 없음</SelectItem>
+                            ) : (
+                              materialCategoryOptions.map(cat => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                       ) : (
