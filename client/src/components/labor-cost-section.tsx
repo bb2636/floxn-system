@@ -52,6 +52,7 @@ export interface LaborCostRow {
   id: string;
   sourceAreaRowId?: string; // 복구면적 산출표 행 ID (연동 추적용)
   isLinkedFromRecovery?: boolean; // 복구면적에서 연동 생성된 행인지 (true: 수정불가, false/undefined: 수정가능)
+  sourceWorkType?: string; // 철거공사 행의 경우 부모 노무비 행의 공종 (복구면적 계산용)
   place: string; // 장소 - 복구면적 산출표에서 가져옴 (읽기전용)
   position: string; // 위치 - 복구면적 산출표에서 가져옴 (읽기전용)
   category: string; // 공종 - select
@@ -214,8 +215,13 @@ export function LaborCostSection({
       // 공종이 없으면 업데이트하지 않음
       if (!row.category) return row;
       
+      // 철거공사 행의 경우 sourceWorkType 사용, 그 외에는 category 사용
+      const lookupWorkType = row.category === '철거공사' && row.sourceWorkType 
+        ? row.sourceWorkType 
+        : row.category;
+      
       // 해당 공종의 복구면적 계산값 가져오기
-      const areaData = calculateRecoveryAreaByWorkType[row.category];
+      const areaData = calculateRecoveryAreaByWorkType[lookupWorkType];
       const newDamageArea = areaData ? Math.round(areaData.total * 10) / 10 : 0;
       
       // 기존 값과 동일하면 업데이트하지 않음

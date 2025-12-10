@@ -351,6 +351,7 @@ export default function FieldEstimate() {
       id: `labor-demolition-${Date.now()}-${Math.random()}`,
       sourceAreaRowId: `demolition-${sourceAreaRow.id}`, // 원본 행 ID에 prefix 추가하여 구분
       isLinkedFromRecovery: true, // 복구면적에서 자동생성된 행
+      sourceWorkType: sourceAreaRow.workType || '', // 부모 노무비 행의 공종 (복구면적 계산용)
       place: sourceAreaRow.category || '', // 장소
       position: sourceAreaRow.location || '', // 위치
       category: '철거공사', // 공종 - 일위대가DB 기준
@@ -2160,6 +2161,7 @@ export default function FieldEstimate() {
               id: `labor-demolition-${Date.now()}-${Math.random()}-${idx}`,
               sourceAreaRowId: `${sourceRowId}::demolition`,
               isLinkedFromRecovery: true,
+              sourceWorkType: workType, // 부모 노무비 행의 공종 (복구면적 계산용)
               place: '',
               position: '',
               category: '철거공사', // 일위대가DB 기준
@@ -2181,7 +2183,7 @@ export default function FieldEstimate() {
             });
           });
           console.log('[일위대가 연동] 철거공사 행 생성:', '철거공사', demolitionWorkName,
-            `${demolitionCatalogItems.length}개 노임항목`);
+            `${demolitionCatalogItems.length}개 노임항목 (sourceWorkType: ${workType})`);
         } else {
           // 일위대가DB에 없으면 기본 철거공사 행 생성
           console.log('[일위대가 연동] 철거공사 일위대가DB 매칭 없음:', demolitionWorkName);
@@ -2189,6 +2191,7 @@ export default function FieldEstimate() {
             id: `labor-demolition-${Date.now()}-${Math.random()}`,
             sourceAreaRowId: `${sourceRowId}::demolition`,
             isLinkedFromRecovery: true,
+            sourceWorkType: workType, // 부모 노무비 행의 공종 (복구면적 계산용)
             place: '',
             position: '',
             category: '철거공사',
