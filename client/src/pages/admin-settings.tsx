@@ -677,7 +677,45 @@ export default function AdminSettings() {
   useEffect(() => {
     if (selectedUnitPriceVersion) {
       setUnitPriceExcelHeaders(selectedUnitPriceVersion.headers);
-      setUnitPriceExcelData(selectedUnitPriceVersion.data);
+      
+      // 일위대가 데이터 중복 제거 (공종+공사명+노임항목 기준)
+      // Forward-fill 적용하여 빈 셀 처리
+      const rawData = selectedUnitPriceVersion.data || [];
+      const seen = new Set<string>();
+      let prevCategory = '';
+      let prevWorkName = '';
+      
+      const uniqueData = rawData.filter((row: any[]) => {
+        if (!Array.isArray(row) || row.length < 3) return true; // Keep non-data rows
+        
+        // Forward-fill: 현재 값이 없으면 이전 값 사용
+        const rawCategory = String(row[0] || '').trim();
+        const rawWorkName = String(row[1] || '').trim();
+        const laborItem = String(row[2] || '').trim();
+        
+        const category = rawCategory || prevCategory;
+        const workName = rawWorkName || prevWorkName;
+        
+        // Update forward-fill values
+        if (rawCategory) prevCategory = rawCategory;
+        if (rawWorkName) prevWorkName = rawWorkName;
+        
+        // Skip header rows
+        if (category === '공종' || laborItem === '노임항목') return true;
+        
+        // Skip rows without essential data
+        if (!category && !workName && !laborItem) return true;
+        if (!laborItem) return true; // 노임항목 필수
+        
+        const key = `${category}|${workName}|${laborItem}`;
+        if (seen.has(key)) {
+          return false; // Duplicate
+        }
+        seen.add(key);
+        return true;
+      });
+      
+      setUnitPriceExcelData(uniqueData);
     } else {
       setUnitPriceExcelHeaders([]);
       setUnitPriceExcelData([]);
