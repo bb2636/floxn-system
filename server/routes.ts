@@ -2816,6 +2816,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('Parsed 일위대가 catalog items:', catalog.length);
+      console.log('일위대가 전체 데이터:', JSON.stringify(catalog, null, 2));
       
       res.json(catalog);
     } catch (error) {
