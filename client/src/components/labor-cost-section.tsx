@@ -166,42 +166,37 @@ export function LaborCostSection({
     updateRow(rowId, 'workName', workName);
   };
 
-  // 공종별 복구면적 자동 계산 함수 (바닥 + 벽체 + 천장×1.3)
-  const calculateRecoveryAreaByWorkType = useMemo(() => {
-    // 공종별로 복구면적 산출표 데이터를 그룹화하여 합계 계산
-    const workTypeAreas: Record<string, { 천장: number; 벽체: number; 바닥: number; total: number }> = {};
+  // 공사명별 복구면적 자동 계산 함수 (천장일 경우에만 ×1.3 적용)
+  const calculateRecoveryAreaByWorkName = useMemo(() => {
+    // 공사명별로 복구면적 산출표 데이터를 그룹화하여 합계 계산
+    const workNameAreas: Record<string, number> = {};
     
     areaCalculationRows.forEach(row => {
-      const workType = row.workType || '';
-      if (!workType) return;
-      
-      if (!workTypeAreas[workType]) {
-        workTypeAreas[workType] = { 천장: 0, 벽체: 0, 바닥: 0, total: 0 };
-      }
+      const workName = row.workName || '';
+      if (!workName) return;
       
       const area = parseFloat(row.repairArea) || 0;
       const location = row.location || '';
       
-      // location에 따라 천장/벽체/바닥 분류
-      if (location.includes('천장') || location === '천장') {
-        workTypeAreas[workType].천장 += area;
-      } else if (location.includes('벽체') || location.includes('벽') || location === '벽체') {
-        workTypeAreas[workType].벽체 += area;
-      } else if (location.includes('바닥') || location === '바닥') {
-        workTypeAreas[workType].바닥 += area;
+      // 천장인 경우 × 1.3 적용
+      const isCeiling = location.includes('천장') || location === '천장';
+      const adjustedArea = isCeiling ? area * 1.3 : area;
+      
+      if (!workNameAreas[workName]) {
+        workNameAreas[workName] = 0;
       }
+      workNameAreas[workName] += adjustedArea;
     });
     
-    // 각 공종별 총 복구면적 계산 (천장 × 1.3 적용)
-    Object.keys(workTypeAreas).forEach(workType => {
-      const areas = workTypeAreas[workType];
-      areas.total = areas.바닥 + areas.벽체 + (areas.천장 * 1.3);
+    // 소수점 첫째 자리까지 반올림
+    Object.keys(workNameAreas).forEach(workName => {
+      workNameAreas[workName] = Math.round(workNameAreas[workName] * 10) / 10;
     });
     
-    return workTypeAreas;
+    return workNameAreas;
   }, [areaCalculationRows]);
 
-  // 연동된 행의 복구면적 자동 업데이트 (공종 기준)
+  // 연동된 행의 복구면적 자동 업데이트 (공사명 기준)
   useEffect(() => {
     if (!enableAreaImport) return;
     if (rows.length === 0) return;
@@ -212,17 +207,11 @@ export function LaborCostSection({
       // 연동된 행만 대상
       if (!row.isLinkedFromRecovery) return row;
       
-      // 공종이 없으면 업데이트하지 않음
-      if (!row.category) return row;
+      // 공사명이 없으면 업데이트하지 않음
+      if (!row.workName) return row;
       
-      // 철거공사 행의 경우 sourceWorkType 사용, 그 외에는 category 사용
-      const lookupWorkType = row.category === '철거공사' && row.sourceWorkType 
-        ? row.sourceWorkType 
-        : row.category;
-      
-      // 해당 공종의 복구면적 계산값 가져오기
-      const areaData = calculateRecoveryAreaByWorkType[lookupWorkType];
-      const newDamageArea = areaData ? Math.round(areaData.total * 10) / 10 : 0;
+      // 공사명으로 복구면적 조회
+      const newDamageArea = calculateRecoveryAreaByWorkName[row.workName] || 0;
       
       // 기존 값과 동일하면 업데이트하지 않음
       if (row.damageArea === newDamageArea) return row;
@@ -249,7 +238,7 @@ export function LaborCostSection({
     if (hasChanges) {
       onRowsChange(updatedRows);
     }
-  }, [calculateRecoveryAreaByWorkType, enableAreaImport, rows, onRowsChange]);
+  }, [calculateRecoveryAreaByWorkName, enableAreaImport, rows, onRowsChange]);
 
   // 캐스케이딩 옵션 생성 - filteredWorkTypes가 제공되면 우선 사용
   const categoryOptions = useMemo(() => {
