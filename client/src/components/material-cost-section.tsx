@@ -590,10 +590,13 @@ export function MaterialCostSection({
                   }}>
                     {row.isManualPriceEntry || (price === 0 && row.자재항목) ? (
                       <Input
-                        type="number"
-                        value={price > 0 ? price : ''}
+                        type="text"
+                        inputMode="numeric"
+                        value={price > 0 ? price.toLocaleString() : ''}
                         onChange={(e) => {
-                          const val = Number(e.target.value) || 0;
+                          // 콤마, 공백 제거 후 숫자만 추출
+                          const rawValue = e.target.value.replace(/[,\s]/g, '');
+                          const val = parseInt(rawValue, 10) || 0;
                           onRowsChange(rows.map(r => {
                             if (r.id === row.id) {
                               const qty = (r.수량m2 || 0) + (r.수량EA || 0);
@@ -612,7 +615,7 @@ export function MaterialCostSection({
                           border: "1px solid #FCD34D",
                           borderRadius: "6px",
                         }}
-                        placeholder="단가 입력"
+                        placeholder="가격 입력"
                         disabled={isReadOnly}
                         data-testid={`input-단가-${currentGlobalIndex}`}
                       />
