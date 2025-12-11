@@ -2776,30 +2776,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // First try to get 일위대가 data from excel_data table
-      let excelDataList = await storage.listExcelData('일위대가');
-      let useIlwidaegaFormat = true;
+      // Get latest 일위대가 data from excel_data table
+      const excelDataList = await storage.listExcelData('일위대가');
       
-      // If no dedicated 일위대가 data, fall back to 노무비 data (contains embedded 일위대가)
-      if (!excelDataList || excelDataList.length === 0) {
-        console.log('[일위대가 API] 일위대가 타입 없음, 노무비에서 추출 시도');
-        excelDataList = await storage.listExcelData('노무비');
-        useIlwidaegaFormat = false;
-      }
+      console.log('[일위대가 API] 조회 결과:', excelDataList?.length || 0, '개');
       
       if (!excelDataList || excelDataList.length === 0) {
+        console.log('[일위대가 API] 일위대가 데이터 없음');
         return res.json([]);
       }
 
       // Use the most recent entry
       const excelData = excelDataList[0];
+      console.log('[일위대가 API] 사용할 데이터:', excelData.id, excelData.title);
       
       if (!excelData.data || !Array.isArray(excelData.data)) {
+        console.log('[일위대가 API] 데이터 배열 없음');
         return res.json([]);
       }
       
-      console.log('[일위대가 API] 데이터 소스:', useIlwidaegaFormat ? '일위대가 전용' : '노무비 내장', 
-        '행 수:', excelData.data.length);
+      console.log('[일위대가 API] 행 수:', excelData.data.length);
 
       // Helper functions
       const safeString = (val: any): string => {
@@ -2818,148 +2814,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const catalog: any[] = [];
       const headers = excelData.headers || [];
       
-      // ===== 노무비 형식에서 일위대가 추출 =====
-      // 노무비 헤더: ["공종","공사명(품명)","세부공사",null(세부항목),"인","수량","무게","천장","벽체","바닥","길이","비고"]
-      // 세부공사='일위대가'인 행만 추출
-      if (!useIlwidaegaFormat) {
-        console.log('[일위대가 API] 노무비 형식에서 일위대가 행 추출');
-        
-        // 노무비 형식 컬럼 인덱스 (고정)
-        const categoryIdx = 0;     // 공종
-        const workNameIdx = 1;     // 공사명
-        const detailWorkIdx = 2;   // 세부공사 ('일위대가' 또는 '노무비')
-        const detailItemIdx = 3;   // 세부항목 (노임항목)
-        const laborPriceIdx = 4;   // 인 (노임단가)
-        const ceilingIdx = 7;      // 천장
-        const wallIdx = 8;         // 벽체
-        const floorIdx = 9;        // 바닥
-        const lengthIdx = 10;      // 길이
-        
-        let prevCategory: string | null = null;
-        let prevWorkName: string | null = null;
-        let isInIlwidaegaSection = false;
-        
-        for (let i = 0; i < excelData.data.length; i++) {
-          const row = excelData.data[i];
-          if (!row || row.length === 0) continue;
-          
-          const category = safeString(row[categoryIdx]) || prevCategory || '';
-          const workName = safeString(row[workNameIdx]) || prevWorkName || '';
-          const detailWork = safeString(row[detailWorkIdx]);
-          const detailItem = safeString(row[detailItemIdx]);
-          
-          // Update forward-fill values
-          if (safeString(row[categoryIdx])) prevCategory = category;
-          if (safeString(row[workNameIdx])) prevWorkName = workName;
-          
-          // 세부공사가 '일위대가'이면 해당 섹션 진입
-          if (detailWork === '일위대가') {
-            isInIlwidaegaSection = true;
-          } else if (detailWork === '노무비' || detailWork === '시장가격') {
-            isInIlwidaegaSection = false;
-          }
-          
-          // 일위대가 섹션이고 세부항목이 있으면 추출
-          if (isInIlwidaegaSection && detailItem && !detailItem.includes('노임항목')) {
-            // 위치별 단가 추출
-            const ceilingPrice = parsePrice(row[ceilingIdx]);
-            const wallPrice = parsePrice(row[wallIdx]);
-            const floorPrice = parsePrice(row[floorIdx]);
-            const lengthPrice = parsePrice(row[lengthIdx]);
-            
-            // 가장 높은 단가를 기본 금액으로 사용 (또는 첫 번째 유효값)
-            const price = ceilingPrice || wallPrice || floorPrice || lengthPrice;
-            
-            if (price !== null && price > 0) {
-              catalog.push({
-                공종: category,
-                공사명: workName,
-                노임항목: detailItem,
-                금액: price,
-                기준작업량: null, // 노무비 형식에는 기준작업량 없음
-                단가_천장: ceilingPrice,
-                단가_벽체: wallPrice,
-                단가_바닥: floorPrice,
-                단가_길이: lengthPrice,
-              });
-            }
+      // 일위대가 format: 공종, 공사명, 노임항목, 기준작업량, 노임단가(인당), 일위대가(노임단가/기준작업량)
+      // Find column indices by header names with EXACT match priority
+      // NOTE: Headers like '노임항목(공종에 종속)' contain '공종' substring, so use exact match first
+      let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = -1, standardWorkQuantityIdx = -1;
+      
+      // First pass: exact or near-exact matches (priority)
+      headers.forEach((h: string, idx: number) => {
+        const trimmed = (h || '').trim();
+        // Exact match for 공종 (not substring match to avoid '노임항목(공종에 종속)')
+        if (trimmed === '공종') categoryIdx = idx;
+        // 노임항목 must be detected before checking for 공사명
+        if (trimmed.includes('노임항목')) laborItemIdx = idx;
+        // 금액 또는 일위대가 (금액 컬럼)
+        if (trimmed.includes('금액') || trimmed.includes('일위대가') || trimmed.includes('노임단가')) {
+          // 일위대가 컬럼이 금액으로 사용됨 (우선순위: 일위대가 > 금액)
+          if (trimmed.includes('일위대가')) {
+            priceIdx = idx;
+          } else if (priceIdx < 0) {
+            priceIdx = idx;
           }
         }
-        
-        console.log('[일위대가 API] 노무비에서 추출된 일위대가 항목:', catalog.length, '개');
-        
-      } else {
-        // ===== 일위대가 전용 형식 파싱 =====
-        // 일위대가 format: 공종, 공사명, 노임항목, 기준작업량, 노임단가(인당), 일위대가(노임단가/기준작업량)
-        // Find column indices by header names with EXACT match priority
-        // NOTE: Headers like '노임항목(공종에 종속)' contain '공종' substring, so use exact match first
-        let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = -1, standardWorkQuantityIdx = -1;
-        
-        // First pass: exact or near-exact matches (priority)
-        headers.forEach((h: string, idx: number) => {
-          const trimmed = (h || '').trim();
-          // Exact match for 공종 (not substring match to avoid '노임항목(공종에 종속)')
-          if (trimmed === '공종') categoryIdx = idx;
-          // 노임항목 must be detected before checking for 공사명
-          if (trimmed.includes('노임항목')) laborItemIdx = idx;
-          // 금액 또는 일위대가 (금액 컬럼)
-          if (trimmed.includes('금액') || trimmed.includes('일위대가') || trimmed.includes('노임단가')) {
-            // 일위대가 컬럼이 금액으로 사용됨 (우선순위: 일위대가 > 금액)
-            if (trimmed.includes('일위대가')) {
-              priceIdx = idx;
-            } else if (priceIdx < 0) {
-              priceIdx = idx;
-            }
-          }
-          // 기준작업량 - '일위대가(노임단가/기준작업량)' 같은 복합 헤더 제외 (정확히 '기준작업량'만 매칭)
-          if (trimmed.includes('기준작업량') && !trimmed.includes('일위대가') && !trimmed.includes('노임단가')) {
-            standardWorkQuantityIdx = idx;
-          }
-        });
-        
-        // Second pass: 공사명 with more specific matching (exclude 노임항목 column)
-        headers.forEach((h: string, idx: number) => {
-          const trimmed = (h || '').trim();
-          // 공사명 match (but not if already matched as 노임항목)
-          if ((trimmed.includes('공사명') || trimmed.includes('품명')) && idx !== laborItemIdx) {
-            workNameIdx = idx;
-          }
-        });
-        
-        console.log('일위대가 headers:', headers);
-        console.log('일위대가 column indices:', { categoryIdx, workNameIdx, laborItemIdx, priceIdx, standardWorkQuantityIdx });
-
-        let prevCategory: string | null = null;
-        let prevWorkName: string | null = null;
-
-        for (let i = 0; i < excelData.data.length; i++) {
-          const row = excelData.data[i];
-          if (!row || row.length === 0) continue;
-
-          const category: string = safeString(row[categoryIdx]) || prevCategory || '';
-          const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
-          const laborItem: string = safeString(row[laborItemIdx]);
-          const price = parsePrice(row[priceIdx]);
-          const standardWorkQuantity = standardWorkQuantityIdx >= 0 ? parsePrice(row[standardWorkQuantityIdx]) : null;
-
-          // Update forward-fill values
-          if (safeString(row[categoryIdx])) prevCategory = category;
-          if (safeString(row[workNameIdx])) prevWorkName = workName;
-
-          // Skip rows without essential data
-          if (!category || !laborItem) continue;
-          
-          // Skip header rows (rows where values look like header names)
-          if (category === '공종' || laborItem === '노임항목' || laborItem.includes('노임항목')) continue;
-
-          catalog.push({
-            공종: category,
-            공사명: workName,
-            노임항목: laborItem,
-            금액: price,
-            기준작업량: standardWorkQuantity,
-          });
+        // 기준작업량 - '일위대가(노임단가/기준작업량)' 같은 복합 헤더 제외 (정확히 '기준작업량'만 매칭)
+        if (trimmed.includes('기준작업량') && !trimmed.includes('일위대가') && !trimmed.includes('노임단가')) {
+          standardWorkQuantityIdx = idx;
         }
+      });
+      
+      // Second pass: 공사명 with more specific matching (exclude 노임항목 column)
+      headers.forEach((h: string, idx: number) => {
+        const trimmed = (h || '').trim();
+        // 공사명 match (but not if already matched as 노임항목)
+        if ((trimmed.includes('공사명') || trimmed.includes('품명')) && idx !== laborItemIdx) {
+          workNameIdx = idx;
+        }
+      });
+      
+      console.log('일위대가 headers:', headers);
+      console.log('일위대가 column indices:', { categoryIdx, workNameIdx, laborItemIdx, priceIdx, standardWorkQuantityIdx });
+
+      let prevCategory: string | null = null;
+      let prevWorkName: string | null = null;
+
+      for (let i = 0; i < excelData.data.length; i++) {
+        const row = excelData.data[i];
+        if (!row || row.length === 0) continue;
+
+        const category: string = safeString(row[categoryIdx]) || prevCategory || '';
+        const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
+        const laborItem: string = safeString(row[laborItemIdx]);
+        const price = parsePrice(row[priceIdx]);
+        const standardWorkQuantity = standardWorkQuantityIdx >= 0 ? parsePrice(row[standardWorkQuantityIdx]) : null;
+
+        // Update forward-fill values
+        if (safeString(row[categoryIdx])) prevCategory = category;
+        if (safeString(row[workNameIdx])) prevWorkName = workName;
+
+        // Skip rows without essential data
+        if (!category || !laborItem) continue;
+        
+        // Skip header rows (rows where values look like header names)
+        if (category === '공종' || laborItem === '노임항목' || laborItem.includes('노임항목')) continue;
+
+        catalog.push({
+          공종: category,
+          공사명: workName,
+          노임항목: laborItem,
+          금액: price,
+          기준작업량: standardWorkQuantity,
+        });
       }
 
       // Remove duplicate entries (based on 공종+공사명+노임항목 combination)
