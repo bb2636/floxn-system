@@ -84,8 +84,14 @@ interface MaterialByWorknameCatalogItem {
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
 
 // 노무비 행을 공종별로 정렬하는 헬퍼 함수 (같은 공종끼리 묶음)
+// 독립 추가 행(isLinkedFromRecovery=false, sourceAreaRowId 없음)은 맨 아래에 유지
 const sortLaborRowsByCategory = (rows: LaborCostRow[]): LaborCostRow[] => {
-  return [...rows].sort((a, b) => {
+  // 연동 행과 독립 행 분리
+  const linkedRows = rows.filter(r => r.isLinkedFromRecovery || r.sourceAreaRowId);
+  const independentRows = rows.filter(r => !r.isLinkedFromRecovery && !r.sourceAreaRowId);
+  
+  // 연동 행만 정렬 (공종 → 공사명 순)
+  const sortedLinkedRows = [...linkedRows].sort((a, b) => {
     const categoryA = a.category || '';
     const categoryB = b.category || '';
     if (categoryA !== categoryB) {
@@ -96,6 +102,9 @@ const sortLaborRowsByCategory = (rows: LaborCostRow[]): LaborCostRow[] => {
     const workNameB = b.workName || '';
     return workNameA.localeCompare(workNameB, 'ko');
   });
+  
+  // 독립 행은 맨 아래에 순서 유지하며 추가
+  return [...sortedLinkedRows, ...independentRows];
 };
 
 export default function FieldEstimate() {
