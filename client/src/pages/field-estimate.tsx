@@ -2161,21 +2161,38 @@ export default function FieldEstimate() {
     
     // 도배, 마루, 장판의 경우 모든 위치(바닥+천장+벽면)의 면적 합계 계산
     const surfaceFinishWorkNames = ['도배', '마루', '장판'];
+    // 기본값: 전달받은 repairArea 사용
     let totalMaterialArea = repairArea || 0;
     
     if (surfaceFinishWorkNames.includes(workName)) {
       // 같은 공사명의 모든 행에서 면적 합산 (천장 ×1.3 적용 안 함 - 자재비는 실면적 기준)
+      // 주의: rows 상태가 stale할 수 있으므로, 현재 행의 값(repairArea)을 별도로 반영
       let sumArea = 0;
+      let currentRowIncluded = false;
+      
       rows.forEach(row => {
         if (row.workName === workName) {
-          const rowArea = parseFloat(row.repairArea) || 0;
-          sumArea += rowArea;
+          if (row.id === sourceRowId) {
+            // 현재 편집 중인 행: 전달받은 repairArea 사용 (최신값)
+            sumArea += (repairArea || 0);
+            currentRowIncluded = true;
+          } else {
+            // 다른 행: rows 상태에서 읽기
+            const rowArea = parseFloat(row.repairArea) || 0;
+            sumArea += rowArea;
+          }
         }
       });
+      
+      // 현재 행이 rows에 없는 경우 (새로 추가되는 경우) repairArea 추가
+      if (!currentRowIncluded && repairArea) {
+        sumArea += repairArea;
+      }
+      
       if (sumArea > 0) {
         totalMaterialArea = Math.round(sumArea * 10) / 10;
       }
-      console.log(`[자재비 수량] ${workName} 전체 면적 합계: ${totalMaterialArea}`);
+      console.log(`[자재비 수량] ${workName} 전체 면적 합계: ${totalMaterialArea} (rows: ${rows.filter(r => r.workName === workName).length}개, 현재행포함: ${currentRowIncluded})`);
     }
     
     console.log('[일위대가 연동] 복구면적 → 노무비:', workType, workName);
