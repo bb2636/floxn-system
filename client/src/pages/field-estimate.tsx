@@ -377,28 +377,11 @@ export default function FieldEstimate() {
   };
   
   // 철거공사 공사명 매핑 (복구면적 공사명 → 일위대가DB 철거공사 공사명)
+  // 일위대가DB의 철거공사 공사명과 동일하게 유지
   const getDemolitionMapping = (workType: string, workName: string): { demolitionWorkName: string; detailItem: string } => {
-    // 목공사 → 철거공사 매핑 (일위대가DB 기준)
-    if (workType === '목공사' && workName === '반자틀') {
-      return { demolitionWorkName: '반자틀', detailItem: '보통인부' };
-    }
-    if (workType === '목공사' && workName === '합판') {
-      return { demolitionWorkName: '합판', detailItem: '보통인부' };
-    }
-    if (workType === '목공사' && workName === '석고보드') {
-      return { demolitionWorkName: '석고', detailItem: '보통인부' }; // 석고보드 → 석고
-    }
-    // 수장공사 → 철거공사 매핑 (일위대가DB 기준)
-    if (workType === '수장공사' && workName === '도배') {
-      return { demolitionWorkName: '도배', detailItem: '보통인부' };
-    }
-    if (workType === '수장공사' && workName === '마루') {
-      return { demolitionWorkName: '마루', detailItem: '보통인부' };
-    }
-    if (workType === '수장공사' && workName === '장판') {
-      return { demolitionWorkName: '장판', detailItem: '보통인부' };
-    }
-    // 기본값 (일위대가DB에 없는 경우)
+    // 기본적으로 공사명 그대로 사용 (일위대가DB 철거공사에 같은 이름 있을 것으로 예상)
+    // 목공사: 반자틀, 합판, 석고보드 → 철거공사 반자틀, 합판, 석고보드
+    // 수장공사: 도배, 마루, 장판 → 철거공사 도배, 마루, 장판
     return { demolitionWorkName: workName, detailItem: '보통인부' };
   };
   
