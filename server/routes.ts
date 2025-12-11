@@ -2814,44 +2814,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const catalog: any[] = [];
       const headers = excelData.headers || [];
       
-      // 일위대가 format: 공종, 공사명, 노임항목, 기준작업량, 노임단가(인당), 일위대가(노임단가/기준작업량)
-      // Find column indices by header names with EXACT match priority
-      // NOTE: Headers like '노임항목(공종에 종속)' contain '공종' substring, so use exact match first
-      let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2, priceIdx = -1, standardWorkQuantityIdx = -1;
+      // 일위대가 format: 공종, 공사명, 노임항목, 기준작업량(D), 노임단가(인당)(E), 일위대가(노임단가/기준작업량)
+      // D = 기준작업량, E = 노임단가(인당)
+      let categoryIdx = 0, workNameIdx = 1, laborItemIdx = 2;
+      let standardWorkQuantityIdx = -1;  // D: 기준작업량
+      let laborUnitPriceIdx = -1;        // E: 노임단가(인당)
+      let ilwidaegaIdx = -1;             // 일위대가 (참고용)
       
-      // First pass: exact or near-exact matches (priority)
+      // Find column indices by header names
       headers.forEach((h: string, idx: number) => {
         const trimmed = (h || '').trim();
-        // Exact match for 공종 (not substring match to avoid '노임항목(공종에 종속)')
+        
+        // 공종 - exact match only
         if (trimmed === '공종') categoryIdx = idx;
-        // 노임항목 must be detected before checking for 공사명
-        if (trimmed.includes('노임항목')) laborItemIdx = idx;
-        // 금액 또는 일위대가 (금액 컬럼)
-        if (trimmed.includes('금액') || trimmed.includes('일위대가') || trimmed.includes('노임단가')) {
-          // 일위대가 컬럼이 금액으로 사용됨 (우선순위: 일위대가 > 금액)
-          if (trimmed.includes('일위대가')) {
-            priceIdx = idx;
-          } else if (priceIdx < 0) {
-            priceIdx = idx;
-          }
-        }
-        // 기준작업량 - '일위대가(노임단가/기준작업량)' 같은 복합 헤더 제외 (정확히 '기준작업량'만 매칭)
+        
+        // 공사명
+        if (trimmed.includes('공사명') || trimmed.includes('품명')) workNameIdx = idx;
+        
+        // 노임항목
+        if (trimmed.includes('노임항목') && !trimmed.includes('공종')) laborItemIdx = idx;
+        
+        // 기준작업량 (D) - must not contain 일위대가 or 노임단가
         if (trimmed.includes('기준작업량') && !trimmed.includes('일위대가') && !trimmed.includes('노임단가')) {
           standardWorkQuantityIdx = idx;
         }
-      });
-      
-      // Second pass: 공사명 with more specific matching (exclude 노임항목 column)
-      headers.forEach((h: string, idx: number) => {
-        const trimmed = (h || '').trim();
-        // 공사명 match (but not if already matched as 노임항목)
-        if ((trimmed.includes('공사명') || trimmed.includes('품명')) && idx !== laborItemIdx) {
-          workNameIdx = idx;
+        
+        // 노임단가(인당) (E) - the labor unit price per person
+        // Must contain '노임단가' but NOT '일위대가'
+        if (trimmed.includes('노임단가') && !trimmed.includes('일위대가')) {
+          laborUnitPriceIdx = idx;
+        }
+        
+        // 일위대가 - for reference (E/D)
+        if (trimmed.includes('일위대가')) {
+          ilwidaegaIdx = idx;
         }
       });
       
       console.log('일위대가 headers:', headers);
-      console.log('일위대가 column indices:', { categoryIdx, workNameIdx, laborItemIdx, priceIdx, standardWorkQuantityIdx });
+      console.log('일위대가 column indices:', { 
+        categoryIdx, workNameIdx, laborItemIdx, 
+        standardWorkQuantityIdx, laborUnitPriceIdx, ilwidaegaIdx 
+      });
 
       let prevCategory: string | null = null;
       let prevWorkName: string | null = null;
@@ -2863,8 +2867,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const category: string = safeString(row[categoryIdx]) || prevCategory || '';
         const workName: string = safeString(row[workNameIdx]) || prevWorkName || '';
         const laborItem: string = safeString(row[laborItemIdx]);
-        const price = parsePrice(row[priceIdx]);
-        const standardWorkQuantity = standardWorkQuantityIdx >= 0 ? parsePrice(row[standardWorkQuantityIdx]) : null;
+        
+        // D = 기준작업량, E = 노임단가(인당)
+        const D = standardWorkQuantityIdx >= 0 ? parsePrice(row[standardWorkQuantityIdx]) : null;
+        const E = laborUnitPriceIdx >= 0 ? parsePrice(row[laborUnitPriceIdx]) : null;
+        const ilwidaega = ilwidaegaIdx >= 0 ? parsePrice(row[ilwidaegaIdx]) : null;
 
         // Update forward-fill values
         if (safeString(row[categoryIdx])) prevCategory = category;
@@ -2880,8 +2887,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           공종: category,
           공사명: workName,
           노임항목: laborItem,
-          금액: price,
-          기준작업량: standardWorkQuantity,
+          기준작업량: D,      // D
+          노임단가: E,        // E (노임단가(인당))
+          일위대가: ilwidaega, // 참고용 (E/D)
         });
       }
 
