@@ -2524,6 +2524,42 @@ export default function FieldEstimate() {
           : '(DB 매칭 없음)');
       return [...prev, newMaterialRow];
     });
+    
+    // 표면마감재(도배/마루/장판)의 경우 같은 공사명의 모든 자재비 행 수량 동기화
+    const surfaceFinishes = ['도배', '마루', '장판'];
+    if (surfaceFinishes.includes(workName)) {
+      // 약간의 지연 후 동기화 (상태 업데이트 완료 대기)
+      setTimeout(() => {
+        setMaterialRows(prev => {
+          // 같은 공사명의 모든 행에서 최대 수량 찾기 (가장 최근 계산된 합계)
+          const sameWorkNameRows = prev.filter(r => r.공사명 === workName);
+          if (sameWorkNameRows.length <= 1) return prev;
+          
+          // 가장 큰 수량 값을 찾아서 동기화 (합계가 가장 큰 값)
+          const maxQty = Math.max(...sameWorkNameRows.map(r => (r.수량m2 || 0) + (r.수량EA || 0)));
+          
+          console.log(`[자재비 수량 동기화] ${workName}: ${sameWorkNameRows.length}개 행 → 수량 ${maxQty}로 통일`);
+          
+          return prev.map(r => {
+            if (r.공사명 === workName) {
+              const currentQty = (r.수량m2 || 0) + (r.수량EA || 0);
+              if (currentQty !== maxQty) {
+                const newTotal = Math.round((r.단가 || r.기준단가 || 0) * maxQty);
+                return { 
+                  ...r, 
+                  수량m2: maxQty, 
+                  수량EA: 0, 
+                  수량: maxQty, 
+                  합계: newTotal, 
+                  금액: newTotal 
+                };
+              }
+            }
+            return r;
+          });
+        });
+      }, 100);
+    }
   };
   
 
