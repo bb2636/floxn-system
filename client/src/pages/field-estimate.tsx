@@ -2390,6 +2390,9 @@ export default function FieldEstimate() {
           const D = catalogItem.기준작업량 || 0;
           const E = catalogItem.노임단가 || 0;
           
+          // 복구면적 = 전달받은 repairArea (현재 행의 값)
+          const currentRepairArea = repairArea || 0;
+          
           newLaborRows.push({
             id: `labor-ilwidaega-${Date.now()}-${Math.random()}-${idx}`,
             sourceAreaRowId: sourceRowId,
@@ -2408,7 +2411,7 @@ export default function FieldEstimate() {
             applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
             salesMarkupRate: 0,
             pricePerSqm: 0, // 초기값 0, useEffect에서 I/C로 계산됨
-            damageArea: 0, // 초기값 0, useEffect에서 복구면적 기준으로 자동 업데이트됨
+            damageArea: currentRepairArea, // 복구면적 (C) - repairArea 사용
             deduction: 0,
             includeInEstimate: true,
             request: '',
@@ -2419,6 +2422,8 @@ export default function FieldEstimate() {
           `${matchingIlwidaegaItems.length}개 노임항목 (${matchingIlwidaegaItems.map(i => i.노임항목).join(', ')})`);
       } else {
         // 일위대가DB에 없으면 빈 행 생성 (수동 입력용)
+        const currentRepairArea = repairArea || 0;
+        
         newLaborRows.push({
           id: `labor-manual-${Date.now()}-${Math.random()}`,
           sourceAreaRowId: sourceRowId,
@@ -2437,7 +2442,7 @@ export default function FieldEstimate() {
           applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
           salesMarkupRate: 0,
           pricePerSqm: 0,
-          damageArea: 0,
+          damageArea: currentRepairArea, // 복구면적 (C) - repairArea 사용
           deduction: 0,
           includeInEstimate: true,
           request: '',
@@ -2469,6 +2474,8 @@ export default function FieldEstimate() {
             // D = 기준작업량, E = 노임단가(인당)
             const D = catItem.기준작업량 || 0;
             const E = catItem.노임단가 || 0;
+            // 철거공사는 부모 행과 동일한 복구면적 사용
+            const currentRepairArea = repairArea || 0;
             
             newLaborRows.push({
               id: `labor-demolition-${Date.now()}-${Math.random()}-${idx}`,
@@ -2489,7 +2496,7 @@ export default function FieldEstimate() {
               applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
               salesMarkupRate: 0,
               pricePerSqm: 0, // 초기값 0, useEffect에서 I/C로 계산됨
-              damageArea: 0,
+              damageArea: currentRepairArea, // 복구면적 (C) - 부모 행과 동일
               deduction: 0,
               includeInEstimate: true,
               request: '',
@@ -2501,6 +2508,8 @@ export default function FieldEstimate() {
         } else {
           // 일위대가DB에 없으면 기본 철거공사 행 생성
           console.log('[일위대가 연동] 철거공사 일위대가DB 매칭 없음:', demolitionWorkName);
+          const currentRepairArea = repairArea || 0;
+          
           newLaborRows.push({
             id: `labor-demolition-${Date.now()}-${Math.random()}`,
             sourceAreaRowId: `${sourceRowId}::demolition`,
@@ -2520,7 +2529,7 @@ export default function FieldEstimate() {
             applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
             salesMarkupRate: 0,
             pricePerSqm: 0,
-            damageArea: 0,
+            damageArea: currentRepairArea, // 복구면적 (C) - 부모 행과 동일
             deduction: 0,
             includeInEstimate: true,
             request: '',
