@@ -636,39 +636,53 @@ export function MaterialCostSection({
                   {/* 수량 - 연동 행도 입력 가능 */}
                   <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF" }}>
                     {isLinkedRow ? (
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                        <Input
-                          type="number"
-                          value={row.수량m2 || ''}
-                          onChange={(e) => {
-                            const val = Number(e.target.value) || 0;
-                            const currentWorkName = row.공사명;
-                            // 같은 공사명의 모든 행 수량 동기화
-                            onRowsChange(rows.map(r => {
-                              if (r.공사명 === currentWorkName && currentWorkName) {
-                                const newTotal = Math.round((r.단가 || r.기준단가 || 0) * val);
-                                return { ...r, 수량m2: val, 수량EA: 0, 수량: val, 합계: newTotal, 금액: newTotal };
-                              }
-                              return r;
-                            }));
-                          }}
-                          className="h-9 border-0 bg-transparent text-center"
-                          style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(59, 130, 246, 0.9)" }}
-                          placeholder="0"
-                          disabled={isReadOnly}
-                          data-testid={`input-수량-linked-${currentGlobalIndex}`}
-                        />
-                        <span 
-                          style={{ 
-                            fontSize: "10px", 
-                            color: "rgba(59, 130, 246, 0.6)",
-                            marginTop: "-4px"
-                          }}
-                          title="바닥+벽체+천장 면적 합계"
-                        >
-                          (바닥+벽체+천장)
-                        </span>
-                      </div>
+                      (() => {
+                        // EA 기반 자재 (합판, 석고보드, 몰딩, 걸레받이)는 수량EA 사용
+                        const eaWorkNames = ['합판', '석고보드', '석고', '몰딩', '걸레받이'];
+                        const isEABased = eaWorkNames.includes(row.공사명 || '') || row.단위 === 'EA';
+                        const displayQty = isEABased ? (row.수량EA || row.수량 || 0) : (row.수량m2 || row.수량 || 0);
+                        const unitLabel = isEABased ? '(EA 수량)' : '(바닥+벽체+천장)';
+                        
+                        return (
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                            <Input
+                              type="number"
+                              value={displayQty || ''}
+                              onChange={(e) => {
+                                const val = Number(e.target.value) || 0;
+                                const currentWorkName = row.공사명;
+                                // 같은 공사명의 모든 행 수량 동기화
+                                onRowsChange(rows.map(r => {
+                                  if (r.공사명 === currentWorkName && currentWorkName) {
+                                    const newTotal = Math.round((r.단가 || r.기준단가 || 0) * val);
+                                    if (isEABased) {
+                                      return { ...r, 수량EA: val, 수량m2: 0, 수량: val, 합계: newTotal, 금액: newTotal };
+                                    } else {
+                                      return { ...r, 수량m2: val, 수량EA: 0, 수량: val, 합계: newTotal, 금액: newTotal };
+                                    }
+                                  }
+                                  return r;
+                                }));
+                              }}
+                              className="h-9 border-0 bg-transparent text-center"
+                              style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(59, 130, 246, 0.9)" }}
+                              placeholder="0"
+                              disabled={isReadOnly}
+                              data-testid={`input-수량-linked-${currentGlobalIndex}`}
+                            />
+                            <span 
+                              style={{ 
+                                fontSize: "10px", 
+                                color: "rgba(59, 130, 246, 0.6)",
+                                marginTop: "-4px"
+                              }}
+                              title={isEABased ? "EA 단위 수량 (올림 계산)" : "바닥+벽체+천장 면적 합계"}
+                            >
+                              {unitLabel}
+                            </span>
+                          </div>
+                        );
+                      })()
                     ) : (
                       <Input
                         type="number"
