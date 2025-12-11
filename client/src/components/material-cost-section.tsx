@@ -302,10 +302,16 @@ export function MaterialCostSection({
               const materialItem = row.자재항목 || row.자재 || '';
               // 단가 값 (단가 또는 기준단가 사용)
               const price = row.단가 || row.기준단가 || 0;
-              // 수량 계산 (m2 + EA)
-              const quantity = (row.수량m2 || 0) + (row.수량EA || 0);
-              // 합계 값 (합계 또는 금액 사용)
-              const total = row.합계 || row.금액 || Math.round(price * quantity);
+              // 면적 기반 자재 (도배, 마루, 장판)는 올림 처리
+              const areaWorkNames = ['도배', '마루', '장판'];
+              const isAreaBasedMaterial = areaWorkNames.includes(row.공사명 || '') || row.단위 === 'm²';
+              // 수량 계산 (m2 + EA) - 면적 기반은 올림
+              const rawQuantity = (row.수량m2 || 0) + (row.수량EA || 0);
+              const quantity = isAreaBasedMaterial ? Math.ceil(rawQuantity) : rawQuantity;
+              // 합계 값 (합계 또는 금액 사용) - 올림 처리된 수량으로 재계산
+              const total = isAreaBasedMaterial 
+                ? Math.round(price * quantity) 
+                : (row.합계 || row.금액 || Math.round(price * quantity));
               // 연동 행인지 확인 (복구면적에서 자동 생성된 행)
               const isLinkedRow = row.isLinkedFromRecovery === true;
               // 수량 표시 텍스트
@@ -640,7 +646,12 @@ export function MaterialCostSection({
                         // EA 기반 자재 (합판, 석고보드, 몰딩, 걸레받이)는 수량EA 사용
                         const eaWorkNames = ['합판', '석고보드', '석고', '몰딩', '걸레받이'];
                         const isEABased = eaWorkNames.includes(row.공사명 || '') || row.단위 === 'EA';
-                        const displayQty = isEABased ? (row.수량EA || row.수량 || 0) : (row.수량m2 || row.수량 || 0);
+                        // 면적 기반 자재 (도배, 마루, 장판)는 올림 처리
+                        const areaWorkNames = ['도배', '마루', '장판'];
+                        const isAreaBased = areaWorkNames.includes(row.공사명 || '') || row.단위 === 'm²';
+                        const rawQty = isEABased ? (row.수량EA || row.수량 || 0) : (row.수량m2 || row.수량 || 0);
+                        // 면적 기반 자재는 올림 처리, EA 기반 자재는 이미 올림 처리됨
+                        const displayQty = isAreaBased ? Math.ceil(rawQty) : rawQty;
                         const unitLabel = isEABased ? '(EA 수량)' : '(바닥+벽체+천장)';
                         
                         return (
