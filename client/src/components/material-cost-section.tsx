@@ -591,7 +591,7 @@ export function MaterialCostSection({
                     {row.isManualPriceEntry || (price === 0 && row.자재항목) ? (
                       <Input
                         type="number"
-                        value={price || ''}
+                        value={price > 0 ? price : ''}
                         onChange={(e) => {
                           const val = Number(e.target.value) || 0;
                           onRowsChange(rows.map(r => {
@@ -603,9 +603,16 @@ export function MaterialCostSection({
                             return r;
                           }));
                         }}
-                        className="h-9 border-0 bg-yellow-50 text-right"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px", minWidth: "80px" }}
-                        placeholder="직접입력"
+                        className="h-9 text-right"
+                        style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px", 
+                          minWidth: "100px",
+                          background: "#FFFBEB",
+                          border: "1px solid #FCD34D",
+                          borderRadius: "6px",
+                        }}
+                        placeholder="단가 입력"
                         disabled={isReadOnly}
                         data-testid={`input-단가-${currentGlobalIndex}`}
                       />
