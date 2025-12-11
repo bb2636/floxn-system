@@ -410,9 +410,9 @@ export default function FieldEstimate() {
     const parsedArea = overrideDamageArea ?? (parseFloat(sourceAreaRow.repairArea) || 0);
     const safeDamageArea = Math.round(parsedArea * 10) / 10;
     
-    // 기준작업량 가져오기
+    // 기준작업량(D), 노임단가(E) 가져오기
     const standardWorkQty = catalogItem?.기준작업량 || 0;
-    const laborPrice = catalogItem?.금액 || 0;
+    const laborPrice = catalogItem?.노임단가 || 0;
     
     // 수량 계산: 복구면적 ÷ 기준작업량
     const calculatedQuantity = standardWorkQty > 0 
@@ -825,17 +825,23 @@ export default function FieldEstimate() {
       data.totalArea += repairArea;
     });
     
-    // 도배, 마루, 장판 공사명의 경우 바닥+천장+벽체 합계 계산
-    const surfaceFinishWorkNames = ['도배', '마루', '장판'];
+    // 면적 기반 공사명: 도배, 마루, 장판, 합판, 석고보드, 석고
+    const areaBasedWorkNames = ['도배', '마루', '장판', '합판', '석고보드', '석고'];
+    // 길이(m) 기반 공사명: 몰딩, 걸레받이
+    const lengthBasedWorkNames = ['몰딩', '걸레받이'];
+    
     workMap.forEach((data, key) => {
-      if (surfaceFinishWorkNames.includes(data.공사명)) {
-        // 바닥+천장+벽체 합계 (천장은 ×1.3 적용하지 않음 - 자재비는 실면적 기준)
+      if (areaBasedWorkNames.includes(data.공사명)) {
+        // 면적 기반: 바닥+천장+벽체 합계 (천장은 ×1.3 적용하지 않음 - 자재비는 실면적 기준)
         const combinedArea = data.floorArea + data.ceilingArea + data.wallArea;
         // 개별 위치 면적이 있으면 combinedArea 사용, 없으면 totalArea 사용
         if (combinedArea > 0) {
           data.totalArea = combinedArea;
         }
-        console.log(`[자재비] ${data.공사명} 수량 계산: 바닥(${data.floorArea}) + 천장(${data.ceilingArea}) + 벽체(${data.wallArea}) = ${data.totalArea}`);
+        console.log(`[자재비] ${data.공사명} 면적 합산: 바닥(${data.floorArea}) + 천장(${data.ceilingArea}) + 벽체(${data.wallArea}) = ${data.totalArea}㎡`);
+      } else if (lengthBasedWorkNames.includes(data.공사명)) {
+        // 길이 기반: totalArea가 이미 길이(m)로 합산되어 있음
+        console.log(`[자재비] ${data.공사명} 길이 합산: ${data.totalArea}m`);
       }
     });
     
@@ -848,11 +854,19 @@ export default function FieldEstimate() {
         item => item.공사명 === data.공사명
       );
       
+      // 수량 계산 (공사명별 단위 규격 적용)
+      const totalAreaOrLength = Math.round(data.totalArea * 10) / 10;
+      const quantityResult = computeMaterialQuantity(data.공사명, totalAreaOrLength, totalAreaOrLength);
+      const calculatedQty = quantityResult.quantity;
+      const calculatedUnit = quantityResult.unit;
+      
+      console.log(`[자재비 행 생성] ${data.공사명}: 면적/길이=${totalAreaOrLength}, 수량=${calculatedQty} ${calculatedUnit}`);
+      
       if (matchingMaterials.length > 0) {
         // 첫 번째 매칭 자재로 기본 행 생성 (사용자가 택1 선택 가능)
         const firstMaterial = matchingMaterials[0];
         const unitPrice = typeof firstMaterial.금액 === 'number' ? firstMaterial.금액 : 0;
-        const totalArea = Math.round(data.totalArea * 10) / 10;
+        
         newMaterialRows.push({
           id: `material-linked-${Date.now()}-${Math.random()}`,
           공종: data.공종,
@@ -860,21 +874,20 @@ export default function FieldEstimate() {
           자재항목: firstMaterial.자재항목, // 자재항목 사용
           자재: firstMaterial.자재항목, // 자재항목 사용
           규격: firstMaterial.규격 || '',
-          단위: firstMaterial.단위 || '',
+          단위: calculatedUnit || firstMaterial.단위 || '',
           단가: unitPrice,
           기준단가: unitPrice,
-          수량m2: totalArea,
-          수량EA: 0,
-          수량: totalArea,
-          합계: Math.round(unitPrice * totalArea),
-          금액: Math.round(unitPrice * totalArea),
+          수량m2: totalAreaOrLength,
+          수량EA: quantityResult.quantityEA,
+          수량: calculatedQty,
+          합계: Math.round(unitPrice * calculatedQty),
+          금액: Math.round(unitPrice * calculatedQty),
           비고: '',
           sourceAreaRowId: data.sourceAreaRowId,
           isLinkedFromRecovery: true,
         });
       } else {
         // 매칭되는 자재가 없으면 빈 행 생성 (수동 입력용)
-        const totalArea = Math.round(data.totalArea * 10) / 10;
         newMaterialRows.push({
           id: `material-linked-${Date.now()}-${Math.random()}`,
           공종: data.공종,
@@ -882,12 +895,12 @@ export default function FieldEstimate() {
           자재항목: '',
           자재: '',
           규격: '',
-          단위: '',
+          단위: calculatedUnit || '',
           단가: 0,
           기준단가: 0,
-          수량m2: totalArea,
-          수량EA: 0,
-          수량: totalArea,
+          수량m2: totalAreaOrLength,
+          수량EA: quantityResult.quantityEA,
+          수량: calculatedQty,
           합계: 0,
           금액: 0,
           비고: '',
@@ -2274,12 +2287,16 @@ export default function FieldEstimate() {
   const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string, repairArea?: number) => {
     if (!workType || !workName) return;
     
-    // 도배, 마루, 장판의 경우 모든 위치(바닥+천장+벽면)의 면적 합계 계산
-    const surfaceFinishWorkNames = ['도배', '마루', '장판'];
+    // 면적 합산 대상 공사명: 도배, 마루, 장판, 합판, 석고보드, 석고
+    const areaAggregationWorkNames = ['도배', '마루', '장판', '합판', '석고보드', '석고'];
+    // 길이(m) 합산 대상 공사명: 몰딩, 걸레받이
+    const lengthAggregationWorkNames = ['몰딩', '걸레받이'];
+    
     // 기본값: 전달받은 repairArea 사용
     let totalMaterialArea = repairArea || 0;
+    let totalMaterialLength = repairArea || 0; // 몰딩/걸레받이는 가로값이 길이(m)
     
-    if (surfaceFinishWorkNames.includes(workName)) {
+    if (areaAggregationWorkNames.includes(workName)) {
       // 같은 공사명의 모든 행에서 면적 합산 (천장 ×1.3 적용 안 함 - 자재비는 실면적 기준)
       // 주의: rows 상태가 stale할 수 있으므로, 현재 행의 값(repairArea)을 별도로 반영
       let sumArea = 0;
@@ -2307,7 +2324,36 @@ export default function FieldEstimate() {
       if (sumArea > 0) {
         totalMaterialArea = Math.round(sumArea * 10) / 10;
       }
-      console.log(`[자재비 수량] ${workName} 전체 면적 합계: ${totalMaterialArea} (rows: ${rows.filter(r => r.workName === workName).length}개, 현재행포함: ${currentRowIncluded})`);
+      console.log(`[자재비 수량] ${workName} 전체 면적 합계: ${totalMaterialArea}㎡ (rows: ${rows.filter(r => r.workName === workName).length}개, 현재행포함: ${currentRowIncluded})`);
+    } else if (lengthAggregationWorkNames.includes(workName)) {
+      // 몰딩/걸레받이: 길이(m) 합산 (repairArea 필드가 실제로는 길이 값)
+      let sumLength = 0;
+      let currentRowIncluded = false;
+      
+      rows.forEach(row => {
+        if (row.workName === workName) {
+          if (row.id === sourceRowId) {
+            // 현재 편집 중인 행: 전달받은 repairArea 사용 (실제로는 길이 m)
+            sumLength += (repairArea || 0);
+            currentRowIncluded = true;
+          } else {
+            // 다른 행: rows 상태에서 읽기 (repairArea가 길이 m)
+            const rowLength = parseFloat(row.repairArea) || 0;
+            sumLength += rowLength;
+          }
+        }
+      });
+      
+      // 현재 행이 rows에 없는 경우 (새로 추가되는 경우) repairArea 추가
+      if (!currentRowIncluded && repairArea) {
+        sumLength += repairArea;
+      }
+      
+      if (sumLength > 0) {
+        totalMaterialLength = Math.round(sumLength * 10) / 10;
+        totalMaterialArea = totalMaterialLength; // computeMaterialQuantity에서 사용
+      }
+      console.log(`[자재비 수량] ${workName} 전체 길이 합계: ${totalMaterialLength}m (rows: ${rows.filter(r => r.workName === workName).length}개, 현재행포함: ${currentRowIncluded})`);
     }
     
     console.log('[일위대가 연동] 복구면적 → 노무비:', workType, workName);
@@ -2420,7 +2466,9 @@ export default function FieldEstimate() {
         if (demolitionCatalogItems.length > 0) {
           // 일위대가DB에서 매칭된 모든 철거공사 노임항목으로 행 생성
           demolitionCatalogItems.forEach((catItem, idx) => {
-            const standardWorkQty = catItem.기준작업량 || 0;
+            // D = 기준작업량, E = 노임단가(인당)
+            const D = catItem.기준작업량 || 0;
+            const E = catItem.노임단가 || 0;
             
             newLaborRows.push({
               id: `labor-demolition-${Date.now()}-${Math.random()}-${idx}`,
@@ -2435,17 +2483,17 @@ export default function FieldEstimate() {
               detailItem: catItem.노임항목 || '', // 노임항목 (보통인부)
               priceStandard: '',
               unit: '㎡',
-              standardPrice: catItem.금액 || 0,
-              standardWorkQuantity: standardWorkQty, // 기준작업량 저장
+              standardPrice: E, // 노임단가 (E)
+              standardWorkQuantity: D, // 기준작업량 (D)
               quantity: 1, // 초기값 1, useEffect에서 복구면적 기준으로 재계산됨
               applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
               salesMarkupRate: 0,
-              pricePerSqm: catItem.금액 || 0,
+              pricePerSqm: 0, // 초기값 0, useEffect에서 I/C로 계산됨
               damageArea: 0,
               deduction: 0,
               includeInEstimate: true,
               request: '',
-              amount: 0,
+              amount: 0, // 초기값 0, useEffect에서 I로 계산됨
             });
           });
           console.log('[일위대가 연동] 철거공사 행 생성:', '철거공사', demolitionWorkName,
