@@ -12,6 +12,89 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Copy, Search, ChevronDown, ChevronRight, GripVertical, Lock } from "lucide-react";
 
+// ===== 노임비 계산 공식 (알파벳 정의) =====
+// D = 기준작업량 (일위대가 DB)
+// C = 복구면적 (노무비 계산값)
+// E = 노임단가 (일위대가 DB)
+// F = C/D 비율에 따른 적용단가 (E 기준 할인율 적용)
+// H = C≥D: (C-D)×(E÷D) / C<D: F
+// I = F + H (최종 노임비)
+// 적용단가 = I / C
+// 합계 = I
+
+/**
+ * F 계산: C/D 비율에 따른 적용단가
+ * @param C 복구면적
+ * @param D 기준작업량
+ * @param E 노임단가
+ * @returns F (적용단가)
+ */
+function calculateF(C: number, D: number, E: number): number {
+  if (D <= 0 || E <= 0) return 0;
+  
+  const ratio = C / D;
+  
+  if (ratio >= 0.85) return E;           // 85% 이상: 100%
+  if (ratio >= 0.80) return E * 0.95;    // 80% 이상: 95%
+  if (ratio >= 0.75) return E * 0.82;    // 75% 이상: 82%
+  if (ratio >= 0.70) return E * 0.74;    // 70% 이상: 74%
+  if (ratio >= 0.65) return E * 0.66;    // 65% 이상: 66%
+  if (ratio >= 0.60) return E * 0.58;    // 60% 이상: 58%
+  if (ratio >= 0.50) return E * 0.50;    // 50% 이상: 50%
+  return E * 0.45;                        // 50% 미만: 45%
+}
+
+/**
+ * H 계산
+ * @param C 복구면적
+ * @param D 기준작업량
+ * @param E 노임단가
+ * @param F 적용단가 (calculateF로 계산된 값)
+ * @returns H
+ */
+function calculateH(C: number, D: number, E: number, F: number): number {
+  if (D <= 0) return 0;
+  
+  if (C >= D) {
+    // C ≥ D: (C-D) × (E÷D)
+    return (C - D) * (E / D);
+  } else {
+    // C < D: F
+    return F;
+  }
+}
+
+/**
+ * I 계산: 최종 노임비
+ * @param C 복구면적
+ * @param D 기준작업량
+ * @param E 노임단가
+ * @returns I (최종 노임비)
+ */
+function calculateI(C: number, D: number, E: number): number {
+  if (D <= 0 || C <= 0) return 0;
+  
+  const F = calculateF(C, D, E);
+  const H = calculateH(C, D, E, F);
+  const I = F + H;
+  
+  return Math.round(I); // 원 단위 반올림
+}
+
+/**
+ * 적용단가 계산: I / C
+ * @param C 복구면적
+ * @param D 기준작업량
+ * @param E 노임단가
+ * @returns 적용단가 (I/C)
+ */
+function calculateAppliedUnitPrice(C: number, D: number, E: number): number {
+  if (C <= 0 || D <= 0) return 0;
+  
+  const I = calculateI(C, D, E);
+  return Math.round(I / C); // 원 단위 반올림
+}
+
 // 복구면적 산출표 행 인터페이스
 export interface AreaCalculationRowForLabor {
   id: string;
@@ -227,18 +310,32 @@ export function LaborCostSection({
       
       hasChanges = true;
       
-      // 금액 재계산: 적용단가 × 수량
-      const pricePerSqm = Number(row.pricePerSqm) || 0;
-      
+      // 금액 재계산: 일위대가 공식 (C, D, E → I)
+      let newPricePerSqm = row.pricePerSqm;
       let newAmount = row.amount;
+      
       if (row.detailWork === '일위대가') {
-        newAmount = Math.round(pricePerSqm * newQuantity);
+        // C = 복구면적, D = 기준작업량, E = 노임단가 (standardPrice)
+        const C = newDamageArea;
+        const D = standardWorkQty;
+        const E = Number(row.standardPrice) || 0;
+        
+        if (D > 0 && E > 0 && C > 0) {
+          // I 계산 (최종 노임비 = 합계)
+          newAmount = calculateI(C, D, E);
+          // 적용단가 = I / C
+          newPricePerSqm = calculateAppliedUnitPrice(C, D, E);
+        } else {
+          newAmount = 0;
+          newPricePerSqm = 0;
+        }
       }
       
       return { 
         ...row, 
         damageArea: newDamageArea,
         quantity: newQuantity,
+        pricePerSqm: newPricePerSqm,
         amount: newAmount
       };
     });
@@ -717,8 +814,8 @@ export function LaborCostSection({
         // 금액 계산 (타입을 명시적으로 number로 변환)
         const standardPrice = Number(updated.standardPrice) || 0;
         const quantity = Number(updated.quantity) || 0;
-        const pricePerSqm = Number(updated.pricePerSqm) || 0;
         const damageArea = Number(updated.damageArea) || 0;
+        const standardWorkQty = Number(updated.standardWorkQuantity) || 0;
         
         // 누수탐지비용은 standardPrice * quantity로 계산
         if (updated.category === '누수탐지비용') {
@@ -727,8 +824,26 @@ export function LaborCostSection({
           // 노무비: 기준가(단위) * 수량 (피해면적은 표시만, 곱하지 않음)
           updated.amount = Math.round(standardPrice * quantity);
         } else if (updated.detailWork === '일위대가') {
-          // 일위대가: 기준가(m²) * 피해면적 * 수량
-          updated.amount = Math.round(pricePerSqm * damageArea * quantity);
+          // 일위대가: 새 공식 적용 (C, D, E → I)
+          // C = 복구면적 (damageArea)
+          // D = 기준작업량 (standardWorkQuantity)
+          // E = 노임단가 (standardPrice - 일위대가DB의 금액)
+          const C = damageArea;
+          const D = standardWorkQty;
+          const E = standardPrice;
+          
+          if (D > 0 && E > 0 && C > 0) {
+            // I 계산 (최종 노임비)
+            const I = calculateI(C, D, E);
+            // 적용단가 = I / C
+            const appliedUnitPrice = calculateAppliedUnitPrice(C, D, E);
+            
+            updated.pricePerSqm = appliedUnitPrice;
+            updated.amount = I;
+          } else {
+            updated.pricePerSqm = 0;
+            updated.amount = 0;
+          }
         } else {
           updated.amount = 0;
         }

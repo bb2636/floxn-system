@@ -81,6 +81,58 @@ interface MaterialByWorknameCatalogItem {
 
 // MaterialRow는 "@/components/material-cost-section"에서 import
 
+// ===== 노임비 계산 공식 (알파벳 정의) =====
+// D = 기준작업량 (일위대가 DB)
+// C = 복구면적 (노무비 계산값)
+// E = 노임단가 (일위대가 DB)
+// F = C/D 비율에 따른 적용단가 (E 기준 할인율 적용)
+// H = C≥D: (C-D)×(E÷D) / C<D: F
+// I = F + H (최종 노임비)
+// 적용단가 = I / C
+// 합계 = I
+
+function calculateF_FieldEstimate(C: number, D: number, E: number): number {
+  if (D <= 0 || E <= 0) return 0;
+  
+  const ratio = C / D;
+  
+  if (ratio >= 0.85) return E;
+  if (ratio >= 0.80) return E * 0.95;
+  if (ratio >= 0.75) return E * 0.82;
+  if (ratio >= 0.70) return E * 0.74;
+  if (ratio >= 0.65) return E * 0.66;
+  if (ratio >= 0.60) return E * 0.58;
+  if (ratio >= 0.50) return E * 0.50;
+  return E * 0.45;
+}
+
+function calculateH_FieldEstimate(C: number, D: number, E: number, F: number): number {
+  if (D <= 0) return 0;
+  
+  if (C >= D) {
+    return (C - D) * (E / D);
+  } else {
+    return F;
+  }
+}
+
+function calculateI_FieldEstimate(C: number, D: number, E: number): number {
+  if (D <= 0 || C <= 0) return 0;
+  
+  const F = calculateF_FieldEstimate(C, D, E);
+  const H = calculateH_FieldEstimate(C, D, E, F);
+  const I = F + H;
+  
+  return Math.round(I);
+}
+
+function calculateAppliedUnitPrice_FieldEstimate(C: number, D: number, E: number): number {
+  if (C <= 0 || D <= 0) return 0;
+  
+  const I = calculateI_FieldEstimate(C, D, E);
+  return Math.round(I / C);
+}
+
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
 
 // 노무비 행을 공종별로 정렬하는 헬퍼 함수 (같은 공종끼리 묶음)
@@ -359,10 +411,30 @@ export default function FieldEstimate() {
     
     // 기준작업량 가져오기
     const standardWorkQty = catalogItem?.기준작업량 || 0;
+    const laborPrice = catalogItem?.금액 || 0;
+    
     // 수량 계산: 복구면적 ÷ 기준작업량
     const calculatedQuantity = standardWorkQty > 0 
       ? Math.round((safeDamageArea / standardWorkQty) * 100) / 100 
       : 1;
+    
+    // 새 공식 적용 (C, D, E → I)
+    // C = 복구면적 (safeDamageArea)
+    // D = 기준작업량 (standardWorkQty)
+    // E = 노임단가 (laborPrice)
+    const C = safeDamageArea;
+    const D = standardWorkQty;
+    const E = laborPrice;
+    
+    let calculatedAmount = 0;
+    let calculatedPricePerSqm = 0;
+    
+    if (D > 0 && E > 0 && C > 0) {
+      // I 계산 (최종 노임비 = 합계)
+      calculatedAmount = calculateI_FieldEstimate(C, D, E);
+      // 적용단가 = I / C
+      calculatedPricePerSqm = calculateAppliedUnitPrice_FieldEstimate(C, D, E);
+    }
     
     return {
       id: `labor-demolition-${Date.now()}-${Math.random()}`,
@@ -377,8 +449,8 @@ export default function FieldEstimate() {
       detailItem: catalogItem?.노임항목 || detailItem, // 노임항목 (보통인부)
       priceStandard: '',
       unit: '㎡',
-      standardPrice: catalogItem?.금액 || 0,
-      standardWorkQuantity: standardWorkQty, // 기준작업량 저장
+      standardPrice: laborPrice, // 노임단가 (E)
+      standardWorkQuantity: standardWorkQty, // 기준작업량 (D)
       quantity: calculatedQuantity, // 자동 계산된 수량 (복구면적 ÷ 기준작업량)
       applicationRates: {
         ceiling: sourceAreaRow.location?.includes('천장') || false,
@@ -387,12 +459,12 @@ export default function FieldEstimate() {
         molding: false,
       },
       salesMarkupRate: 0,
-      pricePerSqm: catalogItem?.금액 || 0, // 일위대가 금액
-      damageArea: safeDamageArea, // 안전하게 변환된 피해면적
+      pricePerSqm: calculatedPricePerSqm, // 적용단가 (I/C)
+      damageArea: safeDamageArea, // 복구면적 (C)
       deduction: 0,
       includeInEstimate: true,
       request: '',
-      amount: Math.round((catalogItem?.금액 || 0) * calculatedQuantity), // 금액 = 적용단가 × 수량
+      amount: calculatedAmount, // 합계 (I)
     };
   };
 
@@ -1158,6 +1230,24 @@ export default function FieldEstimate() {
         if (matchingCatalogItems.length > 0) {
           // 일위대가DB에서 매칭된 모든 노임항목으로 행 생성
           matchingCatalogItems.forEach((catalogItem, idx) => {
+            const C = damageAreaValue; // 복구면적
+            const D = catalogItem.기준작업량 || 0; // 기준작업량
+            const E = catalogItem.금액 || 0; // 노임단가
+            
+            // 수량 계산: 복구면적 ÷ 기준작업량
+            const calculatedQuantity = D > 0 
+              ? Math.round((C / D) * 100) / 100 
+              : 1;
+            
+            // 새 공식으로 적용단가와 합계 계산
+            let calculatedAmount = 0;
+            let calculatedPricePerSqm = 0;
+            
+            if (D > 0 && E > 0 && C > 0) {
+              calculatedAmount = calculateI_FieldEstimate(C, D, E);
+              calculatedPricePerSqm = calculateAppliedUnitPrice_FieldEstimate(C, D, E);
+            }
+            
             newLaborRows.push({
               id: `labor-linked-${Date.now()}-${Math.random()}-${idx}`,
               sourceAreaRowId: areaRow.id,
@@ -1170,16 +1260,17 @@ export default function FieldEstimate() {
               detailItem: catalogItem.노임항목,
               priceStandard: '',
               unit: '㎡',
-              standardPrice: catalogItem.금액 || 0,
-              quantity: 1,
+              standardPrice: E, // 노임단가 (E)
+              standardWorkQuantity: D, // 기준작업량 (D)
+              quantity: calculatedQuantity, // 수량 (C/D)
               applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
               salesMarkupRate: 0,
-              pricePerSqm: catalogItem.금액 || 0,
-              damageArea: damageAreaValue,
+              pricePerSqm: calculatedPricePerSqm, // 적용단가 (I/C)
+              damageArea: C, // 복구면적 (C)
               deduction: 0,
               includeInEstimate: true,
               request: '',
-              amount: Math.round((catalogItem.금액 || 0) * damageAreaValue),
+              amount: calculatedAmount, // 합계 (I)
             });
           });
         } else {
