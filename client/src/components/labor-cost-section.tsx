@@ -127,8 +127,9 @@ export interface IlwidaegaCatalogItem {
   공종: string;
   공사명: string;
   노임항목: string;
-  금액: number | null;
-  기준작업량: number | null;
+  기준작업량: number | null;  // D
+  노임단가: number | null;    // E (노임단가(인당))
+  일위대가: number | null;    // E/D (참고용)
 }
 
 // 노무비 테이블 행
@@ -663,8 +664,8 @@ export function LaborCostSection({
             
             if (ilwidaegaItem) {
               updated.unit = 'm'; // 걸레받이는 길이 단위
-              updated.standardPrice = ilwidaegaItem.금액 || 0;
-              updated.pricePerSqm = ilwidaegaItem.금액 || 0;
+              updated.standardPrice = ilwidaegaItem.노임단가 || 0;
+              updated.standardWorkQuantity = ilwidaegaItem.기준작업량 || 0;
               
               // applicationRates 기본값 설정 (걸레받이는 길이 기준)
               updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: true };
@@ -742,37 +743,54 @@ export function LaborCostSection({
         if (field === 'detailItem') {
           // 걸레받이 -> 목공사 변환하여 조회
           const lookupWorkName = mapWorkNameForLookup(updated.workName);
-          const catalogItem = catalog.find(item =>
-            item.공종 === updated.category &&
-            item.공사명 === lookupWorkName &&
-            item.세부공사 === updated.detailWork &&
-            item.세부항목 === value
-          );
-          if (catalogItem) {
-            // detailWork가 "노무비"인 경우: unit = '인', standardPrice = 단가_인
-            if (updated.detailWork === '노무비') {
+          
+          // 일위대가인 경우: ilwidaegaCatalog에서 D, E 가져오기
+          if (updated.detailWork === '일위대가') {
+            const ilwidaegaItem = ilwidaegaCatalog.find(item =>
+              item.공종 === updated.category &&
+              item.공사명 === lookupWorkName &&
+              item.노임항목 === value
+            );
+            if (ilwidaegaItem) {
+              updated.unit = '㎡';
+              updated.standardPrice = ilwidaegaItem.노임단가 || 0;  // E
+              updated.standardWorkQuantity = ilwidaegaItem.기준작업량 || 0;  // D
+              // 적용면 기본 설정 (바닥 우선)
+              updated.applicationRates = { ceiling: false, wall: false, floor: true, molding: false };
+              console.log('[일위대가 detailItem 선택]', updated.category, lookupWorkName, value, 
+                'D:', ilwidaegaItem.기준작업량, 'E:', ilwidaegaItem.노임단가);
+            } else {
+              updated.standardPrice = 0;
+              updated.standardWorkQuantity = 0;
+              console.log('[일위대가 항목 못찾음]', updated.category, lookupWorkName, value);
+            }
+          } else {
+            // 노무비인 경우: 기존 노무비 catalog에서 가져오기
+            const catalogItem = catalog.find(item =>
+              item.공종 === updated.category &&
+              item.공사명 === lookupWorkName &&
+              item.세부공사 === updated.detailWork &&
+              item.세부항목 === value
+            );
+            if (catalogItem) {
               updated.unit = '인';
               updated.standardPrice = catalogItem.단가_인 || 0;
-            } else {
-              // 일위대가인 경우: catalogItem.단위 사용
-              updated.unit = catalogItem.단위 || '';
-              updated.standardPrice = catalogItem.단가_인 || 0;
-            }
-            
-            // applicationRates 기본값 설정 (첫 번째 사용 가능한 옵션 선택)
-            updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
-            if (catalogItem.단가_천장 !== null) {
-              updated.applicationRates.ceiling = true;
-              updated.pricePerSqm = catalogItem.단가_천장;
-            } else if (catalogItem.단가_벽체 !== null) {
-              updated.applicationRates.wall = true;
-              updated.pricePerSqm = catalogItem.단가_벽체;
-            } else if (catalogItem.단가_바닥 !== null) {
-              updated.applicationRates.floor = true;
-              updated.pricePerSqm = catalogItem.단가_바닥;
-            } else if (catalogItem.단가_길이 !== null) {
-              updated.applicationRates.molding = true;
-              updated.pricePerSqm = catalogItem.단가_길이;
+              
+              // applicationRates 기본값 설정 (첫 번째 사용 가능한 옵션 선택)
+              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+              if (catalogItem.단가_천장 !== null) {
+                updated.applicationRates.ceiling = true;
+                updated.pricePerSqm = catalogItem.단가_천장;
+              } else if (catalogItem.단가_벽체 !== null) {
+                updated.applicationRates.wall = true;
+                updated.pricePerSqm = catalogItem.단가_벽체;
+              } else if (catalogItem.단가_바닥 !== null) {
+                updated.applicationRates.floor = true;
+                updated.pricePerSqm = catalogItem.단가_바닥;
+              } else if (catalogItem.단가_길이 !== null) {
+                updated.applicationRates.molding = true;
+                updated.pricePerSqm = catalogItem.단가_길이;
+              }
             }
           }
           

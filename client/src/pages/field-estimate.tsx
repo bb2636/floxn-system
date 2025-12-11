@@ -65,8 +65,9 @@ interface IlwidaegaCatalogItem {
   공종: string;
   공사명: string;
   노임항목: string;
-  금액: number | null;
-  기준작업량: number | null;
+  기준작업량: number | null;  // D
+  노임단가: number | null;    // E (노임단가(인당))
+  일위대가: number | null;    // E/D (참고용)
 }
 
 // 자재비 카탈로그 아이템 (공사명 기준 조회용)
@@ -665,6 +666,20 @@ export default function FieldEstimate() {
               ? Math.round((totalArea / standardWorkQty) * 100) / 100 
               : 1;
             
+            // I = F + H 공식으로 적용단가/합계 계산
+            const C = totalArea; // 복구면적
+            const D = standardWorkQty; // 기준작업량
+            const E = catalogItem.노임단가 || 0; // 노임단가(인당)
+            
+            // I 계산 (최종 노임비)
+            let appliedUnitPrice = 0;
+            let totalAmount = 0;
+            if (D > 0 && E > 0 && C > 0) {
+              const I = calculateI_FieldEstimate(C, D, E);
+              appliedUnitPrice = Math.round(I / C); // 적용단가 = I / C
+              totalAmount = I; // 합계 = I
+            }
+            
             newLaborRows.push({
               id: `labor-linked-${Date.now()}-${Math.random()}-${idx}`,
               sourceAreaRowId: sourceAreaRowId,
@@ -677,17 +692,17 @@ export default function FieldEstimate() {
               detailItem: catalogItem.노임항목,
               priceStandard: '',
               unit: '㎡',
-              standardPrice: catalogItem.금액 || 0,
-              standardWorkQuantity: standardWorkQty, // 기준작업량 저장
+              standardPrice: E, // 노임단가 (E)
+              standardWorkQuantity: standardWorkQty, // 기준작업량 (D)
               quantity: calculatedQuantity, // 자동 계산된 수량
               applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
               salesMarkupRate: 0,
-              pricePerSqm: catalogItem.금액 || 0, // 적용단가
+              pricePerSqm: appliedUnitPrice, // 적용단가 = I / C
               damageArea: totalArea,
               deduction: 0,
               includeInEstimate: true,
               request: '',
-              amount: Math.round((catalogItem.금액 || 0) * calculatedQuantity), // 금액 = 적용단가 × 수량
+              amount: totalAmount, // 합계 = I
             });
           });
         } else {
@@ -1232,7 +1247,7 @@ export default function FieldEstimate() {
           matchingCatalogItems.forEach((catalogItem, idx) => {
             const C = damageAreaValue; // 복구면적
             const D = catalogItem.기준작업량 || 0; // 기준작업량
-            const E = catalogItem.금액 || 0; // 노임단가
+            const E = catalogItem.노임단가 || 0; // 노임단가(인당)
             
             // 수량 계산: 복구면적 ÷ 기준작업량
             const calculatedQuantity = D > 0 
@@ -2309,7 +2324,7 @@ export default function FieldEstimate() {
     });
     
     console.log('[일위대가 연동] 매칭된 노임항목:', matchingIlwidaegaItems.length, '개',
-      matchingIlwidaegaItems.map(item => `${item.노임항목}(${item.금액}원)`).join(', '));
+      matchingIlwidaegaItems.map(item => `${item.노임항목}(E:${item.노임단가}원)`).join(', '));
     
     // 노무비 행 생성/업데이트 (일위대가DB 기반)
     setLaborCostRows(prev => {
@@ -2325,8 +2340,9 @@ export default function FieldEstimate() {
       if (matchingIlwidaegaItems.length > 0) {
         // 일위대가DB에서 매칭된 모든 노임항목으로 행 생성
         matchingIlwidaegaItems.forEach((catalogItem, idx) => {
-          // 기준작업량 가져오기
-          const standardWorkQty = catalogItem.기준작업량 || 0;
+          // D = 기준작업량, E = 노임단가(인당)
+          const D = catalogItem.기준작업량 || 0;
+          const E = catalogItem.노임단가 || 0;
           
           newLaborRows.push({
             id: `labor-ilwidaega-${Date.now()}-${Math.random()}-${idx}`,
@@ -2340,17 +2356,17 @@ export default function FieldEstimate() {
             detailItem: catalogItem.노임항목 || '',
             priceStandard: '',
             unit: '㎡',
-            standardPrice: catalogItem.금액 || 0,
-            standardWorkQuantity: standardWorkQty, // 기준작업량 저장
+            standardPrice: E, // 노임단가 (E)
+            standardWorkQuantity: D, // 기준작업량 (D)
             quantity: 1, // 초기값 1, useEffect에서 복구면적 기준으로 재계산됨
             applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
             salesMarkupRate: 0,
-            pricePerSqm: catalogItem.금액 || 0,
+            pricePerSqm: 0, // 초기값 0, useEffect에서 I/C로 계산됨
             damageArea: 0, // 초기값 0, useEffect에서 복구면적 기준으로 자동 업데이트됨
             deduction: 0,
             includeInEstimate: true,
             request: '',
-            amount: 0,
+            amount: 0, // 초기값 0, useEffect에서 I로 계산됨
           });
         });
         console.log('[일위대가 연동] 노무비 행 생성:', workType, workName, 
