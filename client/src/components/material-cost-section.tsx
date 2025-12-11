@@ -580,7 +580,7 @@ export function MaterialCostSection({
                       </Select>
                   </td>
                   
-                  {/* 단가 */}
+                  {/* 단가 - 모든 행에서 편집 가능 */}
                   <td style={{ 
                     padding: "0 8px", 
                     fontFamily: "Pretendard", 
@@ -588,40 +588,49 @@ export function MaterialCostSection({
                     color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.8)", 
                     textAlign: "right" 
                   }}>
-                    {row.isManualPriceEntry || (price === 0 && row.자재항목) ? (
-                      <Input
-                        type="text"
-                        inputMode="numeric"
-                        value={price > 0 ? price.toLocaleString() : ''}
-                        onChange={(e) => {
-                          // 콤마, 공백 제거 후 숫자만 추출
-                          const rawValue = e.target.value.replace(/[,\s]/g, '');
-                          const val = parseInt(rawValue, 10) || 0;
-                          onRowsChange(rows.map(r => {
-                            if (r.id === row.id) {
-                              const qty = (r.수량m2 || 0) + (r.수량EA || 0);
-                              const newTotal = Math.round(val * qty);
-                              return { ...r, 단가: val, 기준단가: val, 합계: newTotal, 금액: newTotal };
-                            }
-                            return r;
-                          }));
-                        }}
-                        className="h-9 text-right"
-                        style={{ 
-                          fontFamily: "Pretendard", 
-                          fontSize: "14px", 
-                          minWidth: "100px",
-                          background: "#FFFBEB",
-                          border: "1px solid #FCD34D",
-                          borderRadius: "6px",
-                        }}
-                        placeholder="가격 입력"
-                        disabled={isReadOnly}
-                        data-testid={`input-단가-${currentGlobalIndex}`}
-                      />
-                    ) : (
-                      <span>{price > 0 ? price.toLocaleString() : "-"}</span>
-                    )}
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      defaultValue={price > 0 ? price.toLocaleString() : ''}
+                      key={`price-${row.id}-${price}`}
+                      onFocus={(e) => {
+                        // 포커스 시 콤마 제거하여 편집 용이하게
+                        const rawValue = e.target.value.replace(/[,\s]/g, '');
+                        e.target.value = rawValue;
+                      }}
+                      onBlur={(e) => {
+                        // blur 시 콤마 추가 및 상태 업데이트
+                        const rawValue = e.target.value.replace(/[,\s]/g, '');
+                        const val = parseInt(rawValue, 10) || 0;
+                        e.target.value = val > 0 ? val.toLocaleString() : '';
+                        onRowsChange(rows.map(r => {
+                          if (r.id === row.id) {
+                            const qty = (r.수량m2 || 0) + (r.수량EA || 0);
+                            const newTotal = Math.round(val * qty);
+                            return { ...r, 단가: val, 기준단가: val, 합계: newTotal, 금액: newTotal };
+                          }
+                          return r;
+                        }));
+                      }}
+                      onKeyDown={(e) => {
+                        // Enter 키로도 blur 트리거
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                        }
+                      }}
+                      className="h-9 text-right"
+                      style={{ 
+                        fontFamily: "Pretendard", 
+                        fontSize: "14px", 
+                        minWidth: "100px",
+                        background: row.isManualPriceEntry || (price === 0 && row.자재항목) ? "#FFFBEB" : (isLinkedRow ? "rgba(59, 130, 246, 0.08)" : "transparent"),
+                        border: row.isManualPriceEntry || (price === 0 && row.자재항목) ? "1px solid #FCD34D" : (isLinkedRow ? "1px solid rgba(59, 130, 246, 0.2)" : "1px solid #e5e7eb"),
+                        borderRadius: "6px",
+                      }}
+                      placeholder="가격 입력"
+                      disabled={isReadOnly}
+                      data-testid={`input-단가-${currentGlobalIndex}`}
+                    />
                   </td>
                   
                   {/* 수량 - 연동 행도 입력 가능 */}
