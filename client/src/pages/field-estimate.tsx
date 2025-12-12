@@ -1700,10 +1700,16 @@ export default function FieldEstimate() {
         return baseKey !== workKey;
       }));
       
-      // 연동된 자재비 행도 삭제
+      // 연동된 자재비 행도 삭제 (sourceAreaRowId가 rowId이거나 workKey와 공종+공사명 일치)
       setMaterialRows(prev => prev.filter(row => {
         if (!row.sourceAreaRowId) return true;
-        return row.sourceAreaRowId !== workKey;
+        // sourceAreaRowId가 개별 행 ID인 경우
+        if (row.sourceAreaRowId === rowId) return false;
+        // 공종+공사명이 일치하는 경우 (같은 workKey인 다른 행이 없으면 삭제)
+        if (row.isLinkedFromRecovery && row.공종 === workType && row.공사명 === workName) {
+          return false;
+        }
+        return true;
       }));
       
       console.log('[연동] 복구면적 행 삭제 → 노무비/자재비 연동 삭제 (workKey):', workKey);
@@ -1757,10 +1763,17 @@ export default function FieldEstimate() {
         return !workKeysToDelete.has(baseKey);
       }));
       
-      // 연동된 자재비 행 삭제
+      // 연동된 자재비 행 삭제 (sourceAreaRowId가 삭제 대상이거나 공종+공사명 일치)
       setMaterialRows(prev => prev.filter(row => {
         if (!row.sourceAreaRowId) return true;
-        return !workKeysToDelete.has(row.sourceAreaRowId);
+        // sourceAreaRowId가 삭제 대상 행 ID인 경우
+        if (selectedRows.has(row.sourceAreaRowId)) return false;
+        // 공종+공사명이 삭제 대상 workKey에 해당하는 경우
+        if (row.isLinkedFromRecovery && row.공종 && row.공사명) {
+          const rowWorkKey = `${row.공종}::${row.공사명}`;
+          if (workKeysToDelete.has(rowWorkKey)) return false;
+        }
+        return true;
       }));
       
       console.log('[연동] 복구면적 행 일괄 삭제 → 노무비/자재비 연동 삭제 (workKeys):', Array.from(workKeysToDelete));
@@ -1886,7 +1899,13 @@ export default function FieldEstimate() {
               }));
               setMaterialRows(prev => prev.filter(r => {
                 if (!r.sourceAreaRowId) return true;
-                return r.sourceAreaRowId !== oldWorkKey;
+                // sourceAreaRowId가 현재 행 ID인 경우
+                if (r.sourceAreaRowId === rowId) return false;
+                // 공종+공사명이 이전 workKey와 일치하는 경우
+                if (r.isLinkedFromRecovery && r.공종 === updated.workType && r.공사명 === oldWorkName) {
+                  return false;
+                }
+                return true;
               }));
               console.log('[연동] 공사명 변경 → 이전 노무비/자재비 삭제:', oldWorkKey);
             }
@@ -1922,7 +1941,13 @@ export default function FieldEstimate() {
               }));
               setMaterialRows(prev => prev.filter(r => {
                 if (!r.sourceAreaRowId) return true;
-                return r.sourceAreaRowId !== oldWorkKey;
+                // sourceAreaRowId가 현재 행 ID인 경우
+                if (r.sourceAreaRowId === rowId) return false;
+                // 공종+공사명이 이전 workKey와 일치하는 경우
+                if (r.isLinkedFromRecovery && r.공종 === oldWorkType && r.공사명 === updated.workName) {
+                  return false;
+                }
+                return true;
               }));
               console.log('[연동] 공종 변경 → 이전 노무비/자재비 삭제:', oldWorkKey);
             }
