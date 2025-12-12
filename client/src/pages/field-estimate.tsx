@@ -1154,11 +1154,13 @@ export default function FieldEstimate() {
     }
     
     // 자재비 연동 제외 대상 확인 함수
-    // 1. 목공사-반자틀, 철거공사는 자재비 연동 제외
-    // 2. 복구면적 연동 행(isLinkedFromRecovery)은 별도 경로로 동기화하므로 제외
+    // 1. 복구면적 연동 행(isLinkedFromRecovery)만 자재비에 연동됨 (별도 경로)
+    // 2. 노무비에서 수동 추가한 행은 자재비에 연동하지 않음
+    // 3. 목공사-반자틀, 철거공사는 자재비 연동 제외
     const shouldExcludeFromMaterialSync = (category: string, workName: string, isLinkedFromRecovery?: boolean): boolean => {
-      // 복구면적 연동 행은 별도 동기화 경로 사용 (중복 방지)
-      if (isLinkedFromRecovery) return true;
+      // 노무비 수동 추가 행은 자재비 연동 안함 (복구면적 연동 행만 연동됨)
+      if (!isLinkedFromRecovery) return true;
+      // 목공사-반자틀, 철거공사는 복구면적 연동 행이더라도 자재비 연동 제외
       return (category === '목공사' && workName === '반자틀') || category === '철거공사';
     };
 
