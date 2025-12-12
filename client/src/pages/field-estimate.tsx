@@ -2514,12 +2514,14 @@ export default function FieldEstimate() {
       
       if (sumLength > 0) {
         totalMaterialLength = Math.round(sumLength * 10) / 10;
-        totalMaterialArea = totalMaterialLength; // computeMaterialQuantity에서 사용
-        // 노무비: 걸레받이/몰딩은 ÷1000 변환 (예: 1200 → 1.2m²)
+        // 노무비: 걸레받이/몰딩은 ÷1000 변환 (예: 1200 → 1.2m)
         totalLaborArea = Math.round((totalMaterialLength / 1000) * 10) / 10;
+        // 자재비: 걸레받이/몰딩 수량은 노무비 복구면적(m)을 2.44m로 나눔
+        // computeMaterialQuantity에서 totalLaborArea / 2.44 = 1.2 / 2.44 = 0.49 → ceil → 1 EA
+        totalMaterialArea = totalLaborArea; // 노무비 복구면적(m)을 자재 수량 계산에 사용
       }
-      console.log(`[자재비 수량] ${workName} 전체 길이 합계: ${totalMaterialLength}m (rows: ${matchingAreaRowIds.length}개)`);
-      console.log(`[노무비 면적] ${workName} 노무비 복구면적: ${totalLaborArea}m² (÷1000 변환)`);
+      console.log(`[자재비 수량] ${workName} 노무비 복구면적 기준: ${totalMaterialArea}m → ÷2.44 → EA (rows: ${matchingAreaRowIds.length}개)`);
+      console.log(`[노무비 면적] ${workName} 노무비 복구면적: ${totalLaborArea}m (÷1000 변환)`);
     } else {
       // 합산 대상 아닌 경우 현재 행만 포함
       matchingAreaRowIds.push(sourceRowId);
