@@ -610,7 +610,15 @@ export default function FieldEstimate() {
       }
       
       const workNameData = workNameMap.get(workName)!;
-      const repairArea = parseFloat(row.repairArea) || 0;
+      let repairArea = parseFloat(row.repairArea) || 0;
+      
+      // 걸레받이/몰딩: 입력값(예: 1200) → m² 단위로 변환 (÷1000 → 1.2m²)
+      // 이들은 길이(mm) 기반 입력이므로 노무비 복구면적에는 m² 단위로 변환
+      const isLengthBasedWork = workName === '걸레받이' || workName === '몰딩';
+      if (isLengthBasedWork) {
+        repairArea = repairArea / 1000;
+      }
+      
       // 천장인 경우 ×1.3 적용 (노무비 복구면적 계산)
       const isCeiling = (row.location || '').includes('천장') || (row.category || '').includes('천장');
       workNameData.totalArea += isCeiling ? (repairArea * 1.3) : repairArea;
@@ -1375,7 +1383,13 @@ export default function FieldEstimate() {
         if (!linkedAreaRow) return laborRow;
         
         // 복구면적 값 (숫자로 변환)
-        const damageAreaValue = Number(linkedAreaRow.repairArea) || 0;
+        let damageAreaValue = Number(linkedAreaRow.repairArea) || 0;
+        
+        // 걸레받이/몰딩: 입력값(예: 1200) → m² 단위로 변환 (÷1000 → 1.2m²)
+        const isLengthBasedWork = linkedAreaRow.workName === '걸레받이' || linkedAreaRow.workName === '몰딩';
+        if (isLengthBasedWork) {
+          damageAreaValue = damageAreaValue / 1000;
+        }
         
         if (isDemolitionRow) {
           // 피해철거공사 행 업데이트 (장소, 위치, 피해면적만 동기화)
