@@ -2974,18 +2974,19 @@ export default function FieldEstimate() {
         vatIncluded, // VAT 포함/별도 옵션
       });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "저장 완료",
         description: "견적이 성공적으로 저장되었습니다.",
       });
-      // 견적 목록 및 최신 견적 갱신
-      queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId, "latest"] });
+      // 견적 목록 및 최신 견적 갱신 (await로 완료까지 대기)
+      await queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/estimates", selectedCaseId, "latest"] });
       // 케이스 목록 갱신 (견적금액이 업데이트되었으므로)
-      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-      // 보고서 데이터 갱신 (견적서 탭에서 실시간 반영)
-      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      // 보고서 데이터 갱신 (견적서 탭에서 실시간 반영) - 강제 refetch
+      await queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
     },
     onError: (error: any) => {
       toast({
