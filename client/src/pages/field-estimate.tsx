@@ -1858,17 +1858,69 @@ export default function FieldEstimate() {
         }
         
         // 공사명 변경 시 노무비/자재비 자동 연동 (공종이 이미 설정된 경우)
-        if (field === 'workName' && updated.workType && value) {
-          // 복구면적 값 가져오기
+        if (field === 'workName' && updated.workType) {
+          const oldWorkName = row.workName || '';
+          const newWorkName = value || '';
           const repairAreaValue = parseFloat(updated.repairArea) || 0;
-          // 동기 방식으로 연동 (setLaborCostRows/setMaterialRows 내부에서 중복 체크)
-          syncAreaRowToLaborAndMaterial(updated.workType, value, rowId, repairAreaValue);
+          
+          // 이전 공사명이 있고 변경된 경우 → 이전 workKey의 노무비/자재비 행 삭제 체크
+          if (oldWorkName && oldWorkName !== newWorkName) {
+            const oldWorkKey = `${updated.workType}::${oldWorkName}`;
+            // 같은 workKey를 가진 다른 행이 없으면 삭제
+            const otherRowsWithOldWorkKey = rows.filter(r => 
+              r.id !== rowId && r.workType === updated.workType && r.workName === oldWorkName
+            );
+            if (otherRowsWithOldWorkKey.length === 0) {
+              setLaborCostRows(prev => prev.filter(r => {
+                if (!r.sourceAreaRowId || !r.isLinkedFromRecovery) return true;
+                const baseKey = r.sourceAreaRowId.replace('demolition-', '');
+                return baseKey !== oldWorkKey;
+              }));
+              setMaterialRows(prev => prev.filter(r => {
+                if (!r.sourceAreaRowId) return true;
+                return r.sourceAreaRowId !== oldWorkKey;
+              }));
+              console.log('[연동] 공사명 변경 → 이전 노무비/자재비 삭제:', oldWorkKey);
+            }
+          }
+          
+          // 새 공사명으로 연동 생성
+          if (newWorkName) {
+            syncAreaRowToLaborAndMaterial(updated.workType, newWorkName, rowId, repairAreaValue);
+          }
         }
         
         // 공종 변경 시 노무비/자재비 자동 연동 (공사명이 이미 설정된 경우)
-        if (field === 'workType' && updated.workName && value) {
+        if (field === 'workType' && updated.workName) {
+          const oldWorkType = row.workType || '';
+          const newWorkType = value || '';
           const repairAreaValue = parseFloat(updated.repairArea) || 0;
-          syncAreaRowToLaborAndMaterial(value, updated.workName, rowId, repairAreaValue);
+          
+          // 이전 공종이 있고 변경된 경우 → 이전 workKey의 노무비/자재비 행 삭제 체크
+          if (oldWorkType && oldWorkType !== newWorkType) {
+            const oldWorkKey = `${oldWorkType}::${updated.workName}`;
+            // 같은 workKey를 가진 다른 행이 없으면 삭제
+            const otherRowsWithOldWorkKey = rows.filter(r => 
+              r.id !== rowId && r.workType === oldWorkType && r.workName === updated.workName
+            );
+            if (otherRowsWithOldWorkKey.length === 0) {
+              setLaborCostRows(prev => prev.filter(r => {
+                if (!r.sourceAreaRowId || !r.isLinkedFromRecovery) return true;
+                const baseKey = r.sourceAreaRowId.replace('demolition-', '');
+                return baseKey !== oldWorkKey;
+              }));
+              setMaterialRows(prev => prev.filter(r => {
+                if (!r.sourceAreaRowId) return true;
+                return r.sourceAreaRowId !== oldWorkKey;
+              }));
+              console.log('[연동] 공종 변경 → 이전 노무비/자재비 삭제:', oldWorkKey);
+            }
+          }
+          
+          // 새 공종으로 연동 생성
+          if (newWorkType) {
+            syncAreaRowToLaborAndMaterial(newWorkType, updated.workName, rowId, repairAreaValue);
+          }
         }
         
         // 가로/세로 변경 시 면적 자동 계산
