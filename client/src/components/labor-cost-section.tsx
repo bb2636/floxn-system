@@ -1331,25 +1331,34 @@ export function LaborCostSection({
                     )}
                   </td>
                   
-                  {/* 복구면적 - 항상 수정 불가 (연동 행: 자동계산, 개별 행: 입력 불가) */}
-                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)" }}>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={Number(Number(row.damageArea || 0).toFixed(1))}
-                      onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
-                      className="h-9 border text-center"
+                  {/* 복구면적 - 같은 공사명 행은 rowSpan으로 병합 (항상 수정 불가) */}
+                  {isFirstRowInWorkNameSubGroup(group, row.id) && (
+                    <td 
+                      rowSpan={getWorkNameSubGroupRowCount(group, row.id)}
                       style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "14px",
-                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.5)",
-                        backgroundColor: isLinkedRow ? undefined : "rgba(12, 12, 12, 0.03)",
+                        padding: "0 8px", 
+                        background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)",
+                        verticalAlign: "middle",
                       }}
-                      disabled={true}
-                      title={isLinkedRow ? "복구면적에서 자동 계산됨" : "개별 행은 복구면적 입력 불가"}
-                      data-testid={`input-recoveryArea-labor-${globalIndex}`}
-                    />
-                  </td>
+                    >
+                      <Input
+                        type="number"
+                        step="0.1"
+                        value={Number(Number(row.damageArea || 0).toFixed(1))}
+                        onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
+                        className="h-9 border text-center"
+                        style={{ 
+                          fontFamily: "Pretendard", 
+                          fontSize: "14px",
+                          color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.5)",
+                          backgroundColor: isLinkedRow ? undefined : "rgba(12, 12, 12, 0.03)",
+                        }}
+                        disabled={true}
+                        title={isLinkedRow ? "복구면적에서 자동 계산됨 (같은 공사명 행들이 병합됨)" : "개별 행은 복구면적 입력 불가"}
+                        data-testid={`input-recoveryArea-labor-${globalIndex}`}
+                      />
+                    </td>
+                  )}
                   
                   {/* 적용단가 - 연동 행은 수정 불가 */}
                   <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
