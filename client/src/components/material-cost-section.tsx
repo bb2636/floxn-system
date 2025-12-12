@@ -240,7 +240,22 @@ export function MaterialCostSection({
     onRowsChange(rows.filter(r => r.id !== rowId));
   };
 
-  // 공종별 그룹화
+  // 공사명별 서브그룹 인터페이스
+  interface WorkNameSubGroup {
+    workName: string;
+    rows: MaterialRow[];
+    // 합산 값들
+    totalQuantity: number;
+    totalAmount: number;
+  }
+  
+  interface CategoryGroup {
+    category: string;
+    rows: MaterialRow[];
+    workNameSubGroups: WorkNameSubGroup[];
+  }
+
+  // 공종별 + 공사명별 그룹화 (노무비와 동일한 패턴)
   const groupedRows = useMemo(() => {
     const groups: { [key: string]: MaterialRow[] } = {};
     rows.forEach(row => {
@@ -250,6 +265,84 @@ export function MaterialCostSection({
     });
     return groups;
   }, [rows]);
+
+  // 공종 + 공사명별 상세 그룹화 (rowspan 및 합산용)
+  const categoryGroups = useMemo((): CategoryGroup[] => {
+    const groups: CategoryGroup[] = [];
+    
+    Object.entries(groupedRows).forEach(([category, categoryRows]) => {
+      const group: CategoryGroup = {
+        category,
+        rows: categoryRows,
+        workNameSubGroups: [],
+      };
+      
+      // 공사명별 서브그룹 생성
+      let currentSubGroup: WorkNameSubGroup | null = null;
+      
+      categoryRows.forEach(row => {
+        const workName = row.공사명 || '';
+        
+        if (!currentSubGroup || currentSubGroup.workName !== workName) {
+          if (currentSubGroup) {
+            group.workNameSubGroups.push(currentSubGroup);
+          }
+          currentSubGroup = {
+            workName,
+            rows: [row],
+            totalQuantity: 0,
+            totalAmount: 0,
+          };
+        } else {
+          currentSubGroup.rows.push(row);
+        }
+      });
+      
+      if (currentSubGroup) {
+        group.workNameSubGroups.push(currentSubGroup);
+      }
+      
+      // 각 서브그룹의 합산 값 계산
+      group.workNameSubGroups.forEach(subGroup => {
+        subGroup.totalQuantity = subGroup.rows.reduce((sum, r) => {
+          return sum + (r.수량m2 || 0) + (r.수량EA || 0);
+        }, 0);
+        subGroup.totalAmount = subGroup.rows.reduce((sum, r) => {
+          return sum + (r.합계 || r.금액 || 0);
+        }, 0);
+      });
+      
+      groups.push(group);
+    });
+    
+    return groups;
+  }, [groupedRows]);
+
+  // 특정 행이 공사명 서브그룹의 첫 번째 행인지 확인
+  const isFirstRowInWorkNameSubGroup = (group: CategoryGroup, rowId: string): boolean => {
+    for (const subGroup of group.workNameSubGroups) {
+      if (subGroup.rows[0]?.id === rowId) {
+        return true;
+      }
+    }
+    return false;
+  };
+  
+  // 특정 행이 속한 공사명 서브그룹 반환
+  const getWorkNameSubGroup = (group: CategoryGroup, rowId: string): WorkNameSubGroup | null => {
+    for (const subGroup of group.workNameSubGroups) {
+      if (subGroup.rows.some(r => r.id === rowId)) {
+        return subGroup;
+      }
+    }
+    return null;
+  };
+  
+  // 특정 행이 속한 공사명 서브그룹의 행 수 반환
+  const getWorkNameSubGroupRowCount = (group: CategoryGroup, rowId: string): number => {
+    const subGroup = getWorkNameSubGroup(group, rowId);
+    return subGroup ? subGroup.rows.length : 1;
+  };
 
   // 전역 인덱스 계산용
   let globalIndex = 0;
@@ -290,9 +383,11 @@ export function MaterialCostSection({
           </tr>
         </thead>
         <tbody>
-          {Object.entries(groupedRows).map(([workType, groupRows]) => (
-            groupRows.map((row, rowIndex) => {
+          {categoryGroups.map((group) => (
+            group.rows.map((row, rowIndex) => {
               const currentGlobalIndex = globalIndex++;
+              const workType = group.category;
+              const groupRows = group.rows;
               // 공종별 공사명 목록 (방수, 합판, 도배 등)
               const workNamesForRow = getWorkNamesForWorkType(row.공종);
               // 공종+공사명별 자재항목 목록 (방수프라이머, PVC배관 등)
@@ -318,6 +413,14 @@ export function MaterialCostSection({
               const quantityDisplay = isLinkedRow 
                 ? `(${row.수량m2 || 0}바닥+벽체+천장)` 
                 : (quantity > 0 ? quantity.toString() : '');
+              
+              // 공사명 서브그룹 관련 계산
+              const isFirstInWorkNameGroup = isFirstRowInWorkNameSubGroup(group, row.id);
+              const workNameSubGroup = getWorkNameSubGroup(group, row.id);
+              const workNameGroupRowCount = getWorkNameSubGroupRowCount(group, row.id);
+              // 서브그룹 합산 값
+              const subGroupTotalQuantity = workNameSubGroup?.totalQuantity || quantity;
+              const subGroupTotalAmount = workNameSubGroup?.totalAmount || total;
               
               return (
                 <tr 
@@ -473,45 +576,55 @@ export function MaterialCostSection({
                     </td>
                   ) : null}
                   
-                  {/* 공사명 - 자재비는 연동 행도 수정 가능 */}
-                  <td style={{ padding: "0 8px" }}>
-                    <Select 
-                      value={row.공사명 || ''} 
-                      onValueChange={(value) => {
-                        console.log('[자재비 공사명 드롭다운] 선택됨:', value, '공종:', row.공종, '연동행:', isLinkedRow);
-                        // 공사명 선택 시 자재항목 초기화
-                        onRowsChange(rows.map(r => 
-                          r.id === row.id 
-                            ? { ...r, 공사명: value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
-                            : r
-                        ));
+                  {/* 공사명 - 같은 공사명끼리 rowspan 병합 */}
+                  {isFirstInWorkNameGroup && (
+                    <td 
+                      rowSpan={workNameGroupRowCount}
+                      style={{ 
+                        padding: "0 8px",
+                        verticalAlign: "middle",
+                        borderRight: workNameGroupRowCount > 1 ? "1px solid #E5E7EB" : undefined,
                       }}
-                      disabled={!row.공종 || isReadOnly}
                     >
-                      <SelectTrigger 
-                        className="h-9 border-0" 
-                        style={{ 
-                          fontFamily: "Pretendard", 
-                          fontSize: "14px",
-                          // 연동 행이면 파란색 스타일 적용
-                          ...(isLinkedRow ? {
-                            color: "rgba(59, 130, 246, 0.9)",
-                            background: "rgba(59, 130, 246, 0.08)",
-                            borderRadius: "6px",
-                            border: "1px solid rgba(59, 130, 246, 0.2)",
-                          } : {})
+                      <Select 
+                        value={row.공사명 || ''} 
+                        onValueChange={(value) => {
+                          console.log('[자재비 공사명 드롭다운] 선택됨:', value, '공종:', row.공종, '연동행:', isLinkedRow);
+                          // 같은 공사명 그룹의 모든 행 업데이트
+                          const groupRowIds = workNameSubGroup?.rows.map(r => r.id) || [row.id];
+                          onRowsChange(rows.map(r => 
+                            groupRowIds.includes(r.id)
+                              ? { ...r, 공사명: value, 자재항목: '', 자재: '', 규격: '', 단위: '', 단가: 0, 기준단가: 0 }
+                              : r
+                          ));
                         }}
-                        data-testid={`select-공사명-material-${currentGlobalIndex}`}
+                        disabled={!row.공종 || isReadOnly}
                       >
-                        <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {workNamesForRow.filter(name => name && name.trim() !== '').map(name => (
-                          <SelectItem key={name} value={name}>{name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
+                        <SelectTrigger 
+                          className="h-9 border-0" 
+                          style={{ 
+                            fontFamily: "Pretendard", 
+                            fontSize: "14px",
+                            // 연동 행이면 파란색 스타일 적용
+                            ...(isLinkedRow ? {
+                              color: "rgba(59, 130, 246, 0.9)",
+                              background: "rgba(59, 130, 246, 0.08)",
+                              borderRadius: "6px",
+                              border: "1px solid rgba(59, 130, 246, 0.2)",
+                            } : {})
+                          }}
+                          data-testid={`select-공사명-material-${currentGlobalIndex}`}
+                        >
+                          <SelectValue placeholder={row.공종 ? "선택" : "공종 먼저 선택"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {workNamesForRow.filter(name => name && name.trim() !== '').map(name => (
+                            <SelectItem key={name} value={name}>{name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                  )}
                   
                   {/* 자재항목 - 자재비는 연동 행도 수정 가능 */}
                   <td style={{ padding: "0 8px" }}>
@@ -639,19 +752,25 @@ export function MaterialCostSection({
                     />
                   </td>
                   
-                  {/* 수량 - 연동 행도 입력 가능 */}
-                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF" }}>
-                    {isLinkedRow ? (
-                      (() => {
+                  {/* 수량 - 같은 공사명끼리 rowspan 병합 (합산 표시) */}
+                  {isFirstInWorkNameGroup && (
+                    <td 
+                      rowSpan={workNameGroupRowCount}
+                      style={{ 
+                        padding: "0 8px", 
+                        background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF",
+                        verticalAlign: "middle",
+                      }}
+                    >
+                      {(() => {
                         // EA 기반 자재 (합판, 석고보드, 몰딩, 걸레받이)는 수량EA 사용
                         const eaWorkNames = ['합판', '석고보드', '석고', '몰딩', '걸레받이'];
                         const isEABased = eaWorkNames.includes(row.공사명 || '') || row.단위 === 'EA';
                         // 면적 기반 자재 (도배, 마루, 장판)는 올림 처리
                         const areaWorkNames = ['도배', '마루', '장판'];
                         const isAreaBased = areaWorkNames.includes(row.공사명 || '') || row.단위 === 'm²';
-                        const rawQty = isEABased ? (row.수량EA || row.수량 || 0) : (row.수량m2 || row.수량 || 0);
-                        // 면적 기반 자재는 올림 처리, EA 기반 자재는 이미 올림 처리됨
-                        const displayQty = isAreaBased ? Math.ceil(rawQty) : rawQty;
+                        // 서브그룹의 합산 수량 사용
+                        const displayQty = isAreaBased ? Math.ceil(subGroupTotalQuantity) : subGroupTotalQuantity;
                         const unitLabel = isEABased ? '(EA 수량)' : '(바닥+벽체+천장)';
                         
                         return (
@@ -661,10 +780,10 @@ export function MaterialCostSection({
                               value={displayQty || ''}
                               onChange={(e) => {
                                 const val = Number(e.target.value) || 0;
-                                const currentWorkName = row.공사명;
-                                // 같은 공사명의 모든 행 수량 동기화
+                                const groupRowIds = workNameSubGroup?.rows.map(r => r.id) || [row.id];
+                                // 같은 공사명 그룹의 모든 행 수량 동기화
                                 onRowsChange(rows.map(r => {
-                                  if (r.공사명 === currentWorkName && currentWorkName) {
+                                  if (groupRowIds.includes(r.id)) {
                                     const newTotal = Math.round((r.단가 || r.기준단가 || 0) * val);
                                     if (isEABased) {
                                       return { ...r, 수량EA: val, 수량m2: 0, 수량: val, 합계: newTotal, 금액: newTotal };
@@ -676,72 +795,64 @@ export function MaterialCostSection({
                                 }));
                               }}
                               className="h-9 border-0 bg-transparent text-center"
-                              style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(59, 130, 246, 0.9)" }}
+                              style={{ fontFamily: "Pretendard", fontSize: "14px", color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined }}
                               placeholder="0"
                               disabled={isReadOnly}
-                              data-testid={`input-수량-linked-${currentGlobalIndex}`}
+                              data-testid={`input-수량-${currentGlobalIndex}`}
                             />
-                            <span 
-                              style={{ 
-                                fontSize: "10px", 
-                                color: "rgba(59, 130, 246, 0.6)",
-                                marginTop: "-4px"
-                              }}
-                              title={isEABased ? "EA 단위 수량 (올림 계산)" : "바닥+벽체+천장 면적 합계"}
-                            >
-                              {unitLabel}
-                            </span>
+                            {isLinkedRow && (
+                              <span 
+                                style={{ 
+                                  fontSize: "10px", 
+                                  color: "rgba(59, 130, 246, 0.6)",
+                                  marginTop: "-4px"
+                                }}
+                                title={isEABased ? "EA 단위 수량 (올림 계산)" : "바닥+벽체+천장 면적 합계"}
+                              >
+                                {unitLabel}
+                              </span>
+                            )}
                           </div>
                         );
-                      })()
-                    ) : (
-                      <Input
-                        type="number"
-                        value={quantity || ''}
-                        onChange={(e) => {
-                          const val = Number(e.target.value) || 0;
-                          const currentWorkName = row.공사명;
-                          // 같은 공사명의 모든 행 수량 동기화
-                          onRowsChange(rows.map(r => {
-                            if (r.공사명 === currentWorkName && currentWorkName) {
-                              const newTotal = Math.round((r.단가 || r.기준단가 || 0) * val);
-                              return { ...r, 수량m2: val, 수량EA: 0, 수량: val, 합계: newTotal, 금액: newTotal };
-                            }
-                            return r;
-                          }));
-                        }}
-                        className="h-9 border-0 bg-transparent text-center"
-                        style={{ fontFamily: "Pretendard", fontSize: "14px" }}
-                        placeholder="수동 입력"
-                        disabled={isReadOnly}
-                        data-testid={`input-수량-${currentGlobalIndex}`}
-                      />
-                    )}
-                  </td>
+                      })()}
+                    </td>
+                  )}
                   
-                  {/* 단위 */}
-                  <td style={{ 
-                    padding: "0 12px", 
-                    fontFamily: "Pretendard", 
-                    fontSize: "14px", 
-                    color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.8)", 
-                    textAlign: "center" 
-                  }}>
-                    {row.단위 || "m²"}
-                  </td>
+                  {/* 단위 - 같은 공사명끼리 rowspan 병합 */}
+                  {isFirstInWorkNameGroup && (
+                    <td 
+                      rowSpan={workNameGroupRowCount}
+                      style={{ 
+                        padding: "0 12px", 
+                        fontFamily: "Pretendard", 
+                        fontSize: "14px", 
+                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.8)", 
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                      }}
+                    >
+                      {row.단위 || "m²"}
+                    </td>
+                  )}
                   
-                  {/* 합계 */}
-                  <td style={{ 
-                    padding: "0 12px", 
-                    fontFamily: "Pretendard", 
-                    fontSize: "14px", 
-                    fontWeight: 600, 
-                    color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "#0C0C0C", 
-                    textAlign: "right", 
-                    background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)" 
-                  }}>
-                    {total > 0 ? total.toLocaleString() : "단가x수량"}
-                  </td>
+                  {/* 합계 - 같은 공사명끼리 rowspan 병합 (합산 표시) */}
+                  {isFirstInWorkNameGroup && (
+                    <td 
+                      rowSpan={workNameGroupRowCount}
+                      style={{ 
+                        padding: "0 12px", 
+                        fontFamily: "Pretendard", 
+                        fontSize: "14px", 
+                        fontWeight: 600, 
+                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "#0C0C0C", 
+                        textAlign: "right", 
+                        background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)",
+                        verticalAlign: "middle",
+                      }}
+                    >
+                      {subGroupTotalAmount > 0 ? subGroupTotalAmount.toLocaleString() : "단가x수량"}
+                    </td>
+                  )}
                   
                   {/* 비고 - 연동 행도 수정 가능 */}
                   <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
