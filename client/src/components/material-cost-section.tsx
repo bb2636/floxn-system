@@ -370,8 +370,8 @@ export function MaterialCostSection({
                           <Lock style={{ width: "12px", height: "12px", marginRight: "6px", opacity: 0.6 }} />
                           {row.공종 || ""}
                         </div>
-                      ) : workType === '미분류' || !row.공종 ? (
-                        // 미분류 그룹 또는 공종이 없는 행: 드롭다운으로 공종 선택 가능
+                      ) : (
+                        // 수동 추가 행: 항상 드롭다운으로 공종 선택 가능
                         <Select 
                           value={row.공종 || ''} 
                           onValueChange={(value) => {
@@ -418,11 +418,6 @@ export function MaterialCostSection({
                             )}
                           </SelectContent>
                         </Select>
-                      ) : (
-                        // 공종이 이미 설정된 경우: 텍스트로 표시
-                        <div style={{ fontFamily: "Pretendard", fontSize: "14px", marginBottom: "8px" }}>
-                          {row.공종}
-                        </div>
                       )}
                       
                       {/* +/- 버튼 */}
