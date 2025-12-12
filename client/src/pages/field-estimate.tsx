@@ -210,6 +210,52 @@ export default function FieldEstimate() {
     };
   }, []); // dependency 제거 (한 번만 설정)
 
+  // 노무비 행 중복 자동 제거 (React 배치 처리로 인한 중복 방지)
+  // 연동된 행(isLinkedFromRecovery=true)에서 같은 공종+공사명+노임항목 조합은 첫 번째만 유지
+  const lastDeduplicationRef = useRef<string>('');
+  useEffect(() => {
+    if (laborCostRows.length === 0) return;
+    
+    // 중복 체크: 연동된 행에서 같은 key가 여러 개인지 확인
+    const linkedRows = laborCostRows.filter(r => r.isLinkedFromRecovery);
+    const keyCount: Record<string, number> = {};
+    let hasDuplicates = false;
+    
+    for (const row of linkedRows) {
+      const key = `${row.category}|${row.workName}|${row.detailItem}`;
+      keyCount[key] = (keyCount[key] || 0) + 1;
+      if (keyCount[key] > 1) {
+        hasDuplicates = true;
+      }
+    }
+    
+    if (!hasDuplicates) return;
+    
+    // 중복 제거 (무한 루프 방지를 위해 key 비교)
+    const currentStateKey = laborCostRows.map(r => r.id).join(',');
+    if (currentStateKey === lastDeduplicationRef.current) return;
+    
+    console.log('[노무비 중복 제거] 중복 감지, 자동 제거 실행');
+    
+    const seen = new Set<string>();
+    const deduplicatedRows = laborCostRows.filter(row => {
+      if (!row.isLinkedFromRecovery) return true; // 수동 행은 유지
+      
+      const key = `${row.category}|${row.workName}|${row.detailItem}`;
+      if (seen.has(key)) {
+        console.log('[노무비 중복 제거] 제거:', row.category, row.workName, row.detailItem);
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+    
+    if (deduplicatedRows.length !== laborCostRows.length) {
+      lastDeduplicationRef.current = deduplicatedRows.map(r => r.id).join(',');
+      setLaborCostRows(deduplicatedRows);
+    }
+  }, [laborCostRows]);
+
   // 빈 자재비 행 생성 함수
   const createBlankMaterialRow = (공종 = '', 공사명 = '', sourceLaborRowId?: string): MaterialRow => {
     // 공종/공사명에 따른 자재 자동 설정
