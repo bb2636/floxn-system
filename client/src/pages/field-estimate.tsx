@@ -1676,18 +1676,41 @@ export default function FieldEstimate() {
   const deleteRowById = (rowId: string) => {
     if (isReadOnly) return;
     
-    // 연동된 노무비 행 삭제 (원래 행 + 철거공사 행)
-    setLaborCostRows(prev => prev.filter(row => 
-      row.sourceAreaRowId !== rowId && row.sourceAreaRowId !== `${rowId}::demolition`
-    ));
+    // 삭제할 행의 공종+공사명 찾기
+    const rowToDelete = rows.find(r => r.id === rowId);
+    if (!rowToDelete) return;
     
-    // 연동된 자재비 행 삭제 (sourceLaborRowId가 rowId인 것)
-    setMaterialRows(prev => prev.filter(row => row.sourceLaborRowId !== rowId));
+    const workType = rowToDelete.workType || '';
+    const workName = rowToDelete.workName || '';
+    const workKey = `${workType}::${workName}`;
+    
+    // 같은 공종+공사명을 가진 다른 행이 있는지 확인
+    const remainingRowsWithSameWorkKey = rows.filter(r => 
+      r.id !== rowId && r.workType === workType && r.workName === workName
+    );
+    
+    // 다른 행이 없으면 해당 workKey의 노무비 행 삭제
+    if (remainingRowsWithSameWorkKey.length === 0 && workType && workName) {
+      setLaborCostRows(prev => prev.filter(row => {
+        if (!row.sourceAreaRowId) return true;
+        // workKey 또는 demolition-workKey 형식 모두 처리
+        const baseKey = row.sourceAreaRowId.replace('demolition-', '');
+        return baseKey !== workKey;
+      }));
+      
+      // 연동된 자재비 행도 삭제
+      setMaterialRows(prev => prev.filter(row => {
+        if (!row.sourceAreaRowId) return true;
+        return row.sourceAreaRowId !== workKey;
+      }));
+      
+      console.log('[연동] 복구면적 행 삭제 → 노무비/자재비 연동 삭제 (workKey):', workKey);
+    }
     
     // 복구면적 행 삭제
     setRows(prev => prev.filter(row => row.id !== rowId));
     
-    console.log('[연동] 복구면적 행 삭제 → 노무비/자재비 연동 삭제:', rowId);
+    console.log('[연동] 복구면적 행 삭제:', rowId);
   };
 
   // 선택된 행 삭제 (체크박스 기반) + 연동된 노무비/자재비도 삭제
@@ -1697,24 +1720,52 @@ export default function FieldEstimate() {
     
     const rowIdsToDelete = Array.from(selectedRows);
     
-    // 연동된 노무비 행 삭제
-    setLaborCostRows(prev => prev.filter(row => {
-      if (!row.sourceAreaRowId) return true;
-      // 원래 행 또는 철거공사 행인지 확인
-      const baseRowId = row.sourceAreaRowId.replace('::demolition', '');
-      return !rowIdsToDelete.includes(baseRowId);
-    }));
+    // 삭제 후 남는 행 목록 계산
+    const remainingRows = rows.filter(row => !selectedRows.has(row.id));
     
-    // 연동된 자재비 행 삭제
-    setMaterialRows(prev => prev.filter(row => 
-      !row.sourceLaborRowId || !rowIdsToDelete.includes(row.sourceLaborRowId)
-    ));
+    // 삭제할 행들의 공종+공사명별로 그룹화
+    const workKeysToCheck = new Set<string>();
+    rowIdsToDelete.forEach(rowId => {
+      const row = rows.find(r => r.id === rowId);
+      if (row?.workType && row?.workName) {
+        workKeysToCheck.add(`${row.workType}::${row.workName}`);
+      }
+    });
+    
+    // 각 workKey에 대해 남는 행이 있는지 확인
+    const workKeysToDelete = new Set<string>();
+    workKeysToCheck.forEach(workKey => {
+      const [workType, workName] = workKey.split('::');
+      const hasRemaining = remainingRows.some(r => 
+        r.workType === workType && r.workName === workName
+      );
+      if (!hasRemaining) {
+        workKeysToDelete.add(workKey);
+      }
+    });
+    
+    // 연동된 노무비 행 삭제 (workKey 기반)
+    if (workKeysToDelete.size > 0) {
+      setLaborCostRows(prev => prev.filter(row => {
+        if (!row.sourceAreaRowId) return true;
+        const baseKey = row.sourceAreaRowId.replace('demolition-', '');
+        return !workKeysToDelete.has(baseKey);
+      }));
+      
+      // 연동된 자재비 행 삭제
+      setMaterialRows(prev => prev.filter(row => {
+        if (!row.sourceAreaRowId) return true;
+        return !workKeysToDelete.has(row.sourceAreaRowId);
+      }));
+      
+      console.log('[연동] 복구면적 행 일괄 삭제 → 노무비/자재비 연동 삭제 (workKeys):', Array.from(workKeysToDelete));
+    }
     
     // 복구면적 행 삭제
     setRows(prev => prev.filter(row => !selectedRows.has(row.id)));
     setSelectedRows(new Set());
     
-    console.log('[연동] 복구면적 행 일괄 삭제 → 노무비/자재비 연동 삭제:', rowIdsToDelete);
+    console.log('[연동] 복구면적 행 일괄 삭제:', rowIdsToDelete);
   };
 
   // 드래그 앤 드롭 핸들러 (복구면적 산출표)
