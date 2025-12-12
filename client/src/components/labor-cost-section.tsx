@@ -1331,19 +1331,24 @@ export function LaborCostSection({
                     )}
                   </td>
                   
-                  {/* 복구면적 - 같은 공종+공사명 그룹 내에서 첫 번째 행에만 rowspan으로 표시 */}
+                  {/* 복구면적 - 같은 공종+공사명+복구면적값 그룹 내에서 첫 번째 행에만 rowspan으로 표시 */}
                   {(() => {
-                    // 같은 공종+공사명의 행들 중 첫 번째인지 확인
-                    const sameWorkNameRows = group.rows.filter(r => r.workName === row.workName);
-                    const isFirstInWorkNameGroup = sameWorkNameRows.length > 0 && sameWorkNameRows[0].id === row.id;
-                    const workNameGroupRowCount = sameWorkNameRows.length;
+                    // 같은 공종+공사명+복구면적값의 행들 중 첫 번째인지 확인
+                    // (다른 복구면적 값은 별도로 표시해야 함)
+                    const rowDamageArea = Number(Number(row.damageArea || 0).toFixed(1));
+                    const sameGroupRows = group.rows.filter(r => 
+                      r.workName === row.workName && 
+                      Number(Number(r.damageArea || 0).toFixed(1)) === rowDamageArea
+                    );
+                    const isFirstInGroup = sameGroupRows.length > 0 && sameGroupRows[0].id === row.id;
+                    const groupRowCount = sameGroupRows.length;
                     
                     // 첫 번째 행이 아니면 td 렌더링 스킵 (rowspan으로 병합됨)
-                    if (!isFirstInWorkNameGroup) return null;
+                    if (!isFirstInGroup) return null;
                     
                     return (
                       <td 
-                        rowSpan={workNameGroupRowCount}
+                        rowSpan={groupRowCount}
                         style={{ 
                           padding: "0 8px", 
                           background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)",
@@ -1353,7 +1358,7 @@ export function LaborCostSection({
                         <Input
                           type="number"
                           step="0.1"
-                          value={Number(Number(row.damageArea || 0).toFixed(1))}
+                          value={rowDamageArea}
                           onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
                           className="h-9 border text-center"
                           style={{ 
