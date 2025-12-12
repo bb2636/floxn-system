@@ -2417,26 +2417,28 @@ export default function FieldEstimate() {
         !r.sourceAreaRowId?.startsWith(`${sourceRowId}::`)
       );
       
-      // 같은 공종+공사명의 다른 복구면적 행들 확인 (중복 체크용)
-      const sameWorkNameAreaRows = rows.filter(r => 
-        r.workType === workType && 
-        r.workName === workName && 
-        r.id !== sourceRowId
-      );
-      
-      // 이미 같은 공종+공사명으로 연동된 노무비 행들 (다른 sourceAreaRowId)
+      // 이미 같은 공종+공사명으로 연동된 노무비 행들 (다른 sourceAreaRowId, 철거 제외)
       const existingSameWorkLaborRows = filteredRows.filter(r => 
         r.isLinkedFromRecovery && 
         r.category === workType && 
         r.workName === workName &&
-        !r.sourceAreaRowId?.includes('::demolition') // 철거 제외
+        !r.sourceAreaRowId?.includes('::demolition')
       );
       
-      // 중복 체크: 다른 복구면적 행에서 이미 같은 노임항목 행이 생성되었으면 건너뛰기
-      if (sameWorkNameAreaRows.length > 0 && existingSameWorkLaborRows.length > 0) {
-        // 이미 같은 공종+공사명의 노무비 행이 존재함 - 복구면적만 업데이트
+      // 이미 같은 철거공사+공사명으로 연동된 철거 행들 (다른 sourceAreaRowId)
+      const { demolitionWorkName } = getDemolitionMapping(workType, workName);
+      const existingSameDemolitionRows = filteredRows.filter(r => 
+        r.isLinkedFromRecovery && 
+        r.category === '철거공사' && 
+        r.workName === demolitionWorkName
+      );
+      
+      // 중복 체크: 이미 같은 공종+공사명 노무비 행이 있으면 새로 생성하지 않음
+      // (rows 상태가 stale할 수 있으므로 filteredRows만으로 판단)
+      if (existingSameWorkLaborRows.length > 0) {
         console.log('[일위대가 연동] 중복 건너뛰기: 이미 같은 공종+공사명 노무비 행 존재', 
-          workType, workName, existingSameWorkLaborRows.length, '개');
+          workType, workName, existingSameWorkLaborRows.length, '개',
+          existingSameDemolitionRows.length > 0 ? `(철거도 존재: ${existingSameDemolitionRows.length}개)` : '');
         
         // 복구면적은 useEffect에서 calculateRecoveryAreaByWorkName으로 자동 계산됨
         return filteredRows;
@@ -2647,7 +2649,26 @@ export default function FieldEstimate() {
         }
       }
       
-      return [...filteredRows, ...newLaborRows];
+      // 최종 결과 생성
+      const allRows = [...filteredRows, ...newLaborRows];
+      
+      // 중복 제거: 같은 공종+공사명+노임항목 조합은 첫 번째 행만 유지
+      // (React 배치 처리로 인해 동시에 생성된 중복 방지)
+      const seen = new Set<string>();
+      const deduplicatedRows = allRows.filter(row => {
+        // 연동되지 않은 수동 행은 중복 체크에서 제외
+        if (!row.isLinkedFromRecovery) return true;
+        
+        const key = `${row.category}|${row.workName}|${row.detailItem}`;
+        if (seen.has(key)) {
+          console.log('[일위대가 연동] 중복 행 제거:', row.category, row.workName, row.detailItem);
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
+      
+      return deduplicatedRows;
     });
     
     // 자재비 연동 대상 공사명 (이 공사명만 자재비에 연동됨)
