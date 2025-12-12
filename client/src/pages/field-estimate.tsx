@@ -164,6 +164,9 @@ export default function FieldEstimate() {
   // Hydration guard: 기존 견적 복원 완료 추적 (중복 행 방지)
   const isHydratedRef = useRef(false);
   const [isHydratedState, setIsHydratedState] = useState(false); // 컴포넌트 전달용 상태
+  
+  // 초기 로드 직후 자동 동기화 방지 (새 행 자동 생성 방지)
+  const skipAutoSyncRef = useRef(true);
 
   const [selectedCategory, setSelectedCategory] = useState("복구면적 산출표");
   const [rows, setRows] = useState<AreaCalculationRow[]>([]);
@@ -374,15 +377,19 @@ export default function FieldEstimate() {
     };
   };
 
-  // 노무비 초기 첫 행 설정 (항상 기본 1행 유지)
+  // 노무비 초기 첫 행 설정 (hydration 완료 후에만 빈 행 생성)
   useEffect(() => {
+    // Hydration 완료 전에는 빈 행 생성하지 않음 (DB 데이터 로딩 대기)
+    if (!isHydratedRef.current) return;
     if (laborCostRows.length === 0) {
       setLaborCostRows([createBlankLaborRow()]);
     }
   }, [laborCostRows.length]);
 
-  // 자재비 초기 빈 행 설정 (항상 기본 1행 유지)
+  // 자재비 초기 빈 행 설정 (hydration 완료 후에만 빈 행 생성)
   useEffect(() => {
+    // Hydration 완료 전에는 빈 행 생성하지 않음 (DB 데이터 로딩 대기)
+    if (!isHydratedRef.current) return;
     if (materialRows.length === 0) {
       setMaterialRows([createBlankMaterialRow()]);
     }
@@ -506,6 +513,7 @@ export default function FieldEstimate() {
     // Hydration guard reset
     isHydratedRef.current = false;
     setIsHydratedState(false);
+    skipAutoSyncRef.current = true; // 자동 동기화 방지 리셋
     
     // 이전 케이스 데이터 초기화
     setRows([]);
@@ -1144,6 +1152,7 @@ export default function FieldEstimate() {
 
   // 노무비 행 변화 감지 및 자재비 행 동기화 (공종, 공사명 그대로 복사)
   // 피해복구 케이스에서만 작동 (손해방지 케이스 제외)
+  // 주의: 새 행 생성은 skipAutoSyncRef.current가 false일 때만 실행
   useEffect(() => {
     // Hydration 완료 전에는 동기화 건너뛰기 (중복 행 방지)
     if (!isHydratedRef.current) {
@@ -1179,6 +1188,12 @@ export default function FieldEstimate() {
         // 연결된 노무비 행이 목공사-반자틀이면 자재비 행 제거
         return !shouldExcludeFromMaterialSync(linkedLaborRow.category || '', linkedLaborRow.workName || '', linkedLaborRow.isLinkedFromRecovery);
       });
+      
+      // 초기 로드 직후에는 새 행 생성을 건너뜀 (기존 데이터 유지)
+      if (skipAutoSyncRef.current) {
+        skipAutoSyncRef.current = false;
+        return filteredRows;
+      }
       
       // 이미 연결된 노무비 행 ID 목록
       const existingSourceIds = new Set(filteredRows.map(row => row.sourceLaborRowId).filter(Boolean));
