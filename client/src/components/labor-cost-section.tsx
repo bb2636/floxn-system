@@ -899,11 +899,22 @@ export function LaborCostSection({
   }
   
   const groupRowsByCategory = (rows: LaborCostRow[]): CategoryGroup[] => {
+    // 먼저 공종별로 정렬 (같은 공종이 함께 그룹화되도록)
+    const sortedRows = [...rows].sort((a, b) => {
+      const catA = a.category || "미지정";
+      const catB = b.category || "미지정";
+      if (catA !== catB) return catA.localeCompare(catB);
+      // 같은 공종 내에서는 공사명으로 정렬
+      const workA = a.workName || "";
+      const workB = b.workName || "";
+      return workA.localeCompare(workB);
+    });
+    
     const groups: CategoryGroup[] = [];
     let currentGroup: CategoryGroup | null = null;
     let globalIndex = 0;
 
-    rows.forEach((row) => {
+    sortedRows.forEach((row) => {
       if (!currentGroup || currentGroup.category !== row.category) {
         if (currentGroup) {
           groups.push(currentGroup);
@@ -1331,24 +1342,23 @@ export function LaborCostSection({
                     )}
                   </td>
                   
-                  {/* 복구면적 - 같은 공종+공사명+복구면적값 그룹 내에서 첫 번째 행에만 rowspan으로 표시 */}
+                  {/* 복구면적 - 같은 공사명 그룹 내에서 첫 번째 행에만 rowspan으로 표시 */}
+                  {/* 복구면적은 공사명별로 합산 (바닥+벽체+천장×1.3) */}
                   {(() => {
-                    // 같은 공종+공사명+복구면적값의 행들 중 첫 번째인지 확인
-                    // (다른 복구면적 값은 별도로 표시해야 함)
-                    const rowDamageArea = Number(Number(row.damageArea || 0).toFixed(1));
-                    const sameGroupRows = group.rows.filter(r => 
-                      r.workName === row.workName && 
-                      Number(Number(r.damageArea || 0).toFixed(1)) === rowDamageArea
-                    );
-                    const isFirstInGroup = sameGroupRows.length > 0 && sameGroupRows[0].id === row.id;
-                    const groupRowCount = sameGroupRows.length;
+                    // 같은 공사명의 행들을 찾음 (공종 내에서)
+                    const sameWorkNameRows = group.rows.filter(r => r.workName === row.workName);
+                    const isFirstInWorkNameGroup = sameWorkNameRows.length > 0 && sameWorkNameRows[0].id === row.id;
+                    const workNameRowCount = sameWorkNameRows.length;
+                    
+                    // 공사명별 합산 복구면적 (calculateRecoveryAreaByWorkName에서 계산된 값 사용)
+                    const aggregatedArea = calculateRecoveryAreaByWorkName[row.workName] || row.damageArea || 0;
                     
                     // 첫 번째 행이 아니면 td 렌더링 스킵 (rowspan으로 병합됨)
-                    if (!isFirstInGroup) return null;
+                    if (!isFirstInWorkNameGroup) return null;
                     
                     return (
                       <td 
-                        rowSpan={groupRowCount}
+                        rowSpan={workNameRowCount}
                         style={{ 
                           padding: "0 8px", 
                           background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)",
@@ -1358,7 +1368,7 @@ export function LaborCostSection({
                         <Input
                           type="number"
                           step="0.1"
-                          value={rowDamageArea}
+                          value={Number(aggregatedArea.toFixed(1))}
                           onChange={(e) => updateRow(row.id, 'damageArea', Math.round(Number(e.target.value) * 10) / 10 || 0)}
                           className="h-9 border text-center"
                           style={{ 
@@ -1368,7 +1378,7 @@ export function LaborCostSection({
                             backgroundColor: isLinkedRow ? undefined : "rgba(12, 12, 12, 0.03)",
                           }}
                           disabled={true}
-                          title={isLinkedRow ? "복구면적에서 자동 계산됨" : "개별 행은 복구면적 입력 불가"}
+                          title={isLinkedRow ? "복구면적에서 자동 계산됨 (바닥+벽체+천장×1.3)" : "개별 행은 복구면적 입력 불가"}
                           data-testid={`input-recoveryArea-labor-${globalIndex}`}
                         />
                       </td>
