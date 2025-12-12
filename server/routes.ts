@@ -2214,6 +2214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const estimateRowSchema = z.object({
         category: z.string().min(1, "항소를 선택해주세요"),
         location: z.string().nullable().optional(),
+        workType: z.string().nullable().optional(),
         workName: z.string().nullable().optional(),
         damageWidth: z.union([z.string(), z.number()]).nullable().optional(),
         damageHeight: z.union([z.string(), z.number()]).nullable().optional(),
@@ -2249,6 +2250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return {
           category: validated.category,
           location: validated.location === "선택" ? null : validated.location,
+          workType: validated.workType || null,
           workName: validated.workName === "선택" ? null : validated.workName,
           damageWidth: toMillimeter(validated.damageWidth),
           damageHeight: toMillimeter(validated.damageHeight),

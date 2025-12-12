@@ -585,9 +585,10 @@ export const estimates = pgTable("estimates", {
 export const estimateRows = pgTable("estimate_rows", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   estimateId: varchar("estimate_id").notNull().references(() => estimates.id),
-  category: text("category").notNull(), // 항소: 주방, 화장실, 방안, 거실상
-  location: text("location"), // 위치
-  workName: text("work_name"), // 공사명
+  category: text("category").notNull(), // 장소: 주방, 화장실, 방안, 거실 등
+  location: text("location"), // 위치: 천장, 벽면, 바닥
+  workType: text("work_type"), // 공종: 목공사, 수장공사, 철거공사 등
+  workName: text("work_name"), // 공사명: 합판, 석고보드, 도배 등
   damageWidth: bigint("damage_width", { mode: "number" }), // 피해면적 가로 (mm)
   damageHeight: bigint("damage_height", { mode: "number" }), // 피해면적 세로 (mm)
   damageArea: bigint("damage_area", { mode: "number" }), // 피해면적 면적 (mm²) - 계산된 값
