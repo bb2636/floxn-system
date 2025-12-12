@@ -1693,8 +1693,10 @@ export default function FieldEstimate() {
     if (remainingRowsWithSameWorkKey.length === 0 && workType && workName) {
       setLaborCostRows(prev => prev.filter(row => {
         if (!row.sourceAreaRowId) return true;
-        // workKey 또는 demolition-workKey 형식 모두 처리
-        const baseKey = row.sourceAreaRowId.replace('demolition-', '');
+        // workKey, demolition-workKey, workKey::demolition 형식 모두 처리
+        const baseKey = row.sourceAreaRowId
+          .replace('demolition-', '')
+          .replace('::demolition', '');
         return baseKey !== workKey;
       }));
       
@@ -1748,7 +1750,10 @@ export default function FieldEstimate() {
     if (workKeysToDelete.size > 0) {
       setLaborCostRows(prev => prev.filter(row => {
         if (!row.sourceAreaRowId) return true;
-        const baseKey = row.sourceAreaRowId.replace('demolition-', '');
+        // workKey, demolition-workKey, workKey::demolition 형식 모두 처리
+        const baseKey = row.sourceAreaRowId
+          .replace('demolition-', '')
+          .replace('::demolition', '');
         return !workKeysToDelete.has(baseKey);
       }));
       
@@ -1873,7 +1878,10 @@ export default function FieldEstimate() {
             if (otherRowsWithOldWorkKey.length === 0) {
               setLaborCostRows(prev => prev.filter(r => {
                 if (!r.sourceAreaRowId || !r.isLinkedFromRecovery) return true;
-                const baseKey = r.sourceAreaRowId.replace('demolition-', '');
+                // workKey, demolition-workKey, workKey::demolition 형식 모두 처리
+                const baseKey = r.sourceAreaRowId
+                  .replace('demolition-', '')
+                  .replace('::demolition', '');
                 return baseKey !== oldWorkKey;
               }));
               setMaterialRows(prev => prev.filter(r => {
@@ -1906,7 +1914,10 @@ export default function FieldEstimate() {
             if (otherRowsWithOldWorkKey.length === 0) {
               setLaborCostRows(prev => prev.filter(r => {
                 if (!r.sourceAreaRowId || !r.isLinkedFromRecovery) return true;
-                const baseKey = r.sourceAreaRowId.replace('demolition-', '');
+                // workKey, demolition-workKey, workKey::demolition 형식 모두 처리
+                const baseKey = r.sourceAreaRowId
+                  .replace('demolition-', '')
+                  .replace('::demolition', '');
                 return baseKey !== oldWorkKey;
               }));
               setMaterialRows(prev => prev.filter(r => {
