@@ -178,6 +178,7 @@ interface LaborCostSectionProps {
   isReadOnly?: boolean; // 읽기 전용 모드
   onAreaImportToMaterial?: (workType: string, totalArea: number) => void; // 피해면적 산출표 불러오기 시 자재비 수량 업데이트 콜백
   enableAreaImport?: boolean; // 피해면적 불러오기 활성화 (손해방지 케이스만 true)
+  isHydrated?: boolean; // 데이터 로딩 완료 여부 (재계산 방지용)
 }
 
 export function LaborCostSection({
@@ -194,6 +195,7 @@ export function LaborCostSection({
   isReadOnly = false,
   onAreaImportToMaterial,
   enableAreaImport = true, // 기본값 true (하위 호환)
+  isHydrated = true, // 기본값 true (하위 호환)
 }: LaborCostSectionProps) {
   // 드래그 앤 드롭 상태
   const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
@@ -307,9 +309,11 @@ export function LaborCostSection({
 
   // 연동된 행의 복구면적 및 수량 자동 업데이트 (공사명 기준)
   // 수량 = 복구면적 ÷ 기준작업량
+  // 주의: hydration 완료 전에는 재계산하지 않음 (저장된 값 유지)
   useEffect(() => {
     if (!enableAreaImport) return;
     if (rows.length === 0) return;
+    if (!isHydrated) return; // hydration 완료 전에는 재계산 건너뛰기
     
     // 연동된 행 중 복구면적/수량이 업데이트 필요한 행 찾기
     let hasChanges = false;
@@ -368,7 +372,7 @@ export function LaborCostSection({
     if (hasChanges) {
       onRowsChange(updatedRows);
     }
-  }, [calculateRecoveryAreaByWorkName, enableAreaImport, rows, onRowsChange]);
+  }, [calculateRecoveryAreaByWorkName, enableAreaImport, rows, onRowsChange, isHydrated]);
 
   // 캐스케이딩 옵션 생성 - filteredWorkTypes가 제공되면 우선 사용
   const categoryOptions = useMemo(() => {

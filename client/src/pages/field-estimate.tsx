@@ -163,6 +163,7 @@ const sortLaborRowsByCategory = (rows: LaborCostRow[]): LaborCostRow[] => {
 export default function FieldEstimate() {
   // Hydration guard: 기존 견적 복원 완료 추적 (중복 행 방지)
   const isHydratedRef = useRef(false);
+  const [isHydratedState, setIsHydratedState] = useState(false); // 컴포넌트 전달용 상태
 
   const [selectedCategory, setSelectedCategory] = useState("복구면적 산출표");
   const [rows, setRows] = useState<AreaCalculationRow[]>([]);
@@ -504,6 +505,7 @@ export default function FieldEstimate() {
     
     // Hydration guard reset
     isHydratedRef.current = false;
+    setIsHydratedState(false);
     
     // 이전 케이스 데이터 초기화
     setRows([]);
@@ -1657,10 +1659,12 @@ export default function FieldEstimate() {
 
       // Hydration 완료 표시 (노무비-자재비 동기화 활성화)
       isHydratedRef.current = true;
+      setIsHydratedState(true);
     } else {
       // 견적 데이터가 아예 없으면 빈 행만 생성
       addRow();
       isHydratedRef.current = true;
+      setIsHydratedState(true);
     }
   }, [latestEstimate, masterDataList, selectedCaseId]);
 
@@ -4602,6 +4606,7 @@ export default function FieldEstimate() {
                 isReadOnly={isReadOnly}
                 onAreaImportToMaterial={handleAreaImportToMaterial}
                 enableAreaImport={!isLossPreventionCase}
+                isHydrated={isHydratedState}
               />
             </div>
 
@@ -5089,6 +5094,7 @@ export default function FieldEstimate() {
                 isReadOnly={isReadOnly}
                 onAreaImportToMaterial={handleAreaImportToMaterial}
                 enableAreaImport={!isLossPreventionCase}
+                isHydrated={isHydratedState}
               />
             </div>
 
