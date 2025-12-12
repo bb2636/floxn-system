@@ -1762,11 +1762,34 @@ export default function FieldEstimate() {
         return row;
       }));
       
-      // 자재비 행의 면적도 업데이트
+      // 자재비 행의 수량도 업데이트 (위에서 선언한 isLinearWork 재사용)
       setMaterialRows(prev => prev.map(row => {
         if (!row.isLinkedFromRecovery) return row;
         if (row.공종 === workType && row.공사명 === workName) {
-          return { ...row, 면적: finalArea };
+          // 자재비 수량 재계산
+          let newQty = 0;
+          if (isLinearWork) {
+            // 걸레받이/몰딩: finalArea(m)를 2.44m로 나눔
+            newQty = Math.ceil(finalArea / 2.44);
+          } else if (['합판'].includes(workName)) {
+            // 합판: finalArea(㎡)를 1.65㎡로 나눔
+            newQty = Math.ceil(finalArea / 1.65);
+          } else if (['석고보드', '석고'].includes(workName)) {
+            // 석고보드: finalArea(㎡)를 1.62㎡로 나눔
+            newQty = Math.ceil(finalArea / 1.62);
+          } else {
+            // 기타: 면적 그대로
+            newQty = Math.ceil(finalArea);
+          }
+          const newTotal = Math.round((row.단가 || row.기준단가 || 0) * newQty);
+          return { 
+            ...row, 
+            수량m2: isLinearWork ? 0 : newQty,
+            수량EA: isLinearWork ? newQty : 0,
+            수량: newQty,
+            합계: newTotal,
+            금액: newTotal,
+          };
         }
         return row;
       }));
@@ -1885,12 +1908,39 @@ export default function FieldEstimate() {
         return row;
       }));
       
-      // 자재비 행의 면적도 업데이트
+      // 자재비 행의 수량도 업데이트
       setMaterialRows(prev => prev.map(row => {
         if (!row.isLinkedFromRecovery) return row;
         const rowWorkKey = `${row.공종}::${row.공사명}`;
         if (areaByWorkKey.has(rowWorkKey)) {
-          return { ...row, 면적: areaByWorkKey.get(rowWorkKey) || 0 };
+          const finalArea = areaByWorkKey.get(rowWorkKey) || 0;
+          const workName = row.공사명 || '';
+          const isLinearWork = ['걸레받이', '몰딩'].some(name => workName.includes(name));
+          
+          // 자재비 수량 재계산
+          let newQty = 0;
+          if (isLinearWork) {
+            // 걸레받이/몰딩: finalArea(m)를 2.44m로 나눔
+            newQty = Math.ceil(finalArea / 2.44);
+          } else if (['합판'].includes(workName)) {
+            // 합판: finalArea(㎡)를 1.65㎡로 나눔
+            newQty = Math.ceil(finalArea / 1.65);
+          } else if (['석고보드', '석고'].includes(workName)) {
+            // 석고보드: finalArea(㎡)를 1.62㎡로 나눔
+            newQty = Math.ceil(finalArea / 1.62);
+          } else {
+            // 기타: 면적 그대로
+            newQty = Math.ceil(finalArea);
+          }
+          const newTotal = Math.round((row.단가 || row.기준단가 || 0) * newQty);
+          return { 
+            ...row, 
+            수량m2: isLinearWork ? 0 : newQty,
+            수량EA: isLinearWork ? newQty : 0,
+            수량: newQty,
+            합계: newTotal,
+            금액: newTotal,
+          };
         }
         return row;
       }));
