@@ -585,8 +585,9 @@ export const estimates = pgTable("estimates", {
 export const estimateRows = pgTable("estimate_rows", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   estimateId: varchar("estimate_id").notNull().references(() => estimates.id),
-  category: text("category").notNull(), // 항소: 주방, 화장실, 방안, 거실상
+  category: text("category").notNull(), // 장소: 주방, 화장실, 방안, 거실 등
   location: text("location"), // 위치
+  workType: text("work_type"), // 공종: 목공사, 수장공사, 도장공사 등
   workName: text("work_name"), // 공사명
   damageWidth: bigint("damage_width", { mode: "number" }), // 피해면적 가로 (mm)
   damageHeight: bigint("damage_height", { mode: "number" }), // 피해면적 세로 (mm)

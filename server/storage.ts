@@ -4126,6 +4126,7 @@ export class DbStorage implements IStorage {
     const rowsData = sourceEstimate.rows.map(row => ({
       category: row.category,
       location: row.location,
+      workType: row.workType, // 공종 포함
       workName: row.workName,
       damageWidth: row.damageWidth,
       damageHeight: row.damageHeight,
