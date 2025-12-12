@@ -2409,12 +2409,38 @@ export default function FieldEstimate() {
       matchingIlwidaegaItems.map(item => `${item.노임항목}(E:${item.노임단가}원)`).join(', '));
     
     // 노무비 행 생성/업데이트 (일위대가DB 기반)
+    // 중복 제거: 같은 공종+공사명+노임항목은 하나의 행만 유지
     setLaborCostRows(prev => {
-      // 이미 같은 sourceRowId를 가진 연동 행들 제거 (재생성을 위해)
-      const filteredRows = prev.filter(r => 
+      // 현재 sourceRowId를 가진 행 제거 (재생성을 위해)
+      let filteredRows = prev.filter(r => 
         r.sourceAreaRowId !== sourceRowId && 
         !r.sourceAreaRowId?.startsWith(`${sourceRowId}::`)
       );
+      
+      // 같은 공종+공사명의 다른 복구면적 행들 확인 (중복 체크용)
+      const sameWorkNameAreaRows = rows.filter(r => 
+        r.workType === workType && 
+        r.workName === workName && 
+        r.id !== sourceRowId
+      );
+      
+      // 이미 같은 공종+공사명으로 연동된 노무비 행들 (다른 sourceAreaRowId)
+      const existingSameWorkLaborRows = filteredRows.filter(r => 
+        r.isLinkedFromRecovery && 
+        r.category === workType && 
+        r.workName === workName &&
+        !r.sourceAreaRowId?.includes('::demolition') // 철거 제외
+      );
+      
+      // 중복 체크: 다른 복구면적 행에서 이미 같은 노임항목 행이 생성되었으면 건너뛰기
+      if (sameWorkNameAreaRows.length > 0 && existingSameWorkLaborRows.length > 0) {
+        // 이미 같은 공종+공사명의 노무비 행이 존재함 - 복구면적만 업데이트
+        console.log('[일위대가 연동] 중복 건너뛰기: 이미 같은 공종+공사명 노무비 행 존재', 
+          workType, workName, existingSameWorkLaborRows.length, '개');
+        
+        // 복구면적은 useEffect에서 calculateRecoveryAreaByWorkName으로 자동 계산됨
+        return filteredRows;
+      }
       
       // 독립 추가 행은 유지 (isLinkedFromRecovery = false이고 sourceAreaRowId가 없는 행)
       const newLaborRows: LaborCostRow[] = [];
@@ -2428,6 +2454,19 @@ export default function FieldEstimate() {
           
           // 복구면적 = 전달받은 repairArea (현재 행의 값)
           const currentRepairArea = repairArea || 0;
+          
+          // 중복 체크: 같은 공종+공사명+노임항목 행이 이미 있으면 건너뛰기
+          const existingRow = filteredRows.find(r => 
+            r.isLinkedFromRecovery && 
+            r.category === workType && 
+            r.workName === workName && 
+            r.detailItem === catalogItem.노임항목
+          );
+          
+          if (existingRow) {
+            console.log('[일위대가 연동] 중복 행 건너뛰기:', workType, workName, catalogItem.노임항목);
+            return; // 중복 - 건너뛰기
+          }
           
           newLaborRows.push({
             id: `labor-ilwidaega-${Date.now()}-${Math.random()}-${idx}`,
@@ -2455,36 +2494,45 @@ export default function FieldEstimate() {
           });
         });
         console.log('[일위대가 연동] 노무비 행 생성:', workType, workName, 
-          `${matchingIlwidaegaItems.length}개 노임항목 (${matchingIlwidaegaItems.map(i => i.노임항목).join(', ')})`);
+          `${newLaborRows.length}개 노임항목 (${matchingIlwidaegaItems.map(i => i.노임항목).join(', ')})`);
       } else {
         // 일위대가DB에 없으면 빈 행 생성 (수동 입력용)
         const currentRepairArea = repairArea || 0;
         
-        newLaborRows.push({
-          id: `labor-manual-${Date.now()}-${Math.random()}`,
-          sourceAreaRowId: sourceRowId,
-          isLinkedFromRecovery: true,
-          place: '',
-          position: '',
-          category: workType,
-          workName: workName,
-          detailWork: '일위대가',
-          detailItem: '',
-          priceStandard: '',
-          unit: '㎡',
-          standardPrice: 0,
-          standardWorkQuantity: 0,
-          quantity: 1,
-          applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
-          salesMarkupRate: 0,
-          pricePerSqm: 0,
-          damageArea: currentRepairArea, // 복구면적 (C) - repairArea 사용
-          deduction: 0,
-          includeInEstimate: true,
-          request: '',
-          amount: 0,
-        });
-        console.log('[일위대가 연동] 노무비 행 생성 (DB 매칭 없음):', workType, workName);
+        // 중복 체크: 이미 같은 공종+공사명 행이 있으면 건너뛰기
+        const existingRow = filteredRows.find(r => 
+          r.isLinkedFromRecovery && 
+          r.category === workType && 
+          r.workName === workName
+        );
+        
+        if (!existingRow) {
+          newLaborRows.push({
+            id: `labor-manual-${Date.now()}-${Math.random()}`,
+            sourceAreaRowId: sourceRowId,
+            isLinkedFromRecovery: true,
+            place: '',
+            position: '',
+            category: workType,
+            workName: workName,
+            detailWork: '일위대가',
+            detailItem: '',
+            priceStandard: '',
+            unit: '㎡',
+            standardPrice: 0,
+            standardWorkQuantity: 0,
+            quantity: 1,
+            applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
+            salesMarkupRate: 0,
+            pricePerSqm: 0,
+            damageArea: currentRepairArea, // 복구면적 (C) - repairArea 사용
+            deduction: 0,
+            includeInEstimate: true,
+            request: '',
+            amount: 0,
+          });
+          console.log('[일위대가 연동] 노무비 행 생성 (DB 매칭 없음):', workType, workName);
+        }
       }
       
       // 2. 특정 공사명인 경우 철거공사 행도 추가 생성 (일위대가DB 철거공사 조회)
@@ -2496,81 +2544,106 @@ export default function FieldEstimate() {
         // 일위대가DB 철거공사에서 매칭 아이템 찾기
         const { demolitionWorkName } = getDemolitionMapping(workType, workName);
         
-        const demolitionCatalogItems = ilwidaegaCatalog.filter(item => {
-          const itemWorkType = normalizeForMatch(item.공종 || '');
-          const itemWorkName = normalizeForMatch(item.공사명 || '');
-          return itemWorkType === normalizeForMatch('철거공사') && itemWorkName === normalizeForMatch(demolitionWorkName);
-        });
+        // 중복 체크: 이미 같은 철거공사+공사명 행이 있으면 건너뛰기
+        const existingDemolitionRows = filteredRows.filter(r => 
+          r.isLinkedFromRecovery && 
+          r.category === '철거공사' && 
+          r.workName === demolitionWorkName
+        );
         
-        console.log('[일위대가 연동] 철거공사 조회 (일위대가DB):', demolitionWorkName, demolitionCatalogItems.length, '개 매칭');
-        
-        if (demolitionCatalogItems.length > 0) {
-          // 일위대가DB에서 매칭된 모든 철거공사 노임항목으로 행 생성
-          demolitionCatalogItems.forEach((catItem, idx) => {
-            // D = 기준작업량, E = 노임단가(인당)
-            const D = catItem.기준작업량 || 0;
-            const E = catItem.노임단가 || 0;
-            // 철거공사는 부모 행과 동일한 복구면적 사용
+        if (existingDemolitionRows.length > 0) {
+          console.log('[일위대가 연동] 철거공사 중복 건너뛰기:', demolitionWorkName, existingDemolitionRows.length, '개 이미 존재');
+          // 이미 철거공사 행이 존재하면 생성하지 않음
+        } else {
+          const demolitionCatalogItems = ilwidaegaCatalog.filter(item => {
+            const itemWorkType = normalizeForMatch(item.공종 || '');
+            const itemWorkName = normalizeForMatch(item.공사명 || '');
+            return itemWorkType === normalizeForMatch('철거공사') && itemWorkName === normalizeForMatch(demolitionWorkName);
+          });
+          
+          console.log('[일위대가 연동] 철거공사 조회 (일위대가DB):', demolitionWorkName, demolitionCatalogItems.length, '개 매칭');
+          
+          if (demolitionCatalogItems.length > 0) {
+            // 일위대가DB에서 매칭된 모든 철거공사 노임항목으로 행 생성
+            demolitionCatalogItems.forEach((catItem, idx) => {
+              // D = 기준작업량, E = 노임단가(인당)
+              const D = catItem.기준작업량 || 0;
+              const E = catItem.노임단가 || 0;
+              // 철거공사는 부모 행과 동일한 복구면적 사용
+              const currentRepairArea = repairArea || 0;
+              
+              // 중복 체크: 같은 철거공사+공사명+노임항목 행이 이미 있으면 건너뛰기
+              const existingRow = filteredRows.find(r => 
+                r.isLinkedFromRecovery && 
+                r.category === '철거공사' && 
+                r.workName === demolitionWorkName && 
+                r.detailItem === catItem.노임항목
+              );
+              
+              if (existingRow) {
+                console.log('[일위대가 연동] 철거공사 중복 행 건너뛰기:', demolitionWorkName, catItem.노임항목);
+                return;
+              }
+              
+              newLaborRows.push({
+                id: `labor-demolition-${Date.now()}-${Math.random()}-${idx}`,
+                sourceAreaRowId: `${sourceRowId}::demolition`,
+                isLinkedFromRecovery: true,
+                sourceWorkType: workType, // 부모 노무비 행의 공종 (복구면적 계산용)
+                place: '',
+                position: '',
+                category: '철거공사', // 일위대가DB 기준
+                workName: demolitionWorkName, // 일위대가DB 기준 (반자틀, 석고, 도배 등)
+                detailWork: '일위대가',
+                detailItem: catItem.노임항목 || '', // 노임항목 (보통인부)
+                priceStandard: '',
+                unit: '㎡',
+                standardPrice: E, // 노임단가 (E)
+                standardWorkQuantity: D, // 기준작업량 (D)
+                quantity: 1, // 초기값 1, useEffect에서 복구면적 기준으로 재계산됨
+                applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
+                salesMarkupRate: 0,
+                pricePerSqm: 0, // 초기값 0, useEffect에서 I/C로 계산됨
+                damageArea: currentRepairArea, // 복구면적 (C) - 부모 행과 동일
+                deduction: 0,
+                includeInEstimate: true,
+                request: '',
+                amount: 0, // 초기값 0, useEffect에서 I로 계산됨
+              });
+            });
+            console.log('[일위대가 연동] 철거공사 행 생성:', '철거공사', demolitionWorkName,
+              `${demolitionCatalogItems.length}개 노임항목 (sourceWorkType: ${workType})`);
+          } else {
+            // 일위대가DB에 없으면 기본 철거공사 행 생성
+            console.log('[일위대가 연동] 철거공사 일위대가DB 매칭 없음:', demolitionWorkName);
             const currentRepairArea = repairArea || 0;
             
             newLaborRows.push({
-              id: `labor-demolition-${Date.now()}-${Math.random()}-${idx}`,
+              id: `labor-demolition-${Date.now()}-${Math.random()}`,
               sourceAreaRowId: `${sourceRowId}::demolition`,
               isLinkedFromRecovery: true,
               sourceWorkType: workType, // 부모 노무비 행의 공종 (복구면적 계산용)
               place: '',
               position: '',
-              category: '철거공사', // 일위대가DB 기준
-              workName: demolitionWorkName, // 일위대가DB 기준 (반자틀, 석고, 도배 등)
+              category: '철거공사',
+              workName: demolitionWorkName,
               detailWork: '일위대가',
-              detailItem: catItem.노임항목 || '', // 노임항목 (보통인부)
+              detailItem: '보통인부',
               priceStandard: '',
               unit: '㎡',
-              standardPrice: E, // 노임단가 (E)
-              standardWorkQuantity: D, // 기준작업량 (D)
-              quantity: 1, // 초기값 1, useEffect에서 복구면적 기준으로 재계산됨
+              standardPrice: 0,
+              standardWorkQuantity: 0,
+              quantity: 1,
               applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
               salesMarkupRate: 0,
-              pricePerSqm: 0, // 초기값 0, useEffect에서 I/C로 계산됨
+              pricePerSqm: 0,
               damageArea: currentRepairArea, // 복구면적 (C) - 부모 행과 동일
               deduction: 0,
               includeInEstimate: true,
               request: '',
-              amount: 0, // 초기값 0, useEffect에서 I로 계산됨
+              amount: 0,
             });
-          });
-          console.log('[일위대가 연동] 철거공사 행 생성:', '철거공사', demolitionWorkName,
-            `${demolitionCatalogItems.length}개 노임항목 (sourceWorkType: ${workType})`);
-        } else {
-          // 일위대가DB에 없으면 기본 철거공사 행 생성
-          console.log('[일위대가 연동] 철거공사 일위대가DB 매칭 없음:', demolitionWorkName);
-          const currentRepairArea = repairArea || 0;
-          
-          newLaborRows.push({
-            id: `labor-demolition-${Date.now()}-${Math.random()}`,
-            sourceAreaRowId: `${sourceRowId}::demolition`,
-            isLinkedFromRecovery: true,
-            sourceWorkType: workType, // 부모 노무비 행의 공종 (복구면적 계산용)
-            place: '',
-            position: '',
-            category: '철거공사',
-            workName: demolitionWorkName,
-            detailWork: '일위대가',
-            detailItem: '보통인부',
-            priceStandard: '',
-            unit: '㎡',
-            standardPrice: 0,
-            standardWorkQuantity: 0,
-            quantity: 1,
-            applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
-            salesMarkupRate: 0,
-            pricePerSqm: 0,
-            damageArea: currentRepairArea, // 복구면적 (C) - 부모 행과 동일
-            deduction: 0,
-            includeInEstimate: true,
-            request: '',
-            amount: 0,
-          });
+          }
         }
       }
       
