@@ -1684,8 +1684,28 @@ export default function FieldEstimate() {
       row.sourceAreaRowId !== rowId && row.sourceAreaRowId !== `${rowId}::demolition`
     ));
     
-    // 연동된 자재비 행 삭제 (sourceLaborRowId가 rowId인 것)
-    setMaterialRows(prev => prev.filter(row => row.sourceLaborRowId !== rowId));
+    // 연동된 자재비 행 삭제 또는 업데이트 (sourceAreaRowId/sourceAreaRowIds 기준)
+    setMaterialRows(prev => {
+      return prev.map(row => {
+        // sourceAreaRowId가 직접 매칭되는 경우
+        if (row.sourceAreaRowId === rowId) {
+          const updatedIds = (row.sourceAreaRowIds || []).filter(id => id !== rowId);
+          if (updatedIds.length === 0) {
+            return { ...row, _delete: true };
+          }
+          return { ...row, sourceAreaRowId: updatedIds[0], sourceAreaRowIds: updatedIds };
+        }
+        // sourceAreaRowIds 배열에 포함된 경우
+        if (row.sourceAreaRowIds && row.sourceAreaRowIds.includes(rowId)) {
+          const updatedIds = row.sourceAreaRowIds.filter(id => id !== rowId);
+          if (updatedIds.length === 0) {
+            return { ...row, _delete: true };
+          }
+          return { ...row, sourceAreaRowId: updatedIds[0], sourceAreaRowIds: updatedIds };
+        }
+        return row;
+      }).filter(row => !(row as any)._delete);
+    });
     
     // 복구면적 행 삭제
     setRows(prev => prev.filter(row => row.id !== rowId));
@@ -1708,10 +1728,28 @@ export default function FieldEstimate() {
       return !rowIdsToDelete.includes(baseRowId);
     }));
     
-    // 연동된 자재비 행 삭제
-    setMaterialRows(prev => prev.filter(row => 
-      !row.sourceLaborRowId || !rowIdsToDelete.includes(row.sourceLaborRowId)
-    ));
+    // 연동된 자재비 행 삭제 또는 업데이트 (sourceAreaRowId/sourceAreaRowIds 기준)
+    setMaterialRows(prev => {
+      return prev.map(row => {
+        // sourceAreaRowId가 삭제 대상에 포함된 경우
+        if (row.sourceAreaRowId && rowIdsToDelete.includes(row.sourceAreaRowId)) {
+          const updatedIds = (row.sourceAreaRowIds || []).filter(id => !rowIdsToDelete.includes(id));
+          if (updatedIds.length === 0) {
+            return { ...row, _delete: true };
+          }
+          return { ...row, sourceAreaRowId: updatedIds[0], sourceAreaRowIds: updatedIds };
+        }
+        // sourceAreaRowIds 배열에 삭제 대상이 포함된 경우
+        if (row.sourceAreaRowIds && row.sourceAreaRowIds.some(id => rowIdsToDelete.includes(id))) {
+          const updatedIds = row.sourceAreaRowIds.filter(id => !rowIdsToDelete.includes(id));
+          if (updatedIds.length === 0) {
+            return { ...row, _delete: true };
+          }
+          return { ...row, sourceAreaRowId: updatedIds[0], sourceAreaRowIds: updatedIds };
+        }
+        return row;
+      }).filter(row => !(row as any)._delete);
+    });
     
     // 복구면적 행 삭제
     setRows(prev => prev.filter(row => !selectedRows.has(row.id)));
