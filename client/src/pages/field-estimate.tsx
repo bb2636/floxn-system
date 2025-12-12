@@ -1190,8 +1190,8 @@ export default function FieldEstimate() {
       });
       
       // 초기 로드 직후에는 새 행 생성을 건너뜀 (기존 데이터 유지)
+      // skipAutoSyncRef는 hydration 완료 후에만 false가 됨
       if (skipAutoSyncRef.current) {
-        skipAutoSyncRef.current = false;
         return filteredRows;
       }
       
@@ -1608,10 +1608,12 @@ export default function FieldEstimate() {
       
       // 노무비 데이터 불러오기
       if (latestEstimate.estimate?.laborCostData && Array.isArray(latestEstimate.estimate.laborCostData)) {
-        const loadedLaborRows = latestEstimate.estimate.laborCostData.map((row: any) => {
+        const loadedLaborRows = latestEstimate.estimate.laborCostData.map((row: any, index: number) => {
           const { rowIndex, ...rest } = row; // rowIndex 제거
+          // 결정적 ID 사용: rowIndex 기반으로 일관된 ID 생성 (모든 뷰에서 동일)
+          const stableIndex = typeof rowIndex === 'number' ? rowIndex : index;
           return {
-            id: `labor-${Date.now()}-${Math.random()}`,
+            id: `labor-saved-${stableIndex}`,
             ...rest,
           };
         });
@@ -1625,7 +1627,7 @@ export default function FieldEstimate() {
           : (materialData?.rows || []);
         
         if (materialRowsData.length > 0) {
-          const loadedMaterialRows = materialRowsData.map((row: any) => {
+          const loadedMaterialRows = materialRowsData.map((row: any, index: number) => {
             const { sourceLaborRowIndex, ...rest } = row; // sourceLaborRowIndex 제거
             
             // sourceLaborRowIndex를 사용하여 새로운 laborRow의 ID로 매핑
@@ -1634,8 +1636,9 @@ export default function FieldEstimate() {
                 ? loadedLaborRows[sourceLaborRowIndex]?.id 
                 : undefined;
             
+            // 결정적 ID 사용: 인덱스 기반으로 일관된 ID 생성 (모든 뷰에서 동일)
             return {
-              id: `material-${Date.now()}-${Math.random()}`,
+              id: `material-saved-${index}`,
               ...rest,
               sourceLaborRowId,
             };
@@ -1655,10 +1658,11 @@ export default function FieldEstimate() {
           : (materialData?.rows || []);
         
         if (materialRowsData.length > 0) {
-          const loadedMaterialRows = materialRowsData.map((row: any) => {
+          const loadedMaterialRows = materialRowsData.map((row: any, index: number) => {
             const { sourceLaborRowIndex, ...rest } = row;
+            // 결정적 ID 사용: 인덱스 기반으로 일관된 ID 생성
             return {
-              id: `material-${Date.now()}-${Math.random()}`,
+              id: `material-saved-${index}`,
               ...rest,
               sourceLaborRowId: undefined,
             };
@@ -1675,11 +1679,14 @@ export default function FieldEstimate() {
       // Hydration 완료 표시 (노무비-자재비 동기화 활성화)
       isHydratedRef.current = true;
       setIsHydratedState(true);
+      // 자동 동기화 활성화 - 데이터 로드 완료 후 새 행 생성 허용
+      skipAutoSyncRef.current = false;
     } else {
       // 견적 데이터가 아예 없으면 빈 행만 생성
       addRow();
       isHydratedRef.current = true;
       setIsHydratedState(true);
+      skipAutoSyncRef.current = false;
     }
   }, [latestEstimate, masterDataList, selectedCaseId]);
 
