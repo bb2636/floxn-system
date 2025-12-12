@@ -2594,52 +2594,42 @@ export default function FieldEstimate() {
       : 0;
     
     setMaterialRows(prev => {
-      // 이미 같은 sourceAreaRowId를 가진 행이 있는지 확인 (각 복구면적 행당 1개의 자재비 행)
-      const existingRowIndex = prev.findIndex(r => r.sourceAreaRowId === sourceRowId);
+      // 공종+공사명 기준으로 기존 자재비 행 찾기 (하나의 공종+공사명에 하나의 자재비 행)
+      const existingRowIndex = prev.findIndex(r => 
+        r.공종 === workType && r.공사명 === workName && r.isLinkedFromRecovery === true
+      );
+      
+      // 수량 계산
+      const { quantity: computedQty, quantityEA: computedEA, unit: computedUnit } = computeMaterialQuantity(workName, totalMaterialArea);
+      const useEA = computedUnit === 'EA';
       
       if (existingRowIndex !== -1) {
-        // 기존 행이 있으면 공종/공사명 및 수량 업데이트
+        // 기존 행이 있으면 수량만 업데이트 (공종+공사명 당 1개 행 유지)
         const existingRow = prev[existingRowIndex];
         
-        // 공사명별 수량 계산 (공사명 변경 또는 면적 변경 시)
-        const { quantity: computedQty, quantityEA: computedEA, unit: computedUnit } = computeMaterialQuantity(workName, totalMaterialArea);
-        
-        console.log('[연동] 자재비 행 업데이트:', existingRow.공종, existingRow.공사명, '→', workType, workName, `면적: ${totalMaterialArea}, 계산수량: ${computedQty}`);
+        console.log('[연동] 자재비 행 업데이트:', workType, workName, `면적: ${totalMaterialArea}, 계산수량: ${computedQty}`);
         
         const updatedRows = [...prev];
-        const newPrice = materialsToUse.length > 0 ? unitPrice : (existingRow.단가 || existingRow.기준단가 || 0);
-        // EA 단위인 경우 수량EA 사용, 아닌 경우 수량m2 사용
-        const useEA = computedUnit === 'EA';
+        const newPrice = materialsToUse.length > 0 && !existingRow.자재항목 ? unitPrice : (existingRow.단가 || existingRow.기준단가 || 0);
         const newM2 = useEA ? 0 : computedQty;
         const newEA = useEA ? computedQty : 0;
-        const totalQty = useEA ? computedQty : computedQty;
+        const totalQty = computedQty;
         
         updatedRows[existingRowIndex] = {
           ...existingRow,
-          공종: workType,
-          공사명: workName,
-          isLinkedFromRecovery: true, // 복구면적 연동 표시
-          isManualPriceEntry: materialsToUse.length > 0 ? isManualPriceEntry : existingRow.isManualPriceEntry,
-          // DB 매칭이 있으면 자재명/단가도 업데이트
-          자재항목: materialsToUse.length > 0 ? materialName : (existingRow.자재항목 || existingRow.자재),
-          자재: materialsToUse.length > 0 ? materialName : existingRow.자재,
-          규격: materialsToUse.length > 0 ? spec : existingRow.규격,
-          단위: materialsToUse.length > 0 ? (useEA ? 'EA' : unit) : existingRow.단위,
-          단가: newPrice,
-          기준단가: newPrice,
+          isLinkedFromRecovery: true,
           수량m2: newM2,
           수량EA: newEA,
           수량: totalQty,
           합계: Math.round(newPrice * totalQty),
           금액: Math.round(newPrice * totalQty),
+          // sourceAreaRowIds 배열로 연결된 복구면적 행 추적 (삭제 시 사용)
+          sourceAreaRowIds: Array.from(new Set([...(existingRow.sourceAreaRowIds || []), sourceRowId])),
         };
         return updatedRows;
       }
       
-      // 새 행 생성 (DB 매칭이 없어도 빈 행으로 생성)
-      // 공사명별 수량 계산 (몰딩/걸레받이 → 2.44m 기준, 합판 → 1.65㎡ 기준, 석고보드 → 1.62㎡ 기준)
-      const { quantity: computedQty, quantityEA: computedEA, unit: computedUnit } = computeMaterialQuantity(workName, totalMaterialArea);
-      const useEA = computedUnit === 'EA';
+      // 새 행 생성 (공종+공사명별 1개만)
       const materialQuantity = computedQty;
       const materialAmount = Math.round(unitPrice * materialQuantity);
       
@@ -2659,9 +2649,10 @@ export default function FieldEstimate() {
         합계: materialAmount,
         금액: materialAmount,
         비고: '',
-        sourceAreaRowId: sourceRowId, // 복구면적 행 ID로 연결
-        isLinkedFromRecovery: true, // 복구면적 연동 표시
-        isManualPriceEntry: isManualPriceEntry, // DB에서 '입력'/'직접입력'인 경우
+        sourceAreaRowId: sourceRowId, // 첫 번째 복구면적 행 ID
+        sourceAreaRowIds: [sourceRowId], // 연결된 모든 복구면적 행 ID 배열
+        isLinkedFromRecovery: true,
+        isManualPriceEntry: isManualPriceEntry,
       };
       
       console.log('[연동] 자재비 행 생성:', workType, workName, 

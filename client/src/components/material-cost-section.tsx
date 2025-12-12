@@ -31,7 +31,8 @@ export interface MaterialRow {
   금액: number; // 호환용
   비고: string; // 입력
   sourceLaborRowId?: string; // 노무비 행 ID 추적
-  sourceAreaRowId?: string; // 복구면적 산출표 행 ID 추적
+  sourceAreaRowId?: string; // 복구면적 산출표 행 ID 추적 (첫 번째 행)
+  sourceAreaRowIds?: string[]; // 연결된 모든 복구면적 행 ID 배열 (공종+공사명 당 1개 자재비 행)
   isLinkedFromRecovery?: boolean; // 복구면적에서 연동 생성된 행인지 (true: 수정불가, false/undefined: 수정가능)
   isManualPriceEntry?: boolean; // 단가 직접입력 필요 여부 (DB에서 '입력' 또는 '직접입력'인 경우)
 }
