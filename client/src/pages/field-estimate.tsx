@@ -4409,6 +4409,10 @@ export default function FieldEstimate() {
                               }}
                             >
                               <option value="">공종 선택</option>
+                              {/* 현재 저장된 값이 옵션에 없으면 별도로 추가 */}
+                              {row.workType && !getWorkTypesByLocation(row.location).includes(row.workType) && (
+                                <option key={row.workType} value={row.workType}>{row.workType}</option>
+                              )}
                               {getWorkTypesByLocation(row.location).map((wt) => (
                                 <option key={wt} value={wt}>{wt}</option>
                               ))}
@@ -4430,6 +4434,10 @@ export default function FieldEstimate() {
                               }}
                             >
                               <option value="">공사명 선택</option>
+                              {/* 현재 저장된 값이 옵션에 없으면 별도로 추가 */}
+                              {row.workName && !getWorkNamesByWorkType(row.workType, row.location).includes(row.workName) && (
+                                <option key={row.workName} value={row.workName}>{row.workName}</option>
+                              )}
                               {getWorkNamesByWorkType(row.workType, row.location).map((work) => (
                                 <option key={work} value={work}>{work}</option>
                               ))}
