@@ -252,10 +252,15 @@ export function LaborCostSection({
     updateRow(rowId, 'workName', workName);
   };
 
-  // 공사명별 복구면적 자동 계산 함수 (천장일 경우에만 ×1.3 적용)
+  // 공사명별 복구면적 자동 계산 함수
+  // - 천장: ×1.3 적용
+  // - 걸레받이/몰딩: ÷1000 적용 (mm → m 변환)
   const calculateRecoveryAreaByWorkName = useMemo(() => {
     // 공사명별로 복구면적 산출표 데이터를 그룹화하여 합계 계산
     const workNameAreas: Record<string, number> = {};
+    
+    // 길이 기반 공사 (mm → m 변환 필요)
+    const lengthBasedWorkNames = ['걸레받이', '몰딩'];
     
     areaCalculationRows.forEach(row => {
       const workName = row.workName || '';
@@ -264,9 +269,20 @@ export function LaborCostSection({
       const area = parseFloat(row.repairArea) || 0;
       const location = row.location || '';
       
-      // 천장인 경우 × 1.3 적용
-      const isCeiling = location.includes('천장') || location === '천장';
-      const adjustedArea = isCeiling ? area * 1.3 : area;
+      // 걸레받이/몰딩: mm를 m로 변환 (÷1000)
+      const isLengthBased = lengthBasedWorkNames.includes(workName);
+      
+      // 천장인 경우 × 1.3 적용 (걸레받이/몰딩은 제외)
+      const isCeiling = !isLengthBased && (location.includes('천장') || location === '천장');
+      
+      let adjustedArea = area;
+      if (isLengthBased) {
+        // 걸레받이/몰딩: ÷1000 (mm → m)
+        adjustedArea = area / 1000;
+      } else if (isCeiling) {
+        // 천장: ×1.3
+        adjustedArea = area * 1.3;
+      }
       
       if (!workNameAreas[workName]) {
         workNameAreas[workName] = 0;
@@ -274,9 +290,16 @@ export function LaborCostSection({
       workNameAreas[workName] += adjustedArea;
     });
     
-    // 소수점 첫째 자리까지 반올림
+    // 소수점 둘째 자리까지 반올림 (길이 기반은 더 정밀하게)
     Object.keys(workNameAreas).forEach(workName => {
-      workNameAreas[workName] = Math.round(workNameAreas[workName] * 10) / 10;
+      const isLengthBased = lengthBasedWorkNames.includes(workName);
+      if (isLengthBased) {
+        // 걸레받이/몰딩: 소수점 둘째 자리
+        workNameAreas[workName] = Math.round(workNameAreas[workName] * 100) / 100;
+      } else {
+        // 일반: 소수점 첫째 자리
+        workNameAreas[workName] = Math.round(workNameAreas[workName] * 10) / 10;
+      }
     });
     
     return workNameAreas;

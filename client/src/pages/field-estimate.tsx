@@ -823,8 +823,11 @@ export default function FieldEstimate() {
         }
         console.log(`[자재비] ${data.공사명} 면적 합산: 바닥(${data.floorArea}) + 천장(${data.ceilingArea}) + 벽체(${data.wallArea}) = ${data.totalArea}㎡`);
       } else if (lengthBasedWorkNames.includes(data.공사명)) {
-        // 길이 기반: totalArea가 이미 길이(m)로 합산되어 있음
-        console.log(`[자재비] ${data.공사명} 길이 합산: ${data.totalArea}m`);
+        // 길이 기반: totalArea는 mm 단위 → m로 변환 (÷1000)
+        const lengthMm = data.totalArea;
+        const lengthM = lengthMm / 1000;
+        data.totalArea = Math.round(lengthM * 100) / 100; // 소수점 둘째 자리
+        console.log(`[자재비] ${data.공사명} 길이 합산: ${lengthMm}mm → ${data.totalArea}m`);
       }
     });
     
@@ -838,7 +841,11 @@ export default function FieldEstimate() {
       );
       
       // 수량 계산 (공사명별 단위 규격 적용)
-      const totalAreaOrLength = Math.round(data.totalArea * 10) / 10;
+      // 길이 기반은 이미 m 단위로 변환됨
+      const isLengthBased = lengthBasedWorkNames.includes(data.공사명);
+      const totalAreaOrLength = isLengthBased 
+        ? Math.round(data.totalArea * 100) / 100 // m 단위: 소수점 둘째 자리
+        : Math.round(data.totalArea * 10) / 10;   // ㎡ 단위: 소수점 첫째 자리
       const quantityResult = computeMaterialQuantity(data.공사명, totalAreaOrLength, totalAreaOrLength);
       const calculatedQty = quantityResult.quantity;
       const calculatedUnit = quantityResult.unit;
@@ -2353,34 +2360,36 @@ export default function FieldEstimate() {
       }
       console.log(`[자재비 수량] ${workName} 전체 면적 합계: ${totalMaterialArea}㎡ (rows: ${rows.filter(r => r.workName === workName).length}개, 현재행포함: ${currentRowIncluded})`);
     } else if (lengthAggregationWorkNames.includes(workName)) {
-      // 몰딩/걸레받이: 길이(m) 합산 (repairArea 필드가 실제로는 길이 값)
-      let sumLength = 0;
+      // 몰딩/걸레받이: 길이 합산 (repairArea 필드 값은 mm 단위 → m로 변환: ÷1000)
+      let sumLengthMm = 0; // mm 단위 합계
       let currentRowIncluded = false;
       
       rows.forEach(row => {
         if (row.workName === workName) {
           if (row.id === sourceRowId) {
-            // 현재 편집 중인 행: 전달받은 repairArea 사용 (실제로는 길이 m)
-            sumLength += (repairArea || 0);
+            // 현재 편집 중인 행: 전달받은 repairArea 사용 (mm 단위)
+            sumLengthMm += (repairArea || 0);
             currentRowIncluded = true;
           } else {
-            // 다른 행: rows 상태에서 읽기 (repairArea가 길이 m)
-            const rowLength = parseFloat(row.repairArea) || 0;
-            sumLength += rowLength;
+            // 다른 행: rows 상태에서 읽기 (mm 단위)
+            const rowLengthMm = parseFloat(row.repairArea) || 0;
+            sumLengthMm += rowLengthMm;
           }
         }
       });
       
       // 현재 행이 rows에 없는 경우 (새로 추가되는 경우) repairArea 추가
       if (!currentRowIncluded && repairArea) {
-        sumLength += repairArea;
+        sumLengthMm += repairArea;
       }
       
-      if (sumLength > 0) {
-        totalMaterialLength = Math.round(sumLength * 10) / 10;
+      // mm → m 변환 (÷1000)
+      if (sumLengthMm > 0) {
+        const sumLengthM = sumLengthMm / 1000;
+        totalMaterialLength = Math.round(sumLengthM * 100) / 100; // 소수점 둘째 자리
         totalMaterialArea = totalMaterialLength; // computeMaterialQuantity에서 사용
       }
-      console.log(`[자재비 수량] ${workName} 전체 길이 합계: ${totalMaterialLength}m (rows: ${rows.filter(r => r.workName === workName).length}개, 현재행포함: ${currentRowIncluded})`);
+      console.log(`[자재비 수량] ${workName} 전체 길이 합계: ${sumLengthMm}mm → ${totalMaterialLength}m (rows: ${rows.filter(r => r.workName === workName).length}개, 현재행포함: ${currentRowIncluded})`);
     }
     
     console.log('[일위대가 연동] 복구면적 → 노무비:', workType, workName);
