@@ -4599,7 +4599,7 @@ export default function FieldEstimate() {
                 filteredWorkTypes={workTypes}
                 isReadOnly={isReadOnly}
                 onAreaImportToMaterial={handleAreaImportToMaterial}
-                enableAreaImport={isLossPreventionCase}
+                enableAreaImport={!isLossPreventionCase}
               />
             </div>
 
@@ -5086,7 +5086,7 @@ export default function FieldEstimate() {
                 filteredWorkTypes={workTypes}
                 isReadOnly={isReadOnly}
                 onAreaImportToMaterial={handleAreaImportToMaterial}
-                enableAreaImport={isLossPreventionCase}
+                enableAreaImport={!isLossPreventionCase}
               />
             </div>
 
