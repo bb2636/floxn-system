@@ -153,11 +153,12 @@ export interface IStorage {
   deleteMaterial(id: string): Promise<void>;
   // Excel-based materials catalog
   getMaterialsCatalog(): Promise<Array<{
-    workType: string; // 공종명
-    materialName: string;
+    workType: string; // 공종
+    workName: string; // 공사명
+    materialName: string; // 자재항목
     specification: string;
     unit: string;
-    standardPrice: number | string; // can be "입력" or number
+    standardPrice: number | string; // can be "직접입력" or number
   }>>;
   // User favorites methods
   getUserFavorites(userId: string): Promise<UserFavorite[]>;
@@ -3862,6 +3863,7 @@ export class DbStorage implements IStorage {
 
   async getMaterialsCatalog(): Promise<Array<{
     workType: string;
+    workName: string;
     materialName: string;
     specification: string;
     unit: string;
@@ -3883,25 +3885,32 @@ export class DbStorage implements IStorage {
     const headers = latestExcelData.headers as string[];
     const data = latestExcelData.data as any[][];
     
-    // Find column indices
-    const workTypeIdx = headers.findIndex(h => h === "공종명");
-    const materialNameIdx = headers.findIndex(h => h === "자재명");
+    // Find column indices - 실제 Excel 헤더에 맞게 수정
+    // Excel headers: ["공종","공사명","자재항목(공사명에 종속)","단위"," 단가 "]
+    const workTypeIdx = headers.findIndex(h => h === "공종" || h === "공종명");
+    const workNameIdx = headers.findIndex(h => h === "공사명");
+    const materialNameIdx = headers.findIndex(h => h.includes("자재항목") || h === "자재명");
     const specIdx = headers.findIndex(h => h === "규격");
     const unitIdx = headers.findIndex(h => h === "단위");
-    const priceIdx = headers.findIndex(h => h === "단가");
+    const priceIdx = headers.findIndex(h => h.includes("단가"));
+    
+    console.log('[getMaterialsCatalog] 헤더:', headers);
+    console.log('[getMaterialsCatalog] 인덱스:', { workTypeIdx, workNameIdx, materialNameIdx, specIdx, unitIdx, priceIdx });
     
     if (materialNameIdx === -1 || unitIdx === -1 || priceIdx === -1) {
-      console.error("Missing required columns in excel_data 자재비");
+      console.error("Missing required columns in excel_data 자재비. Headers:", headers);
       return [];
     }
     
     // Forward-fill processing
     let lastWorkType = "";
+    let lastWorkName = "";
     let lastMaterialName = "";
     let lastSpecification = "";
     
     const catalog: Array<{
       workType: string;
+      workName: string;
       materialName: string;
       specification: string;
       unit: string;
@@ -3914,8 +3923,9 @@ export class DbStorage implements IStorage {
       
       // Get values with forward-fill
       const workType = (workTypeIdx !== -1 && row[workTypeIdx]) ? row[workTypeIdx] : lastWorkType;
+      const workName = (workNameIdx !== -1 && row[workNameIdx]) ? row[workNameIdx] : lastWorkName;
       const materialName = row[materialNameIdx] ?? lastMaterialName;
-      const specification = row[specIdx] ?? lastSpecification;
+      const specification = specIdx !== -1 ? (row[specIdx] ?? lastSpecification) : "";
       const unit = row[unitIdx];
       const price = row[priceIdx];
       
@@ -3926,22 +3936,30 @@ export class DbStorage implements IStorage {
       
       // Update last values for forward-fill
       if (workTypeIdx !== -1 && row[workTypeIdx]) lastWorkType = workType;
+      if (workNameIdx !== -1 && row[workNameIdx]) lastWorkName = workName;
       if (row[materialNameIdx]) lastMaterialName = materialName;
-      if (row[specIdx] !== null && row[specIdx] !== undefined) lastSpecification = specification;
+      if (specIdx !== -1 && row[specIdx] !== null && row[specIdx] !== undefined) lastSpecification = specification;
       
-      // Parse price: if it's "입력", keep as string; otherwise convert to number
+      // Parse price: if it's "입력" or "직접입력", keep as string; otherwise convert to number
       let standardPrice: number | string = price;
       if (typeof price === "string") {
-        // Remove commas and try to parse
-        const cleaned = price.replace(/,/g, "");
-        const parsed = parseFloat(cleaned);
-        standardPrice = isNaN(parsed) ? price : parsed;
+        // Check if it's a manual input marker
+        const trimmedPrice = price.trim();
+        if (trimmedPrice === "입력" || trimmedPrice === "직접입력" || trimmedPrice.includes("직접입력")) {
+          standardPrice = "직접입력";
+        } else {
+          // Remove commas and try to parse
+          const cleaned = trimmedPrice.replace(/,/g, "").replace(/\s/g, "");
+          const parsed = parseFloat(cleaned);
+          standardPrice = isNaN(parsed) ? price : parsed;
+        }
       }
       
       catalog.push({
         workType,
+        workName,
         materialName,
-        specification: specification || "-",
+        specification: specification || "",
         unit,
         standardPrice,
       });
