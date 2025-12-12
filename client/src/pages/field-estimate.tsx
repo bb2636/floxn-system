@@ -1727,6 +1727,51 @@ export default function FieldEstimate() {
       }));
       
       console.log('[연동] 복구면적 행 삭제 → 노무비/자재비 연동 삭제 (workKey):', workKey);
+    } else if (remainingRowsWithSameWorkKey.length > 0 && workType && workName) {
+      // 다른 행이 있으면 노무비/자재비 면적 재계산
+      // 남은 행들의 면적 합계 계산
+      const isLinearWork = ['걸레받이', '몰딩'].some(name => workName.includes(name));
+      
+      let newTotalArea = 0;
+      remainingRowsWithSameWorkKey.forEach(row => {
+        if (isLinearWork) {
+          // 걸레받이/몰딩: 가로값 합산 후 ÷1000
+          const length = parseFloat(row.repairWidth) || 0;
+          newTotalArea += length;
+        } else {
+          // 일반: 면적 합산 (천장 ×1.3 적용)
+          const area = parseFloat(row.repairArea) || 0;
+          const isCeiling = (row.location || '').includes('천장') || (row.category || '').includes('천장');
+          newTotalArea += isCeiling ? (area * 1.3) : area;
+        }
+      });
+      
+      // 걸레받이/몰딩은 ÷1000 변환
+      const finalArea = isLinearWork ? Math.round((newTotalArea / 1000) * 10) / 10 : Math.round(newTotalArea * 10) / 10;
+      
+      // 노무비 행의 damageArea 업데이트
+      setLaborCostRows(prev => prev.map(row => {
+        if (!row.sourceAreaRowId || !row.isLinkedFromRecovery) return row;
+        // workKey, demolition-workKey, workKey::demolition 형식 모두 처리
+        const baseKey = row.sourceAreaRowId
+          .replace('demolition-', '')
+          .replace('::demolition', '');
+        if (baseKey === workKey) {
+          return { ...row, damageArea: finalArea };
+        }
+        return row;
+      }));
+      
+      // 자재비 행의 면적도 업데이트
+      setMaterialRows(prev => prev.map(row => {
+        if (!row.isLinkedFromRecovery) return row;
+        if (row.공종 === workType && row.공사명 === workName) {
+          return { ...row, 면적: finalArea };
+        }
+        return row;
+      }));
+      
+      console.log('[연동] 복구면적 행 삭제 → 노무비/자재비 면적 재계산 (workKey):', workKey, '새 면적:', finalArea);
     }
     
     // 복구면적 행 삭제
@@ -1791,6 +1836,66 @@ export default function FieldEstimate() {
       }));
       
       console.log('[연동] 복구면적 행 일괄 삭제 → 노무비/자재비 연동 삭제 (workKeys):', Array.from(workKeysToDelete));
+    }
+    
+    // 남은 행이 있는 workKey에 대해 면적 재계산
+    const workKeysToRecalculate = new Set<string>();
+    workKeysToCheck.forEach(workKey => {
+      if (!workKeysToDelete.has(workKey)) {
+        workKeysToRecalculate.add(workKey);
+      }
+    });
+    
+    if (workKeysToRecalculate.size > 0) {
+      // 각 workKey별로 남은 행들의 면적 합계 계산
+      const areaByWorkKey = new Map<string, number>();
+      
+      workKeysToRecalculate.forEach(workKey => {
+        const [workType, workName] = workKey.split('::');
+        const isLinearWork = ['걸레받이', '몰딩'].some(name => workName.includes(name));
+        
+        let newTotalArea = 0;
+        remainingRows.filter(r => r.workType === workType && r.workName === workName).forEach(row => {
+          if (isLinearWork) {
+            // 걸레받이/몰딩: 가로값 합산 후 ÷1000
+            const length = parseFloat(row.repairWidth) || 0;
+            newTotalArea += length;
+          } else {
+            // 일반: 면적 합산 (천장 ×1.3 적용)
+            const area = parseFloat(row.repairArea) || 0;
+            const isCeiling = (row.location || '').includes('천장') || (row.category || '').includes('천장');
+            newTotalArea += isCeiling ? (area * 1.3) : area;
+          }
+        });
+        
+        // 걸레받이/몰딩은 ÷1000 변환
+        const finalArea = isLinearWork ? Math.round((newTotalArea / 1000) * 10) / 10 : Math.round(newTotalArea * 10) / 10;
+        areaByWorkKey.set(workKey, finalArea);
+      });
+      
+      // 노무비 행의 damageArea 업데이트
+      setLaborCostRows(prev => prev.map(row => {
+        if (!row.sourceAreaRowId || !row.isLinkedFromRecovery) return row;
+        const baseKey = row.sourceAreaRowId
+          .replace('demolition-', '')
+          .replace('::demolition', '');
+        if (areaByWorkKey.has(baseKey)) {
+          return { ...row, damageArea: areaByWorkKey.get(baseKey) || 0 };
+        }
+        return row;
+      }));
+      
+      // 자재비 행의 면적도 업데이트
+      setMaterialRows(prev => prev.map(row => {
+        if (!row.isLinkedFromRecovery) return row;
+        const rowWorkKey = `${row.공종}::${row.공사명}`;
+        if (areaByWorkKey.has(rowWorkKey)) {
+          return { ...row, 면적: areaByWorkKey.get(rowWorkKey) || 0 };
+        }
+        return row;
+      }));
+      
+      console.log('[연동] 복구면적 행 일괄 삭제 → 노무비/자재비 면적 재계산:', Object.fromEntries(areaByWorkKey));
     }
     
     // 복구면적 행 삭제
