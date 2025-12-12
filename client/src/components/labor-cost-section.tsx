@@ -257,16 +257,24 @@ export function LaborCostSection({
     // 공사명별로 복구면적 산출표 데이터를 그룹화하여 합계 계산
     const workNameAreas: Record<string, number> = {};
     
+    // 걸레받이/몰딩: 길이 기반 공사명 (÷1000 변환 필요)
+    const lengthBasedWorkNames = ['걸레받이', '몰딩'];
+    
     areaCalculationRows.forEach(row => {
       const workName = row.workName || '';
       if (!workName) return;
       
-      const area = parseFloat(row.repairArea) || 0;
+      let area = parseFloat(row.repairArea) || 0;
       const location = row.location || '';
       
-      // 천장인 경우 × 1.3 적용
+      // 걸레받이/몰딩: ÷1000 변환 (예: 1200 → 1.2m²)
+      if (lengthBasedWorkNames.includes(workName)) {
+        area = area / 1000;
+      }
+      
+      // 천장인 경우 × 1.3 적용 (걸레받이/몰딩은 천장 적용 안함)
       const isCeiling = location.includes('천장') || location === '천장';
-      const adjustedArea = isCeiling ? area * 1.3 : area;
+      const adjustedArea = (isCeiling && !lengthBasedWorkNames.includes(workName)) ? area * 1.3 : area;
       
       if (!workNameAreas[workName]) {
         workNameAreas[workName] = 0;
