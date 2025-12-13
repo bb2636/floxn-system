@@ -2489,6 +2489,18 @@ export default function FieldEstimate() {
   const syncAreaRowToLaborAndMaterial = (workType: string, workName: string, sourceRowId: string, repairArea?: number) => {
     if (!workType || !workName) return;
     
+    // 중복 호출 방지: 같은 공종+공사명에 대한 동기화가 진행 중이면 건너뛰기
+    const materialSyncKey = `${workType}|${workName}`;
+    if (materialSyncInProgressRef.current.has(materialSyncKey)) {
+      console.log('[자재비 동기화] 중복 호출 방지:', materialSyncKey);
+      return;
+    }
+    materialSyncInProgressRef.current.add(materialSyncKey);
+    // 동기화 완료 후 제거 (다음 렌더 사이클에서)
+    setTimeout(() => {
+      materialSyncInProgressRef.current.delete(materialSyncKey);
+    }, 100);
+    
     // 면적 합산 대상 공사명: 도배, 마루, 장판, 합판, 석고보드, 석고
     const areaAggregationWorkNames = ['도배', '마루', '장판', '합판', '석고보드', '석고'];
     // 길이(m) 합산 대상 공사명: 몰딩, 걸레받이
