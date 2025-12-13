@@ -97,6 +97,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ authenticated: false });
   });
 
+  // BUILD VERSION - Always accessible to verify deployment
+  const BUILD_TIME = new Date().toISOString();
+  const BUILD_ID = `build-${Date.now()}`;
+  
+  app.get("/api/debug/version", async (req, res) => {
+    res.json({
+      buildId: BUILD_ID,
+      buildTime: BUILD_TIME,
+      appVersion: "1.0.0-debug",
+      nodeEnv: process.env.NODE_ENV,
+      replitDeployment: process.env.REPLIT_DEPLOYMENT,
+      isProduction: process.env.REPLIT_DEPLOYMENT === '1',
+      hasDbStatusRoute: true,
+      registeredDebugRoutes: ["/api/debug/version", "/api/debug/db-status"],
+      serverStartTime: new Date().toISOString(),
+    });
+  });
+
   // DEBUG ENDPOINT - Production DB diagnostics (admin only)
   app.get("/api/debug/db-status", async (req, res) => {
     try {
