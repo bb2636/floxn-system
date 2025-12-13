@@ -214,6 +214,9 @@ export default function FieldEstimate() {
     };
   }, []); // dependency 제거 (한 번만 설정)
 
+  // 자재비 동기화 중복 호출 방지 ref (공종+공사명별 진행 중인 동기화 추적)
+  const materialSyncInProgressRef = useRef<Set<string>>(new Set());
+  
   // 노무비 행 중복 자동 제거 (React 배치 처리로 인한 중복 방지)
   // 연동된 행(isLinkedFromRecovery=true)에서 같은 공종+공사명+노임항목 조합은 첫 번째만 유지
   const lastDeduplicationRef = useRef<string>('');
@@ -259,6 +262,52 @@ export default function FieldEstimate() {
       setLaborCostRows(deduplicatedRows);
     }
   }, [laborCostRows]);
+
+  // 자재비 행 중복 자동 제거 (React 배치 처리로 인한 중복 방지)
+  // 연동된 행(isLinkedFromRecovery=true)에서 같은 공종+공사명 조합은 첫 번째만 유지
+  const lastMaterialDeduplicationRef = useRef<string>('');
+  useEffect(() => {
+    if (materialRows.length === 0) return;
+    
+    // 중복 체크: 연동된 행에서 같은 key가 여러 개인지 확인
+    const linkedRows = materialRows.filter(r => r.isLinkedFromRecovery);
+    const keyCount: Record<string, number> = {};
+    let hasDuplicates = false;
+    
+    for (const row of linkedRows) {
+      const key = `${row.공종}|${row.공사명}`;
+      keyCount[key] = (keyCount[key] || 0) + 1;
+      if (keyCount[key] > 1) {
+        hasDuplicates = true;
+      }
+    }
+    
+    if (!hasDuplicates) return;
+    
+    // 중복 제거 (무한 루프 방지를 위해 key 비교)
+    const currentStateKey = materialRows.map(r => r.id).join(',');
+    if (currentStateKey === lastMaterialDeduplicationRef.current) return;
+    
+    console.log('[자재비 중복 제거] 중복 감지, 자동 제거 실행');
+    
+    const seen = new Set<string>();
+    const deduplicatedRows = materialRows.filter(row => {
+      if (!row.isLinkedFromRecovery) return true; // 수동 행은 유지
+      
+      const key = `${row.공종}|${row.공사명}`;
+      if (seen.has(key)) {
+        console.log('[자재비 중복 제거] 제거:', row.공종, row.공사명);
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+    
+    if (deduplicatedRows.length !== materialRows.length) {
+      lastMaterialDeduplicationRef.current = deduplicatedRows.map(r => r.id).join(',');
+      setMaterialRows(deduplicatedRows);
+    }
+  }, [materialRows]);
 
   // 빈 자재비 행 생성 함수
   const createBlankMaterialRow = (공종 = '', 공사명 = '', sourceLaborRowId?: string): MaterialRow => {
