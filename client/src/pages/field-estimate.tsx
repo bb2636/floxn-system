@@ -1262,11 +1262,20 @@ export default function FieldEstimate() {
     // 1. 복구면적 연동 행(isLinkedFromRecovery)만 자재비에 연동됨 (별도 경로)
     // 2. 노무비에서 수동 추가한 행은 자재비에 연동하지 않음
     // 3. 목공사-반자틀, 철거공사는 자재비 연동 제외
+    // 4. 자동 연동 대상 공사명(합판, 석고보드, 도배 등)은 syncMaterialFromRecoveryArea에서 처리하므로 제외
+    const AUTO_MATERIAL_SYNC_WORK_NAMES = ['합판', '석고', '석고보드', '몰딩', '걸레받이', '도배', '마루', '장판'];
     const shouldExcludeFromMaterialSync = (category: string, workName: string, isLinkedFromRecovery?: boolean): boolean => {
       // 노무비 수동 추가 행은 자재비 연동 안함 (복구면적 연동 행만 연동됨)
       if (!isLinkedFromRecovery) return true;
       // 목공사-반자틀, 철거공사는 복구면적 연동 행이더라도 자재비 연동 제외
-      return (category === '목공사' && workName === '반자틀') || category === '철거공사';
+      if ((category === '목공사' && workName === '반자틀') || category === '철거공사') return true;
+      // 자동 연동 대상 공사명은 syncMaterialFromRecoveryArea에서 처리하므로 노무비→자재비 연동 제외
+      // 이 공사명들은 복구면적에서 직접 자재비로 연동되어야 함 (노무비 경유 X)
+      if (AUTO_MATERIAL_SYNC_WORK_NAMES.includes(workName)) {
+        console.log('[노무비→자재비 useEffect] 자동연동 대상 제외:', category, workName);
+        return true;
+      }
+      return false;
     };
 
     setMaterialRows(prev => {
