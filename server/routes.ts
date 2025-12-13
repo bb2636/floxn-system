@@ -145,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filteredCases = await storage.getAllCases(user);
       
       // Get all users count
-      const allUsers = await storage.getUsers();
+      const allUsers = await storage.getAllUsers();
       
       // Get cases by status breakdown
       const allCasesRaw = await db.select().from(cases);
