@@ -97,6 +97,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ authenticated: false });
   });
 
+  // DEBUG ENDPOINT - Production DB diagnostics (admin only)
+  app.get("/api/debug/db-status", async (req, res) => {
+    try {
+      // Check if user is admin
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "인증 필요" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user || user.role !== "관리자") {
+        return res.status(403).json({ error: "관리자 권한 필요" });
+      }
+
+      // Get environment info
+      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+      const dbUrl = isProduction 
+        ? (process.env.PROD_DATABASE_URL || process.env.DATABASE_URL)
+        : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
+      
+      // Mask the DB URL for security (only show host)
+      const maskedDbUrl = dbUrl ? dbUrl.replace(/\/\/[^@]+@/, '//***:***@').split('?')[0] : 'NOT SET';
+      
+      // Get total cases count directly from DB
+      const casesResult = await db.select({ count: sql<number>`count(*)` }).from(cases);
+      const totalCases = casesResult[0]?.count || 0;
+      
+      // Get cases through storage (with user filter applied)
+      const filteredCases = await storage.getAllCases(user);
+      
+      // Get all users count
+      const allUsers = await storage.getUsers();
+      
+      // Get cases by status breakdown
+      const allCasesRaw = await db.select().from(cases);
+      const statusBreakdown: Record<string, number> = {};
+      allCasesRaw.forEach(c => {
+        const status = c.status || 'null';
+        statusBreakdown[status] = (statusBreakdown[status] || 0) + 1;
+      });
+
+      res.json({
+        timestamp: new Date().toISOString(),
+        environment: {
+          isProduction,
+          NODE_ENV: process.env.NODE_ENV,
+          REPLIT_DEPLOYMENT: process.env.REPLIT_DEPLOYMENT,
+        },
+        database: {
+          maskedUrl: maskedDbUrl,
+          connectionTest: "OK",
+        },
+        counts: {
+          totalCasesInDb: totalCases,
+          casesReturnedByApi: filteredCases.length,
+          totalUsers: allUsers.length,
+        },
+        statusBreakdown,
+        currentUser: {
+          id: user.id,
+          username: user.username,
+          role: user.role,
+        },
+        sampleCaseIds: allCasesRaw.slice(0, 3).map(c => ({ id: c.id, caseNumber: c.caseNumber, status: c.status })),
+      });
+    } catch (error) {
+      console.error("[DEBUG] Error:", error);
+      res.status(500).json({ 
+        error: "Debug endpoint error", 
+        message: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
   // Get all users endpoint (admin only)
   app.get("/api/users", async (req, res) => {
     // Check authentication
