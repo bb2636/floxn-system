@@ -1112,54 +1112,6 @@ export default function FieldEstimate() {
     }
   };
 
-  // 복구면적 변경 시 자재비 자동 동기화를 위한 signature
-  // rows 배열 참조가 같아도 내부 필드(workName, repairArea) 변경을 감지
-  const recoverySignature = useMemo(
-    () => rows.map(r => `${r.id}|${r.workType}|${r.workName}|${r.repairArea}`).join(','),
-    [rows]
-  );
-
-  // 복구면적 변경 → 자재비 자동 동기화 useEffect
-  useEffect(() => {
-    // Hydration 완료 전에는 동기화 건너뛰기
-    if (!isHydratedRef.current) {
-      console.log("[SYNC SKIP] Hydration not complete");
-      return;
-    }
-    
-    // 초기 로드 직후 자동 동기화 방지
-    if (skipAutoSyncRef.current) {
-      console.log("[SYNC SKIP] Initial load, skipping auto sync");
-      skipAutoSyncRef.current = false;
-      return;
-    }
-    
-    // 손해방지 케이스면 자동 연동하지 않음
-    if (isLossPreventionCase) {
-      console.log("[SYNC SKIP] Loss prevention case");
-      return;
-    }
-    
-    // 읽기 전용이면 동기화하지 않음
-    if (isReadOnly) {
-      console.log("[SYNC SKIP] Read-only mode");
-      return;
-    }
-    
-    console.log("[SYNC CALL] syncMaterialFromRecoveryArea triggered", {
-      time: Date.now(),
-      recoveryCount: rows.length,
-      recoverySnapshot: rows.map(r => ({
-        id: r.id,
-        workType: r.workType,
-        work: r.workName,
-        area: r.repairArea
-      }))
-    });
-    
-    syncMaterialFromRecoveryArea();
-  }, [recoverySignature, isLossPreventionCase, isReadOnly]);
-
   // 자재비 행 추가
   const addMaterialRow = () => {
     if (isReadOnly) return;
@@ -1320,6 +1272,54 @@ export default function FieldEstimate() {
     // -숫자 패턴이 없으면 손해방지
     return !/-\d+$/.test(caseNumber);
   }, [selectedCase?.caseNumber]);
+
+  // 복구면적 변경 시 자재비 자동 동기화를 위한 signature
+  // rows 배열 참조가 같아도 내부 필드(workName, repairArea) 변경을 감지
+  const recoverySignature = useMemo(
+    () => rows.map(r => `${r.id}|${r.workType}|${r.workName}|${r.repairArea}`).join(','),
+    [rows]
+  );
+
+  // 복구면적 변경 → 자재비 자동 동기화 useEffect
+  useEffect(() => {
+    // Hydration 완료 전에는 동기화 건너뛰기
+    if (!isHydratedRef.current) {
+      console.log("[SYNC SKIP] Hydration not complete");
+      return;
+    }
+    
+    // 초기 로드 직후 자동 동기화 방지
+    if (skipAutoSyncRef.current) {
+      console.log("[SYNC SKIP] Initial load, skipping auto sync");
+      skipAutoSyncRef.current = false;
+      return;
+    }
+    
+    // 손해방지 케이스면 자동 연동하지 않음
+    if (isLossPreventionCase) {
+      console.log("[SYNC SKIP] Loss prevention case");
+      return;
+    }
+    
+    // 읽기 전용이면 동기화하지 않음
+    if (isReadOnly) {
+      console.log("[SYNC SKIP] Read-only mode");
+      return;
+    }
+    
+    console.log("[SYNC CALL] syncMaterialFromRecoveryArea triggered", {
+      time: Date.now(),
+      recoveryCount: rows.length,
+      recoverySnapshot: rows.map(r => ({
+        id: r.id,
+        workType: r.workType,
+        work: r.workName,
+        area: r.repairArea
+      }))
+    });
+    
+    syncMaterialFromRecoveryArea();
+  }, [recoverySignature, isLossPreventionCase, isReadOnly]);
   
   // 공종 목록 (노무비 DB에서 가져온 후 케이스 유형별 필터링)
   // 손해방지 케이스: DAMAGE_PREVENTION_WORK_TYPES만 표시
