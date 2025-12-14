@@ -1105,10 +1105,6 @@ export default function FieldEstimate() {
     if (allRows.length > 0 || materialRows.length > 0) {
       setMaterialRows(allRows);
       setSelectedMaterialRows(new Set());
-      toast({
-        title: "자재비 동기화 완료",
-        description: `복구면적 산출표에서 ${resultAutoRows.length}개 항목이 자동 생성되었습니다.${deletedCount > 0 ? ` (${deletedCount}개 삭제됨)` : ''}`,
-      });
     }
   };
 
