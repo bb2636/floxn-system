@@ -2568,10 +2568,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { id } = req.params;
+      console.log("[Master Data DELETE] Deleting item:", id);
       await storage.deleteMasterData(id);
+      console.log("[Master Data DELETE] Successfully deleted:", id);
       res.json({ success: true });
     } catch (error) {
-      console.error("Delete master data error:", error);
+      console.error("[Master Data DELETE] Error deleting:", error);
       res.status(500).json({ error: "기준정보를 삭제하는 중 오류가 발생했습니다" });
     }
   });

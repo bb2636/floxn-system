@@ -477,9 +477,9 @@ export default function AdminSettings() {
     enabled: !!user && user.role === "관리자",
   });
 
-  // 선택된 카테고리의 마스터 데이터 필터링
+  // 선택된 카테고리의 마스터 데이터 필터링 (활성 항목만 표시)
   const currentMasterData = masterDataList.filter(
-    (item) => item.category === MASTER_DATA_CATEGORIES[selectedCategory]
+    (item) => item.category === MASTER_DATA_CATEGORIES[selectedCategory] && item.isActive === "true"
   );
 
   // 전체 카테고리 목록 (DB 연동 + 메모리 state)
@@ -488,18 +488,18 @@ export default function AdminSettings() {
   // 카테고리가 DB 연동 카테고리인지 확인
   const isMasterDataCategory = (category: string) => category in MASTER_DATA_CATEGORIES;
 
-  // 카테고리의 항목 개수 계산
+  // 카테고리의 항목 개수 계산 (활성 항목만)
   const getCategoryCount = (category: string) => {
     if (isMasterDataCategory(category)) {
-      return masterDataList.filter(item => item.category === MASTER_DATA_CATEGORIES[category]).length;
+      return masterDataList.filter(item => item.category === MASTER_DATA_CATEGORIES[category] && item.isActive === "true").length;
     }
     return categoryItems[category]?.length || 0;
   };
 
-  // 카테고리의 항목 목록 가져오기
+  // 카테고리의 항목 목록 가져오기 (활성 항목만)
   const getCategoryItems = (category: string) => {
     if (isMasterDataCategory(category)) {
-      return masterDataList.filter(item => item.category === MASTER_DATA_CATEGORIES[category]);
+      return masterDataList.filter(item => item.category === MASTER_DATA_CATEGORIES[category] && item.isActive === "true");
     }
     return categoryItems[category] || [];
   };
@@ -530,8 +530,10 @@ export default function AdminSettings() {
     mutationFn: async (id: string) => {
       return await apiRequest("DELETE", `/api/master-data/${id}`);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/master-data"] });
+    onSuccess: async () => {
+      // 캐시 무효화 후 명시적 refetch
+      await queryClient.invalidateQueries({ queryKey: ["/api/master-data"] });
+      await refetchMasterData();
       toast({
         title: "삭제 완료",
         description: "항목이 삭제되었습니다.",
