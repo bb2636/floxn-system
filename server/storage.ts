@@ -4466,7 +4466,7 @@ export class DbStorage implements IStorage {
           caseId: relatedCase.id,
           version: nextVersion,
           createdBy: sourceEstimate.estimate.createdBy,
-          createdAt: getKSTDate(),
+          createdAt: new Date(), // Use Date object for timestamp column
           laborCostData: sourceEstimate.estimate.laborCostData,
           materialCostData: sourceEstimate.estimate.materialCostData,
           vatIncluded: sourceEstimate.estimate.vatIncluded,
