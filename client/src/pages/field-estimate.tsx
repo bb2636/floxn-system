@@ -113,7 +113,7 @@ function calculateH_FieldEstimate(C: number, D: number, E: number, F: number): n
   if (C >= D) {
     return (C - D) * (E / D);
   } else {
-    return F;
+    return 0; // C < D 일 때 H = 0 (추가 금액 없음)
   }
 }
 
