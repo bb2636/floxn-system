@@ -343,6 +343,11 @@ export default function FieldEstimate() {
     };
   };
 
+  // 문자열 정규화 헬퍼 (공백 제거, 소문자 변환) - 일위대가 매칭에 사용
+  const normalizeForMatch = (str: string): string => {
+    return (str || '').trim().toLowerCase().replace(/\s+/g, '');
+  };
+
   // 노무비 카탈로그 조회 (from excel_data)
   const { data: laborCatalog = [], isLoading: isLoadingLaborCatalog } = useQuery<LaborCatalogItem[]>({
     queryKey: ['/api/labor-catalog'],
@@ -2450,11 +2455,6 @@ export default function FieldEstimate() {
         return row;
       })
     );
-  };
-  
-  // 문자열 정규화 헬퍼 (공백 제거, 소문자 변환)
-  const normalizeForMatch = (str: string): string => {
-    return (str || '').trim().toLowerCase().replace(/\s+/g, '');
   };
   
   // 철거공사 행도 함께 생성해야 하는 공사명 목록
