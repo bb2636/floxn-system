@@ -59,8 +59,8 @@ function calculateH(C: number, D: number, E: number, F: number): number {
     // C ≥ D: (C-D) × (E÷D)
     return (C - D) * (E / D);
   } else {
-    // C < D: F
-    return F;
+    // C < D: H = 0 (추가 금액 없음)
+    return 0;
   }
 }
 
