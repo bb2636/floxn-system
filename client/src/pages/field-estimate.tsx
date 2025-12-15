@@ -3064,10 +3064,14 @@ export default function FieldEstimate() {
           existingSameDemolitionRows.length > 0 ? `(철거도 존재: ${existingSameDemolitionRows.length}개)` : '');
         
         // 조기 반환 시에도 중복 제거 적용 (이미 존재하는 중복 행 제거)
+        // 철거공사 행은 sourceAreaRowId 포함하여 고유 키 생성 (각 복구면적 행별로 개별 관리)
         const seenEarly = new Set<string>();
         const deduplicatedFilteredRows = filteredRows.filter(row => {
           if (!row.isLinkedFromRecovery) return true;
-          const key = `${row.category}|${row.workName}|${row.detailItem}`;
+          // 철거공사 행은 sourceAreaRowId 포함하여 각 복구면적 행별로 개별 관리
+          const key = row.category === '철거공사' && row.sourceAreaRowId
+            ? `${row.sourceAreaRowId}|${row.category}|${row.workName}|${row.detailItem}`
+            : `${row.category}|${row.workName}|${row.detailItem}`;
           if (seenEarly.has(key)) {
             console.log('[일위대가 연동] 기존 중복 행 제거:', row.category, row.workName, row.detailItem);
             return false;
@@ -3290,12 +3294,16 @@ export default function FieldEstimate() {
       
       // 중복 제거: 같은 공종+공사명+노임항목 조합은 첫 번째 행만 유지
       // (React 배치 처리로 인해 동시에 생성된 중복 방지)
+      // 철거공사 행은 sourceAreaRowId 포함하여 고유 키 생성 (각 복구면적 행별로 개별 관리)
       const seen = new Set<string>();
       const deduplicatedRows = allRows.filter(row => {
         // 연동되지 않은 수동 행은 중복 체크에서 제외
         if (!row.isLinkedFromRecovery) return true;
         
-        const key = `${row.category}|${row.workName}|${row.detailItem}`;
+        // 철거공사 행은 sourceAreaRowId 포함하여 각 복구면적 행별로 개별 관리
+        const key = row.category === '철거공사' && row.sourceAreaRowId
+          ? `${row.sourceAreaRowId}|${row.category}|${row.workName}|${row.detailItem}`
+          : `${row.category}|${row.workName}|${row.detailItem}`;
         if (seen.has(key)) {
           console.log('[일위대가 연동] 중복 행 제거:', row.category, row.workName, row.detailItem);
           return false;
