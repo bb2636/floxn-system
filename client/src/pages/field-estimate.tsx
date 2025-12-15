@@ -1479,11 +1479,6 @@ export default function FieldEstimate() {
       return;
     }
 
-    // 피해복구 케이스가 아니면 연동하지 않음 (손해방지 케이스 제외)
-    if (isLossPreventionCase) {
-      return;
-    }
-
     // 일위대가 카탈로그가 로드되지 않았으면 대기
     if (!ilwidaegaCatalog || ilwidaegaCatalog.length === 0) {
       return;
@@ -1736,7 +1731,7 @@ export default function FieldEstimate() {
         return laborRow;
       });
     });
-  }, [rows, isLossPreventionCase, ilwidaegaCatalog]); // rows(복구면적 산출표), 케이스 타입, 일위대가 카탈로그 변경 시 실행
+  }, [rows, ilwidaegaCatalog]); // rows(복구면적 산출표), 일위대가 카탈로그 변경 시 실행
 
   // ========== 철거공사 Reconcile useEffect ==========
   // 복구면적 산출표(rows)의 공사명을 기반으로 철거공사 노무비를 자동 생성/삭제
@@ -1749,12 +1744,6 @@ export default function FieldEstimate() {
     // Hydration 완료 전에는 건너뛰기
     if (!isHydratedRef.current) {
       demolitionPendingRef.current = false; // 조기 종료 시 플래그 리셋
-      return;
-    }
-    
-    // 피해복구 케이스가 아니면 건너뛰기
-    if (isLossPreventionCase) {
-      demolitionPendingRef.current = false;
       return;
     }
     
@@ -2046,7 +2035,7 @@ export default function FieldEstimate() {
         return [...updatedRows, ...newDemolitionRows];
       });
     });
-  }, [rows, laborCostRows, isLossPreventionCase, ilwidaegaCatalog]); // laborCostRows 포함 (수동 편집 감지)
+  }, [rows, laborCostRows, ilwidaegaCatalog]); // laborCostRows 포함 (수동 편집 감지)
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
