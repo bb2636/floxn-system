@@ -871,7 +871,7 @@ export default function FieldEstimate() {
   };
 
   // 자동 연동 대상 공사명 (반자틀 제외)
-  const AUTO_SYNC_MATERIAL_WORK_NAMES = ['합판', '석고', '석고보드', '몰딩', '걸레받이', '도배', '마루', '장판'];
+  const AUTO_SYNC_MATERIAL_WORK_NAMES = ['합판', '석고', '석고보드', '몰딩', '걸레받이', '도배', '마루', '장판', '건축물현장정리'];
   
   // 복구면적 산출표에서 자재비로 동기화 (자재비DB 기반 자동 생성)
   // 핵심: 동일 Key(공종+공사명+자재항목)는 1행으로 merge, 전체 합산 후 마지막에 ceil 적용
@@ -1388,13 +1388,15 @@ export default function FieldEstimate() {
     // 2. 노무비에서 수동 추가한 행은 자재비에 연동하지 않음
     // 3. 목공사-반자틀, 철거공사는 자재비 연동 제외
     // 4. 자동 연동 대상 공사명(합판, 석고보드, 도배 등)은 syncMaterialFromRecoveryArea에서 처리하므로 제외
-    const AUTO_MATERIAL_SYNC_WORK_NAMES = ['합판', '석고', '석고보드', '몰딩', '걸레받이', '도배', '마루', '장판'];
+    const AUTO_MATERIAL_SYNC_WORK_NAMES = ['합판', '석고', '석고보드', '몰딩', '걸레받이', '도배', '마루', '장판', '건축물현장정리'];
     const shouldExcludeFromMaterialSync = (category: string, workName: string, isLinkedFromRecovery?: boolean): boolean => {
       // 노무비 수동 추가 행은 자재비 연동 안함 (복구면적 연동 행만 연동됨)
       if (!isLinkedFromRecovery) return true;
-      // 목공사-반자틀, 철거공사, 가설공사는 복구면적 연동 행이더라도 자재비 연동 제외
-      // (가설공사는 인건비 중심 공사로 자재비가 필요 없음)
-      if ((category === '목공사' && workName === '반자틀') || category === '철거공사' || category === '가설공사') return true;
+      // 목공사-반자틀, 철거공사는 복구면적 연동 행이더라도 자재비 연동 제외
+      // 가설공사-건축물현장정리는 자재비(보양재) 연동 대상이므로 제외하지 않음
+      if ((category === '목공사' && workName === '반자틀') || category === '철거공사') return true;
+      // 가설공사 중 건축물현장정리가 아닌 경우만 제외
+      if (category === '가설공사' && workName !== '건축물현장정리') return true;
       // 자동 연동 대상 공사명은 syncMaterialFromRecoveryArea에서 처리하므로 노무비→자재비 연동 제외
       // 이 공사명들은 복구면적에서 직접 자재비로 연동되어야 함 (노무비 경유 X)
       if (AUTO_MATERIAL_SYNC_WORK_NAMES.includes(workName)) {
