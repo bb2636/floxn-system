@@ -231,9 +231,10 @@ export default function FieldEstimate() {
     let hasDuplicates = false;
     
     for (const row of linkedRows) {
-      // 철거공사 행은 sourceAreaRowId를 포함하여 각 복구면적 행별로 개별 관리
+      // 철거공사/가설공사 행은 sourceAreaRowId를 포함하여 각 복구면적 행별로 개별 관리
       // 이렇게 하면 같은 공사명이라도 다른 복구면적 행에서 생성된 경우 중복으로 간주하지 않음
-      const key = row.category === '철거공사' && row.sourceAreaRowId
+      const needsSourceRowKey = (row.category === '철거공사' || row.category === '가설공사') && row.sourceAreaRowId;
+      const key = needsSourceRowKey
         ? `${row.sourceAreaRowId}|${row.category}|${row.workName}|${row.detailItem}`
         : `${row.category}|${row.workName}|${row.detailItem}`;
       keyCount[key] = (keyCount[key] || 0) + 1;
@@ -254,8 +255,9 @@ export default function FieldEstimate() {
     const deduplicatedRows = laborCostRows.filter(row => {
       if (!row.isLinkedFromRecovery) return true; // 수동 행은 유지
       
-      // 철거공사 행은 sourceAreaRowId 포함 키 사용
-      const key = row.category === '철거공사' && row.sourceAreaRowId
+      // 철거공사/가설공사 행은 sourceAreaRowId 포함 키 사용
+      const needsSourceRowKey = (row.category === '철거공사' || row.category === '가설공사') && row.sourceAreaRowId;
+      const key = needsSourceRowKey
         ? `${row.sourceAreaRowId}|${row.category}|${row.workName}|${row.detailItem}`
         : `${row.category}|${row.workName}|${row.detailItem}`;
       if (seen.has(key)) {
@@ -1083,8 +1085,20 @@ export default function FieldEstimate() {
       }
     });
     
-    // RECONCILE: 기존 자동 행 중 nextAutoKeys에 없는 행은 삭제 (stale rows 제거)
-    const deletedCount = existingAutoRows.filter(row => {
+    // RECONCILE: 자동 행 분류 및 병합
+    // 1. 비대상 공사명 행 (도장공사, 가설공사 등): 그대로 유지 (삭제 안 함)
+    // 2. 대상 공사명 행 (AUTO_SYNC_MATERIAL_WORK_NAMES): resultRowsMap 사용 (stale 행 자동 제거)
+    
+    // 비대상 공사명 자동 행: 그대로 유지
+    const nonTargetAutoRows = existingAutoRows.filter(row => 
+      !AUTO_SYNC_MATERIAL_WORK_NAMES.includes(row.공사명 || '')
+    );
+    
+    // 대상 공사명 중 stale 행 개수 (로깅용)
+    const targetAutoRows = existingAutoRows.filter(row => 
+      AUTO_SYNC_MATERIAL_WORK_NAMES.includes(row.공사명 || '')
+    );
+    const deletedCount = targetAutoRows.filter(row => {
       const norm = (v: any) => (v ?? "").toString().trim();
       const key = row.autoKey || `${norm(row.공종)}|${norm(row.공사명)}|${norm(row.자재항목) || "__NONE__"}`;
       return !nextAutoKeys.has(key);
@@ -1099,13 +1113,15 @@ export default function FieldEstimate() {
       before: materialRows.length,
       beforeAuto: existingAutoRows.length,
       beforeManual: manualRows.length,
-      afterAuto: resultRowsMap.size,
+      targetAuto: targetAutoRows.length,
+      nonTargetAuto: nonTargetAutoRows.length,
+      afterTargetAuto: resultRowsMap.size,
       deleted: deletedCount,
     });
     
-    // 결과 병합: 업데이트된 자동 행 + 수동 행
+    // 결과 병합: 대상 공사명 자동 행(resultRowsMap) + 비대상 공사명 자동 행(유지) + 수동 행
     const resultAutoRows = Array.from(resultRowsMap.values());
-    const allRows = [...resultAutoRows, ...manualRows];
+    const allRows = [...resultAutoRows, ...nonTargetAutoRows, ...manualRows];
     
     console.log("[RECONCILE RESULT]", {
       nextKeys: Array.from(nextAutoKeys),
@@ -1376,8 +1392,9 @@ export default function FieldEstimate() {
     const shouldExcludeFromMaterialSync = (category: string, workName: string, isLinkedFromRecovery?: boolean): boolean => {
       // 노무비 수동 추가 행은 자재비 연동 안함 (복구면적 연동 행만 연동됨)
       if (!isLinkedFromRecovery) return true;
-      // 목공사-반자틀, 철거공사는 복구면적 연동 행이더라도 자재비 연동 제외
-      if ((category === '목공사' && workName === '반자틀') || category === '철거공사') return true;
+      // 목공사-반자틀, 철거공사, 가설공사는 복구면적 연동 행이더라도 자재비 연동 제외
+      // (가설공사는 인건비 중심 공사로 자재비가 필요 없음)
+      if ((category === '목공사' && workName === '반자틀') || category === '철거공사' || category === '가설공사') return true;
       // 자동 연동 대상 공사명은 syncMaterialFromRecoveryArea에서 처리하므로 노무비→자재비 연동 제외
       // 이 공사명들은 복구면적에서 직접 자재비로 연동되어야 함 (노무비 경유 X)
       if (AUTO_MATERIAL_SYNC_WORK_NAMES.includes(workName)) {
