@@ -734,7 +734,8 @@ export default function FieldEstimate() {
         
         // 일위대가DB에서 공종+공사명으로 ALL matching 노임항목 조회
         const matchingCatalogItems = ilwidaegaCatalog.filter(
-          item => item.공종 === workType && item.공사명 === workName
+          item => normalizeForMatch(item.공종 || '') === normalizeForMatch(workType) && 
+                 normalizeForMatch(item.공사명 || '') === normalizeForMatch(workName)
         );
         
         // 복구면적 행에서 장소/위치 조합 추출 (모든 행의 데이터 반영)
@@ -811,7 +812,8 @@ export default function FieldEstimate() {
           // 일위대가DB 철거공사에서 매칭 아이템 찾기
           const { demolitionWorkName } = getDemolitionMapping(workType, workName);
           const demolitionCatalogItems = ilwidaegaCatalog.filter(
-            item => item.공종 === '철거공사' && item.공사명 === demolitionWorkName
+            item => normalizeForMatch(item.공종 || '') === normalizeForMatch('철거공사') && 
+                   normalizeForMatch(item.공사명 || '') === normalizeForMatch(demolitionWorkName)
           );
           
           // 대표 행 생성 (combined place/position 적용)
@@ -921,7 +923,7 @@ export default function FieldEstimate() {
     workMap.forEach((data) => {
       // 자재비DB에서 공사명으로 매칭되는 자재 찾기
       const matchingMaterials = materialByWorknameCatalog.filter(
-        item => item.공사명 === data.공사명
+        item => normalizeForMatch(item.공사명 || '') === normalizeForMatch(data.공사명 || '')
       );
       
       // 수량 계산 (단위별 산식 적용)
@@ -1171,7 +1173,7 @@ export default function FieldEstimate() {
         mapping[item.공종] = new Set();
       }
       // 목공사 공종의 공사명 "목공사"를 "걸레받이"로 변경
-      if (item.공종 === '목공사' && item.공사명 === '목공사') {
+      if (normalizeForMatch(item.공종 || '') === normalizeForMatch('목공사') && normalizeForMatch(item.공사명 || '') === normalizeForMatch('목공사')) {
         mapping[item.공종].add('걸레받이');
       } else {
         mapping[item.공종].add(item.공사명);
@@ -1507,7 +1509,8 @@ export default function FieldEstimate() {
         
         // 일위대가DB에서 공종+공사명으로 ALL matching 노임항목 조회
         const matchingCatalogItems = ilwidaegaCatalog.filter(
-          item => item.공종 === laborCategory && item.공사명 === workName
+          item => normalizeForMatch(item.공종 || '') === normalizeForMatch(laborCategory) && 
+                 normalizeForMatch(item.공사명 || '') === normalizeForMatch(workName)
         );
         
         console.log('[연동] 일위대가 조회:', { workType, workName, laborCategory, matchCount: matchingCatalogItems.length });
@@ -1578,7 +1581,8 @@ export default function FieldEstimate() {
           
           // 일위대가DB 철거공사에서 매칭 아이템 찾기 (공종=철거공사)
           const demolitionCatalogItems = ilwidaegaCatalog.filter(
-            item => item.공종 === '철거공사' && item.공사명 === demolitionWorkName
+            item => normalizeForMatch(item.공종 || '') === normalizeForMatch('철거공사') && 
+                   normalizeForMatch(item.공사명 || '') === normalizeForMatch(demolitionWorkName)
           );
           
           console.log('[연동] 철거공사 조회 (일위대가DB):', { demolitionWorkName, matchCount: demolitionCatalogItems.length });
