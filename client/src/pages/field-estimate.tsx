@@ -1694,10 +1694,13 @@ export default function FieldEstimate() {
         
         if (isDemolitionRow) {
           // 피해철거공사 행 업데이트 (장소, 위치, 피해면적 + 적용단가/수량/합계 재계산)
+          // standardWorkQuantity가 0이면 카탈로그 동기화 강제 (D/E 조회 필요)
           const needsUpdate = 
             laborRow.place !== linkedAreaRow.category ||
             laborRow.position !== linkedAreaRow.location ||
-            laborRow.damageArea !== damageAreaValue;
+            laborRow.damageArea !== damageAreaValue ||
+            !laborRow.standardWorkQuantity ||
+            !laborRow.standardPrice;
           
           if (needsUpdate) {
             // 적용단가, 수량, 합계 재계산 (C=복구면적, D=기준작업량, E=노임단가)
@@ -1746,11 +1749,14 @@ export default function FieldEstimate() {
           // 일반 행 업데이트 (장소, 위치, 피해면적 + 적용단가/수량/합계 재계산)
           const laborCategory = getLaborCategory(linkedAreaRow.workType, linkedAreaRow.workName);
           
+          // standardWorkQuantity가 0이면 카탈로그 동기화 강제 (D/E 조회 필요)
           const needsUpdate = 
             laborRow.place !== linkedAreaRow.category ||
             laborRow.position !== linkedAreaRow.location ||
             laborRow.category !== laborCategory ||
-            laborRow.damageArea !== damageAreaValue;
+            laborRow.damageArea !== damageAreaValue ||
+            !laborRow.standardWorkQuantity ||
+            !laborRow.standardPrice;
           
           if (needsUpdate) {
             // 적용단가, 수량, 합계 재계산 (C=복구면적, D=기준작업량, E=노임단가)
