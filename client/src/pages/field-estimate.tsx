@@ -218,7 +218,9 @@ export default function FieldEstimate() {
   const materialSyncInProgressRef = useRef<Set<string>>(new Set());
   
   // 노무비 행 중복 자동 제거 (React 배치 처리로 인한 중복 방지)
-  // 연동된 행(isLinkedFromRecovery=true)에서 같은 공종+공사명+노임항목 조합은 첫 번째만 유지
+  // 연동된 행(isLinkedFromRecovery=true)에서 같은 키 조합은 첫 번째만 유지
+  // 철거공사 행: sourceAreaRowId|공종|공사명|노임항목 (각 복구면적 행별 개별 관리)
+  // 일반 행: 공종|공사명|노임항목
   const lastDeduplicationRef = useRef<string>('');
   useEffect(() => {
     if (laborCostRows.length === 0) return;
@@ -229,7 +231,11 @@ export default function FieldEstimate() {
     let hasDuplicates = false;
     
     for (const row of linkedRows) {
-      const key = `${row.category}|${row.workName}|${row.detailItem}`;
+      // 철거공사 행은 sourceAreaRowId를 포함하여 각 복구면적 행별로 개별 관리
+      // 이렇게 하면 같은 공사명이라도 다른 복구면적 행에서 생성된 경우 중복으로 간주하지 않음
+      const key = row.category === '철거공사' && row.sourceAreaRowId
+        ? `${row.sourceAreaRowId}|${row.category}|${row.workName}|${row.detailItem}`
+        : `${row.category}|${row.workName}|${row.detailItem}`;
       keyCount[key] = (keyCount[key] || 0) + 1;
       if (keyCount[key] > 1) {
         hasDuplicates = true;
@@ -248,7 +254,10 @@ export default function FieldEstimate() {
     const deduplicatedRows = laborCostRows.filter(row => {
       if (!row.isLinkedFromRecovery) return true; // 수동 행은 유지
       
-      const key = `${row.category}|${row.workName}|${row.detailItem}`;
+      // 철거공사 행은 sourceAreaRowId 포함 키 사용
+      const key = row.category === '철거공사' && row.sourceAreaRowId
+        ? `${row.sourceAreaRowId}|${row.category}|${row.workName}|${row.detailItem}`
+        : `${row.category}|${row.workName}|${row.detailItem}`;
       if (seen.has(key)) {
         console.log('[노무비 중복 제거] 제거:', row.category, row.workName, row.detailItem);
         return false;
