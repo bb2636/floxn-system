@@ -1693,22 +1693,57 @@ export default function FieldEstimate() {
         const damageAreaValue = Number(linkedAreaRow.repairArea) || 0;
         
         if (isDemolitionRow) {
-          // 피해철거공사 행 업데이트 (장소, 위치, 피해면적만 동기화)
+          // 피해철거공사 행 업데이트 (장소, 위치, 피해면적 + 적용단가/수량/합계 재계산)
           const needsUpdate = 
             laborRow.place !== linkedAreaRow.category ||
             laborRow.position !== linkedAreaRow.location ||
             laborRow.damageArea !== damageAreaValue;
           
           if (needsUpdate) {
+            // 적용단가, 수량, 합계 재계산 (C=복구면적, D=기준작업량, E=노임단가)
+            const C = damageAreaValue;
+            let D = laborRow.standardWorkQuantity || 0;
+            let E = laborRow.standardPrice || 0;
+            
+            // D가 0이면 일위대가 카탈로그에서 조회
+            if (D === 0 && laborRow.category && laborRow.workName) {
+              const catalogItem = ilwidaegaCatalog.find(item => 
+                normalizeForMatch(item.공종) === normalizeForMatch(laborRow.category) &&
+                normalizeForMatch(item.공사명) === normalizeForMatch(laborRow.workName) &&
+                (!laborRow.detailItem || normalizeForMatch(item.노임항목) === normalizeForMatch(laborRow.detailItem))
+              );
+              if (catalogItem) {
+                D = catalogItem.기준작업량 || 0;
+                E = catalogItem.노임단가 || E;
+              }
+            }
+            
+            let newPricePerSqm = laborRow.pricePerSqm;
+            let newQuantity = laborRow.quantity;
+            let newAmount = laborRow.amount;
+            let newStandardWorkQuantity = D;
+            let newStandardPrice = E;
+            
+            if (D > 0 && E > 0 && C > 0) {
+              newPricePerSqm = calculateAppliedUnitPrice_FieldEstimate(C, D, E);
+              newQuantity = Math.round((C / D) * 100) / 100;
+              newAmount = calculateI_FieldEstimate(C, D, E);
+            }
+            
             return {
               ...laborRow,
               place: linkedAreaRow.category,
               position: linkedAreaRow.location,
               damageArea: damageAreaValue,
+              pricePerSqm: newPricePerSqm,
+              quantity: newQuantity,
+              amount: newAmount,
+              standardWorkQuantity: newStandardWorkQuantity,
+              standardPrice: newStandardPrice,
             };
           }
         } else {
-          // 일반 행 업데이트 (장소, 위치, 피해면적만 - 공사명 변경은 위에서 삭제 후 재생성)
+          // 일반 행 업데이트 (장소, 위치, 피해면적 + 적용단가/수량/합계 재계산)
           const laborCategory = getLaborCategory(linkedAreaRow.workType, linkedAreaRow.workName);
           
           const needsUpdate = 
@@ -1718,12 +1753,47 @@ export default function FieldEstimate() {
             laborRow.damageArea !== damageAreaValue;
           
           if (needsUpdate) {
+            // 적용단가, 수량, 합계 재계산 (C=복구면적, D=기준작업량, E=노임단가)
+            const C = damageAreaValue;
+            let D = laborRow.standardWorkQuantity || 0;
+            let E = laborRow.standardPrice || 0;
+            
+            // D가 0이면 일위대가 카탈로그에서 조회 (새로 계산된 laborCategory와 linkedAreaRow.workName 사용)
+            if (D === 0 && laborCategory && linkedAreaRow.workName) {
+              const catalogItem = ilwidaegaCatalog.find(item => 
+                normalizeForMatch(item.공종) === normalizeForMatch(laborCategory) &&
+                normalizeForMatch(item.공사명) === normalizeForMatch(linkedAreaRow.workName) &&
+                (!laborRow.detailItem || normalizeForMatch(item.노임항목) === normalizeForMatch(laborRow.detailItem))
+              );
+              if (catalogItem) {
+                D = catalogItem.기준작업량 || 0;
+                E = catalogItem.노임단가 || E;
+              }
+            }
+            
+            let newPricePerSqm = laborRow.pricePerSqm;
+            let newQuantity = laborRow.quantity;
+            let newAmount = laborRow.amount;
+            let newStandardWorkQuantity = D;
+            let newStandardPrice = E;
+            
+            if (D > 0 && E > 0 && C > 0) {
+              newPricePerSqm = calculateAppliedUnitPrice_FieldEstimate(C, D, E);
+              newQuantity = Math.round((C / D) * 100) / 100;
+              newAmount = calculateI_FieldEstimate(C, D, E);
+            }
+            
             return {
               ...laborRow,
               place: linkedAreaRow.category,
               position: linkedAreaRow.location,
               category: laborCategory,
               damageArea: damageAreaValue,
+              pricePerSqm: newPricePerSqm,
+              quantity: newQuantity,
+              amount: newAmount,
+              standardWorkQuantity: newStandardWorkQuantity,
+              standardPrice: newStandardPrice,
             };
           }
         }
