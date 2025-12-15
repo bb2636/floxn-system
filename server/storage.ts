@@ -4502,8 +4502,14 @@ export class DbStorage implements IStorage {
         }
 
         syncedCount++;
-      } catch (error) {
-        console.error(`Failed to sync estimate to case ${relatedCase.id}:`, error);
+      } catch (error: any) {
+        console.error(`[Estimate Sync Error] Failed to sync to case ${relatedCase.id}:`, {
+          message: error?.message || 'Unknown error',
+          code: error?.code || 'No error code',
+          stack: error?.stack?.split('\n').slice(0, 5).join('\n') || 'No stack',
+          sourceCaseId,
+          targetCaseId: relatedCase.id,
+        });
       }
     }
 

@@ -2380,15 +2380,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(result);
-    } catch (error) {
-      console.error("Create estimate error:", error);
+    } catch (error: any) {
+      // Enhanced error logging for debugging production issues
+      const errorDetails = {
+        message: error?.message || 'Unknown error',
+        stack: error?.stack || 'No stack trace',
+        code: error?.code || 'No error code',
+        caseId: req.params.caseId,
+        userId: req.session?.userId,
+        rowCount: req.body?.rows?.length || 0,
+        hasLaborData: !!req.body?.laborCostData,
+        hasMaterialData: !!req.body?.materialCostData,
+        timestamp: new Date().toISOString(),
+      };
+      console.error("[Estimate Save Error]", JSON.stringify(errorDetails, null, 2));
+      
       if (error instanceof z.ZodError) {
         return res.status(400).json({ 
           error: "견적 데이터 형식이 올바르지 않습니다",
-          details: error.errors 
+          details: error.errors,
+          errorCode: "VALIDATION_ERROR"
         });
       }
-      res.status(500).json({ error: "견적을 저장하는 중 오류가 발생했습니다" });
+      
+      // Return more detailed error for debugging (excluding sensitive stack in response)
+      res.status(500).json({ 
+        error: "견적을 저장하는 중 오류가 발생했습니다",
+        errorCode: error?.code || "UNKNOWN_ERROR",
+        errorMessage: error?.message || "Unknown error",
+        timestamp: new Date().toISOString()
+      });
     }
   });
 
