@@ -1108,18 +1108,20 @@ export default function FieldEstimate() {
       console.log(`[MATERIAL RECONCILE] ${deletedCount}개 stale 자동 행 삭제됨`);
     }
     
-    // 수동 행 중에서 새로 생성된 자동 행과 중복되는 경우에만 제외
-    // 공종+공사명+자재항목 조합이 동일한 자동 행이 있으면 제외 (자동 행이 우선)
-    // 이렇게 하면: 저장된 합판 행이 현재 복구면적에 없어도 유지됨
-    const norm = (v: any) => (v ?? "").toString().trim();
+    // 수동 행 필터링 로직:
+    // 1. AUTO_SYNC_MATERIAL_WORK_NAMES에 해당하는 공사명: 복구면적 연동 대상이므로 제거 (자동 행으로 대체)
+    // 2. 그 외 공사명: 수동 입력이므로 유지
+    // 이렇게 하면: 복구면적에서 항목 삭제 시 자재비도 함께 삭제됨
     const filteredManualRows = manualRows.filter(row => {
-      const key = `${norm(row.공종)}|${norm(row.공사명)}|${norm(row.자재항목) || "__NONE__"}`;
-      // 새로 생성된 자동 행과 중복되면 제외 (자동 행이 대체)
-      const hasDuplicate = nextAutoKeys.has(key);
-      if (hasDuplicate) {
-        console.log('[자재비 수동행 중복 제거]', row.공종, row.공사명, row.자재항목);
+      const workName = (row.공사명 || '').toString().trim();
+      const isAutoSyncTarget = AUTO_SYNC_MATERIAL_WORK_NAMES.includes(workName);
+      
+      if (isAutoSyncTarget) {
+        // 복구면적 연동 대상 공사명은 제거 (자동 행이 대체하거나, 복구면적에 없으면 삭제)
+        console.log('[자재비 수동행 제거 - 자동연동 대상]', row.공종, row.공사명, row.자재항목);
+        return false;
       }
-      return !hasDuplicate;
+      return true;
     });
     
     console.log("[MATERIAL RECONCILE]", {
