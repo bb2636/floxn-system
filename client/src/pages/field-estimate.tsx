@@ -1108,20 +1108,27 @@ export default function FieldEstimate() {
       console.log(`[MATERIAL RECONCILE] ${deletedCount}개 stale 자동 행 삭제됨`);
     }
     
+    // 수동 행 중에서도 대상 공사명 행은 제외 (자동 행으로 대체됨)
+    // 노무비→자재비 sync로 생성된 행이 있을 수 있으므로 중복 방지
+    const filteredManualRows = manualRows.filter(row => 
+      !AUTO_SYNC_MATERIAL_WORK_NAMES.includes(row.공사명 || '')
+    );
+    
     console.log("[MATERIAL RECONCILE]", {
       nextKeys: Array.from(nextAutoKeys).sort(),
       before: materialRows.length,
       beforeAuto: existingAutoRows.length,
       beforeManual: manualRows.length,
+      filteredManual: filteredManualRows.length,
       targetAuto: targetAutoRows.length,
       nonTargetAuto: nonTargetAutoRows.length,
       afterTargetAuto: resultRowsMap.size,
       deleted: deletedCount,
     });
     
-    // 결과 병합: 대상 공사명 자동 행(resultRowsMap) + 비대상 공사명 자동 행(유지) + 수동 행
+    // 결과 병합: 대상 공사명 자동 행(resultRowsMap) + 비대상 공사명 자동 행(유지) + 필터된 수동 행
     const resultAutoRows = Array.from(resultRowsMap.values());
-    const allRows = [...resultAutoRows, ...nonTargetAutoRows, ...manualRows];
+    const allRows = [...resultAutoRows, ...nonTargetAutoRows, ...filteredManualRows];
     
     console.log("[RECONCILE RESULT]", {
       nextKeys: Array.from(nextAutoKeys),
