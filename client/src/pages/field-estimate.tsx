@@ -2414,15 +2414,33 @@ export default function FieldEstimate() {
   const deleteRowById = (rowId: string) => {
     if (isReadOnly) return;
     
+    // 삭제할 행의 공사명 확인
+    const deletingRow = rows.find(r => r.id === rowId);
+    const deletingWorkName = deletingRow?.workName?.trim() || '';
+    
+    // 삭제 후 같은 공사명을 가진 다른 행이 있는지 확인
+    const remainingWithSameWork = rows.filter(r => r.id !== rowId && r.workName?.trim() === deletingWorkName);
+    const isLastOfWorkName = remainingWithSameWork.length === 0 && AUTO_SYNC_MATERIAL_WORK_NAMES.includes(deletingWorkName);
+    
     // 연동된 노무비 행 삭제 (원래 행 + 철거공사 행)
     setLaborCostRows(prev => prev.filter(row => 
-      row.sourceAreaRowId !== rowId && row.sourceAreaRowId !== `${rowId}::demolition`
+      row.sourceAreaRowId !== rowId && 
+      row.sourceAreaRowId !== `${rowId}::demolition` &&
+      row.sourceAreaRowId !== `demolition-${rowId}`
     ));
     
-    // 연동된 자재비 행 삭제 또는 업데이트 (sourceAreaRowId/sourceAreaRowIds 기준)
+    // 연동된 자재비 행 삭제 또는 업데이트
     setMaterialRows(prev => {
       return prev.map(row => {
-        // sourceAreaRowId가 직접 매칭되는 경우
+        const workName = (row.공사명 || '').toString().trim();
+        
+        // 1. 해당 공사명의 마지막 복구면적 행 삭제 시 → 자재비도 삭제
+        if (isLastOfWorkName && workName === deletingWorkName) {
+          console.log('[자재비 삭제] 복구면적 마지막 행 삭제로 인한 자재비 삭제:', workName);
+          return { ...row, _delete: true };
+        }
+        
+        // 2. sourceAreaRowId가 직접 매칭되는 경우
         if (row.sourceAreaRowId === rowId) {
           const updatedIds = (row.sourceAreaRowIds || []).filter(id => id !== rowId);
           if (updatedIds.length === 0) {
@@ -2430,7 +2448,7 @@ export default function FieldEstimate() {
           }
           return { ...row, sourceAreaRowId: updatedIds[0], sourceAreaRowIds: updatedIds };
         }
-        // sourceAreaRowIds 배열에 포함된 경우
+        // 3. sourceAreaRowIds 배열에 포함된 경우
         if (row.sourceAreaRowIds && row.sourceAreaRowIds.includes(rowId)) {
           const updatedIds = row.sourceAreaRowIds.filter(id => id !== rowId);
           if (updatedIds.length === 0) {
@@ -2445,7 +2463,7 @@ export default function FieldEstimate() {
     // 복구면적 행 삭제
     setRows(prev => prev.filter(row => row.id !== rowId));
     
-    console.log('[연동] 복구면적 행 삭제 → 노무비/자재비 연동 삭제:', rowId);
+    console.log('[연동] 복구면적 행 삭제 → 노무비/자재비 연동 삭제:', rowId, isLastOfWorkName ? `(마지막 ${deletingWorkName})` : '');
   };
 
   // 선택된 행 삭제 (체크박스 기반) + 연동된 노무비/자재비도 삭제
@@ -2455,18 +2473,46 @@ export default function FieldEstimate() {
     
     const rowIdsToDelete = Array.from(selectedRows);
     
+    // 삭제할 복구면적 행에서 공사명 목록 수집
+    const deletingWorkNames = new Set<string>();
+    rows.filter(r => selectedRows.has(r.id)).forEach(r => {
+      if (r.workName) deletingWorkNames.add(r.workName.trim());
+    });
+    
+    // 삭제 후 남아있는 복구면적 행의 공사명 목록
+    const remainingWorkNames = new Set<string>();
+    rows.filter(r => !selectedRows.has(r.id)).forEach(r => {
+      if (r.workName) remainingWorkNames.add(r.workName.trim());
+    });
+    
+    // 완전히 삭제되는 공사명 (삭제 후 남지 않는 공사명)
+    const fullyDeletedWorkNames = new Set<string>();
+    deletingWorkNames.forEach(wn => {
+      if (!remainingWorkNames.has(wn)) {
+        fullyDeletedWorkNames.add(wn);
+      }
+    });
+    
     // 연동된 노무비 행 삭제
     setLaborCostRows(prev => prev.filter(row => {
       if (!row.sourceAreaRowId) return true;
       // 원래 행 또는 철거공사 행인지 확인
-      const baseRowId = row.sourceAreaRowId.replace('::demolition', '');
+      const baseRowId = row.sourceAreaRowId.replace('::demolition', '').replace('demolition-', '');
       return !rowIdsToDelete.includes(baseRowId);
     }));
     
-    // 연동된 자재비 행 삭제 또는 업데이트 (sourceAreaRowId/sourceAreaRowIds 기준)
+    // 연동된 자재비 행 삭제 또는 업데이트
     setMaterialRows(prev => {
       return prev.map(row => {
-        // sourceAreaRowId가 삭제 대상에 포함된 경우
+        const workName = (row.공사명 || '').toString().trim();
+        
+        // 1. AUTO_SYNC_MATERIAL_WORK_NAMES에 해당하고, 해당 공사명이 완전히 삭제되는 경우 제거
+        if (AUTO_SYNC_MATERIAL_WORK_NAMES.includes(workName) && fullyDeletedWorkNames.has(workName)) {
+          console.log('[자재비 삭제] 복구면적 삭제로 인한 자재비 삭제:', workName);
+          return { ...row, _delete: true };
+        }
+        
+        // 2. sourceAreaRowId가 삭제 대상에 포함된 경우
         if (row.sourceAreaRowId && rowIdsToDelete.includes(row.sourceAreaRowId)) {
           const updatedIds = (row.sourceAreaRowIds || []).filter(id => !rowIdsToDelete.includes(id));
           if (updatedIds.length === 0) {
@@ -2474,7 +2520,7 @@ export default function FieldEstimate() {
           }
           return { ...row, sourceAreaRowId: updatedIds[0], sourceAreaRowIds: updatedIds };
         }
-        // sourceAreaRowIds 배열에 삭제 대상이 포함된 경우
+        // 3. sourceAreaRowIds 배열에 삭제 대상이 포함된 경우
         if (row.sourceAreaRowIds && row.sourceAreaRowIds.some(id => rowIdsToDelete.includes(id))) {
           const updatedIds = row.sourceAreaRowIds.filter(id => !rowIdsToDelete.includes(id));
           if (updatedIds.length === 0) {
@@ -2490,7 +2536,7 @@ export default function FieldEstimate() {
     setRows(prev => prev.filter(row => !selectedRows.has(row.id)));
     setSelectedRows(new Set());
     
-    console.log('[연동] 복구면적 행 일괄 삭제 → 노무비/자재비 연동 삭제:', rowIdsToDelete);
+    console.log('[연동] 복구면적 행 일괄 삭제 → 노무비/자재비 연동 삭제:', rowIdsToDelete, '완전삭제 공사명:', Array.from(fullyDeletedWorkNames));
   };
 
   // 드래그 앤 드롭 핸들러 (복구면적 산출표)
