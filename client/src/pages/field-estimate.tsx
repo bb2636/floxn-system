@@ -6267,6 +6267,20 @@ export default function FieldEstimate() {
               </span>
               <div style={{ display: "flex", gap: "8px" }}>
                 <Button
+                  onClick={syncMaterialFromRecoveryArea}
+                  variant="outline"
+                  size="sm"
+                  disabled={rows.length === 0 || isReadOnly}
+                  style={{
+                    borderColor: rows.length === 0 ? "#d1d5db" : "#10B981",
+                    color: rows.length === 0 ? "#9ca3af" : "#10B981",
+                  }}
+                  data-testid="button-sync-material-from-recovery"
+                >
+                  <Copy className="w-4 h-4 mr-1" />
+                  복구면적 가져오기
+                </Button>
+                <Button
                   onClick={addMaterialRow}
                   variant="outline"
                   size="sm"
