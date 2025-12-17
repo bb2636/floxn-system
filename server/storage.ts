@@ -1,4 +1,61 @@
-import { type User, type InsertUser, users, type Case, type CaseWithLatestProgress, type InsertCase, cases, type ProgressUpdate, type InsertProgressUpdate, progressUpdates, type RolePermission, type InsertRolePermission, rolePermissions, type ExcelData, type InsertExcelData, excelData, type Inquiry, type InsertInquiry, type UpdateInquiry, inquiries, type Drawing, type InsertDrawing, drawings, type SharedDrawing, type InsertSharedDrawing, sharedDrawings, type FieldSurveyData, type InsertFieldSurveyData, fieldSurveyData, type CaseDocument, type InsertCaseDocument, caseDocuments, type MasterData, type InsertMasterData, masterData, type Estimate, type InsertEstimate, estimates, type EstimateRow, type InsertEstimateRow, estimateRows, type LaborCost, type InsertLaborCost, laborCosts, type Material, type InsertMaterial, materials, type UserFavorite, type InsertUserFavorite, userFavorites, type Notice, type InsertNotice, notices, type CaseChangeLog, type InsertCaseChangeLog, caseChangeLogs } from "@shared/schema";
+import {
+  type User,
+  type InsertUser,
+  users,
+  type Case,
+  type CaseWithLatestProgress,
+  type InsertCase,
+  cases,
+  type ProgressUpdate,
+  type InsertProgressUpdate,
+  progressUpdates,
+  type RolePermission,
+  type InsertRolePermission,
+  rolePermissions,
+  type ExcelData,
+  type InsertExcelData,
+  excelData,
+  type Inquiry,
+  type InsertInquiry,
+  type UpdateInquiry,
+  inquiries,
+  type Drawing,
+  type InsertDrawing,
+  drawings,
+  type SharedDrawing,
+  type InsertSharedDrawing,
+  sharedDrawings,
+  type FieldSurveyData,
+  type InsertFieldSurveyData,
+  fieldSurveyData,
+  type CaseDocument,
+  type InsertCaseDocument,
+  caseDocuments,
+  type MasterData,
+  type InsertMasterData,
+  masterData,
+  type Estimate,
+  type InsertEstimate,
+  estimates,
+  type EstimateRow,
+  type InsertEstimateRow,
+  estimateRows,
+  type LaborCost,
+  type InsertLaborCost,
+  laborCosts,
+  type Material,
+  type InsertMaterial,
+  materials,
+  type UserFavorite,
+  type InsertUserFavorite,
+  userFavorites,
+  type Notice,
+  type InsertNotice,
+  notices,
+  type CaseChangeLog,
+  type InsertCaseChangeLog,
+  caseChangeLogs,
+} from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -8,24 +65,28 @@ const SALT_ROUNDS = 10;
 
 // Get current date in KST (Korea Standard Time, UTC+9)
 function getKSTDate(): string {
-  const kstDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
+  const kstDate = new Date(
+    new Date().toLocaleString("en-US", { timeZone: "Asia/Seoul" }),
+  );
   const year = kstDate.getFullYear();
-  const month = String(kstDate.getMonth() + 1).padStart(2, '0');
-  const day = String(kstDate.getDate()).padStart(2, '0');
+  const month = String(kstDate.getMonth() + 1).padStart(2, "0");
+  const day = String(kstDate.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
 function getKSTTimestamp(): string {
   const now = new Date();
-  const kstDate = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-  
+  const kstDate = new Date(
+    now.toLocaleString("en-US", { timeZone: "Asia/Seoul" }),
+  );
+
   const year = kstDate.getFullYear();
-  const month = String(kstDate.getMonth() + 1).padStart(2, '0');
-  const day = String(kstDate.getDate()).padStart(2, '0');
-  const hours = String(kstDate.getHours()).padStart(2, '0');
-  const minutes = String(kstDate.getMinutes()).padStart(2, '0');
-  const seconds = String(kstDate.getSeconds()).padStart(2, '0');
-  
+  const month = String(kstDate.getMonth() + 1).padStart(2, "0");
+  const day = String(kstDate.getDate()).padStart(2, "0");
+  const hours = String(kstDate.getHours()).padStart(2, "0");
+  const minutes = String(kstDate.getMinutes()).padStart(2, "0");
+  const seconds = String(kstDate.getSeconds()).padStart(2, "0");
+
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+09:00`;
 }
 
@@ -59,20 +120,48 @@ export interface IStorage {
   verifyPassword(username: string, password: string): Promise<User | null>;
   updatePassword(username: string, newPassword: string): Promise<User | null>;
   deleteAccount(username: string): Promise<User | null>;
-  getNextCaseSequence(date: string, insuranceAccidentNo?: string): Promise<{ prefix: string; suffix: number }>;
-  createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case>;
+  getNextCaseSequence(
+    date: string,
+    insuranceAccidentNo?: string,
+  ): Promise<{ prefix: string; suffix: number }>;
+  createCase(
+    caseData: Omit<InsertCase, "caseNumber"> & {
+      caseNumber: string;
+      createdBy: string;
+    },
+  ): Promise<Case>;
   getCaseById(caseId: string): Promise<Case | null>;
   getAssignedCasesForUser(user: User, search?: string): Promise<Case[]>;
   getAllCases(user?: User): Promise<CaseWithLatestProgress[]>;
-  updateCase(caseId: string, caseData: Partial<InsertCase>): Promise<Case | null>;
+  updateCase(
+    caseId: string,
+    caseData: Partial<InsertCase>,
+  ): Promise<Case | null>;
   deleteCase(caseId: string): Promise<void>;
   updateCaseStatus(caseId: string, status: string): Promise<Case | null>;
-  updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null>;
-  confirmCaseSpecialNotes(caseId: string, confirmedBy: string): Promise<Case | null>;
-  updateCaseAdditionalNotes(caseId: string, additionalNotes: string | null): Promise<Case | null>;
-  updateCaseEstimateAmount(caseId: string, estimateAmount: string): Promise<Case | null>;
+  updateCaseSpecialNotes(
+    caseId: string,
+    specialNotes: string | null,
+  ): Promise<Case | null>;
+  confirmCaseSpecialNotes(
+    caseId: string,
+    confirmedBy: string,
+  ): Promise<Case | null>;
+  updateCaseAdditionalNotes(
+    caseId: string,
+    additionalNotes: string | null,
+  ): Promise<Case | null>;
+  updateCaseEstimateAmount(
+    caseId: string,
+    estimateAmount: string,
+  ): Promise<Case | null>;
   submitFieldSurvey(caseId: string): Promise<Case | null>;
-  reviewCase(caseId: string, decision: "승인" | "비승인", reviewComment: string | null, reviewedBy: string): Promise<Case | null>;
+  reviewCase(
+    caseId: string,
+    decision: "승인" | "비승인",
+    reviewComment: string | null,
+    reviewedBy: string,
+  ): Promise<Case | null>;
   getPartnerStats(): Promise<PartnerStats[]>;
   createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate>;
   getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]>;
@@ -83,7 +172,11 @@ export interface IStorage {
   listExcelData(type: string): Promise<ExcelData[]>;
   getExcelDataById(id: string): Promise<ExcelData | null>;
   saveExcelData(data: InsertExcelData): Promise<ExcelData>;
-  updateExcelData(id: string, headers: string[], data: any[][]): Promise<ExcelData | null>;
+  updateExcelData(
+    id: string,
+    headers: string[],
+    data: any[][],
+  ): Promise<ExcelData | null>;
   deleteExcelDataById(id: string): Promise<boolean>;
   // Legacy methods (deprecated, for backward compatibility during migration)
   getExcelData(type: string): Promise<ExcelData | null>;
@@ -91,28 +184,49 @@ export interface IStorage {
   createInquiry(data: InsertInquiry): Promise<Inquiry>;
   getAllInquiries(): Promise<Inquiry[]>;
   getInquiriesByUserId(userId: string): Promise<Inquiry[]>;
-  updateInquiry(id: string, data: Partial<UpdateInquiry>): Promise<Inquiry | null>;
+  updateInquiry(
+    id: string,
+    data: Partial<UpdateInquiry>,
+  ): Promise<Inquiry | null>;
   // Field Survey Data methods (shared by case group)
   getFieldSurveyData(caseGroupId: string): Promise<FieldSurveyData | null>;
   saveFieldSurveyData(data: InsertFieldSurveyData): Promise<FieldSurveyData>;
-  updateFieldSurveyData(caseGroupId: string, data: Partial<InsertFieldSurveyData>): Promise<FieldSurveyData | null>;
+  updateFieldSurveyData(
+    caseGroupId: string,
+    data: Partial<InsertFieldSurveyData>,
+  ): Promise<FieldSurveyData | null>;
   // Shared Drawing methods (shared by case group)
   getSharedDrawing(caseGroupId: string): Promise<SharedDrawing | null>;
   saveSharedDrawing(data: InsertSharedDrawing): Promise<SharedDrawing>;
-  updateSharedDrawing(caseGroupId: string, data: Partial<InsertSharedDrawing>): Promise<SharedDrawing | null>;
+  updateSharedDrawing(
+    caseGroupId: string,
+    data: Partial<InsertSharedDrawing>,
+  ): Promise<SharedDrawing | null>;
   // Individual Drawing methods (case-specific leak markers)
   saveDrawing(data: InsertDrawing): Promise<Drawing>;
   getDrawing(id: string): Promise<Drawing | null>;
   getDrawingByCaseId(caseId: string): Promise<Drawing | null>;
-  updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null>;
+  updateDrawing(
+    id: string,
+    data: Partial<InsertDrawing>,
+  ): Promise<Drawing | null>;
   // Case group methods
   getCasesByGroupId(caseGroupId: string): Promise<Case[]>;
   // Same accident number methods (for field survey sync)
-  getCasesByAccidentNo(accidentNo: string, excludeCaseId?: string): Promise<Case[]>;
-  syncFieldSurveyToRelatedCases(sourceCaseId: string, fieldData: Partial<InsertCase>): Promise<number>;
+  getCasesByAccidentNo(
+    accidentNo: string,
+    excludeCaseId?: string,
+  ): Promise<Case[]>;
+  syncFieldSurveyToRelatedCases(
+    sourceCaseId: string,
+    fieldData: Partial<InsertCase>,
+  ): Promise<number>;
   // Real-time sync methods for all field survey data (drawing, documents, estimates)
   syncDrawingToRelatedCases(sourceCaseId: string): Promise<number>;
-  syncDocumentsToRelatedCases(sourceCaseId: string, newDocument: CaseDocument): Promise<number>;
+  syncDocumentsToRelatedCases(
+    sourceCaseId: string,
+    newDocument: CaseDocument,
+  ): Promise<number>;
   syncEstimateToRelatedCases(sourceCaseId: string): Promise<number>;
   // Case number helpers
   getPreventionCaseByPrefix(prefix: string): Promise<Case | null>;
@@ -127,19 +241,44 @@ export interface IStorage {
   getDocument(id: string): Promise<CaseDocument | null>;
   getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]>;
   deleteDocument(id: string): Promise<void>;
-  updateDocumentCategory(id: string, category: string): Promise<CaseDocument | null>;
+  updateDocumentCategory(
+    id: string,
+    category: string,
+  ): Promise<CaseDocument | null>;
   // Estimate methods
-  createEstimateVersion(caseId: string, userId: string, rows: Omit<InsertEstimateRow, 'estimateId'>[], laborCostData?: any | null, materialCostData?: any | null, vatIncluded?: boolean): Promise<{ estimate: Estimate; rows: EstimateRow[] }>;
-  getLatestEstimate(caseId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
-  getEstimateVersion(caseId: string, version: number): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
+  createEstimateVersion(
+    caseId: string,
+    userId: string,
+    rows: Omit<InsertEstimateRow, "estimateId">[],
+    laborCostData?: any | null,
+    materialCostData?: any | null,
+    vatIncluded?: boolean,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] }>;
+  getLatestEstimate(
+    caseId: string,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
+  getEstimateVersion(
+    caseId: string,
+    version: number,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
   listEstimateVersions(caseId: string): Promise<Estimate[]>;
   // Master data methods
-  getMasterData(category?: string, includeInactive?: boolean): Promise<MasterData[]>;
+  getMasterData(
+    category?: string,
+    includeInactive?: boolean,
+  ): Promise<MasterData[]>;
   createMasterData(data: InsertMasterData): Promise<MasterData>;
   deleteMasterData(id: string): Promise<void>;
-  updateMasterData(id: string, data: Partial<InsertMasterData>): Promise<MasterData | null>;
+  updateMasterData(
+    id: string,
+    data: Partial<InsertMasterData>,
+  ): Promise<MasterData | null>;
   // Labor cost methods
-  getLaborCosts(filters?: { category?: string; workName?: string; detailWork?: string }): Promise<LaborCost[]>;
+  getLaborCosts(filters?: {
+    category?: string;
+    workName?: string;
+    detailWork?: string;
+  }): Promise<LaborCost[]>;
   getLaborCostOptions(): Promise<{
     categories: string[];
     workNamesByCategory: Record<string, string[]>;
@@ -152,13 +291,15 @@ export interface IStorage {
   createMaterial(data: InsertMaterial): Promise<Material>;
   deleteMaterial(id: string): Promise<void>;
   // Excel-based materials catalog
-  getMaterialsCatalog(): Promise<Array<{
-    workType: string; // 공종명
-    materialName: string;
-    specification: string;
-    unit: string;
-    standardPrice: number | string; // can be "입력" or number
-  }>>;
+  getMaterialsCatalog(): Promise<
+    Array<{
+      workType: string; // 공종명
+      materialName: string;
+      specification: string;
+      unit: string;
+      standardPrice: number | string; // can be "입력" or number
+    }>
+  >;
   // User favorites methods
   getUserFavorites(userId: string): Promise<UserFavorite[]>;
   addFavorite(data: InsertUserFavorite): Promise<UserFavorite>;
@@ -166,20 +307,52 @@ export interface IStorage {
   // Notice methods
   getAllNotices(): Promise<Notice[]>;
   createNotice(data: InsertNotice): Promise<Notice>;
-  updateNotice(id: string, data: { title: string; content: string }): Promise<Notice | null>;
+  updateNotice(
+    id: string,
+    data: { title: string; content: string },
+  ): Promise<Notice | null>;
   deleteNotice(id: string): Promise<void>;
   // Asset cloning methods (for syncing from related cases)
-  getRelatedCaseWithDrawing(caseId: string): Promise<{ caseId: string; caseNumber: string } | null>;
-  getAllRelatedCasesWithDrawings(caseId: string): Promise<Array<{ caseId: string; caseNumber: string }>>;
-  getRelatedCaseWithEstimate(caseId: string): Promise<{ caseId: string; caseNumber: string } | null>;
-  getRelatedCaseWithDocuments(caseId: string): Promise<{ caseId: string; caseNumber: string; documentCount: number } | null>;
-  cloneDrawingFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<Drawing | null>;
-  cloneEstimateFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
-  cloneDocumentsFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<CaseDocument[]>;
+  getRelatedCaseWithDrawing(
+    caseId: string,
+  ): Promise<{ caseId: string; caseNumber: string } | null>;
+  getAllRelatedCasesWithDrawings(
+    caseId: string,
+  ): Promise<Array<{ caseId: string; caseNumber: string }>>;
+  getRelatedCaseWithEstimate(
+    caseId: string,
+  ): Promise<{ caseId: string; caseNumber: string } | null>;
+  getRelatedCaseWithDocuments(
+    caseId: string,
+  ): Promise<{
+    caseId: string;
+    caseNumber: string;
+    documentCount: number;
+  } | null>;
+  cloneDrawingFromCase(
+    sourceCaseId: string,
+    targetCaseId: string,
+    userId: string,
+  ): Promise<Drawing | null>;
+  cloneEstimateFromCase(
+    sourceCaseId: string,
+    targetCaseId: string,
+    userId: string,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null>;
+  cloneDocumentsFromCase(
+    sourceCaseId: string,
+    targetCaseId: string,
+    userId: string,
+  ): Promise<CaseDocument[]>;
   // Case change log methods
   createCaseChangeLog(data: InsertCaseChangeLog): Promise<CaseChangeLog>;
   getCaseChangeLogs(caseId: string): Promise<CaseChangeLog[]>;
-  getAllCaseChangeLogs(filters?: { caseNumber?: string; changedBy?: string; dateFrom?: string; dateTo?: string }): Promise<(CaseChangeLog & { caseNumber: string })[]>;
+  getAllCaseChangeLogs(filters?: {
+    caseNumber?: string;
+    changedBy?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<(CaseChangeLog & { caseNumber: string })[]>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -210,7 +383,7 @@ export class MemStorage implements IStorage {
   private async seedTestUser() {
     const hashedPassword = await bcrypt.hash("1234", SALT_ROUNDS);
     const currentDate = getKSTDate();
-    
+
     const testUsers: User[] = [
       // ===== 관리자 5명 =====
       {
@@ -437,7 +610,7 @@ export class MemStorage implements IStorage {
         department: "현장조사팀",
         position: "팀장",
         email: "partner01@aero.com",
-        phone: "010-3001-3001",
+        phone: "010-9038-8918",
         office: "02-3001-3001",
         address: "서울 서초구",
         bankName: "국민은행",
@@ -756,18 +929,18 @@ export class MemStorage implements IStorage {
   private async seedTestCases() {
     const currentDate = getKSTDate();
     const usersArray = Array.from(this.users.values());
-    
+
     // Get specific users for case assignment
-    const adminUser = usersArray.find(u => u.username === "admin01");
-    const insuranceUser1 = usersArray.find(u => u.username === "insure01");
-    const insuranceUser2 = usersArray.find(u => u.username === "insure02");
-    const partner1 = usersArray.find(u => u.username === "partner01");
-    const partner2 = usersArray.find(u => u.username === "partner02");
-    const assessor1 = usersArray.find(u => u.username === "assessor01");
-    const assessor2 = usersArray.find(u => u.username === "assessor02");
-    
+    const adminUser = usersArray.find((u) => u.username === "admin01");
+    const insuranceUser1 = usersArray.find((u) => u.username === "insure01");
+    const insuranceUser2 = usersArray.find((u) => u.username === "insure02");
+    const partner1 = usersArray.find((u) => u.username === "partner01");
+    const partner2 = usersArray.find((u) => u.username === "partner02");
+    const assessor1 = usersArray.find((u) => u.username === "assessor01");
+    const assessor2 = usersArray.find((u) => u.username === "assessor02");
+
     if (!adminUser) return;
-    
+
     const testCases: Case[] = [
       {
         id: randomUUID(),
@@ -999,7 +1172,10 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  async verifyPassword(username: string, password: string): Promise<User | null> {
+  async verifyPassword(
+    username: string,
+    password: string,
+  ): Promise<User | null> {
     const user = await this.getUserByUsername(username);
     if (!user) {
       return null;
@@ -1009,7 +1185,10 @@ export class MemStorage implements IStorage {
     return isValid ? user : null;
   }
 
-  async updatePassword(username: string, newPassword: string): Promise<User | null> {
+  async updatePassword(
+    username: string,
+    newPassword: string,
+  ): Promise<User | null> {
     const user = await this.getUserByUsername(username);
     if (!user) {
       return null;
@@ -1045,22 +1224,23 @@ export class MemStorage implements IStorage {
 
   async getAssignedCasesForUser(user: User, search?: string): Promise<Case[]> {
     const allCases = Array.from(this.cases.values());
-    
+
     // Filter by role
     let filtered = allCases;
     switch (user.role) {
       case "심사사":
-        filtered = allCases.filter(c => c.assessorId === user.id);
+        filtered = allCases.filter((c) => c.assessorId === user.id);
         break;
       case "협력사":
         // 협력사는 "접수완료" 상태 이상의 건만 볼 수 있음 (배당대기 상태는 제외)
-        filtered = allCases.filter(c => 
-          c.assignedPartner === user.company && 
-          c.status !== "배당대기"
+        filtered = allCases.filter(
+          (c) => c.assignedPartner === user.company && c.status !== "배당대기",
         );
         break;
       case "조사사":
-        filtered = allCases.filter(c => c.investigatorTeamName === user.company);
+        filtered = allCases.filter(
+          (c) => c.investigatorTeamName === user.company,
+        );
         break;
       case "관리자":
         // Admins see all
@@ -1072,68 +1252,72 @@ export class MemStorage implements IStorage {
     // Apply search if provided
     if (search && search.trim()) {
       const searchLower = search.trim().toLowerCase();
-      filtered = filtered.filter(c =>
-        c.caseNumber?.toLowerCase().includes(searchLower) ||
-        c.insuredName?.toLowerCase().includes(searchLower) ||
-        c.insuranceCompany?.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(
+        (c) =>
+          c.caseNumber?.toLowerCase().includes(searchLower) ||
+          c.insuredName?.toLowerCase().includes(searchLower) ||
+          c.insuranceCompany?.toLowerCase().includes(searchLower),
       );
     }
 
     return filtered;
   }
 
-  async getNextCaseSequence(date: string, insuranceAccidentNo?: string): Promise<{ prefix: string; suffix: number }> {
+  async getNextCaseSequence(
+    date: string,
+    insuranceAccidentNo?: string,
+  ): Promise<{ prefix: string; suffix: number }> {
     // Step 1: Check if there are existing cases with the same insurance accident number
     if (insuranceAccidentNo) {
       const existingCases = await db
         .select({ caseNumber: cases.caseNumber })
         .from(cases)
         .where(eq(cases.insuranceAccidentNo, insuranceAccidentNo));
-      
+
       if (existingCases.length > 0) {
         // Extract prefix from first existing case (yyMMddxxx part)
         const firstCaseNumber = existingCases[0].caseNumber;
         if (firstCaseNumber) {
-          const parts = firstCaseNumber.split('-');
+          const parts = firstCaseNumber.split("-");
           if (parts.length >= 2) {
             const prefix = parts[0]; // "251124001"
-            
+
             // Find max suffix for this prefix
             let maxSuffix = -1;
             for (const c of existingCases) {
-              if (c.caseNumber && c.caseNumber.startsWith(prefix + '-')) {
-                const suffixStr = c.caseNumber.split('-')[1];
+              if (c.caseNumber && c.caseNumber.startsWith(prefix + "-")) {
+                const suffixStr = c.caseNumber.split("-")[1];
                 const suffix = parseInt(suffixStr, 10);
                 if (!isNaN(suffix) && suffix > maxSuffix) {
                   maxSuffix = suffix;
                 }
               }
             }
-            
+
             return { prefix, suffix: maxSuffix + 1 };
           }
         }
       }
     }
-    
+
     // Step 2: No existing cases with same accident number - generate new prefix
     // Convert YYYY-MM-DD to yyMMdd (6 digits)
-    const dateParts = date.split('-');
+    const dateParts = date.split("-");
     const year = dateParts[0].substring(2); // YY (last 2 digits)
     const month = dateParts[1]; // MM
     const day = dateParts[2]; // dd
     const datePrefix = year + month + day; // yyMMdd
-    
+
     // Query database for cases with case numbers starting with datePrefix
     const allCases = await db
       .select({ caseNumber: cases.caseNumber })
       .from(cases)
-      .where(sql`${cases.caseNumber} LIKE ${datePrefix + '%'}`);
-    
+      .where(sql`${cases.caseNumber} LIKE ${datePrefix + "%"}`);
+
     let maxSequence = 0;
     for (const c of allCases) {
       if (c.caseNumber && c.caseNumber.startsWith(datePrefix)) {
-        const parts = c.caseNumber.split('-');
+        const parts = c.caseNumber.split("-");
         if (parts.length >= 1) {
           const sequencePart = parts[0].substring(6); // Extract XXX from yyMMddxxx
           const seq = parseInt(sequencePart, 10);
@@ -1143,22 +1327,27 @@ export class MemStorage implements IStorage {
         }
       }
     }
-    
+
     const nextSequence = maxSequence + 1;
-    const seqStr = String(nextSequence).padStart(3, '0');
+    const seqStr = String(nextSequence).padStart(3, "0");
     const prefix = `${datePrefix}${seqStr}`; // e.g., "251124001"
-    
+
     return { prefix, suffix: 0 };
   }
 
-  async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
+  async createCase(
+    caseData: Omit<InsertCase, "caseNumber"> & {
+      caseNumber: string;
+      createdBy: string;
+    },
+  ): Promise<Case> {
     const currentDate = getKSTDate();
     const status = caseData.status || "작성중";
-    
+
     // 상태에 따라 자동으로 날짜 기록 (케이스 생성 시)
     let autoReceptionDate = caseData.receptionDate || null;
     let autoAssignmentDate = caseData.assignmentDate || null;
-    
+
     if (status === "접수완료") {
       // 접수완료 상태로 생성 시 접수일과 배당일 자동 기록 (기존 값 없을 때만)
       if (!autoReceptionDate) {
@@ -1168,84 +1357,88 @@ export class MemStorage implements IStorage {
         autoAssignmentDate = currentDate;
       }
     }
-    
+
     // Insert into database and get the created case
-    const [newCase] = await db.insert(cases).values({
-      caseNumber: caseData.caseNumber,
-      status: status,
-      accidentDate: caseData.accidentDate || null,
-      insuranceCompany: caseData.insuranceCompany || null,
-      insurancePolicyNo: caseData.insurancePolicyNo || null,
-      insuranceAccidentNo: caseData.insuranceAccidentNo || null,
-      clientResidence: caseData.clientResidence || null,
-      clientDepartment: caseData.clientDepartment || null,
-      clientName: caseData.clientName || null,
-      clientContact: caseData.clientContact || null,
-      assessorId: caseData.assessorId || null,
-      assessorDepartment: caseData.assessorDepartment || null,
-      assessorTeam: caseData.assessorTeam || null,
-      assessorContact: caseData.assessorContact || null,
-      investigatorTeam: caseData.investigatorTeam || null,
-      investigatorDepartment: caseData.investigatorDepartment || null,
-      investigatorTeamName: caseData.investigatorTeamName || null,
-      investigatorContact: caseData.investigatorContact || null,
-      policyHolderName: caseData.policyHolderName || null,
-      policyHolderIdNumber: caseData.policyHolderIdNumber || null,
-      policyHolderAddress: caseData.policyHolderAddress || null,
-      insuredName: caseData.insuredName || null,
-      insuredIdNumber: caseData.insuredIdNumber || null,
-      insuredContact: caseData.insuredContact || null,
-      insuredAddress: caseData.insuredAddress || null,
-      insuredAddressDetail: caseData.insuredAddressDetail || null,
-      sameAsPolicyHolder: caseData.sameAsPolicyHolder != null 
-        ? String(caseData.sameAsPolicyHolder) 
-        : null,
-      victimName: caseData.victimName || null,
-      victimContact: caseData.victimContact || null,
-      victimAddress: caseData.victimAddress || null,
-      additionalVictims: caseData.additionalVictims || null,
-      clientPhone: caseData.clientPhone || null,
-      clientAddress: caseData.clientAddress || null,
-      accidentLocation: caseData.accidentLocation || null,
-      accidentDescription: caseData.accidentDescription || null,
-      accidentType: caseData.accidentType || null,
-      accidentCause: caseData.accidentCause || null,
-      recoveryType: caseData.recoveryType || null,
-      restorationMethod: caseData.restorationMethod || null,
-      otherVendorEstimate: caseData.otherVendorEstimate || null,
-      damagePreventionCost: caseData.damagePreventionCost || null,
-      victimIncidentAssistance: caseData.victimIncidentAssistance || null,
-      damageItems: caseData.damageItems || null,
-      assignedPartner: caseData.assignedPartner || null,
-      assignedPartnerManager: caseData.assignedPartnerManager || null,
-      assignedPartnerContact: caseData.assignedPartnerContact || null,
-      urgency: caseData.urgency || null,
-      specialRequests: caseData.specialRequests || null,
-      progressStatus: caseData.progressStatus || null,
-      specialNotes: caseData.specialNotes || null,
-      receptionDate: autoReceptionDate,
-      assignmentDate: autoAssignmentDate,
-      siteVisitDate: caseData.siteVisitDate || null,
-      fieldSurveyDate: caseData.fieldSurveyDate || null,
-      firstInspectionDate: caseData.firstInspectionDate || null,
-      approvalCompletionDate: caseData.approvalCompletionDate || null,
-      totalWorkDate: caseData.totalWorkDate || null,
-      contractorReportDate: caseData.contractorReportDate || null,
-      contractorRepairDate: caseData.contractorRepairDate || null,
-      completionDate: caseData.completionDate || null,
-      assignedTo: caseData.assignedTo || null,
-      createdBy: caseData.createdBy,
-      createdAt: currentDate,
-      updatedAt: currentDate,
-    }).returning();
-    
+    const [newCase] = await db
+      .insert(cases)
+      .values({
+        caseNumber: caseData.caseNumber,
+        status: status,
+        accidentDate: caseData.accidentDate || null,
+        insuranceCompany: caseData.insuranceCompany || null,
+        insurancePolicyNo: caseData.insurancePolicyNo || null,
+        insuranceAccidentNo: caseData.insuranceAccidentNo || null,
+        clientResidence: caseData.clientResidence || null,
+        clientDepartment: caseData.clientDepartment || null,
+        clientName: caseData.clientName || null,
+        clientContact: caseData.clientContact || null,
+        assessorId: caseData.assessorId || null,
+        assessorDepartment: caseData.assessorDepartment || null,
+        assessorTeam: caseData.assessorTeam || null,
+        assessorContact: caseData.assessorContact || null,
+        investigatorTeam: caseData.investigatorTeam || null,
+        investigatorDepartment: caseData.investigatorDepartment || null,
+        investigatorTeamName: caseData.investigatorTeamName || null,
+        investigatorContact: caseData.investigatorContact || null,
+        policyHolderName: caseData.policyHolderName || null,
+        policyHolderIdNumber: caseData.policyHolderIdNumber || null,
+        policyHolderAddress: caseData.policyHolderAddress || null,
+        insuredName: caseData.insuredName || null,
+        insuredIdNumber: caseData.insuredIdNumber || null,
+        insuredContact: caseData.insuredContact || null,
+        insuredAddress: caseData.insuredAddress || null,
+        insuredAddressDetail: caseData.insuredAddressDetail || null,
+        sameAsPolicyHolder:
+          caseData.sameAsPolicyHolder != null
+            ? String(caseData.sameAsPolicyHolder)
+            : null,
+        victimName: caseData.victimName || null,
+        victimContact: caseData.victimContact || null,
+        victimAddress: caseData.victimAddress || null,
+        additionalVictims: caseData.additionalVictims || null,
+        clientPhone: caseData.clientPhone || null,
+        clientAddress: caseData.clientAddress || null,
+        accidentLocation: caseData.accidentLocation || null,
+        accidentDescription: caseData.accidentDescription || null,
+        accidentType: caseData.accidentType || null,
+        accidentCause: caseData.accidentCause || null,
+        recoveryType: caseData.recoveryType || null,
+        restorationMethod: caseData.restorationMethod || null,
+        otherVendorEstimate: caseData.otherVendorEstimate || null,
+        damagePreventionCost: caseData.damagePreventionCost || null,
+        victimIncidentAssistance: caseData.victimIncidentAssistance || null,
+        damageItems: caseData.damageItems || null,
+        assignedPartner: caseData.assignedPartner || null,
+        assignedPartnerManager: caseData.assignedPartnerManager || null,
+        assignedPartnerContact: caseData.assignedPartnerContact || null,
+        urgency: caseData.urgency || null,
+        specialRequests: caseData.specialRequests || null,
+        progressStatus: caseData.progressStatus || null,
+        specialNotes: caseData.specialNotes || null,
+        receptionDate: autoReceptionDate,
+        assignmentDate: autoAssignmentDate,
+        siteVisitDate: caseData.siteVisitDate || null,
+        fieldSurveyDate: caseData.fieldSurveyDate || null,
+        firstInspectionDate: caseData.firstInspectionDate || null,
+        approvalCompletionDate: caseData.approvalCompletionDate || null,
+        totalWorkDate: caseData.totalWorkDate || null,
+        contractorReportDate: caseData.contractorReportDate || null,
+        contractorRepairDate: caseData.contractorRepairDate || null,
+        completionDate: caseData.completionDate || null,
+        assignedTo: caseData.assignedTo || null,
+        createdBy: caseData.createdBy,
+        createdAt: currentDate,
+        updatedAt: currentDate,
+      })
+      .returning();
+
     return newCase;
   }
 
   async getAllCases(user?: User): Promise<CaseWithLatestProgress[]> {
     // Fetch all cases from database instead of memory
     let allCases = await db.select().from(cases);
-    
+
     // 권한별 필터링
     if (user) {
       switch (user.role) {
@@ -1254,84 +1447,97 @@ export class MemStorage implements IStorage {
           break;
         case "협력사":
           // 협력사는 직급 상관없이 자기 회사의 모든 케이스
-          allCases = allCases.filter(c => c.assignedPartner === user.company);
+          allCases = allCases.filter((c) => c.assignedPartner === user.company);
           break;
         case "보험사":
           // 보험사는 자기 회사 케이스만
-          allCases = allCases.filter(c => c.insuranceCompany === user.company);
+          allCases = allCases.filter(
+            (c) => c.insuranceCompany === user.company,
+          );
           break;
         case "심사사":
           // 심사사는 자기가 맡은 케이스만
-          allCases = allCases.filter(c => c.assessorId === user.id);
+          allCases = allCases.filter((c) => c.assessorId === user.id);
           break;
         case "조사사":
           // 조사사는 자기 팀 케이스만
-          allCases = allCases.filter(c => c.investigatorTeamName === user.company);
+          allCases = allCases.filter(
+            (c) => c.investigatorTeamName === user.company,
+          );
           break;
         case "의뢰사":
           // 의뢰사는 자기가 의뢰한 케이스만
-          allCases = allCases.filter(c => c.clientName === user.name);
+          allCases = allCases.filter((c) => c.clientName === user.name);
           break;
         default:
           // 기타 role은 빈 배열 반환
           allCases = [];
       }
     }
-    
+
     // createdAt 기준 오름차순 정렬 (가장 오래된 것부터)
     allCases.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-    
+
     // 모든 사용자 정보 가져오기 (담당자 이름 조회용)
     const allUsers = await db.select().from(users);
-    const userMap = new Map(allUsers.map(u => [u.id, u]));
-    
+    const userMap = new Map(allUsers.map((u) => [u.id, u]));
+
     // 각 케이스의 최신 진행상황 및 담당자 이름 찾기
-    const casesWithProgress: CaseWithLatestProgress[] = allCases.map(caseItem => {
-      // 해당 케이스의 모든 진행상황 찾기
-      const caseUpdates = Array.from(this.progressUpdates.values())
-        .filter(update => update.caseId === caseItem.id)
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)); // 최신순 정렬
-      
-      // 최신 진행상황
-      const latestUpdate = caseUpdates[0];
-      
-      // 담당자 이름 조회
-      const manager = caseItem.managerId ? userMap.get(caseItem.managerId) : null;
-      
-      return {
-        ...caseItem,
-        latestProgress: latestUpdate ? {
-          content: latestUpdate.content,
-          createdAt: latestUpdate.createdAt,
-        } : null,
-        managerName: manager?.name || null,
-      };
-    });
-    
+    const casesWithProgress: CaseWithLatestProgress[] = allCases.map(
+      (caseItem) => {
+        // 해당 케이스의 모든 진행상황 찾기
+        const caseUpdates = Array.from(this.progressUpdates.values())
+          .filter((update) => update.caseId === caseItem.id)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt)); // 최신순 정렬
+
+        // 최신 진행상황
+        const latestUpdate = caseUpdates[0];
+
+        // 담당자 이름 조회
+        const manager = caseItem.managerId
+          ? userMap.get(caseItem.managerId)
+          : null;
+
+        return {
+          ...caseItem,
+          latestProgress: latestUpdate
+            ? {
+                content: latestUpdate.content,
+                createdAt: latestUpdate.createdAt,
+              }
+            : null,
+          managerName: manager?.name || null,
+        };
+      },
+    );
+
     return casesWithProgress;
   }
 
-  async updateCase(caseId: string, caseData: Partial<InsertCase>): Promise<Case | null> {
+  async updateCase(
+    caseId: string,
+    caseData: Partial<InsertCase>,
+  ): Promise<Case | null> {
     const caseItem = this.cases.get(caseId);
     if (!caseItem) {
       return null;
     }
-    
+
     const currentDate = getKSTDate();
-    
+
     // 배당 협력사 저장 시 assignmentDate 자동 기록 (기존 값이 없을 때만)
     const additionalUpdates: Partial<Case> = {};
     if (caseData.assignedPartner && !caseItem.assignmentDate) {
       additionalUpdates.assignmentDate = currentDate;
     }
-    
+
     const updatedCase: Case = {
       ...caseItem,
       ...caseData,
       ...additionalUpdates,
       updatedAt: currentDate,
     };
-    
+
     this.cases.set(caseId, updatedCase);
     return updatedCase;
   }
@@ -1345,15 +1551,15 @@ export class MemStorage implements IStorage {
     if (!caseItem) {
       return null;
     }
-    
+
     const currentDate = getKSTDate();
-    
+
     // 미복구 선택 시 자동으로 출동비 청구로 정규화
     const normalizedStatus = status === "미복구" ? "출동비 청구" : status;
-    
+
     // 상태에 따라 자동으로 날짜 기록 (기존 값이 없을 때만)
     const dateUpdates: Partial<Case> = {};
-    
+
     switch (normalizedStatus) {
       case "접수완료":
         // 접수일과 배당일 자동 기록 (기존 값 없을 때만)
@@ -1407,79 +1613,91 @@ export class MemStorage implements IStorage {
         }
         break;
     }
-    
+
     const updatedCase: Case = {
       ...caseItem,
       status: normalizedStatus,
       updatedAt: currentDate,
       ...dateUpdates,
     };
-    
+
     this.cases.set(caseId, updatedCase);
     return updatedCase;
   }
 
-  async updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null> {
+  async updateCaseSpecialNotes(
+    caseId: string,
+    specialNotes: string | null,
+  ): Promise<Case | null> {
     const caseItem = this.cases.get(caseId);
     if (!caseItem) {
       return null;
     }
-    
+
     const updatedCase: Case = {
       ...caseItem,
       specialNotes,
       specialNotesConfirmedBy: null, // Reset confirmation when notes are updated
       updatedAt: getKSTDate(),
     };
-    
+
     this.cases.set(caseId, updatedCase);
     return updatedCase;
   }
 
-  async confirmCaseSpecialNotes(caseId: string, confirmedBy: string): Promise<Case | null> {
+  async confirmCaseSpecialNotes(
+    caseId: string,
+    confirmedBy: string,
+  ): Promise<Case | null> {
     const caseItem = this.cases.get(caseId);
     if (!caseItem) {
       return null;
     }
-    
+
     const updatedCase: Case = {
       ...caseItem,
       specialNotesConfirmedBy: confirmedBy,
       updatedAt: getKSTDate(),
     };
-    
+
     this.cases.set(caseId, updatedCase);
     return updatedCase;
   }
 
-  async updateCaseAdditionalNotes(caseId: string, additionalNotes: string | null): Promise<Case | null> {
+  async updateCaseAdditionalNotes(
+    caseId: string,
+    additionalNotes: string | null,
+  ): Promise<Case | null> {
     const caseItem = this.cases.get(caseId);
     if (!caseItem) {
       return null;
     }
-    
+
     const updatedCase: Case = {
       ...caseItem,
       additionalNotes,
       updatedAt: getKSTDate(),
     };
-    
+
     this.cases.set(caseId, updatedCase);
     return updatedCase;
   }
 
-  async updateCaseEstimateAmount(caseId: string, estimateAmount: string): Promise<Case | null> {
+  async updateCaseEstimateAmount(
+    caseId: string,
+    estimateAmount: string,
+  ): Promise<Case | null> {
     const caseItem = this.cases.get(caseId);
     if (!caseItem) {
       return null;
     }
-    
+
     const updatedCase: Case = {
       ...caseItem,
       estimateAmount,
       updatedAt: getKSTDate(),
     };
-    
+
     this.cases.set(caseId, updatedCase);
     return updatedCase;
   }
@@ -1489,24 +1707,29 @@ export class MemStorage implements IStorage {
     if (!caseItem) {
       return null;
     }
-    
+
     const updatedCase: Case = {
       ...caseItem,
       fieldSurveyStatus: "submitted",
       status: "제출",
       updatedAt: getKSTDate(),
     };
-    
+
     this.cases.set(caseId, updatedCase);
     return updatedCase;
   }
 
-  async reviewCase(caseId: string, decision: "승인" | "비승인", reviewComment: string | null, reviewedBy: string): Promise<Case | null> {
+  async reviewCase(
+    caseId: string,
+    decision: "승인" | "비승인",
+    reviewComment: string | null,
+    reviewedBy: string,
+  ): Promise<Case | null> {
     const caseItem = this.cases.get(caseId);
     if (!caseItem) {
       return null;
     }
-    
+
     const updatedCase: Case = {
       ...caseItem,
       reviewDecision: decision,
@@ -1516,7 +1739,7 @@ export class MemStorage implements IStorage {
       status: decision === "승인" ? "1차승인" : "반려",
       updatedAt: getKSTDate(),
     };
-    
+
     this.cases.set(caseId, updatedCase);
     return updatedCase;
   }
@@ -1524,19 +1747,29 @@ export class MemStorage implements IStorage {
   async getPartnerStats(): Promise<PartnerStats[]> {
     const allCases = Array.from(this.cases.values());
     const allUsers = Array.from(this.users.values());
-    const partners = allUsers.filter(u => u.role === "협력사");
-    
+    const partners = allUsers.filter((u) => u.role === "협력사");
+
     const today = getKSTDate();
     const currentMonth = today.substring(0, 7); // YYYY-MM
-    
-    return partners.map(partner => {
-      const partnerCases = allCases.filter(c => c.assignedPartner === partner.company);
-      
-      const dailyCount = partnerCases.filter(c => c.createdAt === today).length;
-      const monthlyCount = partnerCases.filter(c => c.createdAt?.startsWith(currentMonth)).length;
-      const inProgressCount = partnerCases.filter(c => c.status !== "작성중" && c.status !== "완료").length;
-      const pendingCount = partnerCases.filter(c => c.status !== "완료").length;
-      
+
+    return partners.map((partner) => {
+      const partnerCases = allCases.filter(
+        (c) => c.assignedPartner === partner.company,
+      );
+
+      const dailyCount = partnerCases.filter(
+        (c) => c.createdAt === today,
+      ).length;
+      const monthlyCount = partnerCases.filter((c) =>
+        c.createdAt?.startsWith(currentMonth),
+      ).length;
+      const inProgressCount = partnerCases.filter(
+        (c) => c.status !== "작성중" && c.status !== "완료",
+      ).length;
+      const pendingCount = partnerCases.filter(
+        (c) => c.status !== "완료",
+      ).length;
+
       return {
         partnerName: partner.company,
         dailyCount,
@@ -1547,10 +1780,12 @@ export class MemStorage implements IStorage {
     });
   }
 
-  async createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate> {
+  async createProgressUpdate(
+    data: InsertProgressUpdate,
+  ): Promise<ProgressUpdate> {
     const id = randomUUID();
     const currentTimestamp = getKSTTimestamp();
-    
+
     const newUpdate: ProgressUpdate = {
       id,
       caseId: data.caseId,
@@ -1558,20 +1793,22 @@ export class MemStorage implements IStorage {
       createdBy: data.createdBy,
       createdAt: currentTimestamp,
     };
-    
+
     this.progressUpdates.set(id, newUpdate);
     return newUpdate;
   }
 
   async getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]> {
-    const updates = Array.from(this.progressUpdates.values()).filter(u => u.caseId === caseId);
+    const updates = Array.from(this.progressUpdates.values()).filter(
+      (u) => u.caseId === caseId,
+    );
     return updates.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
 
   async getStatisticsFilters(): Promise<StatisticsFilters> {
     // Get unique insurance companies from cases
     const insuranceCompaniesSet = new Set<string>();
-    Array.from(this.cases.values()).forEach(caseItem => {
+    Array.from(this.cases.values()).forEach((caseItem) => {
       if (caseItem.insuranceCompany) {
         insuranceCompaniesSet.add(caseItem.insuranceCompany);
       }
@@ -1583,7 +1820,7 @@ export class MemStorage implements IStorage {
     const partnersSet = new Set<string>();
     const settlementManagersSet = new Set<string>();
 
-    Array.from(this.users.values()).forEach(user => {
+    Array.from(this.users.values()).forEach((user) => {
       if (user.status !== "active") return; // Only include active users
 
       if (user.role === "심사사" && user.company) {
@@ -1593,7 +1830,7 @@ export class MemStorage implements IStorage {
       } else if (user.role === "협력사" && user.company) {
         partnersSet.add(user.company);
       }
-      
+
       // Add all active users as potential settlement managers
       if (user.name) {
         settlementManagersSet.add(user.name);
@@ -1610,14 +1847,18 @@ export class MemStorage implements IStorage {
     };
   }
 
-  async getRolePermission(roleName: string): Promise<RolePermission | undefined> {
+  async getRolePermission(
+    roleName: string,
+  ): Promise<RolePermission | undefined> {
     return this.rolePermissions.get(roleName);
   }
 
-  async saveRolePermission(data: InsertRolePermission): Promise<RolePermission> {
+  async saveRolePermission(
+    data: InsertRolePermission,
+  ): Promise<RolePermission> {
     const currentDate = getKSTTimestamp();
     const existing = this.rolePermissions.get(data.roleName);
-    
+
     const rolePermission: RolePermission = {
       id: existing?.id || randomUUID(),
       roleName: data.roleName,
@@ -1625,7 +1866,7 @@ export class MemStorage implements IStorage {
       createdAt: existing?.createdAt || currentDate,
       updatedAt: currentDate,
     };
-    
+
     this.rolePermissions.set(data.roleName, rolePermission);
     return rolePermission;
   }
@@ -1638,7 +1879,7 @@ export class MemStorage implements IStorage {
   async listExcelData(type: string): Promise<ExcelData[]> {
     const allData = Array.from(this.excelData.values());
     return allData
-      .filter(item => item.type === type)
+      .filter((item) => item.type === type)
       .sort((a, b) => b.uploadedAt.getTime() - a.uploadedAt.getTime());
   }
 
@@ -1665,7 +1906,11 @@ export class MemStorage implements IStorage {
     return newData;
   }
 
-  async updateExcelData(id: string, headers: string[], data: any[][]): Promise<ExcelData | null> {
+  async updateExcelData(
+    id: string,
+    headers: string[],
+    data: any[][],
+  ): Promise<ExcelData | null> {
     const existing = this.excelData.get(id);
     if (!existing) return null;
     const updated: ExcelData = {
@@ -1686,8 +1931,8 @@ export class MemStorage implements IStorage {
 
   async deleteExcelData(type: string): Promise<void> {
     const allData = Array.from(this.excelData.values());
-    const toDelete = allData.filter(item => item.type === type);
-    toDelete.forEach(item => this.excelData.delete(item.id));
+    const toDelete = allData.filter((item) => item.type === type);
+    toDelete.forEach((item) => this.excelData.delete(item.id));
   }
 
   // Inquiry methods (in-memory implementation)
@@ -1710,18 +1955,22 @@ export class MemStorage implements IStorage {
   }
 
   async getAllInquiries(): Promise<Inquiry[]> {
-    return Array.from(this.inquiries.values())
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+    return Array.from(this.inquiries.values()).sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+    );
   }
 
   async getInquiriesByUserId(userId: string): Promise<Inquiry[]> {
     const allInquiries = Array.from(this.inquiries.values());
     return allInquiries
-      .filter(inquiry => inquiry.userId === userId)
+      .filter((inquiry) => inquiry.userId === userId)
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 
-  async updateInquiry(id: string, data: Partial<UpdateInquiry>): Promise<Inquiry | null> {
+  async updateInquiry(
+    id: string,
+    data: Partial<UpdateInquiry>,
+  ): Promise<Inquiry | null> {
     const existing = this.inquiries.get(id);
     if (!existing) {
       return null;
@@ -1760,7 +2009,10 @@ export class MemStorage implements IStorage {
     return null;
   }
 
-  async updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null> {
+  async updateDrawing(
+    id: string,
+    data: Partial<InsertDrawing>,
+  ): Promise<Drawing | null> {
     const existing = this.drawings.get(id);
     if (!existing) {
       return null;
@@ -1882,7 +2134,10 @@ export class MemStorage implements IStorage {
     this.documents.delete(id);
   }
 
-  async updateDocumentCategory(id: string, category: string): Promise<CaseDocument | null> {
+  async updateDocumentCategory(
+    id: string,
+    category: string,
+  ): Promise<CaseDocument | null> {
     const existing = this.documents.get(id);
     if (!existing) {
       return null;
@@ -1896,15 +2151,27 @@ export class MemStorage implements IStorage {
   }
 
   // Estimate methods (stub - not implemented for MemStorage)
-  async createEstimateVersion(caseId: string, userId: string, rows: Omit<InsertEstimateRow, 'estimateId'>[], laborCostData?: any | null, materialCostData?: any | null, vatIncluded?: boolean): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
+  async createEstimateVersion(
+    caseId: string,
+    userId: string,
+    rows: Omit<InsertEstimateRow, "estimateId">[],
+    laborCostData?: any | null,
+    materialCostData?: any | null,
+    vatIncluded?: boolean,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
     throw new Error("Estimate methods not implemented in MemStorage");
   }
 
-  async getLatestEstimate(caseId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+  async getLatestEstimate(
+    caseId: string,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
     throw new Error("Estimate methods not implemented in MemStorage");
   }
 
-  async getEstimateVersion(caseId: string, version: number): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+  async getEstimateVersion(
+    caseId: string,
+    version: number,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
     throw new Error("Estimate methods not implemented in MemStorage");
   }
 
@@ -1912,7 +2179,10 @@ export class MemStorage implements IStorage {
     throw new Error("Estimate methods not implemented in MemStorage");
   }
 
-  async getMasterData(category?: string, includeInactive?: boolean): Promise<MasterData[]> {
+  async getMasterData(
+    category?: string,
+    includeInactive?: boolean,
+  ): Promise<MasterData[]> {
     throw new Error("Master data methods not implemented in MemStorage");
   }
 
@@ -1924,11 +2194,18 @@ export class MemStorage implements IStorage {
     throw new Error("Master data methods not implemented in MemStorage");
   }
 
-  async updateMasterData(id: string, data: Partial<InsertMasterData>): Promise<MasterData | null> {
+  async updateMasterData(
+    id: string,
+    data: Partial<InsertMasterData>,
+  ): Promise<MasterData | null> {
     throw new Error("Master data methods not implemented in MemStorage");
   }
 
-  async getLaborCosts(filters?: { category?: string; workName?: string; detailWork?: string }): Promise<LaborCost[]> {
+  async getLaborCosts(filters?: {
+    category?: string;
+    workName?: string;
+    detailWork?: string;
+  }): Promise<LaborCost[]> {
     throw new Error("Labor cost methods not implemented in MemStorage");
   }
 
@@ -1960,13 +2237,15 @@ export class MemStorage implements IStorage {
     throw new Error("Material methods not implemented in MemStorage");
   }
 
-  async getMaterialsCatalog(): Promise<Array<{
-    workType: string;
-    materialName: string;
-    specification: string;
-    unit: string;
-    standardPrice: number | string;
-  }>> {
+  async getMaterialsCatalog(): Promise<
+    Array<{
+      workType: string;
+      materialName: string;
+      specification: string;
+      unit: string;
+      standardPrice: number | string;
+    }>
+  > {
     throw new Error("Materials catalog not implemented in MemStorage");
   }
 
@@ -1990,7 +2269,10 @@ export class MemStorage implements IStorage {
     throw new Error("Notice methods not implemented in MemStorage");
   }
 
-  async updateNotice(id: string, data: { title: string; content: string }): Promise<Notice | null> {
+  async updateNotice(
+    id: string,
+    data: { title: string; content: string },
+  ): Promise<Notice | null> {
     throw new Error("Notice methods not implemented in MemStorage");
   }
 
@@ -1999,31 +2281,55 @@ export class MemStorage implements IStorage {
   }
 
   // Asset cloning methods (stub)
-  async getRelatedCaseWithDrawing(caseId: string): Promise<{ caseId: string; caseNumber: string } | null> {
+  async getRelatedCaseWithDrawing(
+    caseId: string,
+  ): Promise<{ caseId: string; caseNumber: string } | null> {
     throw new Error("Asset cloning methods not implemented in MemStorage");
   }
 
-  async getAllRelatedCasesWithDrawings(caseId: string): Promise<Array<{ caseId: string; caseNumber: string }>> {
+  async getAllRelatedCasesWithDrawings(
+    caseId: string,
+  ): Promise<Array<{ caseId: string; caseNumber: string }>> {
     throw new Error("Asset cloning methods not implemented in MemStorage");
   }
 
-  async getRelatedCaseWithEstimate(caseId: string): Promise<{ caseId: string; caseNumber: string } | null> {
+  async getRelatedCaseWithEstimate(
+    caseId: string,
+  ): Promise<{ caseId: string; caseNumber: string } | null> {
     throw new Error("Asset cloning methods not implemented in MemStorage");
   }
 
-  async getRelatedCaseWithDocuments(caseId: string): Promise<{ caseId: string; caseNumber: string; documentCount: number } | null> {
+  async getRelatedCaseWithDocuments(
+    caseId: string,
+  ): Promise<{
+    caseId: string;
+    caseNumber: string;
+    documentCount: number;
+  } | null> {
     throw new Error("Asset cloning methods not implemented in MemStorage");
   }
 
-  async cloneDrawingFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<Drawing | null> {
+  async cloneDrawingFromCase(
+    sourceCaseId: string,
+    targetCaseId: string,
+    userId: string,
+  ): Promise<Drawing | null> {
     throw new Error("Asset cloning methods not implemented in MemStorage");
   }
 
-  async cloneEstimateFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+  async cloneEstimateFromCase(
+    sourceCaseId: string,
+    targetCaseId: string,
+    userId: string,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
     throw new Error("Asset cloning methods not implemented in MemStorage");
   }
 
-  async cloneDocumentsFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<CaseDocument[]> {
+  async cloneDocumentsFromCase(
+    sourceCaseId: string,
+    targetCaseId: string,
+    userId: string,
+  ): Promise<CaseDocument[]> {
     throw new Error("Asset cloning methods not implemented in MemStorage");
   }
 
@@ -2036,20 +2342,32 @@ export class MemStorage implements IStorage {
     throw new Error("Case change log methods not implemented in MemStorage");
   }
 
-  async getAllCaseChangeLogs(filters?: { caseNumber?: string; changedBy?: string; dateFrom?: string; dateTo?: string }): Promise<(CaseChangeLog & { caseNumber: string })[]> {
+  async getAllCaseChangeLogs(filters?: {
+    caseNumber?: string;
+    changedBy?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<(CaseChangeLog & { caseNumber: string })[]> {
     throw new Error("Case change log methods not implemented in MemStorage");
   }
 
   // Field Survey Data methods (stub)
-  async getFieldSurveyData(caseGroupId: string): Promise<FieldSurveyData | null> {
+  async getFieldSurveyData(
+    caseGroupId: string,
+  ): Promise<FieldSurveyData | null> {
     throw new Error("Field survey data methods not implemented in MemStorage");
   }
 
-  async saveFieldSurveyData(data: InsertFieldSurveyData): Promise<FieldSurveyData> {
+  async saveFieldSurveyData(
+    data: InsertFieldSurveyData,
+  ): Promise<FieldSurveyData> {
     throw new Error("Field survey data methods not implemented in MemStorage");
   }
 
-  async updateFieldSurveyData(caseGroupId: string, data: Partial<InsertFieldSurveyData>): Promise<FieldSurveyData | null> {
+  async updateFieldSurveyData(
+    caseGroupId: string,
+    data: Partial<InsertFieldSurveyData>,
+  ): Promise<FieldSurveyData | null> {
     throw new Error("Field survey data methods not implemented in MemStorage");
   }
 
@@ -2062,7 +2380,10 @@ export class MemStorage implements IStorage {
     throw new Error("Shared drawing methods not implemented in MemStorage");
   }
 
-  async updateSharedDrawing(caseGroupId: string, data: Partial<InsertSharedDrawing>): Promise<SharedDrawing | null> {
+  async updateSharedDrawing(
+    caseGroupId: string,
+    data: Partial<InsertSharedDrawing>,
+  ): Promise<SharedDrawing | null> {
     throw new Error("Shared drawing methods not implemented in MemStorage");
   }
 
@@ -2072,24 +2393,43 @@ export class MemStorage implements IStorage {
   }
 
   // Same accident number methods (stub)
-  async getCasesByAccidentNo(accidentNo: string, excludeCaseId?: string): Promise<Case[]> {
-    throw new Error("Same accident number methods not implemented in MemStorage");
+  async getCasesByAccidentNo(
+    accidentNo: string,
+    excludeCaseId?: string,
+  ): Promise<Case[]> {
+    throw new Error(
+      "Same accident number methods not implemented in MemStorage",
+    );
   }
 
-  async syncFieldSurveyToRelatedCases(sourceCaseId: string, fieldData: Partial<InsertCase>): Promise<number> {
-    throw new Error("Same accident number methods not implemented in MemStorage");
+  async syncFieldSurveyToRelatedCases(
+    sourceCaseId: string,
+    fieldData: Partial<InsertCase>,
+  ): Promise<number> {
+    throw new Error(
+      "Same accident number methods not implemented in MemStorage",
+    );
   }
 
   async syncDrawingToRelatedCases(sourceCaseId: string): Promise<number> {
-    throw new Error("Sync drawing to related cases not implemented in MemStorage");
+    throw new Error(
+      "Sync drawing to related cases not implemented in MemStorage",
+    );
   }
 
-  async syncDocumentsToRelatedCases(sourceCaseId: string, newDocument: CaseDocument): Promise<number> {
-    throw new Error("Sync documents to related cases not implemented in MemStorage");
+  async syncDocumentsToRelatedCases(
+    sourceCaseId: string,
+    newDocument: CaseDocument,
+  ): Promise<number> {
+    throw new Error(
+      "Sync documents to related cases not implemented in MemStorage",
+    );
   }
 
   async syncEstimateToRelatedCases(sourceCaseId: string): Promise<number> {
-    throw new Error("Sync estimate to related cases not implemented in MemStorage");
+    throw new Error(
+      "Sync estimate to related cases not implemented in MemStorage",
+    );
   }
 
   // Case number helpers (stub)
@@ -2102,12 +2442,17 @@ export class MemStorage implements IStorage {
   }
 
   // Same prefix case sync methods (stub)
-  async getCasesByPrefix(prefix: string, excludeCaseId?: string): Promise<Case[]> {
+  async getCasesByPrefix(
+    prefix: string,
+    excludeCaseId?: string,
+  ): Promise<Case[]> {
     throw new Error("getCasesByPrefix not implemented in MemStorage");
   }
 
   async syncIntakeDataToRelatedCases(sourceCaseId: string): Promise<number> {
-    throw new Error("syncIntakeDataToRelatedCases not implemented in MemStorage");
+    throw new Error(
+      "syncIntakeDataToRelatedCases not implemented in MemStorage",
+    );
   }
 }
 
@@ -2120,7 +2465,7 @@ export class DbStorage implements IStorage {
     try {
       // Check if we have any users
       const existingUsers = await db.select().from(users);
-      
+
       // Seed users if no users exist
       if (existingUsers.length === 0) {
         await this.seedTestUsers();
@@ -2128,7 +2473,7 @@ export class DbStorage implements IStorage {
         // Always ensure essential accounts exist (admin01, partner01)
         await this.ensureEssentialAccounts();
       }
-      
+
       // NOTE: 더 이상 케이스/견적 더미 데이터를 자동 생성하지 않음
       // 사용자가 직접 데이터를 생성해야 함
     } catch (error) {
@@ -2137,113 +2482,571 @@ export class DbStorage implements IStorage {
   }
 
   private async ensureEssentialAccounts() {
-    console.log("[Essential Accounts] Checking and creating essential accounts...");
+    console.log(
+      "[Essential Accounts] Checking and creating essential accounts...",
+    );
     const currentDate = getKSTDate();
     const hashedPassword = await bcrypt.hash("1234", SALT_ROUNDS);
-    
+
     // 모든 필수 계정 목록 (개발/프로덕션 동일하게 유지)
     const essentialAccounts = [
       // 관리자
-      { username: "admin01", password: hashedPassword, role: "관리자", name: "김블락", company: "플록슨", department: "개발팀", position: "팀장", email: "admin01@floxn.com", phone: "010-1001-1001", office: "02-1001-1001", address: "서울 강남구", status: "active", createdAt: currentDate },
-      { username: "admin02", password: hashedPassword, role: "관리자", name: "박영희", company: "플록슨", department: "기획팀", position: "부장", email: "admin02@floxn.com", phone: "010-1002-1002", office: "02-1002-1002", address: "서울 송파구", status: "active", createdAt: currentDate },
-      { username: "admin03", password: hashedPassword, role: "관리자", name: "이현우", company: "플록슨", department: "인사팀", position: "차장", email: "admin03@floxn.com", phone: "010-1003-1003", office: "02-1003-1003", address: "서울 종로구", status: "active", createdAt: currentDate },
-      { username: "admin04", password: hashedPassword, role: "관리자", name: "최지원", company: "플록슨", department: "운영팀", position: "과장", email: "admin04@floxn.com", phone: "010-1004-1004", office: "02-1004-1004", address: "서울 마포구", status: "active", createdAt: currentDate },
-      { username: "admin05", password: hashedPassword, role: "관리자", name: "정수현", company: "플록슨", department: "총무팀", position: "대리", email: "admin05@floxn.com", phone: "010-1005-1005", office: "02-1005-1005", address: "서울 서초구", status: "active", createdAt: currentDate },
+      {
+        username: "admin01",
+        password: hashedPassword,
+        role: "관리자",
+        name: "김블락",
+        company: "플록슨",
+        department: "개발팀",
+        position: "팀장",
+        email: "admin01@floxn.com",
+        phone: "010-1001-1001",
+        office: "02-1001-1001",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "admin02",
+        password: hashedPassword,
+        role: "관리자",
+        name: "박영희",
+        company: "플록슨",
+        department: "기획팀",
+        position: "부장",
+        email: "admin02@floxn.com",
+        phone: "010-1002-1002",
+        office: "02-1002-1002",
+        address: "서울 송파구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "admin03",
+        password: hashedPassword,
+        role: "관리자",
+        name: "이현우",
+        company: "플록슨",
+        department: "인사팀",
+        position: "차장",
+        email: "admin03@floxn.com",
+        phone: "010-1003-1003",
+        office: "02-1003-1003",
+        address: "서울 종로구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "admin04",
+        password: hashedPassword,
+        role: "관리자",
+        name: "최지원",
+        company: "플록슨",
+        department: "운영팀",
+        position: "과장",
+        email: "admin04@floxn.com",
+        phone: "010-1004-1004",
+        office: "02-1004-1004",
+        address: "서울 마포구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "admin05",
+        password: hashedPassword,
+        role: "관리자",
+        name: "정수현",
+        company: "플록슨",
+        department: "총무팀",
+        position: "대리",
+        email: "admin05@floxn.com",
+        phone: "010-1005-1005",
+        office: "02-1005-1005",
+        address: "서울 서초구",
+        status: "active",
+        createdAt: currentDate,
+      },
       // 보험사
-      { username: "insure01", password: hashedPassword, role: "보험사", name: "김민준", company: "삼성화재", department: "사고접수팀", position: "팀장", email: "insure01@samsung.com", phone: "010-2001-2001", office: "02-2001-2001", address: "서울 강남구", status: "active", createdAt: currentDate },
-      { username: "insure02", password: hashedPassword, role: "보험사", name: "이서윤", company: "현대해상", department: "보상팀", position: "과장", email: "insure02@hyundai.com", phone: "010-2002-2002", office: "02-2002-2002", address: "서울 서초구", status: "active", createdAt: currentDate },
-      { username: "insure03", password: hashedPassword, role: "보험사", name: "박도현", company: "DB손해보험", department: "보상팀", position: "대리", email: "insure03@db.com", phone: "010-2003-2003", office: "02-2003-2003", address: "서울 송파구", status: "active", createdAt: currentDate },
-      { username: "insure04", password: hashedPassword, role: "보험사", name: "최하은", company: "KB손해보험", department: "사고접수팀", position: "사원", email: "insure04@kb.com", phone: "010-2004-2004", office: "02-2004-2004", address: "서울 영등포구", status: "active", createdAt: currentDate },
-      { username: "insure05", password: hashedPassword, role: "보험사", name: "정예준", company: "MG손해보험", department: "보상팀", position: "차장", email: "insure05@mg.com", phone: "010-2005-2005", office: "02-2005-2005", address: "서울 강동구", status: "active", createdAt: currentDate },
+      {
+        username: "insure01",
+        password: hashedPassword,
+        role: "보험사",
+        name: "김민준",
+        company: "삼성화재",
+        department: "사고접수팀",
+        position: "팀장",
+        email: "insure01@samsung.com",
+        phone: "010-2001-2001",
+        office: "02-2001-2001",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "insure02",
+        password: hashedPassword,
+        role: "보험사",
+        name: "이서윤",
+        company: "현대해상",
+        department: "보상팀",
+        position: "과장",
+        email: "insure02@hyundai.com",
+        phone: "010-2002-2002",
+        office: "02-2002-2002",
+        address: "서울 서초구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "insure03",
+        password: hashedPassword,
+        role: "보험사",
+        name: "박도현",
+        company: "DB손해보험",
+        department: "보상팀",
+        position: "대리",
+        email: "insure03@db.com",
+        phone: "010-2003-2003",
+        office: "02-2003-2003",
+        address: "서울 송파구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "insure04",
+        password: hashedPassword,
+        role: "보험사",
+        name: "최하은",
+        company: "KB손해보험",
+        department: "사고접수팀",
+        position: "사원",
+        email: "insure04@kb.com",
+        phone: "010-2004-2004",
+        office: "02-2004-2004",
+        address: "서울 영등포구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "insure05",
+        password: hashedPassword,
+        role: "보험사",
+        name: "정예준",
+        company: "MG손해보험",
+        department: "보상팀",
+        position: "차장",
+        email: "insure05@mg.com",
+        phone: "010-2005-2005",
+        office: "02-2005-2005",
+        address: "서울 강동구",
+        status: "active",
+        createdAt: currentDate,
+      },
       // 협력사
-      { username: "partner01", password: hashedPassword, role: "협력사", name: "강지훈", company: "우리수리", department: "현장팀", position: "팀장", email: "partner01@woori.com", phone: "010-3001-3001", office: "02-3001-3001", address: "서울 마포구", bankName: "국민은행", accountNumber: "123-456-789", accountHolder: "우리수리", serviceRegions: ["서울", "경기"], status: "active", createdAt: currentDate },
-      { username: "partner02", password: hashedPassword, role: "협력사", name: "윤소희", company: "복구마스터", department: "시공팀", position: "실장", email: "partner02@master.com", phone: "010-3002-3002", office: "02-3002-3002", address: "서울 강서구", bankName: "신한은행", accountNumber: "567-890-001", accountHolder: "복구마스터", serviceRegions: ["서울/강서구", "양천구", "영등포구"], status: "active", createdAt: currentDate },
-      { username: "partner03", password: hashedPassword, role: "협력사", name: "장민서", company: "누수박사", department: "영업팀", position: "과장", email: "partner03@nusoo.com", phone: "010-3003-3003", office: "02-3003-3003", address: "경기 수원시", bankName: "우리은행", accountNumber: "567-890-000003", accountHolder: "누수박사", serviceRegions: ["경기/수원시", "화성시", "용인시"], status: "active", createdAt: currentDate },
-      { username: "partner04", password: hashedPassword, role: "협력사", name: "임채원", company: "스피드복구", department: "현장팀", position: "대리", email: "partner04@speed.com", phone: "010-3004-3004", office: "02-3004-3004", address: "서울 노원구", bankName: "하나은행", accountNumber: "567-890-000004", accountHolder: "스피드복구", serviceRegions: ["서울/노원구", "도봉구", "강북구"], status: "active", createdAt: currentDate },
-      { username: "partner05", password: hashedPassword, role: "협력사", name: "한유진", company: "복구전문가", department: "견적팀", position: "부장", email: "partner05@expert.com", phone: "010-3005-3005", office: "02-3005-3005", address: "경기 성남시", bankName: "농협은행", accountNumber: "567-890-000005", accountHolder: "한유진", serviceRegions: ["경기/성남시", "분당구", "수정구"], status: "active", createdAt: currentDate },
+      {
+        username: "partner01",
+        password: hashedPassword,
+        role: "협력사",
+        name: "강지훈",
+        company: "우리수리",
+        department: "현장팀",
+        position: "팀장",
+        email: "partner01@woori.com",
+        phone: "010-3001-3001",
+        office: "02-3001-3001",
+        address: "서울 마포구",
+        bankName: "국민은행",
+        accountNumber: "123-456-789",
+        accountHolder: "우리수리",
+        serviceRegions: ["서울", "경기"],
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "partner02",
+        password: hashedPassword,
+        role: "협력사",
+        name: "윤소희",
+        company: "복구마스터",
+        department: "시공팀",
+        position: "실장",
+        email: "partner02@master.com",
+        phone: "010-3002-3002",
+        office: "02-3002-3002",
+        address: "서울 강서구",
+        bankName: "신한은행",
+        accountNumber: "567-890-001",
+        accountHolder: "복구마스터",
+        serviceRegions: ["서울/강서구", "양천구", "영등포구"],
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "partner03",
+        password: hashedPassword,
+        role: "협력사",
+        name: "장민서",
+        company: "누수박사",
+        department: "영업팀",
+        position: "과장",
+        email: "partner03@nusoo.com",
+        phone: "010-3003-3003",
+        office: "02-3003-3003",
+        address: "경기 수원시",
+        bankName: "우리은행",
+        accountNumber: "567-890-000003",
+        accountHolder: "누수박사",
+        serviceRegions: ["경기/수원시", "화성시", "용인시"],
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "partner04",
+        password: hashedPassword,
+        role: "협력사",
+        name: "임채원",
+        company: "스피드복구",
+        department: "현장팀",
+        position: "대리",
+        email: "partner04@speed.com",
+        phone: "010-3004-3004",
+        office: "02-3004-3004",
+        address: "서울 노원구",
+        bankName: "하나은행",
+        accountNumber: "567-890-000004",
+        accountHolder: "스피드복구",
+        serviceRegions: ["서울/노원구", "도봉구", "강북구"],
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "partner05",
+        password: hashedPassword,
+        role: "협력사",
+        name: "한유진",
+        company: "복구전문가",
+        department: "견적팀",
+        position: "부장",
+        email: "partner05@expert.com",
+        phone: "010-3005-3005",
+        office: "02-3005-3005",
+        address: "경기 성남시",
+        bankName: "농협은행",
+        accountNumber: "567-890-000005",
+        accountHolder: "한유진",
+        serviceRegions: ["경기/성남시", "분당구", "수정구"],
+        status: "active",
+        createdAt: currentDate,
+      },
       // 심사사
-      { username: "assessor01", password: hashedPassword, role: "심사사", name: "신동욱", company: "플록슨", department: "심사팀", position: "수석심사사", email: "assessor01@floxn.com", phone: "010-4001-4001", office: "02-4001-4001", address: "서울 강남구", status: "active", createdAt: currentDate },
-      { username: "assessor02", password: hashedPassword, role: "심사사", name: "오서현", company: "플록슨", department: "심사팀", position: "책임심사사", email: "assessor02@floxn.com", phone: "010-4002-4002", office: "02-4002-4002", address: "서울 서초구", status: "active", createdAt: currentDate },
-      { username: "assessor03", password: hashedPassword, role: "심사사", name: "배준영", company: "플록슨", department: "심사팀", position: "선임심사사", email: "assessor03@floxn.com", phone: "010-4003-4003", office: "02-4003-4003", address: "서울 송파구", status: "active", createdAt: currentDate },
-      { username: "assessor04", password: hashedPassword, role: "심사사", name: "황시우", company: "플록슨", department: "심사팀", position: "심사사", email: "assessor04@floxn.com", phone: "010-4004-4004", office: "02-4004-4004", address: "서울 마포구", status: "active", createdAt: currentDate },
-      { username: "assessor05", password: hashedPassword, role: "심사사", name: "서은비", company: "플록슨", department: "심사팀", position: "심사사", email: "assessor05@floxn.com", phone: "010-4005-4005", office: "02-4005-4005", address: "서울 강동구", status: "active", createdAt: currentDate },
+      {
+        username: "assessor01",
+        password: hashedPassword,
+        role: "심사사",
+        name: "신동욱",
+        company: "플록슨",
+        department: "심사팀",
+        position: "수석심사사",
+        email: "assessor01@floxn.com",
+        phone: "010-4001-4001",
+        office: "02-4001-4001",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "assessor02",
+        password: hashedPassword,
+        role: "심사사",
+        name: "오서현",
+        company: "플록슨",
+        department: "심사팀",
+        position: "책임심사사",
+        email: "assessor02@floxn.com",
+        phone: "010-4002-4002",
+        office: "02-4002-4002",
+        address: "서울 서초구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "assessor03",
+        password: hashedPassword,
+        role: "심사사",
+        name: "배준영",
+        company: "플록슨",
+        department: "심사팀",
+        position: "선임심사사",
+        email: "assessor03@floxn.com",
+        phone: "010-4003-4003",
+        office: "02-4003-4003",
+        address: "서울 송파구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "assessor04",
+        password: hashedPassword,
+        role: "심사사",
+        name: "황시우",
+        company: "플록슨",
+        department: "심사팀",
+        position: "심사사",
+        email: "assessor04@floxn.com",
+        phone: "010-4004-4004",
+        office: "02-4004-4004",
+        address: "서울 마포구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "assessor05",
+        password: hashedPassword,
+        role: "심사사",
+        name: "서은비",
+        company: "플록슨",
+        department: "심사팀",
+        position: "심사사",
+        email: "assessor05@floxn.com",
+        phone: "010-4005-4005",
+        office: "02-4005-4005",
+        address: "서울 강동구",
+        status: "active",
+        createdAt: currentDate,
+      },
       // 조사사
-      { username: "investigator01", password: hashedPassword, role: "조사사", name: "안재현", company: "플록슨", department: "조사팀", position: "수석조사사", email: "investigator01@floxn.com", phone: "010-5001-5001", office: "02-5001-5001", address: "서울 강남구", status: "active", createdAt: currentDate },
-      { username: "investigator02", password: hashedPassword, role: "조사사", name: "조아라", company: "플록슨", department: "조사팀", position: "책임조사사", email: "investigator02@floxn.com", phone: "010-5002-5002", office: "02-5002-5002", address: "서울 서초구", status: "active", createdAt: currentDate },
-      { username: "investigator03", password: hashedPassword, role: "조사사", name: "홍민재", company: "플록슨", department: "조사팀", position: "선임조사사", email: "investigator03@floxn.com", phone: "010-5003-5003", office: "02-5003-5003", address: "서울 송파구", status: "active", createdAt: currentDate },
-      { username: "investigator04", password: hashedPassword, role: "조사사", name: "허지안", company: "플록슨", department: "조사팀", position: "조사사", email: "investigator04@floxn.com", phone: "010-5004-5004", office: "02-5004-5004", address: "서울 마포구", status: "active", createdAt: currentDate },
-      { username: "investigator05", password: hashedPassword, role: "조사사", name: "송다빈", company: "플록슨", department: "조사팀", position: "조사사", email: "investigator05@floxn.com", phone: "010-5005-5005", office: "02-5005-5005", address: "서울 강동구", status: "active", createdAt: currentDate },
+      {
+        username: "investigator01",
+        password: hashedPassword,
+        role: "조사사",
+        name: "안재현",
+        company: "플록슨",
+        department: "조사팀",
+        position: "수석조사사",
+        email: "investigator01@floxn.com",
+        phone: "010-5001-5001",
+        office: "02-5001-5001",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "investigator02",
+        password: hashedPassword,
+        role: "조사사",
+        name: "조아라",
+        company: "플록슨",
+        department: "조사팀",
+        position: "책임조사사",
+        email: "investigator02@floxn.com",
+        phone: "010-5002-5002",
+        office: "02-5002-5002",
+        address: "서울 서초구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "investigator03",
+        password: hashedPassword,
+        role: "조사사",
+        name: "홍민재",
+        company: "플록슨",
+        department: "조사팀",
+        position: "선임조사사",
+        email: "investigator03@floxn.com",
+        phone: "010-5003-5003",
+        office: "02-5003-5003",
+        address: "서울 송파구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "investigator04",
+        password: hashedPassword,
+        role: "조사사",
+        name: "허지안",
+        company: "플록슨",
+        department: "조사팀",
+        position: "조사사",
+        email: "investigator04@floxn.com",
+        phone: "010-5004-5004",
+        office: "02-5004-5004",
+        address: "서울 마포구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "investigator05",
+        password: hashedPassword,
+        role: "조사사",
+        name: "송다빈",
+        company: "플록슨",
+        department: "조사팀",
+        position: "조사사",
+        email: "investigator05@floxn.com",
+        phone: "010-5005-5005",
+        office: "02-5005-5005",
+        address: "서울 강동구",
+        status: "active",
+        createdAt: currentDate,
+      },
       // 의뢰사
-      { username: "client01", password: hashedPassword, role: "의뢰사", name: "김대한", company: "대한아파트관리", department: "관리팀", position: "팀장", email: "client01@daehan.com", phone: "010-6001-6001", office: "02-6001-6001", address: "서울 강남구", status: "active", createdAt: currentDate },
-      { username: "client02", password: hashedPassword, role: "의뢰사", name: "이한나", company: "한나빌딩관리", department: "관리팀", position: "과장", email: "client02@hanna.com", phone: "010-6002-6002", office: "02-6002-6002", address: "서울 서초구", status: "active", createdAt: currentDate },
-      { username: "client03", password: hashedPassword, role: "의뢰사", name: "박종합", company: "종합부동산", department: "영업팀", position: "대리", email: "client03@jonghap.com", phone: "010-6003-6003", office: "02-6003-6003", address: "서울 송파구", status: "active", createdAt: currentDate },
-      { username: "client04", password: hashedPassword, role: "의뢰사", name: "최민지", company: "민지시설관리", department: "관리팀", position: "실장", email: "client04@minji.com", phone: "010-6004-6004", office: "02-6004-6004", address: "서울 마포구", status: "active", createdAt: currentDate },
-      { username: "client05", password: hashedPassword, role: "의뢰사", name: "정서울", company: "서울건물관리", department: "관리팀", position: "부장", email: "client05@seoul.com", phone: "010-6005-6005", office: "02-6005-6005", address: "서울 강동구", status: "active", createdAt: currentDate },
+      {
+        username: "client01",
+        password: hashedPassword,
+        role: "의뢰사",
+        name: "김대한",
+        company: "대한아파트관리",
+        department: "관리팀",
+        position: "팀장",
+        email: "client01@daehan.com",
+        phone: "010-6001-6001",
+        office: "02-6001-6001",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "client02",
+        password: hashedPassword,
+        role: "의뢰사",
+        name: "이한나",
+        company: "한나빌딩관리",
+        department: "관리팀",
+        position: "과장",
+        email: "client02@hanna.com",
+        phone: "010-6002-6002",
+        office: "02-6002-6002",
+        address: "서울 서초구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "client03",
+        password: hashedPassword,
+        role: "의뢰사",
+        name: "박종합",
+        company: "종합부동산",
+        department: "영업팀",
+        position: "대리",
+        email: "client03@jonghap.com",
+        phone: "010-6003-6003",
+        office: "02-6003-6003",
+        address: "서울 송파구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "client04",
+        password: hashedPassword,
+        role: "의뢰사",
+        name: "최민지",
+        company: "민지시설관리",
+        department: "관리팀",
+        position: "실장",
+        email: "client04@minji.com",
+        phone: "010-6004-6004",
+        office: "02-6004-6004",
+        address: "서울 마포구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "client05",
+        password: hashedPassword,
+        role: "의뢰사",
+        name: "정서울",
+        company: "서울건물관리",
+        department: "관리팀",
+        position: "부장",
+        email: "client05@seoul.com",
+        phone: "010-6005-6005",
+        office: "02-6005-6005",
+        address: "서울 강동구",
+        status: "active",
+        createdAt: currentDate,
+      },
     ];
-    
+
     // 각 계정이 존재하지 않으면 생성
     let createdCount = 0;
     let existingCount = 0;
-    
+
     for (const account of essentialAccounts) {
       try {
-        const existing = await db.select().from(users).where(eq(users.username, account.username));
+        const existing = await db
+          .select()
+          .from(users)
+          .where(eq(users.username, account.username));
         if (existing.length === 0) {
           await db.insert(users).values({
             id: randomUUID(),
             ...account,
           });
-          console.log(`[Essential Accounts] Created: ${account.username} (${account.role})`);
+          console.log(
+            `[Essential Accounts] Created: ${account.username} (${account.role})`,
+          );
           createdCount++;
         } else {
           existingCount++;
         }
       } catch (error) {
-        console.error(`[Essential Accounts] Error creating ${account.username}:`, error);
+        console.error(
+          `[Essential Accounts] Error creating ${account.username}:`,
+          error,
+        );
       }
     }
-    
-    console.log(`[Essential Accounts] Summary: ${createdCount} created, ${existingCount} already exist`);
+
+    console.log(
+      `[Essential Accounts] Summary: ${createdCount} created, ${existingCount} already exist`,
+    );
   }
 
   private async seedTestCases() {
     const currentDate = getKSTDate();
-    
+
     // Get users for case assignment
     const allUsers = await db.select().from(users);
-    const admin01 = allUsers.find(u => u.username === "admin01");
-    const assessor01 = allUsers.find(u => u.username === "assessor01");
-    const assessor02 = allUsers.find(u => u.username === "assessor02");
-    const partner01 = allUsers.find(u => u.username === "partner01");
-    const partner02 = allUsers.find(u => u.username === "partner02");
-    
+    const admin01 = allUsers.find((u) => u.username === "admin01");
+    const assessor01 = allUsers.find((u) => u.username === "assessor01");
+    const assessor02 = allUsers.find((u) => u.username === "assessor02");
+    const partner01 = allUsers.find((u) => u.username === "partner01");
+    const partner02 = allUsers.find((u) => u.username === "partner02");
+
     if (!admin01) return;
-    
+
     const statuses = ["제출", "검토중", "1차승인", "완료", "청구", "정산완료"];
-    const insuranceCompanies = ["MG손해보험", "삼성화재", "현대해상", "DB손해보험", "KB손해보험"];
-    
+    const insuranceCompanies = [
+      "MG손해보험",
+      "삼성화재",
+      "현대해상",
+      "DB손해보험",
+      "KB손해보험",
+    ];
+
     const testCases = [];
-    
+
     // 지난달 (2024년 10월) 케이스 - 145건
     for (let i = 1; i <= 145; i++) {
-      const day = ((i % 28) + 1).toString().padStart(2, '0');
+      const day = ((i % 28) + 1).toString().padStart(2, "0");
       const status = statuses[i % statuses.length];
       const insurance = insuranceCompanies[i % insuranceCompanies.length];
-      
+
       testCases.push({
-        caseNumber: `CLM-2024100${i.toString().padStart(5, '0')}`,
+        caseNumber: `CLM-2024100${i.toString().padStart(5, "0")}`,
         status,
         accidentDate: `2024-10-${day}`,
         insuranceCompany: insurance,
-        insurancePolicyNo: `${insurance.substring(0, 2)}2024-${i.toString().padStart(5, '0')}`,
-        insuranceAccidentNo: `24100${i.toString().padStart(4, '0')}`,
+        insurancePolicyNo: `${insurance.substring(0, 2)}2024-${i.toString().padStart(5, "0")}`,
+        insuranceAccidentNo: `24100${i.toString().padStart(4, "0")}`,
         clientResidence: "서울 강남구",
         clientDepartment: "보상팀",
         clientName: `고객${i}`,
         clientContact: "010-0000-0000",
         assessorId: (i % 2 === 0 ? assessor01?.id : assessor02?.id) || null,
         assessorDepartment: "심사팀",
-        assessorTeam: (i % 2 === 0 ? "1팀" : "2팀"),
+        assessorTeam: i % 2 === 0 ? "1팀" : "2팀",
         assessorContact: "010-4001-4001",
         investigatorTeam: "조사1팀",
         investigatorDepartment: "현장조사",
@@ -2268,27 +3071,27 @@ export class DbStorage implements IStorage {
         updatedAt: `2024-10-${day}`,
       });
     }
-    
+
     // 이번달 (2024년 11월) 케이스 - 167건 (전월 대비 +15.2% 증가, 22건 증가)
     for (let i = 1; i <= 167; i++) {
-      const day = ((i % 28) + 1).toString().padStart(2, '0');
+      const day = ((i % 28) + 1).toString().padStart(2, "0");
       const status = statuses[i % statuses.length];
       const insurance = insuranceCompanies[i % insuranceCompanies.length];
-      
+
       testCases.push({
-        caseNumber: `CLM-2024110${i.toString().padStart(5, '0')}`,
+        caseNumber: `CLM-2024110${i.toString().padStart(5, "0")}`,
         status,
         accidentDate: `2024-11-${day}`,
         insuranceCompany: insurance,
-        insurancePolicyNo: `${insurance.substring(0, 2)}2024-${i.toString().padStart(5, '0')}`,
-        insuranceAccidentNo: `24110${i.toString().padStart(4, '0')}`,
+        insurancePolicyNo: `${insurance.substring(0, 2)}2024-${i.toString().padStart(5, "0")}`,
+        insuranceAccidentNo: `24110${i.toString().padStart(4, "0")}`,
         clientResidence: "서울 서초구",
         clientDepartment: "보상팀",
         clientName: `고객${i}`,
         clientContact: "010-1111-1111",
         assessorId: (i % 2 === 0 ? assessor01?.id : assessor02?.id) || null,
         assessorDepartment: "심사팀",
-        assessorTeam: (i % 2 === 0 ? "1팀" : "2팀"),
+        assessorTeam: i % 2 === 0 ? "1팀" : "2팀",
         assessorContact: "010-4001-4001",
         investigatorTeam: "조사1팀",
         investigatorDepartment: "현장조사",
@@ -2313,7 +3116,7 @@ export class DbStorage implements IStorage {
         updatedAt: `2024-11-${day}`,
       });
     }
-    
+
     // 기존 샘플 케이스 3건 추가 (이번달)
     testCases.push(
       {
@@ -2446,9 +3249,12 @@ export class DbStorage implements IStorage {
       }
 
       // Get admin user for createdBy
-      const adminUsers = await db.select().from(users).where(sql`${users.role} = '관리자'`);
-      const admin01 = adminUsers.find(u => u.username === "admin01");
-      
+      const adminUsers = await db
+        .select()
+        .from(users)
+        .where(sql`${users.role} = '관리자'`);
+      const admin01 = adminUsers.find((u) => u.username === "admin01");
+
       if (!admin01) {
         console.log("No admin user found for estimate seeding");
         return;
@@ -2505,8 +3311,10 @@ export class DbStorage implements IStorage {
 
       // Insert estimates
       await db.insert(estimates).values(estimateRecords);
-      
-      console.log(`Seeded ${estimateRecords.length} estimates for completed/billed cases`);
+
+      console.log(
+        `Seeded ${estimateRecords.length} estimates for completed/billed cases`,
+      );
     } catch (error) {
       console.error("Error seeding test estimates:", error);
     }
@@ -2515,42 +3323,412 @@ export class DbStorage implements IStorage {
   private async seedTestUsers() {
     const hashedPassword = await bcrypt.hash("1234", SALT_ROUNDS);
     const currentDate = getKSTDate();
-    
+
     const testUsers = [
       // ===== 관리자 5명 =====
-      { username: "admin01", password: hashedPassword, role: "관리자", name: "김블락", company: "플록슨", department: "개발팀", position: "팀장", email: "admin01@floxn.com", phone: "010-1001-1001", office: "02-1001-1001", address: "서울 강남구", status: "active", createdAt: currentDate },
-      { username: "admin02", password: hashedPassword, role: "관리자", name: "박영희", company: "플록슨", department: "기획팀", position: "부장", email: "admin02@floxn.com", phone: "010-1002-1002", office: "02-1002-1002", address: "서울 송파구", status: "active", createdAt: currentDate },
-      { username: "admin03", password: hashedPassword, role: "관리자", name: "이현우", company: "플록슨", department: "인사팀", position: "차장", email: "admin03@floxn.com", phone: "010-1003-1003", office: "02-1003-1003", address: "서울 종로구", status: "active", createdAt: currentDate },
-      { username: "admin04", password: hashedPassword, role: "관리자", name: "최지원", company: "플록슨", department: "운영팀", position: "과장", email: "admin04@floxn.com", phone: "010-1004-1004", office: "02-1004-1004", address: "서울 마포구", status: "active", createdAt: currentDate },
-      { username: "admin05", password: hashedPassword, role: "관리자", name: "정수현", company: "플록슨", department: "총무팀", position: "대리", email: "admin05@floxn.com", phone: "010-1005-1005", office: "02-1005-1005", address: "서울 서초구", status: "active", createdAt: currentDate },
-      
+      {
+        username: "admin01",
+        password: hashedPassword,
+        role: "관리자",
+        name: "김블락",
+        company: "플록슨",
+        department: "개발팀",
+        position: "팀장",
+        email: "admin01@floxn.com",
+        phone: "010-1001-1001",
+        office: "02-1001-1001",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "admin02",
+        password: hashedPassword,
+        role: "관리자",
+        name: "박영희",
+        company: "플록슨",
+        department: "기획팀",
+        position: "부장",
+        email: "admin02@floxn.com",
+        phone: "010-1002-1002",
+        office: "02-1002-1002",
+        address: "서울 송파구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "admin03",
+        password: hashedPassword,
+        role: "관리자",
+        name: "이현우",
+        company: "플록슨",
+        department: "인사팀",
+        position: "차장",
+        email: "admin03@floxn.com",
+        phone: "010-1003-1003",
+        office: "02-1003-1003",
+        address: "서울 종로구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "admin04",
+        password: hashedPassword,
+        role: "관리자",
+        name: "최지원",
+        company: "플록슨",
+        department: "운영팀",
+        position: "과장",
+        email: "admin04@floxn.com",
+        phone: "010-1004-1004",
+        office: "02-1004-1004",
+        address: "서울 마포구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "admin05",
+        password: hashedPassword,
+        role: "관리자",
+        name: "정수현",
+        company: "플록슨",
+        department: "총무팀",
+        position: "대리",
+        email: "admin05@floxn.com",
+        phone: "010-1005-1005",
+        office: "02-1005-1005",
+        address: "서울 서초구",
+        status: "active",
+        createdAt: currentDate,
+      },
+
       // ===== 보험사 5명 =====
-      { username: "insure01", password: hashedPassword, role: "보험사", name: "김민준", company: "삼성화재", department: "사고접수팀", position: "팀장", email: "insure01@samsung.com", phone: "010-2001-2001", office: "02-2001-2001", address: "서울 강남구", status: "active", createdAt: currentDate },
-      { username: "insure02", password: hashedPassword, role: "보험사", name: "이서윤", company: "현대해상", department: "보상팀", position: "차장", email: "insure02@hyundai.com", phone: "010-2002-2002", office: "02-2002-2002", address: "서울 중구", status: "active", createdAt: currentDate },
-      { username: "insure03", password: hashedPassword, role: "보험사", name: "박도현", company: "DB손해보험", department: "사고처리팀", position: "과장", email: "insure03@db.com", phone: "010-2003-2003", office: "02-2003-2003", address: "서울 영등포구", status: "active", createdAt: currentDate },
-      { username: "insure04", password: hashedPassword, role: "보험사", name: "최하은", company: "KB손해보험", department: "보상심사팀", position: "부장", email: "insure04@kb.com", phone: "010-2004-2004", office: "02-2004-2004", address: "서울 종로구", status: "active", createdAt: currentDate },
-      { username: "insure05", password: hashedPassword, role: "보험사", name: "정예준", company: "메리츠화재", department: "사고조사팀", position: "대리", email: "insure05@meritz.com", phone: "010-2005-2005", office: "02-2005-2005", address: "서울 강동구", status: "active", createdAt: currentDate },
-      
+      {
+        username: "insure01",
+        password: hashedPassword,
+        role: "보험사",
+        name: "김민준",
+        company: "삼성화재",
+        department: "사고접수팀",
+        position: "팀장",
+        email: "insure01@samsung.com",
+        phone: "010-2001-2001",
+        office: "02-2001-2001",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "insure02",
+        password: hashedPassword,
+        role: "보험사",
+        name: "이서윤",
+        company: "현대해상",
+        department: "보상팀",
+        position: "차장",
+        email: "insure02@hyundai.com",
+        phone: "010-2002-2002",
+        office: "02-2002-2002",
+        address: "서울 중구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "insure03",
+        password: hashedPassword,
+        role: "보험사",
+        name: "박도현",
+        company: "DB손해보험",
+        department: "사고처리팀",
+        position: "과장",
+        email: "insure03@db.com",
+        phone: "010-2003-2003",
+        office: "02-2003-2003",
+        address: "서울 영등포구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "insure04",
+        password: hashedPassword,
+        role: "보험사",
+        name: "최하은",
+        company: "KB손해보험",
+        department: "보상심사팀",
+        position: "부장",
+        email: "insure04@kb.com",
+        phone: "010-2004-2004",
+        office: "02-2004-2004",
+        address: "서울 종로구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "insure05",
+        password: hashedPassword,
+        role: "보험사",
+        name: "정예준",
+        company: "메리츠화재",
+        department: "사고조사팀",
+        position: "대리",
+        email: "insure05@meritz.com",
+        phone: "010-2005-2005",
+        office: "02-2005-2005",
+        address: "서울 강동구",
+        status: "active",
+        createdAt: currentDate,
+      },
+
       // ===== 협력사 5명 =====
-      { username: "partner01", password: hashedPassword, role: "협력사", name: "강지훈", company: "AERO 파트너스", department: "현장조사팀", position: "팀장", email: "partner01@aero.com", phone: "010-3001-3001", office: "02-3001-3001", address: "서울 서초구", bankName: "국민은행", accountNumber: "123-456-000001", accountHolder: "강지훈", serviceRegions: ["서울시/강남구", "서초구", "송파구"], status: "active", createdAt: currentDate },
-      { username: "partner02", password: hashedPassword, role: "협력사", name: "윤소희", company: "누수닥터", department: "복구팀", position: "차장", email: "partner02@doctor.com", phone: "010-3002-3002", office: "02-3002-3002", address: "서울 용산구", bankName: "신한은행", accountNumber: "234-567-000002", accountHolder: "윤소희", serviceRegions: ["서울시/종로구", "중구", "용산구"], status: "active", createdAt: currentDate },
-      { username: "partner03", password: hashedPassword, role: "협력사", name: "장민서", company: "클린워터", department: "기술팀", position: "과장", email: "partner03@cleanwater.com", phone: "010-3003-3003", office: "02-3003-3003", address: "서울 마포구", bankName: "우리은행", accountNumber: "345-678-000003", accountHolder: "장민서", serviceRegions: ["서울시/마포구", "서대문구", "은평구"], status: "active", createdAt: currentDate },
-      { username: "partner04", password: hashedPassword, role: "협력사", name: "임채원", company: "수리마스터", department: "시공팀", position: "팀장", email: "partner04@master.com", phone: "010-3004-3004", office: "02-3004-3004", address: "서울 강북구", bankName: "하나은행", accountNumber: "456-789-000004", accountHolder: "임채원", serviceRegions: ["서울시/강북구", "성북구", "노원구"], status: "active", createdAt: currentDate },
-      { username: "partner05", password: hashedPassword, role: "협력사", name: "한유진", company: "복구전문가", department: "견적팀", position: "부장", email: "partner05@expert.com", phone: "010-3005-3005", office: "02-3005-3005", address: "경기 성남시", bankName: "농협은행", accountNumber: "567-890-000005", accountHolder: "한유진", serviceRegions: ["경기/성남시", "분당구", "수정구"], status: "active", createdAt: currentDate },
-      
+      {
+        username: "partner01",
+        password: hashedPassword,
+        role: "협력사",
+        name: "강지훈",
+        company: "AERO 파트너스",
+        department: "현장조사팀",
+        position: "팀장",
+        email: "partner01@aero.com",
+        phone: "010-3001-3001",
+        office: "02-3001-3001",
+        address: "서울 서초구",
+        bankName: "국민은행",
+        accountNumber: "123-456-000001",
+        accountHolder: "강지훈",
+        serviceRegions: ["서울시/강남구", "서초구", "송파구"],
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "partner02",
+        password: hashedPassword,
+        role: "협력사",
+        name: "윤소희",
+        company: "누수닥터",
+        department: "복구팀",
+        position: "차장",
+        email: "partner02@doctor.com",
+        phone: "010-3002-3002",
+        office: "02-3002-3002",
+        address: "서울 용산구",
+        bankName: "신한은행",
+        accountNumber: "234-567-000002",
+        accountHolder: "윤소희",
+        serviceRegions: ["서울시/종로구", "중구", "용산구"],
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "partner03",
+        password: hashedPassword,
+        role: "협력사",
+        name: "장민서",
+        company: "클린워터",
+        department: "기술팀",
+        position: "과장",
+        email: "partner03@cleanwater.com",
+        phone: "010-3003-3003",
+        office: "02-3003-3003",
+        address: "서울 마포구",
+        bankName: "우리은행",
+        accountNumber: "345-678-000003",
+        accountHolder: "장민서",
+        serviceRegions: ["서울시/마포구", "서대문구", "은평구"],
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "partner04",
+        password: hashedPassword,
+        role: "협력사",
+        name: "임채원",
+        company: "수리마스터",
+        department: "시공팀",
+        position: "팀장",
+        email: "partner04@master.com",
+        phone: "010-3004-3004",
+        office: "02-3004-3004",
+        address: "서울 강북구",
+        bankName: "하나은행",
+        accountNumber: "456-789-000004",
+        accountHolder: "임채원",
+        serviceRegions: ["서울시/강북구", "성북구", "노원구"],
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "partner05",
+        password: hashedPassword,
+        role: "협력사",
+        name: "한유진",
+        company: "복구전문가",
+        department: "견적팀",
+        position: "부장",
+        email: "partner05@expert.com",
+        phone: "010-3005-3005",
+        office: "02-3005-3005",
+        address: "경기 성남시",
+        bankName: "농협은행",
+        accountNumber: "567-890-000005",
+        accountHolder: "한유진",
+        serviceRegions: ["경기/성남시", "분당구", "수정구"],
+        status: "active",
+        createdAt: currentDate,
+      },
+
       // ===== 심사사 5명 =====
-      { username: "assessor01", password: hashedPassword, role: "심사사", name: "신동욱", company: "플록슨", department: "심사팀", position: "수석심사사", email: "assessor01@floxn.com", phone: "010-4001-4001", office: "02-4001-4001", address: "서울 강남구", status: "active", createdAt: currentDate },
-      { username: "assessor02", password: hashedPassword, role: "심사사", name: "오서현", company: "플록슨", department: "심사팀", position: "책임심사사", email: "assessor02@floxn.com", phone: "010-4002-4002", office: "02-4002-4002", address: "서울 서초구", status: "active", createdAt: currentDate },
-      { username: "assessor03", password: hashedPassword, role: "심사사", name: "배준영", company: "플록슨", department: "심사팀", position: "선임심사사", email: "assessor03@floxn.com", phone: "010-4003-4003", office: "02-4003-4003", address: "서울 송파구", status: "active", createdAt: currentDate },
-      { username: "assessor04", password: hashedPassword, role: "심사사", name: "황시우", company: "플록슨", department: "심사팀", position: "심사사", email: "assessor04@floxn.com", phone: "010-4004-4004", office: "02-4004-4004", address: "서울 마포구", status: "active", createdAt: currentDate },
-      { username: "assessor05", password: hashedPassword, role: "심사사", name: "서은비", company: "플록슨", department: "심사팀", position: "심사사", email: "assessor05@floxn.com", phone: "010-4005-4005", office: "02-4005-4005", address: "서울 강동구", status: "active", createdAt: currentDate },
-      
+      {
+        username: "assessor01",
+        password: hashedPassword,
+        role: "심사사",
+        name: "신동욱",
+        company: "플록슨",
+        department: "심사팀",
+        position: "수석심사사",
+        email: "assessor01@floxn.com",
+        phone: "010-4001-4001",
+        office: "02-4001-4001",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "assessor02",
+        password: hashedPassword,
+        role: "심사사",
+        name: "오서현",
+        company: "플록슨",
+        department: "심사팀",
+        position: "책임심사사",
+        email: "assessor02@floxn.com",
+        phone: "010-4002-4002",
+        office: "02-4002-4002",
+        address: "서울 서초구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "assessor03",
+        password: hashedPassword,
+        role: "심사사",
+        name: "배준영",
+        company: "플록슨",
+        department: "심사팀",
+        position: "선임심사사",
+        email: "assessor03@floxn.com",
+        phone: "010-4003-4003",
+        office: "02-4003-4003",
+        address: "서울 송파구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "assessor04",
+        password: hashedPassword,
+        role: "심사사",
+        name: "황시우",
+        company: "플록슨",
+        department: "심사팀",
+        position: "심사사",
+        email: "assessor04@floxn.com",
+        phone: "010-4004-4004",
+        office: "02-4004-4004",
+        address: "서울 마포구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "assessor05",
+        password: hashedPassword,
+        role: "심사사",
+        name: "서은비",
+        company: "플록슨",
+        department: "심사팀",
+        position: "심사사",
+        email: "assessor05@floxn.com",
+        phone: "010-4005-4005",
+        office: "02-4005-4005",
+        address: "서울 강동구",
+        status: "active",
+        createdAt: currentDate,
+      },
+
       // ===== 조사사 5명 =====
-      { username: "investigator01", password: hashedPassword, role: "조사사", name: "안재현", company: "플록슨", department: "조사팀", position: "수석조사사", email: "investigator01@floxn.com", phone: "010-5001-5001", office: "02-5001-5001", address: "서울 강남구", status: "active", createdAt: currentDate },
-      { username: "investigator02", password: hashedPassword, role: "조사사", name: "조아라", company: "플록슨", department: "조사팀", position: "책임조사사", email: "investigator02@floxn.com", phone: "010-5002-5002", office: "02-5002-5002", address: "서울 성동구", status: "active", createdAt: currentDate },
-      { username: "investigator03", password: hashedPassword, role: "조사사", name: "홍민재", company: "플록슨", department: "조사팀", position: "선임조사사", email: "investigator03@floxn.com", phone: "010-5003-5003", office: "02-5003-5003", address: "서울 광진구", status: "active", createdAt: currentDate },
-      { username: "investigator04", password: hashedPassword, role: "조사사", name: "허지안", company: "플록슨", department: "조사팀", position: "조사사", email: "investigator04@floxn.com", phone: "010-5004-5004", office: "02-5004-5004", address: "경기 성남시", status: "active", createdAt: currentDate },
-      { username: "investigator05", password: hashedPassword, role: "조사사", name: "송다빈", company: "플록슨", department: "조사팀", position: "조사사", email: "investigator05@floxn.com", phone: "010-5005-5005", office: "02-5005-5005", address: "서울 용산구", status: "active", createdAt: currentDate },
+      {
+        username: "investigator01",
+        password: hashedPassword,
+        role: "조사사",
+        name: "안재현",
+        company: "플록슨",
+        department: "조사팀",
+        position: "수석조사사",
+        email: "investigator01@floxn.com",
+        phone: "010-5001-5001",
+        office: "02-5001-5001",
+        address: "서울 강남구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "investigator02",
+        password: hashedPassword,
+        role: "조사사",
+        name: "조아라",
+        company: "플록슨",
+        department: "조사팀",
+        position: "책임조사사",
+        email: "investigator02@floxn.com",
+        phone: "010-5002-5002",
+        office: "02-5002-5002",
+        address: "서울 성동구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "investigator03",
+        password: hashedPassword,
+        role: "조사사",
+        name: "홍민재",
+        company: "플록슨",
+        department: "조사팀",
+        position: "선임조사사",
+        email: "investigator03@floxn.com",
+        phone: "010-5003-5003",
+        office: "02-5003-5003",
+        address: "서울 광진구",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "investigator04",
+        password: hashedPassword,
+        role: "조사사",
+        name: "허지안",
+        company: "플록슨",
+        department: "조사팀",
+        position: "조사사",
+        email: "investigator04@floxn.com",
+        phone: "010-5004-5004",
+        office: "02-5004-5004",
+        address: "경기 성남시",
+        status: "active",
+        createdAt: currentDate,
+      },
+      {
+        username: "investigator05",
+        password: hashedPassword,
+        role: "조사사",
+        name: "송다빈",
+        company: "플록슨",
+        department: "조사팀",
+        position: "조사사",
+        email: "investigator05@floxn.com",
+        phone: "010-5005-5005",
+        office: "02-5005-5005",
+        address: "서울 용산구",
+        status: "active",
+        createdAt: currentDate,
+      },
     ];
 
     await db.insert(users).values(testUsers);
@@ -2562,20 +3740,26 @@ export class DbStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username));
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
     return result[0];
   }
 
   async getAllUsers(): Promise<User[]> {
     // Return all active users (not soft-deleted)
-    const result = await db.select().from(users).where(eq(users.status, "active"));
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.status, "active"));
     return result;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const hashedPassword = await bcrypt.hash(insertUser.password, SALT_ROUNDS);
     const createdAt = getKSTDate();
-    
+
     const newUser = {
       username: insertUser.username,
       password: hashedPassword,
@@ -2601,7 +3785,10 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async verifyPassword(username: string, password: string): Promise<User | null> {
+  async verifyPassword(
+    username: string,
+    password: string,
+  ): Promise<User | null> {
     const user = await this.getUserByUsername(username);
     if (!user) {
       return null;
@@ -2611,20 +3798,23 @@ export class DbStorage implements IStorage {
     return isValid ? user : null;
   }
 
-  async updatePassword(username: string, newPassword: string): Promise<User | null> {
+  async updatePassword(
+    username: string,
+    newPassword: string,
+  ): Promise<User | null> {
     const user = await this.getUserByUsername(username);
     if (!user) {
       return null;
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
-    
+
     const result = await db
       .update(users)
       .set({ password: hashedPassword })
       .where(eq(users.username, username))
       .returning();
-    
+
     return result[0] || null;
   }
 
@@ -2640,12 +3830,16 @@ export class DbStorage implements IStorage {
       .set({ status: "deleted" })
       .where(eq(users.username, username))
       .returning();
-    
+
     return result[0] || null;
   }
 
   async getCaseById(caseId: string): Promise<Case | null> {
-    const result = await db.select().from(cases).where(eq(cases.id, caseId)).limit(1);
+    const result = await db
+      .select()
+      .from(cases)
+      .where(eq(cases.id, caseId))
+      .limit(1);
     return result[0] || null;
   }
 
@@ -2682,8 +3876,8 @@ export class DbStorage implements IStorage {
         or(
           like(cases.caseNumber, searchTerm),
           like(cases.insuredName, searchTerm),
-          like(cases.insuranceCompany, searchTerm)
-        )
+          like(cases.insuranceCompany, searchTerm),
+        ),
       );
     }
 
@@ -2691,58 +3885,61 @@ export class DbStorage implements IStorage {
     return results;
   }
 
-  async getNextCaseSequence(date: string, insuranceAccidentNo?: string): Promise<{ prefix: string; suffix: number }> {
+  async getNextCaseSequence(
+    date: string,
+    insuranceAccidentNo?: string,
+  ): Promise<{ prefix: string; suffix: number }> {
     // Step 1: Check if there are existing cases with the same insurance accident number
     if (insuranceAccidentNo) {
       const existingCases = await db
         .select({ caseNumber: cases.caseNumber })
         .from(cases)
         .where(eq(cases.insuranceAccidentNo, insuranceAccidentNo));
-      
+
       if (existingCases.length > 0) {
         // Extract prefix from first existing case (yyMMddxxx part)
         const firstCaseNumber = existingCases[0].caseNumber;
         if (firstCaseNumber) {
-          const parts = firstCaseNumber.split('-');
+          const parts = firstCaseNumber.split("-");
           if (parts.length >= 2) {
             const prefix = parts[0]; // "251124001"
-            
+
             // Find max suffix for this prefix
             let maxSuffix = -1;
             for (const c of existingCases) {
-              if (c.caseNumber && c.caseNumber.startsWith(prefix + '-')) {
-                const suffixStr = c.caseNumber.split('-')[1];
+              if (c.caseNumber && c.caseNumber.startsWith(prefix + "-")) {
+                const suffixStr = c.caseNumber.split("-")[1];
                 const suffix = parseInt(suffixStr, 10);
                 if (!isNaN(suffix) && suffix > maxSuffix) {
                   maxSuffix = suffix;
                 }
               }
             }
-            
+
             return { prefix, suffix: maxSuffix + 1 };
           }
         }
       }
     }
-    
+
     // Step 2: No existing cases with same accident number - generate new prefix
     // Convert YYYY-MM-DD to yyMMdd (6 digits)
-    const dateParts = date.split('-');
+    const dateParts = date.split("-");
     const year = dateParts[0].substring(2); // YY (last 2 digits)
     const month = dateParts[1]; // MM
     const day = dateParts[2]; // dd
     const datePrefix = year + month + day; // yyMMdd
-    
+
     // Query database for cases with case numbers starting with datePrefix
     const allCases = await db
       .select({ caseNumber: cases.caseNumber })
       .from(cases)
-      .where(sql`${cases.caseNumber} LIKE ${datePrefix + '%'}`);
-    
+      .where(sql`${cases.caseNumber} LIKE ${datePrefix + "%"}`);
+
     let maxSequence = 0;
     for (const c of allCases) {
       if (c.caseNumber && c.caseNumber.startsWith(datePrefix)) {
-        const parts = c.caseNumber.split('-');
+        const parts = c.caseNumber.split("-");
         if (parts.length >= 1) {
           const sequencePart = parts[0].substring(6); // Extract XXX from yyMMddxxx
           const seq = parseInt(sequencePart, 10);
@@ -2752,22 +3949,27 @@ export class DbStorage implements IStorage {
         }
       }
     }
-    
+
     const nextSequence = maxSequence + 1;
-    const seqStr = String(nextSequence).padStart(3, '0');
+    const seqStr = String(nextSequence).padStart(3, "0");
     const prefix = `${datePrefix}${seqStr}`; // e.g., "251124001"
-    
+
     return { prefix, suffix: 0 };
   }
 
-  async createCase(caseData: Omit<InsertCase, "caseNumber"> & { caseNumber: string; createdBy: string }): Promise<Case> {
+  async createCase(
+    caseData: Omit<InsertCase, "caseNumber"> & {
+      caseNumber: string;
+      createdBy: string;
+    },
+  ): Promise<Case> {
     const currentDate = getKSTDate();
     const status = caseData.status || "작성중";
-    
+
     // 상태에 따라 자동으로 날짜 기록 (케이스 생성 시)
     let autoReceptionDate = caseData.receptionDate || null;
     let autoAssignmentDate = caseData.assignmentDate || null;
-    
+
     if (status === "접수완료") {
       // 접수완료 상태로 생성 시 접수일과 배당일 자동 기록 (기존 값 없을 때만)
       if (!autoReceptionDate) {
@@ -2777,7 +3979,7 @@ export class DbStorage implements IStorage {
         autoAssignmentDate = currentDate;
       }
     }
-    
+
     const newCase = {
       caseNumber: caseData.caseNumber,
       status: status,
@@ -2807,9 +4009,10 @@ export class DbStorage implements IStorage {
       insuredAddressDetail: caseData.insuredAddressDetail || null,
       victimName: caseData.victimName || null,
       victimContact: caseData.victimContact || null,
-      sameAsPolicyHolder: caseData.sameAsPolicyHolder != null 
-        ? String(caseData.sameAsPolicyHolder)
-        : null,
+      sameAsPolicyHolder:
+        caseData.sameAsPolicyHolder != null
+          ? String(caseData.sameAsPolicyHolder)
+          : null,
       clientPhone: caseData.clientPhone || null,
       clientAddress: caseData.clientAddress || null,
       accidentLocation: caseData.accidentLocation || null,
@@ -2843,7 +4046,7 @@ export class DbStorage implements IStorage {
 
   async getAllCases(user?: User): Promise<CaseWithLatestProgress[]> {
     let query: any = db.select().from(cases);
-    
+
     // 권한별 필터링
     if (user) {
       switch (user.role) {
@@ -2875,109 +4078,128 @@ export class DbStorage implements IStorage {
           return [];
       }
     }
-    
+
     const allCases = await query.orderBy(asc(cases.createdAt));
     const allProgressUpdates = await db.select().from(progressUpdates);
-    
+
     // 담당자 이름 조회용 사용자 목록 가져오기
     const allUsers = await db.select().from(users);
-    const userMap = new Map(allUsers.map(u => [u.id, u]));
+    const userMap = new Map(allUsers.map((u) => [u.id, u]));
     console.log(`[getAllCases] Total users in userMap: ${userMap.size}`);
-    
+
     // 각 케이스의 최신 진행상황 찾기
-    const casesWithProgress: CaseWithLatestProgress[] = allCases.map(caseItem => {
-      // 해당 케이스의 모든 진행상황 찾기
-      const caseUpdates = allProgressUpdates
-        .filter(update => update.caseId === caseItem.id)
-        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)); // 최신순 정렬
-      
-      // 최신 진행상황
-      const latestUpdate = caseUpdates[0];
-      
-      // 담당자 이름 조회 (managerId로 users 테이블에서 찾기)
-      const manager = caseItem.managerId ? userMap.get(caseItem.managerId) : null;
-      
-      // 디버깅 로그 - 모든 케이스에 대해 출력
-      console.log(`[getAllCases] Case ${caseItem.caseNumber}: managerId=${caseItem.managerId || 'NULL'}, found: ${manager?.name || '-'}`);
-      
-      return {
-        ...caseItem,
-        latestProgress: latestUpdate ? {
-          content: latestUpdate.content,
-          createdAt: latestUpdate.createdAt,
-        } : null,
-        managerName: manager?.name || null,
-      };
-    });
-    
+    const casesWithProgress: CaseWithLatestProgress[] = allCases.map(
+      (caseItem) => {
+        // 해당 케이스의 모든 진행상황 찾기
+        const caseUpdates = allProgressUpdates
+          .filter((update) => update.caseId === caseItem.id)
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt)); // 최신순 정렬
+
+        // 최신 진행상황
+        const latestUpdate = caseUpdates[0];
+
+        // 담당자 이름 조회 (managerId로 users 테이블에서 찾기)
+        const manager = caseItem.managerId
+          ? userMap.get(caseItem.managerId)
+          : null;
+
+        // 디버깅 로그 - 모든 케ol�스에 대해 출력
+        console.log(
+          `[getAllCases] Case ${caseItem.caseNumber}: managerId=${caseItem.managerId || "NULL"}, found: ${manager?.name || "-"}`,
+        );
+
+        return {
+          ...caseItem,
+          latestProgress: latestUpdate
+            ? {
+                content: latestUpdate.content,
+                createdAt: latestUpdate.createdAt,
+              }
+            : null,
+          managerName: manager?.name || null,
+        };
+      },
+    );
+
     return casesWithProgress;
   }
 
-  async updateCase(caseId: string, caseData: Partial<InsertCase>): Promise<Case | null> {
+  async updateCase(
+    caseId: string,
+    caseData: Partial<InsertCase>,
+  ): Promise<Case | null> {
     const currentDate = getKSTDate();
-    
+
     // 배당 협력사 저장 시 assignmentDate 자동 기록 (기존 값이 없을 때만)
     const existingCase = await this.getCaseById(caseId);
     const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
-    
-    if (caseData.assignedPartner && existingCase && !existingCase.assignmentDate) {
+
+    if (
+      caseData.assignedPartner &&
+      existingCase &&
+      !existingCase.assignmentDate
+    ) {
       additionalUpdates.assignmentDate = currentDate;
     }
-    
-    const result = await db.update(cases)
+
+    const result = await db
+      .update(cases)
       .set({ ...caseData, ...additionalUpdates, updatedAt: currentDate })
       .where(eq(cases.id, caseId))
       .returning();
-    
+
     if (result.length === 0) {
       return null;
     }
-    
+
     return result[0];
   }
 
   async deleteCase(caseId: string): Promise<void> {
     // 1. 먼저 해당 케이스의 견적서 ID 목록 가져오기
-    const caseEstimates = await db.select({ id: estimates.id })
+    const caseEstimates = await db
+      .select({ id: estimates.id })
       .from(estimates)
       .where(eq(estimates.caseId, caseId));
-    
+
     // 2. 각 견적서의 estimateRows 삭제
     for (const estimate of caseEstimates) {
-      await db.delete(estimateRows).where(eq(estimateRows.estimateId, estimate.id));
+      await db
+        .delete(estimateRows)
+        .where(eq(estimateRows.estimateId, estimate.id));
     }
-    
+
     // 3. 견적서 삭제
     await db.delete(estimates).where(eq(estimates.caseId, caseId));
-    
+
     // 4. 케이스 문서 삭제
     await db.delete(caseDocuments).where(eq(caseDocuments.caseId, caseId));
-    
+
     // 5. 진행상황 업데이트 삭제
     await db.delete(progressUpdates).where(eq(progressUpdates.caseId, caseId));
-    
+
     // 6. 도면 삭제 (drawings 테이블)
     await db.delete(drawings).where(eq(drawings.caseId, caseId));
-    
+
     // 7. 마지막으로 케이스 삭제
     await db.delete(cases).where(eq(cases.id, caseId));
   }
 
   async updateCaseStatus(caseId: string, status: string): Promise<Case | null> {
     const currentDate = getKSTDate();
-    
+
     // 미복구 선택 시 자동으로 출동비 청구로 정규화 (모든 경로에서 일관성 보장)
     const normalizedStatus = status === "미복구" ? "출동비 청구" : status;
-    
+
     // 먼저 기존 케이스 데이터를 가져와서 일자가 이미 설정되어 있는지 확인
     const existingCase = await this.getCaseById(caseId);
     if (!existingCase) {
       return null;
     }
-    
+
     // 상태에 따라 자동으로 날짜 기록 (기존 값이 없을 때만)
     const dateUpdates: Partial<typeof cases.$inferInsert> = {};
-    
+
     switch (normalizedStatus) {
       case "접수완료":
         // 접수일과 배당일 자동 기록 (기존 값 없을 때만)
@@ -3031,201 +4253,250 @@ export class DbStorage implements IStorage {
         }
         break;
     }
-    
-    const result = await db.update(cases)
-      .set({ 
-        status: normalizedStatus, 
+
+    const result = await db
+      .update(cases)
+      .set({
+        status: normalizedStatus,
         updatedAt: currentDate,
-        ...dateUpdates
+        ...dateUpdates,
       })
       .where(eq(cases.id, caseId))
       .returning();
-    
+
     if (result.length === 0) {
       return null;
     }
-    
+
     return result[0];
   }
 
-  async updateCaseSpecialNotes(caseId: string, specialNotes: string | null): Promise<Case | null> {
+  async updateCaseSpecialNotes(
+    caseId: string,
+    specialNotes: string | null,
+  ): Promise<Case | null> {
     const currentDate = getKSTDate();
-    
-    const result = await db.update(cases)
-      .set({ specialNotes, specialNotesConfirmedBy: null, updatedAt: currentDate }) // Reset confirmation when notes are updated
+
+    const result = await db
+      .update(cases)
+      .set({
+        specialNotes,
+        specialNotesConfirmedBy: null,
+        updatedAt: currentDate,
+      }) // Reset confirmation when notes are updated
       .where(eq(cases.id, caseId))
       .returning();
-    
+
     if (result.length === 0) {
       return null;
     }
-    
+
     return result[0];
   }
 
-  async confirmCaseSpecialNotes(caseId: string, confirmedBy: string): Promise<Case | null> {
+  async confirmCaseSpecialNotes(
+    caseId: string,
+    confirmedBy: string,
+  ): Promise<Case | null> {
     const currentDate = getKSTDate();
-    
-    const result = await db.update(cases)
+
+    const result = await db
+      .update(cases)
       .set({ specialNotesConfirmedBy: confirmedBy, updatedAt: currentDate })
       .where(eq(cases.id, caseId))
       .returning();
-    
+
     if (result.length === 0) {
       return null;
     }
-    
+
     return result[0];
   }
 
-  async updateCaseAdditionalNotes(caseId: string, additionalNotes: string | null): Promise<Case | null> {
+  async updateCaseAdditionalNotes(
+    caseId: string,
+    additionalNotes: string | null,
+  ): Promise<Case | null> {
     const currentDate = getKSTDate();
-    
-    const result = await db.update(cases)
+
+    const result = await db
+      .update(cases)
       .set({ additionalNotes, updatedAt: currentDate })
       .where(eq(cases.id, caseId))
       .returning();
-    
+
     if (result.length === 0) {
       return null;
     }
-    
+
     return result[0];
   }
 
-  async updateCaseEstimateAmount(caseId: string, estimateAmount: string): Promise<Case | null> {
+  async updateCaseEstimateAmount(
+    caseId: string,
+    estimateAmount: string,
+  ): Promise<Case | null> {
     const currentDate = getKSTDate();
-    
-    const result = await db.update(cases)
+
+    const result = await db
+      .update(cases)
       .set({ estimateAmount, updatedAt: currentDate })
       .where(eq(cases.id, caseId))
       .returning();
-    
+
     if (result.length === 0) {
       return null;
     }
-    
+
     return result[0];
   }
 
   async submitFieldSurvey(caseId: string): Promise<Case | null> {
     const currentDate = getKSTDate();
-    
+
     // 현장자료 제출일 자동 기록 (기존 값이 없을 때만)
     const existingCase = await this.getCaseById(caseId);
     const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
-    
+
     if (existingCase && !existingCase.siteInvestigationSubmitDate) {
       additionalUpdates.siteInvestigationSubmitDate = currentDate;
     }
-    
-    const result = await db.update(cases)
-      .set({ 
+
+    const result = await db
+      .update(cases)
+      .set({
         fieldSurveyStatus: "submitted",
         status: "제출",
         ...additionalUpdates,
-        updatedAt: currentDate 
+        updatedAt: currentDate,
       })
       .where(eq(cases.id, caseId))
       .returning();
-    
+
     if (result.length === 0) {
       return null;
     }
-    
+
     return result[0];
   }
 
-  async reviewCase(caseId: string, decision: "승인" | "비승인", reviewComment: string | null, reviewedBy: string): Promise<Case | null> {
+  async reviewCase(
+    caseId: string,
+    decision: "승인" | "비승인",
+    reviewComment: string | null,
+    reviewedBy: string,
+  ): Promise<Case | null> {
     const currentDate = getKSTDate();
     const currentTimestamp = getKSTTimestamp();
-    
+
     // 승인 시 1차 승인일(내부) 자동 기록 (기존 값이 없을 때만)
     const existingCase = await this.getCaseById(caseId);
     const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
-    
-    if (decision === "승인" && existingCase && !existingCase.firstApprovalDate) {
+
+    if (
+      decision === "승인" &&
+      existingCase &&
+      !existingCase.firstApprovalDate
+    ) {
       additionalUpdates.firstApprovalDate = currentDate;
     }
-    
-    const result = await db.update(cases)
-      .set({ 
+
+    const result = await db
+      .update(cases)
+      .set({
         reviewDecision: decision,
         reviewComment: reviewComment || null,
         reviewedAt: currentTimestamp,
         reviewedBy: reviewedBy,
         status: decision === "승인" ? "1차승인" : "반려",
         ...additionalUpdates,
-        updatedAt: currentDate 
+        updatedAt: currentDate,
       })
       .where(eq(cases.id, caseId))
       .returning();
-    
+
     if (result.length === 0) {
       return null;
     }
-    
+
     return result[0];
   }
 
-  async updateCaseFieldSurvey(caseId: string, fieldData: {
-    visitDate?: string | null;
-    visitTime?: string | null;
-    travelDistance?: string | null;
-    dispatchLocation?: string | null;
-    accompaniedPerson?: string | null;
-    accidentTime?: string | null;
-    accidentCategory?: string | null;
-    accidentCause?: string | null;
-    specialNotes?: string | null;
-    victimName?: string | null;
-    victimContact?: string | null;
-    victimAddress?: string | null;
-    additionalVictims?: string | null;
-    specialRequests?: string | null;
-    processingTypes?: string | null;
-    processingTypeOther?: string | null;
-    recoveryMethodType?: string | null;
-    fieldSurveyStatus?: string | null;
-    status?: string | null; // 케이스 상태 자동 변경용
-  }): Promise<Case | null> {
+  async updateCaseFieldSurvey(
+    caseId: string,
+    fieldData: {
+      visitDate?: string | null;
+      visitTime?: string | null;
+      travelDistance?: string | null;
+      dispatchLocation?: string | null;
+      accompaniedPerson?: string | null;
+      accidentTime?: string | null;
+      accidentCategory?: string | null;
+      accidentCause?: string | null;
+      specialNotes?: string | null;
+      victimName?: string | null;
+      victimContact?: string | null;
+      victimAddress?: string | null;
+      additionalVictims?: string | null;
+      specialRequests?: string | null;
+      processingTypes?: string | null;
+      processingTypeOther?: string | null;
+      recoveryMethodType?: string | null;
+      fieldSurveyStatus?: string | null;
+      status?: string | null; // 케이스 상태 자동 변경용
+    },
+  ): Promise<Case | null> {
     const currentDate = getKSTDate();
-    
+
     // 현장방문일 저장 시 siteVisitDate 자동 기록 (기존 값이 없을 때만)
     const existingCase = await this.getCaseById(caseId);
     const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
-    
+
     if (fieldData.visitDate && existingCase && !existingCase.siteVisitDate) {
       additionalUpdates.siteVisitDate = currentDate;
     }
-    
-    const result = await db.update(cases)
+
+    const result = await db
+      .update(cases)
       .set({ ...fieldData, ...additionalUpdates, updatedAt: currentDate })
       .where(eq(cases.id, caseId))
       .returning();
-    
+
     if (result.length === 0) {
       return null;
     }
-    
+
     return result[0];
   }
 
   async getPartnerStats(): Promise<PartnerStats[]> {
     const allCases = await db.select().from(cases);
-    const allUsers = await db.select().from(users).where(eq(users.role, "협력사"));
-    
+    const allUsers = await db
+      .select()
+      .from(users)
+      .where(eq(users.role, "협력사"));
+
     const today = getKSTDate();
     const currentMonth = today.substring(0, 7); // YYYY-MM
-    
-    return allUsers.map(partner => {
-      const partnerCases = allCases.filter(c => c.assignedPartner === partner.company);
-      
-      const dailyCount = partnerCases.filter(c => c.createdAt === today).length;
-      const monthlyCount = partnerCases.filter(c => c.createdAt?.startsWith(currentMonth)).length;
-      const inProgressCount = partnerCases.filter(c => c.status !== "작성중" && c.status !== "완료").length;
-      const pendingCount = partnerCases.filter(c => c.status !== "완료").length;
-      
+
+    return allUsers.map((partner) => {
+      const partnerCases = allCases.filter(
+        (c) => c.assignedPartner === partner.company,
+      );
+
+      const dailyCount = partnerCases.filter(
+        (c) => c.createdAt === today,
+      ).length;
+      const monthlyCount = partnerCases.filter((c) =>
+        c.createdAt?.startsWith(currentMonth),
+      ).length;
+      const inProgressCount = partnerCases.filter(
+        (c) => c.status !== "작성중" && c.status !== "완료",
+      ).length;
+      const pendingCount = partnerCases.filter(
+        (c) => c.status !== "완료",
+      ).length;
+
       return {
         partnerName: partner.company,
         dailyCount,
@@ -3236,9 +4507,11 @@ export class DbStorage implements IStorage {
     });
   }
 
-  async createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate> {
+  async createProgressUpdate(
+    data: InsertProgressUpdate,
+  ): Promise<ProgressUpdate> {
     const currentTimestamp = getKSTTimestamp();
-    
+
     const newUpdate = {
       caseId: data.caseId,
       content: data.content,
@@ -3246,12 +4519,16 @@ export class DbStorage implements IStorage {
       createdAt: currentTimestamp,
     };
 
-    const result = await db.insert(progressUpdates).values(newUpdate).returning();
+    const result = await db
+      .insert(progressUpdates)
+      .values(newUpdate)
+      .returning();
     return result[0];
   }
 
   async getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(progressUpdates)
       .where(eq(progressUpdates.caseId, caseId))
       .orderBy(asc(progressUpdates.createdAt));
@@ -3261,11 +4538,14 @@ export class DbStorage implements IStorage {
   async getStatisticsFilters(): Promise<StatisticsFilters> {
     // Get all cases and users
     const allCases = await db.select().from(cases);
-    const allUsers = await db.select().from(users).where(eq(users.status, "active"));
+    const allUsers = await db
+      .select()
+      .from(users)
+      .where(eq(users.status, "active"));
 
     // Get unique insurance companies from cases
     const insuranceCompaniesSet = new Set<string>();
-    allCases.forEach(caseItem => {
+    allCases.forEach((caseItem) => {
       if (caseItem.insuranceCompany) {
         insuranceCompaniesSet.add(caseItem.insuranceCompany);
       }
@@ -3277,7 +4557,7 @@ export class DbStorage implements IStorage {
     const partnersSet = new Set<string>();
     const settlementManagersSet = new Set<string>();
 
-    allUsers.forEach(user => {
+    allUsers.forEach((user) => {
       if (user.role === "심사사" && user.company) {
         assessorsSet.add(user.company);
       } else if (user.role === "조사사" && user.company) {
@@ -3285,7 +4565,7 @@ export class DbStorage implements IStorage {
       } else if (user.role === "협력사" && user.company) {
         partnersSet.add(user.company);
       }
-      
+
       // Add all active users as potential settlement managers
       if (user.name) {
         settlementManagersSet.add(user.name);
@@ -3302,18 +4582,26 @@ export class DbStorage implements IStorage {
     };
   }
 
-  async getRolePermission(roleName: string): Promise<RolePermission | undefined> {
-    const result = await db.select().from(rolePermissions).where(eq(rolePermissions.roleName, roleName));
+  async getRolePermission(
+    roleName: string,
+  ): Promise<RolePermission | undefined> {
+    const result = await db
+      .select()
+      .from(rolePermissions)
+      .where(eq(rolePermissions.roleName, roleName));
     return result[0];
   }
 
-  async saveRolePermission(data: InsertRolePermission): Promise<RolePermission> {
+  async saveRolePermission(
+    data: InsertRolePermission,
+  ): Promise<RolePermission> {
     const currentDate = getKSTTimestamp();
     const existing = await this.getRolePermission(data.roleName);
-    
+
     if (existing) {
       // Update existing
-      const updated = await db.update(rolePermissions)
+      const updated = await db
+        .update(rolePermissions)
         .set({
           permissions: data.permissions,
           updatedAt: currentDate,
@@ -3323,7 +4611,8 @@ export class DbStorage implements IStorage {
       return updated[0];
     } else {
       // Create new
-      const created = await db.insert(rolePermissions)
+      const created = await db
+        .insert(rolePermissions)
         .values({
           roleName: data.roleName,
           permissions: data.permissions,
@@ -3341,7 +4630,8 @@ export class DbStorage implements IStorage {
 
   // New methods for multi-version support
   async listExcelData(type: string): Promise<ExcelData[]> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(excelData)
       .where(eq(excelData.type, type))
       .orderBy(desc(excelData.uploadedAt));
@@ -3349,7 +4639,8 @@ export class DbStorage implements IStorage {
   }
 
   async getExcelDataById(id: string): Promise<ExcelData | null> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(excelData)
       .where(eq(excelData.id, id))
       .limit(1);
@@ -3357,17 +4648,22 @@ export class DbStorage implements IStorage {
   }
 
   async deleteExcelDataById(id: string): Promise<boolean> {
-    const deleted = await db.delete(excelData)
+    const deleted = await db
+      .delete(excelData)
       .where(eq(excelData.id, id))
       .returning();
     return deleted.length > 0;
   }
 
   async saveExcelData(data: InsertExcelData): Promise<ExcelData> {
-    console.log('[DB] saveExcelData called with:', { type: data.type, title: data.title });
-    
+    console.log("[DB] saveExcelData called with:", {
+      type: data.type,
+      title: data.title,
+    });
+
     // Create new version (no longer overwrites existing)
-    const created = await db.insert(excelData)
+    const created = await db
+      .insert(excelData)
       .values({
         type: data.type,
         title: data.title,
@@ -3375,18 +4671,32 @@ export class DbStorage implements IStorage {
         data: data.data as any,
       })
       .returning();
-    
-    console.log('[DB] saveExcelData result:', { id: created[0]?.id, type: created[0]?.type });
-    
+
+    console.log("[DB] saveExcelData result:", {
+      id: created[0]?.id,
+      type: created[0]?.type,
+    });
+
     // Verify the insert worked
-    const verify = await db.select().from(excelData).where(eq(excelData.id, created[0].id));
-    console.log('[DB] saveExcelData verification:', verify.length > 0 ? 'EXISTS' : 'MISSING');
-    
+    const verify = await db
+      .select()
+      .from(excelData)
+      .where(eq(excelData.id, created[0].id));
+    console.log(
+      "[DB] saveExcelData verification:",
+      verify.length > 0 ? "EXISTS" : "MISSING",
+    );
+
     return created[0];
   }
 
-  async updateExcelData(id: string, headers: string[], newData: any[][]): Promise<ExcelData | null> {
-    const updated = await db.update(excelData)
+  async updateExcelData(
+    id: string,
+    headers: string[],
+    newData: any[][],
+  ): Promise<ExcelData | null> {
+    const updated = await db
+      .update(excelData)
       .set({
         headers: headers as any,
         data: newData as any,
@@ -3410,7 +4720,8 @@ export class DbStorage implements IStorage {
   }
 
   async createInquiry(data: InsertInquiry): Promise<Inquiry> {
-    const created = await db.insert(inquiries)
+    const created = await db
+      .insert(inquiries)
       .values({
         userId: data.userId,
         title: data.title,
@@ -3429,13 +4740,19 @@ export class DbStorage implements IStorage {
   }
 
   async getInquiriesByUserId(userId: string): Promise<Inquiry[]> {
-    return await db.select().from(inquiries)
+    return await db
+      .select()
+      .from(inquiries)
       .where(eq(inquiries.userId, userId))
       .orderBy(asc(inquiries.createdAt));
   }
 
-  async updateInquiry(id: string, data: Partial<UpdateInquiry>): Promise<Inquiry | null> {
-    const updated = await db.update(inquiries)
+  async updateInquiry(
+    id: string,
+    data: Partial<UpdateInquiry>,
+  ): Promise<Inquiry | null> {
+    const updated = await db
+      .update(inquiries)
       .set({
         ...data,
         updatedAt: new Date(),
@@ -3446,7 +4763,8 @@ export class DbStorage implements IStorage {
   }
 
   async saveDrawing(data: InsertDrawing): Promise<Drawing> {
-    const created = await db.insert(drawings)
+    const created = await db
+      .insert(drawings)
       .values({
         caseId: data.caseId,
         uploadedImages: data.uploadedImages,
@@ -3460,7 +4778,8 @@ export class DbStorage implements IStorage {
   }
 
   async getDrawing(id: string): Promise<Drawing | null> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(drawings)
       .where(eq(drawings.id, id))
       .limit(1);
@@ -3468,15 +4787,20 @@ export class DbStorage implements IStorage {
   }
 
   async getDrawingByCaseId(caseId: string): Promise<Drawing | null> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(drawings)
       .where(eq(drawings.caseId, caseId))
       .limit(1);
     return result[0] || null;
   }
 
-  async updateDrawing(id: string, data: Partial<InsertDrawing>): Promise<Drawing | null> {
-    const updated = await db.update(drawings)
+  async updateDrawing(
+    id: string,
+    data: Partial<InsertDrawing>,
+  ): Promise<Drawing | null> {
+    const updated = await db
+      .update(drawings)
       .set({
         ...data,
         updatedAt: new Date(),
@@ -3488,12 +4812,10 @@ export class DbStorage implements IStorage {
 
   async getOrCreateActiveCase(userId: string): Promise<Case> {
     // Find existing active case (작성중) for this user
-    const existing = await db.select()
+    const existing = await db
+      .select()
       .from(cases)
-      .where(and(
-        eq(cases.createdBy, userId),
-        eq(cases.status, "작성중")
-      ))
+      .where(and(eq(cases.createdBy, userId), eq(cases.status, "작성중")))
       .limit(1);
 
     if (existing.length > 0) {
@@ -3502,7 +4824,8 @@ export class DbStorage implements IStorage {
 
     // Create new active case for drawing purposes
     const caseNumber = `CLM-DRAW-${Date.now()}`;
-    const newCase = await db.insert(cases)
+    const newCase = await db
+      .insert(cases)
       .values({
         caseNumber,
         status: "작성중",
@@ -3517,7 +4840,8 @@ export class DbStorage implements IStorage {
 
   // Document methods
   async saveDocument(data: InsertCaseDocument): Promise<CaseDocument> {
-    const created = await db.insert(caseDocuments)
+    const created = await db
+      .insert(caseDocuments)
       .values({
         caseId: data.caseId,
         category: data.category,
@@ -3532,7 +4856,8 @@ export class DbStorage implements IStorage {
   }
 
   async getDocument(id: string): Promise<CaseDocument | null> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(caseDocuments)
       .where(eq(caseDocuments.id, id))
       .limit(1);
@@ -3540,7 +4865,8 @@ export class DbStorage implements IStorage {
   }
 
   async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(caseDocuments)
       .where(eq(caseDocuments.caseId, caseId))
       .orderBy(desc(caseDocuments.createdAt));
@@ -3548,12 +4874,15 @@ export class DbStorage implements IStorage {
   }
 
   async deleteDocument(id: string): Promise<void> {
-    await db.delete(caseDocuments)
-      .where(eq(caseDocuments.id, id));
+    await db.delete(caseDocuments).where(eq(caseDocuments.id, id));
   }
 
-  async updateDocumentCategory(id: string, category: string): Promise<CaseDocument | null> {
-    const updated = await db.update(caseDocuments)
+  async updateDocumentCategory(
+    id: string,
+    category: string,
+  ): Promise<CaseDocument | null> {
+    const updated = await db
+      .update(caseDocuments)
       .set({ category })
       .where(eq(caseDocuments.id, id))
       .returning();
@@ -3562,12 +4891,12 @@ export class DbStorage implements IStorage {
 
   // Estimate methods
   async createEstimateVersion(
-    caseId: string, 
-    userId: string, 
-    rows: Omit<InsertEstimateRow, 'estimateId'>[],
+    caseId: string,
+    userId: string,
+    rows: Omit<InsertEstimateRow, "estimateId">[],
     laborCostData: any | null = null,
     materialCostData: any | null = null,
-    vatIncluded: boolean = true
+    vatIncluded: boolean = true,
   ): Promise<{ estimate: Estimate; rows: EstimateRow[] }> {
     return await db.transaction(async (tx) => {
       // 1. 현재 최대 버전 조회 (row-level locking으로 동시성 제어)
@@ -3577,9 +4906,10 @@ export class DbStorage implements IStorage {
         .where(eq(estimates.caseId, caseId))
         .orderBy(desc(estimates.version))
         .limit(1)
-        .for('update'); // row-level lock 추가
+        .for("update"); // row-level lock 추가
 
-      const nextVersion = existingEstimates.length > 0 ? existingEstimates[0].version + 1 : 1;
+      const nextVersion =
+        existingEstimates.length > 0 ? existingEstimates[0].version + 1 : 1;
 
       // 2. 새 견적 레코드 생성 (노무비/자재비 데이터 포함, vatIncluded는 materialCostData에 같이 저장)
       // materialCostData에 vatIncluded 옵션을 함께 저장 (배열이 아닌 객체 형태로 감싸서)
@@ -3587,7 +4917,7 @@ export class DbStorage implements IStorage {
         rows: materialCostData || [],
         vatIncluded, // VAT 포함/별도 옵션 저장
       };
-      
+
       const [newEstimate] = await tx
         .insert(estimates)
         .values({
@@ -3630,7 +4960,9 @@ export class DbStorage implements IStorage {
     });
   }
 
-  async getLatestEstimate(caseId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+  async getLatestEstimate(
+    caseId: string,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
     // 최신 버전의 견적 조회
     const latestEstimate = await db
       .select()
@@ -3655,15 +4987,15 @@ export class DbStorage implements IStorage {
     return { estimate, rows };
   }
 
-  async getEstimateVersion(caseId: string, version: number): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+  async getEstimateVersion(
+    caseId: string,
+    version: number,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
     // 특정 버전의 견적 조회
     const result = await db
       .select()
       .from(estimates)
-      .where(and(
-        eq(estimates.caseId, caseId),
-        eq(estimates.version, version)
-      ))
+      .where(and(eq(estimates.caseId, caseId), eq(estimates.version, version)))
       .limit(1);
 
     if (result.length === 0) {
@@ -3694,7 +5026,10 @@ export class DbStorage implements IStorage {
   }
 
   // Master data methods
-  async getMasterData(category?: string, includeInactive: boolean = false): Promise<MasterData[]> {
+  async getMasterData(
+    category?: string,
+    includeInactive: boolean = false,
+  ): Promise<MasterData[]> {
     if (category) {
       if (includeInactive) {
         // 특정 카테고리의 모든 데이터 조회 (관리자용)
@@ -3708,10 +5043,12 @@ export class DbStorage implements IStorage {
         return await db
           .select()
           .from(masterData)
-          .where(and(
-            eq(masterData.category, category),
-            eq(masterData.isActive, "true")
-          ))
+          .where(
+            and(
+              eq(masterData.category, category),
+              eq(masterData.isActive, "true"),
+            ),
+          )
           .orderBy(asc(masterData.displayOrder), asc(masterData.value));
       }
     } else {
@@ -3720,14 +5057,22 @@ export class DbStorage implements IStorage {
         return await db
           .select()
           .from(masterData)
-          .orderBy(asc(masterData.category), asc(masterData.displayOrder), asc(masterData.value));
+          .orderBy(
+            asc(masterData.category),
+            asc(masterData.displayOrder),
+            asc(masterData.value),
+          );
       } else {
         // 모든 활성 데이터 조회
         return await db
           .select()
           .from(masterData)
           .where(eq(masterData.isActive, "true"))
-          .orderBy(asc(masterData.category), asc(masterData.displayOrder), asc(masterData.value));
+          .orderBy(
+            asc(masterData.category),
+            asc(masterData.displayOrder),
+            asc(masterData.value),
+          );
       }
     }
   }
@@ -3745,20 +5090,27 @@ export class DbStorage implements IStorage {
       .where(eq(masterData.id, id));
   }
 
-  async updateMasterData(id: string, data: Partial<InsertMasterData>): Promise<MasterData | null> {
+  async updateMasterData(
+    id: string,
+    data: Partial<InsertMasterData>,
+  ): Promise<MasterData | null> {
     const [updated] = await db
       .update(masterData)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(masterData.id, id))
       .returning();
-    
+
     return updated || null;
   }
 
   // Labor cost methods
-  async getLaborCosts(filters?: { category?: string; workName?: string; detailWork?: string }): Promise<LaborCost[]> {
+  async getLaborCosts(filters?: {
+    category?: string;
+    workName?: string;
+    detailWork?: string;
+  }): Promise<LaborCost[]> {
     let query = db.select().from(laborCosts);
-    
+
     const conditions = [];
     if (filters?.category) {
       conditions.push(eq(laborCosts.category, filters.category));
@@ -3769,12 +5121,15 @@ export class DbStorage implements IStorage {
     if (filters?.detailWork) {
       conditions.push(eq(laborCosts.detailWork, filters.detailWork));
     }
-    
+
     if (conditions.length > 0) {
       query = query.where(and(...conditions)) as any;
     }
-    
-    return await query.orderBy(asc(laborCosts.category), asc(laborCosts.workName));
+
+    return await query.orderBy(
+      asc(laborCosts.category),
+      asc(laborCosts.workName),
+    );
   }
 
   async getLaborCostOptions(): Promise<{
@@ -3782,40 +5137,43 @@ export class DbStorage implements IStorage {
     workNamesByCategory: Record<string, string[]>;
     detailWorksByWork: Record<string, string[]>;
   }> {
-    const allCosts = await db.select().from(laborCosts).orderBy(asc(laborCosts.category), asc(laborCosts.workName));
-    
+    const allCosts = await db
+      .select()
+      .from(laborCosts)
+      .orderBy(asc(laborCosts.category), asc(laborCosts.workName));
+
     const categories = new Set<string>();
     const workNamesByCategory: Record<string, Set<string>> = {};
     const detailWorksByWork: Record<string, Set<string>> = {};
-    
+
     for (const cost of allCosts) {
       const category = cost.category?.trim();
       const workName = cost.workName?.trim();
       const detailWork = cost.detailWork?.trim();
-      
+
       if (!category || !workName || !detailWork) continue;
-      
+
       categories.add(category);
-      
+
       if (!workNamesByCategory[category]) {
         workNamesByCategory[category] = new Set();
       }
       workNamesByCategory[category].add(workName);
-      
+
       const workKey = `${category}|${workName}`;
       if (!detailWorksByWork[workKey]) {
         detailWorksByWork[workKey] = new Set();
       }
       detailWorksByWork[workKey].add(detailWork);
     }
-    
+
     return {
       categories: Array.from(categories),
       workNamesByCategory: Object.fromEntries(
-        Object.entries(workNamesByCategory).map(([k, v]) => [k, Array.from(v)])
+        Object.entries(workNamesByCategory).map(([k, v]) => [k, Array.from(v)]),
       ),
       detailWorksByWork: Object.fromEntries(
-        Object.entries(detailWorksByWork).map(([k, v]) => [k, Array.from(v)])
+        Object.entries(detailWorksByWork).map(([k, v]) => [k, Array.from(v)]),
       ),
     };
   }
@@ -3831,15 +5189,12 @@ export class DbStorage implements IStorage {
 
   // Material methods
   async listMaterials(workType?: string): Promise<Material[]> {
-    let query = db
-      .select()
-      .from(materials);
-    
+    let query = db.select().from(materials);
+
     if (workType) {
-      query = query.where(and(
-        eq(materials.isActive, "true"),
-        eq(materials.workType, workType)
-      ));
+      query = query.where(
+        and(eq(materials.isActive, "true"), eq(materials.workType, workType)),
+      );
     } else {
       query = query.where(eq(materials.isActive, "true"));
     }
@@ -3847,7 +5202,7 @@ export class DbStorage implements IStorage {
     return query.orderBy(
       asc(materials.workType),
       asc(materials.materialName),
-      asc(materials.specification)
+      asc(materials.specification),
     );
   }
 
@@ -3860,46 +5215,48 @@ export class DbStorage implements IStorage {
     await db.delete(materials).where(eq(materials.id, Number(id)));
   }
 
-  async getMaterialsCatalog(): Promise<Array<{
-    workType: string;
-    materialName: string;
-    specification: string;
-    unit: string;
-    standardPrice: number | string;
-  }>> {
+  async getMaterialsCatalog(): Promise<
+    Array<{
+      workType: string;
+      materialName: string;
+      specification: string;
+      unit: string;
+      standardPrice: number | string;
+    }>
+  > {
     // Get 자재비 data from excel_data table, sorted by upload date (최신 데이터 먼저)
     const excelRows = await db
       .select()
       .from(excelData)
       .where(eq(excelData.type, "자재비"))
       .orderBy(sql`${excelData.uploadedAt} DESC`);
-    
+
     if (excelRows.length === 0) {
       return [];
     }
-    
+
     // Take the most recent upload (first in DESC order)
     const latestExcelData = excelRows[0];
     const headers = latestExcelData.headers as string[];
     const data = latestExcelData.data as any[][];
-    
+
     // Find column indices
-    const workTypeIdx = headers.findIndex(h => h === "공종명");
-    const materialNameIdx = headers.findIndex(h => h === "자재명");
-    const specIdx = headers.findIndex(h => h === "규격");
-    const unitIdx = headers.findIndex(h => h === "단위");
-    const priceIdx = headers.findIndex(h => h === "단가");
-    
+    const workTypeIdx = headers.findIndex((h) => h === "공종명");
+    const materialNameIdx = headers.findIndex((h) => h === "자재명");
+    const specIdx = headers.findIndex((h) => h === "규격");
+    const unitIdx = headers.findIndex((h) => h === "단위");
+    const priceIdx = headers.findIndex((h) => h === "단가");
+
     if (materialNameIdx === -1 || unitIdx === -1 || priceIdx === -1) {
       console.error("Missing required columns in excel_data 자재비");
       return [];
     }
-    
+
     // Forward-fill processing
     let lastWorkType = "";
     let lastMaterialName = "";
     let lastSpecification = "";
-    
+
     const catalog: Array<{
       workType: string;
       materialName: string;
@@ -3907,28 +5264,38 @@ export class DbStorage implements IStorage {
       unit: string;
       standardPrice: number | string;
     }> = [];
-    
+
     for (const row of data) {
       // Skip empty rows or rows with invalid structure
       if (!row || row.length === 0) continue;
-      
+
       // Get values with forward-fill
-      const workType = (workTypeIdx !== -1 && row[workTypeIdx]) ? row[workTypeIdx] : lastWorkType;
+      const workType =
+        workTypeIdx !== -1 && row[workTypeIdx]
+          ? row[workTypeIdx]
+          : lastWorkType;
       const materialName = row[materialNameIdx] ?? lastMaterialName;
       const specification = row[specIdx] ?? lastSpecification;
       const unit = row[unitIdx];
       const price = row[priceIdx];
-      
+
       // Skip if essential fields are missing
-      if (!workType || !materialName || !unit || price === undefined || price === null) {
+      if (
+        !workType ||
+        !materialName ||
+        !unit ||
+        price === undefined ||
+        price === null
+      ) {
         continue;
       }
-      
+
       // Update last values for forward-fill
       if (workTypeIdx !== -1 && row[workTypeIdx]) lastWorkType = workType;
       if (row[materialNameIdx]) lastMaterialName = materialName;
-      if (row[specIdx] !== null && row[specIdx] !== undefined) lastSpecification = specification;
-      
+      if (row[specIdx] !== null && row[specIdx] !== undefined)
+        lastSpecification = specification;
+
       // Parse price: if it's "입력", keep as string; otherwise convert to number
       let standardPrice: number | string = price;
       if (typeof price === "string") {
@@ -3937,7 +5304,7 @@ export class DbStorage implements IStorage {
         const parsed = parseFloat(cleaned);
         standardPrice = isNaN(parsed) ? price : parsed;
       }
-      
+
       catalog.push({
         workType,
         materialName,
@@ -3946,7 +5313,7 @@ export class DbStorage implements IStorage {
         standardPrice,
       });
     }
-    
+
     return catalog;
   }
 
@@ -3961,10 +5328,7 @@ export class DbStorage implements IStorage {
   }
 
   async addFavorite(data: InsertUserFavorite): Promise<UserFavorite> {
-    const [favorite] = await db
-      .insert(userFavorites)
-      .values(data)
-      .returning();
+    const [favorite] = await db.insert(userFavorites).values(data).returning();
     return favorite;
   }
 
@@ -3974,8 +5338,8 @@ export class DbStorage implements IStorage {
       .where(
         and(
           eq(userFavorites.userId, userId),
-          eq(userFavorites.menuName, menuName)
-        )
+          eq(userFavorites.menuName, menuName),
+        ),
       );
   }
 
@@ -3989,14 +5353,14 @@ export class DbStorage implements IStorage {
   }
 
   async createNotice(data: InsertNotice): Promise<Notice> {
-    const [created] = await db
-      .insert(notices)
-      .values(data)
-      .returning();
+    const [created] = await db.insert(notices).values(data).returning();
     return created;
   }
 
-  async updateNotice(id: string, data: { title: string; content: string }): Promise<Notice | null> {
+  async updateNotice(
+    id: string,
+    data: { title: string; content: string },
+  ): Promise<Notice | null> {
     const [updated] = await db
       .update(notices)
       .set({
@@ -4014,80 +5378,121 @@ export class DbStorage implements IStorage {
   }
 
   // Asset cloning methods (for syncing from related cases)
-  async getRelatedCaseWithDrawing(caseId: string): Promise<{ caseId: string; caseNumber: string } | null> {
+  async getRelatedCaseWithDrawing(
+    caseId: string,
+  ): Promise<{ caseId: string; caseNumber: string } | null> {
     // Get the source case to find its accident number
     const sourceCase = await this.getCaseById(caseId);
     if (!sourceCase || !sourceCase.insuranceAccidentNo) return null;
 
     // Find related cases with the same accident number
-    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, caseId);
-    
+    const relatedCases = await this.getCasesByAccidentNo(
+      sourceCase.insuranceAccidentNo,
+      caseId,
+    );
+
     // Find the first related case that has a drawing
     for (const relatedCase of relatedCases) {
       const drawing = await this.getDrawingByCaseId(relatedCase.id);
       if (drawing) {
-        return { caseId: relatedCase.id, caseNumber: relatedCase.caseNumber || '' };
+        return {
+          caseId: relatedCase.id,
+          caseNumber: relatedCase.caseNumber || "",
+        };
       }
     }
     return null;
   }
 
-  async getAllRelatedCasesWithDrawings(caseId: string): Promise<Array<{ caseId: string; caseNumber: string }>> {
+  async getAllRelatedCasesWithDrawings(
+    caseId: string,
+  ): Promise<Array<{ caseId: string; caseNumber: string }>> {
     // Get the source case to find its accident number
     const sourceCase = await this.getCaseById(caseId);
     if (!sourceCase || !sourceCase.insuranceAccidentNo) return [];
 
     // Find related cases with the same accident number
-    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, caseId);
-    
+    const relatedCases = await this.getCasesByAccidentNo(
+      sourceCase.insuranceAccidentNo,
+      caseId,
+    );
+
     // Find ALL related cases that have drawings
     const casesWithDrawings: Array<{ caseId: string; caseNumber: string }> = [];
     for (const relatedCase of relatedCases) {
       const drawing = await this.getDrawingByCaseId(relatedCase.id);
       if (drawing) {
-        casesWithDrawings.push({ caseId: relatedCase.id, caseNumber: relatedCase.caseNumber || '' });
+        casesWithDrawings.push({
+          caseId: relatedCase.id,
+          caseNumber: relatedCase.caseNumber || "",
+        });
       }
     }
     return casesWithDrawings;
   }
 
-  async getRelatedCaseWithEstimate(caseId: string): Promise<{ caseId: string; caseNumber: string } | null> {
+  async getRelatedCaseWithEstimate(
+    caseId: string,
+  ): Promise<{ caseId: string; caseNumber: string } | null> {
     // Get the source case to find its accident number
     const sourceCase = await this.getCaseById(caseId);
     if (!sourceCase || !sourceCase.insuranceAccidentNo) return null;
 
     // Find related cases with the same accident number
-    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, caseId);
-    
+    const relatedCases = await this.getCasesByAccidentNo(
+      sourceCase.insuranceAccidentNo,
+      caseId,
+    );
+
     // Find the first related case that has an estimate
     for (const relatedCase of relatedCases) {
       const estimate = await this.getLatestEstimate(relatedCase.id);
       if (estimate) {
-        return { caseId: relatedCase.id, caseNumber: relatedCase.caseNumber || '' };
+        return {
+          caseId: relatedCase.id,
+          caseNumber: relatedCase.caseNumber || "",
+        };
       }
     }
     return null;
   }
 
-  async getRelatedCaseWithDocuments(caseId: string): Promise<{ caseId: string; caseNumber: string; documentCount: number } | null> {
+  async getRelatedCaseWithDocuments(
+    caseId: string,
+  ): Promise<{
+    caseId: string;
+    caseNumber: string;
+    documentCount: number;
+  } | null> {
     // Get the source case to find its accident number
     const sourceCase = await this.getCaseById(caseId);
     if (!sourceCase || !sourceCase.insuranceAccidentNo) return null;
 
     // Find related cases with the same accident number
-    const relatedCases = await this.getCasesByAccidentNo(sourceCase.insuranceAccidentNo, caseId);
-    
+    const relatedCases = await this.getCasesByAccidentNo(
+      sourceCase.insuranceAccidentNo,
+      caseId,
+    );
+
     // Find the first related case that has documents
     for (const relatedCase of relatedCases) {
       const docs = await this.getDocumentsByCaseId(relatedCase.id);
       if (docs && docs.length > 0) {
-        return { caseId: relatedCase.id, caseNumber: relatedCase.caseNumber || '', documentCount: docs.length };
+        return {
+          caseId: relatedCase.id,
+          caseNumber: relatedCase.caseNumber || "",
+          documentCount: docs.length,
+        };
       }
     }
     return null;
   }
 
-  async cloneDrawingFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<Drawing | null> {
+  async cloneDrawingFromCase(
+    sourceCaseId: string,
+    targetCaseId: string,
+    userId: string,
+  ): Promise<Drawing | null> {
     // Get source drawing
     const sourceDrawing = await this.getDrawingByCaseId(sourceCaseId);
     if (!sourceDrawing) return null;
@@ -4117,13 +5522,17 @@ export class DbStorage implements IStorage {
     return newDrawing;
   }
 
-  async cloneEstimateFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
+  async cloneEstimateFromCase(
+    sourceCaseId: string,
+    targetCaseId: string,
+    userId: string,
+  ): Promise<{ estimate: Estimate; rows: EstimateRow[] } | null> {
     // Get source estimate with rows
     const sourceEstimate = await this.getLatestEstimate(sourceCaseId);
     if (!sourceEstimate) return null;
 
     // Create new estimate for target case (version 1)
-    const rowsData = sourceEstimate.rows.map(row => ({
+    const rowsData = sourceEstimate.rows.map((row) => ({
       category: row.category,
       location: row.location,
       workName: row.workName,
@@ -4142,13 +5551,17 @@ export class DbStorage implements IStorage {
       userId,
       rowsData,
       sourceEstimate.estimate.laborCostData,
-      sourceEstimate.estimate.materialCostData
+      sourceEstimate.estimate.materialCostData,
     );
 
     return newEstimate;
   }
 
-  async cloneDocumentsFromCase(sourceCaseId: string, targetCaseId: string, userId: string): Promise<CaseDocument[]> {
+  async cloneDocumentsFromCase(
+    sourceCaseId: string,
+    targetCaseId: string,
+    userId: string,
+  ): Promise<CaseDocument[]> {
     // Get source documents
     const sourceDocuments = await this.getDocumentsByCaseId(sourceCaseId);
     if (!sourceDocuments || sourceDocuments.length === 0) return [];
@@ -4171,7 +5584,9 @@ export class DbStorage implements IStorage {
   }
 
   // Field Survey Data methods
-  async getFieldSurveyData(caseGroupId: string): Promise<FieldSurveyData | null> {
+  async getFieldSurveyData(
+    caseGroupId: string,
+  ): Promise<FieldSurveyData | null> {
     const [result] = await db
       .select()
       .from(fieldSurveyData)
@@ -4180,15 +5595,17 @@ export class DbStorage implements IStorage {
     return result || null;
   }
 
-  async saveFieldSurveyData(data: InsertFieldSurveyData): Promise<FieldSurveyData> {
-    const [created] = await db
-      .insert(fieldSurveyData)
-      .values(data)
-      .returning();
+  async saveFieldSurveyData(
+    data: InsertFieldSurveyData,
+  ): Promise<FieldSurveyData> {
+    const [created] = await db.insert(fieldSurveyData).values(data).returning();
     return created;
   }
 
-  async updateFieldSurveyData(caseGroupId: string, data: Partial<InsertFieldSurveyData>): Promise<FieldSurveyData | null> {
+  async updateFieldSurveyData(
+    caseGroupId: string,
+    data: Partial<InsertFieldSurveyData>,
+  ): Promise<FieldSurveyData | null> {
     const [updated] = await db
       .update(fieldSurveyData)
       .set({
@@ -4211,14 +5628,14 @@ export class DbStorage implements IStorage {
   }
 
   async saveSharedDrawing(data: InsertSharedDrawing): Promise<SharedDrawing> {
-    const [created] = await db
-      .insert(sharedDrawings)
-      .values(data)
-      .returning();
+    const [created] = await db.insert(sharedDrawings).values(data).returning();
     return created;
   }
 
-  async updateSharedDrawing(caseGroupId: string, data: Partial<InsertSharedDrawing>): Promise<SharedDrawing | null> {
+  async updateSharedDrawing(
+    caseGroupId: string,
+    data: Partial<InsertSharedDrawing>,
+  ): Promise<SharedDrawing | null> {
     const [updated] = await db
       .update(sharedDrawings)
       .set({
@@ -4241,64 +5658,82 @@ export class DbStorage implements IStorage {
   }
 
   // Same accident number methods (for field survey sync)
-  async getCasesByAccidentNo(accidentNo: string, excludeCaseId?: string): Promise<Case[]> {
+  async getCasesByAccidentNo(
+    accidentNo: string,
+    excludeCaseId?: string,
+  ): Promise<Case[]> {
     if (!accidentNo) return [];
-    
+
     const conditions = [eq(cases.insuranceAccidentNo, accidentNo)];
-    
+
     const result = await db
       .select()
       .from(cases)
       .where(and(...conditions))
       .orderBy(asc(cases.caseNumber));
-    
+
     // Filter out the excluded case if provided
     if (excludeCaseId) {
-      return result.filter(c => c.id !== excludeCaseId);
+      return result.filter((c) => c.id !== excludeCaseId);
     }
     return result;
   }
 
   // 접수번호 prefix를 기준으로 관련 케이스 조회 (예: 251203001 -> 251203001, 251203001-1, 251203001-2)
-  async getCasesByCaseNumberPrefix(caseNumber: string, excludeCaseId?: string): Promise<Case[]> {
+  async getCasesByCaseNumberPrefix(
+    caseNumber: string,
+    excludeCaseId?: string,
+  ): Promise<Case[]> {
     if (!caseNumber) return [];
-    
+
     // Extract prefix from case number (e.g., "251203001-1" -> "251203001")
-    const prefix = caseNumber.split('-')[0];
+    const prefix = caseNumber.split("-")[0];
     if (!prefix) return [];
-    
+
     // Find all cases that start with this prefix
     const result = await db
       .select()
       .from(cases)
-      .where(sql`${cases.caseNumber} LIKE ${prefix + '%'}`)
+      .where(sql`${cases.caseNumber} LIKE ${prefix + "%"}`)
       .orderBy(asc(cases.caseNumber));
-    
+
     // Filter out the excluded case if provided
     if (excludeCaseId) {
-      return result.filter(c => c.id !== excludeCaseId);
+      return result.filter((c) => c.id !== excludeCaseId);
     }
     return result;
   }
 
-  async syncFieldSurveyToRelatedCases(sourceCaseId: string, fieldData: Partial<InsertCase>): Promise<number> {
+  async syncFieldSurveyToRelatedCases(
+    sourceCaseId: string,
+    fieldData: Partial<InsertCase>,
+  ): Promise<number> {
     // Get source case to find its case number prefix
     const sourceCase = await this.getCaseById(sourceCaseId);
     if (!sourceCase || !sourceCase.caseNumber) {
-      console.log(`[Field Survey Sync] Source case ${sourceCaseId} not found or no case number`);
+      console.log(
+        `[Field Survey Sync] Source case ${sourceCaseId} not found or no case number`,
+      );
       return 0;
     }
 
     // Get all related cases by case number prefix (e.g., 251203001 -> 251203001, 251203001-1, 251203001-2)
-    const relatedCases = await this.getCasesByCaseNumberPrefix(sourceCase.caseNumber, sourceCaseId);
-    
+    const relatedCases = await this.getCasesByCaseNumberPrefix(
+      sourceCase.caseNumber,
+      sourceCaseId,
+    );
+
     if (relatedCases.length === 0) {
-      console.log(`[Field Survey Sync] No related cases found for ${sourceCase.caseNumber}`);
+      console.log(
+        `[Field Survey Sync] No related cases found for ${sourceCase.caseNumber}`,
+      );
       return 0;
     }
 
-    console.log(`[Field Survey Sync] Syncing field data from ${sourceCase.caseNumber} to ${relatedCases.length} related cases:`, 
-      relatedCases.map(c => c.caseNumber).join(', '));
+    console.log(
+      `[Field Survey Sync] Syncing field data from ${sourceCase.caseNumber} to ${relatedCases.length} related cases:`,
+      relatedCases.map((c) => c.caseNumber).join(", "),
+    );
 
     // Update all related cases with the field survey data
     let updatedCount = 0;
@@ -4309,9 +5744,14 @@ export class DbStorage implements IStorage {
           .set(fieldData)
           .where(eq(cases.id, relatedCase.id));
         updatedCount++;
-        console.log(`[Field Survey Sync] Updated case ${relatedCase.caseNumber}`);
+        console.log(
+          `[Field Survey Sync] Updated case ${relatedCase.caseNumber}`,
+        );
       } catch (error) {
-        console.error(`Failed to sync field survey to case ${relatedCase.id}:`, error);
+        console.error(
+          `Failed to sync field survey to case ${relatedCase.id}:`,
+          error,
+        );
       }
     }
 
@@ -4322,32 +5762,43 @@ export class DbStorage implements IStorage {
   async syncDrawingToRelatedCases(sourceCaseId: string): Promise<number> {
     const sourceCase = await this.getCaseById(sourceCaseId);
     if (!sourceCase || !sourceCase.caseNumber) {
-      console.log(`[Drawing Sync] Source case ${sourceCaseId} not found or no case number`);
+      console.log(
+        `[Drawing Sync] Source case ${sourceCaseId} not found or no case number`,
+      );
       return 0;
     }
 
-    const relatedCases = await this.getCasesByCaseNumberPrefix(sourceCase.caseNumber, sourceCaseId);
+    const relatedCases = await this.getCasesByCaseNumberPrefix(
+      sourceCase.caseNumber,
+      sourceCaseId,
+    );
     if (relatedCases.length === 0) {
-      console.log(`[Drawing Sync] No related cases found for ${sourceCase.caseNumber}`);
+      console.log(
+        `[Drawing Sync] No related cases found for ${sourceCase.caseNumber}`,
+      );
       return 0;
     }
 
     // Get source drawing
     const sourceDrawing = await this.getDrawingByCaseId(sourceCaseId);
     if (!sourceDrawing) {
-      console.log(`[Drawing Sync] No drawing found for source case ${sourceCaseId}`);
+      console.log(
+        `[Drawing Sync] No drawing found for source case ${sourceCaseId}`,
+      );
       return 0;
     }
 
-    console.log(`[Drawing Sync] Syncing drawing from ${sourceCase.caseNumber} to ${relatedCases.length} related cases:`,
-      relatedCases.map(c => c.caseNumber).join(', '));
+    console.log(
+      `[Drawing Sync] Syncing drawing from ${sourceCase.caseNumber} to ${relatedCases.length} related cases:`,
+      relatedCases.map((c) => c.caseNumber).join(", "),
+    );
 
     let syncedCount = 0;
     for (const relatedCase of relatedCases) {
       try {
         // Check if related case already has a drawing
         const existingDrawing = await this.getDrawingByCaseId(relatedCase.id);
-        
+
         if (existingDrawing) {
           // Update existing drawing with source data
           await db
@@ -4375,30 +5826,47 @@ export class DbStorage implements IStorage {
         syncedCount++;
         console.log(`[Drawing Sync] Updated case ${relatedCase.caseNumber}`);
       } catch (error) {
-        console.error(`Failed to sync drawing to case ${relatedCase.id}:`, error);
+        console.error(
+          `Failed to sync drawing to case ${relatedCase.id}:`,
+          error,
+        );
       }
     }
 
-    console.log(`[Drawing Sync] Synced drawing from case ${sourceCase.caseNumber} to ${syncedCount} related cases`);
+    console.log(
+      `[Drawing Sync] Synced drawing from case ${sourceCase.caseNumber} to ${syncedCount} related cases`,
+    );
     return syncedCount;
   }
 
   // Real-time sync for new documents to all related cases (same case number prefix)
-  async syncDocumentsToRelatedCases(sourceCaseId: string, newDocument: CaseDocument): Promise<number> {
+  async syncDocumentsToRelatedCases(
+    sourceCaseId: string,
+    newDocument: CaseDocument,
+  ): Promise<number> {
     const sourceCase = await this.getCaseById(sourceCaseId);
     if (!sourceCase || !sourceCase.caseNumber) {
-      console.log(`[Document Sync] Source case ${sourceCaseId} not found or no case number`);
+      console.log(
+        `[Document Sync] Source case ${sourceCaseId} not found or no case number`,
+      );
       return 0;
     }
 
-    const relatedCases = await this.getCasesByCaseNumberPrefix(sourceCase.caseNumber, sourceCaseId);
+    const relatedCases = await this.getCasesByCaseNumberPrefix(
+      sourceCase.caseNumber,
+      sourceCaseId,
+    );
     if (relatedCases.length === 0) {
-      console.log(`[Document Sync] No related cases found for ${sourceCase.caseNumber}`);
+      console.log(
+        `[Document Sync] No related cases found for ${sourceCase.caseNumber}`,
+      );
       return 0;
     }
 
-    console.log(`[Document Sync] Syncing document "${newDocument.fileName}" from ${sourceCase.caseNumber} to ${relatedCases.length} related cases:`,
-      relatedCases.map(c => c.caseNumber).join(', '));
+    console.log(
+      `[Document Sync] Syncing document "${newDocument.fileName}" from ${sourceCase.caseNumber} to ${relatedCases.length} related cases:`,
+      relatedCases.map((c) => c.caseNumber).join(", "),
+    );
 
     let syncedCount = 0;
     for (const relatedCase of relatedCases) {
@@ -4419,11 +5887,16 @@ export class DbStorage implements IStorage {
         syncedCount++;
         console.log(`[Document Sync] Synced to case ${relatedCase.caseNumber}`);
       } catch (error) {
-        console.error(`Failed to sync document to case ${relatedCase.id}:`, error);
+        console.error(
+          `Failed to sync document to case ${relatedCase.id}:`,
+          error,
+        );
       }
     }
 
-    console.log(`[Document Sync] Synced document "${newDocument.fileName}" from case ${sourceCase.caseNumber} to ${syncedCount} related cases`);
+    console.log(
+      `[Document Sync] Synced document "${newDocument.fileName}" from case ${sourceCase.caseNumber} to ${syncedCount} related cases`,
+    );
     return syncedCount;
   }
 
@@ -4431,11 +5904,16 @@ export class DbStorage implements IStorage {
   async syncEstimateToRelatedCases(sourceCaseId: string): Promise<number> {
     const sourceCase = await this.getCaseById(sourceCaseId);
     if (!sourceCase || !sourceCase.caseNumber) {
-      console.log(`[Estimate Sync] Source case ${sourceCaseId} not found or no case number`);
+      console.log(
+        `[Estimate Sync] Source case ${sourceCaseId} not found or no case number`,
+      );
       return 0;
     }
 
-    const relatedCases = await this.getCasesByCaseNumberPrefix(sourceCase.caseNumber, sourceCaseId);
+    const relatedCases = await this.getCasesByCaseNumberPrefix(
+      sourceCase.caseNumber,
+      sourceCaseId,
+    );
     if (relatedCases.length === 0) {
       return 0;
     }
@@ -4456,7 +5934,7 @@ export class DbStorage implements IStorage {
           .where(eq(estimates.caseId, relatedCase.id))
           .orderBy(desc(estimates.version))
           .limit(1);
-        
+
         const nextVersion = (existingVersions[0]?.version || 0) + 1;
         const newEstimateId = randomUUID();
 
@@ -4503,17 +5981,23 @@ export class DbStorage implements IStorage {
 
         syncedCount++;
       } catch (error: any) {
-        console.error(`[Estimate Sync Error] Failed to sync to case ${relatedCase.id}:`, {
-          message: error?.message || 'Unknown error',
-          code: error?.code || 'No error code',
-          stack: error?.stack?.split('\n').slice(0, 5).join('\n') || 'No stack',
-          sourceCaseId,
-          targetCaseId: relatedCase.id,
-        });
+        console.error(
+          `[Estimate Sync Error] Failed to sync to case ${relatedCase.id}:`,
+          {
+            message: error?.message || "Unknown error",
+            code: error?.code || "No error code",
+            stack:
+              error?.stack?.split("\n").slice(0, 5).join("\n") || "No stack",
+            sourceCaseId,
+            targetCaseId: relatedCase.id,
+          },
+        );
       }
     }
 
-    console.log(`[Estimate Sync] Synced estimate from case ${sourceCaseId} to ${syncedCount} related cases`);
+    console.log(
+      `[Estimate Sync] Synced estimate from case ${sourceCaseId} to ${syncedCount} related cases`,
+    );
     return syncedCount;
   }
 
@@ -4534,36 +6018,41 @@ export class DbStorage implements IStorage {
     const allCases = await db
       .select({ caseNumber: cases.caseNumber })
       .from(cases)
-      .where(sql`${cases.caseNumber} LIKE ${prefix + '%'}`);
-    
+      .where(sql`${cases.caseNumber} LIKE ${prefix + "%"}`);
+
     // Find the maximum suffix used
     let maxSuffix = 0;
     for (const c of allCases) {
-      if (c.caseNumber && c.caseNumber.startsWith(prefix + '-')) {
-        const suffixStr = c.caseNumber.split('-')[1];
+      if (c.caseNumber && c.caseNumber.startsWith(prefix + "-")) {
+        const suffixStr = c.caseNumber.split("-")[1];
         const suffix = parseInt(suffixStr, 10);
         if (!isNaN(suffix) && suffix > maxSuffix) {
           maxSuffix = suffix;
         }
       }
     }
-    
+
     return maxSuffix + 1;
   }
 
   // 같은 prefix를 가진 케이스들 조회 (예: 251102001, 251102001-1, 251102001-2)
-  async getCasesByPrefix(prefix: string, excludeCaseId?: string): Promise<Case[]> {
+  async getCasesByPrefix(
+    prefix: string,
+    excludeCaseId?: string,
+  ): Promise<Case[]> {
     // Find all cases with this prefix (including prefix itself and prefix-N)
     const allCases = await db
       .select()
       .from(cases)
-      .where(sql`${cases.caseNumber} = ${prefix} OR ${cases.caseNumber} LIKE ${prefix + '-%'}`);
-    
+      .where(
+        sql`${cases.caseNumber} = ${prefix} OR ${cases.caseNumber} LIKE ${prefix + "-%"}`,
+      );
+
     // Exclude the source case if specified
     if (excludeCaseId) {
-      return allCases.filter(c => c.id !== excludeCaseId);
+      return allCases.filter((c) => c.id !== excludeCaseId);
     }
-    
+
     return allCases;
   }
 
@@ -4575,8 +6064,8 @@ export class DbStorage implements IStorage {
     }
 
     // Extract prefix from case number (e.g., "251102001" from "251102001-1")
-    const prefix = sourceCase.caseNumber.split('-')[0];
-    
+    const prefix = sourceCase.caseNumber.split("-")[0];
+
     const relatedCases = await this.getCasesByPrefix(prefix, sourceCaseId);
     if (relatedCases.length === 0) {
       return 0;
@@ -4648,11 +6137,16 @@ export class DbStorage implements IStorage {
           .where(eq(cases.id, relatedCase.id));
         syncedCount++;
       } catch (error) {
-        console.error(`Failed to sync intake data to case ${relatedCase.id}:`, error);
+        console.error(
+          `Failed to sync intake data to case ${relatedCase.id}:`,
+          error,
+        );
       }
     }
 
-    console.log(`[Intake Sync] Synced intake data from case ${sourceCaseId} (${sourceCase.caseNumber}) to ${syncedCount} related cases`);
+    console.log(
+      `[Intake Sync] Synced intake data from case ${sourceCaseId} (${sourceCase.caseNumber}) to ${syncedCount} related cases`,
+    );
     return syncedCount;
   }
 
@@ -4673,43 +6167,75 @@ export class DbStorage implements IStorage {
       // 상태에 따라 순차적으로 날짜 채우기
       const status = caseItem.status;
       const statusOrder = [
-        "배당대기", "접수완료", "현장방문", "현장정보입력", "검토중", "반려",
-        "1차승인", "현장정보제출", "복구요청(2차승인)", "직접복구", "선견적요청",
-        "(직접복구인 경우) 청구자료제출", "(선견적요청인 경우) 출동비 청구",
-        "청구", "입금완료", "일부입금", "정산완료"
+        "배당대기",
+        "접수완료",
+        "현장방문",
+        "현장정보입력",
+        "검토중",
+        "반려",
+        "1차승인",
+        "현장정보제출",
+        "복구요청(2차승인)",
+        "직접복구",
+        "선견적요청",
+        "(직접복구인 경우) 청구자료제출",
+        "(선견적요청인 경우) 출동비 청구",
+        "청구",
+        "입금완료",
+        "일부입금",
+        "정산완료",
       ];
 
       const currentIndex = statusOrder.indexOf(status || "");
 
       // 배당일: 접수완료 이후 상태면 설정
-      if (!caseItem.assignmentDate && currentIndex >= statusOrder.indexOf("접수완료")) {
+      if (
+        !caseItem.assignmentDate &&
+        currentIndex >= statusOrder.indexOf("접수완료")
+      ) {
         dateUpdates.assignmentDate = baseDate;
       }
 
       // 현장방문일: 현장방문 이후 상태면 설정
-      if (!caseItem.siteVisitDate && currentIndex >= statusOrder.indexOf("현장방문")) {
+      if (
+        !caseItem.siteVisitDate &&
+        currentIndex >= statusOrder.indexOf("현장방문")
+      ) {
         dateUpdates.siteVisitDate = baseDate;
       }
 
       // 현장자료 제출일: 현장정보입력 이후 상태면 설정
-      if (!caseItem.siteInvestigationSubmitDate && currentIndex >= statusOrder.indexOf("현장정보입력")) {
+      if (
+        !caseItem.siteInvestigationSubmitDate &&
+        currentIndex >= statusOrder.indexOf("현장정보입력")
+      ) {
         dateUpdates.siteInvestigationSubmitDate = baseDate;
       }
 
       // 1차 승인일: 1차승인 이후 상태면 설정
-      if (!caseItem.firstApprovalDate && currentIndex >= statusOrder.indexOf("1차승인")) {
+      if (
+        !caseItem.firstApprovalDate &&
+        currentIndex >= statusOrder.indexOf("1차승인")
+      ) {
         dateUpdates.firstApprovalDate = baseDate;
       }
 
       // 2차 승인일: 복구요청(2차승인) 이후 상태면 설정
-      if (!caseItem.secondApprovalDate && currentIndex >= statusOrder.indexOf("복구요청(2차승인)")) {
+      if (
+        !caseItem.secondApprovalDate &&
+        currentIndex >= statusOrder.indexOf("복구요청(2차승인)")
+      ) {
         dateUpdates.secondApprovalDate = baseDate;
       }
 
       // 복구완료일: 청구자료제출 또는 출동비 청구 이후 상태면 설정
-      if (!caseItem.constructionCompletionDate && 
-          (currentIndex >= statusOrder.indexOf("(직접복구인 경우) 청구자료제출") ||
-           currentIndex >= statusOrder.indexOf("(선견적요청인 경우) 출동비 청구"))) {
+      if (
+        !caseItem.constructionCompletionDate &&
+        (currentIndex >=
+          statusOrder.indexOf("(직접복구인 경우) 청구자료제출") ||
+          currentIndex >=
+            statusOrder.indexOf("(선견적요청인 경우) 출동비 청구"))
+      ) {
         dateUpdates.constructionCompletionDate = baseDate;
       }
 
@@ -4720,14 +6246,17 @@ export class DbStorage implements IStorage {
 
       // 업데이트할 내용이 있으면 DB 업데이트
       if (Object.keys(dateUpdates).length > 0) {
-        await db.update(cases)
+        await db
+          .update(cases)
           .set(dateUpdates)
           .where(eq(cases.id, caseItem.id));
         updatedCount++;
       }
     }
 
-    console.log(`[Date Migration] Updated ${updatedCount} cases with auto-populated dates`);
+    console.log(
+      `[Date Migration] Updated ${updatedCount} cases with auto-populated dates`,
+    );
     return updatedCount;
   }
 
@@ -4745,26 +6274,30 @@ export class DbStorage implements IStorage {
       .orderBy(desc(caseChangeLogs.changedAt));
   }
 
-  async getAllCaseChangeLogs(filters?: { 
-    caseNumber?: string; 
-    changedBy?: string; 
-    dateFrom?: string; 
-    dateTo?: string 
+  async getAllCaseChangeLogs(filters?: {
+    caseNumber?: string;
+    changedBy?: string;
+    dateFrom?: string;
+    dateTo?: string;
   }): Promise<(CaseChangeLog & { caseNumber: string })[]> {
     const conditions: any[] = [];
-    
+
     if (filters?.changedBy) {
       conditions.push(eq(caseChangeLogs.changedBy, filters.changedBy));
     }
-    
+
     if (filters?.dateFrom) {
-      conditions.push(sql`${caseChangeLogs.changedAt}::date >= ${filters.dateFrom}::date`);
+      conditions.push(
+        sql`${caseChangeLogs.changedAt}::date >= ${filters.dateFrom}::date`,
+      );
     }
-    
+
     if (filters?.dateTo) {
-      conditions.push(sql`${caseChangeLogs.changedAt}::date <= ${filters.dateTo}::date`);
+      conditions.push(
+        sql`${caseChangeLogs.changedAt}::date <= ${filters.dateTo}::date`,
+      );
     }
-    
+
     // Join with cases to get caseNumber and filter by it
     const query = db
       .select({
@@ -4781,15 +6314,15 @@ export class DbStorage implements IStorage {
       .from(caseChangeLogs)
       .innerJoin(cases, eq(caseChangeLogs.caseId, cases.id))
       .orderBy(desc(caseChangeLogs.changedAt));
-    
+
     if (filters?.caseNumber) {
       conditions.push(like(cases.caseNumber, `%${filters.caseNumber}%`));
     }
-    
+
     if (conditions.length > 0) {
       return await query.where(and(...conditions));
     }
-    
+
     return await query;
   }
 }
