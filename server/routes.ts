@@ -4238,6 +4238,268 @@ FLOXN 드림`,
     }
   });
 
+  // ==========================================
+  // POST /api/send-stage-notification - 단계별 SMS 알림 발송
+  // ==========================================
+  const stageNotificationSchema = z.object({
+    caseId: z.string(),
+    stage: z.enum([
+      "접수완료",
+      "현장정보입력", 
+      "반려",
+      "현장정보제출",
+      "복구요청",
+      "직접복구",
+      "미복구",
+      "청구자료제출",
+      "청구",
+      "결정금액수수료",
+      "접수취소"
+    ]),
+    recipients: z.object({
+      partner: z.boolean().default(false),
+      manager: z.boolean().default(false),
+      assessorInvestigator: z.boolean().default(false),
+    }),
+    additionalMessage: z.string().optional(),
+    // 접수취소 사유 (접수취소 단계에서만 사용)
+    cancelReason: z.string().optional(),
+    // 결정금액/수수료 정보 (결정금액수수료 단계에서만 사용)
+    recoveryAmount: z.number().optional(),
+    feeRate: z.number().optional(),
+    paymentAmount: z.number().optional(),
+  });
+
+  app.post("/api/send-stage-notification", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const currentUser = await storage.getUser(req.session.userId);
+    if (!currentUser) {
+      return res.status(401).json({ error: "사용자를 찾을 수 없습니다" });
+    }
+
+    // 관리자 또는 협력사만 SMS 발송 가능
+    if (!["관리자", "협력사"].includes(currentUser.role)) {
+      console.log(`[send-stage-notification] Unauthorized role: ${currentUser.role} (user: ${currentUser.username})`);
+      return res.status(403).json({ error: "SMS 발송 권한이 없습니다" });
+    }
+
+    try {
+      const validatedData = stageNotificationSchema.parse(req.body);
+      const { caseId, stage, recipients, additionalMessage, cancelReason, recoveryAmount, feeRate, paymentAmount } = validatedData;
+
+      // 솔라피 API 키 확인
+      const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+      const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+      const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
+
+      if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !SOLAPI_SENDER) {
+        console.error("[send-stage-notification] Missing Solapi configuration");
+        return res.status(500).json({ error: "SMS 서비스가 설정되지 않았습니다" });
+      }
+
+      // 케이스 정보 조회
+      const caseData = await storage.getCase(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 담당자(관리자) 정보 조회
+      let managerData = null;
+      if (caseData.managerId) {
+        managerData = await storage.getUser(caseData.managerId);
+      }
+
+      const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+
+      // 수신자별 전화번호 수집
+      const phoneNumbers: { type: string; phone: string; name: string }[] = [];
+
+      // 협력업체 연락처
+      if (recipients.partner && caseData.assignedPartnerContact) {
+        const normalizedPhone = caseData.assignedPartnerContact.replace(/[^0-9]/g, "");
+        if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+          phoneNumbers.push({
+            type: "협력업체",
+            phone: normalizedPhone,
+            name: caseData.assignedPartner || "협력업체",
+          });
+        }
+      }
+
+      // 플록슨 담당자 연락처
+      if (recipients.manager && managerData?.phone) {
+        const normalizedPhone = managerData.phone.replace(/[^0-9]/g, "");
+        if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+          phoneNumbers.push({
+            type: "플록슨담당자",
+            phone: normalizedPhone,
+            name: managerData.name || "담당자",
+          });
+        }
+      }
+
+      // 심사자/조사자 연락처
+      if (recipients.assessorInvestigator) {
+        // 심사자 연락처
+        if (caseData.assessorContact) {
+          const normalizedPhone = caseData.assessorContact.replace(/[^0-9]/g, "");
+          if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+            phoneNumbers.push({
+              type: "심사자",
+              phone: normalizedPhone,
+              name: caseData.assessorId || "심사자",
+            });
+          }
+        }
+        // 조사자 연락처
+        if (caseData.investigatorContact) {
+          const normalizedPhone = caseData.investigatorContact.replace(/[^0-9]/g, "");
+          if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+            phoneNumbers.push({
+              type: "조사자",
+              phone: normalizedPhone,
+              name: caseData.investigatorTeamName || "조사자",
+            });
+          }
+        }
+      }
+
+      if (phoneNumbers.length === 0) {
+        return res.status(400).json({ error: "발송할 연락처가 없습니다" });
+      }
+
+      // 메시지 템플릿 생성
+      let messageText = "";
+      let subject = "";
+
+      if (stage === "접수완료") {
+        subject = "접수완료 알림";
+        messageText = `<접수완료 알림>
+
+접수번호 : ${caseData.caseNumber || "-"}
+보험사 : ${caseData.insuranceCompany || "-"}
+담당자 : ${managerData?.name || "-"}
+증권번호 : ${caseData.insurancePolicyNo || "-"}
+사고번호 : ${caseData.insuranceAccidentNo || "-"}
+피보험자 : ${caseData.insuredName || "-"}  연락처 ${caseData.insuredContact || "-"}
+피해자 : ${caseData.victimName || "-"}  연락처 ${caseData.victimContact || "-"}
+조사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}
+사고장소 : ${caseData.insuredAddress || "-"}
+의뢰범위 : ${caseData.requestScope || "-"}`;
+      } else if (stage === "접수취소") {
+        subject = "접수취소 알림";
+        messageText = `<접수취소 알림>
+
+접수번호 : ${caseData.caseNumber || "-"}
+보험사 : ${caseData.insuranceCompany || "-"}
+증권번호 : ${caseData.insurancePolicyNo || "-"}
+사고번호 : ${caseData.insuranceAccidentNo || "-"}
+피보험자 : ${caseData.insuredName || "-"}
+사고장소 : ${caseData.insuredAddress || "-"}
+
+위 접수건은 접수 취소 되었음을 알려드립니다.
+취소 사유 : ${cancelReason || "-"}`;
+      } else if (stage === "결정금액수수료") {
+        subject = "결정금액 및 수수료 안내";
+        messageText = `<결정금액 및 수수료안내 알림>
+
+접수번호 : ${caseData.caseNumber || "-"}
+보험사 : ${caseData.insuranceCompany || "-"}
+증권번호 : ${caseData.insurancePolicyNo || "-"}
+사고번호 : ${caseData.insuranceAccidentNo || "-"}
+피보험자 : ${caseData.insuredName || "-"}
+사고장소 : ${caseData.insuredAddress || "-"}
+복구금액 : ${recoveryAmount?.toLocaleString() || "-"}원
+수수료 : 최종금액의 ${feeRate || "-"}%
+지급금액 : ${paymentAmount?.toLocaleString() || "-"}원`;
+      } else {
+        // 현장정보입력~청구 등 단계별 항목 알림
+        const stageDisplayName = stage === "직접복구" || stage === "미복구" 
+          ? `${stage}` 
+          : stage;
+        subject = `${stageDisplayName} 알림`;
+        messageText = `<${stageDisplayName} 알림>
+
+접수번호 : ${caseData.caseNumber || "-"}
+보험사 : ${caseData.insuranceCompany || "-"}
+증권번호 : ${caseData.insurancePolicyNo || "-"}
+사고번호 : ${caseData.insuranceAccidentNo || "-"}
+피보험자 : ${caseData.insuredName || "-"}
+사고장소 : ${caseData.insuredAddress || "-"}
+진행사항 : ${stageDisplayName}`;
+      }
+
+      // 추가 메시지가 있으면 추가
+      if (additionalMessage) {
+        messageText += `\n\n추가사항 : ${additionalMessage}`;
+      }
+
+      console.log(`[send-stage-notification] Stage: ${stage}, Recipients: ${phoneNumbers.length}`);
+
+      // 각 수신자에게 SMS 발송
+      const results: { type: string; name: string; success: boolean; error?: string }[] = [];
+
+      for (const recipient of phoneNumbers) {
+        try {
+          const payload = {
+            message: {
+              to: recipient.phone,
+              from: normalizedSender,
+              text: messageText,
+              subject: subject,
+              type: 'LMS',
+            },
+          };
+          const body = JSON.stringify(payload);
+
+          await solapiHttpsRequest({
+            method: "POST",
+            path: "/messages/v4/send",
+            headers: {
+              Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+              "Content-Type": "application/json",
+              "Content-Length": Buffer.byteLength(body),
+            },
+            body,
+          });
+
+          console.log(`[send-stage-notification] LMS sent to ${recipient.type}: ${recipient.phone}`);
+          results.push({ type: recipient.type, name: recipient.name, success: true });
+        } catch (sendError: any) {
+          console.error(`[send-stage-notification] Failed to send to ${recipient.type}:`, sendError);
+          results.push({
+            type: recipient.type,
+            name: recipient.name,
+            success: false,
+            error: sendError?.body?.message || sendError?.message || "발송 실패",
+          });
+        }
+      }
+
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
+
+      res.json({
+        success: successCount > 0,
+        message: `${successCount}건 발송 완료${failCount > 0 ? `, ${failCount}건 실패` : ""}`,
+        results,
+      });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        console.error("[send-stage-notification] Validation error:", error.errors);
+        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다", details: error.errors });
+      }
+      console.error("[send-stage-notification] Error:", error);
+      res.status(500).json({
+        error: "알림 발송에 실패했습니다",
+        details: error instanceof Error ? error.message : "알 수 없는 오류",
+      });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
