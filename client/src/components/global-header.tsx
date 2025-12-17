@@ -37,6 +37,7 @@ export function GlobalHeader() {
   const allMenuItems = [
     { name: "홈", category: "홈" },
     { name: "접수하기", category: "새로운접수" },
+    { name: "현장조사", category: "현장조사" },
     { name: "종합진행관리", category: "종합진행관리" },
     { name: "통계 및 정산", category: "통계 및 정산" },
     { name: "관리자 설정", category: "관리자 설정" },
@@ -52,6 +53,7 @@ export function GlobalHeader() {
   const getActiveMenu = () => {
     if (location === "/dashboard") return "홈";
     if (location === "/intake") return "접수하기";
+    if (location.startsWith("/field-survey")) return "현장조사";
     if (location === "/comprehensive-progress") return "종합진행관리";
     if (location.startsWith("/statistics") || location === "/settlements") return "통계 및 정산";
     if (location === "/admin-settings") return "관리자 설정";
@@ -68,69 +70,115 @@ export function GlobalHeader() {
     <>
       {/* Mobile Header */}
       <header 
-        className="lg:hidden flex items-center justify-between relative w-full"
+        className="lg:hidden flex flex-col relative w-full"
         style={{
           background: 'rgba(255, 255, 255, 0.06)',
           backdropFilter: 'blur(22px)',
           borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
-          height: '58px',
-          padding: '0px 20px',
-          gap: '230px',
         }}
       >
-        {/* Logo */}
+        {/* Top Row: Logo and Logout */}
         <div 
-          className="flex flex-col items-start"
+          className="flex items-center justify-between w-full"
           style={{
-            padding: '0px 12px',
-            gap: '10px',
-            width: '52px',
-            height: '26px',
-            filter: 'drop-shadow(0px 0px 20px #DBE9F5)',
+            height: '58px',
+            padding: '0px 20px',
           }}
         >
-          <img 
-            src={logoIcon} 
-            alt="FLOXN Logo" 
+          {/* Logo */}
+          <div 
+            className="flex flex-col items-start"
             style={{
-              width: '28px',
-              height: '26px',
-            }}
-          />
-        </div>
-
-        {/* Logout Button */}
-        <button
-          type="button"
-          onClick={() => logoutMutation.mutate()}
-          className="flex items-center justify-center"
-          style={{
-            padding: '6px 12px',
-            gap: '10px',
-            width: '76px',
-            height: '31px',
-            background: 'rgba(253, 253, 253, 0.1)',
-            borderRadius: '6px',
-          }}
-          data-testid="button-mobile-logout"
-        >
-          <span
-            style={{
+              padding: '0px 12px',
+              gap: '10px',
               width: '52px',
-              height: '19px',
-              fontFamily: 'Pretendard',
-              fontStyle: 'normal',
-              fontWeight: 500,
-              fontSize: '15px',
-              lineHeight: '128%',
-              letterSpacing: '-0.01em',
-              textDecoration: 'underline',
-              color: 'rgba(12, 12, 12, 0.7)',
+              height: '26px',
+              filter: 'drop-shadow(0px 0px 20px #DBE9F5)',
             }}
           >
-            로그아웃
-          </span>
-        </button>
+            <img 
+              src={logoIcon} 
+              alt="FLOXN Logo" 
+              style={{
+                width: '28px',
+                height: '26px',
+              }}
+            />
+          </div>
+
+          {/* Logout Button */}
+          <button
+            type="button"
+            onClick={() => logoutMutation.mutate()}
+            className="flex items-center justify-center"
+            style={{
+              padding: '6px 12px',
+              gap: '10px',
+              width: '76px',
+              height: '31px',
+              background: 'rgba(253, 253, 253, 0.1)',
+              borderRadius: '6px',
+            }}
+            data-testid="button-mobile-logout"
+          >
+            <span
+              style={{
+                width: '52px',
+                height: '19px',
+                fontFamily: 'Pretendard',
+                fontStyle: 'normal',
+                fontWeight: 500,
+                fontSize: '15px',
+                lineHeight: '128%',
+                letterSpacing: '-0.01em',
+                textDecoration: 'underline',
+                color: 'rgba(12, 12, 12, 0.7)',
+              }}
+            >
+              로그아웃
+            </span>
+          </button>
+        </div>
+
+        {/* Mobile Navigation Menu */}
+        <div 
+          className="flex items-center gap-2 overflow-x-auto px-4 pb-2"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {menuItems.map((item) => (
+            <button
+              key={item.name}
+              type="button"
+              onClick={() => {
+                if (item.name === "홈") {
+                  setLocation("/dashboard");
+                } else if (item.name === "접수하기") {
+                  setLocation("/intake");
+                } else if (item.name === "현장조사") {
+                  setLocation("/field-survey/management");
+                } else if (item.name === "종합진행관리") {
+                  setLocation("/comprehensive-progress");
+                } else if (item.name === "관리자 설정") {
+                  setLocation("/admin-settings");
+                } else if (item.name === "통계 및 정산") {
+                  setLocation("/statistics");
+                }
+              }}
+              className="px-3 py-1.5 rounded-md whitespace-nowrap transition-colors"
+              style={{
+                fontFamily: 'Pretendard',
+                fontSize: '14px',
+                fontWeight: activeMenu === item.name ? 600 : 500,
+                letterSpacing: '-0.02em',
+                color: activeMenu === item.name ? '#0C0C0C' : 'rgba(12, 12, 12, 0.5)',
+                background: activeMenu === item.name ? 'rgba(0, 143, 237, 0.1)' : 'transparent',
+              }}
+              data-testid={`mobile-menu-${item.name}`}
+            >
+              {item.name}
+            </button>
+          ))}
+        </div>
       </header>
 
       {/* Desktop Header */}
@@ -164,6 +212,8 @@ export function GlobalHeader() {
                     setLocation("/dashboard");
                   } else if (item.name === "접수하기") {
                     setLocation("/intake");
+                  } else if (item.name === "현장조사") {
+                    setLocation("/field-survey/management");
                   } else if (item.name === "종합진행관리") {
                     setLocation("/comprehensive-progress");
                   } else if (item.name === "관리자 설정") {
