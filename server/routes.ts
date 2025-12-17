@@ -4301,7 +4301,7 @@ FLOXN 드림`,
       }
 
       // 케이스 정보 조회
-      const caseData = await storage.getCase(caseId);
+      const caseData = await storage.getCaseById(caseId);
       if (!caseData) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
