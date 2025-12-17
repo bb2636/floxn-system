@@ -27,7 +27,7 @@ type NotificationStage =
   | "미복구"
   | "청구자료제출"
   | "청구"
-  | "결정금액수수료"
+  | "결정금액/수수료"
   | "접수취소";
 
 interface RecipientConfig {
@@ -38,7 +38,7 @@ interface RecipientConfig {
 
 const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   "접수완료": { partner: true, manager: true, assessorInvestigator: true },
-  "현장정보입력": { partner: false, manager: true, assessorInvestigator: false },
+  "현장정보입력": { partner: true, manager: true, assessorInvestigator: false },
   "반려": { partner: true, manager: false, assessorInvestigator: false },
   "현장정보제출": { partner: false, manager: false, assessorInvestigator: true },
   "복구요청": { partner: true, manager: false, assessorInvestigator: false },
@@ -46,7 +46,7 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   "미복구": { partner: true, manager: true, assessorInvestigator: false },
   "청구자료제출": { partner: false, manager: true, assessorInvestigator: false },
   "청구": { partner: false, manager: false, assessorInvestigator: true },
-  "결정금액수수료": { partner: true, manager: false, assessorInvestigator: false },
+  "결정금액/수수료": { partner: true, manager: false, assessorInvestigator: false },
   "접수취소": { partner: false, manager: false, assessorInvestigator: true },
 };
 
@@ -102,9 +102,9 @@ export function SmsNotificationDialog({
         recipients,
         additionalMessage: additionalMessage || undefined,
         cancelReason: stage === "접수취소" ? cancelReason : undefined,
-        recoveryAmount: stage === "결정금액수수료" ? recoveryAmount : undefined,
-        feeRate: stage === "결정금액수수료" ? feeRate : undefined,
-        paymentAmount: stage === "결정금액수수료" ? paymentAmount : undefined,
+        recoveryAmount: stage === "결정금액/수수료" ? recoveryAmount : undefined,
+        feeRate: stage === "결정금액/수수료" ? feeRate : undefined,
+        paymentAmount: stage === "결정금액/수수료" ? paymentAmount : undefined,
       });
       return response;
     },
@@ -139,9 +139,17 @@ export function SmsNotificationDialog({
 
   const getStageDisplayName = () => {
     switch (stage) {
-      case "결정금액수수료": return "결정금액 및 수수료 안내";
+      case "결정금액/수수료": return "결정금액 및 수수료 안내";
       default: return stage;
     }
+  };
+
+  // 의뢰범위 계산 (손방/대물)
+  const getRequestScope = () => {
+    const items = [];
+    if (caseData.damagePreventionCost === "true") items.push("손방");
+    if (caseData.victimIncidentAssistance === "true") items.push("대물");
+    return items.length > 0 ? items.join(", ") : "기타";
   };
 
   const getMessagePreview = () => {
@@ -155,7 +163,7 @@ export function SmsNotificationDialog({
 피해자 : ${caseData.victimName || "-"}  연락처 ${caseData.victimContact || "-"}
 조사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}
 사고장소 : ${caseData.insuredAddress || "-"}
-의뢰범위 : ${(caseData as any).requestScope || "-"}`;
+의뢰범위 : ${getRequestScope()}`;
     } else if (stage === "접수취소") {
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
@@ -166,7 +174,7 @@ export function SmsNotificationDialog({
 
 위 접수건은 접수 취소 되었음을 알려드립니다.
 취소 사유 : ${cancelReason || "-"}`;
-    } else if (stage === "결정금액수수료") {
+    } else if (stage === "결정금액/수수료") {
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
 증권번호 : ${caseData.insurancePolicyNo || "-"}
@@ -223,7 +231,7 @@ export function SmsNotificationDialog({
             </div>
           )}
 
-          {stage === "결정금액수수료" && (
+          {stage === "결정금액/수수료" && (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">

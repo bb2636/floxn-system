@@ -15,6 +15,7 @@ import { ko } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { SmsNotificationDialog } from "@/components/sms-notification-dialog";
 
 // Helper function to normalize boolean values from string/boolean storage
 const normalizeBoolean = (value: any): boolean => {
@@ -138,6 +139,9 @@ export default function FieldManagement() {
   const [processingTypes, setProcessingTypes] = useState<Set<string>>(new Set());
   const [processingTypeOther, setProcessingTypeOther] = useState("");
   const [recoveryMethodType, setRecoveryMethodType] = useState("부분수리");
+
+  // SMS 알림 다이얼로그 상태
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false);
 
   // 입력 중 상태 추적 (데이터 자동 리로드 방지)
   // ref 사용: state 변경 시 re-render 방지 (포커스 유지)
@@ -1956,6 +1960,9 @@ export default function FieldManagement() {
 
                       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
                       queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseData.id, "report"] });
+
+                      // 현장정보입력 SMS 알림 다이얼로그 표시
+                      setSmsDialogOpen(true);
                     } catch (error) {
                       console.error("제출 에러:", error);
                       toast({
@@ -1988,6 +1995,16 @@ export default function FieldManagement() {
         </div>
       )}
       </div>
+
+      {/* 현장정보입력 SMS 알림 다이얼로그 */}
+      {selectedCaseData && (
+        <SmsNotificationDialog
+          open={smsDialogOpen}
+          onOpenChange={setSmsDialogOpen}
+          stage="현장정보입력"
+          caseData={selectedCaseData}
+        />
+      )}
     </>
   );
 }
