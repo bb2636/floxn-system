@@ -1736,46 +1736,45 @@ export default function FieldDrawing() {
                       </div>
                     )}
 
-                    {/* mm 표시 (하단 - 도형 바깥) */}
+                    {/* mm 표시 (하단 - 도형 하단 가장자리) */}
                     <div
                       style={{
                         position: "absolute",
-                        bottom: "-24px",
+                        bottom: "2px",
                         left: "50%",
                         transform: "translateX(-50%)",
                         background: "rgba(255, 255, 255, 0.95)",
-                        padding: "3px 8px",
-                        borderRadius: "4px",
-                        fontSize: "11px",
+                        padding: "2px 6px",
+                        borderRadius: "3px",
+                        fontSize: "10px",
                         fontFamily: "Pretendard",
                         fontWeight: 500,
                         color: "#0C0C0C",
                         whiteSpace: "nowrap",
-                        border: "1px solid rgba(12, 12, 12, 0.15)",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                        border: "1px solid rgba(12, 12, 12, 0.2)",
                         zIndex: 20,
                       }}
                     >
                       {rect.width.toLocaleString()} mm
                     </div>
 
-                    {/* mm 표시 (우측 - 도형 바깥) */}
+                    {/* mm 표시 (우측 - 도형 우측 가장자리) */}
                     <div
                       style={{
                         position: "absolute",
-                        right: "-55px",
+                        right: "2px",
                         top: "50%",
                         transform: "translateY(-50%) rotate(90deg)",
+                        transformOrigin: "center center",
                         background: "rgba(255, 255, 255, 0.95)",
-                        padding: "3px 8px",
-                        borderRadius: "4px",
-                        fontSize: "11px",
+                        padding: "2px 6px",
+                        borderRadius: "3px",
+                        fontSize: "10px",
                         fontFamily: "Pretendard",
                         fontWeight: 500,
                         color: "#0C0C0C",
                         whiteSpace: "nowrap",
-                        border: "1px solid rgba(12, 12, 12, 0.15)",
-                        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                        border: "1px solid rgba(12, 12, 12, 0.2)",
                         zIndex: 20,
                       }}
                     >
