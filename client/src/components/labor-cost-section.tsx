@@ -1412,19 +1412,38 @@ export function LaborCostSection({
                     );
                   })()}
                   
-                  {/* 적용단가 - 연동 행은 수정 불가 */}
+                  {/* 적용단가 - 연동 행은 수정 불가, 천단위 콤마 표시 */}
                   <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
                     <Input
-                      type="number"
-                      value={row.pricePerSqm || 0}
-                      onChange={(e) => updateRow(row.id, 'pricePerSqm', Number(e.target.value) || 0)}
+                      type="text"
+                      inputMode="numeric"
+                      defaultValue={(row.pricePerSqm || 0) > 0 ? (row.pricePerSqm || 0).toLocaleString() : '0'}
+                      key={`price-${row.id}-${row.pricePerSqm}`}
+                      onFocus={(e) => {
+                        // 포커스 시 콤마 제거하여 편집 용이하게
+                        const rawValue = e.target.value.replace(/[,\s]/g, '');
+                        e.target.value = rawValue;
+                      }}
+                      onBlur={(e) => {
+                        // blur 시 콤마 추가 및 상태 업데이트
+                        const rawValue = e.target.value.replace(/[,\s]/g, '');
+                        const val = parseInt(rawValue, 10) || 0;
+                        e.target.value = val > 0 ? val.toLocaleString() : '0';
+                        updateRow(row.id, 'pricePerSqm', val);
+                      }}
+                      onKeyDown={(e) => {
+                        // Enter 키로도 blur 트리거
+                        if (e.key === 'Enter') {
+                          e.currentTarget.blur();
+                        }
+                      }}
                       className="h-9 border text-center"
                       style={{ 
                         fontFamily: "Pretendard", 
                         fontSize: "14px",
                         color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
                       }}
-                      disabled={isLinkedRow}
+                      disabled={isLinkedRow || isReadOnly}
                       data-testid={`input-unitPrice-labor-${globalIndex}`}
                     />
                   </td>
