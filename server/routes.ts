@@ -4146,6 +4146,7 @@ FLOXN 드림`,
         from: normalizedSender,
         text: messageText,
         type: 'LMS',
+        subject: '접수완료 알림',
       });
 
       console.log(`[send-sms] LMS sent successfully to ${normalizedTo}`);
