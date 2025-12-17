@@ -2640,15 +2640,25 @@ export default function FieldEstimate() {
       if (row.id === rowId) {
         const updated = { ...row, [field]: value };
         
-        // 공사명이 걸레받이/몰딩으로 변경되면 세로를 1로 고정
-        if (field === 'workName' && isLinearWorkName(value)) {
-          updated.damageHeight = '1';
-          updated.repairHeight = '1';
-          // 면적 재계산 (가로 값 그대로 표시)
-          const damageWidth = parseFloat(updated.damageWidth) || 0;
-          const repairWidth = parseFloat(updated.repairWidth) || 0;
-          updated.damageArea = damageWidth > 0 ? damageWidth.toString() : '0';
-          updated.repairArea = repairWidth > 0 ? repairWidth.toString() : '0';
+        // 공사명 변경 시 세로 값 처리
+        if (field === 'workName') {
+          if (isLinearWorkName(value)) {
+            // 걸레받이/몰딩으로 변경되면 세로를 1로 고정
+            updated.damageHeight = '1';
+            updated.repairHeight = '1';
+            // 면적 재계산 (가로 값 그대로 표시)
+            const damageWidth = parseFloat(updated.damageWidth) || 0;
+            const repairWidth = parseFloat(updated.repairWidth) || 0;
+            updated.damageArea = damageWidth > 0 ? damageWidth.toString() : '0';
+            updated.repairArea = repairWidth > 0 ? repairWidth.toString() : '0';
+          } else if (isLinearWorkName(row.workName) && !isLinearWorkName(value)) {
+            // 걸레받이/몰딩에서 다른 공사명으로 변경 시 세로를 0으로 리셋
+            updated.damageHeight = '0';
+            updated.repairHeight = '0';
+            // 면적 재계산 (세로가 0이므로 면적도 0)
+            updated.damageArea = '0';
+            updated.repairArea = '0';
+          }
         }
         
         // 공사명 변경 시 노무비/자재비 자동 연동 (공종이 이미 설정된 경우)
