@@ -1736,42 +1736,50 @@ export default function FieldDrawing() {
                       </div>
                     )}
 
-                    {/* mm 표시 (하단) */}
+                    {/* mm 표시 (하단 - 도형 바깥) */}
                     <div
                       style={{
                         position: "absolute",
-                        bottom: "-20px",
+                        bottom: "-24px",
                         left: "50%",
                         transform: "translateX(-50%)",
-                        background: "rgba(218, 218, 218, 0.9)",
-                        padding: "2px 6px",
+                        background: "rgba(255, 255, 255, 0.95)",
+                        padding: "3px 8px",
                         borderRadius: "4px",
                         fontSize: "11px",
                         fontFamily: "Pretendard",
+                        fontWeight: 500,
                         color: "#0C0C0C",
                         whiteSpace: "nowrap",
+                        border: "1px solid rgba(12, 12, 12, 0.15)",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                        zIndex: 20,
                       }}
                     >
-                      {rect.width} mm
+                      {rect.width.toLocaleString()} mm
                     </div>
 
-                    {/* mm 표시 (우측) */}
+                    {/* mm 표시 (우측 - 도형 바깥) */}
                     <div
                       style={{
                         position: "absolute",
-                        right: "-50px",
+                        right: "-55px",
                         top: "50%",
                         transform: "translateY(-50%) rotate(90deg)",
-                        background: "rgba(218, 218, 218, 0.9)",
-                        padding: "2px 6px",
+                        background: "rgba(255, 255, 255, 0.95)",
+                        padding: "3px 8px",
                         borderRadius: "4px",
                         fontSize: "11px",
                         fontFamily: "Pretendard",
+                        fontWeight: 500,
                         color: "#0C0C0C",
                         whiteSpace: "nowrap",
+                        border: "1px solid rgba(12, 12, 12, 0.15)",
+                        boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+                        zIndex: 20,
                       }}
                     >
-                      {rect.height} mm
+                      {rect.height.toLocaleString()} mm
                     </div>
                   </div>
                 ))}
