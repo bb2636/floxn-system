@@ -106,7 +106,7 @@ export function SmsNotificationDialog({
         feeRate: stage === "결정금액수수료" ? feeRate : undefined,
         paymentAmount: stage === "결정금액수수료" ? paymentAmount : undefined,
       });
-      return response.json();
+      return response;
     },
     onSuccess: (data: any) => {
       toast({

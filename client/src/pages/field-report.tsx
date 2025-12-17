@@ -25,7 +25,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
-import type { Drawing, CaseDocument as SchemaDocument } from "@shared/schema";
+import type { Drawing, CaseDocument as SchemaDocument, Case as SchemaCase } from "@shared/schema";
+import { SmsNotificationDialog } from "@/components/sms-notification-dialog";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import html2canvas from "html2canvas";
@@ -261,6 +262,10 @@ export default function FieldReport() {
   // 활성 탭 상태 (PDF 캡처를 위해 제어 컴포넌트로 사용)
   const [activeTab, setActiveTab] = useState("현장조사");
   
+  // SMS 알림 다이얼로그 상태
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false);
+  const [smsStage, setSmsStage] = useState<"현장정보입력" | "반려" | "현장정보제출">("현장정보입력");
+  
   // 테이블 체크박스 상태 관리
   const [areaChecked, setAreaChecked] = useState<Record<number, boolean>>({});
   const [laborChecked, setLaborChecked] = useState<Record<number, boolean>>({});
@@ -417,6 +422,10 @@ export default function FieldReport() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
       setShowSubmitDialog(false);
+      
+      // SMS 알림 다이얼로그 표시 (현장정보제출)
+      setSmsStage("현장정보제출");
+      setSmsDialogOpen(true);
     },
     onError: (error: Error) => {
       toast({
@@ -447,6 +456,13 @@ export default function FieldReport() {
       queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       setShowReviewDialog(false);
+      
+      // 비승인(반려) 시 SMS 알림 다이얼로그 표시
+      if (reviewDecision === "비승인") {
+        setSmsStage("반려");
+        setSmsDialogOpen(true);
+      }
+      
       setReviewDecision("승인");
       setReviewComment("");
     },
@@ -3259,6 +3275,17 @@ export default function FieldReport() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* SMS 알림 발송 다이얼로그 */}
+      {reportData?.case && (
+        <SmsNotificationDialog
+          open={smsDialogOpen}
+          onOpenChange={setSmsDialogOpen}
+          caseData={reportData.case as unknown as SchemaCase}
+          stage={smsStage}
+          onSuccess={() => setSmsDialogOpen(false)}
+        />
+      )}
     </div>
   );
 }

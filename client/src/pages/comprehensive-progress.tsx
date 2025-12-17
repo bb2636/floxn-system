@@ -50,6 +50,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SmsNotificationDialog } from "@/components/sms-notification-dialog";
+import type { Case as SchemaCase } from "@shared/schema";
 
 // 진행상태 목록
 const CASE_STATUSES = [
@@ -117,6 +119,11 @@ export default function ComprehensiveProgress() {
   const [constructionStatus, setConstructionStatus] = useState<string>("수리");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // SMS 알림 다이얼로그 상태
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false);
+  const [smsStage, setSmsStage] = useState<"복구요청" | "직접복구" | "미복구" | "청구자료제출" | "청구" | "결정금액수수료" | "접수취소">("복구요청");
+  const [smsCaseData, setSmsCaseData] = useState<CaseWithLatestProgress | null>(null);
 
   // 케이스 번호에서 prefix 추출 (예: "251203001-2" -> "251203001")
   const getCaseNumberPrefix = (caseNumber: string | null | undefined): string | null => {
@@ -295,11 +302,12 @@ export default function ComprehensiveProgress() {
     },
     onSuccess: (data, variables) => {
       // 백엔드에서 반환된 실제 데이터로 업데이트
+      let updatedCaseData: CaseWithLatestProgress | null = null;
       if (data && typeof data === 'object' && 'id' in data) {
-        const updatedCase = data as unknown as CaseWithLatestProgress;
+        updatedCaseData = data as unknown as CaseWithLatestProgress;
         queryClient.setQueryData<CaseWithLatestProgress[]>(["/api/cases"], (old) => {
           if (!old) return old;
-          return old.map(c => c.id === updatedCase.id ? { ...c, ...updatedCase } : c);
+          return old.map(c => c.id === updatedCaseData!.id ? { ...c, ...updatedCaseData } : c);
         });
       }
       
@@ -312,11 +320,34 @@ export default function ComprehensiveProgress() {
           title: "상태 자동 변경",
           description: "미복구 선택으로 인해 상태가 '출동비 청구'로 자동 변경되었습니다.",
         });
+        // 미복구 SMS 알림 다이얼로그
+        if (updatedCaseData) {
+          setSmsCaseData(updatedCaseData);
+          setSmsStage("미복구");
+          setSmsDialogOpen(true);
+        }
       } else {
         toast({
           title: "상태 변경 완료",
           description: "진행상태가 성공적으로 변경되었습니다.",
         });
+        
+        // 특정 상태 변경 시 SMS 알림 다이얼로그 표시
+        const smsRequiredStages: Record<string, "복구요청" | "직접복구" | "미복구" | "청구자료제출" | "청구" | "결정금액수수료" | "접수취소"> = {
+          "복구요청(2차승인)": "복구요청",
+          "직접복구": "직접복구",
+          "(직접복구인 경우) 청구자료제출": "청구자료제출",
+          "(선견적요청인 경우) 출동비 청구": "청구자료제출",
+          "청구": "청구",
+          "접수취소": "접수취소",
+        };
+        
+        const stage = smsRequiredStages[variables.status];
+        if (stage && updatedCaseData) {
+          setSmsCaseData(updatedCaseData);
+          setSmsStage(stage);
+          setSmsDialogOpen(true);
+        }
       }
     },
     onError: (error, variables, context) => {
@@ -2927,6 +2958,20 @@ export default function ComprehensiveProgress() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* SMS 알림 발송 다이얼로그 */}
+      {smsCaseData && (
+        <SmsNotificationDialog
+          open={smsDialogOpen}
+          onOpenChange={setSmsDialogOpen}
+          caseData={smsCaseData as unknown as SchemaCase}
+          stage={smsStage}
+          onSuccess={() => {
+            setSmsDialogOpen(false);
+            setSmsCaseData(null);
+          }}
+        />
+      )}
 
     </div>
   );
