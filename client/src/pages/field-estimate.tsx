@@ -175,6 +175,7 @@ export default function FieldEstimate() {
   const [selectedLaborRows, setSelectedLaborRows] = useState<Set<string>>(new Set());
   const [materialRows, setMaterialRows] = useState<MaterialRow[]>([]);
   const [selectedMaterialRows, setSelectedMaterialRows] = useState<Set<string>>(new Set());
+  const [deletedDemolitionKeys, setDeletedDemolitionKeys] = useState<Set<string>>(new Set()); // 수동 삭제된 철거공사 키 추적
   const [vatIncluded, setVatIncluded] = useState(true); // VAT 포함 여부
   const [estimateCase, setEstimateCase] = useState<Case | null>(null); // 견적서용 선택된 케이스
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false); // 케이스 검색 모달
@@ -697,12 +698,56 @@ export default function FieldEstimate() {
     setLaborCostRows(prev => [...prev, newLaborRow]);
   };
 
-  // 선택된 노무비 행 삭제
+  // 선택된 노무비 행 삭제 (철거공사 행은 삭제 키 추적하여 재생성 방지)
   const deleteSelectedLaborRows = () => {
     if (isReadOnly) return;
     if (selectedLaborRows.size === 0) return;
+    
+    // 삭제할 철거공사 행의 키를 추적 (재생성 방지)
+    const newDeletedKeys = new Set<string>();
+    laborCostRows.forEach(row => {
+      if (selectedLaborRows.has(row.id) && row.category === '철거공사' && row.isLinkedFromRecovery) {
+        // 키 형식: sourceRowId|matchedWorkName|detailItem
+        const actualSourceRowId = row.sourceAreaRowId?.startsWith('demolition-') 
+          ? row.sourceAreaRowId.replace('demolition-', '')
+          : row.sourceAreaRowId || '';
+        const key = `${actualSourceRowId}|${row.workName || ''}|${row.detailItem || ''}`;
+        newDeletedKeys.add(key);
+      }
+    });
+    
+    if (newDeletedKeys.size > 0) {
+      setDeletedDemolitionKeys(prev => new Set([...Array.from(prev), ...Array.from(newDeletedKeys)]));
+    }
+    
     setLaborCostRows(prev => prev.filter(row => !selectedLaborRows.has(row.id)));
     setSelectedLaborRows(new Set());
+  };
+
+  // 노무비 행 변경 핸들러 (LaborCostSection에서 - 버튼으로 삭제 시 철거공사 키 추적)
+  const handleLaborRowsChange = (newRows: LaborCostRow[]) => {
+    // 삭제된 행 감지 (현재 행에서 새 행에 없는 것 = 삭제된 행)
+    const newRowIds = new Set(newRows.map(r => r.id));
+    const deletedRows = laborCostRows.filter(r => !newRowIds.has(r.id));
+    
+    // 삭제된 철거공사 행의 키 추적
+    const newDeletedKeys = new Set<string>();
+    deletedRows.forEach(row => {
+      if (row.category === '철거공사' && row.isLinkedFromRecovery) {
+        const actualSourceRowId = row.sourceAreaRowId?.startsWith('demolition-') 
+          ? row.sourceAreaRowId.replace('demolition-', '')
+          : row.sourceAreaRowId || '';
+        const key = `${actualSourceRowId}|${row.workName || ''}|${row.detailItem || ''}`;
+        newDeletedKeys.add(key);
+        console.log('[철거공사 삭제 추적] 키:', key);
+      }
+    });
+    
+    if (newDeletedKeys.size > 0) {
+      setDeletedDemolitionKeys(prev => new Set([...Array.from(prev), ...Array.from(newDeletedKeys)]));
+    }
+    
+    setLaborCostRows(sortLaborRowsByCategory(newRows));
   };
 
   // 복구면적 산출표에서 노무비로 동기화 (일위대가DB 기반 자동 생성)
@@ -2016,6 +2061,10 @@ export default function FieldEstimate() {
       if (existingDemolitionMap.has(entry.key)) {
         return;
       }
+      // 수동 삭제된 철거공사 행은 재생성하지 않음
+      if (deletedDemolitionKeys.has(entry.key)) {
+        return;
+      }
       missingEntries.push(entry);
     });
     
@@ -2147,7 +2196,7 @@ export default function FieldEstimate() {
         return [...updatedRows, ...newDemolitionRows];
       });
     });
-  }, [rows, laborCostRows, ilwidaegaCatalog]); // laborCostRows 포함 (수동 편집 감지)
+  }, [rows, laborCostRows, ilwidaegaCatalog, deletedDemolitionKeys]); // laborCostRows 포함 (수동 편집 감지)
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
@@ -5315,7 +5364,7 @@ export default function FieldEstimate() {
               {/* 노무비 테이블 - 노무비 탭과 동일한 LaborCostSection 사용 */}
               <LaborCostSection
                 rows={laborCostRows}
-                onRowsChange={(newRows) => setLaborCostRows(sortLaborRowsByCategory(newRows))}
+                onRowsChange={handleLaborRowsChange}
                 catalog={laborCatalog}
                 ilwidaegaCatalog={ilwidaegaCatalog}
                 selectedRows={selectedLaborRows}
@@ -5803,7 +5852,7 @@ export default function FieldEstimate() {
               {/* 노무비 테이블 컴포넌트 - 새로운 프롬프트 기반 UI */}
               <LaborCostSection
                 rows={laborCostRows}
-                onRowsChange={(newRows) => setLaborCostRows(sortLaborRowsByCategory(newRows))}
+                onRowsChange={handleLaborRowsChange}
                 catalog={laborCatalog}
                 ilwidaegaCatalog={ilwidaegaCatalog}
                 selectedRows={selectedLaborRows}
