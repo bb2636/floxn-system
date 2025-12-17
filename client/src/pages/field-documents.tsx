@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Case, CaseDocument } from "@shared/schema";
 import { Upload, X, Check, Download, Search } from "lucide-react";
@@ -130,6 +130,37 @@ export default function FieldDocuments() {
     queryKey: ["/api/documents/case", selectedCaseId],
     enabled: !!selectedCaseId,
   });
+
+  // 도면 데이터 조회 (제출 조건 체크용)
+  const { data: drawingData, isLoading: isLoadingDrawing } = useQuery({
+    queryKey: ["/api/drawings", "case", selectedCaseId],
+    enabled: !!selectedCaseId,
+  });
+
+  // 견적 데이터 조회 (제출 조건 체크용)
+  const { data: estimateData, isLoading: isLoadingEstimate } = useQuery({
+    queryKey: ["/api/estimates", selectedCaseId, "latest"],
+    enabled: !!selectedCaseId,
+  });
+
+  // 제출 조건 상태 계산
+  const isFieldInputComplete = useMemo(() => {
+    return !!(selectedCase?.visitDate && selectedCase?.visitTime && selectedCase?.accidentCategory && selectedCase?.victimName);
+  }, [selectedCase]);
+
+  const isDrawingComplete = useMemo(() => {
+    return !isLoadingDrawing && !!drawingData && typeof drawingData === 'object' && 'id' in drawingData;
+  }, [drawingData, isLoadingDrawing]);
+
+  const isDocumentsComplete = useMemo(() => {
+    return !isLoading && Array.isArray(documents) && documents.length > 0;
+  }, [documents, isLoading]);
+
+  const isEstimateComplete = useMemo(() => {
+    return !isLoadingEstimate && !!estimateData && typeof estimateData === 'object' && 'estimate' in estimateData && !!estimateData.estimate;
+  }, [estimateData, isLoadingEstimate]);
+
+  const canSubmit = isFieldInputComplete && isDrawingComplete && isDocumentsComplete && isEstimateComplete;
 
   // 관련 케이스 문서 확인 (같은 사고번호의 다른 케이스에 문서가 있는지)
   const { data: relatedDocumentsInfo } = useQuery<{
@@ -425,6 +456,15 @@ export default function FieldDocuments() {
 
   // 저장 핸들러
   const handleSave = () => {
+    // 제출 조건 상태 콘솔 로그
+    console.log("=== 제출 조건 체크 (증빙자료 저장) ===");
+    console.log("현장입력 완료:", isFieldInputComplete);
+    console.log("도면 완료:", isDrawingComplete);
+    console.log("증빙자료 완료:", isDocumentsComplete);
+    console.log("견적 완료:", isEstimateComplete);
+    console.log("제출 가능:", canSubmit);
+    console.log("====================================");
+    
     toast({
       title: "증빙자료가 저장되었습니다",
       description: "",

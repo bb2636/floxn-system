@@ -574,7 +574,16 @@ export default function FieldReport() {
               </Button>
               <Button
                 data-testid="button-submit-report"
-                onClick={() => setShowSubmitDialog(true)}
+                onClick={() => {
+                  console.log("=== 제출 조건 체크 (보고서 제출) ===");
+                  console.log("현장입력 완료:", completionStatus.fieldSurvey);
+                  console.log("도면 완료:", completionStatus.drawing);
+                  console.log("증빙자료 완료:", completionStatus.documents);
+                  console.log("견적 완료:", completionStatus.estimate);
+                  console.log("전체 완료 (isComplete):", completionStatus.isComplete);
+                  console.log("================================");
+                  setShowSubmitDialog(true);
+                }}
                 disabled={submitReportMutation.isPending || !completionStatus.isComplete || caseData.fieldSurveyStatus === "submitted"}
                 style={{
                   fontFamily: "Pretendard",

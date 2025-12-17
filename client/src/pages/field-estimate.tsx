@@ -1298,6 +1298,31 @@ export default function FieldEstimate() {
     enabled: !!selectedCaseId,
   });
 
+  // 도면 데이터 조회 (제출 조건 체크용)
+  const { data: drawingData, isLoading: isLoadingDrawing } = useQuery({
+    queryKey: ["/api/drawings", "case", selectedCaseId],
+    enabled: !!selectedCaseId,
+  });
+
+  // 문서 데이터 조회 (제출 조건 체크용)
+  const { data: documentsData, isLoading: isLoadingDocuments } = useQuery({
+    queryKey: ["/api/documents/case", selectedCaseId],
+    enabled: !!selectedCaseId,
+  });
+
+  // 제출 조건 상태 계산
+  const isFieldInputComplete = useMemo(() => {
+    return !!(selectedCase?.visitDate && selectedCase?.visitTime && selectedCase?.accidentCategory && selectedCase?.victimName);
+  }, [selectedCase]);
+
+  const isDrawingComplete = useMemo(() => {
+    return !isLoadingDrawing && !!drawingData && typeof drawingData === 'object' && 'id' in drawingData;
+  }, [drawingData, isLoadingDrawing]);
+
+  const isDocumentsComplete = useMemo(() => {
+    return !isLoadingDocuments && Array.isArray(documentsData) && documentsData.length > 0;
+  }, [documentsData, isLoadingDocuments]);
+
   // 협력사: 현장출동보고서 제출 후 수정 불가
   const isPartner = currentUser?.role === "협력사";
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
@@ -2200,6 +2225,13 @@ export default function FieldEstimate() {
     queryKey: ["/api/estimates", selectedCaseId, "latest"],
     enabled: !!selectedCaseId,
   });
+
+  // 제출 조건 상태 계산 (견적 완료 상태)
+  const isEstimateComplete = useMemo(() => {
+    return !isLoadingEstimate && !!latestEstimate && typeof latestEstimate === 'object' && 'estimate' in latestEstimate && !!latestEstimate.estimate;
+  }, [latestEstimate, isLoadingEstimate]);
+
+  const canSubmitAll = isFieldInputComplete && isDrawingComplete && isDocumentsComplete && isEstimateComplete;
 
   // 관련 케이스 견적서 확인 (같은 사고번호의 다른 케이스에 견적서가 있는지)
   const { data: relatedEstimateInfo } = useQuery<{
@@ -3783,6 +3815,15 @@ export default function FieldEstimate() {
 
   // 저장
   const handleSave = () => {
+    // 제출 조건 상태 콘솔 로그
+    console.log("=== 제출 조건 체크 (견적 저장) ===");
+    console.log("현장입력 완료:", isFieldInputComplete);
+    console.log("도면 완료:", isDrawingComplete);
+    console.log("증빙자료 완료:", isDocumentsComplete);
+    console.log("견적 완료:", isEstimateComplete);
+    console.log("제출 가능:", canSubmitAll);
+    console.log("================================");
+    
     saveMutation.mutate();
   };
 
