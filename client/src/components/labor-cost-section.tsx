@@ -912,22 +912,71 @@ export function LaborCostSection({
     onRowsChange([...rows, newRow]);
   };
 
+  // 병합된 행 인터페이스 (동일 철거공사 합산 표시용)
+  interface MergedLaborCostRow extends LaborCostRow {
+    mergedSourceIds?: string[]; // 병합된 원본 행 ID들
+    mergedQuantity?: number; // 합산된 수량
+    mergedAmount?: number; // 합산된 금액
+  }
+
+  // 철거공사 동일 항목 병합 함수
+  const mergeDemolitionRows = (inputRows: LaborCostRow[]): MergedLaborCostRow[] => {
+    const result: MergedLaborCostRow[] = [];
+    const demolitionMap = new Map<string, MergedLaborCostRow>();
+    
+    inputRows.forEach(row => {
+      // 철거공사 카테고리만 병합 대상
+      if (row.category === '철거공사' || row.category === '피해철거공사') {
+        // 병합 키: 공사명 + 세부항목 + 단위 + 단가
+        const mergeKey = `${row.workName}|${row.detailItem}|${row.unit}|${row.standardPrice}`;
+        
+        if (demolitionMap.has(mergeKey)) {
+          // 기존 병합 행에 합산
+          const existing = demolitionMap.get(mergeKey)!;
+          existing.mergedSourceIds = existing.mergedSourceIds || [existing.id];
+          existing.mergedSourceIds.push(row.id);
+          existing.mergedQuantity = (existing.mergedQuantity || existing.quantity) + row.quantity;
+          existing.mergedAmount = (existing.mergedAmount || existing.amount) + row.amount;
+          existing.damageArea = (existing.damageArea || 0) + (row.damageArea || 0);
+        } else {
+          // 새 병합 행 생성
+          const mergedRow: MergedLaborCostRow = {
+            ...row,
+            mergedSourceIds: [row.id],
+            mergedQuantity: row.quantity,
+            mergedAmount: row.amount,
+          };
+          demolitionMap.set(mergeKey, mergedRow);
+          result.push(mergedRow);
+        }
+      } else {
+        // 철거공사가 아닌 행은 그대로 추가
+        result.push({ ...row });
+      }
+    });
+    
+    return result;
+  };
+
   // 공종별 + 공사명별 그룹화 함수 (이미지와 같이 공종과 공사명 모두 rowspan 적용)
   interface WorkNameSubGroup {
     workName: string;
-    rows: LaborCostRow[];
+    rows: MergedLaborCostRow[];
     startIndexInCategory: number;
   }
   interface CategoryGroup {
     category: string;
-    rows: LaborCostRow[];
+    rows: MergedLaborCostRow[];
     workNameSubGroups: WorkNameSubGroup[];
     startIndex: number;
   }
   
-  const groupRowsByCategory = (rows: LaborCostRow[]): CategoryGroup[] => {
-    // 먼저 공종별로 정렬 (같은 공종이 함께 그룹화되도록)
-    const sortedRows = [...rows].sort((a, b) => {
+  const groupRowsByCategory = (inputRows: LaborCostRow[]): CategoryGroup[] => {
+    // 철거공사 동일 항목 병합
+    const mergedRows = mergeDemolitionRows(inputRows);
+    
+    // 공종별로 정렬 (같은 공종이 함께 그룹화되도록)
+    const sortedRows = [...mergedRows].sort((a, b) => {
       const catA = a.category || "미지정";
       const catB = b.category || "미지정";
       if (catA !== catB) return catA.localeCompare(catB);
@@ -1142,14 +1191,39 @@ export function LaborCostSection({
                     >
                       <input
                         type="checkbox"
-                        checked={group.rows.every(r => selectedRows.has(r.id))}
+                        checked={group.rows.every(r => {
+                          // 병합된 행인 경우 모든 원본 ID 확인
+                          const mergedRow = r as MergedLaborCostRow;
+                          if (mergedRow.mergedSourceIds && mergedRow.mergedSourceIds.length > 1) {
+                            return mergedRow.mergedSourceIds.every(id => selectedRows.has(id));
+                          }
+                          return selectedRows.has(r.id);
+                        })}
                         onChange={() => {
-                          const allSelected = group.rows.every(r => selectedRows.has(r.id));
+                          const allSelected = group.rows.every(r => {
+                            const mergedRow = r as MergedLaborCostRow;
+                            if (mergedRow.mergedSourceIds && mergedRow.mergedSourceIds.length > 1) {
+                              return mergedRow.mergedSourceIds.every(id => selectedRows.has(id));
+                            }
+                            return selectedRows.has(r.id);
+                          });
                           group.rows.forEach(r => {
-                            if (allSelected) {
-                              onSelectRow(r.id);
-                            } else if (!selectedRows.has(r.id)) {
-                              onSelectRow(r.id);
+                            const mergedRow = r as MergedLaborCostRow;
+                            // 병합된 행인 경우 모든 원본 ID 선택/해제
+                            if (mergedRow.mergedSourceIds && mergedRow.mergedSourceIds.length > 1) {
+                              mergedRow.mergedSourceIds.forEach(sourceId => {
+                                if (allSelected) {
+                                  if (selectedRows.has(sourceId)) onSelectRow(sourceId);
+                                } else if (!selectedRows.has(sourceId)) {
+                                  onSelectRow(sourceId);
+                                }
+                              });
+                            } else {
+                              if (allSelected) {
+                                onSelectRow(r.id);
+                              } else if (!selectedRows.has(r.id)) {
+                                onSelectRow(r.id);
+                              }
                             }
                           });
                         }}
@@ -1443,12 +1517,12 @@ export function LaborCostSection({
                     />
                   </td>
                   
-                  {/* 수량(인) - 연동 행은 수정 불가 */}
+                  {/* 수량(인) - 연동 행은 수정 불가, 병합된 행은 합산값 표시 */}
                   <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
                     <Input
                       type="number"
                       step="0.01"
-                      value={row.quantity}
+                      value={(row as MergedLaborCostRow).mergedQuantity ?? row.quantity}
                       onChange={(e) => updateRow(row.id, 'quantity', Number(e.target.value) || 0)}
                       className="h-9 border text-center"
                       style={{ 
@@ -1456,12 +1530,12 @@ export function LaborCostSection({
                         fontSize: "14px",
                         color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
                       }}
-                      disabled={isLinkedRow}
+                      disabled={isLinkedRow || ((row as MergedLaborCostRow).mergedSourceIds?.length ?? 0) > 1}
                       data-testid={`input-quantity-labor-${globalIndex}`}
                     />
                   </td>
                   
-                  {/* 합계 */}
+                  {/* 합계 - 병합된 행은 합산값 표시 */}
                   <td style={{ 
                     padding: "0 12px", 
                     fontFamily: "Pretendard", 
@@ -1471,7 +1545,7 @@ export function LaborCostSection({
                     textAlign: "center", 
                     background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)" 
                   }}>
-                    {(row.amount ?? 0).toLocaleString()}
+                    {((row as MergedLaborCostRow).mergedAmount ?? row.amount ?? 0).toLocaleString()}
                   </td>
                   
                   {/* 경비 여부 - 연동 행도 수정 가능 */}
