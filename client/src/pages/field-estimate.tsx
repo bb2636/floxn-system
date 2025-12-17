@@ -2675,14 +2675,16 @@ export default function FieldEstimate() {
         // 공사명 변경 시 세로 값 처리
         if (field === 'workName') {
           if (isLinearWorkName(value)) {
-            // 걸레받이/몰딩으로 변경되면 세로를 1로 고정
-            updated.damageHeight = '1';
-            updated.repairHeight = '1';
-            // 면적 재계산 (가로 값 그대로 표시)
+            // 걸레받이/몰딩으로 변경되면 세로를 1000mm(1m)로 고정
+            updated.damageHeight = '1000';
+            updated.repairHeight = '1000';
+            // 면적 재계산: 가로(mm) * 1000(mm) / 1000000 = 가로/1000 (m²)
             const damageWidth = parseFloat(updated.damageWidth) || 0;
             const repairWidth = parseFloat(updated.repairWidth) || 0;
-            updated.damageArea = damageWidth > 0 ? damageWidth.toString() : '0';
-            updated.repairArea = repairWidth > 0 ? repairWidth.toString() : '0';
+            const damageAreaM2 = (damageWidth * 1000 / 1000000).toFixed(2);
+            const repairAreaM2 = (repairWidth * 1000 / 1000000).toFixed(2);
+            updated.damageArea = parseFloat(damageAreaM2) > 0 ? damageAreaM2 : '0.00';
+            updated.repairArea = parseFloat(repairAreaM2) > 0 ? repairAreaM2 : '0.00';
           } else if (isLinearWorkName(row.workName) && !isLinearWorkName(value)) {
             // 걸레받이/몰딩에서 다른 공사명으로 변경 시 세로를 0으로 리셋
             updated.damageHeight = '0';
@@ -2713,9 +2715,10 @@ export default function FieldEstimate() {
           const width = parseFloat(field === 'damageWidth' ? value : row.damageWidth) || 0;
           
           if (isLinearWorkName(currentWorkName)) {
-            // 걸레받이/몰딩: 세로 1 고정, 면적 = 가로 값 그대로
-            updated.damageHeight = '1';
-            updated.damageArea = width > 0 ? width.toString() : '0';
+            // 걸레받이/몰딩: 세로 1000mm(1m) 고정, 면적 = 가로*1000/1000000 (m²)
+            updated.damageHeight = '1000';
+            const areaM2 = (width * 1000 / 1000000).toFixed(2);
+            updated.damageArea = parseFloat(areaM2) > 0 ? areaM2 : '0.00';
           } else {
             // 일반: mm -> m 변환하여 m² 계산 (1000mm = 1m)
             const height = parseFloat(field === 'damageHeight' ? value : row.damageHeight) || 0;
@@ -2731,9 +2734,10 @@ export default function FieldEstimate() {
           const width = parseFloat(field === 'repairWidth' ? value : row.repairWidth) || 0;
           
           if (isLinearWorkName(currentWorkName)) {
-            // 걸레받이/몰딩: 세로 1 고정, 면적 = 가로 값 그대로
-            updated.repairHeight = '1';
-            updated.repairArea = width > 0 ? width.toString() : '0';
+            // 걸레받이/몰딩: 세로 1000mm(1m) 고정, 면적 = 가로*1000/1000000 (m²)
+            updated.repairHeight = '1000';
+            const areaM2 = (width * 1000 / 1000000).toFixed(2);
+            updated.repairArea = parseFloat(areaM2) > 0 ? areaM2 : '0.00';
           } else {
             // 일반: mm -> m 변환하여 m² 계산 (1000mm = 1m)
             const height = parseFloat(field === 'repairHeight' ? value : row.repairHeight) || 0;
@@ -4606,7 +4610,7 @@ export default function FieldEstimate() {
                           value={row.damageHeight}
                           onChange={(e) => updateRow(row.id, 'damageHeight', e.target.value)}
                           onFocus={() => {
-                            if ((row.damageHeight === '0000' || row.damageHeight === '0' || row.damageHeight === '1') && !isLinearWorkName(row.workName)) {
+                            if ((row.damageHeight === '0000' || row.damageHeight === '0' || row.damageHeight === '1000') && !isLinearWorkName(row.workName)) {
                               updateRow(row.id, 'damageHeight', '');
                             }
                           }}
@@ -4682,7 +4686,7 @@ export default function FieldEstimate() {
                           value={row.repairHeight}
                           onChange={(e) => updateRow(row.id, 'repairHeight', e.target.value)}
                           onFocus={() => {
-                            if ((row.repairHeight === '0000' || row.repairHeight === '0' || row.repairHeight === '1') && !isLinearWorkName(row.workName)) {
+                            if ((row.repairHeight === '0000' || row.repairHeight === '0' || row.repairHeight === '1000') && !isLinearWorkName(row.workName)) {
                               updateRow(row.id, 'repairHeight', '');
                             }
                           }}
