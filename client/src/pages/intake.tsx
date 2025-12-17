@@ -968,7 +968,10 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       setEditCaseId(null);
       
       // SMS 발송 (협력사 담당자에게 접수완료 알림)
-      if (formData.assignedPartnerContact) {
+      // 연락처가 유효한 경우에만 발송 (숫자만 추출하여 10자리 이상인 경우)
+      const rawPartnerContact = formData.assignedPartnerContact?.trim() || "";
+      const partnerContact = rawPartnerContact.replace(/[^0-9]/g, ""); // 숫자만 추출
+      if (partnerContact.length >= 10 && partnerContact.length <= 11) {
         try {
           // 의뢰범위 생성
           const requestScopeItems = [];
@@ -986,7 +989,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
           const firstCaseNumber = cases.length > 0 ? formatCaseNumber(cases[0].caseNumber) : "-";
           
           const smsPayload = {
-            to: formData.assignedPartnerContact,
+            to: partnerContact,
             caseNumber: firstCaseNumber,
             insuranceCompany: formData.insuranceCompany || "-",
             managerName: managerName,

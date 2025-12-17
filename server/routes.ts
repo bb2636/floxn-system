@@ -4045,49 +4045,81 @@ FLOXN 드림`,
   // ==========================================
   // POST /api/send-sms - 솔라피 SMS 발송 (접수완료 알림)
   // ==========================================
+  const sendSmsSchema = z.object({
+    to: z.string().min(10, "유효한 전화번호를 입력해주세요").max(20),
+    caseNumber: z.string().optional(),
+    insuranceCompany: z.string().optional(),
+    managerName: z.string().optional(),
+    insurancePolicyNo: z.string().optional(),
+    insuranceAccidentNo: z.string().optional(),
+    insuredName: z.string().optional(),
+    insuredContact: z.string().optional(),
+    victimName: z.string().optional(),
+    victimContact: z.string().optional(),
+    investigatorTeamName: z.string().optional(),
+    investigatorContact: z.string().optional(),
+    accidentLocation: z.string().optional(),
+    requestScope: z.string().optional(),
+  });
+
   app.post("/api/send-sms", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
-    try {
-      const { 
-        to,           // 수신자 전화번호
-        caseNumber,   // 접수번호
-        insuranceCompany, // 보험사
-        managerName,  // 플록슨 담당자
-        insurancePolicyNo, // 증권번호
-        insuranceAccidentNo, // 사고번호
-        insuredName,  // 피보험자
-        insuredContact, // 피보험자 연락처
-        victimName,   // 피해자
-        victimContact, // 피해자 연락처
-        investigatorTeamName, // 조사자
-        investigatorContact, // 조사자 연락처
-        accidentLocation, // 사고장소
-        requestScope  // 의뢰범위 (손방, 대물 등)
-      } = req.body;
+    // 권한 확인: storage에서 사용자 정보 다시 조회하여 실제 권한 확인
+    const currentUser = await storage.getUser(req.session.userId);
+    if (!currentUser) {
+      return res.status(401).json({ error: "사용자를 찾을 수 없습니다" });
+    }
 
-      // 필수 값 검증
-      if (!to) {
-        return res.status(400).json({ error: "수신자 전화번호가 필요합니다" });
-      }
+    // 관리자 또는 보험사만 SMS 발송 가능
+    if (!["관리자", "보험사"].includes(currentUser.role)) {
+      console.log(`[send-sms] Unauthorized role: ${currentUser.role} (user: ${currentUser.username})`);
+      return res.status(403).json({ error: "SMS 발송 권한이 없습니다" });
+    }
+
+    try {
+      // Zod 스키마로 요청 검증
+      const validatedData = sendSmsSchema.parse(req.body);
+      
+      const { 
+        to,
+        caseNumber,
+        insuranceCompany,
+        managerName,
+        insurancePolicyNo,
+        insuranceAccidentNo,
+        insuredName,
+        insuredContact,
+        victimName,
+        victimContact,
+        investigatorTeamName,
+        investigatorContact,
+        accidentLocation,
+        requestScope
+      } = validatedData;
 
       // 솔라피 API 키 확인
       const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
       const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
-      const SOLAPI_SENDER = process.env.SOLAPI_SENDER; // 발신번호
+      const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
 
       if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !SOLAPI_SENDER) {
         console.error("[send-sms] Missing Solapi configuration");
         return res.status(500).json({ 
-          error: "솔라피 설정이 필요합니다 (SOLAPI_API_KEY, SOLAPI_API_SECRET, SOLAPI_SENDER)" 
+          error: "SMS 서비스가 설정되지 않았습니다" 
         });
       }
 
-      // 전화번호 정규화 (하이픈 제거)
-      const normalizedTo = to.replace(/-/g, "");
-      const normalizedSender = SOLAPI_SENDER.replace(/-/g, "");
+      // 전화번호 정규화 (하이픈 및 공백 제거, 숫자만 추출)
+      const normalizedTo = to.replace(/[^0-9]/g, "");
+      const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+
+      // 전화번호 유효성 검사
+      if (normalizedTo.length < 10 || normalizedTo.length > 11) {
+        return res.status(400).json({ error: "유효하지 않은 전화번호 형식입니다" });
+      }
 
       // SMS 메시지 내용 생성
       const messageText = `<접수완료 알림>
@@ -4103,8 +4135,7 @@ FLOXN 드림`,
 사고장소 : ${accidentLocation || "-"}
 의뢰범위 : ${requestScope || "-"}`;
 
-      console.log(`[send-sms] Sending SMS to: ${normalizedTo}`);
-      console.log(`[send-sms] Message content:`, messageText);
+      console.log(`[send-sms] Sending SMS to: ${normalizedTo} (user: ${req.session.userId})`);
 
       // 솔라피 메시지 서비스 초기화
       const messageService = new SolapiMessageService(SOLAPI_API_KEY, SOLAPI_API_SECRET);
@@ -4116,18 +4147,19 @@ FLOXN 드림`,
         text: messageText,
       });
 
-      console.log(`[send-sms] SMS sent successfully:`, response);
+      console.log(`[send-sms] SMS sent successfully to ${normalizedTo}`);
       res.json({ 
         success: true, 
-        message: "문자가 전송되었습니다",
-        response 
+        message: "문자가 전송되었습니다"
       });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        console.error("[send-sms] Validation error:", error.errors);
+        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다" });
+      }
+      // 상세 에러는 서버 로그에만 기록, 클라이언트에는 일반 메시지만 전송
       console.error("[send-sms] SMS send error:", error);
-      res.status(500).json({ 
-        error: "문자 전송 중 오류가 발생했습니다",
-        details: (error as Error).message 
-      });
+      res.status(500).json({ error: "문자 전송에 실패했습니다" });
     }
   });
 
