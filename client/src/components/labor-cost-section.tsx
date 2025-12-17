@@ -1047,14 +1047,9 @@ export function LaborCostSection({
     }
   };
 
-  // 특정 행 삭제
+  // 특정 행 삭제 (단일 행 그룹도 삭제 가능)
   const deleteRowById = (rowId: string) => {
     if (isReadOnly) return;
-    const groupedRows = groupRowsByCategory(rows);
-    const group = groupedRows.find(g => g.rows.some(r => r.id === rowId));
-    if (group && group.rows.length <= 1) {
-      return; // 그룹에 1개 행만 있으면 삭제 불가
-    }
     onRowsChange(rows.filter(r => r.id !== rowId));
   };
 
@@ -1259,18 +1254,18 @@ export function LaborCostSection({
                       <button
                         type="button"
                         onClick={() => deleteRowById(row.id)}
-                        disabled={isReadOnly || group.rows.length <= 1}
+                        disabled={isReadOnly}
                         style={{
                           width: "24px",
                           height: "24px",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          background: (isReadOnly || group.rows.length <= 1) ? "#f5f5f5" : "#FF4D4F",
+                          background: isReadOnly ? "#f5f5f5" : "#FF4D4F",
                           color: "white",
                           border: "none",
                           borderRadius: "4px",
-                          cursor: (isReadOnly || group.rows.length <= 1) ? "not-allowed" : "pointer",
+                          cursor: isReadOnly ? "not-allowed" : "pointer",
                           fontSize: "16px",
                           fontWeight: "bold",
                         }}
