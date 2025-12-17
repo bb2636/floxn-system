@@ -37,7 +37,6 @@ export function GlobalHeader() {
   const allMenuItems = [
     { name: "홈", category: "홈" },
     { name: "접수하기", category: "새로운접수" },
-    { name: "현장조사", category: "현장조사" },
     { name: "종합진행관리", category: "종합진행관리" },
     { name: "통계 및 정산", category: "통계 및 정산" },
     { name: "관리자 설정", category: "관리자 설정" },
@@ -53,7 +52,6 @@ export function GlobalHeader() {
   const getActiveMenu = () => {
     if (location === "/dashboard") return "홈";
     if (location === "/intake") return "접수하기";
-    if (location.startsWith("/field-survey")) return "현장조사";
     if (location === "/comprehensive-progress") return "종합진행관리";
     if (location.startsWith("/statistics") || location === "/settlements") return "통계 및 정산";
     if (location === "/admin-settings") return "관리자 설정";
@@ -154,8 +152,6 @@ export function GlobalHeader() {
                   setLocation("/dashboard");
                 } else if (item.name === "접수하기") {
                   setLocation("/intake");
-                } else if (item.name === "현장조사") {
-                  setLocation("/field-survey/management");
                 } else if (item.name === "종합진행관리") {
                   setLocation("/comprehensive-progress");
                 } else if (item.name === "관리자 설정") {
@@ -212,8 +208,6 @@ export function GlobalHeader() {
                     setLocation("/dashboard");
                   } else if (item.name === "접수하기") {
                     setLocation("/intake");
-                  } else if (item.name === "현장조사") {
-                    setLocation("/field-survey/management");
                   } else if (item.name === "종합진행관리") {
                     setLocation("/comprehensive-progress");
                   } else if (item.name === "관리자 설정") {
