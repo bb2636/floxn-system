@@ -187,9 +187,6 @@ export default function FieldEstimate() {
     localStorage.getItem('selectedFieldSurveyCaseId') || ''
   );
   
-  // 드래그 앤 드롭 상태
-  const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
-  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
 
   // localStorage 변경 감지 (현장입력에서 케이스 선택 시)
   useEffect(() => {
@@ -2415,20 +2412,47 @@ export default function FieldEstimate() {
     setRows(prev => [...prev, createBlankRow()]);
   };
 
-  // 장소 그룹화 헬퍼 함수 - 연속된 동일 장소를 그룹으로 묶음
+  // 위치 정렬 순서 (천장 → 벽면 → 바닥)
+  const locationSortOrder: Record<string, number> = {
+    '천장': 1,
+    '벽면': 2,
+    '바닥': 3,
+  };
+  
+  // 위치 기준 정렬 함수
+  const getLocationOrder = (location: string): number => {
+    return locationSortOrder[location] || 99; // 정의되지 않은 위치는 맨 뒤로
+  };
+
+  // 장소 그룹화 헬퍼 함수 - 동일 장소를 그룹으로 묶고, 위치(천장/벽면/바닥) 순 정렬
   const groupRowsByCategory = (rowList: AreaCalculationRow[]) => {
-    const groups: { category: string; rows: AreaCalculationRow[]; startIndex: number }[] = [];
-    let currentGroup: { category: string; rows: AreaCalculationRow[]; startIndex: number } | null = null;
+    // 1. 먼저 장소별로 그룹화
+    const categoryMap = new Map<string, AreaCalculationRow[]>();
     
-    rowList.forEach((row, index) => {
-      if (!currentGroup || currentGroup.category !== row.category) {
-        // 새 그룹 시작
-        currentGroup = { category: row.category, rows: [row], startIndex: index };
-        groups.push(currentGroup);
-      } else {
-        // 기존 그룹에 추가
-        currentGroup.rows.push(row);
+    rowList.forEach((row) => {
+      const category = row.category || '';
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, []);
       }
+      categoryMap.get(category)!.push(row);
+    });
+    
+    // 2. 각 그룹 내에서 위치(천장, 벽면, 바닥) 순으로 정렬
+    const groups: { category: string; rows: AreaCalculationRow[]; startIndex: number }[] = [];
+    let startIndex = 0;
+    
+    categoryMap.forEach((categoryRows, category) => {
+      // 위치 기준 정렬 (천장 → 벽면 → 바닥)
+      const sortedRows = [...categoryRows].sort((a, b) => {
+        return getLocationOrder(a.location) - getLocationOrder(b.location);
+      });
+      
+      groups.push({ 
+        category, 
+        rows: sortedRows, 
+        startIndex 
+      });
+      startIndex += sortedRows.length;
     });
     
     return groups;
@@ -2586,56 +2610,6 @@ export default function FieldEstimate() {
     setSelectedRows(new Set());
     
     console.log('[연동] 복구면적 행 일괄 삭제 → 노무비/자재비 연동 삭제:', rowIdsToDelete, '완전삭제 공사명:', Array.from(fullyDeletedWorkNames));
-  };
-
-  // 드래그 앤 드롭 핸들러 (복구면적 산출표)
-  const handleDragStart = (e: React.DragEvent, rowId: string) => {
-    if (isReadOnly) return;
-    setDraggedRowId(rowId);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', rowId);
-  };
-
-  const handleDragOver = (e: React.DragEvent, rowId: string) => {
-    e.preventDefault();
-    if (draggedRowId && draggedRowId !== rowId) {
-      setDragOverRowId(rowId);
-    }
-  };
-
-  const handleDragLeave = () => {
-    setDragOverRowId(null);
-  };
-
-  const handleDrop = (e: React.DragEvent, targetRowId: string) => {
-    e.preventDefault();
-    const sourceRowId = e.dataTransfer.getData('text/plain');
-    
-    if (!sourceRowId || sourceRowId === targetRowId) {
-      setDraggedRowId(null);
-      setDragOverRowId(null);
-      return;
-    }
-
-    setRows(prev => {
-      const newRows = [...prev];
-      const draggedIndex = newRows.findIndex(r => r.id === sourceRowId);
-      const targetIndex = newRows.findIndex(r => r.id === targetRowId);
-      
-      if (draggedIndex !== -1 && targetIndex !== -1) {
-        const [draggedRow] = newRows.splice(draggedIndex, 1);
-        newRows.splice(targetIndex, 0, draggedRow);
-      }
-      return newRows;
-    });
-
-    setDraggedRowId(null);
-    setDragOverRowId(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedRowId(null);
-    setDragOverRowId(null);
   };
 
   // 체크박스 토글
@@ -4322,17 +4296,8 @@ export default function FieldEstimate() {
                       return (
                         <tr
                           key={row.id}
-                          draggable={!isReadOnly}
-                          onDragStart={(e) => handleDragStart(e, row.id)}
-                          onDragOver={(e) => handleDragOver(e, row.id)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, row.id)}
-                          onDragEnd={handleDragEnd}
                           style={{
                             borderBottom: isLastRowInGroup ? "2px solid rgba(12, 12, 12, 0.15)" : "1px solid rgba(12, 12, 12, 0.06)",
-                            opacity: draggedRowId === row.id ? 0.5 : 1,
-                            background: dragOverRowId === row.id ? "rgba(59, 130, 246, 0.1)" : undefined,
-                            transition: "background 0.2s",
                           }}
                         >
                           {/* 체크박스 컬럼 - 그룹 첫 번째 행에만 rowspan 적용 */}
