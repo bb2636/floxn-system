@@ -6095,15 +6095,33 @@ export default function FieldEstimate() {
                             </div>
                           </td>
                           
-                          {/* 기준가(m²) - Editable Input */}
+                          {/* 기준가(m²) - Editable Input with comma formatting */}
                           <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
                             <Input
-                              value={row.pricePerSqm}
-                              onChange={(e) => {
-                                setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, pricePerSqm: Number(e.target.value) || 0 } : r));
+                              type="text"
+                              inputMode="numeric"
+                              defaultValue={row.pricePerSqm > 0 ? row.pricePerSqm.toLocaleString() : ''}
+                              key={`price-sqm-${row.id}-${row.pricePerSqm}`}
+                              onFocus={(e) => {
+                                // 포커스 시 콤마 제거하여 편집 용이하게
+                                const rawValue = e.target.value.replace(/[,\s]/g, '');
+                                e.target.value = rawValue;
+                              }}
+                              onBlur={(e) => {
+                                // blur 시 콤마 추가 및 상태 업데이트
+                                const rawValue = e.target.value.replace(/[,\s]/g, '');
+                                const val = parseInt(rawValue, 10) || 0;
+                                e.target.value = val > 0 ? val.toLocaleString() : '';
+                                setLaborCostRows(prev => prev.map(r => r.id === row.id ? { ...r, pricePerSqm: val } : r));
+                              }}
+                              onKeyDown={(e) => {
+                                // Enter 키로도 blur 트리거
+                                if (e.key === 'Enter') {
+                                  e.currentTarget.blur();
+                                }
                               }}
                               className="h-9 border-0 bg-transparent text-right"
-                              style={{ fontFamily: "Pretendard", fontSize: "14px" }}
+                              style={{ fontFamily: "Pretendard", fontSize: "14px", minWidth: "100px" }}
                               data-testid={`input-price-sqm-${index}`}
                             />
                           </td>
