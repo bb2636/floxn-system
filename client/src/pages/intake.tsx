@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { User, MasterData } from "@shared/schema";
+import { User, MasterData, Case } from "@shared/schema";
 import { formatCaseNumber } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { GlobalHeader } from "@/components/global-header";
+import { SmsNotificationDialog } from "@/components/sms-notification-dialog";
 
 // 피보험자 주소에서 지역 키워드 추출
 const extractCityFromAddress = (address: string): string => {
@@ -111,6 +112,10 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
   
   // SMS 발송 상태
   const [isSendingSms, setIsSendingSms] = useState(false);
+  
+  // SMS 알림 다이얼로그 상태
+  const [smsDialogOpen, setSmsDialogOpen] = useState(false);
+  const [completedCase, setCompletedCase] = useState<Case | null>(null);
   
   // 협력사 통계 가져오기
   const { data: partnerStats } = useQuery<Array<{
@@ -970,62 +975,10 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       localStorage.removeItem('editCaseId');
       setEditCaseId(null);
       
-      // SMS 발송 (협력사 담당자에게 접수완료 알림)
-      // 연락처가 유효한 경우에만 발송 (숫자만 추출하여 10자리 이상인 경우)
-      const rawPartnerContact = formData.assignedPartnerContact?.trim() || "";
-      const partnerContact = rawPartnerContact.replace(/[^0-9]/g, ""); // 숫자만 추출
-      if (partnerContact.length >= 10 && partnerContact.length <= 11) {
-        try {
-          // 의뢰범위 생성
-          const requestScopeItems = [];
-          if (formData.damagePreventionCost === "true") requestScopeItems.push("손방");
-          if (formData.victimIncidentAssistance === "true") requestScopeItems.push("대물");
-          if (requestScopeItems.length === 0) requestScopeItems.push("기타");
-          const requestScope = requestScopeItems.join(", ");
-          
-          // 담당자 이름 조회 (managerId로 사용자 찾기)
-          const managerName = formData.managerId 
-            ? allUsers?.find(u => u.id === formData.managerId)?.name || user?.name || "-"
-            : user?.name || "-";
-          
-          // 첫 번째 케이스의 접수번호 사용
-          const firstCaseNumber = cases.length > 0 ? formatCaseNumber(cases[0].caseNumber) : "-";
-          
-          const smsPayload = {
-            to: partnerContact,
-            caseNumber: firstCaseNumber,
-            insuranceCompany: formData.insuranceCompany || "-",
-            managerName: managerName,
-            insurancePolicyNo: formData.insurancePolicyNo || "-",
-            insuranceAccidentNo: formData.insuranceAccidentNo || "-",
-            insuredName: formData.insuredName || "-",
-            insuredContact: formData.insuredContact || "-",
-            victimName: formData.victimName || "-",
-            victimContact: formData.victimContact || "-",
-            investigatorTeamName: formData.investigatorTeamName || "-",
-            investigatorContact: formData.investigatorContact || "-",
-            accidentLocation: formData.insuredAddress || "-",
-            requestScope: requestScope,
-          };
-          
-          console.log("📱 Sending SMS notification:", smsPayload);
-          
-          const smsResponse = await apiRequest("POST", "/api/send-sms", smsPayload);
-          console.log("📱 SMS sent successfully:", smsResponse);
-          
-          toast({ 
-            description: "협력사에 문자 알림이 전송되었습니다.",
-            duration: 3000,
-          });
-        } catch (smsError) {
-          console.error("📱 SMS send failed:", smsError);
-          // SMS 실패해도 접수는 성공했으므로 에러 토스트만 표시
-          toast({ 
-            description: "문자 알림 전송에 실패했습니다. 접수는 완료되었습니다.",
-            variant: "destructive",
-            duration: 5000,
-          });
-        }
+      // SMS 알림 다이얼로그 표시 (첫 번째 케이스 기준)
+      if (cases.length > 0) {
+        setCompletedCase(cases[0] as Case);
+        setSmsDialogOpen(true);
       }
       
       // 모달 모드인 경우 onSuccess 콜백 호출
@@ -4453,6 +4406,29 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
           </div>
         </div>,
         document.body
+      )}
+      
+      {/* SMS 알림 발송 다이얼로그 */}
+      {completedCase && (
+        <SmsNotificationDialog
+          open={smsDialogOpen}
+          onOpenChange={(open) => {
+            setSmsDialogOpen(open);
+            if (!open) {
+              // 다이얼로그 닫힐 때 대시보드로 이동
+              if (!isModal) {
+                setLocation("/dashboard");
+              }
+            }
+          }}
+          caseData={completedCase}
+          stage="접수완료"
+          onSuccess={() => {
+            if (!isModal) {
+              setLocation("/dashboard");
+            }
+          }}
+        />
       )}
     </div>
   );

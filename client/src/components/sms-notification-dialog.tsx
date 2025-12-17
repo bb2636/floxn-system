@@ -96,19 +96,17 @@ export function SmsNotificationDialog({
 
   const sendNotificationMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/send-stage-notification", {
-        method: "POST",
-        body: JSON.stringify({
-          caseId: caseData.id,
-          stage,
-          recipients,
-          additionalMessage: additionalMessage || undefined,
-          cancelReason: stage === "접수취소" ? cancelReason : undefined,
-          recoveryAmount: stage === "결정금액수수료" ? recoveryAmount : undefined,
-          feeRate: stage === "결정금액수수료" ? feeRate : undefined,
-          paymentAmount: stage === "결정금액수수료" ? paymentAmount : undefined,
-        }),
+      const response = await apiRequest("POST", "/api/send-stage-notification", {
+        caseId: caseData.id,
+        stage,
+        recipients,
+        additionalMessage: additionalMessage || undefined,
+        cancelReason: stage === "접수취소" ? cancelReason : undefined,
+        recoveryAmount: stage === "결정금액수수료" ? recoveryAmount : undefined,
+        feeRate: stage === "결정금액수수료" ? feeRate : undefined,
+        paymentAmount: stage === "결정금액수수료" ? paymentAmount : undefined,
       });
+      return response.json();
     },
     onSuccess: (data: any) => {
       toast({
@@ -157,7 +155,7 @@ export function SmsNotificationDialog({
 피해자 : ${caseData.victimName || "-"}  연락처 ${caseData.victimContact || "-"}
 조사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}
 사고장소 : ${caseData.insuredAddress || "-"}
-의뢰범위 : ${caseData.requestScope || "-"}`;
+의뢰범위 : ${(caseData as any).requestScope || "-"}`;
     } else if (stage === "접수취소") {
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
