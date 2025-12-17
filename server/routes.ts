@@ -7,7 +7,55 @@ import { db } from "./db";
 import { estimates, cases } from "@shared/schema";
 import { sql, inArray } from "drizzle-orm";
 import nodemailer from "nodemailer";
-import { SolapiMessageService } from "solapi";
+import https from "https";
+import crypto from "crypto";
+
+// Solapi HMAC-SHA256 인증 헤더 생성
+function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
+  const date = new Date().toISOString();
+  const salt = crypto.randomBytes(32).toString("hex");
+  const signature = crypto
+    .createHmac("sha256", apiSecret)
+    .update(date + salt)
+    .digest("hex");
+  return `HMAC-SHA256 apiKey=${apiKey}, date=${date}, salt=${salt}, signature=${signature}`;
+}
+
+// Solapi HTTPS 요청 함수
+function solapiHttpsRequest({ method, path, headers, body }: {
+  method: string;
+  path: string;
+  headers: Record<string, string | number>;
+  body?: string;
+}): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const req = https.request(
+      { hostname: "api.solapi.com", port: 443, method, path, headers, timeout: 15000 },
+      (res) => {
+        let data = "";
+        res.on("data", (c) => (data += c));
+        res.on("end", () => {
+          try {
+            const json = data ? JSON.parse(data) : {};
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              return resolve(json);
+            }
+            reject({ statusCode: res.statusCode, body: json });
+          } catch {
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              return resolve({ raw: data });
+            }
+            reject({ statusCode: res.statusCode, body: data });
+          }
+        });
+      }
+    );
+    req.on("timeout", () => req.destroy(new Error("REQUEST_TIMEOUT")));
+    req.on("error", reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Login endpoint
@@ -4135,31 +4183,51 @@ FLOXN 드림`,
 사고장소 : ${accidentLocation || "-"}
 의뢰범위 : ${requestScope || "-"}`;
 
-      console.log(`[send-sms] Sending SMS to: ${normalizedTo} (user: ${req.session.userId})`);
+      console.log(`[send-sms] Sending LMS to: ${normalizedTo} (user: ${req.session.userId})`);
 
-      // 솔라피 메시지 서비스 초기화
-      const messageService = new SolapiMessageService(SOLAPI_API_KEY, SOLAPI_API_SECRET);
+      // Solapi LMS 발송 (순수 HTTPS + HMAC-SHA256 인증)
+      const payload = {
+        message: {
+          to: normalizedTo,
+          from: normalizedSender,
+          text: messageText,
+          subject: '접수완료 알림',
+          type: 'LMS',
+        },
+      };
+      const body = JSON.stringify(payload);
 
-      // LMS 발송 (subject 파라미터 추가시 자동으로 LMS로 전환됨)
-      const response = await messageService.send({
-        to: normalizedTo,
-        from: normalizedSender,
-        text: messageText,
-        subject: '접수완료 알림',
+      const solapiResponse = await solapiHttpsRequest({
+        method: "POST",
+        path: "/messages/v4/send",
+        headers: {
+          Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+        body,
       });
 
-      console.log(`[send-sms] LMS sent successfully to ${normalizedTo}`);
+      console.log(`[send-sms] LMS sent successfully to ${normalizedTo}`, solapiResponse);
       res.json({ 
         success: true, 
         message: "문자가 전송되었습니다"
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof z.ZodError) {
         console.error("[send-sms] Validation error:", error.errors);
         return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다", details: error.errors });
       }
-      // 상세 에러 정보를 클라이언트에 전송 (디버깅용)
+      // Solapi API 에러 처리 (statusCode, body 형식)
       console.error("[send-sms] SMS send error:", error);
+      if (error?.statusCode && error?.body) {
+        return res.status(error.statusCode).json({ 
+          error: "문자 전송에 실패했습니다", 
+          statusCode: error.statusCode,
+          details: error.body
+        });
+      }
+      // 일반 에러 처리
       const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
       const errorDetails = error instanceof Error ? error.stack : JSON.stringify(error);
       res.status(500).json({ 
