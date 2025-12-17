@@ -1825,6 +1825,15 @@ export default function FieldManagement() {
                 <Button
                   type="button"
                   onClick={async () => {
+                    // 제출 조건 상태 콘솔 로그
+                    console.log("=== 제출 조건 체크 (임시저장) ===");
+                    console.log("현장입력 완료:", isFieldInputComplete);
+                    console.log("도면 완료:", isDrawingComplete);
+                    console.log("증빙자료 완료:", isDocumentsComplete);
+                    console.log("견적 완료:", isEstimateComplete);
+                    console.log("제출 가능:", canSubmit);
+                    console.log("================================");
+                    
                     if (!selectedCaseData?.id) return;
 
                     try {
@@ -1900,6 +1909,15 @@ export default function FieldManagement() {
                 <Button
                   type="button"
                   onClick={async () => {
+                    // 제출 조건 상태 콘솔 로그
+                    console.log("=== 제출 조건 체크 (제출) ===");
+                    console.log("현장입력 완료:", isFieldInputComplete);
+                    console.log("도면 완료:", isDrawingComplete);
+                    console.log("증빙자료 완료:", isDocumentsComplete);
+                    console.log("견적 완료:", isEstimateComplete);
+                    console.log("제출 가능:", canSubmit);
+                    console.log("============================");
+                    
                     if (!selectedCaseData?.id) return;
 
                     try {
