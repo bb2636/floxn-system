@@ -7,6 +7,7 @@ import { db } from "./db";
 import { estimates, cases } from "@shared/schema";
 import { sql, inArray } from "drizzle-orm";
 import nodemailer from "nodemailer";
+import { SolapiMessageService } from "solapi";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Login endpoint
@@ -4038,6 +4039,95 @@ FLOXN 드림`,
     } catch (error) {
       console.error("[send-pdf] Unexpected error:", error);
       return res.status(500).json({ ok: false, message: `서버 오류: ${(error as Error).message}` });
+    }
+  });
+
+  // ==========================================
+  // POST /api/send-sms - 솔라피 SMS 발송 (접수완료 알림)
+  // ==========================================
+  app.post("/api/send-sms", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { 
+        to,           // 수신자 전화번호
+        caseNumber,   // 접수번호
+        insuranceCompany, // 보험사
+        managerName,  // 플록슨 담당자
+        insurancePolicyNo, // 증권번호
+        insuranceAccidentNo, // 사고번호
+        insuredName,  // 피보험자
+        insuredContact, // 피보험자 연락처
+        victimName,   // 피해자
+        victimContact, // 피해자 연락처
+        investigatorTeamName, // 조사자
+        investigatorContact, // 조사자 연락처
+        accidentLocation, // 사고장소
+        requestScope  // 의뢰범위 (손방, 대물 등)
+      } = req.body;
+
+      // 필수 값 검증
+      if (!to) {
+        return res.status(400).json({ error: "수신자 전화번호가 필요합니다" });
+      }
+
+      // 솔라피 API 키 확인
+      const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+      const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+      const SOLAPI_SENDER = process.env.SOLAPI_SENDER; // 발신번호
+
+      if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !SOLAPI_SENDER) {
+        console.error("[send-sms] Missing Solapi configuration");
+        return res.status(500).json({ 
+          error: "솔라피 설정이 필요합니다 (SOLAPI_API_KEY, SOLAPI_API_SECRET, SOLAPI_SENDER)" 
+        });
+      }
+
+      // 전화번호 정규화 (하이픈 제거)
+      const normalizedTo = to.replace(/-/g, "");
+      const normalizedSender = SOLAPI_SENDER.replace(/-/g, "");
+
+      // SMS 메시지 내용 생성
+      const messageText = `<접수완료 알림>
+
+접수번호 : ${caseNumber || "-"}
+보험사 : ${insuranceCompany || "-"}
+담당자 : ${managerName || "-"}
+증권번호 : ${insurancePolicyNo || "-"}
+사고번호 : ${insuranceAccidentNo || "-"}
+피보험자 : ${insuredName || "-"}  연락처 ${insuredContact || "-"}
+피해자 : ${victimName || "-"}  연락처 ${victimContact || "-"}
+조사자 : ${investigatorTeamName || "-"}  연락처 ${investigatorContact || "-"}
+사고장소 : ${accidentLocation || "-"}
+의뢰범위 : ${requestScope || "-"}`;
+
+      console.log(`[send-sms] Sending SMS to: ${normalizedTo}`);
+      console.log(`[send-sms] Message content:`, messageText);
+
+      // 솔라피 메시지 서비스 초기화
+      const messageService = new SolapiMessageService(SOLAPI_API_KEY, SOLAPI_API_SECRET);
+
+      // SMS 발송 (90바이트 초과시 자동으로 LMS로 전환됨)
+      const response = await messageService.send({
+        to: normalizedTo,
+        from: normalizedSender,
+        text: messageText,
+      });
+
+      console.log(`[send-sms] SMS sent successfully:`, response);
+      res.json({ 
+        success: true, 
+        message: "문자가 전송되었습니다",
+        response 
+      });
+    } catch (error) {
+      console.error("[send-sms] SMS send error:", error);
+      res.status(500).json({ 
+        error: "문자 전송 중 오류가 발생했습니다",
+        details: (error as Error).message 
+      });
     }
   });
 

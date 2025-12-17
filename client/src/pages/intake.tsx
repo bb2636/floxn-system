@@ -946,7 +946,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       const result = await apiRequest("POST", "/api/cases", payload);
       return result;
     },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       // 응답 형식: { success: true, cases: [...] }
       const cases = (result && typeof result === 'object' && 'cases' in result) 
         ? (result as any).cases 
@@ -966,6 +966,61 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       localStorage.removeItem('intakeFormDraft');
       localStorage.removeItem('editCaseId');
       setEditCaseId(null);
+      
+      // SMS 발송 (협력사 담당자에게 접수완료 알림)
+      if (formData.assignedPartnerContact) {
+        try {
+          // 의뢰범위 생성
+          const requestScopeItems = [];
+          if (formData.damagePreventionCost === "true") requestScopeItems.push("손방");
+          if (formData.victimIncidentAssistance === "true") requestScopeItems.push("대물");
+          if (requestScopeItems.length === 0) requestScopeItems.push("기타");
+          const requestScope = requestScopeItems.join(", ");
+          
+          // 담당자 이름 조회 (managerId로 사용자 찾기)
+          const managerName = formData.managerId 
+            ? allUsers?.find(u => u.id === formData.managerId)?.name || user?.name || "-"
+            : user?.name || "-";
+          
+          // 첫 번째 케이스의 접수번호 사용
+          const firstCaseNumber = cases.length > 0 ? formatCaseNumber(cases[0].caseNumber) : "-";
+          
+          const smsPayload = {
+            to: formData.assignedPartnerContact,
+            caseNumber: firstCaseNumber,
+            insuranceCompany: formData.insuranceCompany || "-",
+            managerName: managerName,
+            insurancePolicyNo: formData.insurancePolicyNo || "-",
+            insuranceAccidentNo: formData.insuranceAccidentNo || "-",
+            insuredName: formData.insuredName || "-",
+            insuredContact: formData.insuredContact || "-",
+            victimName: formData.victimName || "-",
+            victimContact: formData.victimContact || "-",
+            investigatorTeamName: formData.investigatorTeamName || "-",
+            investigatorContact: formData.investigatorContact || "-",
+            accidentLocation: formData.accidentLocation || "-",
+            requestScope: requestScope,
+          };
+          
+          console.log("📱 Sending SMS notification:", smsPayload);
+          
+          const smsResponse = await apiRequest("POST", "/api/send-sms", smsPayload);
+          console.log("📱 SMS sent successfully:", smsResponse);
+          
+          toast({ 
+            description: "협력사에 문자 알림이 전송되었습니다.",
+            duration: 3000,
+          });
+        } catch (smsError) {
+          console.error("📱 SMS send failed:", smsError);
+          // SMS 실패해도 접수는 성공했으므로 에러 토스트만 표시
+          toast({ 
+            description: "문자 알림 전송에 실패했습니다. 접수는 완료되었습니다.",
+            variant: "destructive",
+            duration: 5000,
+          });
+        }
+      }
       
       // 모달 모드인 경우 onSuccess 콜백 호출
       if (isModal && onSuccess) {
