@@ -4156,11 +4156,17 @@ FLOXN 드림`,
     } catch (error) {
       if (error instanceof z.ZodError) {
         console.error("[send-sms] Validation error:", error.errors);
-        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다" });
+        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다", details: error.errors });
       }
-      // 상세 에러는 서버 로그에만 기록, 클라이언트에는 일반 메시지만 전송
+      // 상세 에러 정보를 클라이언트에 전송 (디버깅용)
       console.error("[send-sms] SMS send error:", error);
-      res.status(500).json({ error: "문자 전송에 실패했습니다" });
+      const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
+      const errorDetails = error instanceof Error ? error.stack : JSON.stringify(error);
+      res.status(500).json({ 
+        error: "문자 전송에 실패했습니다", 
+        details: errorMessage,
+        stack: errorDetails
+      });
     }
   });
 
