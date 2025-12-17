@@ -4536,6 +4536,16 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.damageWidth}
                           onChange={(e) => updateRow(row.id, 'damageWidth', e.target.value)}
+                          onFocus={(e) => {
+                            if (e.target.value === '0000' || e.target.value === '0') {
+                              e.target.value = '';
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === '') {
+                              updateRow(row.id, 'damageWidth', '0000');
+                            }
+                          }}
                           className="input-focus-blue"
                           style={{
                             width: "100%",
@@ -4554,6 +4564,18 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.damageHeight}
                           onChange={(e) => updateRow(row.id, 'damageHeight', e.target.value)}
+                          onFocus={(e) => {
+                            if (e.target.value === '0000' || e.target.value === '0' || e.target.value === '1') {
+                              if (!isLinearWorkName(row.workName)) {
+                                e.target.value = '';
+                              }
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === '' && !isLinearWorkName(row.workName)) {
+                              updateRow(row.id, 'damageHeight', '0000');
+                            }
+                          }}
                           readOnly={isLinearWorkName(row.workName)}
                           className="input-focus-blue"
                           style={{
@@ -4592,6 +4614,16 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.repairWidth}
                           onChange={(e) => updateRow(row.id, 'repairWidth', e.target.value)}
+                          onFocus={(e) => {
+                            if (e.target.value === '0000' || e.target.value === '0') {
+                              e.target.value = '';
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === '') {
+                              updateRow(row.id, 'repairWidth', '0000');
+                            }
+                          }}
                           className="input-focus-blue"
                           style={{
                             width: "100%",
@@ -4610,6 +4642,18 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.repairHeight}
                           onChange={(e) => updateRow(row.id, 'repairHeight', e.target.value)}
+                          onFocus={(e) => {
+                            if (e.target.value === '0000' || e.target.value === '0' || e.target.value === '1') {
+                              if (!isLinearWorkName(row.workName)) {
+                                e.target.value = '';
+                              }
+                            }
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === '' && !isLinearWorkName(row.workName)) {
+                              updateRow(row.id, 'repairHeight', '0000');
+                            }
+                          }}
                           readOnly={isLinearWorkName(row.workName)}
                           className="input-focus-blue"
                           style={{
