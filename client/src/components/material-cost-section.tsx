@@ -265,6 +265,43 @@ export function MaterialCostSection({
   // 전역 인덱스 계산용
   let globalIndex = 0;
 
+  // 공종 그룹 내 행 추가
+  const addRowInGroup = (workType: string, afterRowId: string) => {
+    if (isReadOnly) return;
+    const newRow: MaterialRow = {
+      id: `material-${Date.now()}-${Math.random()}`,
+      공종: workType,
+      공사명: '',
+      자재항목: '',
+      자재: '',
+      규격: '',
+      단위: '',
+      단가: 0,
+      기준단가: 0,
+      수량m2: 0,
+      수량EA: 0,
+      수량: 0,
+      합계: 0,
+      금액: 0,
+      비고: '',
+    };
+    
+    const afterIndex = rows.findIndex(r => r.id === afterRowId);
+    if (afterIndex !== -1) {
+      const newRows = [...rows];
+      newRows.splice(afterIndex + 1, 0, newRow);
+      onRowsChange(newRows);
+    } else {
+      onRowsChange([...rows, newRow]);
+    }
+  };
+
+  // 특정 행 삭제
+  const deleteRowById = (rowId: string) => {
+    if (isReadOnly) return;
+    onRowsChange(rows.filter(r => r.id !== rowId));
+  };
+
   return (
     <div style={{ overflowX: "auto" }}>
       <table
@@ -291,6 +328,7 @@ export function MaterialCostSection({
               />
             </th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", minWidth: "120px" }}>공종</th>
+            <th style={{ width: "70px", padding: "0 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>+/-</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", minWidth: "100px" }}>공사명</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", minWidth: "150px" }}>자재항목</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB", minWidth: "80px" }}>단가</th>
@@ -430,54 +468,58 @@ export function MaterialCostSection({
                         </Select>
                       )}
                       
-                      {/* +/- 버튼 */}
-                      {!isReadOnly && (
-                        <div style={{ display: "flex", gap: "4px" }}>
-                          <button
-                            onClick={() => addRowToGroup(workType)}
-                            style={{
-                              width: "24px",
-                              height: "24px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              background: "#3B82F6",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "16px",
-                              fontWeight: "bold",
-                            }}
-                            data-testid={`button-add-material-${workType}`}
-                          >
-                            +
-                          </button>
-                          <button
-                            onClick={() => removeRowFromGroup(row.id, workType)}
-                            disabled={groupRows.length <= 1}
-                            style={{
-                              width: "24px",
-                              height: "24px",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              background: groupRows.length <= 1 ? "#f5f5f5" : "#FF4D4F",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: groupRows.length <= 1 ? "not-allowed" : "pointer",
-                              fontSize: "16px",
-                              fontWeight: "bold",
-                            }}
-                            data-testid={`button-remove-material-${workType}`}
-                          >
-                            −
-                          </button>
-                        </div>
-                      )}
                     </td>
                   ) : null}
+                  
+                  {/* +/- 버튼 컬럼 (각 행마다) */}
+                  <td style={{ padding: "0 8px", textAlign: "center" }}>
+                    <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+                      <button
+                        type="button"
+                        onClick={() => addRowInGroup(row.공종, row.id)}
+                        disabled={isReadOnly}
+                        style={{
+                          width: "24px",
+                          height: "24px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: isReadOnly ? "#f5f5f5" : "#3B82F6",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: isReadOnly ? "not-allowed" : "pointer",
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                        }}
+                        data-testid={`button-add-material-row-${currentGlobalIndex}`}
+                      >
+                        +
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteRowById(row.id)}
+                        disabled={isReadOnly}
+                        style={{
+                          width: "24px",
+                          height: "24px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: isReadOnly ? "#f5f5f5" : "#FF4D4F",
+                          color: "white",
+                          border: "none",
+                          borderRadius: "4px",
+                          cursor: isReadOnly ? "not-allowed" : "pointer",
+                          fontSize: "16px",
+                          fontWeight: "bold",
+                        }}
+                        data-testid={`button-delete-material-row-${currentGlobalIndex}`}
+                      >
+                        −
+                      </button>
+                    </div>
+                  </td>
                   
                   {/* 공사명 - 자재비는 연동 행도 수정 가능 */}
                   <td style={{ padding: "0 8px" }}>
