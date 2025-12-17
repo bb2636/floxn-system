@@ -4140,14 +4140,15 @@ FLOXN 드림`,
       // 솔라피 메시지 서비스 초기화
       const messageService = new SolapiMessageService(SOLAPI_API_KEY, SOLAPI_API_SECRET);
 
-      // SMS 발송 (90바이트 초과시 자동으로 LMS로 전환됨)
+      // LMS 발송 (장문 메시지 - 최대 2,000바이트)
       const response = await messageService.send({
         to: normalizedTo,
         from: normalizedSender,
         text: messageText,
+        type: 'LMS',
       });
 
-      console.log(`[send-sms] SMS sent successfully to ${normalizedTo}`);
+      console.log(`[send-sms] LMS sent successfully to ${normalizedTo}`);
       res.json({ 
         success: true, 
         message: "문자가 전송되었습니다"
