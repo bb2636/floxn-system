@@ -4752,6 +4752,29 @@ export default function FieldEstimate() {
                 </tbody>
               </table>
             </div>
+            
+            {/* 저장 버튼 */}
+            <div className="flex justify-end mt-4">
+              <button
+                type="button"
+                onClick={() => saveMutation.mutate()}
+                disabled={isReadOnly || saveMutation.isPending}
+                className="px-6 py-2.5 rounded-md flex items-center gap-2 hover-elevate active-elevate-2"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  background: (isReadOnly || saveMutation.isPending) ? "#f5f5f5" : "#008FED",
+                  color: (isReadOnly || saveMutation.isPending) ? "rgba(12, 12, 12, 0.3)" : "white",
+                  border: "none",
+                  cursor: (isReadOnly || saveMutation.isPending) ? "not-allowed" : "pointer",
+                  opacity: (isReadOnly || saveMutation.isPending) ? 0.6 : 1,
+                }}
+                data-testid="button-save-area-calculation"
+              >
+                {saveMutation.isPending ? "저장 중..." : "저장"}
+              </button>
+            </div>
           </div>
         )}
 
