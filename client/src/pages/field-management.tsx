@@ -292,9 +292,8 @@ export default function FieldManagement() {
     return !isLoadingEstimate && !!estimateData && typeof estimateData === 'object' && 'id' in estimateData;
   }, [estimateData, isLoadingEstimate]);
 
-  // 모든 섹션이 완료되어야 제출 가능 (로딩 중이 아닐 때만 판단)
-  const isCompletionDataReady = !isLoadingDrawing && !isLoadingDocuments && !isLoadingEstimate;
-  const canSubmit = isCompletionDataReady && isFieldInputComplete && isDrawingComplete && isDocumentsComplete && isEstimateComplete;
+  // 현장입력 필수 필드만 채워지면 제출 가능 (도면, 증빙자료, 견적서는 선택)
+  const canSubmit = isFieldInputComplete;
 
   // 케이스 선택 관리: 첫 번째 케이스 자동 선택 & 현재 선택된 케이스가 목록에 없으면 초기화
   // 케이스 ID 목록만 추적하여 불필요한 재실행 방지
@@ -1870,9 +1869,6 @@ export default function FieldManagement() {
                     // 제출 조건 상태 콘솔 로그
                     console.log("=== 제출 조건 체크 (임시저장) ===");
                     console.log("현장입력 완료:", isFieldInputComplete);
-                    console.log("도면 완료:", isDrawingComplete);
-                    console.log("증빙자료 완료:", isDocumentsComplete);
-                    console.log("견적 완료:", isEstimateComplete);
                     console.log("제출 가능:", canSubmit);
                     console.log("================================");
                     
@@ -1987,9 +1983,6 @@ export default function FieldManagement() {
                     // 제출 조건 상태 콘솔 로그
                     console.log("=== 제출 조건 체크 (제출) ===");
                     console.log("현장입력 완료:", isFieldInputComplete);
-                    console.log("도면 완료:", isDrawingComplete);
-                    console.log("증빙자료 완료:", isDocumentsComplete);
-                    console.log("견적 완료:", isEstimateComplete);
                     console.log("제출 가능:", canSubmit);
                     console.log("============================");
                     
@@ -2002,7 +1995,7 @@ export default function FieldManagement() {
                       return;
                     }
 
-                    // 필수 필드 검증 - 제출 시에는 모든 필수 필드가 필요
+                    // 필수 필드 검증 - 현장입력 필수 필드만 체크
                     const missingFields: string[] = [];
                     
                     // 현장입력 필수 필드
@@ -2010,12 +2003,6 @@ export default function FieldManagement() {
                     if (!visitTime) missingFields.push("방문시간");
                     if (!accidentCategory) missingFields.push("사고구분");
                     if (!victimName) missingFields.push("피해자 성명");
-                    
-                    // 섹션별 완료 체크
-                    if (!isFieldInputComplete) missingFields.push("현장입력 섹션");
-                    if (!isDrawingComplete) missingFields.push("도면작성 섹션");
-                    if (!isDocumentsComplete) missingFields.push("증빙자료 섹션");
-                    if (!isEstimateComplete) missingFields.push("견적서 섹션");
                     
                     if (missingFields.length > 0) {
                       toast({
