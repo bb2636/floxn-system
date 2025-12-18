@@ -1246,6 +1246,228 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // 청구 상태 변경 시 심사자/조사자에게 SMS 자동 발송
+      if (status === "청구") {
+        const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+        const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+        const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
+
+        if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER) {
+          const messageText = `<청구 알림>
+
+접수번호 : ${updatedCase.caseNumber || '-'}
+보험사 : ${updatedCase.insuranceCompany || '-'}
+증권번호 : ${updatedCase.insurancePolicyNo || '-'}
+사고번호 : ${updatedCase.insuranceAccidentNo || '-'}
+피보험자 : ${updatedCase.insuredName || '-'}
+협력업체 : ${updatedCase.assignedPartner || '-'}
+
+위 접수건 청구가 완료되었습니다.`;
+
+          const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+
+          // 심사자에게 SMS 발송
+          if (updatedCase.assessorContact) {
+            try {
+              const normalizedPhone = updatedCase.assessorContact.replace(/[^0-9]/g, "");
+              if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+                const payload = {
+                  message: {
+                    to: normalizedPhone,
+                    from: normalizedSender,
+                    text: messageText,
+                    type: "LMS",
+                  },
+                };
+                const body = JSON.stringify(payload);
+                solapiHttpsRequest({
+                  method: "POST",
+                  path: "/messages/v4/send",
+                  headers: {
+                    Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                    "Content-Type": "application/json",
+                    "Content-Length": Buffer.byteLength(body),
+                  },
+                  body,
+                })
+                  .then(() => console.log(`[status-change] 청구 SMS 발송 성공 (심사자): ${normalizedPhone}`))
+                  .catch((err) => console.error(`[status-change] 청구 SMS 발송 실패 (심사자):`, err));
+              }
+            } catch (err) {
+              console.error("[status-change] 청구 심사자 SMS 발송 준비 중 오류:", err);
+            }
+          }
+
+          // 조사자에게 SMS 발송
+          if (updatedCase.investigatorContact) {
+            try {
+              const normalizedPhone = updatedCase.investigatorContact.replace(/[^0-9]/g, "");
+              if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+                const payload = {
+                  message: {
+                    to: normalizedPhone,
+                    from: normalizedSender,
+                    text: messageText,
+                    type: "LMS",
+                  },
+                };
+                const body = JSON.stringify(payload);
+                solapiHttpsRequest({
+                  method: "POST",
+                  path: "/messages/v4/send",
+                  headers: {
+                    Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                    "Content-Type": "application/json",
+                    "Content-Length": Buffer.byteLength(body),
+                  },
+                  body,
+                })
+                  .then(() => console.log(`[status-change] 청구 SMS 발송 성공 (조사자): ${normalizedPhone}`))
+                  .catch((err) => console.error(`[status-change] 청구 SMS 발송 실패 (조사자):`, err));
+              }
+            } catch (err) {
+              console.error("[status-change] 청구 조사자 SMS 발송 준비 중 오류:", err);
+            }
+          }
+        }
+      }
+
+      // 결정금액/수수료 관련 상태 변경 시 협력업체에게 SMS 자동 발송
+      if ((status === "입금완료" || status === "일부입금" || status === "정산완료") && updatedCase.assignedPartnerContact) {
+        const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+        const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+        const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
+
+        if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER) {
+          const statusLabel = status === "입금완료" ? "입금완료" : status === "일부입금" ? "일부입금" : "정산완료";
+          const messageText = `<${statusLabel} 알림>
+
+접수번호 : ${updatedCase.caseNumber || '-'}
+보험사 : ${updatedCase.insuranceCompany || '-'}
+증권번호 : ${updatedCase.insurancePolicyNo || '-'}
+사고번호 : ${updatedCase.insuranceAccidentNo || '-'}
+피보험자 : ${updatedCase.insuredName || '-'}
+
+위 접수건 ${statusLabel} 처리되었습니다.`;
+
+          try {
+            const normalizedPhone = updatedCase.assignedPartnerContact.replace(/[^0-9]/g, "");
+            const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+
+            if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+              const payload = {
+                message: {
+                  to: normalizedPhone,
+                  from: normalizedSender,
+                  text: messageText,
+                  type: "LMS",
+                },
+              };
+              const body = JSON.stringify(payload);
+              solapiHttpsRequest({
+                method: "POST",
+                path: "/messages/v4/send",
+                headers: {
+                  Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                  "Content-Type": "application/json",
+                  "Content-Length": Buffer.byteLength(body),
+                },
+                body,
+              })
+                .then(() => console.log(`[status-change] ${statusLabel} SMS 발송 성공 (협력사): ${normalizedPhone}`))
+                .catch((err) => console.error(`[status-change] ${statusLabel} SMS 발송 실패 (협력사):`, err));
+            }
+          } catch (err) {
+            console.error(`[status-change] ${statusLabel} 협력사 SMS 발송 준비 중 오류:`, err);
+          }
+        }
+      }
+
+      // 접수취소 상태 변경 시 심사자/조사자에게 SMS 자동 발송
+      if (status === "접수취소") {
+        const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+        const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+        const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
+
+        if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER) {
+          const messageText = `<접수취소 알림>
+
+접수번호 : ${updatedCase.caseNumber || '-'}
+보험사 : ${updatedCase.insuranceCompany || '-'}
+증권번호 : ${updatedCase.insurancePolicyNo || '-'}
+사고번호 : ${updatedCase.insuranceAccidentNo || '-'}
+피보험자 : ${updatedCase.insuredName || '-'}
+
+위 접수건이 취소되었습니다.`;
+
+          const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+
+          // 심사자에게 SMS 발송
+          if (updatedCase.assessorContact) {
+            try {
+              const normalizedPhone = updatedCase.assessorContact.replace(/[^0-9]/g, "");
+              if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+                const payload = {
+                  message: {
+                    to: normalizedPhone,
+                    from: normalizedSender,
+                    text: messageText,
+                    type: "LMS",
+                  },
+                };
+                const body = JSON.stringify(payload);
+                solapiHttpsRequest({
+                  method: "POST",
+                  path: "/messages/v4/send",
+                  headers: {
+                    Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                    "Content-Type": "application/json",
+                    "Content-Length": Buffer.byteLength(body),
+                  },
+                  body,
+                })
+                  .then(() => console.log(`[status-change] 접수취소 SMS 발송 성공 (심사자): ${normalizedPhone}`))
+                  .catch((err) => console.error(`[status-change] 접수취소 SMS 발송 실패 (심사자):`, err));
+              }
+            } catch (err) {
+              console.error("[status-change] 접수취소 심사자 SMS 발송 준비 중 오류:", err);
+            }
+          }
+
+          // 조사자에게 SMS 발송
+          if (updatedCase.investigatorContact) {
+            try {
+              const normalizedPhone = updatedCase.investigatorContact.replace(/[^0-9]/g, "");
+              if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+                const payload = {
+                  message: {
+                    to: normalizedPhone,
+                    from: normalizedSender,
+                    text: messageText,
+                    type: "LMS",
+                  },
+                };
+                const body = JSON.stringify(payload);
+                solapiHttpsRequest({
+                  method: "POST",
+                  path: "/messages/v4/send",
+                  headers: {
+                    Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                    "Content-Type": "application/json",
+                    "Content-Length": Buffer.byteLength(body),
+                  },
+                  body,
+                })
+                  .then(() => console.log(`[status-change] 접수취소 SMS 발송 성공 (조사자): ${normalizedPhone}`))
+                  .catch((err) => console.error(`[status-change] 접수취소 SMS 발송 실패 (조사자):`, err));
+              }
+            } catch (err) {
+              console.error("[status-change] 접수취소 조사자 SMS 발송 준비 중 오류:", err);
+            }
+          }
+        }
+      }
+
       res.json({ success: true, case: updatedCase });
     } catch (error) {
       console.error("Update case status error:", error);
