@@ -546,6 +546,23 @@ export function LaborCostSection({
     const useWorkName = demolitionCatalogItem?.공사명 || demolitionWorkName;
     const useDetailItem = demolitionCatalogItem?.세부항목 || demolitionDetailItem;
     
+    // 일위대가 카탈로그에서 기준작업량(D)과 노임단가(E) 조회
+    const ilwidaegaItem = ilwidaegaCatalog.find(item =>
+      item.공종 === useCategory &&
+      item.공사명 === useWorkName &&
+      item.노임항목 === useDetailItem
+    );
+    
+    // 기준작업량과 노임단가 가져오기
+    const standardWorkQty = ilwidaegaItem?.기준작업량 || 0;
+    const laborUnitPrice = ilwidaegaItem?.노임단가 || 0;
+    
+    // 피해면적과 수량 계산 (수량 = 피해면적 / 기준작업량)
+    const damageArea = sourceRow.damageArea || 0;
+    const quantity = standardWorkQty > 0 
+      ? Math.round((damageArea / standardWorkQty) * 100) / 100 
+      : 1;
+    
     const newRow: LaborCostRow = {
       id: `labor-demolition-${sourceRow.id}-${Date.now()}`,
       sourceAreaRowId: `demolition-${sourceRow.id}`, // 중복 방지를 위한 추적 ID
@@ -557,37 +574,50 @@ export function LaborCostSection({
       detailItem: useDetailItem,
       priceStandard: sourceRow.priceStandard,
       unit: demolitionCatalogItem?.단위 || 'm²',
-      standardPrice: demolitionCatalogItem?.단가_인 || 0,
-      quantity: 1,
+      standardPrice: laborUnitPrice,  // 노임단가 (E)
+      standardWorkQuantity: standardWorkQty, // 기준작업량 (D)
+      quantity: quantity,
       applicationRates: { ceiling: false, wall: false, floor: false, molding: false },
       salesMarkupRate: 0,
       pricePerSqm: 0,
-      damageArea: sourceRow.damageArea,
+      damageArea: damageArea,
       deduction: 0,
       includeInEstimate: true,
       request: '',
       amount: 0,
     };
     
-    // 적용면 및 기준가 설정
+    // 적용면 기본 설정 (바닥 우선)
     if (demolitionCatalogItem) {
-      if (demolitionCatalogItem.단가_천장 !== null) {
+      if (demolitionCatalogItem.단가_바닥 !== null) {
+        newRow.applicationRates.floor = true;
+      } else if (demolitionCatalogItem.단가_천장 !== null) {
         newRow.applicationRates.ceiling = true;
-        newRow.pricePerSqm = demolitionCatalogItem.단가_천장;
       } else if (demolitionCatalogItem.단가_벽체 !== null) {
         newRow.applicationRates.wall = true;
-        newRow.pricePerSqm = demolitionCatalogItem.단가_벽체;
-      } else if (demolitionCatalogItem.단가_바닥 !== null) {
-        newRow.applicationRates.floor = true;
-        newRow.pricePerSqm = demolitionCatalogItem.단가_바닥;
       } else if (demolitionCatalogItem.단가_길이 !== null) {
         newRow.applicationRates.molding = true;
-        newRow.pricePerSqm = demolitionCatalogItem.단가_길이;
       }
     }
     
-    // 금액 계산 (일위대가: 기준가(m²) * 피해면적 * 수량)
-    newRow.amount = Math.round(newRow.pricePerSqm * newRow.damageArea * newRow.quantity);
+    // 금액 계산 (일위대가 공식: calculateI(C, D, E))
+    // C = 피해면적, D = 기준작업량, E = 노임단가
+    const C = damageArea;
+    const D = standardWorkQty;
+    const E = laborUnitPrice;
+    
+    if (D > 0 && E > 0 && C > 0) {
+      // I 계산 (최종 노임비)
+      const I = calculateI(C, D, E);
+      // 적용단가 = I / C
+      const appliedUnitPrice = calculateAppliedUnitPrice(C, D, E);
+      
+      newRow.pricePerSqm = appliedUnitPrice;
+      newRow.amount = I;
+    } else {
+      newRow.pricePerSqm = 0;
+      newRow.amount = 0;
+    }
     
     return newRow;
   };
