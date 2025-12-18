@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, Case, type UserFavorite, type Notice } from "@shared/schema";
@@ -23,6 +23,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'reception' | 'pending' | 'insurance' | 'partner'>('reception');
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("홈");
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const pdfContentRef = useRef<HTMLDivElement>(null);
   
   const [periodType, setPeriodType] = useState<PeriodType>('thisMonth');
   const [isPeriodSheetOpen, setIsPeriodSheetOpen] = useState(false);
@@ -390,6 +392,47 @@ export default function Dashboard() {
     }
   };
 
+  const handlePdfTest = async () => {
+    if (!pdfContentRef.current) {
+      toast({
+        title: "PDF 생성 실패",
+        description: "변환할 홈 정보를 찾을 수 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+
+    try {
+      const html2pdf = (await import("@/lib/html2pdf")).default;
+
+      await html2pdf()
+        .set({
+          margin: 10,
+          filename: "floxen-home.pdf",
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(pdfContentRef.current)
+        .save();
+
+      toast({
+        title: "PDF 다운로드 완료",
+        description: "홈 화면 정보를 PDF로 저장했습니다.",
+      });
+    } catch (error) {
+      console.error("PDF 생성 중 오류 발생", error);
+      toast({
+        title: "PDF 생성 실패",
+        description: "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen" style={{ background: '#E7EDFE' }}>
       {/* Blur Background Orbs */}
@@ -597,6 +640,48 @@ export default function Dashboard() {
                 }} 
               />
             </button>
+          </div>
+
+          <div 
+            className="mb-6 rounded-2xl border border-[#DCE3F8] bg-white shadow-lg"
+            style={{ padding: '20px' }}
+          >
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div ref={pdfContentRef} className="flex-1" style={{ gap: '8px' }}>
+                <p 
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    lineHeight: '140%',
+                    color: '#0C0C0C',
+                  }}
+                >
+                  홈 화면 PDF 전송 테스트
+                </p>
+                <p 
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '13px',
+                    fontWeight: 500,
+                    lineHeight: '150%',
+                    color: 'rgba(12, 12, 12, 0.75)',
+                  }}
+                >
+                  아래 버튼을 누르면 홈 화면의 테스트 내용을 html2pdf.js를 이용해 PDF로 저장합니다.
+                  파일 이름은 <strong>floxen-home.pdf</strong>로 내려받습니다.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button 
+                  onClick={handlePdfTest}
+                  disabled={isGeneratingPdf}
+                  className="min-w-[150px]"
+                >
+                  {isGeneratingPdf ? 'PDF 생성 중...' : 'PDF 전송 테스트'}
+                </Button>
+              </div>
+            </div>
           </div>
           
           {/* Mobile Header - Only visible on mobile */}
