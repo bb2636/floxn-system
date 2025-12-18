@@ -1080,6 +1080,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // 직접복구/선견적요청 상태 변경 시 협력사와 플록슨담당자에게 SMS 자동 발송
+      if ((status === "직접복구" || status === "선견적요청") && updatedCase.managerId) {
+        const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+        const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+        const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
+
+        if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER) {
+          const statusLabel = status === "직접복구" ? "직접복구" : "선견적요청";
+          const messageText = `<${statusLabel} 알림>
+
+접수번호 : ${updatedCase.caseNumber || '-'}
+보험사 : ${updatedCase.insuranceCompany || '-'}
+증권번호 : ${updatedCase.insurancePolicyNo || '-'}
+사고번호 : ${updatedCase.insuranceAccidentNo || '-'}
+피보험자 : ${updatedCase.insuredName || '-'}
+협력업체 : ${updatedCase.assignedPartner || '-'}
+
+위 접수건이 ${statusLabel}(으)로 변경되었습니다.`;
+
+          // 협력사에게 SMS 발송
+          if (updatedCase.assignedPartnerContact) {
+            try {
+              const normalizedPartnerPhone = updatedCase.assignedPartnerContact.replace(/[^0-9]/g, "");
+              const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+
+              if (normalizedPartnerPhone.length >= 10 && normalizedPartnerPhone.length <= 11) {
+                const payload = {
+                  message: {
+                    to: normalizedPartnerPhone,
+                    from: normalizedSender,
+                    text: messageText,
+                    type: "LMS",
+                  },
+                };
+
+                const body = JSON.stringify(payload);
+
+                solapiHttpsRequest({
+                  method: "POST",
+                  path: "/messages/v4/send",
+                  headers: {
+                    Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                    "Content-Type": "application/json",
+                    "Content-Length": Buffer.byteLength(body),
+                  },
+                  body,
+                })
+                  .then(() => {
+                    console.log(`[status-change] ${statusLabel} SMS 발송 성공 (협력사): ${normalizedPartnerPhone}`);
+                  })
+                  .catch((smsError) => {
+                    console.error(`[status-change] ${statusLabel} SMS 발송 실패 (협력사):`, smsError);
+                  });
+              }
+            } catch (smsError) {
+              console.error(`[status-change] ${statusLabel} 협력사 SMS 발송 준비 중 오류:`, smsError);
+            }
+          }
+
+          // 플록슨담당자에게 SMS 발송
+          try {
+            const manager = await storage.getUser(updatedCase.managerId);
+            if (manager && manager.phone) {
+              const normalizedManagerPhone = manager.phone.replace(/[^0-9]/g, "");
+              const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+
+              if (normalizedManagerPhone.length >= 10 && normalizedManagerPhone.length <= 11) {
+                const payload = {
+                  message: {
+                    to: normalizedManagerPhone,
+                    from: normalizedSender,
+                    text: messageText,
+                    type: "LMS",
+                  },
+                };
+
+                const body = JSON.stringify(payload);
+
+                solapiHttpsRequest({
+                  method: "POST",
+                  path: "/messages/v4/send",
+                  headers: {
+                    Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                    "Content-Type": "application/json",
+                    "Content-Length": Buffer.byteLength(body),
+                  },
+                  body,
+                })
+                  .then(() => {
+                    console.log(`[status-change] ${statusLabel} SMS 발송 성공 (담당자): ${normalizedManagerPhone}`);
+                  })
+                  .catch((smsError) => {
+                    console.error(`[status-change] ${statusLabel} SMS 발송 실패 (담당자):`, smsError);
+                  });
+              }
+            }
+          } catch (smsError) {
+            console.error(`[status-change] ${statusLabel} 담당자 SMS 발송 준비 중 오류:`, smsError);
+          }
+        }
+      }
+
       // 청구자료제출 상태 변경 시 플록슨담당자에게 SMS 자동 발송
       if ((status === "(직접복구인 경우) 청구자료제출" || status === "(선견적요청인 경우) 출동비 청구") && updatedCase.managerId) {
         const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
