@@ -1343,6 +1343,15 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       return;
     }
     
+    // Validation: 당사 담당자 필수
+    if (!formData.managerId) {
+      toast({
+        description: "당사 담당자를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Validation: 피해자 성명 필수
     if (!formData.victimName) {
       toast({
