@@ -319,7 +319,7 @@ export function MaterialCostSection({
               height: "40px",
             }}
           >
-            <th style={{ width: "50px", padding: "0 12px", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>
+            <th style={{ width: "50px", padding: "0 12px", textAlign: "center", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
               <input 
                 type="checkbox"
                 checked={selectedRows.size === rows.length && rows.length > 0}
@@ -327,14 +327,14 @@ export function MaterialCostSection({
                 data-testid="checkbox-select-all-material"
               />
             </th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", minWidth: "120px" }}>공종</th>
-            <th style={{ width: "70px", padding: "0 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB" }}>+/-</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", minWidth: "100px" }}>공사명</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", minWidth: "150px" }}>자재항목</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB", minWidth: "80px" }}>단가</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB", minWidth: "150px" }}>수량</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB", minWidth: "60px" }}>단위</th>
-            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB", minWidth: "100px" }}>합계</th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)", minWidth: "120px" }}>공종</th>
+            <th style={{ width: "70px", padding: "0 8px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>+/-</th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)", minWidth: "100px" }}>공사명</th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)", minWidth: "150px" }}>자재항목</th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)", minWidth: "80px" }}>단가</th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)", minWidth: "150px" }}>수량</th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)", minWidth: "60px" }}>단위</th>
+            <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "right", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)", minWidth: "100px" }}>합계</th>
             <th style={{ padding: "0 12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left", borderBottom: "1px solid #E5E7EB", minWidth: "150px" }}>비고</th>
           </tr>
         </thead>
@@ -379,7 +379,7 @@ export function MaterialCostSection({
                   title={isLinkedRow ? "복구면적에서 자동 생성된 행 (수정 불가)" : undefined}
                 >
                   {/* 체크박스 */}
-                  <td style={{ padding: "0 12px", textAlign: "center" }}>
+                  <td style={{ padding: "0 12px", textAlign: "center", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
                     <input
                       type="checkbox"
                       checked={selectedRows.has(row.id)}
@@ -472,7 +472,7 @@ export function MaterialCostSection({
                   ) : null}
                   
                   {/* +/- 버튼 컬럼 (각 행마다) */}
-                  <td style={{ padding: "0 8px", textAlign: "center" }}>
+                  <td style={{ padding: "0 8px", textAlign: "center", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
                     <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
                       <button
                         type="button"
@@ -522,7 +522,7 @@ export function MaterialCostSection({
                   </td>
                   
                   {/* 공사명 - 자재비는 연동 행도 수정 가능 */}
-                  <td style={{ padding: "0 8px" }}>
+                  <td style={{ padding: "0 8px", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
                     <Select 
                       value={row.공사명 || ''} 
                       onValueChange={(value) => {
@@ -562,7 +562,7 @@ export function MaterialCostSection({
                   </td>
                   
                   {/* 자재항목 - 자재비는 연동 행도 수정 가능 */}
-                  <td style={{ padding: "0 8px" }}>
+                  <td style={{ padding: "0 8px", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
                     <Select 
                         value={materialItem} 
                         onValueChange={(value) => {
@@ -640,7 +640,9 @@ export function MaterialCostSection({
                     fontFamily: "Pretendard", 
                     fontSize: "14px", 
                     color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.8)", 
-                    textAlign: "right" 
+                    textAlign: "right",
+                    borderBottom: "1px solid #E5E7EB",
+                    borderRight: "1px solid rgba(12, 12, 12, 0.06)"
                   }}>
                     <Input
                       type="text"
@@ -688,7 +690,7 @@ export function MaterialCostSection({
                   </td>
                   
                   {/* 수량 - 연동 행도 입력 가능 */}
-                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF" }}>
+                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
                     {isLinkedRow ? (
                       (() => {
                         // EA 기반 자재 (합판, 석고보드, 몰딩, 걸레받이)는 수량EA 사용
@@ -773,7 +775,9 @@ export function MaterialCostSection({
                     fontFamily: "Pretendard", 
                     fontSize: "14px", 
                     color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.8)", 
-                    textAlign: "center" 
+                    textAlign: "center",
+                    borderBottom: "1px solid #E5E7EB",
+                    borderRight: "1px solid rgba(12, 12, 12, 0.06)"
                   }}>
                     {row.단위 || "m²"}
                   </td>
@@ -786,13 +790,15 @@ export function MaterialCostSection({
                     fontWeight: 600, 
                     color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "#0C0C0C", 
                     textAlign: "right", 
-                    background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)" 
+                    background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)",
+                    borderBottom: "1px solid #E5E7EB",
+                    borderRight: "1px solid rgba(12, 12, 12, 0.06)"
                   }}>
                     {total > 0 ? total.toLocaleString() : "단가x수량"}
                   </td>
                   
                   {/* 비고 - 연동 행도 수정 가능 */}
-                  <td style={{ padding: "0 8px", background: "#EFF6FF" }}>
+                  <td style={{ padding: "0 8px", background: "#EFF6FF", borderBottom: "1px solid #E5E7EB" }}>
                     <Input
                       value={row.비고}
                       onChange={(e) => {
