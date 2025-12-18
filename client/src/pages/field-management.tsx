@@ -1838,7 +1838,14 @@ export default function FieldManagement() {
                     console.log("제출 가능:", canSubmit);
                     console.log("================================");
                     
-                    if (!selectedCaseData?.id) return;
+                    if (!selectedCaseData?.id) {
+                      toast({
+                        title: "저장 실패",
+                        description: "선택된 접수건이 없습니다.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
 
                     try {
                       // 상태 자동 변경 로직
@@ -1884,11 +1891,18 @@ export default function FieldManagement() {
 
                       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
                       queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseData.id, "report"] });
-                    } catch (error) {
+                    } catch (error: any) {
                       console.error("임시저장 에러:", error);
+                      
+                      // 서버에서 반환된 오류 메시지 파싱
+                      let errorMessage = "현장조사 정보 임시저장 중 오류가 발생했습니다.";
+                      if (error?.message) {
+                        errorMessage = error.message;
+                      }
+                      
                       toast({
                         title: "임시저장 실패",
-                        description: "현장조사 정보 임시저장 중 오류가 발생했습니다.",
+                        description: errorMessage,
                         variant: "destructive",
                       });
                     }
@@ -1922,7 +1936,38 @@ export default function FieldManagement() {
                     console.log("제출 가능:", canSubmit);
                     console.log("============================");
                     
-                    if (!selectedCaseData?.id) return;
+                    if (!selectedCaseData?.id) {
+                      toast({
+                        title: "제출 실패",
+                        description: "선택된 접수건이 없습니다.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    // 필수 필드 검증 - 제출 시에는 모든 필수 필드가 필요
+                    const missingFields: string[] = [];
+                    
+                    // 현장입력 필수 필드
+                    if (!visitDate) missingFields.push("방문일자");
+                    if (!visitTime) missingFields.push("방문시간");
+                    if (!accidentCategory) missingFields.push("사고구분");
+                    if (!victimName) missingFields.push("피해자 성명");
+                    
+                    // 섹션별 완료 체크
+                    if (!isFieldInputComplete) missingFields.push("현장입력 섹션");
+                    if (!isDrawingComplete) missingFields.push("도면작성 섹션");
+                    if (!isDocumentsComplete) missingFields.push("증빙자료 섹션");
+                    if (!isEstimateComplete) missingFields.push("견적서 섹션");
+                    
+                    if (missingFields.length > 0) {
+                      toast({
+                        title: "제출 불가",
+                        description: `다음 항목이 누락되었습니다: ${missingFields.join(", ")}`,
+                        variant: "destructive",
+                      });
+                      return;
+                    }
 
                     try {
                       const payload = {
@@ -1963,11 +2008,18 @@ export default function FieldManagement() {
 
                       // 현장정보입력 SMS 알림 다이얼로그 표시
                       setSmsDialogOpen(true);
-                    } catch (error) {
+                    } catch (error: any) {
                       console.error("제출 에러:", error);
+                      
+                      // 서버에서 반환된 오류 메시지 파싱
+                      let errorMessage = "현장조사 보고서 제출 중 오류가 발생했습니다.";
+                      if (error?.message) {
+                        errorMessage = error.message;
+                      }
+                      
                       toast({
                         title: "제출 실패",
-                        description: "현장조사 보고서 제출 중 오류가 발생했습니다.",
+                        description: errorMessage,
                         variant: "destructive",
                       });
                     }
