@@ -1080,6 +1080,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // 청구자료제출 상태 변경 시 플록슨담당자에게 SMS 자동 발송
+      if ((status === "(직접복구인 경우) 청구자료제출" || status === "(선견적요청인 경우) 출동비 청구") && updatedCase.managerId) {
+        const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+        const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+        const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
+
+        if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER) {
+          try {
+            // 담당자 정보 조회
+            const manager = await storage.getUser(updatedCase.managerId);
+            if (manager && manager.phone) {
+              const normalizedPhone = manager.phone.replace(/[^0-9]/g, "");
+              const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+
+              if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+                // 청구자료제출 알림 메시지 생성
+                const statusLabel = status === "(직접복구인 경우) 청구자료제출" ? "직접복구 청구자료제출" : "선견적요청 출동비 청구";
+                const message = `<${statusLabel} 알림>
+
+접수번호 : ${updatedCase.caseNumber || '-'}
+보험사 : ${updatedCase.insuranceCompany || '-'}
+증권번호 : ${updatedCase.insurancePolicyNo || '-'}
+사고번호 : ${updatedCase.insuranceAccidentNo || '-'}
+피보험자 : ${updatedCase.insuredName || '-'}
+협력업체 : ${updatedCase.assignedPartner || '-'}
+
+위 접수건 청구자료가 제출되었습니다.`;
+
+                const payload = {
+                  message: {
+                    to: normalizedPhone,
+                    from: normalizedSender,
+                    text: message,
+                    type: "LMS",
+                  },
+                };
+
+                const body = JSON.stringify(payload);
+
+                // 비동기로 SMS 발송 (응답 차단하지 않음)
+                solapiHttpsRequest({
+                  method: "POST",
+                  path: "/messages/v4/send",
+                  headers: {
+                    Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                    "Content-Type": "application/json",
+                    "Content-Length": Buffer.byteLength(body),
+                  },
+                  body,
+                })
+                  .then(() => {
+                    console.log(`[status-change] 청구자료제출 SMS 발송 성공: ${normalizedPhone}`);
+                  })
+                  .catch((smsError) => {
+                    console.error(`[status-change] 청구자료제출 SMS 발송 실패:`, smsError);
+                  });
+              }
+            }
+          } catch (smsError) {
+            console.error("[status-change] 청구자료제출 SMS 발송 준비 중 오류:", smsError);
+          }
+        }
+      }
+
       res.json({ success: true, case: updatedCase });
     } catch (error) {
       console.error("Update case status error:", error);
