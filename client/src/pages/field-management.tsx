@@ -226,6 +226,44 @@ export default function FieldManagement() {
       .sort((a, b) => (a.caseNumber || "").localeCompare(b.caseNumber || ""));
   }, [selectedCaseData, availableCases]);
 
+  // 케이스 데이터 로드 시 누락된 정보 콘솔 로그
+  useEffect(() => {
+    if (!selectedCaseData) return;
+    
+    console.log("=== 현장조사 케이스 데이터 체크 ===");
+    console.log("접수번호:", selectedCaseData.caseNumber);
+    
+    const missingFields: string[] = [];
+    
+    // 기본정보 체크
+    if (!selectedCaseData.assignedPartner) missingFields.push("접수사 (협력사)");
+    if (!selectedCaseData.assignedPartnerManager) missingFields.push("협력사 담당자명");
+    if (!selectedCaseData.assignedPartnerContact) missingFields.push("협력사 담당자 연락처");
+    if (!(selectedCaseData as any).managerName) missingFields.push("당사 담당자명");
+    
+    // 접수정보 체크
+    if (!selectedCaseData.insuranceCompany) missingFields.push("보험사");
+    if (!selectedCaseData.insurancePolicyNo) missingFields.push("증권번호");
+    if (!selectedCaseData.insuranceAccidentNo) missingFields.push("사고접수번호");
+    
+    // 보험계약자/피보험자 정보 체크
+    if (!selectedCaseData.policyHolderName) missingFields.push("보험계약자");
+    if (!selectedCaseData.insuredName) missingFields.push("피보험자");
+    if (!selectedCaseData.insuredContact) missingFields.push("피보험자 연락처");
+    
+    // 피해자 정보 체크
+    if (!selectedCaseData.victimName) missingFields.push("피해자 성명");
+    if (!selectedCaseData.victimContact) missingFields.push("피해자 연락처");
+    
+    if (missingFields.length > 0) {
+      console.warn("⚠️ 누락된 정보:", missingFields.join(", "));
+    } else {
+      console.log("✅ 모든 기본 정보가 입력되어 있습니다.");
+    }
+    
+    console.log("================================");
+  }, [selectedCaseData?.id]);
+
   // 협력사 또는 관리자만 입력 가능
   // 협력사: 현장출동보고서 제출 후(fieldSurveyStatus === "submitted") 수정 불가
   // 관리자: 항상 수정 가능
