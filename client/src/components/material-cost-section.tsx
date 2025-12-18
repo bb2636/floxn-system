@@ -403,6 +403,7 @@ export function MaterialCostSection({
                         padding: "8px 12px", 
                         verticalAlign: "top",
                         borderRight: "1px solid #E5E7EB",
+                        borderBottom: "2px solid rgba(12, 12, 12, 0.15)",
                       }}
                     >
                       {isLinkedRow ? (
