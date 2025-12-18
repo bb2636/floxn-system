@@ -1885,6 +1885,25 @@ export default function FieldManagement() {
                       return;
                     }
 
+                    // 누락된 필드 체크 및 표시
+                    const missingFields: string[] = [];
+                    if (!visitDate) missingFields.push("방문일자");
+                    if (!visitTime) missingFields.push("방문시간");
+                    if (!accidentCategory) missingFields.push("사고구분");
+                    if (!victimName) missingFields.push("피해자 성명");
+                    if (!victimContact) missingFields.push("피해자 연락처");
+                    
+                    // 콘솔에도 출력
+                    if (missingFields.length > 0) {
+                      console.warn("⚠️ 임시저장 - 누락된 필드:", missingFields.join(", "));
+                      toast({
+                        title: "일부 정보 누락",
+                        description: `다음 항목이 비어있습니다: ${missingFields.join(", ")}`,
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
                     try {
                       // 상태 자동 변경 로직
                       let status = "현장방문"; // 기본값: 방문일시만 입력된 경우
