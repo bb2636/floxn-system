@@ -5965,6 +5965,38 @@ export default function FieldEstimate() {
                 enableAreaImport={!isLossPreventionCase}
                 isHydrated={isHydratedState}
               />
+              
+              {/* 노무비 총합계 */}
+              <div 
+                className="flex justify-end items-center mt-4 pt-4"
+                style={{ borderTop: "1px solid rgba(12, 12, 12, 0.1)" }}
+              >
+                <div className="flex items-center gap-4">
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      color: "#0C0C0C",
+                    }}
+                  >
+                    총합계
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "18px",
+                      fontWeight: 700,
+                      color: "#008FED",
+                      minWidth: "120px",
+                      textAlign: "right",
+                    }}
+                    data-testid="text-labor-total"
+                  >
+                    {laborCostRows.reduce((sum, row) => sum + (row.amount || 0), 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
             </div>
 
             {/* 기존 노무비 테이블 (임시 주석 처리) */}
@@ -6337,6 +6369,38 @@ export default function FieldEstimate() {
               isLoading={isLoadingMaterialCatalog}
               isReadOnly={isReadOnly}
             />
+            
+            {/* 자재비 총합계 */}
+            <div 
+              className="flex justify-end items-center mt-4 pt-4"
+              style={{ borderTop: "1px solid rgba(12, 12, 12, 0.1)" }}
+            >
+              <div className="flex items-center gap-4">
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  총합계
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    color: "#008FED",
+                    minWidth: "120px",
+                    textAlign: "right",
+                  }}
+                  data-testid="text-material-total"
+                >
+                  {materialRows.reduce((sum, row) => sum + (row.합계 || 0), 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
 
             {/* 하단 버튼 */}
             <div
