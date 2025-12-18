@@ -272,10 +272,16 @@ export default function FieldManagement() {
   const isReadOnly = !canEdit || (isPartner && isSubmitted);
 
   // 각 섹션 완료 상태 체크
-  // 현장입력 완료: 필수 필드 입력 완료
+  // 현장입력 완료: 필수 필드 입력 완료 (로컬 state 또는 저장된 데이터 확인)
   const isFieldInputComplete = useMemo(() => {
-    return !!(visitDate && visitTime && accidentCategory && victimName);
-  }, [visitDate, visitTime, accidentCategory, victimName]);
+    // 로컬 state 우선, 없으면 저장된 케이스 데이터 확인
+    const hasVisitDate = visitDate || selectedCaseData?.visitDate;
+    const hasVisitTime = visitTime || selectedCaseData?.visitTime;
+    const hasAccidentCategory = accidentCategory || selectedCaseData?.accidentCategory;
+    const hasVictimName = victimName || selectedCaseData?.victimName;
+    
+    return !!(hasVisitDate && hasVisitTime && hasAccidentCategory && hasVictimName);
+  }, [visitDate, visitTime, accidentCategory, victimName, selectedCaseData?.visitDate, selectedCaseData?.visitTime, selectedCaseData?.accidentCategory, selectedCaseData?.victimName]);
 
   // 도면 완료: 도면이 저장되어 있으면 완료 (도면 객체에 id가 있으면 저장된 것으로 판단)
   const isDrawingComplete = useMemo(() => {

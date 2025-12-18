@@ -1021,6 +1021,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
+      // 복구요청(2차승인) 상태 변경 시 협력업체에 SMS 자동 발송
+      if (status === "복구요청(2차승인)" && updatedCase.assignedPartnerContact) {
+        const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+        const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+        const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
+
+        if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER) {
+          try {
+            const normalizedPhone = updatedCase.assignedPartnerContact.replace(/[^0-9]/g, "");
+            const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+
+            if (normalizedPhone.length >= 10 && normalizedPhone.length <= 11) {
+              // 복구요청 알림 메시지 생성
+              const message = `<복구요청 알림>
+
+접수번호 : ${updatedCase.caseNumber || '-'}
+보험사 : ${updatedCase.insuranceCompany || '-'}
+증권번호 : ${updatedCase.insurancePolicyNo || '-'}
+사고번호 : ${updatedCase.insuranceAccidentNo || '-'}
+피보험자 : ${updatedCase.insuredName || '-'}
+사고장소 : ${updatedCase.insuredAddress || '-'}
+
+위 접수건 복구요청이 완료되었습니다.`;
+
+              const payload = {
+                message: {
+                  to: normalizedPhone,
+                  from: normalizedSender,
+                  text: message,
+                  type: "LMS",
+                },
+              };
+
+              const body = JSON.stringify(payload);
+
+              // 비동기로 SMS 발송 (응답 차단하지 않음)
+              solapiHttpsRequest({
+                method: "POST",
+                path: "/messages/v4/send",
+                headers: {
+                  Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                  "Content-Type": "application/json",
+                  "Content-Length": Buffer.byteLength(body),
+                },
+                body,
+              })
+                .then(() => {
+                  console.log(`[status-change] 복구요청 SMS 발송 성공: ${normalizedPhone}`);
+                })
+                .catch((smsError) => {
+                  console.error(`[status-change] 복구요청 SMS 발송 실패:`, smsError);
+                });
+            }
+          } catch (smsError) {
+            console.error("[status-change] SMS 발송 준비 중 오류:", smsError);
+          }
+        }
+      }
+
       res.json({ success: true, case: updatedCase });
     } catch (error) {
       console.error("Update case status error:", error);
