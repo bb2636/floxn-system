@@ -179,9 +179,12 @@ export default function ComprehensiveProgress() {
     enabled: !!user,
   });
 
-  // 사용자 목록 가져오기 (담당자 이름 표시용)
-  const { data: allUsers = [] } = useQuery<Omit<User, "password">[]>({
-    queryKey: ["/api/users"],
+  // 기본 사용자 정보 타입 (협력사도 접근 가능)
+  type BasicUser = { id: string; name: string | null; username: string; contact: string | null; role: string; bankName: string | null; accountNumber: string | null };
+  
+  // 사용자 목록 가져오기 (담당자 이름 표시용) - 협력사도 접근 가능한 basic 엔드포인트 사용
+  const { data: allUsers = [] } = useQuery<BasicUser[]>({
+    queryKey: ["/api/users/basic"],
   });
 
   // 사용자 ID로 이름 가져오기
