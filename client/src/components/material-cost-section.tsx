@@ -363,23 +363,30 @@ export function MaterialCostSection({
                 : (row.합계 || row.금액 || Math.round(price * quantity));
               // 연동 행인지 확인 (복구면적에서 자동 생성된 행)
               const isLinkedRow = row.isLinkedFromRecovery === true;
+              // 그룹 마지막 행인지 확인 (공종별 구분선)
+              const isLastRowInGroup = rowIndex === groupRows.length - 1;
               // 수량 표시 텍스트
               const quantityDisplay = isLinkedRow 
                 ? `(${row.수량m2 || 0}바닥+벽체+천장)` 
                 : (quantity > 0 ? quantity.toString() : '');
+              
+              // 공종 그룹 구분 테두리 스타일
+              const groupBorderBottom = isLastRowInGroup 
+                ? "2px solid rgba(12, 12, 12, 0.15)" 
+                : "1px solid #E5E7EB";
               
               return (
                 <tr 
                   key={row.id} 
                   style={{ 
                     height: "48px", 
-                    borderBottom: "1px solid #E5E7EB",
+                    borderBottom: groupBorderBottom,
                     background: isLinkedRow ? "rgba(59, 130, 246, 0.03)" : undefined,
                   }}
                   title={isLinkedRow ? "복구면적에서 자동 생성된 행 (수정 불가)" : undefined}
                 >
                   {/* 체크박스 */}
-                  <td style={{ padding: "0 12px", textAlign: "center", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                  <td style={{ padding: "0 12px", textAlign: "center", borderBottom: groupBorderBottom, borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
                     <input
                       type="checkbox"
                       checked={selectedRows.has(row.id)}
@@ -472,7 +479,7 @@ export function MaterialCostSection({
                   ) : null}
                   
                   {/* +/- 버튼 컬럼 (각 행마다) */}
-                  <td style={{ padding: "0 8px", textAlign: "center", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                  <td style={{ padding: "0 8px", textAlign: "center", borderBottom: groupBorderBottom, borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
                     <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
                       <button
                         type="button"
@@ -522,7 +529,7 @@ export function MaterialCostSection({
                   </td>
                   
                   {/* 공사명 - 자재비는 연동 행도 수정 가능 */}
-                  <td style={{ padding: "0 8px", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                  <td style={{ padding: "0 8px", borderBottom: groupBorderBottom, borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
                     <Select 
                       value={row.공사명 || ''} 
                       onValueChange={(value) => {
@@ -562,7 +569,7 @@ export function MaterialCostSection({
                   </td>
                   
                   {/* 자재항목 - 자재비는 연동 행도 수정 가능 */}
-                  <td style={{ padding: "0 8px", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                  <td style={{ padding: "0 8px", borderBottom: groupBorderBottom, borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
                     <Select 
                         value={materialItem} 
                         onValueChange={(value) => {
@@ -641,7 +648,7 @@ export function MaterialCostSection({
                     fontSize: "14px", 
                     color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.8)", 
                     textAlign: "right",
-                    borderBottom: "1px solid #E5E7EB",
+                    borderBottom: groupBorderBottom,
                     borderRight: "1px solid rgba(12, 12, 12, 0.06)"
                   }}>
                     <Input
@@ -690,7 +697,7 @@ export function MaterialCostSection({
                   </td>
                   
                   {/* 수량 - 연동 행도 입력 가능 */}
-                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF", borderBottom: "1px solid #E5E7EB", borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
+                  <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "#EFF6FF", borderBottom: groupBorderBottom, borderRight: "1px solid rgba(12, 12, 12, 0.06)" }}>
                     {isLinkedRow ? (
                       (() => {
                         // EA 기반 자재 (합판, 석고보드, 몰딩, 걸레받이)는 수량EA 사용
@@ -776,7 +783,7 @@ export function MaterialCostSection({
                     fontSize: "14px", 
                     color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.8)", 
                     textAlign: "center",
-                    borderBottom: "1px solid #E5E7EB",
+                    borderBottom: groupBorderBottom,
                     borderRight: "1px solid rgba(12, 12, 12, 0.06)"
                   }}>
                     {row.단위 || "m²"}
@@ -791,14 +798,14 @@ export function MaterialCostSection({
                     color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "#0C0C0C", 
                     textAlign: "right", 
                     background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)",
-                    borderBottom: "1px solid #E5E7EB",
+                    borderBottom: groupBorderBottom,
                     borderRight: "1px solid rgba(12, 12, 12, 0.06)"
                   }}>
                     {total > 0 ? total.toLocaleString() : "단가x수량"}
                   </td>
                   
                   {/* 비고 - 연동 행도 수정 가능 */}
-                  <td style={{ padding: "0 8px", background: "#EFF6FF", borderBottom: "1px solid #E5E7EB" }}>
+                  <td style={{ padding: "0 8px", background: "#EFF6FF", borderBottom: groupBorderBottom }}>
                     <Input
                       value={row.비고}
                       onChange={(e) => {
