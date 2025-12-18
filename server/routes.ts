@@ -4388,7 +4388,7 @@ FLOXN 드림`,
 피해자 : ${caseData.victimName || "-"}  연락처 ${caseData.victimContact || "-"}
 조사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}
 사고장소 : ${caseData.insuredAddress || "-"}
-의뢰범위 : ${caseData.requestScope || "-"}`;
+의뢰범위 : ${[caseData.damagePreventionCost === "true" ? "손방" : null, caseData.victimIncidentAssistance === "true" ? "대물" : null].filter(Boolean).join(", ") || "기타"}`;
       } else if (stage === "접수취소") {
         subject = "접수취소 알림";
         messageText = `<접수취소 알림>
@@ -4437,7 +4437,8 @@ FLOXN 드림`,
         messageText += `\n\n추가사항 : ${additionalMessage}`;
       }
 
-      console.log(`[send-stage-notification] Stage: ${stage}, Recipients: ${phoneNumbers.length}`);
+      console.log(`[send-stage-notification] Stage: ${stage}, Recipients request:`, JSON.stringify(recipients));
+      console.log(`[send-stage-notification] Phone numbers collected: ${phoneNumbers.length}`, phoneNumbers.map(p => `${p.type}:${p.phone}`).join(", "));
 
       // 각 수신자에게 SMS 발송
       const results: { type: string; name: string; success: boolean; error?: string }[] = [];
