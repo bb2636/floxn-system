@@ -2737,7 +2737,16 @@ export default function FieldReport() {
             {/* 카테고리별 문서 리스트 */}
             {documents && documents.length > 0 ? (
               <div className="flex flex-col" style={{ gap: "16px" }}>
-                {["현장", "수리중", "복구완료", "청구", "개인정보"].map((category) => {
+                {[
+                  // 사진
+                  "현장출동사진", "수리중 사진", "복구완료 사진",
+                  // 기본자료
+                  "보험금 청구서", "개인정보 동의서(가족용)",
+                  // 증빙자료
+                  "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+                  // 청구자료
+                  "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
+                ].map((category) => {
                   const categoryDocs = documents.filter(doc => doc.category === category);
                   if (categoryDocs.length === 0) return null;
 
