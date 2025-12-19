@@ -2583,14 +2583,18 @@ export default function ComprehensiveProgress() {
                   }} />
                 </div>
 
-                {/* 메인 콘텐츠 */}
-                <div style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  padding: "0px 38px",
-                  gap: "26px",
-                }}>
+                {/* 메인 콘텐츠 - PDF 캡처 영역 */}
+                <div 
+                  ref={invoicePdfRef}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                    padding: "0px 38px",
+                    gap: "26px",
+                    background: "#FFFFFF",
+                  }}
+                >
                   {/* 요약 카드 2개 */}
                   <div style={{
                     display: "flex",
@@ -3081,26 +3085,67 @@ export default function ComprehensiveProgress() {
                   </div>
                 </div>
 
-                {/* 하단 버튼 */}
+                {/* 이메일 입력 및 하단 버튼 */}
                 <div style={{ 
                   padding: "20px 38px", 
                   borderTop: "1px solid rgba(12, 12, 12, 0.08)",
                   display: "flex",
-                  justifyContent: "flex-end",
-                  gap: "12px",
+                  flexDirection: "column",
+                  gap: "16px",
                 }}>
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      toast({
-                        title: "PDF 발송",
-                        description: "PDF 발송 기능 준비 중입니다.",
-                      });
-                    }}
-                    data-testid="button-invoice-pdf"
-                  >
-                    PDF 발송
-                  </Button>
+                  {/* 수신자 이메일 입력 */}
+                  <div style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: "12px",
+                  }}>
+                    <span style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.7)",
+                      whiteSpace: "nowrap",
+                    }}>
+                      수신자 이메일
+                    </span>
+                    <input
+                      type="email"
+                      value={invoiceRecipientEmail}
+                      onChange={(e) => setInvoiceRecipientEmail(e.target.value)}
+                      placeholder="보험사 이메일 주소를 입력해주세요"
+                      style={{
+                        flex: 1,
+                        fontFamily: "Pretendard",
+                        fontWeight: 400,
+                        fontSize: "14px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                        background: "rgba(12, 12, 12, 0.04)",
+                        border: "1px solid rgba(12, 12, 12, 0.1)",
+                        borderRadius: "8px",
+                        padding: "10px 14px",
+                        outline: "none",
+                      }}
+                      data-testid="input-invoice-email"
+                    />
+                  </div>
+
+                  {/* 버튼 영역 */}
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "12px",
+                  }}>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleSendInvoicePdf(invoiceCase, totalAmount)}
+                      disabled={isSendingInvoicePdf || !invoiceRecipientEmail}
+                      data-testid="button-invoice-pdf"
+                    >
+                      {isSendingInvoicePdf ? "발송 중..." : "PDF 발송"}
+                    </Button>
                   <Button
                     onClick={async () => {
                       try {
@@ -3134,6 +3179,7 @@ export default function ComprehensiveProgress() {
                   >
                     저장
                   </Button>
+                  </div>
                 </div>
               </div>
             );
