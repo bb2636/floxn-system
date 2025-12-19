@@ -136,34 +136,18 @@ export default function ComprehensiveProgress() {
     return caseNumber;
   };
 
-  // 동일 prefix(연동된 케이스들) 내 모든 케이스가 청구자료제출 상태인지 확인
+  // 청구하기 버튼 표시 조건: "청구" 상태인 경우 개별적으로 버튼 표시
   const canShowClaimButton = (caseItem: CaseWithLatestProgress, allCases: CaseWithLatestProgress[] | undefined): boolean => {
     if (!allCases) return false;
     
-    // 해당 케이스가 청구자료제출 상태가 아니면 버튼 표시 안함
-    if (caseItem.status !== "(직접복구인 경우) 청구자료제출" && caseItem.status !== "(선견적요청인 경우) 출동비 청구") {
-      return false;
-    }
+    // 해당 케이스가 "청구" 또는 청구자료제출 관련 상태인 경우 버튼 표시
+    const claimStatuses = [
+      "청구",
+      "(직접복구인 경우) 청구자료제출",
+      "(선견적요청인 경우) 출동비 청구"
+    ];
     
-    // 케이스 번호 prefix 추출
-    const prefix = getCaseNumberPrefix(caseItem.caseNumber);
-    if (!prefix) {
-      return true; // prefix가 없으면 단독 케이스로 취급
-    }
-    
-    // 같은 prefix를 가진 케이스들 조회 (연동된 케이스들)
-    const relatedCases = allCases.filter(c => getCaseNumberPrefix(c.caseNumber) === prefix);
-    
-    // 케이스가 1개뿐이면 버튼 표시 (단독 케이스)
-    if (relatedCases.length <= 1) {
-      return true;
-    }
-    
-    // 연동된 케이스가 여러 개일 경우, 모든 관련 케이스가 청구자료제출 상태인지 확인
-    return relatedCases.every(c => 
-      c.status === "(직접복구인 경우) 청구자료제출" || 
-      c.status === "(선견적요청인 경우) 출동비 청구"
-    );
+    return claimStatuses.includes(caseItem.status || "");
   };
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
