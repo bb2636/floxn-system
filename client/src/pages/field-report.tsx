@@ -1013,11 +1013,11 @@ export default function FieldReport() {
                   
                   for (const chapter of chapters) {
                     setActiveTab(chapter.tabValue);
-                    await new Promise(resolve => setTimeout(resolve, 600));
+                    await new Promise(resolve => setTimeout(resolve, 800));
                     
                     const element = document.getElementById(chapter.elementId);
                     if (!element) {
-                      console.warn(`Chapter not found: ${chapter.name}`);
+                      console.warn(`Chapter not found: ${chapter.name} (${chapter.elementId})`);
                       continue;
                     }
                     
@@ -1041,7 +1041,24 @@ export default function FieldReport() {
                         el.style.overflow = 'visible';
                       });
                       
-                      await new Promise(resolve => setTimeout(resolve, 200));
+                      // textarea를 div로 임시 변환 (html2canvas 호환성)
+                      const textareas = element.querySelectorAll('textarea');
+                      const textareaClones: Array<{original: HTMLElement, clone: HTMLElement}> = [];
+                      textareas.forEach((textarea) => {
+                        const ta = textarea as HTMLTextAreaElement;
+                        const clone = document.createElement('div');
+                        clone.style.cssText = window.getComputedStyle(ta).cssText;
+                        clone.style.height = 'auto';
+                        clone.style.minHeight = ta.offsetHeight + 'px';
+                        clone.style.whiteSpace = 'pre-wrap';
+                        clone.style.wordBreak = 'break-word';
+                        clone.textContent = ta.value || ta.placeholder;
+                        ta.parentNode?.insertBefore(clone, ta);
+                        ta.style.display = 'none';
+                        textareaClones.push({ original: ta, clone });
+                      });
+                      
+                      await new Promise(resolve => setTimeout(resolve, 300));
                       
                       const canvas = await html2canvas(element, {
                         scale: 1.5,
@@ -1049,6 +1066,16 @@ export default function FieldReport() {
                         allowTaint: true,
                         logging: false,
                         backgroundColor: '#FFFFFF',
+                        onclone: (doc) => {
+                          // 클론된 문서에서 display:none 요소 제거
+                          doc.querySelectorAll('[style*="display: none"]').forEach(el => el.remove());
+                        }
+                      });
+                      
+                      // textarea 복원
+                      textareaClones.forEach(({ original, clone }) => {
+                        (original as HTMLElement).style.display = '';
+                        clone.remove();
                       });
                       
                       // 스타일 복원
