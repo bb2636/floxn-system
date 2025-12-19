@@ -978,9 +978,9 @@ export default function FieldReport() {
                   
                   const pdf = new jsPDF('p', 'mm', 'a4');
                   
-                  // 한글 폰트 등록
+                  // 한글 폰트 등록 (Identity-H 인코딩 필수 - Unicode 지원)
                   pdf.addFileToVFS('NotoSansKR-Regular.ttf', NotoSansKR_Regular);
-                  pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
+                  pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal', 'Identity-H');
                   
                   const pageWidth = pdf.internal.pageSize.getWidth();
                   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -1499,9 +1499,9 @@ export default function FieldReport() {
 
                   const pdf = new jsPDF('p', 'mm', 'a4');
                   
-                  // 한글 폰트 등록
+                  // 한글 폰트 등록 (Identity-H 인코딩 필수 - Unicode 지원)
                   pdf.addFileToVFS('NotoSansKR-Regular.ttf', NotoSansKR_Regular);
-                  pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal');
+                  pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal', 'Identity-H');
                   
                   const pageWidth = pdf.internal.pageSize.getWidth();
                   const pageHeight = pdf.internal.pageSize.getHeight();
