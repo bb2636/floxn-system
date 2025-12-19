@@ -1831,35 +1831,67 @@ export default function FieldReport() {
                 {activeTab === "견적서" && "견적서"}
                 {activeTab === "기타사항/원인" && "기타사항/원인"}
               </h2>
-              <button
-                onClick={() => {
-                  setShowDownloadDialog(true);
-                }}
-                className="flex items-center gap-2 px-4 py-3"
-                style={{
-                  background: "#FDFDFD",
-                  boxShadow: "2px 4px 30px #BDD1F0",
-                  borderRadius: "10px",
-                  border: "none",
-                  cursor: "pointer",
-                }}
-                data-testid="button-download-report"
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    letterSpacing: "-0.02em",
-                    color: "#008FED",
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setShowEmailDialog(true);
                   }}
+                  className="flex items-center gap-2 px-4 py-3"
+                  style={{
+                    background: "#FDFDFD",
+                    boxShadow: "2px 4px 30px #BDD1F0",
+                    borderRadius: "10px",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                  data-testid="button-email-report"
                 >
-                  전체 다운로드
-                </span>
-              </button>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <polyline points="22,6 12,13 2,6" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "#008FED",
+                    }}
+                  >
+                    이메일 전송
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDownloadDialog(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-3"
+                  style={{
+                    background: "#FDFDFD",
+                    boxShadow: "2px 4px 30px #BDD1F0",
+                    borderRadius: "10px",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                  data-testid="button-download-report"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "18px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "#008FED",
+                    }}
+                  >
+                    전체 다운로드
+                  </span>
+                </button>
+              </div>
             </div>
           )}
 
