@@ -4036,6 +4036,87 @@ FLOXN 드림`,
     }
   });
 
+  // Send dashboard PDF email endpoint (SMTP/Nodemailer) - Admin only
+  app.post("/api/send-dashboard-pdf-email", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check if user is admin
+    const user = await storage.getUser(req.session.userId);
+    if (!user || user.role !== "관리자") {
+      return res.status(403).json({ error: "관리자만 사용할 수 있는 기능입니다" });
+    }
+
+    try {
+      const { email, pdfBase64, title } = req.body;
+
+      if (!email || !pdfBase64) {
+        return res.status(400).json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
+      }
+
+      // Check SMTP environment variables
+      const SMTP_HOST = process.env.SMTP_HOST;
+      const SMTP_PORT = process.env.SMTP_PORT;
+      const SMTP_USER = process.env.SMTP_USER;
+      const SMTP_PASS = process.env.SMTP_PASS;
+
+      if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
+        console.error("[send-dashboard-pdf-email] Missing SMTP configuration");
+        return res.status(500).json({ error: "SMTP 설정이 필요합니다 (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)" });
+      }
+
+      const fileName = `FLOXN_대시보드현황_${new Date().toISOString().split('T')[0]}.pdf`;
+      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      
+      // Convert base64 to buffer
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+
+      // Create Nodemailer transporter
+      const transporter = nodemailer.createTransport({
+        host: SMTP_HOST,
+        port: parseInt(SMTP_PORT, 10),
+        secure: parseInt(SMTP_PORT, 10) === 465,
+        auth: {
+          user: SMTP_USER,
+          pass: SMTP_PASS,
+        },
+      });
+
+      // Send email with PDF attachment
+      const mailOptions = {
+        from: `FLOXN <${SMTP_USER}>`,
+        to: email,
+        subject: title || `FLOXN 대시보드 현황 - ${dateStr}`,
+        text: `안녕하세요,
+
+FLOXN 대시보드 현황을 첨부하여 보내드립니다.
+
+- 발송일: ${dateStr}
+- 발송자: ${user.name || user.username}
+
+첨부된 PDF 파일을 확인해 주시기 바랍니다.
+
+감사합니다.
+FLOXN 드림`,
+        attachments: [
+          {
+            filename: fileName,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          }
+        ],
+      };
+
+      const info = await transporter.sendMail(mailOptions);
+      console.log(`[Email] Dashboard PDF sent successfully to ${email} by ${user.username}, messageId: ${info.messageId}`);
+      res.json({ success: true, message: "이메일이 전송되었습니다" });
+    } catch (error) {
+      console.error("Send dashboard PDF email error:", error);
+      res.status(500).json({ error: "이메일 전송 중 오류가 발생했습니다" });
+    }
+  });
+
   // ==========================================
   // POST /send-pdf - PDF 이메일 첨부 전송 (SMTP/Nodemailer)
   // ==========================================

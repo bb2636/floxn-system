@@ -6,7 +6,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown, ChevronRight, X } from "lucide-react";
+import { Home, Star, LogOut, CalendarPlus, AlertCircle, Building2, Handshake, TrendingUp, TrendingDown, Calendar, ChevronDown, ChevronRight, X, Mail, Loader2 } from "lucide-react";
 import logoIcon from "@assets/Vector_1762589710900.png";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -24,6 +24,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const [activeMenu, setActiveMenu] = useState("홈");
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const pdfContentRef = useRef<HTMLDivElement>(null);
   
   const [periodType, setPeriodType] = useState<PeriodType>('thisMonth');
@@ -433,6 +434,69 @@ export default function Dashboard() {
     }
   };
 
+  const handleSendPdfEmail = async () => {
+    if (!pdfContentRef.current) {
+      toast({
+        title: "PDF 생성 실패",
+        description: "변환할 홈 정보를 찾을 수 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingEmail(true);
+
+    try {
+      const html2pdf = (await import("@/lib/html2pdf")).default;
+      const jsPDF = (await import("jspdf")).default;
+
+      const pdfInstance = await html2pdf()
+        .set({
+          margin: 10,
+          filename: "floxen-home.pdf",
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(pdfContentRef.current)
+        .toPdf()
+        .get('pdf');
+
+      const pdfBase64 = pdfInstance.output('datauristring').split(',')[1];
+
+      const response = await fetch('/api/send-dashboard-pdf-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'qq8918@naver.com',
+          pdfBase64,
+          title: 'FLOXN 대시보드 현황',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "이메일 전송 완료",
+          description: "qq8918@naver.com으로 대시보드 PDF가 전송되었습니다.",
+        });
+      } else {
+        throw new Error(result.error || "이메일 전송에 실패했습니다");
+      }
+    } catch (error) {
+      console.error("이메일 전송 중 오류 발생", error);
+      toast({
+        title: "이메일 전송 실패",
+        description: error instanceof Error ? error.message : "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen" style={{ background: '#E7EDFE' }}>
       {/* Blur Background Orbs */}
@@ -642,9 +706,11 @@ export default function Dashboard() {
             </button>
           </div>
 
+          {user?.role === "관리자" && (
           <div 
             className="mb-6 rounded-2xl border border-[#DCE3F8] bg-white shadow-lg"
             style={{ padding: '20px' }}
+            data-testid="admin-pdf-email-section"
           >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div ref={pdfContentRef} className="flex-1" style={{ gap: '8px' }}>
@@ -657,7 +723,7 @@ export default function Dashboard() {
                     color: '#0C0C0C',
                   }}
                 >
-                  홈 화면 PDF 전송 테스트
+                  대시보드 PDF 이메일 전송
                 </p>
                 <p 
                   style={{
@@ -668,8 +734,7 @@ export default function Dashboard() {
                     color: 'rgba(12, 12, 12, 0.75)',
                   }}
                 >
-                  아래 버튼을 누르면 홈 화면의 테스트 내용을 html2pdf.js를 이용해 PDF로 저장합니다.
-                  파일 이름은 <strong>floxen-home.pdf</strong>로 내려받습니다.
+                  대시보드 현황을 PDF로 생성하여 <strong>qq8918@naver.com</strong>으로 이메일 전송합니다.
                 </p>
               </div>
               <div className="flex items-center gap-3">
@@ -677,12 +742,33 @@ export default function Dashboard() {
                   onClick={handlePdfTest}
                   disabled={isGeneratingPdf}
                   className="min-w-[150px]"
+                  variant="outline"
+                  data-testid="button-pdf-download"
                 >
-                  {isGeneratingPdf ? 'PDF 생성 중...' : 'PDF 전송 테스트'}
+                  {isGeneratingPdf ? 'PDF 생성 중...' : 'PDF 다운로드'}
+                </Button>
+                <Button 
+                  onClick={handleSendPdfEmail}
+                  disabled={isSendingEmail}
+                  className="min-w-[150px]"
+                  data-testid="button-send-pdf-email"
+                >
+                  {isSendingEmail ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      전송 중...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" />
+                      이메일 전송
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
           </div>
+          )}
           
           {/* Mobile Header - Only visible on mobile */}
           <div className="lg:hidden flex flex-col items-start mb-3" style={{ maxWidth: '375px', margin: '0 auto' }}>
