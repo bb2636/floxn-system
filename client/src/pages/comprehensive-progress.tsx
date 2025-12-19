@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, CaseWithLatestProgress, type UserFavorite } from "@shared/schema";
-import { Search, Cloud, Star, Plus, CalendarIcon } from "lucide-react";
+import { Search, Cloud, Star, Plus, CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
@@ -106,6 +106,7 @@ export default function ComprehensiveProgress() {
   const [isReceptionEditMode, setIsReceptionEditMode] = useState(false);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
+  const [invoiceActiveTab, setInvoiceActiveTab] = useState<string>("기본 정보");
   const [submissionDate, setSubmissionDate] = useState<Date>(new Date());
   const [taxInvoiceDate, setTaxInvoiceDate] = useState<Date | undefined>(undefined);
   const [invoiceConfirmDate, setInvoiceConfirmDate] = useState<Date | undefined>(undefined);
@@ -2423,517 +2424,538 @@ export default function ComprehensiveProgress() {
         </DialogContent>
       </Dialog>
 
-      {/* 인보이스 관리 Dialog */}
-      <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
-        <DialogContent
+      {/* 인보이스 관리 Dialog - 새 디자인 */}
+      <Sheet open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
+        <SheetContent 
+          side="right" 
           style={{
+            width: "609px",
             maxWidth: "95vw",
-            width: "600px",
-            maxHeight: "95vh",
-            overflow: "auto",
-            padding: "24px",
+            padding: 0,
             background: "#FFFFFF",
-            borderRadius: "12px",
+            overflow: "auto",
           }}
           data-testid="dialog-invoice"
         >
-          <DialogHeader>
-            <DialogTitle style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "20px" }}>
-              인보이스 관리
-            </DialogTitle>
-          </DialogHeader>
-          
           {(() => {
             const invoiceCase = cases?.find(c => c.id === invoiceCaseId);
             const invoiceCasePrefix = getCaseNumberPrefix(invoiceCase?.caseNumber);
             const relatedCases = invoiceCasePrefix 
               ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix) || []
               : invoiceCase ? [invoiceCase] : [];
-            const totalEstimateAmount = relatedCases.reduce((sum, c) => sum + (Number(c.estimateAmount) || 0), 0);
             
             return (
-              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-                {/* 기본정보 */}
-                <div style={{ 
-                  background: "#F8F9FA", 
-                  borderRadius: "8px", 
-                  padding: "20px",
+              <>
+                {/* 헤더 */}
+                <div style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "24px 20px",
+                  borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                 }}>
-                  <h3 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "15px", marginBottom: "16px", color: "#0C0C0C" }}>
-                    기본정보
-                  </h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>제출일</span>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            style={{ 
-                              fontFamily: "Pretendard", 
-                              fontSize: "12px",
-                              gap: "6px",
-                              height: "28px",
-                              padding: "0 10px",
-                            }}
-                            data-testid="button-submission-date"
-                          >
-                            <CalendarIcon style={{ width: "14px", height: "14px" }} />
-                            {format(submissionDate, "yyyy-MM-dd", { locale: ko })}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="end">
-                          <Calendar
-                            mode="single"
-                            selected={submissionDate}
-                            onSelect={(date) => date && setSubmissionDate(date)}
-                            initialFocus
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>수임일</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.receptionDate || "2025-00-00"}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>보험사</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.insuranceCompany || "-"}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>담당자</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{getUserName(invoiceCase?.assignedTo)}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>접수번호</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.caseNumber || "-"}</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>사고번호</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.caseGroupId || "-"}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 협력/현장 정보 & 세금계산서/인보이스 */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                  <div style={{ background: "#F8F9FA", borderRadius: "8px", padding: "20px" }}>
-                    <h3 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "15px", marginBottom: "16px", color: "#0C0C0C" }}>
-                      협력/현장 정보
-                    </h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>협력업체</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.assignedPartner || "-"}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>담당자</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{getUserName(invoiceCase?.assignedTo)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>사고유형</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceCase?.accidentType || "수리"}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>공사유무</span>
-                        <Select
-                          value={constructionStatus}
-                          onValueChange={(value) => {
-                            setConstructionStatus(value);
-                            // 수리 선택 시 최종승인금액을 견적금액에 자동 입력
-                            if (value === "수리") {
-                              setDamagePreventionEstimate(damagePreventionApproved);
-                              setPropertyEstimate(propertyApproved);
-                            }
-                          }}
-                        >
-                          <SelectTrigger 
-                            style={{ 
-                              width: "100px", 
-                              height: "28px",
-                              fontFamily: "Pretendard",
-                              fontSize: "13px",
-                            }}
-                            data-testid="select-construction-status"
-                          >
-                            <SelectValue placeholder="선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="수리">수리</SelectItem>
-                            <SelectItem value="미수리">미수리</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div style={{ background: "#F8F9FA", borderRadius: "8px", padding: "20px" }}>
-                    <h3 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "15px", marginBottom: "16px", color: "#0C0C0C" }}>
-                      세금계산서/인보이스
-                    </h3>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>세금계산서 확인</span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              style={{ 
-                                fontFamily: "Pretendard", 
-                                fontSize: "12px",
-                                gap: "6px",
-                                height: "28px",
-                                padding: "0 10px",
-                              }}
-                              data-testid="button-tax-invoice-date"
-                            >
-                              <CalendarIcon style={{ width: "14px", height: "14px" }} />
-                              {taxInvoiceDate ? format(taxInvoiceDate, "yyyy-MM-dd", { locale: ko }) : "날짜 선택"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="end">
-                            <Calendar
-                              mode="single"
-                              selected={taxInvoiceDate}
-                              onSelect={setTaxInvoiceDate}
-                              locale={ko}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>인보이스 확인</span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              style={{ 
-                                fontFamily: "Pretendard", 
-                                fontSize: "12px",
-                                gap: "6px",
-                                height: "28px",
-                                padding: "0 10px",
-                              }}
-                              data-testid="button-invoice-confirm-date"
-                            >
-                              <CalendarIcon style={{ width: "14px", height: "14px" }} />
-                              {invoiceConfirmDate ? format(invoiceConfirmDate, "yyyy-MM-dd", { locale: ko }) : "날짜 선택"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="end">
-                            <Calendar
-                              mode="single"
-                              selected={invoiceConfirmDate}
-                              onSelect={setInvoiceConfirmDate}
-                              locale={ko}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>인보이스 속성</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>일반</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>메인 인보이스</span>
-                        <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>연동</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 금액 탭 */}
-                <div>
-                  <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-                    <button style={{ 
-                      padding: "8px 16px", 
-                      background: "#008FED", 
-                      color: "#FFFFFF", 
-                      border: "none", 
-                      borderRadius: "6px",
-                      fontFamily: "Pretendard",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                    }}>
-                      금액
-                    </button>
-                    <button style={{ 
-                      padding: "8px 16px", 
-                      background: "#F3F4F6", 
-                      color: "rgba(12, 12, 12, 0.6)", 
-                      border: "none", 
-                      borderRadius: "6px",
-                      fontFamily: "Pretendard",
-                      fontSize: "13px",
-                      fontWeight: 500,
-                    }}>
-                      입금내역
-                    </button>
-                  </div>
-                  
-                  <h4 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", marginBottom: "12px", color: "#0C0C0C" }}>
-                    금액
-                  </h4>
-                  {(() => {
-                    // 차액 계산 (견적 - 승인)
-                    const damagePreventionDiff = damagePreventionEstimate - damagePreventionApproved;
-                    const propertyDiff = propertyEstimate - propertyApproved;
-                    // 수정률 계산 ((견적 - 승인) / 견적 * 100)
-                    const damagePreventionRate = damagePreventionEstimate > 0 
-                      ? ((damagePreventionDiff / damagePreventionEstimate) * 100).toFixed(1) 
-                      : "0.0";
-                    const propertyRate = propertyEstimate > 0 
-                      ? ((propertyDiff / propertyEstimate) * 100).toFixed(1) 
-                      : "0.0";
-                    
-                    return (
-                      <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "24px" }}>
-                        <thead>
-                          <tr style={{ background: "rgba(12, 12, 12, 0.04)" }}>
-                            <th style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "left" }}></th>
-                            <th style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>손해방지비용</th>
-                            <th style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", fontWeight: 500, color: "rgba(12, 12, 12, 0.6)", textAlign: "center" }}>대물비용</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
-                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>견적금액(원)</td>
-                            <td style={{ padding: "10px", textAlign: "center" }}>
-                              <input
-                                type="number"
-                                value={damagePreventionEstimate}
-                                onChange={(e) => setDamagePreventionEstimate(Number(e.target.value) || 0)}
-                                style={{
-                                  width: "100px",
-                                  padding: "6px 8px",
-                                  border: "1px solid rgba(12, 12, 12, 0.2)",
-                                  borderRadius: "4px",
-                                  fontFamily: "Pretendard",
-                                  fontSize: "13px",
-                                  textAlign: "right",
-                                }}
-                                data-testid="input-damage-prevention-estimate"
-                              />
-                            </td>
-                            <td style={{ padding: "10px", textAlign: "center" }}>
-                              <input
-                                type="number"
-                                value={propertyEstimate}
-                                onChange={(e) => setPropertyEstimate(Number(e.target.value) || 0)}
-                                style={{
-                                  width: "100px",
-                                  padding: "6px 8px",
-                                  border: "1px solid rgba(12, 12, 12, 0.2)",
-                                  borderRadius: "4px",
-                                  fontFamily: "Pretendard",
-                                  fontSize: "13px",
-                                  textAlign: "right",
-                                }}
-                                data-testid="input-property-estimate"
-                              />
-                            </td>
-                          </tr>
-                          <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
-                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>승인금액(원)</td>
-                            <td style={{ padding: "10px", textAlign: "center" }}>
-                              <input
-                                type="number"
-                                value={damagePreventionApproved}
-                                onChange={(e) => setDamagePreventionApproved(Number(e.target.value) || 0)}
-                                style={{
-                                  width: "100px",
-                                  padding: "6px 8px",
-                                  border: "1px solid rgba(12, 12, 12, 0.2)",
-                                  borderRadius: "4px",
-                                  fontFamily: "Pretendard",
-                                  fontSize: "13px",
-                                  textAlign: "right",
-                                }}
-                                data-testid="input-damage-prevention-approved"
-                              />
-                            </td>
-                            <td style={{ padding: "10px", textAlign: "center" }}>
-                              <input
-                                type="number"
-                                value={propertyApproved}
-                                onChange={(e) => setPropertyApproved(Number(e.target.value) || 0)}
-                                style={{
-                                  width: "100px",
-                                  padding: "6px 8px",
-                                  border: "1px solid rgba(12, 12, 12, 0.2)",
-                                  borderRadius: "4px",
-                                  fontFamily: "Pretendard",
-                                  fontSize: "13px",
-                                  textAlign: "right",
-                                }}
-                                data-testid="input-property-approved"
-                              />
-                            </td>
-                          </tr>
-                          <tr style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>
-                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>차액(원)</td>
-                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{damagePreventionDiff.toLocaleString()}원</td>
-                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{propertyDiff.toLocaleString()}원</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>수정률(%)</td>
-                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{damagePreventionRate}%</td>
-                            <td style={{ padding: "10px", fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C", textAlign: "center" }}>{propertyRate}%</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    );
-                  })()}
-                </div>
-
-                {/* 정산 */}
-                <div>
-                  <h4 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", marginBottom: "12px", color: "#0C0C0C" }}>
-                    정산
-                  </h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>수수료(원)</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>00000원</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>협력업체 지급액(원)</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>00000원</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>협력업체 지급일</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>2025-00-00</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>입금일</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>2025-00-00</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gridColumn: "1 / -1" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>입금 구분</span>
-                      <div style={{ display: "flex", gap: "16px" }}>
-                        {["정산", "부분입금", "청구변경"].map((type) => (
-                          <label 
-                            key={type} 
-                            style={{ 
-                              display: "flex", 
-                              alignItems: "center", 
-                              gap: "6px", 
-                              cursor: "pointer",
-                              fontFamily: "Pretendard",
-                              fontSize: "13px",
-                              color: depositType === type ? "#008FED" : "rgba(12, 12, 12, 0.6)",
-                            }}
-                          >
-                            <input
-                              type="radio"
-                              name="depositType"
-                              value={type}
-                              checked={depositType === type}
-                              onChange={(e) => setDepositType(e.target.value)}
-                              style={{ 
-                                width: "16px", 
-                                height: "16px",
-                                accentColor: "#008FED",
-                              }}
-                              data-testid={`radio-deposit-${type}`}
-                            />
-                            {type}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>총 승인 금액</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>0원</span>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>자기부담금</span>
-                      <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>0원</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 협력사 계좌 정보 */}
-                <div style={{ background: "#F8F9FA", borderRadius: "8px", padding: "20px" }}>
-                  <h4 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", marginBottom: "12px", color: "#0C0C0C" }}>
-                    협력사 계좌 정보
-                  </h4>
-                  {(() => {
-                    // 협력사 사용자 정보 조회
-                    const partnerUser = invoiceCase?.assignedTo ? allUsers.find(u => u.id === invoiceCase.assignedTo) : null;
-                    return (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>은행명</span>
-                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{partnerUser?.bankName || "-"}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>계좌번호</span>
-                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{partnerUser?.accountNumber || "-"}</span>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>예금주</span>
-                          <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{partnerUser?.name || "-"}</span>
-                        </div>
-                        <p style={{ fontFamily: "Pretendard", fontSize: "11px", color: "rgba(12, 12, 12, 0.4)", marginTop: "4px" }}>
-                          * 협력사 계좌가 등록된 정보로 자동입력됩니다
-                        </p>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                {/* 비고 */}
-                <div>
-                  <h4 style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "14px", marginBottom: "8px", color: "#0C0C0C" }}>
-                    비고
-                  </h4>
-                  <textarea
-                    placeholder="내용을 입력하세요"
+                  <h2 style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 600,
+                    fontSize: "22px",
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                    margin: 0,
+                  }}>
+                    진행건 상세보기
+                  </h2>
+                  <button
+                    onClick={() => setShowInvoiceDialog(false)}
                     style={{
-                      width: "100%",
-                      minHeight: "80px",
-                      padding: "12px",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                      borderRadius: "8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "13px",
-                      resize: "vertical",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      padding: "4px",
                     }}
-                    data-testid="textarea-invoice-notes"
-                  />
+                    data-testid="button-close-invoice"
+                  >
+                    <X size={24} color="#1C1B1F" />
+                  </button>
                 </div>
 
-                {/* 버튼 영역 */}
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "8px" }}>
+                {/* 요약 카드 */}
+                <div style={{
+                  margin: "0 20px",
+                  marginTop: "16px",
+                  padding: "16px",
+                  background: "rgba(12, 12, 12, 0.04)",
+                  backdropFilter: "blur(7px)",
+                  borderRadius: "12px",
+                }}>
+                  <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "16px",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "9px" }}>
+                      <span style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "18px",
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}>
+                        {invoiceCase?.insuranceCompany || "-"}
+                      </span>
+                      <span style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "18px",
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}>
+                        {invoiceCase?.caseNumber || "-"}
+                      </span>
+                    </div>
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "8px 12px",
+                      background: "rgba(12, 149, 246, 0.2)",
+                      backdropFilter: "blur(7px)",
+                      borderRadius: "20px",
+                    }}>
+                      <span style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "16px",
+                        letterSpacing: "-0.02em",
+                        color: "#0077D8",
+                      }}>
+                        {invoiceCase?.status || "심사대기"}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "24px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 400,
+                        fontSize: "16px",
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.5)",
+                      }}>
+                        사고번호
+                      </span>
+                      <span style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 400,
+                        fontSize: "16px",
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}>
+                        {invoiceCase?.insuranceAccidentNo || "-"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 400,
+                        fontSize: "16px",
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.5)",
+                      }}>
+                        보험사
+                      </span>
+                      <span style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 400,
+                        fontSize: "16px",
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}>
+                        {invoiceCase?.insuranceCompany?.substring(0, 4) || "-"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <span style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 400,
+                        fontSize: "16px",
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.5)",
+                      }}>
+                        계약자
+                      </span>
+                      <span style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 400,
+                        fontSize: "16px",
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}>
+                        {invoiceCase?.insuredName || "-"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 탭 네비게이션 */}
+                <div style={{
+                  display: "flex",
+                  padding: "0 20px",
+                  marginTop: "20px",
+                  borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                }}>
+                  {["기본 정보", "일자", "진행상황", "특이사항"].map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setInvoiceActiveTab(tab)}
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        padding: "16px 10px",
+                        width: "100px",
+                        background: "none",
+                        border: "none",
+                        borderBottom: invoiceActiveTab === tab ? "2px solid #008FED" : "2px solid transparent",
+                        cursor: "pointer",
+                        fontFamily: "Pretendard",
+                        fontWeight: 600,
+                        fontSize: "15px",
+                        letterSpacing: "-0.02em",
+                        color: invoiceActiveTab === tab ? "#0C0C0C" : "rgba(12, 12, 12, 0.7)",
+                      }}
+                      data-testid={`tab-${tab}`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 탭 콘텐츠 */}
+                <div style={{ padding: "20px" }}>
+                  {invoiceActiveTab === "기본 정보" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <h3 style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 700,
+                        fontSize: "18px",
+                        letterSpacing: "-0.02em",
+                        color: "#292929",
+                        padding: "9px 0",
+                        margin: 0,
+                      }}>
+                        기본 정보
+                      </h3>
+                      
+                      {/* 진행상태 */}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "10px 0",
+                        gap: "16px",
+                        borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                      }}>
+                        <div style={{
+                          width: "120px",
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "15px",
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}>
+                          진행상태
+                        </div>
+                        <div style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "8px 12px",
+                          background: "rgba(12, 149, 246, 0.2)",
+                          backdropFilter: "blur(7px)",
+                          borderRadius: "20px",
+                        }}>
+                          <span style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 500,
+                            fontSize: "16px",
+                            letterSpacing: "-0.02em",
+                            color: "#0077D8",
+                          }}>
+                            {invoiceCase?.status || "심사대기"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 당사 담당자 */}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "10px 0",
+                        gap: "16px",
+                        borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                      }}>
+                        <div style={{
+                          width: "120px",
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "15px",
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}>
+                          당사 담당자
+                        </div>
+                        <div style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 500,
+                          fontSize: "15px",
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.7)",
+                        }}>
+                          {getUserName(invoiceCase?.assignedTo)}
+                        </div>
+                      </div>
+
+                      {/* 협력사 */}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "10px 0",
+                        gap: "16px",
+                        borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                      }}>
+                        <div style={{
+                          width: "120px",
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "15px",
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}>
+                          협력사
+                        </div>
+                        <div style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 500,
+                          fontSize: "15px",
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.7)",
+                        }}>
+                          {invoiceCase?.assignedPartner || "-"}
+                        </div>
+                      </div>
+
+                      {/* 경과일수 */}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "10px 0",
+                        gap: "16px",
+                        borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                      }}>
+                        <div style={{
+                          width: "120px",
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "15px",
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}>
+                          경과일수
+                        </div>
+                        <div style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 500,
+                          fontSize: "15px",
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.7)",
+                        }}>
+                          {calculateDays(invoiceCase?.createdAt)}
+                        </div>
+                      </div>
+
+                      {/* 견적금액 */}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "10px 0",
+                        gap: "16px",
+                        borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                      }}>
+                        <div style={{
+                          width: "120px",
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "15px",
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}>
+                          견적금액
+                        </div>
+                        <div style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 500,
+                          fontSize: "15px",
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.7)",
+                        }}>
+                          {invoiceCase?.estimateAmount ? `${parseInt(invoiceCase.estimateAmount).toLocaleString()}원` : "-"}
+                        </div>
+                      </div>
+
+                      {/* 승인금액 */}
+                      <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "10px 0",
+                        gap: "16px",
+                      }}>
+                        <div style={{
+                          width: "120px",
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "15px",
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}>
+                          승인금액
+                        </div>
+                        <div style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 500,
+                          fontSize: "15px",
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.7)",
+                        }}>
+                          {invoiceCase?.approvedAmount ? `${parseInt(invoiceCase.approvedAmount).toLocaleString()}원` : "-"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {invoiceActiveTab === "일자" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <h3 style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 700,
+                        fontSize: "18px",
+                        color: "#292929",
+                        padding: "9px 0",
+                        margin: 0,
+                      }}>
+                        일자 정보
+                      </h3>
+                      <div style={{ padding: "10px 0", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>
+                        <span style={{ width: "120px", display: "inline-block", fontFamily: "Pretendard", fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>접수일</span>
+                        <span style={{ fontFamily: "Pretendard", fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>{invoiceCase?.receptionDate || "-"}</span>
+                      </div>
+                      <div style={{ padding: "10px 0", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>
+                        <span style={{ width: "120px", display: "inline-block", fontFamily: "Pretendard", fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>사고일자</span>
+                        <span style={{ fontFamily: "Pretendard", fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>{invoiceCase?.accidentDate || "-"}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {invoiceActiveTab === "진행상황" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <h3 style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 700,
+                        fontSize: "18px",
+                        color: "#292929",
+                        padding: "9px 0",
+                        margin: 0,
+                      }}>
+                        진행상황
+                      </h3>
+                      <div style={{ padding: "10px 0" }}>
+                        <span style={{ fontFamily: "Pretendard", fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                          {invoiceCase?.latestProgress?.content || "진행상황이 없습니다."}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {invoiceActiveTab === "특이사항" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      <h3 style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 700,
+                        fontSize: "18px",
+                        color: "#292929",
+                        padding: "9px 0",
+                        margin: 0,
+                      }}>
+                        특이사항
+                      </h3>
+                      <div style={{ padding: "10px 0" }}>
+                        <span style={{ fontFamily: "Pretendard", fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                          {invoiceCase?.specialNotes || "특이사항이 없습니다."}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 구분선 */}
+                <div style={{ width: "100%", height: "12px", background: "rgba(12, 12, 12, 0.06)" }} />
+
+                {/* 증권/보장 섹션 */}
+                <div style={{ padding: "20px" }}>
+                  <h3 style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 700,
+                    fontSize: "18px",
+                    letterSpacing: "-0.02em",
+                    color: "#292929",
+                    padding: "9px 0",
+                    margin: 0,
+                  }}>
+                    증권/보장
+                  </h3>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
+                    <div style={{ padding: "10px 0", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>
+                      <span style={{ width: "120px", display: "inline-block", fontFamily: "Pretendard", fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>보험종목</span>
+                      <span style={{ fontFamily: "Pretendard", fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>{invoiceCase?.insuranceType || "-"}</span>
+                    </div>
+                    <div style={{ padding: "10px 0", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>
+                      <span style={{ width: "120px", display: "inline-block", fontFamily: "Pretendard", fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>증권번호</span>
+                      <span style={{ fontFamily: "Pretendard", fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>{invoiceCase?.policyNumber || "-"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 하단 버튼 */}
+                <div style={{ 
+                  padding: "20px", 
+                  borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "12px",
+                }}>
                   <Button
                     variant="outline"
                     onClick={() => setShowInvoiceDialog(false)}
                     data-testid="button-invoice-cancel"
                   >
-                    취소
+                    닫기
                   </Button>
                   <Button
                     onClick={async () => {
                       try {
-                        // 인보이스 발송 API 호출
                         await apiRequest("POST", "/api/invoice/send", {
                           caseId: invoiceCaseId,
                           relatedCaseIds: relatedCases.map(c => c.id),
                         });
                         toast({
-                          title: "발송 완료",
-                          description: "인보이스가 심사자에게 발송되었습니다.",
+                          title: "청구 완료",
+                          description: "인보이스가 발송되었습니다.",
                         });
                         setShowInvoiceDialog(false);
                         queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
                       } catch (error: any) {
                         toast({
-                          title: "발송 실패",
-                          description: error?.message || "인보이스 발송 중 오류가 발생했습니다.",
+                          title: "청구 실패",
+                          description: error?.message || "청구 중 오류가 발생했습니다.",
                           variant: "destructive",
                         });
                       }
@@ -2941,14 +2963,14 @@ export default function ComprehensiveProgress() {
                     style={{ background: "#008FED" }}
                     data-testid="button-invoice-send"
                   >
-                    수정완료
+                    청구하기
                   </Button>
                 </div>
-              </div>
+              </>
             );
           })()}
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* SMS 알림 발송 다이얼로그 */}
       {smsCaseData && (
