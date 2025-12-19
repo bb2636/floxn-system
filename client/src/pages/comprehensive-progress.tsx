@@ -122,7 +122,7 @@ export default function ComprehensiveProgress() {
   
   // SMS 알림 다이얼로그 상태
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
-  const [smsStage, setSmsStage] = useState<"복구요청" | "직접복구" | "미복구" | "청구자료제출" | "청구" | "결정금액/수수료" | "접수취소">("복구요청");
+  const [smsStage, setSmsStage] = useState<"복구요청" | "직접복구" | "미복구" | "청구자료제출" | "청구" | "결정금액/수수료" | "접수취소" | "입금완료" | "일부입금" | "정산완료" | "선견적요청">("복구요청");
   const [smsCaseData, setSmsCaseData] = useState<CaseWithLatestProgress | null>(null);
 
   // 케이스 번호에서 prefix 추출 (예: "251203001-2" -> "251203001")
@@ -336,15 +336,16 @@ export default function ComprehensiveProgress() {
         });
         
         // 특정 상태 변경 시 SMS 알림 다이얼로그 표시
-        const smsRequiredStages: Record<string, "복구요청" | "직접복구" | "미복구" | "청구자료제출" | "청구" | "결정금액/수수료" | "접수취소"> = {
+        const smsRequiredStages: Record<string, "복구요청" | "직접복구" | "미복구" | "청구자료제출" | "청구" | "결정금액/수수료" | "접수취소" | "입금완료" | "일부입금" | "정산완료" | "선견적요청"> = {
           "복구요청(2차승인)": "복구요청",
           "직접복구": "직접복구",
+          "선견적요청": "선견적요청",
           "(직접복구인 경우) 청구자료제출": "청구자료제출",
           "(선견적요청인 경우) 출동비 청구": "청구자료제출",
           "청구": "청구",
-          "입금완료": "결정금액/수수료",
-          "일부입금": "결정금액/수수료",
-          "정산완료": "결정금액/수수료",
+          "입금완료": "입금완료",
+          "일부입금": "일부입금",
+          "정산완료": "정산완료",
           "접수취소": "접수취소",
         };
         

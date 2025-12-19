@@ -28,7 +28,11 @@ type NotificationStage =
   | "청구자료제출"
   | "청구"
   | "결정금액/수수료"
-  | "접수취소";
+  | "접수취소"
+  | "입금완료"
+  | "일부입금"
+  | "정산완료"
+  | "선견적요청";
 
 interface RecipientConfig {
   partner: boolean;
@@ -48,6 +52,10 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   "청구": { partner: false, manager: false, assessorInvestigator: true },
   "결정금액/수수료": { partner: true, manager: false, assessorInvestigator: false },
   "접수취소": { partner: false, manager: false, assessorInvestigator: true },
+  "입금완료": { partner: true, manager: false, assessorInvestigator: false },
+  "일부입금": { partner: true, manager: false, assessorInvestigator: false },
+  "정산완료": { partner: true, manager: false, assessorInvestigator: false },
+  "선견적요청": { partner: true, manager: true, assessorInvestigator: false },
 };
 
 interface SmsNotificationDialogProps {
