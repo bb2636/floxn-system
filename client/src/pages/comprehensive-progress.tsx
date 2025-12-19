@@ -184,12 +184,27 @@ export default function ComprehensiveProgress() {
       const jsPDF = (await import("jspdf")).default;
       const html2canvas = (await import("html2canvas")).default;
 
+      // PDF 생성 전: input 숨기고 span 표시
+      const pdfContainer = invoicePdfRef.current;
+      const inputFields = pdfContainer.querySelectorAll('.invoice-input-field');
+      const spanFields = pdfContainer.querySelectorAll('.invoice-span-field');
+      const wonLabels = pdfContainer.querySelectorAll('.invoice-input-field + span');
+      
+      inputFields.forEach(el => (el as HTMLElement).style.display = 'none');
+      wonLabels.forEach(el => (el as HTMLElement).style.display = 'none');
+      spanFields.forEach(el => (el as HTMLElement).style.display = 'inline');
+
       const canvas = await html2canvas(invoicePdfRef.current, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         backgroundColor: "#FFFFFF",
       });
+
+      // PDF 생성 후: input 복원, span 숨김
+      inputFields.forEach(el => (el as HTMLElement).style.display = '');
+      wonLabels.forEach(el => (el as HTMLElement).style.display = '');
+      spanFields.forEach(el => (el as HTMLElement).style.display = 'none');
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -2600,116 +2615,6 @@ export default function ComprehensiveProgress() {
                   }} />
                 </div>
 
-                {/* 금액 입력 섹션 - PDF 캡처 영역 외부 */}
-                <div style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  gap: "16px",
-                  padding: "0px 38px",
-                  width: "100%",
-                }}>
-                  <div style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}>
-                    <label style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 500,
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}>
-                      손해방지비용
-                    </label>
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRadius: "8px",
-                      padding: "12px 16px",
-                    }}>
-                      <input
-                        type="text"
-                        value={invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : ""}
-                        onChange={(e) => setInvoiceDamagePreventionAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                        placeholder="금액 입력"
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontWeight: 500,
-                          fontSize: "15px",
-                          color: "rgba(12, 12, 12, 0.9)",
-                          background: "transparent",
-                          border: "none",
-                          outline: "none",
-                          flex: 1,
-                          textAlign: "right",
-                        }}
-                        data-testid="input-damage-prevention-amount"
-                      />
-                      <span style={{
-                        fontFamily: "Pretendard",
-                        fontWeight: 500,
-                        fontSize: "15px",
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}>
-                        원
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}>
-                    <label style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 500,
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}>
-                      현장출동비용
-                    </label>
-                    <div style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRadius: "8px",
-                      padding: "12px 16px",
-                    }}>
-                      <input
-                        type="text"
-                        value={invoiceFieldDispatchAmount ? Number(invoiceFieldDispatchAmount).toLocaleString() : ""}
-                        onChange={(e) => setInvoiceFieldDispatchAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                        placeholder="금액 입력"
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontWeight: 500,
-                          fontSize: "15px",
-                          color: "rgba(12, 12, 12, 0.9)",
-                          background: "transparent",
-                          border: "none",
-                          outline: "none",
-                          flex: 1,
-                          textAlign: "right",
-                        }}
-                        data-testid="input-field-dispatch-amount"
-                      />
-                      <span style={{
-                        fontFamily: "Pretendard",
-                        fontWeight: 500,
-                        fontSize: "15px",
-                        color: "rgba(12, 12, 12, 0.7)",
-                      }}>
-                        원
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
                 {/* 메인 콘텐츠 - PDF 캡처 영역 */}
                 <div 
                   ref={invoicePdfRef}
@@ -2958,20 +2863,50 @@ export default function ComprehensiveProgress() {
                       }}>
                         손해방지비용
                       </span>
-                      <span 
-                        style={{
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <input
+                          type="text"
+                          value={invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : ""}
+                          onChange={(e) => setInvoiceDamagePreventionAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                          placeholder="0"
+                          className="invoice-input-field"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 500,
+                            fontSize: "15px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.01em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                            background: "transparent",
+                            border: "none",
+                            outline: "none",
+                            textAlign: "right",
+                            width: "120px",
+                          }}
+                          data-testid="input-damage-prevention-amount"
+                        />
+                        <span style={{
                           fontFamily: "Pretendard",
                           fontWeight: 500,
                           fontSize: "15px",
-                          lineHeight: "128%",
-                          letterSpacing: "-0.01em",
                           color: "rgba(12, 12, 12, 0.9)",
-                          textAlign: "right",
-                        }}
-                        data-testid="text-damage-prevention-amount"
-                      >
-                        {invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : "0"}원
-                      </span>
+                        }}>원</span>
+                        <span 
+                          className="invoice-span-field"
+                          style={{
+                            display: "none",
+                            fontFamily: "Pretendard",
+                            fontWeight: 500,
+                            fontSize: "15px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.01em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                          data-testid="text-damage-prevention-amount"
+                        >
+                          {invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : "0"}원
+                        </span>
+                      </div>
                     </div>
 
                     {/* 현장출동비용 */}
@@ -2993,20 +2928,50 @@ export default function ComprehensiveProgress() {
                       }}>
                         현장출동비용
                       </span>
-                      <span 
-                        style={{
+                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                        <input
+                          type="text"
+                          value={invoiceFieldDispatchAmount ? Number(invoiceFieldDispatchAmount).toLocaleString() : ""}
+                          onChange={(e) => setInvoiceFieldDispatchAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                          placeholder="0"
+                          className="invoice-input-field"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 500,
+                            fontSize: "15px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.01em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                            background: "transparent",
+                            border: "none",
+                            outline: "none",
+                            textAlign: "right",
+                            width: "120px",
+                          }}
+                          data-testid="input-field-dispatch-amount"
+                        />
+                        <span style={{
                           fontFamily: "Pretendard",
                           fontWeight: 500,
                           fontSize: "15px",
-                          lineHeight: "128%",
-                          letterSpacing: "-0.01em",
                           color: "rgba(12, 12, 12, 0.9)",
-                          textAlign: "right",
-                        }}
-                        data-testid="text-field-dispatch-amount"
-                      >
-                        {invoiceFieldDispatchAmount ? Number(invoiceFieldDispatchAmount).toLocaleString() : "0"}원
-                      </span>
+                        }}>원</span>
+                        <span 
+                          className="invoice-span-field"
+                          style={{
+                            display: "none",
+                            fontFamily: "Pretendard",
+                            fontWeight: 500,
+                            fontSize: "15px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.01em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                          data-testid="text-field-dispatch-amount"
+                        >
+                          {invoiceFieldDispatchAmount ? Number(invoiceFieldDispatchAmount).toLocaleString() : "0"}원
+                        </span>
+                      </div>
                     </div>
 
                     {/* TOTAL AMOUNT */}
