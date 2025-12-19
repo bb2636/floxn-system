@@ -63,7 +63,7 @@ export default function FieldDocuments() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("전체");
-  const [photoSubFilter, setPhotoSubFilter] = useState<"수임" | "미결">("수임");
+  const [photoSubFilter, setPhotoSubFilter] = useState<"전체" | "현장출동사진">("전체");
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false);
@@ -660,43 +660,43 @@ export default function FieldDocuments() {
           >
             <button
               type="button"
-              onClick={() => setPhotoSubFilter("수임")}
+              onClick={() => setPhotoSubFilter("전체")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: photoSubFilter === "수임" ? "#FDFDFD" : "transparent",
-                boxShadow: photoSubFilter === "수임" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background: photoSubFilter === "전체" ? "#FDFDFD" : "transparent",
+                boxShadow: photoSubFilter === "전체" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
-                fontWeight: photoSubFilter === "수임" ? 500 : 400,
+                fontWeight: photoSubFilter === "전체" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: photoSubFilter === "수임" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color: photoSubFilter === "전체" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
-              data-testid="button-filter-suim"
+              data-testid="button-filter-all"
             >
-              수임
+              전체
             </button>
             <button
               type="button"
-              onClick={() => setPhotoSubFilter("미결")}
+              onClick={() => setPhotoSubFilter("현장출동사진")}
               className="flex items-center justify-center px-1.5 py-1"
               style={{
-                background: photoSubFilter === "미결" ? "#FDFDFD" : "transparent",
-                boxShadow: photoSubFilter === "미결" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                background: photoSubFilter === "현장출동사진" ? "#FDFDFD" : "transparent",
+                boxShadow: photoSubFilter === "현장출동사진" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
                 borderRadius: "4px",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
-                fontWeight: photoSubFilter === "미결" ? 500 : 400,
+                fontWeight: photoSubFilter === "현장출동사진" ? 500 : 400,
                 letterSpacing: "-0.01em",
-                color: photoSubFilter === "미결" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                color: photoSubFilter === "현장출동사진" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
                 border: "none",
                 cursor: "pointer",
               }}
-              data-testid="button-filter-migyeol"
+              data-testid="button-filter-field-photo"
             >
-              미결
+              현장출동사진
             </button>
           </div>
         </div>
