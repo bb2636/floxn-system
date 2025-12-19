@@ -46,3 +46,6 @@ integrations = ["javascript_mem_db:1.0.0", "javascript_database:1.0.0", "javascr
 
 [userenv.production]
 PROD_DATABASE_URL = "postgresql://neondb_owner:npg_WU8V9haFopnC@ep-icy-hall-adlh0xcy-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-3a197262-446f-4f16-bd21-669a78015258"
