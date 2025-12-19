@@ -5,7 +5,7 @@ interface BubbleEmailPayload {
   sender: string;
   title: string;
   to: string;
-  code: string;
+  content: string;
 }
 
 interface BubbleResponse {
@@ -47,7 +47,7 @@ export async function sendVerificationEmail(email: string, code: string): Promis
       sender: 'FLOXN',
       title: 'FLOXN 이메일 인증',
       to: email,
-      code: code,
+      content: code,
     });
     console.log(`[Email] Verification email sent to ${email}`);
     return true;
@@ -63,7 +63,7 @@ export async function sendPasswordResetEmail(email: string, code: string): Promi
       sender: 'FLOXN',
       title: 'FLOXN 비밀번호 재설정',
       to: email,
-      code: code,
+      content: code,
     });
     console.log(`[Email] Password reset email sent to ${email}`);
     return true;
@@ -76,14 +76,14 @@ export async function sendPasswordResetEmail(email: string, code: string): Promi
 export async function sendNotificationEmail(
   email: string, 
   title: string, 
-  content: string
+  emailContent: string
 ): Promise<boolean> {
   try {
     await callBubbleWF({
       sender: 'FLOXN',
       title: title,
       to: email,
-      code: content,
+      content: emailContent,
     });
     console.log(`[Email] Notification email sent to ${email}: ${title}`);
     return true;
@@ -161,7 +161,7 @@ export async function sendCaseNotificationEmail(
       sender: 'FLOXN',
       title: `[FLOXN] ${stage} 알림`,
       to: email,
-      code: content,
+      content: content,
     });
     console.log(`[Email] Case notification (${stage}) sent to ${email}`);
     return true;
