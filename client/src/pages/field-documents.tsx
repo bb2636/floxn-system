@@ -63,9 +63,10 @@ export default function FieldDocuments() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("전체");
-  const [photoSubFilter, setPhotoSubFilter] = useState<"전체" | "현장출동사진">("전체");
+  const [photoSubFilter, setPhotoSubFilter] = useState<"전체" | "현장출동사진" | "수리중 사진" | "복구완료 사진">("전체");
   const [basicDataSubFilter, setBasicDataSubFilter] = useState<"전체" | "보험금 청구서" | "개인정보 동의서(가족용)">("전체");
   const [evidenceSubFilter, setEvidenceSubFilter] = useState<"전체" | "주민등록등본" | "등기부등본" | "건축물대장" | "기타증빙자료(민원일지 등)">("전체");
+  const [claimDataSubFilter, setClaimDataSubFilter] = useState<"전체" | "위임장" | "도급계약서" | "복구완료확인서" | "부가세 청구자료">("전체");
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false);
@@ -658,8 +659,8 @@ export default function FieldDocuments() {
         })}
       </div>
 
-      {/* 사진 탭 서브 필터 (청구 전에만 표시) */}
-      {selectedCategory === "사진" && !isSubmitted && (
+      {/* 사진 탭 서브 필터 */}
+      {selectedCategory === "사진" && (
         <div className="mb-6">
           <div
             className="inline-flex items-center p-1 gap-1.5"
@@ -709,12 +710,57 @@ export default function FieldDocuments() {
             >
               현장출동사진
             </button>
+            {/* 청구 후에만 표시되는 추가 필터 */}
+            {isSubmitted && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setPhotoSubFilter("수리중 사진")}
+                  className="flex items-center justify-center px-1.5 py-1"
+                  style={{
+                    background: photoSubFilter === "수리중 사진" ? "#FDFDFD" : "transparent",
+                    boxShadow: photoSubFilter === "수리중 사진" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                    borderRadius: "4px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: photoSubFilter === "수리중 사진" ? 500 : 400,
+                    letterSpacing: "-0.01em",
+                    color: photoSubFilter === "수리중 사진" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                  data-testid="button-filter-repair-photo"
+                >
+                  수리중 사진
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPhotoSubFilter("복구완료 사진")}
+                  className="flex items-center justify-center px-1.5 py-1"
+                  style={{
+                    background: photoSubFilter === "복구완료 사진" ? "#FDFDFD" : "transparent",
+                    boxShadow: photoSubFilter === "복구완료 사진" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                    borderRadius: "4px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: photoSubFilter === "복구완료 사진" ? 500 : 400,
+                    letterSpacing: "-0.01em",
+                    color: photoSubFilter === "복구완료 사진" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
+                  data-testid="button-filter-complete-photo"
+                >
+                  복구완료 사진
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
 
-      {/* 기본자료 탭 서브 필터 (청구 전에만 표시) */}
-      {selectedCategory === "기본자료" && !isSubmitted && (
+      {/* 기본자료 탭 서브 필터 */}
+      {selectedCategory === "기본자료" && (
         <div className="mb-6">
           <div
             className="inline-flex items-center p-1 gap-1.5"
@@ -788,8 +834,8 @@ export default function FieldDocuments() {
         </div>
       )}
 
-      {/* 증빙자료 탭 서브 필터 (청구 전에만 표시) */}
-      {selectedCategory === "증빙자료" && !isSubmitted && (
+      {/* 증빙자료 탭 서브 필터 */}
+      {selectedCategory === "증빙자료" && (
         <div className="mb-6">
           <div
             className="inline-flex items-center p-1 gap-1.5"
@@ -898,6 +944,121 @@ export default function FieldDocuments() {
               data-testid="button-evidence-filter-other"
             >
               기타증빙자료(민원일지 등)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 청구자료 탭 서브 필터 (청구 후에만 표시) */}
+      {selectedCategory === "청구자료" && isSubmitted && (
+        <div className="mb-6">
+          <div
+            className="inline-flex items-center p-1 gap-1.5"
+            style={{
+              background: "#E0E2F3",
+              borderRadius: "6px",
+            }}
+            data-testid="claim-data-sub-filter"
+          >
+            <button
+              type="button"
+              onClick={() => setClaimDataSubFilter("전체")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: claimDataSubFilter === "전체" ? "#FDFDFD" : "transparent",
+                boxShadow: claimDataSubFilter === "전체" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: claimDataSubFilter === "전체" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: claimDataSubFilter === "전체" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-claim-filter-all"
+            >
+              전체
+            </button>
+            <button
+              type="button"
+              onClick={() => setClaimDataSubFilter("위임장")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: claimDataSubFilter === "위임장" ? "#FDFDFD" : "transparent",
+                boxShadow: claimDataSubFilter === "위임장" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: claimDataSubFilter === "위임장" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: claimDataSubFilter === "위임장" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-claim-filter-delegation"
+            >
+              위임장
+            </button>
+            <button
+              type="button"
+              onClick={() => setClaimDataSubFilter("도급계약서")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: claimDataSubFilter === "도급계약서" ? "#FDFDFD" : "transparent",
+                boxShadow: claimDataSubFilter === "도급계약서" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: claimDataSubFilter === "도급계약서" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: claimDataSubFilter === "도급계약서" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-claim-filter-contract"
+            >
+              도급계약서
+            </button>
+            <button
+              type="button"
+              onClick={() => setClaimDataSubFilter("복구완료확인서")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: claimDataSubFilter === "복구완료확인서" ? "#FDFDFD" : "transparent",
+                boxShadow: claimDataSubFilter === "복구완료확인서" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: claimDataSubFilter === "복구완료확인서" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: claimDataSubFilter === "복구완료확인서" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-claim-filter-completion"
+            >
+              복구완료확인서
+            </button>
+            <button
+              type="button"
+              onClick={() => setClaimDataSubFilter("부가세 청구자료")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: claimDataSubFilter === "부가세 청구자료" ? "#FDFDFD" : "transparent",
+                boxShadow: claimDataSubFilter === "부가세 청구자료" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: claimDataSubFilter === "부가세 청구자료" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: claimDataSubFilter === "부가세 청구자료" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-claim-filter-vat"
+            >
+              부가세 청구자료
             </button>
           </div>
         </div>
