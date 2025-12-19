@@ -447,21 +447,48 @@ export default function Dashboard() {
     setIsSendingEmail(true);
 
     try {
-      const html2pdf = (await import("@/lib/html2pdf")).default;
       const jsPDF = (await import("jspdf")).default;
+      const html2canvas = (await import("html2canvas")).default;
 
-      const pdfInstance = await html2pdf()
-        .set({
-          margin: 10,
-          filename: "floxen-home.pdf",
-          html2canvas: { scale: 2 },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        })
-        .from(pdfContentRef.current)
-        .toPdf()
-        .get('pdf');
+      const canvas = await html2canvas(pdfContentRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+      });
 
-      const pdfBase64 = pdfInstance.output('datauristring').split(',')[1];
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      
+      const imgWidth = pageWidth - (margin * 2);
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const usablePageHeight = pageHeight - (margin * 2);
+      
+      let heightLeft = imgHeight;
+      let position = margin;
+      let pageNumber = 0;
+
+      while (heightLeft > 0) {
+        if (pageNumber > 0) {
+          pdf.addPage();
+        }
+        
+        pdf.addImage(
+          imgData, 
+          'PNG', 
+          margin, 
+          position - (pageNumber * usablePageHeight), 
+          imgWidth, 
+          imgHeight
+        );
+        
+        heightLeft -= usablePageHeight;
+        pageNumber++;
+      }
+
+      const pdfBase64 = pdf.output('datauristring').split(',')[1];
 
       const response = await fetch('/api/send-dashboard-pdf-email', {
         method: 'POST',
