@@ -9,6 +9,8 @@ import { sql, inArray } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import https from "https";
 import crypto from "crypto";
+import { registerObjectStorageRoutes, objectStorageClient } from "./replit_integrations/object_storage";
+import { sendNotificationEmail } from "./email";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
@@ -58,6 +60,9 @@ function solapiHttpsRequest({ method, path, headers, body }: {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register Object Storage routes
+  registerObjectStorageRoutes(app);
+
   // Login endpoint
   app.post("/api/login", async (req, res) => {
     try {
@@ -4036,7 +4041,7 @@ FLOXN 드림`,
     }
   });
 
-  // Send dashboard PDF email endpoint (SMTP/Nodemailer) - Admin only
+  // Send dashboard PDF email endpoint (Bubble.io + Object Storage) - Admin only
   app.post("/api/send-dashboard-pdf-email", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
@@ -4055,62 +4060,57 @@ FLOXN 드림`,
         return res.status(400).json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
       }
 
-      // Check SMTP environment variables
-      const SMTP_HOST = process.env.SMTP_HOST;
-      const SMTP_PORT = process.env.SMTP_PORT;
-      const SMTP_USER = process.env.SMTP_USER;
-      const SMTP_PASS = process.env.SMTP_PASS;
-
-      if (!SMTP_HOST || !SMTP_PORT || !SMTP_USER || !SMTP_PASS) {
-        console.error("[send-dashboard-pdf-email] Missing SMTP configuration");
-        return res.status(500).json({ error: "SMTP 설정이 필요합니다 (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS)" });
-      }
-
-      const fileName = `FLOXN_대시보드현황_${new Date().toISOString().split('T')[0]}.pdf`;
       const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timestamp = Date.now();
+      const fileName = `dashboard_${timestamp}.pdf`;
       
       // Convert base64 to buffer
       const pdfBuffer = Buffer.from(pdfBase64, 'base64');
 
-      // Create Nodemailer transporter
-      const transporter = nodemailer.createTransport({
-        host: SMTP_HOST,
-        port: parseInt(SMTP_PORT, 10),
-        secure: parseInt(SMTP_PORT, 10) === 465,
-        auth: {
-          user: SMTP_USER,
-          pass: SMTP_PASS,
+      // Upload PDF to Object Storage
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+      if (!bucketId) {
+        console.error("[send-dashboard-pdf-email] Missing Object Storage bucket ID");
+        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+      }
+
+      const bucket = objectStorageClient.bucket(bucketId);
+      const objectName = `public/dashboard-pdfs/${fileName}`;
+      const file = bucket.file(objectName);
+
+      // Upload the PDF
+      await file.save(pdfBuffer, {
+        contentType: 'application/pdf',
+        metadata: {
+          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
         },
       });
 
-      // Send email with PDF attachment
-      const mailOptions = {
-        from: `FLOXN <${SMTP_USER}>`,
-        to: email,
-        subject: title || `FLOXN 대시보드 현황 - ${dateStr}`,
-        text: `안녕하세요,
+      // Generate public URL
+      const appDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      const protocol = appDomain.includes('localhost') ? 'http' : 'https';
+      const pdfUrl = `${protocol}://${appDomain}/objects/public/dashboard-pdfs/${fileName}`;
 
-FLOXN 대시보드 현황을 첨부하여 보내드립니다.
+      console.log(`[PDF Upload] Dashboard PDF uploaded to: ${pdfUrl}`);
+
+      // Send email via Bubble.io API with PDF link
+      const emailContent = `안녕하세요,
+
+FLOXN 대시보드 현황을 보내드립니다.
 
 - 발송일: ${dateStr}
 - 발송자: ${user.name || user.username}
 
-첨부된 PDF 파일을 확인해 주시기 바랍니다.
+아래 링크를 클릭하시면 PDF를 다운로드하실 수 있습니다:
+${pdfUrl}
 
 감사합니다.
-FLOXN 드림`,
-        attachments: [
-          {
-            filename: fileName,
-            content: pdfBuffer,
-            contentType: 'application/pdf',
-          }
-        ],
-      };
+FLOXN 드림`;
 
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`[Email] Dashboard PDF sent successfully to ${email} by ${user.username}, messageId: ${info.messageId}`);
-      res.json({ success: true, message: "이메일이 전송되었습니다" });
+      await sendNotificationEmail(email, title || `FLOXN 대시보드 현황 - ${dateStr}`, emailContent);
+
+      console.log(`[Email] Dashboard PDF link sent successfully to ${email} by ${user.username}`);
+      res.json({ success: true, message: "이메일이 전송되었습니다", pdfUrl });
     } catch (error) {
       console.error("Send dashboard PDF email error:", error);
       res.status(500).json({ error: "이메일 전송 중 오류가 발생했습니다" });
