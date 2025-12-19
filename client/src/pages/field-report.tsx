@@ -1212,6 +1212,139 @@ export default function FieldReport() {
                   // 원래 탭으로 복원
                   setActiveTab(originalTab);
                   
+                  // ===== 3. 증빙자료 다운로드 링크 페이지 추가 =====
+                  if (selectedCaseId) {
+                    try {
+                      // 증빙자료 서명 URL 생성 API 호출
+                      const docUrlsResponse = await fetch('/api/generate-document-urls', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ caseId: selectedCaseId }),
+                      });
+                      
+                      if (docUrlsResponse.ok) {
+                        const { documentLinks } = await docUrlsResponse.json();
+                        
+                        if (documentLinks && documentLinks.length > 0) {
+                          // 카테고리별로 그룹화
+                          const categoryGroups: Record<string, Array<{ fileName: string; url: string }>> = {};
+                          const categoryOrder = [
+                            "현장출동사진", "수리중 사진", "복구완료 사진",
+                            "보험금 청구서", "개인정보 동의서(가족용)",
+                            "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+                            "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
+                          ];
+                          
+                          for (const doc of documentLinks) {
+                            if (!categoryGroups[doc.category]) {
+                              categoryGroups[doc.category] = [];
+                            }
+                            categoryGroups[doc.category].push({ fileName: doc.fileName, url: doc.url });
+                          }
+                          
+                          // 새 페이지 추가
+                          pdf.addPage();
+                          
+                          // 페이지 헤더
+                          pdf.setFillColor(37, 99, 235); // #2563eb
+                          pdf.rect(0, 0, pageWidth, 12, 'F');
+                          pdf.setTextColor(255, 255, 255);
+                          pdf.setFontSize(12);
+                          pdf.text(`Chapter ${chapterNum}. 증빙자료 다운로드`, margin, 8);
+                          
+                          // 본문
+                          pdf.setTextColor(0, 0, 0);
+                          let yPos = 22;
+                          
+                          pdf.setFontSize(10);
+                          pdf.setTextColor(100, 100, 100);
+                          pdf.text('아래 링크를 클릭하시면 증빙자료를 다운로드 하실 수 있습니다. (유효기간: 7일)', margin, yPos);
+                          yPos += 10;
+                          
+                          pdf.setTextColor(0, 0, 0);
+                          
+                          // 카테고리별로 링크 추가
+                          for (const category of categoryOrder) {
+                            if (categoryGroups[category] && categoryGroups[category].length > 0) {
+                              // 페이지 넘김 체크
+                              if (yPos > pageHeight - 30) {
+                                pdf.addPage();
+                                yPos = 15;
+                              }
+                              
+                              // 카테고리 제목
+                              pdf.setFontSize(11);
+                              pdf.setFont('helvetica', 'bold');
+                              pdf.text(`[${category}]`, margin, yPos);
+                              yPos += 6;
+                              
+                              pdf.setFontSize(9);
+                              pdf.setFont('helvetica', 'normal');
+                              
+                              for (const doc of categoryGroups[category]) {
+                                // 페이지 넘김 체크
+                                if (yPos > pageHeight - 20) {
+                                  pdf.addPage();
+                                  yPos = 15;
+                                }
+                                
+                                // 파일명
+                                pdf.setTextColor(0, 0, 0);
+                                pdf.text(`• ${doc.fileName}`, margin + 2, yPos);
+                                yPos += 4;
+                                
+                                // 링크 (클릭 가능)
+                                pdf.setTextColor(0, 102, 204);
+                                const linkText = doc.url.length > 80 ? doc.url.substring(0, 80) + '...' : doc.url;
+                                pdf.textWithLink(linkText, margin + 4, yPos, { url: doc.url });
+                                yPos += 6;
+                              }
+                              yPos += 4;
+                            }
+                          }
+                          
+                          // 카테고리 순서에 없는 항목 추가
+                          for (const category of Object.keys(categoryGroups)) {
+                            if (!categoryOrder.includes(category)) {
+                              if (yPos > pageHeight - 30) {
+                                pdf.addPage();
+                                yPos = 15;
+                              }
+                              
+                              pdf.setFontSize(11);
+                              pdf.setFont('helvetica', 'bold');
+                              pdf.setTextColor(0, 0, 0);
+                              pdf.text(`[${category}]`, margin, yPos);
+                              yPos += 6;
+                              
+                              pdf.setFontSize(9);
+                              pdf.setFont('helvetica', 'normal');
+                              
+                              for (const doc of categoryGroups[category]) {
+                                if (yPos > pageHeight - 20) {
+                                  pdf.addPage();
+                                  yPos = 15;
+                                }
+                                
+                                pdf.setTextColor(0, 0, 0);
+                                pdf.text(`• ${doc.fileName}`, margin + 2, yPos);
+                                yPos += 4;
+                                
+                                pdf.setTextColor(0, 102, 204);
+                                const linkText = doc.url.length > 80 ? doc.url.substring(0, 80) + '...' : doc.url;
+                                pdf.textWithLink(linkText, margin + 4, yPos, { url: doc.url });
+                                yPos += 6;
+                              }
+                              yPos += 4;
+                            }
+                          }
+                        }
+                      }
+                    } catch (docUrlError) {
+                      console.error('증빙자료 URL 생성 오류:', docUrlError);
+                    }
+                  }
+                  
                   // PDF를 Base64로 변환
                   const pdfBase64 = pdf.output('datauristring').split(',')[1];
                   

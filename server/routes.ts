@@ -4143,6 +4143,115 @@ FLOXN 드림`;
   });
 
   // ==========================================
+  // POST /api/generate-document-urls - 증빙자료 서명 URL 생성 (PDF용)
+  // ==========================================
+  app.post("/api/generate-document-urls", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(403).json({ error: "사용자 정보를 찾을 수 없습니다" });
+    }
+
+    // 역할 기반 접근 제어 - 협력사, 관리자, 심사사만 허용
+    const allowedRoles = ["협력사", "관리자", "심사사"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "증빙자료 URL 생성 권한이 없습니다" });
+    }
+
+    try {
+      const { caseId } = req.body;
+      if (!caseId) {
+        return res.status(400).json({ error: "caseId가 필요합니다" });
+      }
+
+      // 사건 존재 여부 및 접근 권한 확인
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "사건을 찾을 수 없습니다" });
+      }
+
+      // 관리자가 아닌 경우, 사건에 배정된 협력사인지 확인
+      if (user.role !== "관리자") {
+        const isAssignedPartner = user.role === "협력사" && caseData.assignedPartner === user.company;
+        const isAssignedAssessor = user.role === "심사사" && caseData.assessorId === user.id;
+        
+        if (!isAssignedPartner && !isAssignedAssessor) {
+          return res.status(403).json({ error: "해당 사건에 대한 접근 권한이 없습니다" });
+        }
+      }
+
+      const documents = await storage.getDocumentsByCaseId(caseId);
+      if (!documents || documents.length === 0) {
+        return res.json({ documentLinks: [] });
+      }
+
+      console.log(`[generate-document-urls] Found ${documents.length} documents for case ${caseId}`);
+
+      // Get private object directory
+      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+      if (!privateObjectDir) {
+        console.warn("[generate-document-urls] PRIVATE_OBJECT_DIR not set");
+        return res.json({ documentLinks: [] });
+      }
+
+      // Parse bucket name from private object dir
+      const privateDirParts = privateObjectDir.startsWith('/') 
+        ? privateObjectDir.slice(1).split('/') 
+        : privateObjectDir.split('/');
+      const privateBucketName = privateDirParts[0];
+      const privatePrefix = privateDirParts.slice(1).join('/');
+      const privateBucket = objectStorageClient.bucket(privateBucketName);
+
+      const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
+      const timestamp = Date.now();
+      const documentLinks: Array<{ category: string; fileName: string; url: string }> = [];
+
+      for (const doc of documents) {
+        try {
+          const fileBuffer = Buffer.from(doc.fileData, 'base64');
+          const sanitizedFileName = doc.fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
+          const docObjectName = `${privatePrefix}/case-documents/${caseId}/${timestamp}_${sanitizedFileName}`;
+          const docFile = privateBucket.file(docObjectName);
+
+          // Upload to private storage
+          await docFile.save(fileBuffer, {
+            contentType: doc.fileType,
+            metadata: {
+              'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'private' }),
+            },
+          });
+
+          // Generate signed URL
+          const docUrl = await signObjectURL({
+            bucketName: privateBucketName,
+            objectName: docObjectName,
+            method: 'GET',
+            ttlSec: SIGNED_URL_TTL_SEC,
+          });
+
+          documentLinks.push({
+            category: doc.category,
+            fileName: doc.fileName,
+            url: docUrl,
+          });
+
+          console.log(`[generate-document-urls] Generated signed URL for: ${doc.fileName}`);
+        } catch (docError) {
+          console.error(`[generate-document-urls] Failed for ${doc.fileName}:`, docError);
+        }
+      }
+
+      res.json({ documentLinks });
+    } catch (error) {
+      console.error("Generate document URLs error:", error);
+      res.status(500).json({ error: "증빙자료 URL 생성 중 오류가 발생했습니다" });
+    }
+  });
+
+  // ==========================================
   // POST /api/send-field-report-email - 현장조사 리포트 PDF 이메일 전송 (Bubble.io)
   // ==========================================
   const sendFieldReportEmailSchema = z.object({
@@ -4232,109 +4341,7 @@ FLOXN 드림`;
 
       console.log(`[PDF Upload] Field Report PDF uploaded to: ${pdfUrl}`);
 
-      // Fetch and upload case documents (증빙자료) if caseId is provided
-      let documentLinksSection = '';
-      if (caseId) {
-        try {
-          const documents = await storage.getDocumentsByCaseId(caseId);
-          if (documents && documents.length > 0) {
-            console.log(`[Email] Found ${documents.length} documents for case ${caseId}`);
-            
-            // Group documents by category
-            const categoryGroups: Record<string, Array<{ fileName: string; url: string }>> = {};
-            
-            // Category display order and groupings
-            const categoryOrder = [
-              "현장출동사진", "수리중 사진", "복구완료 사진",
-              "보험금 청구서", "개인정보 동의서(가족용)",
-              "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
-              "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
-            ];
-            
-            // Upload each document to private Object Storage and generate signed URLs (7일 유효)
-            const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days in seconds
-            
-            // Get private object directory from environment
-            const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
-            if (!privateObjectDir) {
-              console.warn("[Email] PRIVATE_OBJECT_DIR not set, skipping document links");
-            } else {
-              // Parse bucket name from private object dir (format: /bucket-name/.private)
-              const privateDirParts = privateObjectDir.startsWith('/') 
-                ? privateObjectDir.slice(1).split('/') 
-                : privateObjectDir.split('/');
-              const privateBucketName = privateDirParts[0];
-              const privatePrefix = privateDirParts.slice(1).join('/');
-              const privateBucket = objectStorageClient.bucket(privateBucketName);
-              
-              for (const doc of documents) {
-                try {
-                  // Decode base64 file data
-                  const fileBuffer = Buffer.from(doc.fileData, 'base64');
-                  const sanitizedFileName = doc.fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
-                  // Use private directory for secure storage
-                  const docObjectName = `${privatePrefix}/case-documents/${caseId}/${timestamp}_${sanitizedFileName}`;
-                  const docFile = privateBucket.file(docObjectName);
-                  
-                  // Upload document to private storage
-                  await docFile.save(fileBuffer, {
-                    contentType: doc.fileType,
-                    metadata: {
-                      'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'private' }),
-                    },
-                  });
-                  
-                  // Generate signed URL with expiration (7 days)
-                  const docUrl = await signObjectURL({
-                    bucketName: privateBucketName,
-                    objectName: docObjectName,
-                    method: 'GET',
-                    ttlSec: SIGNED_URL_TTL_SEC,
-                  });
-                  
-                  // Add to category group
-                  if (!categoryGroups[doc.category]) {
-                    categoryGroups[doc.category] = [];
-                  }
-                  categoryGroups[doc.category].push({ fileName: doc.fileName, url: docUrl });
-                  
-                  console.log(`[Email] Uploaded document with signed URL (7d expiry): ${doc.fileName}`);
-                } catch (docError) {
-                  console.error(`[Email] Failed to upload document ${doc.fileName}:`, docError);
-                }
-              }
-            }
-            
-            // Build document links section for email
-            if (Object.keys(categoryGroups).length > 0) {
-              documentLinksSection = '\n\n■ 증빙자료 다운로드 (링크 유효기간: 7일)\n';
-              
-              for (const category of categoryOrder) {
-                if (categoryGroups[category] && categoryGroups[category].length > 0) {
-                  documentLinksSection += `\n[${category}]\n`;
-                  for (const doc of categoryGroups[category]) {
-                    documentLinksSection += `- ${doc.fileName}\n  ${doc.url}\n`;
-                  }
-                }
-              }
-              
-              // Add any categories not in the predefined order
-              for (const category of Object.keys(categoryGroups)) {
-                if (!categoryOrder.includes(category)) {
-                  documentLinksSection += `\n[${category}]\n`;
-                  for (const doc of categoryGroups[category]) {
-                    documentLinksSection += `- ${doc.fileName}\n  ${doc.url}\n`;
-                  }
-                }
-              }
-            }
-          }
-        } catch (docFetchError) {
-          console.error(`[Email] Failed to fetch documents for case ${caseId}:`, docFetchError);
-        }
-      }
-
-      // Send email via Bubble.io API with PDF link
+      // Send email via Bubble.io API with PDF link only (증빙자료 링크는 PDF 내에 포함됨)
       const emailContent = `안녕하세요,
 
 현장조사 리포트를 전송해드립니다.
@@ -4356,7 +4363,9 @@ FLOXN 드림`;
 
 아래 링크를 클릭하시면 현장조사 리포트 PDF를 다운로드하실 수 있습니다:
 ${pdfUrl}
-${documentLinksSection}
+
+(증빙자료 다운로드 링크는 PDF 파일 내에 포함되어 있습니다)
+
 - 발송일: ${dateStr}
 - 발송자: ${user.name || user.username}
 
