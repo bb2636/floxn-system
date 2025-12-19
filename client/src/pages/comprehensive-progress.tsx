@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { User, CaseWithLatestProgress, type UserFavorite } from "@shared/schema";
@@ -127,6 +127,11 @@ export default function ComprehensiveProgress() {
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
   const [smsStage, setSmsStage] = useState<"복구요청" | "직접복구" | "미복구" | "청구자료제출" | "청구" | "결정금액/수수료" | "접수취소" | "입금완료" | "일부입금" | "정산완료" | "선견적요청">("복구요청");
   const [smsCaseData, setSmsCaseData] = useState<CaseWithLatestProgress | null>(null);
+  
+  // INVOICE PDF 발송 관련 상태
+  const invoicePdfRef = useRef<HTMLDivElement>(null);
+  const [isSendingInvoicePdf, setIsSendingInvoicePdf] = useState(false);
+  const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState<string>("");
 
   // 케이스 번호에서 prefix 추출 (예: "251203001-2" -> "251203001")
   const getCaseNumberPrefix = (caseNumber: string | null | undefined): string | null => {
@@ -151,6 +156,96 @@ export default function ComprehensiveProgress() {
     ];
     
     return claimStatuses.includes(caseItem.status || "");
+  };
+
+  // INVOICE PDF 발송 함수
+  const handleSendInvoicePdf = async (invoiceCase: CaseWithLatestProgress | undefined, totalAmount: number) => {
+    if (!invoicePdfRef.current) {
+      toast({
+        title: "PDF 생성 실패",
+        description: "변환할 인보이스 정보를 찾을 수 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!invoiceRecipientEmail) {
+      toast({
+        title: "이메일 주소 필요",
+        description: "수신자 이메일 주소를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingInvoicePdf(true);
+
+    try {
+      const jsPDF = (await import("jspdf")).default;
+      const html2canvas = (await import("html2canvas")).default;
+
+      const canvas = await html2canvas(invoicePdfRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#FFFFFF",
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 10;
+      
+      const imgWidth = pageWidth - (margin * 2);
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
+
+      const pdfBase64 = pdf.output('datauristring').split(',')[1];
+
+      const response = await fetch('/api/send-invoice-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: invoiceRecipientEmail,
+          pdfBase64,
+          caseNumber: invoiceCase?.caseNumber || '',
+          insuranceCompany: invoiceCase?.insuranceCompany || '',
+          accidentNo: invoiceCase?.insuranceAccidentNo || '',
+          damagePreventionAmount: parseInt(invoiceDamagePreventionAmount || "0") || 0,
+          fieldDispatchAmount: parseInt(invoiceFieldDispatchAmount || "0") || 0,
+          totalAmount,
+          remarks: invoiceRemarks,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "이메일 전송 완료",
+          description: `${invoiceRecipientEmail}으로 INVOICE PDF가 전송되었습니다.`,
+        });
+        setShowInvoiceDialog(false);
+        setInvoiceRecipientEmail("");
+        setInvoiceDamagePreventionAmount("");
+        setInvoiceFieldDispatchAmount("");
+        setInvoiceRemarks("");
+      } else {
+        throw new Error(result.error || "이메일 전송에 실패했습니다");
+      }
+    } catch (error) {
+      console.error("INVOICE PDF 이메일 전송 중 오류 발생", error);
+      toast({
+        title: "이메일 전송 실패",
+        description: error instanceof Error ? error.message : "다시 시도해주세요.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingInvoicePdf(false);
+    }
   };
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
