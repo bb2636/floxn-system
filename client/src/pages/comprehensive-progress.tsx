@@ -367,8 +367,11 @@ export default function ComprehensiveProgress() {
       // 진행 중인 refetch 취소
       await queryClient.cancelQueries({ queryKey: ["/api/cases"] });
       
-      // 이전 데이터 저장 (롤백용)
+      // 이전 데이터 저장 (롤백용 및 SMS 다이얼로그용)
       const previousCases = queryClient.getQueryData<CaseWithLatestProgress[]>(["/api/cases"]);
+      
+      // SMS 다이얼로그용 케이스 데이터 스냅샷 저장 (변경 전 상태)
+      const targetCase = previousCases?.find(c => c.id === caseId) || null;
       
       // 미복구는 출동비 청구로 정규화 (백엔드와 동일한 로직)
       const normalizedStatus = status === "미복구" ? "출동비 청구" : status;
@@ -383,9 +386,9 @@ export default function ComprehensiveProgress() {
         );
       });
       
-      return { previousCases };
+      return { previousCases, targetCase };
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data, variables, context) => {
       // 백엔드에서 반환된 실제 데이터로 업데이트
       // 서버에서 { success: true, case: updatedCase } 형태로 반환
       let updatedCaseData: CaseWithLatestProgress | null = null;
@@ -396,6 +399,11 @@ export default function ComprehensiveProgress() {
           if (!old) return old;
           return old.map(c => c.id === updatedCaseData!.id ? { ...c, ...updatedCaseData } : c);
         });
+      }
+      
+      // 서버 응답에 case가 없으면 onMutate에서 저장한 스냅샷 사용
+      if (!updatedCaseData && context?.targetCase) {
+        updatedCaseData = context.targetCase;
       }
       
       // 백그라운드 refetch로 전체 데이터 동기화
