@@ -1028,56 +1028,82 @@ export default function FieldReport() {
                   
                   for (const sectionKey of sectionOrder) {
                     setActiveTab(sectionKey);
-                    await new Promise(resolve => setTimeout(resolve, 400));
+                    await new Promise(resolve => setTimeout(resolve, 500));
                     
                     const elementId = sectionIdMap[sectionKey];
-                    const element = document.getElementById(elementId);
+                    let element = document.getElementById(elementId);
                     
-                    if (!element) continue;
+                    if (!element) {
+                      console.warn(`Section not found: ${sectionKey} (${elementId})`);
+                      continue;
+                    }
                     
                     try {
+                      // 도면 섹션의 경우 스크롤 영역 확장
+                      let drawingContainer: HTMLElement | null = null;
+                      let originalDrawingStyles: Record<string, string> = {};
+                      
+                      if (sectionKey === '도면') {
+                        drawingContainer = element.querySelector('.overflow-auto') as HTMLElement;
+                        if (drawingContainer) {
+                          originalDrawingStyles = {
+                            height: drawingContainer.style.height,
+                            width: drawingContainer.style.width,
+                            overflow: drawingContainer.style.overflow,
+                            maxHeight: drawingContainer.style.maxHeight,
+                          };
+                          drawingContainer.style.height = 'auto';
+                          drawingContainer.style.width = 'auto';
+                          drawingContainer.style.overflow = 'visible';
+                          drawingContainer.style.maxHeight = 'none';
+                          await new Promise(resolve => setTimeout(resolve, 200));
+                        }
+                      }
+                      
                       const canvas = await html2canvas(element, {
-                        scale: 2,
+                        scale: 1.5,
                         useCORS: true,
                         allowTaint: true,
                         logging: false,
                         backgroundColor: '#FFFFFF',
+                        windowWidth: element.scrollWidth,
+                        windowHeight: element.scrollHeight,
                       });
+                      
+                      // 도면 섹션 스타일 복원
+                      if (sectionKey === '도면' && drawingContainer) {
+                        Object.assign(drawingContainer.style, originalDrawingStyles);
+                      }
                       
                       if (canvas.width === 0 || canvas.height === 0) continue;
                       
-                      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                      const imgData = canvas.toDataURL('image/jpeg', 0.85);
                       const maxWidth = pageWidth - (margin * 2);
-                      const maxHeight = pageHeight - (margin * 2);
+                      const maxHeight = pageHeight - 30; // 상단 여백 고려
                       
+                      // 이미지 비율 계산
+                      const imgRatio = canvas.width / canvas.height;
                       let imgWidth = maxWidth;
-                      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+                      let imgHeight = imgWidth / imgRatio;
+                      
+                      // 이미지가 페이지 높이보다 크면 높이에 맞춰 축소
+                      if (imgHeight > maxHeight) {
+                        imgHeight = maxHeight;
+                        imgWidth = imgHeight * imgRatio;
+                      }
                       
                       // 새 페이지 추가
                       pdf.addPage();
                       
                       // 섹션 제목
-                      pdf.setFontSize(14);
+                      pdf.setFontSize(12);
                       pdf.setFont('helvetica', 'bold');
-                      pdf.text(sectionKey, margin, 15);
+                      pdf.text(`[ ${sectionKey} ]`, margin, 12);
                       
-                      // 이미지가 페이지 높이보다 크면 여러 페이지로 분할
-                      if (imgHeight <= maxHeight - 10) {
-                        pdf.addImage(imgData, 'JPEG', margin, 20, imgWidth, imgHeight);
-                      } else {
-                        let heightLeft = imgHeight;
-                        let position = 20;
-                        
-                        pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-                        heightLeft -= (maxHeight - 10);
-                        
-                        while (heightLeft > 0) {
-                          pdf.addPage();
-                          position = -(imgHeight - heightLeft) + 10;
-                          pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
-                          heightLeft -= maxHeight;
-                        }
-                      }
+                      // 이미지를 한 페이지에 맞춰서 추가 (잘리지 않게)
+                      const xOffset = (pageWidth - imgWidth) / 2; // 가운데 정렬
+                      pdf.addImage(imgData, 'JPEG', xOffset, 18, imgWidth, imgHeight);
+                      
                     } catch (err) {
                       console.error(`Section capture error (${sectionKey}):`, err);
                     }
