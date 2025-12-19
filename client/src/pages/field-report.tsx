@@ -1061,136 +1061,239 @@ export default function FieldReport() {
                     setActiveTab(chapter.tabValue);
                     await new Promise(resolve => setTimeout(resolve, 800));
                     
-                    // 증빙자료 챕터는 jsPDF로 직접 렌더링 (클릭 가능한 링크 포함)
+                    // 증빙자료 챕터는 html2canvas로 캡처 후 클릭 링크 페이지 추가
                     if (chapter.name === '증빙자료') {
-                      // 새 페이지 추가
-                      pdf.addPage();
-                      
-                      // 헤더
-                      pdf.setFillColor(37, 99, 235);
-                      pdf.rect(0, 0, pageWidth, 12, 'F');
-                      pdf.setTextColor(255, 255, 255);
-                      pdf.setFontSize(12);
-                      pdf.text(`Chapter ${chapterNum}. Evidence Documents`, margin, 8);
-                      
-                      pdf.setTextColor(0, 0, 0);
-                      let yPos = 22;
-                      
-                      try {
-                        if (!selectedCaseId) {
-                          throw new Error('No case selected');
-                        }
-                        
-                        const docUrlsResponse = await fetch('/api/generate-document-urls', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ caseId: selectedCaseId }),
-                        });
-                        
-                        if (!docUrlsResponse.ok) {
-                          throw new Error('Failed to fetch document URLs');
-                        }
-                        
-                        const { documentLinks } = await docUrlsResponse.json();
-                        
-                        // 문서 수 표시
-                        pdf.setFontSize(14);
-                        pdf.setFont('helvetica', 'bold');
-                        pdf.text(`Evidence Documents: ${documentLinks?.length || 0}`, margin, yPos);
-                        yPos += 10;
-                        
-                        // 안내 문구
-                        pdf.setFontSize(9);
-                        pdf.setFont('helvetica', 'normal');
-                        pdf.setTextColor(100, 100, 100);
-                        pdf.text('Click on the file names below to download. (Links valid for 7 days)', margin, yPos);
-                        yPos += 10;
-                        
-                        if (documentLinks && documentLinks.length > 0) {
-                          const categoryGroups: Record<string, Array<{ fileName: string; url: string }>> = {};
-                          const categoryOrder = [
-                            "현장출동사진", "수리중 사진", "복구완료 사진",
-                            "보험금 청구서", "개인정보 동의서(가족용)",
-                            "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
-                            "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
-                          ];
+                      const element = document.getElementById(chapter.elementId);
+                      if (element) {
+                        try {
+                          // 스크롤 영역 확장
+                          const scrollContainers = element.querySelectorAll('.overflow-auto, .overflow-y-auto, .overflow-x-auto');
+                          const originalStyles: Array<{el: HTMLElement, styles: Record<string, string>}> = [];
                           
-                          for (const doc of documentLinks) {
-                            if (!categoryGroups[doc.category]) {
-                              categoryGroups[doc.category] = [];
-                            }
-                            categoryGroups[doc.category].push({ fileName: doc.fileName, url: doc.url });
+                          scrollContainers.forEach((container) => {
+                            const el = container as HTMLElement;
+                            originalStyles.push({
+                              el,
+                              styles: {
+                                height: el.style.height,
+                                maxHeight: el.style.maxHeight,
+                                overflow: el.style.overflow,
+                              }
+                            });
+                            el.style.height = 'auto';
+                            el.style.maxHeight = 'none';
+                            el.style.overflow = 'visible';
+                          });
+                          
+                          // 이미지 로딩 대기
+                          const images = element.querySelectorAll('img');
+                          if (images.length > 0) {
+                            const imageLoadPromises = Array.from(images).map((img) => {
+                              const imgEl = img as HTMLImageElement;
+                              if (imgEl.complete && imgEl.naturalWidth > 0) {
+                                return Promise.resolve();
+                              }
+                              return new Promise<void>((resolve) => {
+                                const timeoutId = setTimeout(resolve, 2000);
+                                if (imgEl.decode) {
+                                  imgEl.decode()
+                                    .then(() => { clearTimeout(timeoutId); resolve(); })
+                                    .catch(() => { clearTimeout(timeoutId); resolve(); });
+                                } else {
+                                  const onDone = () => { clearTimeout(timeoutId); resolve(); };
+                                  imgEl.addEventListener('load', onDone);
+                                  imgEl.addEventListener('error', onDone);
+                                }
+                              });
+                            });
+                            await Promise.all(imageLoadPromises);
                           }
                           
-                          // 카테고리별로 렌더링
-                          const allCategories = [...categoryOrder, ...Object.keys(categoryGroups).filter(c => !categoryOrder.includes(c))];
+                          await new Promise(resolve => setTimeout(resolve, 500));
                           
-                          for (const category of allCategories) {
-                            if (!categoryGroups[category] || categoryGroups[category].length === 0) continue;
+                          const canvas = await html2canvas(element, {
+                            scale: 1.5,
+                            useCORS: true,
+                            allowTaint: true,
+                            logging: false,
+                            backgroundColor: '#FFFFFF',
+                          });
+                          
+                          // 스타일 복원
+                          originalStyles.forEach(({ el, styles }) => {
+                            Object.assign(el.style, styles);
+                          });
+                          
+                          if (canvas.width > 0 && canvas.height > 0) {
+                            // 새 페이지 추가
+                            pdf.addPage();
                             
-                            // 페이지 넘김 체크
-                            if (yPos > pageHeight - 40) {
-                              pdf.addPage();
-                              yPos = 20;
+                            // 챕터 헤더
+                            const headerHtml = document.createElement('div');
+                            headerHtml.style.cssText = `
+                              position: fixed; left: -9999px; top: 0;
+                              width: 595px; height: 50px;
+                              background: #2563eb; padding: 12px 20px;
+                              font-family: 'Noto Sans KR', 'Pretendard', sans-serif;
+                              box-sizing: border-box;
+                            `;
+                            headerHtml.innerHTML = `
+                              <p style="color: white; font-size: 16px; font-weight: 600; margin: 0;">
+                                Chapter ${chapterNum}. ${chapter.name}
+                              </p>
+                            `;
+                            document.body.appendChild(headerHtml);
+                            
+                            const headerCanvas = await html2canvas(headerHtml, { scale: 2, backgroundColor: '#2563eb' });
+                            document.body.removeChild(headerHtml);
+                            
+                            const headerImg = headerCanvas.toDataURL('image/png');
+                            pdf.addImage(headerImg, 'PNG', 0, 0, pageWidth, 12);
+                            
+                            // 콘텐츠 이미지 추가
+                            const contentTop = 14;
+                            const availableWidth = pageWidth - (margin * 2);
+                            const availableHeight = pageHeight - contentTop - margin;
+                            
+                            const imgRatio = canvas.width / canvas.height;
+                            let imgWidth = availableWidth;
+                            let imgHeight = imgWidth / imgRatio;
+                            
+                            if (imgHeight > availableHeight) {
+                              imgHeight = availableHeight;
+                              imgWidth = imgHeight * imgRatio;
+                              if (imgWidth > availableWidth) {
+                                imgWidth = availableWidth;
+                                imgHeight = imgWidth / imgRatio;
+                              }
                             }
                             
-                            // 카테고리 헤더 (박스 스타일)
-                            pdf.setFillColor(245, 245, 245);
-                            pdf.roundedRect(margin, yPos - 4, pageWidth - margin * 2, 10, 2, 2, 'F');
-                            pdf.setFontSize(11);
-                            pdf.setFont('helvetica', 'bold');
-                            pdf.setTextColor(30, 30, 30);
-                            pdf.text(`${category} (${categoryGroups[category].length})`, margin + 4, yPos + 3);
-                            yPos += 14;
+                            const imgData = canvas.toDataURL('image/jpeg', 0.85);
+                            const xOffset = (pageWidth - imgWidth) / 2;
+                            pdf.addImage(imgData, 'JPEG', xOffset, contentTop, imgWidth, imgHeight);
+                          }
+                        } catch (err) {
+                          console.error('Evidence chapter capture error:', err);
+                        }
+                      }
+                      
+                      // 다운로드 링크 페이지 추가 (클릭 가능한 링크)
+                      if (selectedCaseId) {
+                        try {
+                          const docUrlsResponse = await fetch('/api/generate-document-urls', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ caseId: selectedCaseId }),
+                          });
+                          
+                          if (docUrlsResponse.ok) {
+                            const { documentLinks } = await docUrlsResponse.json();
                             
-                            // 파일 목록
-                            pdf.setFontSize(10);
-                            pdf.setFont('helvetica', 'normal');
-                            
-                            for (const doc of categoryGroups[category]) {
-                              // 페이지 넘김 체크
-                              if (yPos > pageHeight - 15) {
-                                pdf.addPage();
-                                yPos = 20;
+                            if (documentLinks && documentLinks.length > 0) {
+                              // 새 페이지에 다운로드 링크 추가
+                              pdf.addPage();
+                              
+                              // 헤더
+                              pdf.setFillColor(37, 99, 235);
+                              pdf.rect(0, 0, pageWidth, 12, 'F');
+                              pdf.setTextColor(255, 255, 255);
+                              pdf.setFontSize(12);
+                              pdf.text(`Chapter ${chapterNum}. Evidence Documents - Download Links`, margin, 8);
+                              
+                              pdf.setTextColor(0, 0, 0);
+                              let yPos = 22;
+                              
+                              // 안내 문구
+                              pdf.setFontSize(10);
+                              pdf.setTextColor(100, 100, 100);
+                              pdf.text('Click on the file names below to download. Links are valid for 7 days.', margin, yPos);
+                              yPos += 12;
+                              
+                              const categoryGroups: Record<string, Array<{ fileName: string; url: string }>> = {};
+                              const categoryOrder = [
+                                "현장출동사진", "수리중 사진", "복구완료 사진",
+                                "보험금 청구서", "개인정보 동의서(가족용)",
+                                "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+                                "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
+                              ];
+                              
+                              // 카테고리 이름을 영어로 매핑
+                              const categoryEnglish: Record<string, string> = {
+                                "현장출동사진": "Site Visit Photos",
+                                "수리중 사진": "Repair Progress Photos",
+                                "복구완료 사진": "Restoration Complete Photos",
+                                "보험금 청구서": "Insurance Claim Form",
+                                "개인정보 동의서(가족용)": "Privacy Consent (Family)",
+                                "주민등록등본": "Resident Registration",
+                                "등기부등본": "Property Registration",
+                                "건축물대장": "Building Ledger",
+                                "기타증빙자료(민원일지 등)": "Other Evidence",
+                                "위임장": "Power of Attorney",
+                                "도급계약서": "Contract",
+                                "복구완료확인서": "Restoration Confirmation",
+                                "부가세 청구자료": "VAT Documents"
+                              };
+                              
+                              for (const doc of documentLinks) {
+                                if (!categoryGroups[doc.category]) {
+                                  categoryGroups[doc.category] = [];
+                                }
+                                categoryGroups[doc.category].push({ fileName: doc.fileName, url: doc.url });
                               }
                               
-                              // 파일 아이콘 (간단한 사각형)
-                              pdf.setFillColor(230, 230, 230);
-                              pdf.roundedRect(margin + 4, yPos - 4, 8, 8, 1, 1, 'F');
+                              const allCategories = [...categoryOrder, ...Object.keys(categoryGroups).filter(c => !categoryOrder.includes(c))];
                               
-                              // 파일명 (파란색 밑줄 링크)
-                              pdf.setTextColor(0, 102, 204);
-                              const fileName = doc.fileName.length > 60 ? doc.fileName.substring(0, 57) + '...' : doc.fileName;
-                              
-                              // 밑줄 그리기
-                              const textWidth = pdf.getTextWidth(fileName);
-                              pdf.setDrawColor(0, 102, 204);
-                              pdf.setLineWidth(0.3);
-                              pdf.line(margin + 16, yPos + 1, margin + 16 + textWidth, yPos + 1);
-                              
-                              // 클릭 가능한 텍스트
-                              pdf.textWithLink(fileName, margin + 16, yPos, { url: doc.url });
-                              
-                              yPos += 8;
+                              for (const category of allCategories) {
+                                if (!categoryGroups[category] || categoryGroups[category].length === 0) continue;
+                                
+                                if (yPos > pageHeight - 30) {
+                                  pdf.addPage();
+                                  yPos = 15;
+                                }
+                                
+                                // 카테고리 헤더 (영어)
+                                pdf.setFontSize(11);
+                                pdf.setFont('helvetica', 'bold');
+                                pdf.setTextColor(60, 60, 60);
+                                const categoryName = categoryEnglish[category] || category;
+                                pdf.text(`[${categoryName}] (${categoryGroups[category].length})`, margin, yPos);
+                                yPos += 7;
+                                
+                                pdf.setFontSize(9);
+                                pdf.setFont('helvetica', 'normal');
+                                
+                                for (const doc of categoryGroups[category]) {
+                                  if (yPos > pageHeight - 15) {
+                                    pdf.addPage();
+                                    yPos = 15;
+                                  }
+                                  
+                                  // 파일명 (파란색 링크)
+                                  pdf.setTextColor(0, 102, 204);
+                                  const fileName = doc.fileName.length > 70 ? doc.fileName.substring(0, 67) + '...' : doc.fileName;
+                                  
+                                  // 밑줄 그리기
+                                  const textWidth = pdf.getTextWidth(fileName);
+                                  pdf.setDrawColor(0, 102, 204);
+                                  pdf.setLineWidth(0.2);
+                                  pdf.line(margin + 4, yPos + 1, margin + 4 + textWidth, yPos + 1);
+                                  
+                                  // 클릭 가능한 텍스트
+                                  pdf.textWithLink(fileName, margin + 4, yPos, { url: doc.url });
+                                  
+                                  yPos += 6;
+                                }
+                                yPos += 5;
+                              }
                             }
-                            yPos += 6;
                           }
-                        } else {
-                          // 문서가 없는 경우
-                          pdf.setFontSize(11);
-                          pdf.setTextColor(128, 128, 128);
-                          pdf.text('No evidence documents registered.', margin, yPos);
+                        } catch (docUrlError) {
+                          console.error('Evidence download links error:', docUrlError);
                         }
-                      } catch (docUrlError) {
-                        console.error('Evidence document rendering error:', docUrlError);
-                        // 오류 시 폴백 메시지 표시
-                        pdf.setFontSize(11);
-                        pdf.setTextColor(128, 128, 128);
-                        pdf.text('Unable to load evidence documents.', margin, yPos);
                       }
                       
                       chapterNum++;
-                      continue; // 다음 챕터로
+                      continue;
                     }
                     
                     const element = document.getElementById(chapter.elementId);
