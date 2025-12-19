@@ -2674,9 +2674,83 @@ export default function FieldReport() {
         {/* 증빙자료 탭 */}
         <TabsContent value="증빙자료" id="pdf-section-증빙자료" className="px-6">
           <div className="flex flex-col gap-4">
+            {/* 상단 헤더: 증빙자료 N + 전체 다운로드 버튼 */}
+            <div 
+              className="flex items-center justify-between"
+              style={{ padding: "24px", position: "relative" }}
+            >
+              {/* 가운데 정렬을 위한 빈 공간 */}
+              <div style={{ width: "154px" }} />
+              
+              {/* 증빙자료 N - 가운데 정렬 */}
+              <h2
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "24px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
+                  margin: 0,
+                }}
+              >
+                증빙자료 {documents?.length || 0}
+              </h2>
+              
+              {/* 전체 다운로드 버튼 - 오른쪽 */}
+              <button
+                onClick={() => {
+                  if (documents && documents.length > 0) {
+                    documents.forEach((doc) => {
+                      const link = document.createElement('a');
+                      const mimeType = doc.fileType || 'image/jpeg';
+                      const dataUrl = doc.fileData.startsWith('data:') 
+                        ? doc.fileData 
+                        : `data:${mimeType};base64,${doc.fileData}`;
+                      link.href = dataUrl;
+                      link.download = doc.fileName;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    });
+                  }
+                }}
+                className="flex items-center gap-2"
+                style={{
+                  padding: "10px 16px 10px 12px",
+                  background: "#FDFDFD",
+                  boxShadow: "2px 4px 30px #BDD1F0",
+                  borderRadius: "10px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                data-testid="button-download-all"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <path 
+                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" 
+                    stroke="#008FED" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "#008FED",
+                  }}
+                >
+                  전체 다운로드
+                </span>
+              </button>
+            </div>
+
+            {/* 카테고리별 문서 리스트 */}
             {documents && documents.length > 0 ? (
-              <>
-                {/* 카테고리별 그룹핑 - 리스트 형태 */}
+              <div className="flex flex-col" style={{ gap: "16px" }}>
                 {["현장", "수리중", "복구완료", "청구", "개인정보"].map((category) => {
                   const categoryDocs = documents.filter(doc => doc.category === category);
                   if (categoryDocs.length === 0) return null;
@@ -2690,10 +2764,11 @@ export default function FieldReport() {
                         padding: "8px 16px 16px",
                       }}
                     >
-                      {/* 카테고리 헤더 */}
+                      {/* 카테고리 헤더 - 가운데 정렬 */}
                       <div 
-                        className="flex items-center justify-center py-3"
+                        className="flex items-center justify-center"
                         style={{
+                          padding: "12px 0",
                           fontFamily: "Pretendard",
                           fontSize: "20px",
                           fontWeight: 600,
@@ -2705,7 +2780,7 @@ export default function FieldReport() {
                       </div>
                       
                       {/* 파일 리스트 */}
-                      <div className="flex flex-col gap-3">
+                      <div className="flex flex-col" style={{ gap: "12px" }}>
                         {categoryDocs.map((doc) => {
                           const dataUrl = doc.fileData.startsWith('data:') 
                             ? doc.fileData 
@@ -2716,11 +2791,36 @@ export default function FieldReport() {
                           return (
                             <div
                               key={doc.id}
-                              className="flex items-center justify-between py-2"
+                              className="flex items-center justify-between"
+                              style={{ gap: "12px", height: "64px" }}
                             >
-                              {/* 왼쪽: 파일 아이콘/썸네일 + 파일명 */}
-                              <div className="flex items-center gap-2">
-                                {/* 파일 썸네일 */}
+                              {/* 왼쪽: 마이너스 아이콘 + 파일 아이콘/썸네일 + 파일명 */}
+                              <div className="flex items-center" style={{ gap: "8px" }}>
+                                {/* 마이너스(-) 삭제 아이콘 */}
+                                <button
+                                  onClick={() => {
+                                    // 삭제 기능 (필요시 구현)
+                                    console.log('Delete document:', doc.id);
+                                  }}
+                                  style={{
+                                    width: "24px",
+                                    height: "24px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    background: "transparent",
+                                    border: "none",
+                                    cursor: "pointer",
+                                  }}
+                                  data-testid={`button-delete-${doc.id}`}
+                                >
+                                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <circle cx="12" cy="12" r="10" stroke="rgba(12, 12, 12, 0.3)" strokeWidth="2"/>
+                                    <path d="M8 12h8" stroke="rgba(12, 12, 12, 0.3)" strokeWidth="2" strokeLinecap="round"/>
+                                  </svg>
+                                </button>
+                                
+                                {/* 파일 썸네일/아이콘 (64x64) */}
                                 <div
                                   style={{
                                     width: "64px",
@@ -2731,6 +2831,7 @@ export default function FieldReport() {
                                     alignItems: "center",
                                     justifyContent: "center",
                                     overflow: "hidden",
+                                    flexShrink: 0,
                                   }}
                                 >
                                   {isImage ? (
@@ -2745,9 +2846,9 @@ export default function FieldReport() {
                                       data-testid={`image-preview-${doc.id}`}
                                     />
                                   ) : (
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <svg width="15" height="24" viewBox="0 0 15 24" fill="none">
                                       <path 
-                                        d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" 
+                                        d="M14.44 10.05l-6.19 6.19a4 4 0 0 1-5.66-5.66l6.19-6.19a2.67 2.67 0 0 1 3.77 3.77l-6.2 6.19a1.33 1.33 0 0 1-1.88-1.88l5.66-5.66" 
                                         stroke="rgba(12, 12, 12, 0.8)" 
                                         strokeWidth="2" 
                                         strokeLinecap="round" 
@@ -2757,7 +2858,7 @@ export default function FieldReport() {
                                   )}
                                 </div>
                                 
-                                {/* 파일명 */}
+                                {/* 파일명 - 밑줄 */}
                                 <span
                                   style={{
                                     fontFamily: "Pretendard",
@@ -2811,7 +2912,7 @@ export default function FieldReport() {
                     </div>
                   );
                 })}
-              </>
+              </div>
             ) : (
               <div 
                 style={{
