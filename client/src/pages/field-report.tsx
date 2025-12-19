@@ -1051,11 +1051,10 @@ export default function FieldReport() {
                   const coverImg = coverCanvas.toDataURL('image/jpeg', 0.95);
                   pdf.addImage(coverImg, 'JPEG', 0, 0, pageWidth, pageHeight);
                   
-                  // ===== 2. 각 섹션을 챕터별로 추가 =====
+                  // ===== 2. 각 섹션을 챕터별로 추가 (증빙자료는 이메일 본문에 링크로 제공) =====
                   const chapters = [
                     { name: '현장조사', tabValue: '현장조사', elementId: 'pdf-section-현장조사' },
                     { name: '도면', tabValue: '도면', elementId: 'pdf-section-도면' },
-                    { name: '증빙자료', tabValue: '증빙자료', elementId: 'pdf-section-증빙자료' },
                     { name: '견적서', tabValue: '견적서', elementId: 'pdf-section-견적서' },
                     { name: '기타사항/원인', tabValue: '기타사항/원인', elementId: 'pdf-section-기타사항' },
                   ];
@@ -1066,125 +1065,6 @@ export default function FieldReport() {
                   for (const chapter of chapters) {
                     setActiveTab(chapter.tabValue);
                     await new Promise(resolve => setTimeout(resolve, 800));
-                    
-                    // 증빙자료 챕터는 한글 폰트로 직접 렌더링 (클릭 가능한 링크 포함)
-                    if (chapter.name === '증빙자료') {
-                      // 새 페이지 추가 - 챕터 헤더
-                      pdf.addPage();
-                      
-                      // 챕터 헤더 배경
-                      pdf.setFillColor(37, 99, 235);
-                      pdf.rect(0, 0, pageWidth, 12, 'F');
-                      pdf.setFont('NotoSansKR', 'normal');
-                      pdf.setTextColor(255, 255, 255);
-                      pdf.setFontSize(12);
-                      pdf.text(`Chapter ${chapterNum}. 증빙자료`, margin, 8);
-                      
-                      let yPos = 22;
-                      
-                      // 안내 문구
-                      pdf.setFontSize(9);
-                      pdf.setTextColor(100, 100, 100);
-                      pdf.text('파일명을 클릭하면 다운로드됩니다. 링크는 7일간 유효합니다.', margin, yPos);
-                      yPos += 10;
-                      
-                      // API 호출하여 문서 링크 가져오기
-                      if (selectedCaseId) {
-                        try {
-                          const docUrlsResponse = await fetch('/api/generate-document-urls', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ caseId: selectedCaseId }),
-                          });
-                          
-                          if (docUrlsResponse.ok) {
-                            const { documentLinks } = await docUrlsResponse.json();
-                            
-                            if (documentLinks && documentLinks.length > 0) {
-                              const categoryGroups: Record<string, Array<{ fileName: string; url: string }>> = {};
-                              const categoryOrder = [
-                                "현장출동사진", "수리중 사진", "복구완료 사진",
-                                "보험금 청구서", "개인정보 동의서(가족용)",
-                                "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
-                                "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
-                              ];
-                              
-                              for (const doc of documentLinks) {
-                                if (!categoryGroups[doc.category]) {
-                                  categoryGroups[doc.category] = [];
-                                }
-                                categoryGroups[doc.category].push({ fileName: doc.fileName, url: doc.url });
-                              }
-                              
-                              const allCategories = [...categoryOrder, ...Object.keys(categoryGroups).filter(c => !categoryOrder.includes(c))];
-                              
-                              for (const category of allCategories) {
-                                if (!categoryGroups[category] || categoryGroups[category].length === 0) continue;
-                                
-                                if (yPos > pageHeight - 30) {
-                                  pdf.addPage();
-                                  yPos = 15;
-                                }
-                                
-                                // 카테고리 헤더 (한글)
-                                pdf.setFont('NotoSansKR', 'normal');
-                                pdf.setFontSize(10);
-                                pdf.setTextColor(60, 60, 60);
-                                pdf.text(`■ ${category} (${categoryGroups[category].length}건)`, margin, yPos);
-                                yPos += 7;
-                                
-                                pdf.setFontSize(9);
-                                
-                                for (const doc of categoryGroups[category]) {
-                                  if (yPos > pageHeight - 15) {
-                                    pdf.addPage();
-                                    yPos = 15;
-                                  }
-                                  
-                                  // 파일명 (파란색 링크)
-                                  pdf.setTextColor(0, 102, 204);
-                                  const fileName = doc.fileName.length > 60 ? doc.fileName.substring(0, 57) + '...' : doc.fileName;
-                                  
-                                  // 밑줄 그리기
-                                  pdf.setFont('NotoSansKR', 'normal');
-                                  const textWidth = pdf.getTextWidth(fileName);
-                                  pdf.setDrawColor(0, 102, 204);
-                                  pdf.setLineWidth(0.2);
-                                  pdf.line(margin + 4, yPos + 1, margin + 4 + textWidth, yPos + 1);
-                                  
-                                  // 클릭 가능한 텍스트
-                                  pdf.textWithLink(fileName, margin + 4, yPos, { url: doc.url });
-                                  
-                                  yPos += 6;
-                                }
-                                yPos += 5;
-                              }
-                            } else {
-                              // 문서가 없는 경우
-                              pdf.setFont('NotoSansKR', 'normal');
-                              pdf.setFontSize(10);
-                              pdf.setTextColor(120, 120, 120);
-                              pdf.text('등록된 증빙자료가 없습니다.', margin, yPos);
-                            }
-                          } else {
-                            // API 오류
-                            pdf.setFont('NotoSansKR', 'normal');
-                            pdf.setFontSize(10);
-                            pdf.setTextColor(180, 80, 80);
-                            pdf.text('증빙자료를 불러오는 중 오류가 발생했습니다.', margin, yPos);
-                          }
-                        } catch (docUrlError) {
-                          console.error('Evidence documents error:', docUrlError);
-                          pdf.setFont('NotoSansKR', 'normal');
-                          pdf.setFontSize(10);
-                          pdf.setTextColor(180, 80, 80);
-                          pdf.text('증빙자료를 불러오는 중 오류가 발생했습니다.', margin, yPos);
-                        }
-                      }
-                      
-                      chapterNum++;
-                      continue;
-                    }
                     
                     const element = document.getElementById(chapter.elementId);
                     if (!element) {

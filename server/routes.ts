@@ -4341,7 +4341,98 @@ FLOXN 드림`;
 
       console.log(`[PDF Upload] Field Report PDF uploaded to: ${pdfUrl}`);
 
-      // Send email via Bubble.io API with PDF link only (증빙자료 링크는 PDF 내에 포함됨)
+      // 증빙자료 다운로드 링크 생성
+      let documentLinksSection = '';
+      if (caseId) {
+        try {
+          const documents = await storage.getDocumentsByCaseId(caseId);
+          if (documents && documents.length > 0) {
+            const categoryOrder = [
+              "현장출동사진", "수리중 사진", "복구완료 사진",
+              "보험금 청구서", "개인정보 동의서(가족용)",
+              "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+              "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
+            ];
+            
+            // Private object directory 설정
+            const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+            if (privateObjectDir) {
+              const privateDirParts = privateObjectDir.startsWith('/') 
+                ? privateObjectDir.slice(1).split('/') 
+                : privateObjectDir.split('/');
+              const privateBucketName = privateDirParts[0];
+              const privatePrefix = privateDirParts.slice(1).join('/');
+              const privateBucket = objectStorageClient.bucket(privateBucketName);
+              
+              const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
+              const emailTimestamp = Date.now();
+              
+              // 카테고리별 그룹화
+              const categoryGroups: Record<string, Array<{ fileName: string; url: string }>> = {};
+              
+              for (const doc of documents) {
+                if (!doc.fileData || !doc.category) continue;
+                
+                try {
+                  const fileBuffer = Buffer.from(doc.fileData, 'base64');
+                  const sanitizedFileName = doc.fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
+                  const docObjectName = `${privatePrefix}/email-documents/${caseId}/${emailTimestamp}_${sanitizedFileName}`;
+                  const docFile = privateBucket.file(docObjectName);
+                  
+                  // Upload to private storage
+                  await docFile.save(fileBuffer, {
+                    contentType: doc.fileType,
+                    metadata: {
+                      'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'private' }),
+                    },
+                  });
+                  
+                  // Generate signed URL
+                  const docUrl = await signObjectURL({
+                    bucketName: privateBucketName,
+                    objectName: docObjectName,
+                    method: 'GET',
+                    ttlSec: SIGNED_URL_TTL_SEC,
+                  });
+                  
+                  if (!categoryGroups[doc.category]) {
+                    categoryGroups[doc.category] = [];
+                  }
+                  categoryGroups[doc.category].push({ 
+                    fileName: doc.fileName || 'unknown', 
+                    url: docUrl 
+                  });
+                } catch (docUploadErr) {
+                  console.error(`[Email] Failed to generate signed URL for ${doc.fileName}:`, docUploadErr);
+                }
+              }
+              
+              // 카테고리 순서대로 정렬
+              const allCategories = [...categoryOrder, ...Object.keys(categoryGroups).filter(c => !categoryOrder.includes(c))];
+              
+              let linksText = '\n\n■ 증빙자료 다운로드 (링크는 7일간 유효합니다)\n';
+              let hasLinks = false;
+              
+              for (const category of allCategories) {
+                if (!categoryGroups[category] || categoryGroups[category].length === 0) continue;
+                hasLinks = true;
+                linksText += `\n[${category}]\n`;
+                for (const docLink of categoryGroups[category]) {
+                  linksText += `  - ${docLink.fileName}\n    ${docLink.url}\n`;
+                }
+              }
+              
+              if (hasLinks) {
+                documentLinksSection = linksText;
+              }
+            }
+          }
+        } catch (docError) {
+          console.error('[Email] Error fetching documents for email:', docError);
+        }
+      }
+
+      // Send email via Bubble.io API with PDF link and document links
       const emailContent = `안녕하세요,
 
 현장조사 리포트를 전송해드립니다.
@@ -4361,10 +4452,10 @@ FLOXN 드림`;
 - 사고원인: ${accidentCause || '-'}
 - 처리유형: ${recoveryMethodType || '-'}
 
-아래 링크를 클릭하시면 현장조사 리포트 PDF를 다운로드하실 수 있습니다:
+■ 현장조사 리포트 PDF
+아래 링크를 클릭하시면 다운로드하실 수 있습니다:
 ${pdfUrl}
-
-(증빙자료 다운로드 링크는 PDF 파일 내에 포함되어 있습니다)
+${documentLinksSection}
 
 - 발송일: ${dateStr}
 - 발송자: ${user.name || user.username}
