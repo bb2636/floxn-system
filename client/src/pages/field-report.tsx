@@ -932,133 +932,116 @@ export default function FieldReport() {
                   const pdf = new jsPDF('p', 'mm', 'a4');
                   const pageWidth = pdf.internal.pageSize.getWidth();
                   const pageHeight = pdf.internal.pageSize.getHeight();
-                  const margin = 25;
+                  const margin = 10;
                   
-                  // ===== 1. 표지 페이지 =====
-                  let yPos = 50;
+                  // ===== 1. 표지 페이지 (HTML로 생성 후 캡처) =====
+                  const today = new Date();
+                  const dateStr = `${today.getFullYear()}년 ${String(today.getMonth() + 1).padStart(2, '0')}월 ${String(today.getDate()).padStart(2, '0')}일`;
                   
-                  // 제목
-                  pdf.setFontSize(28);
-                  pdf.setFont('helvetica', 'bold');
-                  pdf.text('Field Dispatch Report', pageWidth / 2, yPos, { align: 'center' });
-                  yPos += 12;
+                  const coverHtml = document.createElement('div');
+                  coverHtml.style.cssText = `
+                    position: fixed; left: -9999px; top: 0;
+                    width: 595px; height: 842px;
+                    background: white; padding: 60px 50px;
+                    font-family: 'Noto Sans KR', 'Pretendard', sans-serif;
+                    box-sizing: border-box;
+                  `;
+                  coverHtml.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 50px;">
+                      <h1 style="font-size: 32px; font-weight: 700; color: #1a1a1a; margin: 0;">현장출동확인서</h1>
+                    </div>
+                    <div style="margin-bottom: 30px;">
+                      <p style="font-size: 14px; margin: 8px 0;"><strong>수신:</strong> ${caseData?.insuranceCompany || '-'} 귀중</p>
+                      <p style="font-size: 14px; margin: 8px 0;"><strong>발신:</strong> 주식회사 플록슨(FLOXN Co., Ltd.)</p>
+                    </div>
+                    <div style="margin-bottom: 30px;">
+                      <p style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">사고 정보</p>
+                      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <tr>
+                          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 30%; font-weight: 600;">사고접수번호</td>
+                          <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseData?.insuranceAccidentNo || caseData?.caseNumber || '-'}</td>
+                        </tr>
+                        <tr>
+                          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: 600;">피보험자명</td>
+                          <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseData?.insuredName || '-'}</td>
+                        </tr>
+                        <tr>
+                          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: 600;">조사자</td>
+                          <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseData?.assignedPartnerManager ? `${caseData.assignedPartner || ''} ${caseData.assignedPartnerManager}` : '-'}</td>
+                        </tr>
+                        <tr>
+                          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: 600;">협력업체</td>
+                          <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseData?.assignedPartner || '-'}</td>
+                        </tr>
+                      </table>
+                    </div>
+                    <div style="margin: 40px 0; text-align: center;">
+                      <p style="font-size: 14px; color: #333;">상기 사고 건에 대한 현장 조사를 완료하였기에 본 확인서를 제출합니다.</p>
+                    </div>
+                    <div style="text-align: center; margin-top: 60px;">
+                      <p style="font-size: 15px; font-weight: 600; color: #1a1a1a;">작성일자: ${dateStr}</p>
+                    </div>
+                    <div style="position: absolute; bottom: 40px; left: 0; right: 0; text-align: center;">
+                      <p style="font-size: 11px; color: #888;">(주)플록슨은 손해사정 전문성을 기반으로 보험과 현장을 연결 관리하는 네트워크 기업 입니다.</p>
+                    </div>
+                  `;
+                  document.body.appendChild(coverHtml);
                   
-                  // 수신
-                  yPos += 20;
-                  pdf.setFontSize(11);
-                  pdf.setFont('helvetica', 'normal');
-                  pdf.text(`To: ${caseData?.insuranceCompany || '-'}`, margin, yPos);
-                  yPos += 8;
+                  await new Promise(resolve => setTimeout(resolve, 100));
                   
-                  // 발신
-                  pdf.text('From: FLOXN Co., Ltd.', margin, yPos);
-                  yPos += 20;
+                  const coverCanvas = await html2canvas(coverHtml, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: '#FFFFFF',
+                  });
+                  document.body.removeChild(coverHtml);
                   
-                  // 사고 정보 테이블
-                  pdf.setFontSize(12);
-                  pdf.setFont('helvetica', 'bold');
-                  pdf.text('Case Information', margin, yPos);
-                  yPos += 8;
+                  const coverImg = coverCanvas.toDataURL('image/jpeg', 0.95);
+                  pdf.addImage(coverImg, 'JPEG', 0, 0, pageWidth, pageHeight);
                   
-                  // 테이블 그리기
-                  const tableStartY = yPos;
-                  const col1Width = 50;
-                  const col2Width = 100;
-                  const rowHeight = 10;
-                  
-                  const tableData = [
-                    ['Case No.', caseData?.insuranceAccidentNo || caseData?.caseNumber || '-'],
-                    ['Insured', caseData?.insuredName || '-'],
-                    ['Investigator', caseData?.assignedPartnerManager ? `${caseData.assignedPartner} ${caseData.assignedPartnerManager}` : '-'],
-                    ['Partner', caseData?.assignedPartner || '-'],
+                  // ===== 2. 각 섹션을 챕터별로 추가 =====
+                  const chapters = [
+                    { name: '현장조사', tabValue: '현장조사', elementId: 'pdf-section-현장조사' },
+                    { name: '도면', tabValue: '도면', elementId: 'pdf-section-도면' },
+                    { name: '증빙자료', tabValue: '증빙자료', elementId: 'pdf-section-증빙자료' },
+                    { name: '견적서', tabValue: '견적서', elementId: 'pdf-section-견적서' },
+                    { name: '기타사항/원인', tabValue: '기타사항/원인', elementId: 'pdf-section-기타사항' },
                   ];
                   
-                  pdf.setFont('helvetica', 'normal');
-                  pdf.setFontSize(10);
-                  
-                  tableData.forEach((row, index) => {
-                    const y = tableStartY + (index * rowHeight);
-                    // 테이블 셀 테두리
-                    pdf.setDrawColor(200, 200, 200);
-                    pdf.rect(margin, y, col1Width, rowHeight);
-                    pdf.rect(margin + col1Width, y, col2Width, rowHeight);
-                    // 라벨 (회색 배경)
-                    pdf.setFillColor(245, 245, 245);
-                    pdf.rect(margin, y, col1Width, rowHeight, 'F');
-                    pdf.rect(margin, y, col1Width, rowHeight);
-                    // 텍스트
-                    pdf.setFont('helvetica', 'bold');
-                    pdf.text(row[0], margin + 3, y + 7);
-                    pdf.setFont('helvetica', 'normal');
-                    pdf.text(row[1], margin + col1Width + 3, y + 7);
-                  });
-                  
-                  yPos = tableStartY + (tableData.length * rowHeight) + 20;
-                  
-                  // 확인 문구
-                  pdf.setFontSize(10);
-                  pdf.text('This confirms completion of the field investigation for the above case.', margin, yPos);
-                  yPos += 30;
-                  
-                  // 작성일자
-                  const today = new Date();
-                  const dateStr = `${today.getFullYear()}. ${String(today.getMonth() + 1).padStart(2, '0')}. ${String(today.getDate()).padStart(2, '0')}`;
-                  pdf.setFontSize(11);
-                  pdf.setFont('helvetica', 'bold');
-                  pdf.text(`Date: ${dateStr}`, pageWidth / 2, yPos, { align: 'center' });
-                  
-                  // 하단 푸터
-                  pdf.setFontSize(8);
-                  pdf.setFont('helvetica', 'normal');
-                  pdf.setTextColor(128, 128, 128);
-                  pdf.text('FLOXN - Water Damage Management Platform', pageWidth / 2, pageHeight - 15, { align: 'center' });
-                  pdf.setTextColor(0, 0, 0);
-                  
-                  // ===== 2. 각 섹션 캡처 및 추가 =====
-                  const sectionOrder = ['현장조사', '도면', '증빙자료', '견적서', '기타사항/원인'];
-                  const sectionIdMap: Record<string, string> = {
-                    '현장조사': 'pdf-section-현장조사',
-                    '도면': 'pdf-section-도면',
-                    '증빙자료': 'pdf-section-증빙자료',
-                    '견적서': 'pdf-section-견적서',
-                    '기타사항/원인': 'pdf-section-기타사항',
-                  };
-                  
                   const originalTab = activeTab;
+                  let chapterNum = 1;
                   
-                  for (const sectionKey of sectionOrder) {
-                    setActiveTab(sectionKey);
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                  for (const chapter of chapters) {
+                    setActiveTab(chapter.tabValue);
+                    await new Promise(resolve => setTimeout(resolve, 600));
                     
-                    const elementId = sectionIdMap[sectionKey];
-                    let element = document.getElementById(elementId);
-                    
+                    const element = document.getElementById(chapter.elementId);
                     if (!element) {
-                      console.warn(`Section not found: ${sectionKey} (${elementId})`);
+                      console.warn(`Chapter not found: ${chapter.name}`);
                       continue;
                     }
                     
                     try {
-                      // 도면 섹션의 경우 스크롤 영역 확장
-                      let drawingContainer: HTMLElement | null = null;
-                      let originalDrawingStyles: Record<string, string> = {};
+                      // 스크롤 영역 확장 (도면, 증빙자료 등)
+                      const scrollContainers = element.querySelectorAll('.overflow-auto, .overflow-y-auto, .overflow-x-auto');
+                      const originalStyles: Array<{el: HTMLElement, styles: Record<string, string>}> = [];
                       
-                      if (sectionKey === '도면') {
-                        drawingContainer = element.querySelector('.overflow-auto') as HTMLElement;
-                        if (drawingContainer) {
-                          originalDrawingStyles = {
-                            height: drawingContainer.style.height,
-                            width: drawingContainer.style.width,
-                            overflow: drawingContainer.style.overflow,
-                            maxHeight: drawingContainer.style.maxHeight,
-                          };
-                          drawingContainer.style.height = 'auto';
-                          drawingContainer.style.width = 'auto';
-                          drawingContainer.style.overflow = 'visible';
-                          drawingContainer.style.maxHeight = 'none';
-                          await new Promise(resolve => setTimeout(resolve, 200));
-                        }
-                      }
+                      scrollContainers.forEach((container) => {
+                        const el = container as HTMLElement;
+                        originalStyles.push({
+                          el,
+                          styles: {
+                            height: el.style.height,
+                            maxHeight: el.style.maxHeight,
+                            overflow: el.style.overflow,
+                          }
+                        });
+                        el.style.height = 'auto';
+                        el.style.maxHeight = 'none';
+                        el.style.overflow = 'visible';
+                      });
+                      
+                      await new Promise(resolve => setTimeout(resolve, 200));
                       
                       const canvas = await html2canvas(element, {
                         scale: 1.5,
@@ -1066,46 +1049,66 @@ export default function FieldReport() {
                         allowTaint: true,
                         logging: false,
                         backgroundColor: '#FFFFFF',
-                        windowWidth: element.scrollWidth,
-                        windowHeight: element.scrollHeight,
                       });
                       
-                      // 도면 섹션 스타일 복원
-                      if (sectionKey === '도면' && drawingContainer) {
-                        Object.assign(drawingContainer.style, originalDrawingStyles);
-                      }
+                      // 스타일 복원
+                      originalStyles.forEach(({ el, styles }) => {
+                        Object.assign(el.style, styles);
+                      });
                       
                       if (canvas.width === 0 || canvas.height === 0) continue;
-                      
-                      const imgData = canvas.toDataURL('image/jpeg', 0.85);
-                      const maxWidth = pageWidth - (margin * 2);
-                      const maxHeight = pageHeight - 30; // 상단 여백 고려
-                      
-                      // 이미지 비율 계산
-                      const imgRatio = canvas.width / canvas.height;
-                      let imgWidth = maxWidth;
-                      let imgHeight = imgWidth / imgRatio;
-                      
-                      // 이미지가 페이지 높이보다 크면 높이에 맞춰 축소
-                      if (imgHeight > maxHeight) {
-                        imgHeight = maxHeight;
-                        imgWidth = imgHeight * imgRatio;
-                      }
                       
                       // 새 페이지 추가
                       pdf.addPage();
                       
-                      // 섹션 제목
-                      pdf.setFontSize(12);
-                      pdf.setFont('helvetica', 'bold');
-                      pdf.text(`[ ${sectionKey} ]`, margin, 12);
+                      // 챕터 헤더
+                      const headerHtml = document.createElement('div');
+                      headerHtml.style.cssText = `
+                        position: fixed; left: -9999px; top: 0;
+                        width: 595px; height: 50px;
+                        background: #2563eb; padding: 12px 20px;
+                        font-family: 'Noto Sans KR', 'Pretendard', sans-serif;
+                        box-sizing: border-box;
+                      `;
+                      headerHtml.innerHTML = `
+                        <p style="color: white; font-size: 16px; font-weight: 600; margin: 0;">
+                          Chapter ${chapterNum}. ${chapter.name}
+                        </p>
+                      `;
+                      document.body.appendChild(headerHtml);
                       
-                      // 이미지를 한 페이지에 맞춰서 추가 (잘리지 않게)
-                      const xOffset = (pageWidth - imgWidth) / 2; // 가운데 정렬
-                      pdf.addImage(imgData, 'JPEG', xOffset, 18, imgWidth, imgHeight);
+                      const headerCanvas = await html2canvas(headerHtml, { scale: 2, backgroundColor: '#2563eb' });
+                      document.body.removeChild(headerHtml);
                       
+                      const headerImg = headerCanvas.toDataURL('image/png');
+                      pdf.addImage(headerImg, 'PNG', 0, 0, pageWidth, 12);
+                      
+                      // 콘텐츠 이미지 추가
+                      const contentTop = 14;
+                      const availableWidth = pageWidth - (margin * 2);
+                      const availableHeight = pageHeight - contentTop - margin;
+                      
+                      const imgRatio = canvas.width / canvas.height;
+                      let imgWidth = availableWidth;
+                      let imgHeight = imgWidth / imgRatio;
+                      
+                      // 한 페이지에 맞추기
+                      if (imgHeight > availableHeight) {
+                        imgHeight = availableHeight;
+                        imgWidth = imgHeight * imgRatio;
+                        if (imgWidth > availableWidth) {
+                          imgWidth = availableWidth;
+                          imgHeight = imgWidth / imgRatio;
+                        }
+                      }
+                      
+                      const imgData = canvas.toDataURL('image/jpeg', 0.85);
+                      const xOffset = (pageWidth - imgWidth) / 2;
+                      pdf.addImage(imgData, 'JPEG', xOffset, contentTop, imgWidth, imgHeight);
+                      
+                      chapterNum++;
                     } catch (err) {
-                      console.error(`Section capture error (${sectionKey}):`, err);
+                      console.error(`Chapter capture error (${chapter.name}):`, err);
                     }
                   }
                   
