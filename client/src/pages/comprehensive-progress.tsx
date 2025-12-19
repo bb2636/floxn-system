@@ -387,9 +387,11 @@ export default function ComprehensiveProgress() {
     },
     onSuccess: (data, variables) => {
       // 백엔드에서 반환된 실제 데이터로 업데이트
+      // 서버에서 { success: true, case: updatedCase } 형태로 반환
       let updatedCaseData: CaseWithLatestProgress | null = null;
-      if (data && typeof data === 'object' && 'id' in data) {
-        updatedCaseData = data as unknown as CaseWithLatestProgress;
+      const responseData = data as { success?: boolean; case?: unknown };
+      if (responseData && responseData.case && typeof responseData.case === 'object' && 'id' in responseData.case) {
+        updatedCaseData = responseData.case as unknown as CaseWithLatestProgress;
         queryClient.setQueryData<CaseWithLatestProgress[]>(["/api/cases"], (old) => {
           if (!old) return old;
           return old.map(c => c.id === updatedCaseData!.id ? { ...c, ...updatedCaseData } : c);
