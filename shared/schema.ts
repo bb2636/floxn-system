@@ -517,7 +517,7 @@ export type Drawing = typeof drawings.$inferSelect;
 export const caseDocuments = pgTable("case_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   caseId: varchar("case_id").notNull().references(() => cases.id),
-  category: text("category").notNull(), // "전체", "현장", "수리중", "복구완료", "청구", "개인정보"
+  category: text("category").notNull(), // 서브카테고리: 현장출동사진, 수리중 사진, 복구완료 사진, 보험금 청구서, 등
   fileName: text("file_name").notNull(),
   fileType: text("file_type").notNull(),
   fileSize: integer("file_size").notNull(),
@@ -526,7 +526,17 @@ export const caseDocuments = pgTable("case_documents", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const DOCUMENT_CATEGORIES = ["현장", "수리중", "복구완료", "청구", "개인정보"] as const;
+// 문서 서브카테고리 (탭별)
+export const DOCUMENT_CATEGORIES = [
+  // 사진 탭
+  "현장출동사진", "수리중 사진", "복구완료 사진",
+  // 기본자료 탭
+  "보험금 청구서", "개인정보 동의서(가족용)",
+  // 증빙자료 탭
+  "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+  // 청구자료 탭
+  "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
+] as const;
 export type DocumentCategory = typeof DOCUMENT_CATEGORIES[number];
 
 export const insertCaseDocumentSchema = createInsertSchema(caseDocuments).omit({

@@ -354,14 +354,42 @@ export default function FieldDocuments() {
 
   const categories: DocumentCategory[] = ["전체", "사진", "기본자료", "증빙자료", "청구자료"];
 
+  // 탭별 서브카테고리 옵션 반환 (전체 제외)
+  const getSubCategoryOptions = (tab: DocumentCategory, submitted: boolean): string[] => {
+    switch (tab) {
+      case "사진":
+        return submitted 
+          ? ["현장출동사진", "수리중 사진", "복구완료 사진"]
+          : ["현장출동사진"];
+      case "기본자료":
+        return ["보험금 청구서", "개인정보 동의서(가족용)"];
+      case "증빙자료":
+        return ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"];
+      case "청구자료":
+        return submitted 
+          ? ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"]
+          : [];
+      default:
+        return ["현장출동사진"]; // 전체 탭일 경우 기본값
+    }
+  };
+
+  // 현재 탭의 서브카테고리 옵션
+  const currentSubCategories = getSubCategoryOptions(selectedCategory, isSubmitted);
+
   // 파일 선택 핸들러
   const handleFileSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
+    // 현재 탭의 첫 번째 서브카테고리를 기본값으로 사용
+    const defaultSubCategory = currentSubCategories.length > 0 
+      ? currentSubCategories[0] 
+      : "현장출동사진";
+
     const newFiles: UploadingFile[] = Array.from(files).map(file => ({
       id: `${Date.now()}-${Math.random()}`,
       file,
-      category: selectedCategory === "전체" ? "사진" : selectedCategory,
+      category: defaultSubCategory,
       progress: 0,
       uploaded: false,
     }));
@@ -453,10 +481,24 @@ export default function FieldDocuments() {
     return `${mb.toFixed(2)}MB`;
   };
 
-  // 필터링된 파일 목록
+  // 서브카테고리와 탭 매핑
+  const getParentTab = (subCategory: string): DocumentCategory => {
+    const photoCategories = ["현장출동사진", "수리중 사진", "복구완료 사진"];
+    const basicCategories = ["보험금 청구서", "개인정보 동의서(가족용)"];
+    const evidenceCategories = ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"];
+    const claimCategories = ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"];
+    
+    if (photoCategories.includes(subCategory)) return "사진";
+    if (basicCategories.includes(subCategory)) return "기본자료";
+    if (evidenceCategories.includes(subCategory)) return "증빙자료";
+    if (claimCategories.includes(subCategory)) return "청구자료";
+    return "사진"; // 기본값
+  };
+
+  // 필터링된 파일 목록 (탭별 서브카테고리로 필터링)
   const filteredDocuments = selectedCategory === "전체"
     ? documents
-    : documents.filter(d => d.category === selectedCategory);
+    : documents.filter(d => getParentTab(d.category) === selectedCategory);
 
   // 저장 핸들러
   const handleSave = () => {
@@ -1356,14 +1398,14 @@ export default function FieldDocuments() {
                     {formatFileSize(doc.fileSize)}
                   </div>
 
-                  {/* Category dropdown */}
+                  {/* Category dropdown - 서브카테고리 옵션 표시 */}
                   <Select
                     value={doc.category}
                     onValueChange={(value) => handleCategoryChange(doc.id, value)}
                     disabled={isReadOnly}
                   >
                     <SelectTrigger
-                      className="w-32 h-8"
+                      className="w-40 h-8"
                       style={{
                         fontFamily: "Pretendard",
                         fontSize: "12px",
@@ -1374,12 +1416,35 @@ export default function FieldDocuments() {
                     >
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      {categories.filter(c => c !== "전체").map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
+                    <SelectContent
+                      style={{
+                        filter: "drop-shadow(12px 12px 50px #C7D5E1)",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      {currentSubCategories.map((subCategory) => {
+                        const isSelected = doc.category === subCategory;
+                        return (
+                          <SelectItem 
+                            key={subCategory} 
+                            value={subCategory}
+                            className="flex items-center justify-between"
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "16px",
+                              fontWeight: isSelected ? 600 : 500,
+                              letterSpacing: "-0.02em",
+                              color: isSelected ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.4)",
+                              background: isSelected 
+                                ? "linear-gradient(0deg, rgba(0, 143, 237, 0.07), rgba(0, 143, 237, 0.07)), #FDFDFD"
+                                : "#FFFFFF",
+                              padding: "12px",
+                            }}
+                          >
+                            {subCategory}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
