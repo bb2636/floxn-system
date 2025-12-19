@@ -2672,15 +2672,19 @@ export default function FieldReport() {
         </TabsContent>
 
         {/* 증빙자료 탭 */}
-        <TabsContent value="증빙자료" id="pdf-section-증빙자료" className="px-6">
-          <div className="flex flex-col gap-4">
+        <TabsContent value="증빙자료" id="pdf-section-증빙자료">
+          <div className="flex flex-col" style={{ padding: "0", gap: "16px" }}>
             {/* 상단 헤더: 증빙자료 N + 전체 다운로드 버튼 */}
             <div 
               className="flex items-center justify-between"
-              style={{ padding: "24px", position: "relative" }}
+              style={{ 
+                padding: "24px",
+                height: "79px",
+                boxSizing: "border-box",
+              }}
             >
               {/* 가운데 정렬을 위한 빈 공간 */}
-              <div style={{ width: "154px" }} />
+              <div style={{ width: "154px", flexShrink: 0 }} />
               
               {/* 증빙자료 N - 가운데 정렬 */}
               <h2
@@ -2690,7 +2694,7 @@ export default function FieldReport() {
                   fontWeight: 600,
                   letterSpacing: "-0.02em",
                   color: "#0C0C0C",
-                  margin: 0,
+                  margin: "0 auto",
                 }}
               >
                 증빙자료 {documents?.length || 0}
@@ -2722,6 +2726,7 @@ export default function FieldReport() {
                   borderRadius: "10px",
                   border: "none",
                   cursor: "pointer",
+                  flexShrink: 0,
                 }}
                 data-testid="button-download-all"
               >
