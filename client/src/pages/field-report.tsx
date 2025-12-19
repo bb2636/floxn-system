@@ -1058,7 +1058,31 @@ export default function FieldReport() {
                         textareaClones.push({ original: ta, clone });
                       });
                       
-                      await new Promise(resolve => setTimeout(resolve, 300));
+                      // 이미지 로딩 대기 (증빙자료 등 Base64 이미지 처리)
+                      const images = element.querySelectorAll('img');
+                      if (images.length > 0) {
+                        const imageLoadPromises = Array.from(images).map((img) => {
+                          const imgEl = img as HTMLImageElement;
+                          if (imgEl.complete && imgEl.naturalWidth > 0) {
+                            return Promise.resolve();
+                          }
+                          return new Promise<void>((resolve) => {
+                            const timeoutId = setTimeout(resolve, 2000);
+                            if (imgEl.decode) {
+                              imgEl.decode()
+                                .then(() => { clearTimeout(timeoutId); resolve(); })
+                                .catch(() => { clearTimeout(timeoutId); resolve(); });
+                            } else {
+                              const onDone = () => { clearTimeout(timeoutId); resolve(); };
+                              imgEl.addEventListener('load', onDone);
+                              imgEl.addEventListener('error', onDone);
+                            }
+                          });
+                        });
+                        await Promise.all(imageLoadPromises);
+                      }
+                      
+                      await new Promise(resolve => setTimeout(resolve, 500));
                       
                       const canvas = await html2canvas(element, {
                         scale: 1.5,
