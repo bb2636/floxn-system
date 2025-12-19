@@ -1051,10 +1051,11 @@ export default function FieldReport() {
                   const coverImg = coverCanvas.toDataURL('image/jpeg', 0.95);
                   pdf.addImage(coverImg, 'JPEG', 0, 0, pageWidth, pageHeight);
                   
-                  // ===== 2. 각 섹션을 챕터별로 추가 (증빙자료는 이메일 본문에 링크로 제공) =====
+                  // ===== 2. 각 섹션을 챕터별로 추가 =====
                   const chapters = [
                     { name: '현장조사', tabValue: '현장조사', elementId: 'pdf-section-현장조사' },
                     { name: '도면', tabValue: '도면', elementId: 'pdf-section-도면' },
+                    { name: '증빙자료', tabValue: '증빙자료', elementId: 'pdf-section-증빙자료' },
                     { name: '견적서', tabValue: '견적서', elementId: 'pdf-section-견적서' },
                     { name: '기타사항/원인', tabValue: '기타사항/원인', elementId: 'pdf-section-기타사항' },
                   ];
@@ -1144,6 +1145,11 @@ export default function FieldReport() {
                         onclone: (doc) => {
                           // 클론된 문서에서 display:none 요소 제거
                           doc.querySelectorAll('[style*="display: none"]').forEach(el => el.remove());
+                          // PDF 캡처 시 다운로드/삭제 버튼 숨기기
+                          doc.querySelectorAll('[data-testid^="button-download"]').forEach(el => (el as HTMLElement).style.display = 'none');
+                          doc.querySelectorAll('[data-testid^="button-delete"]').forEach(el => (el as HTMLElement).style.display = 'none');
+                          // 전체 다운로드 버튼도 숨기기
+                          doc.querySelectorAll('[data-testid="button-download-all-documents"]').forEach(el => (el as HTMLElement).style.display = 'none');
                         }
                       });
                       
