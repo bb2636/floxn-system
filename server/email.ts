@@ -1,5 +1,5 @@
 const BASE = 'https://sendmail-43925.bubbleapps.io/version-test/api/1.1/wf';
-const WORKFLOW = 'send-mail';
+const WORKFLOW = 'send-file';
 
 interface BubbleEmailPayload {
   sender: string;
