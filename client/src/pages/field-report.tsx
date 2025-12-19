@@ -1224,6 +1224,7 @@ export default function FieldReport() {
                     body: JSON.stringify({
                       email: emailAddress,
                       pdfBase64,
+                      caseId: selectedCaseId,
                       caseNumber: caseData?.caseNumber,
                       insuranceCompany: caseData?.insuranceCompany,
                       accidentNo: caseData?.insuranceAccidentNo,

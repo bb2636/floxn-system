@@ -9,7 +9,7 @@ import { sql, inArray } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import https from "https";
 import crypto from "crypto";
-import { registerObjectStorageRoutes, objectStorageClient } from "./replit_integrations/object_storage";
+import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from "./replit_integrations/object_storage";
 import { sendNotificationEmail } from "./email";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
@@ -4148,6 +4148,7 @@ FLOXN 드림`;
   const sendFieldReportEmailSchema = z.object({
     email: z.string().email("올바른 이메일 형식이 아닙니다"),
     pdfBase64: z.string().min(1, "PDF 데이터가 필요합니다"),
+    caseId: z.string().optional(),
     caseNumber: z.string().optional(),
     insuranceCompany: z.string().optional(),
     accidentNo: z.string().optional(),
@@ -4186,6 +4187,7 @@ FLOXN 드림`;
       const { 
         email, 
         pdfBase64, 
+        caseId,
         caseNumber, 
         insuranceCompany, 
         accidentNo,
@@ -4230,6 +4232,108 @@ FLOXN 드림`;
 
       console.log(`[PDF Upload] Field Report PDF uploaded to: ${pdfUrl}`);
 
+      // Fetch and upload case documents (증빙자료) if caseId is provided
+      let documentLinksSection = '';
+      if (caseId) {
+        try {
+          const documents = await storage.getDocumentsByCaseId(caseId);
+          if (documents && documents.length > 0) {
+            console.log(`[Email] Found ${documents.length} documents for case ${caseId}`);
+            
+            // Group documents by category
+            const categoryGroups: Record<string, Array<{ fileName: string; url: string }>> = {};
+            
+            // Category display order and groupings
+            const categoryOrder = [
+              "현장출동사진", "수리중 사진", "복구완료 사진",
+              "보험금 청구서", "개인정보 동의서(가족용)",
+              "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+              "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
+            ];
+            
+            // Upload each document to private Object Storage and generate signed URLs (7일 유효)
+            const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days in seconds
+            
+            // Get private object directory from environment
+            const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+            if (!privateObjectDir) {
+              console.warn("[Email] PRIVATE_OBJECT_DIR not set, skipping document links");
+            } else {
+              // Parse bucket name from private object dir (format: /bucket-name/.private)
+              const privateDirParts = privateObjectDir.startsWith('/') 
+                ? privateObjectDir.slice(1).split('/') 
+                : privateObjectDir.split('/');
+              const privateBucketName = privateDirParts[0];
+              const privatePrefix = privateDirParts.slice(1).join('/');
+              const privateBucket = objectStorageClient.bucket(privateBucketName);
+              
+              for (const doc of documents) {
+                try {
+                  // Decode base64 file data
+                  const fileBuffer = Buffer.from(doc.fileData, 'base64');
+                  const sanitizedFileName = doc.fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
+                  // Use private directory for secure storage
+                  const docObjectName = `${privatePrefix}/case-documents/${caseId}/${timestamp}_${sanitizedFileName}`;
+                  const docFile = privateBucket.file(docObjectName);
+                  
+                  // Upload document to private storage
+                  await docFile.save(fileBuffer, {
+                    contentType: doc.fileType,
+                    metadata: {
+                      'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'private' }),
+                    },
+                  });
+                  
+                  // Generate signed URL with expiration (7 days)
+                  const docUrl = await signObjectURL({
+                    bucketName: privateBucketName,
+                    objectName: docObjectName,
+                    method: 'GET',
+                    ttlSec: SIGNED_URL_TTL_SEC,
+                  });
+                  
+                  // Add to category group
+                  if (!categoryGroups[doc.category]) {
+                    categoryGroups[doc.category] = [];
+                  }
+                  categoryGroups[doc.category].push({ fileName: doc.fileName, url: docUrl });
+                  
+                  console.log(`[Email] Uploaded document with signed URL (7d expiry): ${doc.fileName}`);
+                } catch (docError) {
+                  console.error(`[Email] Failed to upload document ${doc.fileName}:`, docError);
+                }
+              }
+            }
+            
+            // Build document links section for email
+            if (Object.keys(categoryGroups).length > 0) {
+              documentLinksSection = '\n\n■ 증빙자료 다운로드 (링크 유효기간: 7일)\n';
+              
+              for (const category of categoryOrder) {
+                if (categoryGroups[category] && categoryGroups[category].length > 0) {
+                  documentLinksSection += `\n[${category}]\n`;
+                  for (const doc of categoryGroups[category]) {
+                    documentLinksSection += `- ${doc.fileName}\n  ${doc.url}\n`;
+                  }
+                }
+              }
+              
+              // Add any categories not in the predefined order
+              for (const category of Object.keys(categoryGroups)) {
+                if (!categoryOrder.includes(category)) {
+                  documentLinksSection += `\n[${category}]\n`;
+                  for (const doc of categoryGroups[category]) {
+                    documentLinksSection += `- ${doc.fileName}\n  ${doc.url}\n`;
+                  }
+                }
+              }
+            }
+          }
+        } catch (docFetchError) {
+          console.error(`[Email] Failed to fetch documents for case ${caseId}:`, docFetchError);
+        }
+      }
+
       // Send email via Bubble.io API with PDF link
       const emailContent = `안녕하세요,
 
@@ -4252,7 +4356,7 @@ FLOXN 드림`;
 
 아래 링크를 클릭하시면 현장조사 리포트 PDF를 다운로드하실 수 있습니다:
 ${pdfUrl}
-
+${documentLinksSection}
 - 발송일: ${dateStr}
 - 발송자: ${user.name || user.username}
 
