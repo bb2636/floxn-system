@@ -64,6 +64,7 @@ export default function FieldDocuments() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("전체");
   const [photoSubFilter, setPhotoSubFilter] = useState<"전체" | "현장출동사진">("전체");
+  const [basicDataSubFilter, setBasicDataSubFilter] = useState<"전체" | "보험금 청구서" | "개인정보 동의서(가족용)">("전체");
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false);
@@ -697,6 +698,81 @@ export default function FieldDocuments() {
               data-testid="button-filter-field-photo"
             >
               현장출동사진
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 기본자료 탭 서브 필터 (청구 전에만 표시) */}
+      {selectedCategory === "기본자료" && !isSubmitted && (
+        <div className="mb-6">
+          <div
+            className="inline-flex items-center p-1 gap-1.5"
+            style={{
+              background: "#E0E2F3",
+              borderRadius: "6px",
+            }}
+            data-testid="basic-data-sub-filter"
+          >
+            <button
+              type="button"
+              onClick={() => setBasicDataSubFilter("전체")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: basicDataSubFilter === "전체" ? "#FDFDFD" : "transparent",
+                boxShadow: basicDataSubFilter === "전체" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: basicDataSubFilter === "전체" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: basicDataSubFilter === "전체" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-basic-filter-all"
+            >
+              전체
+            </button>
+            <button
+              type="button"
+              onClick={() => setBasicDataSubFilter("보험금 청구서")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: basicDataSubFilter === "보험금 청구서" ? "#FDFDFD" : "transparent",
+                boxShadow: basicDataSubFilter === "보험금 청구서" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: basicDataSubFilter === "보험금 청구서" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: basicDataSubFilter === "보험금 청구서" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-basic-filter-insurance-claim"
+            >
+              보험금 청구서
+            </button>
+            <button
+              type="button"
+              onClick={() => setBasicDataSubFilter("개인정보 동의서(가족용)")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: basicDataSubFilter === "개인정보 동의서(가족용)" ? "#FDFDFD" : "transparent",
+                boxShadow: basicDataSubFilter === "개인정보 동의서(가족용)" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: basicDataSubFilter === "개인정보 동의서(가족용)" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: basicDataSubFilter === "개인정보 동의서(가족용)" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-basic-filter-privacy-consent"
+            >
+              개인정보 동의서(가족용)
             </button>
           </div>
         </div>
