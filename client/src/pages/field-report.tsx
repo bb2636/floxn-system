@@ -520,9 +520,54 @@ export default function FieldReport() {
   const { case: caseData, drawing, documents, estimate, completionStatus } = reportData;
 
   return (
-    <div className="relative p-8">
+    <div 
+      className="relative min-h-screen"
+      style={{
+        background: "linear-gradient(0deg, #E7EDFE, #E7EDFE), #FFFFFF",
+        padding: "32px",
+      }}
+    >
+      {/* 배경 블러 원형 효과 */}
+      <div 
+        style={{
+          position: "absolute",
+          width: "1095px",
+          height: "776px",
+          left: "100px",
+          top: "-200px",
+          background: "rgba(254, 240, 230, 0.4)",
+          filter: "blur(212px)",
+          transform: "rotate(-35.25deg)",
+          pointerEvents: "none",
+        }}
+      />
+      <div 
+        style={{
+          position: "absolute",
+          width: "1334px",
+          height: "1322px",
+          right: "-200px",
+          bottom: "-400px",
+          background: "rgba(234, 230, 254, 0.5)",
+          filter: "blur(212px)",
+          pointerEvents: "none",
+        }}
+      />
+      <div 
+        style={{
+          position: "absolute",
+          width: "348px",
+          height: "1322px",
+          left: "0px",
+          bottom: "189px",
+          background: "rgba(234, 230, 254, 0.5)",
+          filter: "blur(212px)",
+          pointerEvents: "none",
+        }}
+      />
+
       {/* 페이지 타이틀 및 버튼 */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="relative flex items-center justify-between mb-4" style={{ zIndex: 1 }}>
         <div className="flex items-center gap-4">
           {/* 뒤로 가기 버튼 (종합진행관리에서 온 경우만) */}
           {returnToComprehensiveProgress && (
@@ -536,7 +581,8 @@ export default function FieldReport() {
                 alignItems: "center",
                 gap: "6px",
                 padding: "8px 12px",
-                background: "rgba(12, 12, 12, 0.05)",
+                background: "rgba(253, 253, 253, 0.8)",
+                backdropFilter: "blur(7px)",
                 borderRadius: "6px",
                 border: "1px solid rgba(12, 12, 12, 0.1)",
                 fontFamily: "Pretendard",
@@ -1584,109 +1630,235 @@ export default function FieldReport() {
       </Dialog>
 
       {/* 작성중인 건 */}
-      <div className="mb-6">
+      <div className="relative mb-4" style={{ zIndex: 1 }}>
         <div
           style={{
             fontFamily: "Pretendard",
-            fontSize: "14px",
-            fontWeight: 400,
+            fontSize: "15px",
+            fontWeight: 600,
             letterSpacing: "-0.02em",
-            color: "rgba(12, 12, 12, 0.5)",
-            marginBottom: "8px",
+            color: "rgba(12, 12, 12, 0.7)",
+            marginBottom: "16px",
+            padding: "24px 0px",
           }}
         >
           작성중인 건
         </div>
         
         <div 
-          className="p-4 rounded-lg"
+          className="p-4 flex items-center justify-between"
           style={{
-            background: "rgba(12, 12, 12, 0.03)",
+            background: "rgba(12, 12, 12, 0.04)",
+            backdropFilter: "blur(7px)",
+            borderRadius: "12px",
           }}
         >
-          {/* 첫 번째 줄: 보험사명 + 사고번호 */}
-          <div className="flex items-center gap-2 mb-2">
-            <div
-              className="w-2 h-2 rounded-full"
-              style={{ background: "#008FED" }}
-            />
-            <span
+          {/* 왼쪽: 케이스 정보 */}
+          <div className="flex flex-col gap-2">
+            {/* 첫 번째 줄: 보험사명 + 사고번호 */}
+            <div className="flex items-center gap-4">
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ background: "#008FED" }}
+              />
+              <div className="flex items-center gap-2">
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.9)",
+                  }}
+                >
+                  {caseData.insuranceCompany || "보험사 미정"}
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.9)",
+                  }}
+                >
+                  {caseData.insuranceAccidentNo || ""}
+                </span>
+              </div>
+            </div>
+            
+            {/* 두 번째 줄: 접수번호, 계약자, 담당자 */}
+            <div 
+              className="flex items-center gap-6"
               style={{
-                fontFamily: "Pretendard",
-                fontSize: "15px",
-                fontWeight: 600,
-                letterSpacing: "-0.02em",
-                color: "#0C0C0C",
+                paddingLeft: "24px",
               }}
             >
-              {caseData.insuranceCompany || "보험사 미정"} {caseData.insuranceAccidentNo || ""}
-            </span>
-          </div>
-          
-          {/* 두 번째 줄: 접수번호, 피보험자, 담당자 */}
-          <div 
-            className="flex items-center gap-4"
-            style={{
-              fontFamily: "Pretendard",
-              fontSize: "13px",
-              fontWeight: 400,
-              letterSpacing: "-0.02em",
-              color: "rgba(12, 12, 12, 0.5)",
-              paddingLeft: "12px",
-            }}
-          >
-            <span>접수번호 {formatCaseNumber(caseData.caseNumber)}</span>
-            <span>피보험자 {caseData.policyHolderName || caseData.clientName || "미정"}</span>
-            <span>담당자 {caseData.assignedPartnerManager || "미정"}</span>
+              <div className="flex items-center gap-1.5">
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 400,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                >
+                  접수번호
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 400,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  {formatCaseNumber(caseData.caseNumber)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 400,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                >
+                  계약자
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 400,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  {caseData.policyHolderName || caseData.clientName || "미정"}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 400,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                >
+                  담당자
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 400,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}
+                >
+                  {caseData.assignedPartnerManager || "미정"}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* 탭 메뉴 + 다운로드/이메일 버튼 */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center justify-between mb-6">
-          <TabsList>
-            <TabsTrigger value="현장조사">현장조사</TabsTrigger>
-            <TabsTrigger value="도면">도면</TabsTrigger>
-            <TabsTrigger value="증빙자료">증빙자료</TabsTrigger>
-            <TabsTrigger value="견적서">견적서</TabsTrigger>
-            <TabsTrigger value="기타사항/원인">기타사항/원인</TabsTrigger>
-          </TabsList>
-          
-          {/* 다운로드/이메일 버튼 - 항상 표시 */}
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setShowDownloadDialog(true)}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="relative w-full" style={{ zIndex: 1 }}>
+        {/* 탭 헤더 - 새로운 디자인 */}
+        <div 
+          className="flex items-center border-b-2 mb-0"
+          style={{
+            borderColor: "rgba(12, 12, 12, 0.1)",
+          }}
+        >
+          {["현장조사", "도면", "증빙자료", "견적서", "기타사항/원인"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className="flex-1 flex items-center justify-center py-5"
               style={{
                 fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
+                fontSize: "18px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: activeTab === tab ? "#0C0C0C" : "rgba(12, 12, 12, 0.7)",
+                background: "transparent",
+                border: "none",
+                borderBottom: activeTab === tab ? "2px solid #008FED" : "2px solid transparent",
+                marginBottom: "-2px",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+              }}
+              data-testid={`tab-${tab}`}
+            >
+              {tab === "기타사항/원인" ? "기타사항입력" : tab}
+            </button>
+          ))}
+        </div>
+        
+        {/* 메인 콘텐츠 컨테이너 - blur 효과 */}
+        <div
+          style={{
+            background: "rgba(12, 12, 12, 0.04)",
+            backdropFilter: "blur(7px)",
+            borderRadius: "0 0 12px 12px",
+            padding: "8px 0 20px",
+          }}
+        >
+          {/* 탭 콘텐츠 헤더 및 다운로드 버튼 */}
+          <div className="flex items-center justify-between px-6 py-6">
+            <h2
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "24px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+              }}
+            >
+              {activeTab === "현장조사" && "현장조사"}
+              {activeTab === "도면" && "도면"}
+              {activeTab === "증빙자료" && `증빙자료 ${documents?.length || 0}`}
+              {activeTab === "견적서" && "견적서"}
+              {activeTab === "기타사항/원인" && "기타사항/원인"}
+            </h2>
+            <button
+              onClick={() => setShowDownloadDialog(true)}
+              className="flex items-center gap-2 px-4 py-3"
+              style={{
+                background: "#FDFDFD",
+                boxShadow: "2px 4px 30px #BDD1F0",
+                borderRadius: "10px",
+                border: "none",
+                cursor: "pointer",
               }}
               data-testid="button-download-report"
             >
-              ↓ 다운로드
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowEmailDialog(true)}
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-              data-testid="button-email-report"
-            >
-              ✉ 이메일 전송
-            </Button>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "18px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  color: "#008FED",
+                }}
+              >
+                전체 다운로드
+              </span>
+            </button>
           </div>
-        </div>
 
         {/* 현장조사 탭 */}
         <TabsContent value="현장조사" className="space-y-6" id="pdf-section-현장조사">
@@ -2500,265 +2672,165 @@ export default function FieldReport() {
         </TabsContent>
 
         {/* 증빙자료 탭 */}
-        <TabsContent value="증빙자료" id="pdf-section-증빙자료">
-          <div>
+        <TabsContent value="증빙자료" id="pdf-section-증빙자료" className="px-6">
+          <div className="flex flex-col gap-4">
             {documents && documents.length > 0 ? (
               <>
-                {/* 헤더 */}
-                <div className="flex items-center justify-between mb-6">
-                  <h2
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "20px",
-                      fontWeight: 700,
-                      letterSpacing: "-0.02em",
-                      color: "#0C0C0C",
-                    }}
-                  >
-                    증빙자료 {documents.length}
-                  </h2>
-                  <button
-                    onClick={() => {
-                      // 전체 다운로드 함수
-                      documents.forEach((doc) => {
-                        const link = document.createElement('a');
-                        // Base64 데이터에 data URL prefix 추가
-                        const dataUrl = doc.fileData.startsWith('data:') 
-                          ? doc.fileData 
-                          : `data:${doc.fileType};base64,${doc.fileData}`;
-                        link.href = dataUrl;
-                        link.download = doc.fileName;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      });
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
-                    style={{
-                      background: "rgba(0, 143, 237, 0.1)",
-                      border: "1px solid rgba(0, 143, 237, 0.3)",
-                    }}
-                    data-testid="button-download-all"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 600,
-                        color: "#008FED",
-                      }}
-                    >
-                      전체 다운로드
-                    </span>
-                  </button>
-                </div>
-              <div className="space-y-6">
-                {/* 카테고리별 그룹핑 */}
+                {/* 카테고리별 그룹핑 - 리스트 형태 */}
                 {["현장", "수리중", "복구완료", "청구", "개인정보"].map((category) => {
                   const categoryDocs = documents.filter(doc => doc.category === category);
                   if (categoryDocs.length === 0) return null;
 
-                  // 이미지 파일과 기타 파일 분리
-                  const imageDocs = categoryDocs.filter(doc => 
-                    doc.fileType?.startsWith('image/') || 
-                    doc.fileName?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)
-                  );
-                  const otherDocs = categoryDocs.filter(doc => 
-                    !doc.fileType?.startsWith('image/') && 
-                    !doc.fileName?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)
-                  );
-
                   return (
-                    <Card key={category}>
-                      <CardHeader>
-                        <CardTitle
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "16px",
-                            fontWeight: 600,
-                            color: "rgba(12, 12, 12, 0.8)",
-                          }}
-                        >
-                          {category} {categoryDocs.length}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {/* 이미지 그리드 */}
-                        {imageDocs.length > 0 && (
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                            {imageDocs.map((doc) => {
-                              const dataUrl = doc.fileData.startsWith('data:') 
-                                ? doc.fileData 
-                                : `data:${doc.fileType || 'image/jpeg'};base64,${doc.fileData}`;
-                              
-                              return (
+                    <div 
+                      key={category}
+                      style={{
+                        background: "#FDFDFD",
+                        borderRadius: "12px",
+                        padding: "8px 16px 16px",
+                      }}
+                    >
+                      {/* 카테고리 헤더 */}
+                      <div 
+                        className="flex items-center justify-center py-3"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "20px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {category} {categoryDocs.length}
+                      </div>
+                      
+                      {/* 파일 리스트 */}
+                      <div className="flex flex-col gap-3">
+                        {categoryDocs.map((doc) => {
+                          const dataUrl = doc.fileData.startsWith('data:') 
+                            ? doc.fileData 
+                            : `data:${doc.fileType || 'image/jpeg'};base64,${doc.fileData}`;
+                          const isImage = doc.fileType?.startsWith('image/') || 
+                            doc.fileName?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
+                          
+                          return (
+                            <div
+                              key={doc.id}
+                              className="flex items-center justify-between py-2"
+                            >
+                              {/* 왼쪽: 파일 아이콘/썸네일 + 파일명 */}
+                              <div className="flex items-center gap-2">
+                                {/* 파일 썸네일 */}
                                 <div
-                                  key={doc.id}
-                                  className="relative group"
                                   style={{
-                                    background: "rgba(12, 12, 12, 0.02)",
-                                    borderRadius: "8px",
-                                    overflow: "hidden",
-                                  }}
-                                >
-                                  <img
-                                    src={dataUrl}
-                                    alt={doc.fileName}
-                                    style={{
-                                      width: "100%",
-                                      height: "150px",
-                                      objectFit: "cover",
-                                    }}
-                                    data-testid={`image-preview-${doc.id}`}
-                                  />
-                                  <div
-                                    className="absolute bottom-0 left-0 right-0 p-2"
-                                    style={{
-                                      background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
-                                    }}
-                                  >
-                                    <p
-                                      style={{
-                                        fontFamily: "Pretendard",
-                                        fontSize: "12px",
-                                        color: "white",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                        whiteSpace: "nowrap",
-                                      }}
-                                    >
-                                      {doc.fileName}
-                                    </p>
-                                  </div>
-                                  <button
-                                    onClick={() => {
-                                      const link = document.createElement('a');
-                                      link.href = dataUrl;
-                                      link.download = doc.fileName;
-                                      document.body.appendChild(link);
-                                      link.click();
-                                      document.body.removeChild(link);
-                                    }}
-                                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    style={{
-                                      width: "28px",
-                                      height: "28px",
-                                      borderRadius: "4px",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      background: "rgba(255, 255, 255, 0.9)",
-                                    }}
-                                    data-testid={`button-download-image-${doc.id}`}
-                                  >
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    </svg>
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                        
-                        {/* 기타 파일 목록 */}
-                        {otherDocs.length > 0 && (
-                          <div className="space-y-3">
-                            {otherDocs.map((doc) => (
-                              <div
-                                key={doc.id}
-                                className="flex items-center justify-between"
-                                style={{
-                                  padding: "12px",
-                                  background: "rgba(12, 12, 12, 0.02)",
-                                  borderRadius: "8px",
-                                }}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    style={{
-                                      width: "40px",
-                                      height: "40px",
-                                      borderRadius: "50%",
-                                      background: "rgba(12, 12, 12, 0.05)",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                    }}
-                                  >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-7-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                      <path d="M13 2v7h7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                    </svg>
-                                  </div>
-                                  <span
-                                    style={{
-                                      fontFamily: "Pretendard",
-                                      fontSize: "14px",
-                                      fontWeight: 500,
-                                      color: "#0C0C0C",
-                                    }}
-                                  >
-                                    {doc.fileName}
-                                  </span>
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    const link = document.createElement('a');
-                                    const dataUrl = doc.fileData.startsWith('data:') 
-                                      ? doc.fileData 
-                                      : `data:${doc.fileType};base64,${doc.fileData}`;
-                                    link.href = dataUrl;
-                                    link.download = doc.fileName;
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
-                                  }}
-                                  style={{
-                                    width: "32px",
-                                    height: "32px",
-                                    borderRadius: "4px",
+                                    width: "64px",
+                                    height: "64px",
+                                    background: "rgba(12, 12, 12, 0.04)",
+                                    borderRadius: "6px",
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    background: "rgba(0, 143, 237, 0.1)",
+                                    overflow: "hidden",
                                   }}
-                                  className="hover-elevate"
-                                  data-testid={`button-download-document-${doc.id}`}
                                 >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                                  </svg>
-                                </button>
+                                  {isImage ? (
+                                    <img
+                                      src={dataUrl}
+                                      alt={doc.fileName}
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "cover",
+                                      }}
+                                      data-testid={`image-preview-${doc.id}`}
+                                    />
+                                  ) : (
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                      <path 
+                                        d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" 
+                                        stroke="rgba(12, 12, 12, 0.8)" 
+                                        strokeWidth="2" 
+                                        strokeLinecap="round" 
+                                        strokeLinejoin="round"
+                                      />
+                                    </svg>
+                                  )}
+                                </div>
+                                
+                                {/* 파일명 */}
+                                <span
+                                  style={{
+                                    fontFamily: "Pretendard",
+                                    fontSize: "16px",
+                                    fontWeight: 500,
+                                    letterSpacing: "-0.02em",
+                                    color: "rgba(12, 12, 12, 0.9)",
+                                    textDecoration: "underline",
+                                  }}
+                                >
+                                  {doc.fileName}
+                                </span>
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                              
+                              {/* 오른쪽: 다운로드 버튼 */}
+                              <button
+                                onClick={() => {
+                                  const link = document.createElement('a');
+                                  link.href = dataUrl;
+                                  link.download = doc.fileName;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                }}
+                                style={{
+                                  width: "24px",
+                                  height: "24px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  background: "transparent",
+                                  border: "none",
+                                  cursor: "pointer",
+                                }}
+                                data-testid={`button-download-${doc.id}`}
+                              >
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                  <path 
+                                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" 
+                                    stroke="#008FED" 
+                                    strokeWidth="2" 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   );
                 })}
-              </div>
               </>
             ) : (
-              <Card>
-                <CardContent className="p-6">
-                  <p
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      textAlign: "center",
-                      padding: "40px 0",
-                    }}
-                  >
-                    등록된 증빙자료가 없습니다.
-                  </p>
-                </CardContent>
-              </Card>
+              <div 
+                style={{
+                  background: "#FDFDFD",
+                  borderRadius: "12px",
+                  padding: "40px",
+                  textAlign: "center",
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: "rgba(12, 12, 12, 0.5)",
+                  }}
+                >
+                  등록된 증빙자료가 없습니다.
+                </p>
+              </div>
             )}
           </div>
         </TabsContent>
@@ -3380,6 +3452,7 @@ export default function FieldReport() {
             </CardContent>
           </Card>
         </TabsContent>
+        </div>
       </Tabs>
       
       {/* SMS 알림 발송 다이얼로그 */}
