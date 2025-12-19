@@ -4218,6 +4218,133 @@ FLOXN 드림`;
   });
 
   // ==========================================
+  // POST /api/send-field-report-email - 현장조사 리포트 PDF 이메일 전송 (Bubble.io)
+  // ==========================================
+  const sendFieldReportEmailSchema = z.object({
+    email: z.string().email("올바른 이메일 형식이 아닙니다"),
+    pdfBase64: z.string().min(1, "PDF 데이터가 필요합니다"),
+    caseNumber: z.string().optional(),
+    insuranceCompany: z.string().optional(),
+    accidentNo: z.string().optional(),
+    clientName: z.string().optional(),
+    insuredName: z.string().optional(),
+    visitDate: z.string().optional().nullable(),
+    accidentCategory: z.string().optional().nullable(),
+    accidentCause: z.string().optional().nullable(),
+    recoveryMethodType: z.string().optional().nullable(),
+  });
+
+  app.post("/api/send-field-report-email", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(403).json({ error: "사용자 정보를 찾을 수 없습니다" });
+    }
+
+    // 역할 기반 접근 제어 - 협력사, 관리자, 심사사만 허용
+    const allowedRoles = ["협력사", "관리자", "심사사"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "현장조사 리포트 이메일 전송 권한이 없습니다" });
+    }
+
+    try {
+      // Zod 검증
+      const validationResult = sendFieldReportEmailSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors.map(e => e.message).join(", ");
+        return res.status(400).json({ error: errorMessage });
+      }
+
+      const { 
+        email, 
+        pdfBase64, 
+        caseNumber, 
+        insuranceCompany, 
+        accidentNo,
+        clientName,
+        insuredName,
+        visitDate,
+        accidentCategory,
+        accidentCause,
+        recoveryMethodType
+      } = validationResult.data;
+
+      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timestamp = Date.now();
+      const fileName = `field-report_${caseNumber || timestamp}_${timestamp}.pdf`;
+      
+      // Convert base64 to buffer
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+
+      // Upload PDF to Object Storage
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+      if (!bucketId) {
+        console.error("[send-field-report-email] Missing Object Storage bucket ID");
+        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+      }
+
+      const bucket = objectStorageClient.bucket(bucketId);
+      const objectName = `public/field-report-pdfs/${fileName}`;
+      const file = bucket.file(objectName);
+
+      // Upload the PDF
+      await file.save(pdfBuffer, {
+        contentType: 'application/pdf',
+        metadata: {
+          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
+        },
+      });
+
+      // Generate public URL
+      const appDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      const protocol = appDomain.includes('localhost') ? 'http' : 'https';
+      const pdfUrl = `${protocol}://${appDomain}/objects/public/field-report-pdfs/${fileName}`;
+
+      console.log(`[PDF Upload] Field Report PDF uploaded to: ${pdfUrl}`);
+
+      // Send email via Bubble.io API with PDF link
+      const emailContent = `안녕하세요,
+
+현장조사 리포트를 전송해드립니다.
+
+■ 사건 정보
+- 보험사: ${insuranceCompany || '-'}
+- 사고번호: ${accidentNo || '-'}
+- 사건번호: ${caseNumber || '-'}
+- 의뢰사: ${clientName || '-'}
+
+■ 피보험자 정보
+- 피보험자: ${insuredName || '-'}
+
+■ 현장조사 정보
+- 방문일: ${visitDate || '-'}
+- 사고분류: ${accidentCategory || '-'}
+- 사고원인: ${accidentCause || '-'}
+- 처리유형: ${recoveryMethodType || '-'}
+
+아래 링크를 클릭하시면 현장조사 리포트 PDF를 다운로드하실 수 있습니다:
+${pdfUrl}
+
+- 발송일: ${dateStr}
+- 발송자: ${user.name || user.username}
+
+감사합니다.
+FLOXN 드림`;
+
+      await sendNotificationEmail(email, `FLOXN 현장조사 리포트 - ${caseNumber || dateStr}`, emailContent);
+
+      console.log(`[Email] Field Report PDF link sent successfully to ${email} by ${user.username}`);
+      res.json({ success: true, message: "현장조사 리포트 이메일이 전송되었습니다", pdfUrl });
+    } catch (error) {
+      console.error("Send field report email error:", error);
+      res.status(500).json({ error: "현장조사 리포트 이메일 전송 중 오류가 발생했습니다" });
+    }
+  });
+
+  // ==========================================
   // POST /send-pdf - PDF 이메일 첨부 전송 (SMTP/Nodemailer)
   // ==========================================
   app.post("/send-pdf", async (req, res) => {

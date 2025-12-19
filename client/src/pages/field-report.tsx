@@ -1077,7 +1077,14 @@ export default function FieldReport() {
                       email: emailAddress,
                       pdfBase64,
                       caseNumber: caseData?.caseNumber,
-                      caseId: selectedCaseId,
+                      insuranceCompany: caseData?.insuranceCompany,
+                      accidentNo: caseData?.insuranceAccidentNo,
+                      clientName: caseData?.clientName,
+                      insuredName: caseData?.insuredName,
+                      visitDate: caseData?.visitDate,
+                      accidentCategory: caseData?.accidentCategory,
+                      accidentCause: caseData?.accidentCause,
+                      recoveryMethodType: caseData?.recoveryMethodType,
                     }),
                   });
                   
