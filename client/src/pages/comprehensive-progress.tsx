@@ -2834,12 +2834,12 @@ export default function ComprehensiveProgress() {
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <input
                           type="text"
-                          value={invoiceDamagePreventionAmount}
+                          value={invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : ""}
                           onChange={(e) => setInvoiceDamagePreventionAmount(e.target.value.replace(/[^0-9]/g, ""))}
                           placeholder="금액을 입력해주세요"
                           style={{
                             fontFamily: "Pretendard",
-                            fontWeight: 400,
+                            fontWeight: 500,
                             fontSize: "15px",
                             lineHeight: "128%",
                             letterSpacing: "-0.01em",
@@ -2848,7 +2848,8 @@ export default function ComprehensiveProgress() {
                             border: "none",
                             outline: "none",
                             textAlign: "right",
-                            width: "150px",
+                            width: "200px",
+                            minWidth: "200px",
                           }}
                           data-testid="input-damage-prevention-amount"
                         />
@@ -2857,6 +2858,7 @@ export default function ComprehensiveProgress() {
                           fontWeight: 500,
                           fontSize: "15px",
                           color: "rgba(12, 12, 12, 0.9)",
+                          flexShrink: 0,
                         }}>
                           원
                         </span>
@@ -2885,12 +2887,12 @@ export default function ComprehensiveProgress() {
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <input
                           type="text"
-                          value={invoiceFieldDispatchAmount}
+                          value={invoiceFieldDispatchAmount ? Number(invoiceFieldDispatchAmount).toLocaleString() : ""}
                           onChange={(e) => setInvoiceFieldDispatchAmount(e.target.value.replace(/[^0-9]/g, ""))}
                           placeholder="금액을 입력해주세요"
                           style={{
                             fontFamily: "Pretendard",
-                            fontWeight: 400,
+                            fontWeight: 500,
                             fontSize: "15px",
                             lineHeight: "128%",
                             letterSpacing: "-0.01em",
@@ -2899,7 +2901,8 @@ export default function ComprehensiveProgress() {
                             border: "none",
                             outline: "none",
                             textAlign: "right",
-                            width: "150px",
+                            width: "200px",
+                            minWidth: "200px",
                           }}
                           data-testid="input-field-dispatch-amount"
                         />
@@ -2908,6 +2911,7 @@ export default function ComprehensiveProgress() {
                           fontWeight: 500,
                           fontSize: "15px",
                           color: "rgba(12, 12, 12, 0.9)",
+                          flexShrink: 0,
                         }}>
                           원
                         </span>
