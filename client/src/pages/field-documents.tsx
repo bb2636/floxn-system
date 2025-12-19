@@ -63,6 +63,7 @@ export default function FieldDocuments() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("전체");
+  const [photoSubFilter, setPhotoSubFilter] = useState<"수임" | "미결">("수임");
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false);
@@ -645,6 +646,61 @@ export default function FieldDocuments() {
           </button>
         ))}
       </div>
+
+      {/* 사진 탭 서브 필터 (청구 전에만 표시) */}
+      {selectedCategory === "사진" && !isSubmitted && (
+        <div className="mb-6">
+          <div
+            className="inline-flex items-center p-1 gap-1.5"
+            style={{
+              background: "#E0E2F3",
+              borderRadius: "6px",
+            }}
+            data-testid="photo-sub-filter"
+          >
+            <button
+              type="button"
+              onClick={() => setPhotoSubFilter("수임")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: photoSubFilter === "수임" ? "#FDFDFD" : "transparent",
+                boxShadow: photoSubFilter === "수임" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: photoSubFilter === "수임" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: photoSubFilter === "수임" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-filter-suim"
+            >
+              수임
+            </button>
+            <button
+              type="button"
+              onClick={() => setPhotoSubFilter("미결")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: photoSubFilter === "미결" ? "#FDFDFD" : "transparent",
+                boxShadow: photoSubFilter === "미결" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: photoSubFilter === "미결" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: photoSubFilter === "미결" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-filter-migyeol"
+            >
+              미결
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 파일 업로드 영역 */}
       {isReadOnly ? (
