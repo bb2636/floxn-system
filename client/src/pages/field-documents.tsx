@@ -615,38 +615,47 @@ export default function FieldDocuments() {
           borderBottom: "2px solid rgba(12, 12, 12, 0.08)",
         }}
       >
-        {categories.map((category) => (
-          <button
-            key={category}
-            type="button"
-            onClick={() => setSelectedCategory(category)}
-            className="pb-3 transition-all relative"
-            style={{
-              fontFamily: "Pretendard",
-              fontSize: "16px",
-              fontWeight: selectedCategory === category ? 600 : 400,
-              letterSpacing: "-0.02em",
-              background: "transparent",
-              color: selectedCategory === category ? "#008FED" : "rgba(12, 12, 12, 0.5)",
-              border: "none",
-            }}
-            data-testid={`tab-${category}`}
-          >
-            {category}
-            {selectedCategory === category && (
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: "-2px",
-                  left: 0,
-                  right: 0,
-                  height: "2px",
-                  background: "#008FED",
-                }}
-              />
-            )}
-          </button>
-        ))}
+        {categories.map((category) => {
+          const isDisabled = category === "청구자료" && !isSubmitted;
+          return (
+            <button
+              key={category}
+              type="button"
+              onClick={() => !isDisabled && setSelectedCategory(category)}
+              disabled={isDisabled}
+              className="pb-3 transition-all relative"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: selectedCategory === category ? 600 : 400,
+                letterSpacing: "-0.02em",
+                background: "transparent",
+                color: isDisabled 
+                  ? "rgba(12, 12, 12, 0.25)" 
+                  : selectedCategory === category 
+                    ? "#008FED" 
+                    : "rgba(12, 12, 12, 0.5)",
+                border: "none",
+                cursor: isDisabled ? "not-allowed" : "pointer",
+              }}
+              data-testid={`tab-${category}`}
+            >
+              {category}
+              {selectedCategory === category && (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: "-2px",
+                    left: 0,
+                    right: 0,
+                    height: "2px",
+                    background: "#008FED",
+                  }}
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* 사진 탭 서브 필터 (청구 전에만 표시) */}
