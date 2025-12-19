@@ -65,6 +65,7 @@ export default function FieldDocuments() {
   const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>("전체");
   const [photoSubFilter, setPhotoSubFilter] = useState<"전체" | "현장출동사진">("전체");
   const [basicDataSubFilter, setBasicDataSubFilter] = useState<"전체" | "보험금 청구서" | "개인정보 동의서(가족용)">("전체");
+  const [evidenceSubFilter, setEvidenceSubFilter] = useState<"전체" | "주민등록등본" | "등기부등본" | "건축물대장" | "기타증빙자료(민원일지 등)">("전체");
   const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false);
@@ -773,6 +774,121 @@ export default function FieldDocuments() {
               data-testid="button-basic-filter-privacy-consent"
             >
               개인정보 동의서(가족용)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 증빙자료 탭 서브 필터 (청구 전에만 표시) */}
+      {selectedCategory === "증빙자료" && !isSubmitted && (
+        <div className="mb-6">
+          <div
+            className="inline-flex items-center p-1 gap-1.5"
+            style={{
+              background: "#E0E2F3",
+              borderRadius: "6px",
+            }}
+            data-testid="evidence-sub-filter"
+          >
+            <button
+              type="button"
+              onClick={() => setEvidenceSubFilter("전체")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: evidenceSubFilter === "전체" ? "#FDFDFD" : "transparent",
+                boxShadow: evidenceSubFilter === "전체" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: evidenceSubFilter === "전체" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: evidenceSubFilter === "전체" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-evidence-filter-all"
+            >
+              전체
+            </button>
+            <button
+              type="button"
+              onClick={() => setEvidenceSubFilter("주민등록등본")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: evidenceSubFilter === "주민등록등본" ? "#FDFDFD" : "transparent",
+                boxShadow: evidenceSubFilter === "주민등록등본" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: evidenceSubFilter === "주민등록등본" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: evidenceSubFilter === "주민등록등본" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-evidence-filter-resident"
+            >
+              주민등록등본
+            </button>
+            <button
+              type="button"
+              onClick={() => setEvidenceSubFilter("등기부등본")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: evidenceSubFilter === "등기부등본" ? "#FDFDFD" : "transparent",
+                boxShadow: evidenceSubFilter === "등기부등본" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: evidenceSubFilter === "등기부등본" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: evidenceSubFilter === "등기부등본" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-evidence-filter-registry"
+            >
+              등기부등본
+            </button>
+            <button
+              type="button"
+              onClick={() => setEvidenceSubFilter("건축물대장")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: evidenceSubFilter === "건축물대장" ? "#FDFDFD" : "transparent",
+                boxShadow: evidenceSubFilter === "건축물대장" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: evidenceSubFilter === "건축물대장" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: evidenceSubFilter === "건축물대장" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-evidence-filter-building"
+            >
+              건축물대장
+            </button>
+            <button
+              type="button"
+              onClick={() => setEvidenceSubFilter("기타증빙자료(민원일지 등)")}
+              className="flex items-center justify-center px-1.5 py-1"
+              style={{
+                background: evidenceSubFilter === "기타증빙자료(민원일지 등)" ? "#FDFDFD" : "transparent",
+                boxShadow: evidenceSubFilter === "기타증빙자료(민원일지 등)" ? "0px 2px 14px rgba(0, 0, 0, 0.12)" : "none",
+                borderRadius: "4px",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: evidenceSubFilter === "기타증빙자료(민원일지 등)" ? 500 : 400,
+                letterSpacing: "-0.01em",
+                color: evidenceSubFilter === "기타증빙자료(민원일지 등)" ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-evidence-filter-other"
+            >
+              기타증빙자료(민원일지 등)
             </button>
           </div>
         </div>
