@@ -12,7 +12,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { formatCaseNumber } from "@/lib/utils";
 
-type DocumentCategory = "전체" | "현장" | "수리중" | "복구완료" | "청구";
+type DocumentCategory = "전체" | "사진" | "기본자료" | "증빙자료" | "청구자료";
 
 interface UploadingFile {
   id: string;
@@ -348,7 +348,7 @@ export default function FieldDocuments() {
     );
   }
 
-  const categories: DocumentCategory[] = ["전체", "현장", "수리중", "복구완료", "청구"];
+  const categories: DocumentCategory[] = ["전체", "사진", "기본자료", "증빙자료", "청구자료"];
 
   // 파일 선택 핸들러
   const handleFileSelect = async (files: FileList | null) => {
@@ -357,7 +357,7 @@ export default function FieldDocuments() {
     const newFiles: UploadingFile[] = Array.from(files).map(file => ({
       id: `${Date.now()}-${Math.random()}`,
       file,
-      category: selectedCategory === "전체" ? "현장" : selectedCategory,
+      category: selectedCategory === "전체" ? "사진" : selectedCategory,
       progress: 0,
       uploaded: false,
     }));
