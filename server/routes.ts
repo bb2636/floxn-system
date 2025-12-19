@@ -9,6 +9,8 @@ import { sql, inArray } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import https from "https";
 import crypto from "crypto";
+import { registerObjectStorageRoutes, objectStorageClient } from "./replit_integrations/object_storage";
+import { sendNotificationEmail } from "./email";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
@@ -58,6 +60,9 @@ function solapiHttpsRequest({ method, path, headers, body }: {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register Object Storage routes
+  registerObjectStorageRoutes(app);
+
   // Login endpoint
   app.post("/api/login", async (req, res) => {
     try {
@@ -4033,6 +4038,182 @@ FLOXN 드림`,
     } catch (error) {
       console.error("Send field report email error:", error);
       res.status(500).json({ error: "이메일 전송 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Send dashboard PDF email endpoint (Bubble.io + Object Storage) - Admin only
+  app.post("/api/send-dashboard-pdf-email", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check if user is admin
+    const user = await storage.getUser(req.session.userId);
+    if (!user || user.role !== "관리자") {
+      return res.status(403).json({ error: "관리자만 사용할 수 있는 기능입니다" });
+    }
+
+    try {
+      const { email, pdfBase64, title } = req.body;
+
+      if (!email || !pdfBase64) {
+        return res.status(400).json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
+      }
+
+      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timestamp = Date.now();
+      const fileName = `dashboard_${timestamp}.pdf`;
+      
+      // Convert base64 to buffer
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+
+      // Upload PDF to Object Storage
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+      if (!bucketId) {
+        console.error("[send-dashboard-pdf-email] Missing Object Storage bucket ID");
+        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+      }
+
+      const bucket = objectStorageClient.bucket(bucketId);
+      const objectName = `public/dashboard-pdfs/${fileName}`;
+      const file = bucket.file(objectName);
+
+      // Upload the PDF
+      await file.save(pdfBuffer, {
+        contentType: 'application/pdf',
+        metadata: {
+          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
+        },
+      });
+
+      // Generate public URL
+      const appDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      const protocol = appDomain.includes('localhost') ? 'http' : 'https';
+      const pdfUrl = `${protocol}://${appDomain}/objects/public/dashboard-pdfs/${fileName}`;
+
+      console.log(`[PDF Upload] Dashboard PDF uploaded to: ${pdfUrl}`);
+
+      // Send email via Bubble.io API with PDF link
+      const emailContent = `안녕하세요,
+
+FLOXN 대시보드 현황을 보내드립니다.
+
+- 발송일: ${dateStr}
+- 발송자: ${user.name || user.username}
+
+아래 링크를 클릭하시면 PDF를 다운로드하실 수 있습니다:
+${pdfUrl}
+
+감사합니다.
+FLOXN 드림`;
+
+      await sendNotificationEmail(email, title || `FLOXN 대시보드 현황 - ${dateStr}`, emailContent);
+
+      console.log(`[Email] Dashboard PDF link sent successfully to ${email} by ${user.username}`);
+      res.json({ success: true, message: "이메일이 전송되었습니다", pdfUrl });
+    } catch (error) {
+      console.error("Send dashboard PDF email error:", error);
+      res.status(500).json({ error: "이메일 전송 중 오류가 발생했습니다" });
+    }
+  });
+
+  // ==========================================
+  // POST /api/send-invoice-email - INVOICE PDF 이메일 전송 (Bubble.io)
+  // ==========================================
+  app.post("/api/send-invoice-email", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(403).json({ error: "사용자 정보를 찾을 수 없습니다" });
+    }
+
+    try {
+      const { 
+        email, 
+        pdfBase64, 
+        caseNumber, 
+        insuranceCompany, 
+        accidentNo,
+        damagePreventionAmount,
+        fieldDispatchAmount,
+        totalAmount,
+        remarks
+      } = req.body;
+
+      if (!email || !pdfBase64) {
+        return res.status(400).json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
+      }
+
+      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timestamp = Date.now();
+      const fileName = `invoice_${caseNumber || timestamp}_${timestamp}.pdf`;
+      
+      // Convert base64 to buffer
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+
+      // Upload PDF to Object Storage
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+      if (!bucketId) {
+        console.error("[send-invoice-email] Missing Object Storage bucket ID");
+        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+      }
+
+      const bucket = objectStorageClient.bucket(bucketId);
+      const objectName = `public/invoice-pdfs/${fileName}`;
+      const file = bucket.file(objectName);
+
+      // Upload the PDF
+      await file.save(pdfBuffer, {
+        contentType: 'application/pdf',
+        metadata: {
+          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
+        },
+      });
+
+      // Generate public URL
+      const appDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      const protocol = appDomain.includes('localhost') ? 'http' : 'https';
+      const pdfUrl = `${protocol}://${appDomain}/objects/public/invoice-pdfs/${fileName}`;
+
+      console.log(`[PDF Upload] Invoice PDF uploaded to: ${pdfUrl}`);
+
+      // Format amounts
+      const formatAmount = (amount: number) => amount.toLocaleString('ko-KR');
+
+      // Send email via Bubble.io API with PDF link
+      const emailContent = `안녕하세요,
+
+INVOICE를 전송해드립니다.
+
+- 보험사: ${insuranceCompany || '-'}
+- 사고번호: ${accidentNo || '-'}
+- 사건번호: ${caseNumber || '-'}
+
+청구 금액:
+- 손해방지비용: ${formatAmount(damagePreventionAmount || 0)}원
+- 현장출동비용: ${formatAmount(fieldDispatchAmount || 0)}원
+- 합계: ${formatAmount(totalAmount || 0)}원
+${remarks ? `\n비고: ${remarks}` : ''}
+
+아래 링크를 클릭하시면 INVOICE PDF를 다운로드하실 수 있습니다:
+${pdfUrl}
+
+- 발송일: ${dateStr}
+- 발송자: ${user.name || user.username}
+
+감사합니다.
+FLOXN 드림`;
+
+      await sendNotificationEmail(email, `FLOXN INVOICE - ${caseNumber || dateStr}`, emailContent);
+
+      console.log(`[Email] Invoice PDF link sent successfully to ${email} by ${user.username}`);
+      res.json({ success: true, message: "INVOICE 이메일이 전송되었습니다", pdfUrl });
+    } catch (error) {
+      console.error("Send invoice email error:", error);
+      res.status(500).json({ error: "INVOICE 이메일 전송 중 오류가 발생했습니다" });
     }
   });
 
