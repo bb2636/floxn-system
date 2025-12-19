@@ -926,100 +926,165 @@ export default function FieldReport() {
                 });
                 
                 try {
-                  // 간단한 양식의 PDF 생성
                   const jsPDF = (await import('jspdf')).default;
+                  const html2canvas = (await import('html2canvas')).default;
                   
                   const pdf = new jsPDF('p', 'mm', 'a4');
                   const pageWidth = pdf.internal.pageSize.getWidth();
-                  const margin = 20;
-                  const contentWidth = pageWidth - (margin * 2);
+                  const pageHeight = pdf.internal.pageSize.getHeight();
+                  const margin = 25;
                   
-                  // 한글 폰트 설정을 위해 기본 폰트 사용
-                  pdf.setFont('helvetica');
+                  // ===== 1. 표지 페이지 =====
+                  let yPos = 50;
                   
-                  let yPosition = 40;
-                  
-                  // 문서 제목
-                  pdf.setFontSize(24);
+                  // 제목
+                  pdf.setFontSize(28);
                   pdf.setFont('helvetica', 'bold');
-                  pdf.text('Field Investigation Report', pageWidth / 2, yPosition, { align: 'center' });
-                  yPosition += 8;
-                  pdf.setFontSize(16);
-                  pdf.text('(현장 실사 보고서)', pageWidth / 2, yPosition, { align: 'center' });
-                  yPosition += 25;
+                  pdf.text('Field Dispatch Report', pageWidth / 2, yPos, { align: 'center' });
+                  yPos += 12;
                   
-                  // 구분선
-                  pdf.setLineWidth(0.5);
-                  pdf.line(margin, yPosition, pageWidth - margin, yPosition);
-                  yPosition += 15;
-                  
-                  // 내용 항목들
-                  pdf.setFontSize(12);
+                  // 수신
+                  yPos += 20;
+                  pdf.setFontSize(11);
                   pdf.setFont('helvetica', 'normal');
+                  pdf.text(`To: ${caseData?.insuranceCompany || '-'}`, margin, yPos);
+                  yPos += 8;
                   
-                  const addField = (label: string, value: string) => {
+                  // 발신
+                  pdf.text('From: FLOXN Co., Ltd.', margin, yPos);
+                  yPos += 20;
+                  
+                  // 사고 정보 테이블
+                  pdf.setFontSize(12);
+                  pdf.setFont('helvetica', 'bold');
+                  pdf.text('Case Information', margin, yPos);
+                  yPos += 8;
+                  
+                  // 테이블 그리기
+                  const tableStartY = yPos;
+                  const col1Width = 50;
+                  const col2Width = 100;
+                  const rowHeight = 10;
+                  
+                  const tableData = [
+                    ['Case No.', caseData?.insuranceAccidentNo || caseData?.caseNumber || '-'],
+                    ['Insured', caseData?.insuredName || '-'],
+                    ['Investigator', caseData?.assignedPartnerManager ? `${caseData.assignedPartner} ${caseData.assignedPartnerManager}` : '-'],
+                    ['Partner', caseData?.assignedPartner || '-'],
+                  ];
+                  
+                  pdf.setFont('helvetica', 'normal');
+                  pdf.setFontSize(10);
+                  
+                  tableData.forEach((row, index) => {
+                    const y = tableStartY + (index * rowHeight);
+                    // 테이블 셀 테두리
+                    pdf.setDrawColor(200, 200, 200);
+                    pdf.rect(margin, y, col1Width, rowHeight);
+                    pdf.rect(margin + col1Width, y, col2Width, rowHeight);
+                    // 라벨 (회색 배경)
+                    pdf.setFillColor(245, 245, 245);
+                    pdf.rect(margin, y, col1Width, rowHeight, 'F');
+                    pdf.rect(margin, y, col1Width, rowHeight);
+                    // 텍스트
                     pdf.setFont('helvetica', 'bold');
-                    pdf.text(label, margin, yPosition);
+                    pdf.text(row[0], margin + 3, y + 7);
                     pdf.setFont('helvetica', 'normal');
-                    pdf.text(value || '-', margin + 50, yPosition);
-                    yPosition += 12;
+                    pdf.text(row[1], margin + col1Width + 3, y + 7);
+                  });
+                  
+                  yPos = tableStartY + (tableData.length * rowHeight) + 20;
+                  
+                  // 확인 문구
+                  pdf.setFontSize(10);
+                  pdf.text('This confirms completion of the field investigation for the above case.', margin, yPos);
+                  yPos += 30;
+                  
+                  // 작성일자
+                  const today = new Date();
+                  const dateStr = `${today.getFullYear()}. ${String(today.getMonth() + 1).padStart(2, '0')}. ${String(today.getDate()).padStart(2, '0')}`;
+                  pdf.setFontSize(11);
+                  pdf.setFont('helvetica', 'bold');
+                  pdf.text(`Date: ${dateStr}`, pageWidth / 2, yPos, { align: 'center' });
+                  
+                  // 하단 푸터
+                  pdf.setFontSize(8);
+                  pdf.setFont('helvetica', 'normal');
+                  pdf.setTextColor(128, 128, 128);
+                  pdf.text('FLOXN - Water Damage Management Platform', pageWidth / 2, pageHeight - 15, { align: 'center' });
+                  pdf.setTextColor(0, 0, 0);
+                  
+                  // ===== 2. 각 섹션 캡처 및 추가 =====
+                  const sectionOrder = ['현장조사', '도면', '증빙자료', '견적서', '기타사항/원인'];
+                  const sectionIdMap: Record<string, string> = {
+                    '현장조사': 'pdf-section-현장조사',
+                    '도면': 'pdf-section-도면',
+                    '증빙자료': 'pdf-section-증빙자료',
+                    '견적서': 'pdf-section-견적서',
+                    '기타사항/원인': 'pdf-section-기타사항',
                   };
                   
-                  // 접수번호
-                  addField('Case No.', caseData?.caseNumber || '-');
-                  pdf.text('(접수번호)', margin, yPosition - 6);
-                  yPosition += 8;
+                  const originalTab = activeTab;
                   
-                  // 접수자 / 담당자
-                  const managerInfo = caseData?.assignedPartnerManager 
-                    ? `${caseData.assignedPartner || ''} / ${caseData.assignedPartnerManager}`
-                    : (caseData?.assignedPartner || '-');
-                  addField('Manager', managerInfo);
-                  pdf.text('(접수자/담당자)', margin, yPosition - 6);
-                  yPosition += 8;
-                  
-                  // 접수 일자
-                  const receiptDate = caseData?.createdAt 
-                    ? new Date(caseData.createdAt).toLocaleDateString('ko-KR')
-                    : (caseData?.assignmentDate || '-');
-                  addField('Date', receiptDate);
-                  pdf.text('(접수 일자)', margin, yPosition - 6);
-                  yPosition += 8;
-                  
-                  // 현장 주소
-                  addField('Address', caseData?.insuredAddress || '-');
-                  pdf.text('(현장 주소)', margin, yPosition - 6);
-                  yPosition += 20;
-                  
-                  // 하단 구분선
-                  pdf.line(margin, yPosition, pageWidth - margin, yPosition);
-                  yPosition += 15;
-                  
-                  // 추가 정보 (선택적)
-                  pdf.setFontSize(10);
-                  pdf.setFont('helvetica', 'normal');
-                  
-                  if (caseData?.insuranceCompany) {
-                    pdf.text(`Insurance: ${caseData.insuranceCompany}`, margin, yPosition);
-                    yPosition += 8;
+                  for (const sectionKey of sectionOrder) {
+                    setActiveTab(sectionKey);
+                    await new Promise(resolve => setTimeout(resolve, 400));
+                    
+                    const elementId = sectionIdMap[sectionKey];
+                    const element = document.getElementById(elementId);
+                    
+                    if (!element) continue;
+                    
+                    try {
+                      const canvas = await html2canvas(element, {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        logging: false,
+                        backgroundColor: '#FFFFFF',
+                      });
+                      
+                      if (canvas.width === 0 || canvas.height === 0) continue;
+                      
+                      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                      const maxWidth = pageWidth - (margin * 2);
+                      const maxHeight = pageHeight - (margin * 2);
+                      
+                      let imgWidth = maxWidth;
+                      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+                      
+                      // 새 페이지 추가
+                      pdf.addPage();
+                      
+                      // 섹션 제목
+                      pdf.setFontSize(14);
+                      pdf.setFont('helvetica', 'bold');
+                      pdf.text(sectionKey, margin, 15);
+                      
+                      // 이미지가 페이지 높이보다 크면 여러 페이지로 분할
+                      if (imgHeight <= maxHeight - 10) {
+                        pdf.addImage(imgData, 'JPEG', margin, 20, imgWidth, imgHeight);
+                      } else {
+                        let heightLeft = imgHeight;
+                        let position = 20;
+                        
+                        pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
+                        heightLeft -= (maxHeight - 10);
+                        
+                        while (heightLeft > 0) {
+                          pdf.addPage();
+                          position = -(imgHeight - heightLeft) + 10;
+                          pdf.addImage(imgData, 'JPEG', margin, position, imgWidth, imgHeight);
+                          heightLeft -= maxHeight;
+                        }
+                      }
+                    } catch (err) {
+                      console.error(`Section capture error (${sectionKey}):`, err);
+                    }
                   }
-                  if (caseData?.insuredName) {
-                    pdf.text(`Insured: ${caseData.insuredName}`, margin, yPosition);
-                    yPosition += 8;
-                  }
-                  if (caseData?.visitDate) {
-                    pdf.text(`Visit Date: ${caseData.visitDate}`, margin, yPosition);
-                    yPosition += 8;
-                  }
                   
-                  // 회사명 (하단)
-                  const footerY = pdf.internal.pageSize.getHeight() - 30;
-                  pdf.setFontSize(14);
-                  pdf.setFont('helvetica', 'bold');
-                  pdf.text('FLOXN', pageWidth / 2, footerY, { align: 'center' });
-                  pdf.setFontSize(10);
-                  pdf.setFont('helvetica', 'normal');
-                  pdf.text('Water Damage Management System', pageWidth / 2, footerY + 6, { align: 'center' });
+                  // 원래 탭으로 복원
+                  setActiveTab(originalTab);
                   
                   // PDF를 Base64로 변환
                   const pdfBase64 = pdf.output('datauristring').split(',')[1];
