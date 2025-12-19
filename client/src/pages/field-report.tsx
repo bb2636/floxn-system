@@ -926,143 +926,100 @@ export default function FieldReport() {
                 });
                 
                 try {
-                  // PDF 생성 (동일한 로직 사용)
+                  // 간단한 양식의 PDF 생성
                   const jsPDF = (await import('jspdf')).default;
-                  const html2canvas = (await import('html2canvas')).default;
                   
                   const pdf = new jsPDF('p', 'mm', 'a4');
                   const pageWidth = pdf.internal.pageSize.getWidth();
-                  const pageHeight = pdf.internal.pageSize.getHeight();
-                  const margin = 10;
-                  let isFirstPage = true;
+                  const margin = 20;
+                  const contentWidth = pageWidth - (margin * 2);
                   
-                  // 모든 섹션 캡처
-                  const sectionOrder = ['현장입력', '도면', '증빙자료', '견적서', '기타사항'];
-                  const tabMapping: Record<string, string> = {
-                    '현장입력': '현장조사',
-                    '도면': '도면',
-                    '증빙자료': '증빙자료',
-                    '견적서': '견적서',
-                    '기타사항': '기타사항/원인',
+                  // 한글 폰트 설정을 위해 기본 폰트 사용
+                  pdf.setFont('helvetica');
+                  
+                  let yPosition = 40;
+                  
+                  // 문서 제목
+                  pdf.setFontSize(24);
+                  pdf.setFont('helvetica', 'bold');
+                  pdf.text('Field Investigation Report', pageWidth / 2, yPosition, { align: 'center' });
+                  yPosition += 8;
+                  pdf.setFontSize(16);
+                  pdf.text('(현장 실사 보고서)', pageWidth / 2, yPosition, { align: 'center' });
+                  yPosition += 25;
+                  
+                  // 구분선
+                  pdf.setLineWidth(0.5);
+                  pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+                  yPosition += 15;
+                  
+                  // 내용 항목들
+                  pdf.setFontSize(12);
+                  pdf.setFont('helvetica', 'normal');
+                  
+                  const addField = (label: string, value: string) => {
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text(label, margin, yPosition);
+                    pdf.setFont('helvetica', 'normal');
+                    pdf.text(value || '-', margin + 50, yPosition);
+                    yPosition += 12;
                   };
                   
-                  for (const sectionKey of sectionOrder) {
-                    const tabValue = tabMapping[sectionKey];
-                    setActiveTab(tabValue);
-                    await new Promise(resolve => setTimeout(resolve, 300));
-                    
-                    let sectionElement: HTMLElement | null = null;
-                    
-                    if (sectionKey === '도면') {
-                      sectionElement = document.querySelector('.drawing-workspace') as HTMLElement
-                        || document.getElementById('pdf-section-도면')
-                        || document.querySelector('[id*="도면"]') as HTMLElement;
-                    } else if (sectionKey === '현장입력') {
-                      sectionElement = document.getElementById('pdf-section-현장조사');
-                    } else {
-                      sectionElement = document.getElementById(`pdf-section-${tabValue}`);
-                    }
-                    
-                    if (!sectionElement) continue;
-                    
-                    try {
-                      // 도면 섹션 스타일 저장 및 수정
-                      let originalStyles: { transform: string; width: string; height: string; overflow: string } | null = null;
-                      if (sectionKey === '도면') {
-                        const layoutWrapper = sectionElement.querySelector('[style*="transform"]') as HTMLElement;
-                        if (layoutWrapper) {
-                          originalStyles = {
-                            transform: layoutWrapper.style.transform,
-                            width: layoutWrapper.style.width,
-                            height: layoutWrapper.style.height,
-                            overflow: layoutWrapper.style.overflow,
-                          };
-                          layoutWrapper.style.transform = 'none';
-                          layoutWrapper.style.width = 'auto';
-                          layoutWrapper.style.height = 'auto';
-                          layoutWrapper.style.overflow = 'visible';
-                        }
-                        sectionElement.style.width = `${sectionElement.scrollWidth}px`;
-                        sectionElement.style.height = `${sectionElement.scrollHeight}px`;
-                        sectionElement.style.overflow = 'visible';
-                      }
-                      
-                      const canvas = await html2canvas(sectionElement, {
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: true,
-                        logging: false,
-                        backgroundColor: '#FFFFFF',
-                        width: sectionElement.scrollWidth,
-                        height: sectionElement.scrollHeight,
-                      });
-                      
-                      // 도면 섹션 스타일 복원
-                      if (sectionKey === '도면') {
-                        const layoutWrapper = sectionElement.querySelector('[style*="transform"]') as HTMLElement || sectionElement.querySelector('div') as HTMLElement;
-                        if (layoutWrapper && originalStyles) {
-                          layoutWrapper.style.transform = originalStyles.transform;
-                          layoutWrapper.style.width = originalStyles.width;
-                          layoutWrapper.style.height = originalStyles.height;
-                          layoutWrapper.style.overflow = originalStyles.overflow;
-                        }
-                        sectionElement.style.width = '';
-                        sectionElement.style.height = '';
-                        sectionElement.style.overflow = '';
-                      }
-                      
-                      if (!canvas || canvas.width === 0 || canvas.height === 0) continue;
-                      
-                      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                      const maxWidth = pageWidth - (margin * 2);
-                      const maxHeight = pageHeight - (margin * 2);
-                      
-                      const imgAspectRatio = canvas.width / canvas.height;
-                      const pageAspectRatio = maxWidth / maxHeight;
-                      
-                      let imgWidth: number;
-                      let imgHeight: number;
-                      
-                      if (sectionKey === '도면') {
-                        if (imgAspectRatio > pageAspectRatio) {
-                          imgWidth = maxWidth;
-                          imgHeight = maxWidth / imgAspectRatio;
-                        } else {
-                          imgHeight = maxHeight;
-                          imgWidth = maxHeight * imgAspectRatio;
-                        }
-                        
-                        if (!isFirstPage) pdf.addPage();
-                        isFirstPage = false;
-                        
-                        const xOffset = margin + (maxWidth - imgWidth) / 2;
-                        const yOffset = margin + (maxHeight - imgHeight) / 2;
-                        pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
-                      } else {
-                        imgWidth = maxWidth;
-                        imgHeight = (canvas.height * imgWidth) / canvas.width;
-                        
-                        let heightLeft = imgHeight;
-                        let position = 0;
-                        
-                        if (!isFirstPage) pdf.addPage();
-                        isFirstPage = false;
-                        
-                        pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
-                        heightLeft -= maxHeight;
-                        position = -maxHeight;
-                        
-                        while (heightLeft > 0) {
-                          pdf.addPage();
-                          pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
-                          heightLeft -= maxHeight;
-                          position -= maxHeight;
-                        }
-                      }
-                    } catch (captureError) {
-                      console.error(`캡처 오류 (${sectionKey}):`, captureError);
-                    }
+                  // 접수번호
+                  addField('Case No.', caseData?.caseNumber || '-');
+                  pdf.text('(접수번호)', margin, yPosition - 6);
+                  yPosition += 8;
+                  
+                  // 접수자 / 담당자
+                  const managerInfo = caseData?.assignedPartnerManager 
+                    ? `${caseData.assignedPartner || ''} / ${caseData.assignedPartnerManager}`
+                    : (caseData?.assignedPartner || '-');
+                  addField('Manager', managerInfo);
+                  pdf.text('(접수자/담당자)', margin, yPosition - 6);
+                  yPosition += 8;
+                  
+                  // 접수 일자
+                  const receiptDate = caseData?.createdAt 
+                    ? new Date(caseData.createdAt).toLocaleDateString('ko-KR')
+                    : (caseData?.assignmentDate || '-');
+                  addField('Date', receiptDate);
+                  pdf.text('(접수 일자)', margin, yPosition - 6);
+                  yPosition += 8;
+                  
+                  // 현장 주소
+                  addField('Address', caseData?.insuredAddress || '-');
+                  pdf.text('(현장 주소)', margin, yPosition - 6);
+                  yPosition += 20;
+                  
+                  // 하단 구분선
+                  pdf.line(margin, yPosition, pageWidth - margin, yPosition);
+                  yPosition += 15;
+                  
+                  // 추가 정보 (선택적)
+                  pdf.setFontSize(10);
+                  pdf.setFont('helvetica', 'normal');
+                  
+                  if (caseData?.insuranceCompany) {
+                    pdf.text(`Insurance: ${caseData.insuranceCompany}`, margin, yPosition);
+                    yPosition += 8;
                   }
+                  if (caseData?.insuredName) {
+                    pdf.text(`Insured: ${caseData.insuredName}`, margin, yPosition);
+                    yPosition += 8;
+                  }
+                  if (caseData?.visitDate) {
+                    pdf.text(`Visit Date: ${caseData.visitDate}`, margin, yPosition);
+                    yPosition += 8;
+                  }
+                  
+                  // 회사명 (하단)
+                  const footerY = pdf.internal.pageSize.getHeight() - 30;
+                  pdf.setFontSize(14);
+                  pdf.setFont('helvetica', 'bold');
+                  pdf.text('FLOXN', pageWidth / 2, footerY, { align: 'center' });
+                  pdf.setFontSize(10);
+                  pdf.setFont('helvetica', 'normal');
+                  pdf.text('Water Damage Management System', pageWidth / 2, footerY + 6, { align: 'center' });
                   
                   // PDF를 Base64로 변환
                   const pdfBase64 = pdf.output('datauristring').split(',')[1];
