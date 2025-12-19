@@ -1832,7 +1832,28 @@ export default function FieldReport() {
               {activeTab === "기타사항/원인" && "기타사항/원인"}
             </h2>
             <button
-              onClick={() => setShowDownloadDialog(true)}
+              onClick={() => {
+                if (activeTab === "증빙자료") {
+                  // 증빙자료 탭: 모든 문서 다운로드
+                  if (documents && documents.length > 0) {
+                    documents.forEach((doc) => {
+                      const link = document.createElement('a');
+                      const mimeType = doc.fileType || 'image/jpeg';
+                      const dataUrl = doc.fileData.startsWith('data:') 
+                        ? doc.fileData 
+                        : `data:${mimeType};base64,${doc.fileData}`;
+                      link.href = dataUrl;
+                      link.download = doc.fileName;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    });
+                  }
+                } else {
+                  // 다른 탭: PDF 다운로드 다이얼로그 표시
+                  setShowDownloadDialog(true);
+                }
+              }}
               className="flex items-center gap-2 px-4 py-3"
               style={{
                 background: "#FDFDFD",
@@ -2673,86 +2694,7 @@ export default function FieldReport() {
 
         {/* 증빙자료 탭 */}
         <TabsContent value="증빙자료" id="pdf-section-증빙자료">
-          <div className="flex flex-col" style={{ padding: "0", gap: "16px" }}>
-            {/* 상단 헤더: 증빙자료 N + 전체 다운로드 버튼 */}
-            <div 
-              className="flex items-center justify-between"
-              style={{ 
-                padding: "24px",
-                height: "79px",
-                boxSizing: "border-box",
-              }}
-            >
-              {/* 가운데 정렬을 위한 빈 공간 */}
-              <div style={{ width: "154px", flexShrink: 0 }} />
-              
-              {/* 증빙자료 N - 가운데 정렬 */}
-              <h2
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "24px",
-                  fontWeight: 600,
-                  letterSpacing: "-0.02em",
-                  color: "#0C0C0C",
-                  margin: "0 auto",
-                }}
-              >
-                증빙자료 {documents?.length || 0}
-              </h2>
-              
-              {/* 전체 다운로드 버튼 - 오른쪽 */}
-              <button
-                onClick={() => {
-                  if (documents && documents.length > 0) {
-                    documents.forEach((doc) => {
-                      const link = document.createElement('a');
-                      const mimeType = doc.fileType || 'image/jpeg';
-                      const dataUrl = doc.fileData.startsWith('data:') 
-                        ? doc.fileData 
-                        : `data:${mimeType};base64,${doc.fileData}`;
-                      link.href = dataUrl;
-                      link.download = doc.fileName;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    });
-                  }
-                }}
-                className="flex items-center gap-2"
-                style={{
-                  padding: "10px 16px 10px 12px",
-                  background: "#FDFDFD",
-                  boxShadow: "2px 4px 30px #BDD1F0",
-                  borderRadius: "10px",
-                  border: "none",
-                  cursor: "pointer",
-                  flexShrink: 0,
-                }}
-                data-testid="button-download-all"
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <path 
-                    d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" 
-                    stroke="#008FED" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "18px",
-                    fontWeight: 600,
-                    letterSpacing: "-0.02em",
-                    color: "#008FED",
-                  }}
-                >
-                  전체 다운로드
-                </span>
-              </button>
-            </div>
-
+          <div className="flex flex-col px-6" style={{ padding: "0 24px", gap: "16px" }}>
             {/* 카테고리별 문서 리스트 */}
             {documents && documents.length > 0 ? (
               <div className="flex flex-col" style={{ gap: "16px" }}>
