@@ -965,11 +965,10 @@ export function LaborCostSection({
           const existing = demolitionMap.get(mergeKey)!;
           existing.mergedSourceIds = existing.mergedSourceIds || [existing.id];
           existing.mergedSourceIds.push(row.id);
-          existing.mergedQuantity = (existing.mergedQuantity || existing.quantity) + row.quantity;
           // 면적 합산
           existing.damageArea = (existing.damageArea || 0) + (row.damageArea || 0);
           
-          // 합산된 면적으로 금액 및 적용단가 재계산 (일위대가 공식: I = F + H)
+          // 합산된 면적으로 금액, 적용단가, 수량 재계산 (일위대가 공식: I = F + H)
           const C = existing.damageArea;
           const D = existing.standardWorkQuantity || 0;
           const E = existing.standardPrice || 0;
@@ -977,8 +976,11 @@ export function LaborCostSection({
             existing.mergedAmount = calculateI(C, D, E);
             // 적용단가도 재계산: I / C
             existing.pricePerSqm = calculateAppliedUnitPrice(C, D, E);
+            // 수량도 재계산: C / D (반올림 오차 방지)
+            existing.mergedQuantity = Math.round((C / D) * 100) / 100;
           } else {
-            // 일위대가 공식 적용 불가 시: 면적 × 적용단가
+            // 일위대가 공식 적용 불가 시: 기존 방식
+            existing.mergedQuantity = (existing.mergedQuantity || existing.quantity) + row.quantity;
             existing.mergedAmount = Math.round(C * (existing.pricePerSqm || 0));
           }
         } else {
