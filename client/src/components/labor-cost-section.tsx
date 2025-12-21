@@ -328,12 +328,13 @@ export function LaborCostSection({
       const newDamageArea = calculateRecoveryAreaByWorkName[row.workName] || 0;
       
       // 수량 계산: 복구면적 ÷ 기준작업량
-      // 일위대가 카탈로그에서 최신 D 값 가져오기
+      // 일위대가 카탈로그에서 최신 D 값 가져오기 (공종+공사명+노임항목으로 검색)
       let standardWorkQty = row.standardWorkQuantity || 0;
       if (row.detailWork === '일위대가' && ilwidaegaCatalog.length > 0) {
         const ilwidaegaItem = ilwidaegaCatalog.find(item =>
           item.공종 === row.category &&
-          item.공사명 === row.workName
+          item.공사명 === row.workName &&
+          item.노임항목 === row.detailItem
         );
         if (ilwidaegaItem?.기준작업량) {
           standardWorkQty = ilwidaegaItem.기준작업량;
