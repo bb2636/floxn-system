@@ -966,8 +966,19 @@ export function LaborCostSection({
           existing.mergedSourceIds = existing.mergedSourceIds || [existing.id];
           existing.mergedSourceIds.push(row.id);
           existing.mergedQuantity = (existing.mergedQuantity || existing.quantity) + row.quantity;
-          existing.mergedAmount = (existing.mergedAmount || existing.amount) + row.amount;
+          // 면적 합산
           existing.damageArea = (existing.damageArea || 0) + (row.damageArea || 0);
+          
+          // 합산된 면적으로 금액 재계산 (일위대가 공식: I = F + H)
+          const C = existing.damageArea;
+          const D = existing.standardWorkQuantity || 0;
+          const E = existing.standardPrice || 0;
+          if (D > 0 && E > 0 && C > 0) {
+            existing.mergedAmount = calculateI(C, D, E);
+          } else {
+            // 일위대가 공식 적용 불가 시: 면적 × 적용단가
+            existing.mergedAmount = Math.round(C * (existing.pricePerSqm || 0));
+          }
         } else {
           // 새 병합 행 생성
           const mergedRow: MergedLaborCostRow = {
