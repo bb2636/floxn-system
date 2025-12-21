@@ -969,12 +969,14 @@ export function LaborCostSection({
           // 면적 합산
           existing.damageArea = (existing.damageArea || 0) + (row.damageArea || 0);
           
-          // 합산된 면적으로 금액 재계산 (일위대가 공식: I = F + H)
+          // 합산된 면적으로 금액 및 적용단가 재계산 (일위대가 공식: I = F + H)
           const C = existing.damageArea;
           const D = existing.standardWorkQuantity || 0;
           const E = existing.standardPrice || 0;
           if (D > 0 && E > 0 && C > 0) {
             existing.mergedAmount = calculateI(C, D, E);
+            // 적용단가도 재계산: I / C
+            existing.pricePerSqm = calculateAppliedUnitPrice(C, D, E);
           } else {
             // 일위대가 공식 적용 불가 시: 면적 × 적용단가
             existing.mergedAmount = Math.round(C * (existing.pricePerSqm || 0));
