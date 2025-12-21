@@ -544,18 +544,23 @@ export function LaborCostSection({
     // 사용할 카탈로그 항목에서 공종/공사명/세부항목 결정
     const useCategory = demolitionCatalogItem?.공종 || '철거공사';
     const useWorkName = demolitionCatalogItem?.공사명 || demolitionWorkName;
-    const useDetailItem = demolitionCatalogItem?.세부항목 || demolitionDetailItem;
     
     // 일위대가 카탈로그에서 기준작업량(D)과 노임단가(E) 조회
+    // 철거공사는 공종+공사명으로만 검색 (노임항목은 일위대가 DB에서 자동 매칭)
     const ilwidaegaItem = ilwidaegaCatalog.find(item =>
       item.공종 === useCategory &&
-      item.공사명 === useWorkName &&
-      item.노임항목 === useDetailItem
+      item.공사명 === useWorkName
     );
+    
+    // 일위대가 카탈로그에서 노임항목 가져오기 (보통인부, 내장공 등)
+    const useDetailItem = ilwidaegaItem?.노임항목 || demolitionCatalogItem?.세부항목 || demolitionDetailItem;
     
     // 기준작업량과 노임단가 가져오기
     const standardWorkQty = ilwidaegaItem?.기준작업량 || 0;
     const laborUnitPrice = ilwidaegaItem?.노임단가 || 0;
+    
+    console.log('[철거공사 생성]', useCategory, useWorkName, useDetailItem, 
+      'D:', standardWorkQty, 'E:', laborUnitPrice);
     
     // 피해면적과 수량 계산 (수량 = 피해면적 / 기준작업량)
     const damageArea = sourceRow.damageArea || 0;
