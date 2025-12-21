@@ -328,7 +328,17 @@ export function LaborCostSection({
       const newDamageArea = calculateRecoveryAreaByWorkName[row.workName] || 0;
       
       // 수량 계산: 복구면적 ÷ 기준작업량
-      const standardWorkQty = row.standardWorkQuantity || 0;
+      // 일위대가 카탈로그에서 최신 D 값 가져오기
+      let standardWorkQty = row.standardWorkQuantity || 0;
+      if (row.detailWork === '일위대가' && ilwidaegaCatalog.length > 0) {
+        const ilwidaegaItem = ilwidaegaCatalog.find(item =>
+          item.공종 === row.category &&
+          item.공사명 === row.workName
+        );
+        if (ilwidaegaItem?.기준작업량) {
+          standardWorkQty = ilwidaegaItem.기준작업량;
+        }
+      }
       const newQuantity = standardWorkQty > 0 
         ? Math.round((newDamageArea / standardWorkQty) * 100) / 100 
         : row.quantity;
@@ -372,7 +382,7 @@ export function LaborCostSection({
     if (hasChanges) {
       onRowsChange(updatedRows);
     }
-  }, [calculateRecoveryAreaByWorkName, enableAreaImport, rows, onRowsChange, isHydrated]);
+  }, [calculateRecoveryAreaByWorkName, enableAreaImport, rows, onRowsChange, isHydrated, ilwidaegaCatalog]);
 
   // 캐스케이딩 옵션 생성 - filteredWorkTypes가 제공되면 우선 사용
   const categoryOptions = useMemo(() => {
