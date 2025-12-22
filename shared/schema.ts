@@ -213,16 +213,6 @@ export const cases = pgTable("cases", {
   estimateAmount: text("estimate_amount"), // 견적금액 (최종 총액)
   approvedAmount: text("approved_amount"), // 승인금액 (2차승인 시점의 견적금액)
   
-  // 정산 관련 필드
-  settlementAmount: text("settlement_amount"), // 정산금액
-  settlementDate: text("settlement_date"), // 정산일자
-  settlementCommission: text("settlement_commission"), // 수수료
-  settlementDiscount: text("settlement_discount"), // 입금액
-  settlementDeductible: text("settlement_deductible"), // 자기부담금
-  settlementInvoiceDate: text("settlement_invoice_date"), // 계산서 발행일
-  settlementMemo: text("settlement_memo"), // 정산 메모
-  settlementBank: text("settlement_bank"), // 입금은행
-  
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),
@@ -748,3 +738,27 @@ export const insertCaseChangeLogSchema = createInsertSchema(caseChangeLogs).omit
 
 export type CaseChangeLog = typeof caseChangeLogs.$inferSelect;
 export type InsertCaseChangeLog = z.infer<typeof insertCaseChangeLogSchema>;
+
+// 정산 테이블
+export const settlements = pgTable("settlements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseId: varchar("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  settlementAmount: text("settlement_amount").notNull(), // 정산금액
+  settlementDate: text("settlement_date").notNull(), // 정산일자
+  commission: text("commission"), // 수수료
+  discount: text("discount"), // 입금액
+  deductible: text("deductible"), // 자기부담금
+  invoiceDate: text("invoice_date"), // 계산서 발행일
+  memo: text("memo"), // 정산 메모
+  bank: text("bank"), // 입금은행
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertSettlementSchema = createInsertSchema(settlements).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Settlement = typeof settlements.$inferSelect;
+export type InsertSettlement = z.infer<typeof insertSettlementSchema>;
