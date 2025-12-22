@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { User, CaseWithLatestProgress, Estimate } from "@shared/schema";
+import { User, CaseWithLatestProgress, Estimate, Settlement } from "@shared/schema";
 import { Search, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,6 +68,24 @@ export default function SettlementsInquiry() {
   const { data: allUsers = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
+
+  // Fetch all settlements
+  const { data: allSettlements = [], isLoading: settlementsLoading } = useQuery<Settlement[]>({
+    queryKey: ["/api/settlements"],
+  });
+
+  // Create a map for quick settlement lookup by caseId (get the latest)
+  const settlementsByCaseIdMap = useMemo(() => {
+    const map = new Map<string, Settlement>();
+    allSettlements.forEach(s => {
+      const existing = map.get(s.caseId);
+      // Keep the latest settlement (ordered by createdAt descending from API)
+      if (!existing) {
+        map.set(s.caseId, s);
+      }
+    });
+    return map;
+  }, [allSettlements]);
 
   if (!user) {
     return null;
@@ -236,11 +254,12 @@ export default function SettlementsInquiry() {
         || usersByCompanyMap.get(assignedPartnerValue);
       const depositBank = partnerUser?.bankName || "-";
 
-      // 정산 데이터 파싱
-      const settlementAmount = parseAmountValue(caseItem.settlementAmount);
-      const settlementCommission = parseAmountValue(caseItem.settlementCommission);
-      const settlementDeposit = parseAmountValue(caseItem.settlementDeposit);
-      const settlementDeductible = parseAmountValue(caseItem.settlementDeductible);
+      // 정산 데이터 파싱 - settlements 테이블에서 가져오기
+      const settlement = settlementsByCaseIdMap.get(caseItem.id);
+      const settlementAmount = settlement ? parseAmountValue(settlement.settlementAmount) : 0;
+      const settlementCommission = settlement ? parseAmountValue(settlement.commission) : 0;
+      const settlementDeposit = settlement ? parseAmountValue(settlement.discount) : 0;
+      const settlementDeductible = settlement ? parseAmountValue(settlement.deductible) : 0;
 
       return {
         id: caseItem.id,
@@ -262,20 +281,20 @@ export default function SettlementsInquiry() {
         propertyDifference,
         propertyAdjustmentRate,
         claimAmount: estimateTotal,
-        // 정산 데이터 추가
+        // 정산 데이터 추가 - settlements 테이블에서
         settlementAmount,
-        settlementDate: caseItem.settlementDate || "-",
+        settlementDate: settlement?.settlementDate || "-",
         settlementCommission,
         settlementDeposit,
         settlementDeductible,
-        settlementInvoiceDate: caseItem.settlementInvoiceDate || "-",
-        settlementMemo: caseItem.settlementMemo || "",
+        settlementInvoiceDate: settlement?.invoiceDate || "-",
+        settlementMemo: settlement?.memo || "",
         status: caseItem.status,
       };
     });
-  }, [claimCases, estimatesMap, user, usersByIdMap, usersByUsernameMap, usersByCompanyMap]);
+  }, [claimCases, estimatesMap, user, usersByIdMap, usersByUsernameMap, usersByCompanyMap, settlementsByCaseIdMap]);
 
-  const isLoading = casesLoading || estimatesLoading || usersLoading;
+  const isLoading = casesLoading || estimatesLoading || usersLoading || settlementsLoading;
 
   const handleReset = () => {
     setSearchQuery("");
