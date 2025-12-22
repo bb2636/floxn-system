@@ -117,6 +117,19 @@ export default function FieldDocuments() {
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
   const isReadOnly = isPartner && isSubmitted;
 
+  // 청구자료 탭 활성화 조건: 케이스 상태가 청구자료제출 또는 출동비 청구일 때
+  const claimDocumentStatuses = [
+    "(직접복구인 경우) 청구자료제출",
+    "(선견적요청인 경우) 출동비 청구",
+    "청구자료제출",
+    "출동비 청구",
+    "청구",
+    "입금완료",
+    "일부입금",
+    "정산완료"
+  ];
+  const isClaimDocumentEnabled = claimDocumentStatuses.includes(selectedCase?.status || "");
+
   // 케이스 선택 핸들러
   const handleCaseSelect = (caseId: string) => {
     setSelectedCaseId(caseId);
@@ -659,7 +672,7 @@ export default function FieldDocuments() {
         }}
       >
         {categories.map((category) => {
-          const isDisabled = category === "청구자료" && !isSubmitted;
+          const isDisabled = category === "청구자료" && !isClaimDocumentEnabled;
           return (
             <button
               key={category}
