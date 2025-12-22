@@ -1147,7 +1147,7 @@ export default function FieldManagement() {
                   </Label>
                   <Input
                     id="dispatch-manager"
-                    value={selectedCaseData?.assignedPartnerManager || selectedCaseData?.assignedPartner || ""}
+                    value={selectedCaseData?.assignedPartner || ""}
                     readOnly
                     className={intakeFieldClass}
                     style={{
@@ -1155,7 +1155,7 @@ export default function FieldManagement() {
                       background: "rgba(12, 12, 12, 0.04)",
                       color: "rgba(12, 12, 12, 0.6)",
                     }}
-                    placeholder="출동 담당자 성명"
+                    placeholder="협력사명"
                     data-testid="input-dispatch-manager"
                   />
                 </div>
