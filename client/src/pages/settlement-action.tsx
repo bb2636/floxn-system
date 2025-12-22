@@ -36,6 +36,7 @@ export default function SettlementAction() {
   const [settlementMemo, setSettlementMemo] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [settlementType, setSettlementType] = useState<"full" | "half" | null>(null);
   const { toast } = useToast();
 
   const { data: user } = useQuery<User>({
@@ -269,10 +270,11 @@ export default function SettlementAction() {
       // 1. settlements 테이블에 정산 데이터 저장
       await apiRequest("POST", "/api/settlements", settlementData);
       
-      // 2. 케이스 상태를 '정산완료'로 업데이트
+      // 2. 케이스 상태를 전액/50%에 따라 업데이트
+      const newStatus = settlementType === "full" ? "입금완료" : settlementType === "half" ? "일부입금" : "정산완료";
       await updateCaseStatusMutation.mutateAsync({
         caseId: selectedCase.id,
-        status: "정산완료",
+        status: newStatus,
       });
       
       // 정산 쿼리 캐시 무효화
@@ -281,7 +283,7 @@ export default function SettlementAction() {
       setShowConfirmDialog(false);
       toast({
         title: "정산 완료",
-        description: `${selectedCase.caseNumber} 건의 정산이 완료되었습니다. 상태가 '정산완료'로 변경되었습니다.`,
+        description: `${selectedCase.caseNumber} 건의 정산이 완료되었습니다. 상태가 '${newStatus}'로 변경되었습니다.`,
       });
       
       // 폼 초기화
@@ -294,6 +296,7 @@ export default function SettlementAction() {
       setUseTodayInvoice(false);
       setSettlementMemo("");
       setSelectedCaseId(null);
+      setSettlementType(null);
     } catch (error) {
       console.error("Settlement error:", error);
       toast({
@@ -1181,13 +1184,14 @@ export default function SettlementAction() {
                 {/* Amount Buttons */}
                 <div className="flex items-center gap-2 mt-2">
                   <Button
-                    variant="outline"
+                    variant={settlementType === "full" ? "default" : "outline"}
                     size="sm"
                     onClick={() => {
                       const rawAmount = selectedCase.caseData.status === "정산완료" || selectedCase.caseData.status === "입금완료"
                         ? "0"
                         : selectedCase.approvedAmount.replace(/,/g, "");
                       setSettlementAmount(rawAmount.replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+                      setSettlementType("full");
                     }}
                     style={{
                       fontFamily: "Pretendard",
@@ -1199,7 +1203,7 @@ export default function SettlementAction() {
                     전액
                   </Button>
                   <Button
-                    variant="outline"
+                    variant={settlementType === "half" ? "default" : "outline"}
                     size="sm"
                     onClick={() => {
                       const rawAmount = selectedCase.caseData.status === "정산완료" || selectedCase.caseData.status === "입금완료"
@@ -1207,6 +1211,7 @@ export default function SettlementAction() {
                         : selectedCase.approvedAmount.replace(/,/g, "");
                       const halfAmount = Math.floor(parseInt(rawAmount) * 0.5);
                       setSettlementAmount(halfAmount.toLocaleString());
+                      setSettlementType("half");
                     }}
                     style={{
                       fontFamily: "Pretendard",
