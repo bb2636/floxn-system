@@ -1333,6 +1333,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         travelDistance: z.string().nullable().optional(),
         dispatchLocation: z.string().nullable().optional(),
         accompaniedPerson: z.string().nullable().optional(),
+        accidentDate: z.string().nullable().optional(),
         accidentTime: z.string().nullable().optional(),
         accidentCategory: z.string().nullable().optional(),
         accidentCause: z.string().nullable().optional(),

@@ -4432,6 +4432,7 @@ export class DbStorage implements IStorage {
       travelDistance?: string | null;
       dispatchLocation?: string | null;
       accompaniedPerson?: string | null;
+      accidentDate?: string | null;
       accidentTime?: string | null;
       accidentCategory?: string | null;
       accidentCause?: string | null;
