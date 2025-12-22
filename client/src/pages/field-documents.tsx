@@ -227,6 +227,7 @@ export default function FieldDocuments() {
     mutationFn: async (data: {
       caseId: string;
       category: string;
+      parentCategory?: string;
       fileName: string;
       fileType: string;
       fileSize: number;
@@ -428,6 +429,7 @@ export default function FieldDocuments() {
         await uploadMutation.mutateAsync({
           caseId: selectedCaseId,
           category: uploadingFile.category,
+          parentCategory: selectedCategory,
           fileName: uploadingFile.file.name,
           fileType: uploadingFile.file.type,
           fileSize: uploadingFile.file.size,

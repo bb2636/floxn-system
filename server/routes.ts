@@ -2228,8 +2228,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 정산 관련 상태 목록 (이미 정산 프로세스에 있는 상태들)
       const settlementStatuses = ["청구", "입금완료", "일부입금", "정산완료"];
       
-      // 청구자료 또는 청구 카테고리 문서 제출 시 처리
-      if ((claimDocumentCategories.includes(validatedData.category) || validatedData.category === "청구") && validatedData.caseId) {
+      // parentCategory 체크 - 프론트엔드에서 전송한 탭 정보 (스키마에서 검증됨)
+      const parentCategory = validatedData.parentCategory;
+      const isClaimTab = parentCategory === "청구자료";
+      
+      // 청구자료 탭에서 업로드하거나, 청구자료 카테고리 문서 제출 시 처리
+      if ((isClaimTab || claimDocumentCategories.includes(validatedData.category) || validatedData.category === "청구") && validatedData.caseId) {
         // 현재 케이스 상태를 다시 조회 (동시성 문제 방지)
         const existingCase = await storage.getCaseById(validatedData.caseId);
         if (existingCase) {

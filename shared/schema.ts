@@ -542,6 +542,8 @@ export type DocumentCategory = typeof DOCUMENT_CATEGORIES[number];
 export const insertCaseDocumentSchema = createInsertSchema(caseDocuments).omit({
   id: true,
   createdAt: true,
+}).extend({
+  parentCategory: z.string().optional(), // 탭 정보 (청구자료 등) - DB에 저장되지 않음, 상태 변경 로직에만 사용
 });
 
 export type InsertCaseDocument = z.infer<typeof insertCaseDocumentSchema>;
