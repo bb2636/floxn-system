@@ -260,6 +260,7 @@ export default function SettlementAction() {
       invoiceDate: invoiceDate ? format(invoiceDate, "yyyy-MM-dd") : (useTodayInvoice ? format(new Date(), "yyyy-MM-dd") : null),
       memo: settlementMemo || null,
       bank: null,
+      createdBy: user?.id,
     };
 
     console.log("Settlement data:", settlementData);
