@@ -456,6 +456,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Debug: log incoming sameAsPolicyHolder with type
       console.log("📥 Incoming sameAsPolicyHolder:", req.body.sameAsPolicyHolder, "type:", typeof req.body.sameAsPolicyHolder);
       console.log("📥 Incoming managerId:", req.body.managerId);
+      console.log("📥 Incoming assignedPartnerManager:", req.body.assignedPartnerManager);
       
       // Validate request body with Zod
       const validatedData = insertCaseRequestSchema.parse(req.body);
