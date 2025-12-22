@@ -4036,6 +4036,7 @@ export class DbStorage implements IStorage {
       assignmentDate: autoAssignmentDate,
       siteVisitDate: caseData.siteVisitDate || null,
       assignedTo: caseData.assignedTo || null,
+      managerId: caseData.managerId || null,
       createdBy: caseData.createdBy,
       createdAt: currentDate,
       updatedAt: currentDate,
