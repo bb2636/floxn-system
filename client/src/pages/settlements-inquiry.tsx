@@ -426,8 +426,8 @@ export default function SettlementsInquiry() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="전체">전체</SelectItem>
-                <SelectItem value="청산완료">청산완료</SelectItem>
-                <SelectItem value="청산대기">청산대기</SelectItem>
+                <SelectItem value="정산완료">정산완료</SelectItem>
+                <SelectItem value="정산대기">정산대기</SelectItem>
               </SelectContent>
             </Select>
           </div>
