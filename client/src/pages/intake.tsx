@@ -937,6 +937,10 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
         sameAsPolicyHolder: cleanedData.sameAsPolicyHolder,
         managerId_from_formData: data.managerId,
         managerId_in_cleanedData: cleanedData.managerId,
+        // 협력사 정보 디버그
+        assignedPartner: cleanedData.assignedPartner,
+        assignedPartnerManager: cleanedData.assignedPartnerManager,
+        assignedPartnerContact: cleanedData.assignedPartnerContact,
       });
       
       // 백엔드가 자동으로 다중 케이스 생성 및 접수번호 생성 처리
