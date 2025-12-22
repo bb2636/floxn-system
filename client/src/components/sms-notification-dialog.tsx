@@ -48,7 +48,7 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   "복구요청": { partner: true, manager: false, assessorInvestigator: false },
   "직접복구": { partner: true, manager: true, assessorInvestigator: false },
   "미복구": { partner: true, manager: true, assessorInvestigator: false },
-  "청구자료제출": { partner: false, manager: false, assessorInvestigator: true },
+  "청구자료제출": { partner: false, manager: true, assessorInvestigator: false },
   "청구": { partner: false, manager: false, assessorInvestigator: true },
   "결정금액/수수료": { partner: true, manager: false, assessorInvestigator: false },
   "접수취소": { partner: false, manager: false, assessorInvestigator: true },
