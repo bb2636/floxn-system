@@ -1887,13 +1887,13 @@ export default function FieldManagement() {
                       return;
                     }
 
-                    // 누락된 필드 체크 및 표시
+                    // 누락된 필드 체크 및 표시 (로컬 상태 + 케이스 데이터 모두 확인)
                     const missingFields: string[] = [];
                     if (!visitDate) missingFields.push("방문일자");
                     if (!visitTime) missingFields.push("방문시간");
-                    if (!accidentCategory) missingFields.push("사고구분");
-                    if (!victimName) missingFields.push("피해자 성명");
-                    if (!victimContact) missingFields.push("피해자 연락처");
+                    if (!accidentCategory && !selectedCaseData?.accidentCategory) missingFields.push("사고구분");
+                    if (!victimName && !selectedCaseData?.victimName) missingFields.push("피해자 성명");
+                    if (!victimContact && !selectedCaseData?.victimContact) missingFields.push("피해자 연락처");
                     
                     // 콘솔에도 출력
                     if (missingFields.length > 0) {
@@ -1910,8 +1910,10 @@ export default function FieldManagement() {
                       // 상태 자동 변경 로직
                       let status = "현장방문"; // 기본값: 방문일시만 입력된 경우
                       
-                      // 모든 필수 필드가 입력된 경우 → "현장정보 입력"
-                      if (visitDate && visitTime && accidentCategory && victimName) {
+                      // 모든 필수 필드가 입력된 경우 → "현장정보 입력" (로컬 상태 + 케이스 데이터 확인)
+                      const hasVictimName = victimName || selectedCaseData?.victimName;
+                      const hasAccidentCategory = accidentCategory || selectedCaseData?.accidentCategory;
+                      if (visitDate && visitTime && hasAccidentCategory && hasVictimName) {
                         status = "현장정보 입력";
                       }
 
@@ -1922,12 +1924,12 @@ export default function FieldManagement() {
                         accompaniedPerson,
                         accidentDate: accidentDate ? `${format(accidentDate, "yyyy-MM-dd")} ${accidentTime || "00:00"}` : null,
                         accidentTime,
-                        accidentCategory,
+                        accidentCategory: accidentCategory || selectedCaseData?.accidentCategory || null,
                         accidentCause,
                         specialNotes,
-                        victimName,
-                        victimContact,
-                        victimAddress,
+                        victimName: victimName || selectedCaseData?.victimName || null,
+                        victimContact: victimContact || selectedCaseData?.victimContact || null,
+                        victimAddress: victimAddress || selectedCaseData?.victimAddress || null,
                         additionalVictims: JSON.stringify(additionalVictims),
                         specialRequests: voc,
                         processingTypes: JSON.stringify(Array.from(processingTypes)),
@@ -2002,14 +2004,14 @@ export default function FieldManagement() {
                       return;
                     }
 
-                    // 필수 필드 검증 - 현장입력 필수 필드만 체크
+                    // 필수 필드 검증 - 현장입력 필수 필드만 체크 (로컬 상태 + 케이스 데이터 확인)
                     const missingFields: string[] = [];
                     
                     // 현장입력 필수 필드
                     if (!visitDate) missingFields.push("방문일자");
                     if (!visitTime) missingFields.push("방문시간");
-                    if (!accidentCategory) missingFields.push("사고구분");
-                    if (!victimName) missingFields.push("피해자 성명");
+                    if (!accidentCategory && !selectedCaseData?.accidentCategory) missingFields.push("사고구분");
+                    if (!victimName && !selectedCaseData?.victimName) missingFields.push("피해자 성명");
                     
                     if (missingFields.length > 0) {
                       toast({
@@ -2028,12 +2030,12 @@ export default function FieldManagement() {
                         accompaniedPerson,
                         accidentDate: accidentDate ? `${format(accidentDate, "yyyy-MM-dd")} ${accidentTime || "00:00"}` : null,
                         accidentTime,
-                        accidentCategory,
+                        accidentCategory: accidentCategory || selectedCaseData?.accidentCategory || null,
                         accidentCause,
                         specialNotes,
-                        victimName,
-                        victimContact,
-                        victimAddress,
+                        victimName: victimName || selectedCaseData?.victimName || null,
+                        victimContact: victimContact || selectedCaseData?.victimContact || null,
+                        victimAddress: victimAddress || selectedCaseData?.victimAddress || null,
                         additionalVictims: JSON.stringify(additionalVictims),
                         specialRequests: voc,
                         processingTypes: JSON.stringify(Array.from(processingTypes)),
