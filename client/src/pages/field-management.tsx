@@ -1920,6 +1920,7 @@ export default function FieldManagement() {
                         visitTime,
                         dispatchLocation,
                         accompaniedPerson,
+                        accidentDate: accidentDate ? `${format(accidentDate, "yyyy-MM-dd")} ${accidentTime || "00:00"}` : null,
                         accidentTime,
                         accidentCategory,
                         accidentCause,
