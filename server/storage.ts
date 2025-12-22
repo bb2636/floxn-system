@@ -1426,6 +1426,7 @@ export class MemStorage implements IStorage {
         contractorRepairDate: caseData.contractorRepairDate || null,
         completionDate: caseData.completionDate || null,
         assignedTo: caseData.assignedTo || null,
+        managerId: caseData.managerId || null,
         createdBy: caseData.createdBy,
         createdAt: currentDate,
         updatedAt: currentDate,
