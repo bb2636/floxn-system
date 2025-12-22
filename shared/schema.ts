@@ -760,6 +760,7 @@ export const settlements = pgTable("settlements", {
 export const insertSettlementSchema = createInsertSchema(settlements).omit({
   id: true,
   createdAt: true,
+  createdBy: true,
 });
 
 export type Settlement = typeof settlements.$inferSelect;
