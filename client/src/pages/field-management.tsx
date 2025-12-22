@@ -1147,7 +1147,7 @@ export default function FieldManagement() {
                   </Label>
                   <Input
                     id="dispatch-manager"
-                    value={selectedCaseData?.assignedPartnerManager || ""}
+                    value={selectedCaseData?.assignedPartnerManager || selectedCaseData?.assignedPartner || ""}
                     readOnly
                     className={intakeFieldClass}
                     style={{
