@@ -55,6 +55,9 @@ import {
   type CaseChangeLog,
   type InsertCaseChangeLog,
   caseChangeLogs,
+  type Settlement,
+  type InsertSettlement,
+  settlements,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
@@ -353,6 +356,11 @@ export interface IStorage {
     dateFrom?: string;
     dateTo?: string;
   }): Promise<(CaseChangeLog & { caseNumber: string })[]>;
+  // Settlement methods
+  createSettlement(data: InsertSettlement): Promise<Settlement>;
+  getSettlementsByCaseId(caseId: string): Promise<Settlement[]>;
+  getLatestSettlementByCaseId(caseId: string): Promise<Settlement | null>;
+  getAllSettlements(): Promise<Settlement[]>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -2454,6 +2462,23 @@ export class MemStorage implements IStorage {
     throw new Error(
       "syncIntakeDataToRelatedCases not implemented in MemStorage",
     );
+  }
+
+  // Settlement methods (stub)
+  async createSettlement(data: InsertSettlement): Promise<Settlement> {
+    throw new Error("createSettlement not implemented in MemStorage");
+  }
+
+  async getSettlementsByCaseId(caseId: string): Promise<Settlement[]> {
+    throw new Error("getSettlementsByCaseId not implemented in MemStorage");
+  }
+
+  async getLatestSettlementByCaseId(caseId: string): Promise<Settlement | null> {
+    throw new Error("getLatestSettlementByCaseId not implemented in MemStorage");
+  }
+
+  async getAllSettlements(): Promise<Settlement[]> {
+    throw new Error("getAllSettlements not implemented in MemStorage");
   }
 }
 
@@ -6327,6 +6352,43 @@ export class DbStorage implements IStorage {
     }
 
     return await query;
+  }
+
+  // Settlement methods
+  async createSettlement(data: InsertSettlement): Promise<Settlement> {
+    const [settlement] = await db
+      .insert(settlements)
+      .values({
+        ...data,
+        createdAt: getKSTTimestamp(),
+      })
+      .returning();
+    return settlement;
+  }
+
+  async getSettlementsByCaseId(caseId: string): Promise<Settlement[]> {
+    return await db
+      .select()
+      .from(settlements)
+      .where(eq(settlements.caseId, caseId))
+      .orderBy(desc(settlements.createdAt));
+  }
+
+  async getLatestSettlementByCaseId(caseId: string): Promise<Settlement | null> {
+    const result = await db
+      .select()
+      .from(settlements)
+      .where(eq(settlements.caseId, caseId))
+      .orderBy(desc(settlements.createdAt))
+      .limit(1);
+    return result[0] || null;
+  }
+
+  async getAllSettlements(): Promise<Settlement[]> {
+    return await db
+      .select()
+      .from(settlements)
+      .orderBy(desc(settlements.createdAt));
   }
 }
 

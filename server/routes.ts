@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema, insertSettlementSchema } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
 import { estimates, cases } from "@shared/schema";
@@ -4992,6 +4992,68 @@ FLOXN 드림`;
         error: "알림 발송에 실패했습니다",
         details: error instanceof Error ? error.message : "알 수 없는 오류",
       });
+    }
+  });
+
+  // =====================
+  // Settlement endpoints
+  // =====================
+
+  // Create a new settlement
+  app.post("/api/settlements", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "로그인이 필요합니다" });
+      }
+
+      const validatedData = insertSettlementSchema.parse(req.body);
+      const settlement = await storage.createSettlement({
+        ...validatedData,
+        createdBy: req.session.userId,
+      });
+
+      res.status(201).json(settlement);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Create settlement error:", error);
+      res.status(500).json({ error: "정산 생성 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get all settlements
+  app.get("/api/settlements", async (req, res) => {
+    try {
+      const settlements = await storage.getAllSettlements();
+      res.json(settlements);
+    } catch (error) {
+      console.error("Get all settlements error:", error);
+      res.status(500).json({ error: "정산 목록 조회 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get settlements by case ID
+  app.get("/api/settlements/case/:caseId", async (req, res) => {
+    try {
+      const { caseId } = req.params;
+      const settlements = await storage.getSettlementsByCaseId(caseId);
+      res.json(settlements);
+    } catch (error) {
+      console.error("Get settlements by case error:", error);
+      res.status(500).json({ error: "케이스별 정산 조회 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get latest settlement for a case
+  app.get("/api/settlements/case/:caseId/latest", async (req, res) => {
+    try {
+      const { caseId } = req.params;
+      const settlement = await storage.getLatestSettlementByCaseId(caseId);
+      res.json(settlement);
+    } catch (error) {
+      console.error("Get latest settlement error:", error);
+      res.status(500).json({ error: "최신 정산 조회 중 오류가 발생했습니다" });
     }
   });
 

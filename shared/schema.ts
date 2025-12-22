@@ -740,3 +740,27 @@ export const insertCaseChangeLogSchema = createInsertSchema(caseChangeLogs).omit
 
 export type CaseChangeLog = typeof caseChangeLogs.$inferSelect;
 export type InsertCaseChangeLog = z.infer<typeof insertCaseChangeLogSchema>;
+
+// 정산 테이블
+export const settlements = pgTable("settlements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseId: varchar("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  settlementAmount: text("settlement_amount").notNull(), // 정산금액
+  settlementDate: text("settlement_date").notNull(), // 정산일자
+  commission: text("commission"), // 수수료
+  discount: text("discount"), // 입금액
+  deductible: text("deductible"), // 자기부담금
+  invoiceDate: text("invoice_date"), // 계산서 발행일
+  memo: text("memo"), // 정산 메모
+  bank: text("bank"), // 입금은행
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertSettlementSchema = createInsertSchema(settlements).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type Settlement = typeof settlements.$inferSelect;
+export type InsertSettlement = z.infer<typeof insertSettlementSchema>;
