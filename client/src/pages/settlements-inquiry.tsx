@@ -322,26 +322,30 @@ export default function SettlementsInquiry() {
 
   const isLoading = casesLoading || estimatesLoading || usersLoading || settlementsLoading;
 
-  // 접수번호로 검색 필터링
+  // 필터링 (검색어 + 정산여부)
   const filteredRows = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return tableRows;
+    let filtered = tableRows;
+    
+    // 정산여부 필터 적용
+    if (settlementStatus !== "전체") {
+      filtered = filtered.filter((row) => row.status === settlementStatus);
     }
     
-    // 숫자만 남겨서 비교 (하이픈, 공백 등 모두 제거)
-    const extractNumbers = (str: string) => (str || "").replace(/[^0-9]/g, "");
-    const normalizedQuery = extractNumbers(searchQuery.trim());
-    
-    // 빈 쿼리면 필터링 안함
-    if (!normalizedQuery) {
-      return tableRows;
+    // 접수번호 검색 필터 적용
+    if (searchQuery.trim()) {
+      const extractNumbers = (str: string | null) => (str || "").replace(/[^0-9]/g, "");
+      const normalizedQuery = extractNumbers(searchQuery.trim());
+      
+      if (normalizedQuery) {
+        filtered = filtered.filter((row) => {
+          const caseNumberDigits = extractNumbers(row.caseNumber);
+          return caseNumberDigits.includes(normalizedQuery);
+        });
+      }
     }
     
-    return tableRows.filter((row) => {
-      const caseNumberDigits = extractNumbers(row.caseNumber);
-      return caseNumberDigits.includes(normalizedQuery);
-    });
-  }, [tableRows, searchQuery]);
+    return filtered;
+  }, [tableRows, searchQuery, settlementStatus]);
 
   const handleReset = () => {
     setSearchQuery("");
@@ -492,8 +496,10 @@ export default function SettlementsInquiry() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="전체">전체</SelectItem>
+                <SelectItem value="청구">청구</SelectItem>
+                <SelectItem value="일부입금">일부입금</SelectItem>
+                <SelectItem value="입금완료">입금완료</SelectItem>
                 <SelectItem value="정산완료">정산완료</SelectItem>
-                <SelectItem value="정산대기">정산대기</SelectItem>
               </SelectContent>
             </Select>
           </div>
