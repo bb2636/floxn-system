@@ -216,6 +216,18 @@ export default function SettlementAction() {
     console.log("Searching for:", searchQuery);
   };
 
+  // 정산 후 잔액 계산
+  const remainingBalance = useMemo(() => {
+    if (!selectedCase) return 0;
+    // 이미 정산완료 또는 입금완료인 경우 미정산액이 0
+    if (selectedCase.caseData.status === "정산완료" || selectedCase.caseData.status === "입금완료") {
+      return 0;
+    }
+    const unsettledAmount = parseInt(selectedCase.approvedAmount.replace(/,/g, "")) || 0;
+    const currentSettlement = parseInt(settlementAmount.replace(/,/g, "")) || 0;
+    return Math.max(0, unsettledAmount - currentSettlement);
+  }, [selectedCase, settlementAmount]);
+
   // 모든 필수 값이 입력되었는지 확인
   const isFormComplete = useMemo(() => {
     if (!selectedCase) return false;
@@ -1503,7 +1515,7 @@ export default function SettlementAction() {
                   fontSize: "14px",
                   color: "rgba(12, 12, 12, 0.6)",
                 }}
-              >정산 후 잔액 0원</span>
+              >정산 후 잔액 {remainingBalance.toLocaleString()}원</span>
               <div className="flex gap-3">
                 <Button
                   variant="outline"
