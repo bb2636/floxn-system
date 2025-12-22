@@ -44,7 +44,7 @@ export default function SettlementAction() {
 
   // 케이스 상태 업데이트 mutation
   const updateCaseStatusMutation = useMutation({
-    mutationFn: async (data: { caseId: number; status: string }) => {
+    mutationFn: async (data: { caseId: string; status: string }) => {
       const { caseId, status } = data;
       return await apiRequest("PATCH", `/api/cases/${caseId}`, { status });
     },
@@ -203,7 +203,7 @@ export default function SettlementAction() {
   const filteredSettlements = searchQuery.trim()
     ? settlements.filter(
         (s) =>
-          s.caseNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (s.caseNumber || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
           s.insuranceAccidentNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
           s.insuranceCompany.toLowerCase().includes(searchQuery.toLowerCase()) ||
           s.contractor.toLowerCase().includes(searchQuery.toLowerCase())

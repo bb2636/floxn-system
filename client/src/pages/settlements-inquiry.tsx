@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, CaseWithLatestProgress, Estimate, Settlement } from "@shared/schema";
-import { Search, Calendar as CalendarIcon } from "lucide-react";
+import { Search, Calendar as CalendarIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { formatCaseNumber } from "@/lib/utils";
@@ -15,7 +16,7 @@ import { formatCaseNumber } from "@/lib/utils";
 // 정산 테이블 행 타입
 interface SettlementRow {
   id: string;
-  caseNumber: string;
+  caseNumber: string | null;
   insuranceCompany: string;
   manager: string;
   withdrawalNumber: string;
@@ -56,6 +57,8 @@ export default function SettlementsInquiry() {
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
+  const [managementDialogOpen, setManagementDialogOpen] = useState(false);
+  const [selectedCaseForManagement, setSelectedCaseForManagement] = useState<SettlementRow | null>(null);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -86,6 +89,29 @@ export default function SettlementsInquiry() {
     });
     return map;
   }, [allSettlements]);
+
+  // Create a map to get all settlements for a case (for history view)
+  const allSettlementsByCaseIdMap = useMemo(() => {
+    const map = new Map<string, Settlement[]>();
+    allSettlements.forEach(s => {
+      const existing = map.get(s.caseId) || [];
+      existing.push(s);
+      map.set(s.caseId, existing);
+    });
+    return map;
+  }, [allSettlements]);
+
+  // Helper function to open management dialog
+  const handleOpenManagement = (row: SettlementRow) => {
+    setSelectedCaseForManagement(row);
+    setManagementDialogOpen(true);
+  };
+
+  // Get settlements for the selected case
+  const selectedCaseSettlements = useMemo(() => {
+    if (!selectedCaseForManagement) return [];
+    return allSettlementsByCaseIdMap.get(selectedCaseForManagement.id) || [];
+  }, [selectedCaseForManagement, allSettlementsByCaseIdMap]);
 
   if (!user) {
     return null;
@@ -1583,11 +1609,26 @@ export default function SettlementsInquiry() {
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
                       textAlign: "center",
                     }}
                   >
-                    관리
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenManagement(row);
+                      }}
+                      data-testid={`button-management-${row.id}`}
+                      style={{
+                        padding: "4px 12px",
+                        height: "28px",
+                        fontSize: "12px",
+                        fontFamily: "Pretendard",
+                      }}
+                    >
+                      관리
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -1613,6 +1654,140 @@ export default function SettlementsInquiry() {
           </span>
         </div>
       </div>
+
+      {/* Settlement Management Dialog */}
+      <Dialog open={managementDialogOpen} onOpenChange={setManagementDialogOpen}>
+        <DialogContent 
+          className="max-w-4xl max-h-[80vh] overflow-y-auto"
+          style={{
+            fontFamily: "Pretendard",
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
+              정산 관리 - {selectedCaseForManagement?.caseNumber ? formatCaseNumber(selectedCaseForManagement.caseNumber) : ""}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Case Info Summary */}
+            {selectedCaseForManagement && (
+              <div 
+                className="p-4 rounded-lg"
+                style={{ background: "rgba(12, 12, 12, 0.03)", border: "1px solid rgba(12, 12, 12, 0.08)" }}
+              >
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <div style={{ fontSize: "12px", color: "rgba(12, 12, 12, 0.5)" }}>보험사</div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>{selectedCaseForManagement.insuranceCompany}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "12px", color: "rgba(12, 12, 12, 0.5)" }}>사고번호</div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>{selectedCaseForManagement.accidentNumber}</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "12px", color: "rgba(12, 12, 12, 0.5)" }}>청구액</div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>{selectedCaseForManagement.claimAmount.toLocaleString()}원</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "12px", color: "rgba(12, 12, 12, 0.5)" }}>진행상태</div>
+                    <div style={{ fontSize: "14px", fontWeight: 500 }}>{selectedCaseForManagement.status}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Settlement History */}
+            <div>
+              <h3 style={{ fontSize: "16px", fontWeight: 600, marginBottom: "12px" }}>
+                정산 이력 ({selectedCaseSettlements.length}건)
+              </h3>
+
+              {selectedCaseSettlements.length === 0 ? (
+                <div 
+                  className="p-8 text-center rounded-lg"
+                  style={{ background: "rgba(12, 12, 12, 0.03)", border: "1px solid rgba(12, 12, 12, 0.08)" }}
+                >
+                  <span style={{ fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>
+                    정산 이력이 없습니다.
+                  </span>
+                </div>
+              ) : (
+                <div 
+                  className="rounded-lg overflow-hidden"
+                  style={{ border: "1px solid rgba(12, 12, 12, 0.08)" }}
+                >
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ background: "rgba(12, 12, 12, 0.06)" }}>
+                        <th style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 600, textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>정산일</th>
+                        <th style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 600, textAlign: "right", borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>정산금액</th>
+                        <th style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 600, textAlign: "right", borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>수수료</th>
+                        <th style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 600, textAlign: "right", borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>할인</th>
+                        <th style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 600, textAlign: "right", borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>자기부담금</th>
+                        <th style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 600, textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>계산서 발행일</th>
+                        <th style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 600, textAlign: "left", borderBottom: "1px solid rgba(12, 12, 12, 0.08)" }}>메모</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedCaseSettlements.map((settlement, index) => (
+                        <tr 
+                          key={settlement.id}
+                          style={{ background: index % 2 === 0 ? "#fff" : "rgba(12, 12, 12, 0.02)" }}
+                        >
+                          <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.05)" }}>
+                            {settlement.settlementDate || "-"}
+                          </td>
+                          <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "right", borderBottom: "1px solid rgba(12, 12, 12, 0.05)" }}>
+                            {settlement.settlementAmount ? parseInt(settlement.settlementAmount).toLocaleString() + "원" : "-"}
+                          </td>
+                          <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "right", borderBottom: "1px solid rgba(12, 12, 12, 0.05)" }}>
+                            {settlement.commission ? parseInt(settlement.commission).toLocaleString() + "원" : "-"}
+                          </td>
+                          <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "right", borderBottom: "1px solid rgba(12, 12, 12, 0.05)" }}>
+                            {settlement.discount ? parseInt(settlement.discount).toLocaleString() + "원" : "-"}
+                          </td>
+                          <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "right", borderBottom: "1px solid rgba(12, 12, 12, 0.05)" }}>
+                            {settlement.deductible ? parseInt(settlement.deductible).toLocaleString() + "원" : "-"}
+                          </td>
+                          <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "center", borderBottom: "1px solid rgba(12, 12, 12, 0.05)" }}>
+                            {settlement.invoiceDate || "-"}
+                          </td>
+                          <td style={{ padding: "12px 16px", fontSize: "14px", textAlign: "left", borderBottom: "1px solid rgba(12, 12, 12, 0.05)", maxWidth: "200px" }}>
+                            <span style={{ 
+                              overflow: "hidden", 
+                              textOverflow: "ellipsis", 
+                              whiteSpace: "nowrap",
+                              display: "block" 
+                            }}>
+                              {settlement.memo || "-"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Total Summary */}
+            {selectedCaseSettlements.length > 0 && (
+              <div 
+                className="p-4 rounded-lg"
+                style={{ background: "rgba(0, 143, 237, 0.05)", border: "1px solid rgba(0, 143, 237, 0.15)" }}
+              >
+                <div className="flex justify-between items-center">
+                  <span style={{ fontSize: "14px", fontWeight: 500 }}>총 정산금액</span>
+                  <span style={{ fontSize: "18px", fontWeight: 600, color: "#008FED" }}>
+                    {selectedCaseSettlements.reduce((sum, s) => sum + (parseInt(s.settlementAmount) || 0), 0).toLocaleString()}원
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
