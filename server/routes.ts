@@ -2223,15 +2223,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertCaseDocumentSchema.parse(req.body);
       const document = await storage.saveDocument(validatedData);
       
-      // 청구 탭 자료 제출 시 복구완료일 자동 기록 (기존 값이 없을 때만)
-      if (validatedData.category === "청구" && validatedData.caseId) {
+      // 청구자료 카테고리 목록
+      const claimDocumentCategories = ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"];
+      // 정산 관련 상태 목록 (이미 정산 프로세스에 있는 상태들)
+      const settlementStatuses = ["청구", "입금완료", "일부입금", "정산완료"];
+      
+      // parentCategory 체크 - 프론트엔드에서 전송한 탭 정보 (스키마에서 검증됨)
+      const parentCategory = validatedData.parentCategory;
+      const isClaimTab = parentCategory === "청구자료";
+      
+      // 청구자료 탭에서 업로드하거나, 청구자료 카테고리 문서 제출 시 처리
+      if ((isClaimTab || claimDocumentCategories.includes(validatedData.category) || validatedData.category === "청구") && validatedData.caseId) {
+        // 현재 케이스 상태를 다시 조회 (동시성 문제 방지)
         const existingCase = await storage.getCaseById(validatedData.caseId);
-        if (existingCase && !existingCase.constructionCompletionDate) {
-          await storage.updateCase(validatedData.caseId, {
-            constructionCompletionDate: new Date().toLocaleString("en-CA", { 
-              timeZone: "Asia/Seoul" 
-            }).split(",")[0]
-          });
+        if (existingCase) {
+          const updateData: Record<string, any> = {};
+          const currentDate = new Date().toLocaleString("en-CA", { 
+            timeZone: "Asia/Seoul" 
+          }).split(",")[0];
+          
+          // 상태가 아직 정산 관련 상태가 아닌 경우에만 '청구'로 변경
+          // (이미 입금완료, 일부입금, 정산완료인 경우 상태를 되돌리지 않음)
+          if (!settlementStatuses.includes(existingCase.status)) {
+            updateData.status = "청구";
+            updateData.claimDate = currentDate;
+          }
+          
+          // 복구완료일이 없는 경우에만 설정
+          if (!existingCase.constructionCompletionDate) {
+            updateData.constructionCompletionDate = currentDate;
+          }
+          
+          // 변경할 내용이 있는 경우에만 단일 업데이트 수행
+          if (Object.keys(updateData).length > 0) {
+            await storage.updateCase(validatedData.caseId, updateData);
+          }
         }
       }
       
