@@ -249,28 +249,34 @@ export default function SettlementAction() {
   const handleConfirmSettlement = async () => {
     if (!selectedCase) return;
 
-    // 정산 데이터 로깅 (UI에서 입력한 값들)
-    console.log("Settlement data:", {
+    const settlementData = {
       caseId: selectedCase.id,
-      caseNumber: selectedCase.caseNumber,
-      settlementAmount: parseFloat(settlementAmount.replace(/,/g, "")) || 0,
+      settlementAmount: (parseFloat(settlementAmount.replace(/,/g, "")) || 0).toString(),
       settlementDate: settlementDate ? format(settlementDate, "yyyy-MM-dd") : "",
-      commission: parseFloat(commission) || 0,
-      discount: parseFloat(discount) || 0,
-      deductible: parseFloat(deductible) || 0,
-      invoiceDate: invoiceDate ? format(invoiceDate, "yyyy-MM-dd") : (useTodayInvoice ? format(new Date(), "yyyy-MM-dd") : ""),
-      useTodayInvoice,
-      settlementMemo,
-    });
+      commission: (parseFloat(commission) || 0).toString(),
+      discount: (parseFloat(discount) || 0).toString(),
+      deductible: (parseFloat(deductible) || 0).toString(),
+      invoiceDate: invoiceDate ? format(invoiceDate, "yyyy-MM-dd") : (useTodayInvoice ? format(new Date(), "yyyy-MM-dd") : null),
+      memo: settlementMemo || null,
+      bank: null,
+    };
+
+    console.log("Settlement data:", settlementData);
     
     setIsSubmitting(true);
     
     try {
-      // 케이스 상태를 '정산완료'로 업데이트
+      // 1. settlements 테이블에 정산 데이터 저장
+      await apiRequest("POST", "/api/settlements", settlementData);
+      
+      // 2. 케이스 상태를 '정산완료'로 업데이트
       await updateCaseStatusMutation.mutateAsync({
         caseId: selectedCase.id,
         status: "정산완료",
       });
+      
+      // 정산 쿼리 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: ["/api/settlements"] });
       
       setShowConfirmDialog(false);
       toast({
