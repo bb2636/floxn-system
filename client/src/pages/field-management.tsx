@@ -557,6 +557,9 @@ export default function FieldManagement() {
       setProcessingTypes(new Set());
     }
     setProcessingTypeOther(selectedCaseData.processingTypeOther || "");
+    
+    // 복구방식 로드
+    setRecoveryMethodType(selectedCaseData.recoveryMethodType || "부분수리");
 
   }, [selectedCase]); // selectedCase ID만 감지 - ref로 입력 보호
 

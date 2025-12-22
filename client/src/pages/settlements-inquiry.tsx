@@ -277,6 +277,27 @@ export default function SettlementsInquiry() {
 
   const isLoading = casesLoading || estimatesLoading || usersLoading;
 
+  // 접수번호로 검색 필터링
+  const filteredRows = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return tableRows;
+    }
+    
+    // 숫자만 남겨서 비교 (하이픈, 공백 등 모두 제거)
+    const extractNumbers = (str: string) => (str || "").replace(/[^0-9]/g, "");
+    const normalizedQuery = extractNumbers(searchQuery.trim());
+    
+    // 빈 쿼리면 필터링 안함
+    if (!normalizedQuery) {
+      return tableRows;
+    }
+    
+    return tableRows.filter((row) => {
+      const caseNumberDigits = extractNumbers(row.caseNumber);
+      return caseNumberDigits.includes(normalizedQuery);
+    });
+  }, [tableRows, searchQuery]);
+
   const handleReset = () => {
     setSearchQuery("");
     setSettlementStatus("전체");
@@ -426,8 +447,8 @@ export default function SettlementsInquiry() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="전체">전체</SelectItem>
-                <SelectItem value="청산완료">청산완료</SelectItem>
-                <SelectItem value="청산대기">청산대기</SelectItem>
+                <SelectItem value="정산완료">정산완료</SelectItem>
+                <SelectItem value="정산대기">정산대기</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -667,8 +688,9 @@ export default function SettlementsInquiry() {
             fontWeight: 600,
             color: "#008FED",
           }}
+          data-testid="text-results-count"
         >
-          1000
+          {filteredRows.length}
         </span>
       </div>
 
@@ -1201,7 +1223,7 @@ export default function SettlementsInquiry() {
                     데이터를 불러오는 중...
                   </td>
                 </tr>
-              ) : tableRows.length === 0 ? (
+              ) : filteredRows.length === 0 ? (
                 <tr>
                   <td
                     colSpan={21}
@@ -1213,15 +1235,15 @@ export default function SettlementsInquiry() {
                       color: "rgba(12, 12, 12, 0.5)",
                     }}
                   >
-                    정산 조회 대상 접수건이 없습니다.
+                    {searchQuery.trim() ? "검색 결과가 없습니다." : "정산 조회 대상 접수건이 없습니다."}
                   </td>
                 </tr>
-              ) : tableRows.map((row, index) => (
+              ) : filteredRows.map((row, index) => (
                 <tr
                   key={row.id}
                   style={{
                     borderBottom:
-                      index < tableRows.length - 1
+                      index < filteredRows.length - 1
                         ? "1px solid rgba(12, 12, 12, 0.05)"
                         : "none",
                   }}
