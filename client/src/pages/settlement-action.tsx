@@ -31,7 +31,7 @@ export default function SettlementAction() {
   const [commission, setCommission] = useState("0");
   const [discount, setDiscount] = useState("0");
   const [deductible, setDeductible] = useState("0");
-  const [invoiceDate, setInvoiceDate] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(undefined);
   const [useTodayInvoice, setUseTodayInvoice] = useState(false);
   const [settlementMemo, setSettlementMemo] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -246,7 +246,7 @@ export default function SettlementAction() {
       commission: parseFloat(commission) || 0,
       discount: parseFloat(discount) || 0,
       deductible: parseFloat(deductible) || 0,
-      invoiceDate,
+      invoiceDate: invoiceDate ? format(invoiceDate, "yyyy-MM-dd") : (useTodayInvoice ? format(new Date(), "yyyy-MM-dd") : ""),
       useTodayInvoice,
       settlementMemo,
     });
@@ -272,7 +272,7 @@ export default function SettlementAction() {
       setCommission("0");
       setDiscount("0");
       setDeductible("0");
-      setInvoiceDate("");
+      setInvoiceDate(undefined);
       setUseTodayInvoice(false);
       setSettlementMemo("");
       setSelectedCaseId(null);
@@ -1387,26 +1387,54 @@ export default function SettlementAction() {
                   계산서 발행일
                 </label>
                 <div className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    value={invoiceDate}
-                    onChange={(e) => setInvoiceDate(e.target.value)}
-                    placeholder="날짜 선택"
-                    style={{
-                      flex: 1,
-                      height: "40px",
-                      background: "#FAFAFA",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                      borderRadius: "8px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                    }}
-                    data-testid="input-invoice-date"
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        disabled={useTodayInvoice}
+                        style={{
+                          flex: 1,
+                          height: "40px",
+                          background: useTodayInvoice ? "#F0F0F0" : "#FAFAFA",
+                          border: "1px solid rgba(12, 12, 12, 0.1)",
+                          borderRadius: "8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          justifyContent: "space-between",
+                          fontWeight: invoiceDate || useTodayInvoice ? 500 : 400,
+                          color: invoiceDate || useTodayInvoice ? "rgba(12, 12, 12, 0.9)" : "rgba(12, 12, 12, 0.5)",
+                        }}
+                        data-testid="button-invoice-date"
+                      >
+                        <span>
+                          {useTodayInvoice 
+                            ? format(new Date(), "yyyy년 MM월 dd일", { locale: ko })
+                            : invoiceDate 
+                              ? format(invoiceDate, "yyyy년 MM월 dd일", { locale: ko }) 
+                              : "날짜 선택"}
+                        </span>
+                        <CalendarIcon className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={invoiceDate}
+                        onSelect={setInvoiceDate}
+                        locale={ko}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
                   <div className="flex items-center gap-1">
                     <Checkbox
                       checked={useTodayInvoice}
-                      onCheckedChange={(checked) => setUseTodayInvoice(checked === true)}
+                      onCheckedChange={(checked) => {
+                        setUseTodayInvoice(checked === true);
+                        if (checked === true) {
+                          setInvoiceDate(undefined);
+                        }
+                      }}
                       data-testid="checkbox-use-today-invoice"
                     />
                     <label
@@ -1579,7 +1607,7 @@ export default function SettlementAction() {
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>계산서 발행일</span>
-                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceDate || (useTodayInvoice ? format(new Date(), "yyyy-MM-dd") : "-")}</span>
+                    <span style={{ fontFamily: "Pretendard", fontSize: "13px", color: "#0C0C0C" }}>{invoiceDate ? format(invoiceDate, "yyyy-MM-dd") : (useTodayInvoice ? format(new Date(), "yyyy-MM-dd") : "-")}</span>
                   </div>
                 </div>
               </div>
