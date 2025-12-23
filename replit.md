@@ -52,6 +52,11 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Master Data Management**: Administrator-only feature for managing dropdown options (e.g., room categories, locations, work names) used throughout the system, with API endpoints for management and real-time updates.
 - **Progress Management**: Track case progress, manage approvals/rejections, and send notifications.
 - **Finance & Settlement**: View statistics, manage settlements, track receivables, and match payments.
+  - **Invoice System**: Two distinct invoice types based on case recovery type:
+    - **재사용 인보이스 (Reusable Invoice)**: For 직접복구 (direct restoration) cases - displays 손해방지비용 + 대물복구비용
+    - **현장출동비용 청구 (Field Dispatch Cost Invoice)**: For 선견적요청 (pre-estimate request) cases - displays only 현장출동비용
+  - Invoice data is persisted in the database (invoiceDamagePreventionAmount, invoicePropertyRepairAmount, invoiceRemarks, fieldDispatchInvoiceAmount, fieldDispatchInvoiceRemarks)
+  - PDFs can be generated and emailed to recipients
 
 ### System Design Choices
 - **Frontend**: React with TypeScript, Wouter for routing, TanStack Query for data fetching, React Hook Form with Zod for form validation, Shadcn UI and Tailwind CSS for component styling, and Lucide React for icons.

@@ -3746,11 +3746,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const { caseId, relatedCaseIds } = req.body;
+      const { caseId, relatedCaseIds, damagePreventionAmount, propertyRepairAmount, remarks } = req.body;
 
       if (!caseId) {
         return res.status(400).json({ error: "케이스 ID가 필요합니다" });
       }
+
+      // 입력값 검증
+      const parsedDamagePreventionAmount = parseInt(damagePreventionAmount) || 0;
+      const parsedPropertyRepairAmount = parseInt(propertyRepairAmount) || 0;
 
       // 케이스 정보 조회
       const caseData = await storage.getCaseById(caseId);
@@ -3758,16 +3762,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // 관련 케이스들의 상태를 "청구"로 변경
+      // 관련 케이스들의 상태를 "청구"로 변경하고 인보이스 데이터 저장
       const caseIdsToUpdate = relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
       
       for (const id of caseIdsToUpdate) {
-        await storage.updateCase(id, { status: "청구" });
+        await storage.updateCase(id, { 
+          status: "청구",
+          invoiceDamagePreventionAmount: parsedDamagePreventionAmount.toString(),
+          invoicePropertyRepairAmount: parsedPropertyRepairAmount.toString(),
+          invoiceRemarks: remarks || null,
+        });
         
-        // 진행상황 기록 추가
+        // 진행상황 기록 추가 (금액 정보 포함)
         await storage.createProgressUpdate({
           caseId: id,
-          content: "인보이스 발송 완료 - 청구 상태로 변경",
+          content: `인보이스 발송 완료 - 청구 상태로 변경 (손해방지비용: ${parsedDamagePreventionAmount.toLocaleString()}원, 대물복구비용: ${parsedPropertyRepairAmount.toLocaleString()}원${remarks ? `, 비고: ${remarks}` : ''})`,
           createdBy: req.session.userId,
         });
       }
@@ -3783,6 +3792,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Invoice send error:", error);
       res.status(500).json({ error: "인보이스 발송 중 오류가 발생했습니다" });
+    }
+  });
+
+  // 현장출동비용 청구 발송 API (선견적요청 케이스용)
+  app.post("/api/field-dispatch-invoice/send", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId, relatedCaseIds, fieldDispatchAmount, remarks } = req.body;
+
+      if (!caseId) {
+        return res.status(400).json({ error: "케이스 ID가 필요합니다" });
+      }
+
+      // 입력값 검증
+      const parsedFieldDispatchAmount = parseInt(fieldDispatchAmount) || 0;
+
+      // 케이스 정보 조회
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 관련 케이스들의 상태를 "청구"로 변경하고 금액 저장
+      const caseIdsToUpdate = relatedCaseIds && relatedCaseIds.length > 0 ? relatedCaseIds : [caseId];
+      
+      for (const id of caseIdsToUpdate) {
+        // 상태 변경 및 인보이스 데이터 저장
+        await storage.updateCase(id, { 
+          status: "청구",
+          fieldDispatchInvoiceAmount: parsedFieldDispatchAmount.toString(),
+          fieldDispatchInvoiceRemarks: remarks || null,
+        });
+        
+        // 진행상황 기록 추가 (금액 정보 포함)
+        await storage.createProgressUpdate({
+          caseId: id,
+          content: `현장출동비용 청구서 발송 완료 - 청구 상태로 변경 (현장출동비용: ${parsedFieldDispatchAmount.toLocaleString()}원${remarks ? `, 비고: ${remarks}` : ''})`,
+          createdBy: req.session.userId,
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "현장출동비용 청구서가 발송되었습니다.",
+        updatedCases: caseIdsToUpdate.length,
+        savedAmount: parsedFieldDispatchAmount,
+      });
+    } catch (error) {
+      console.error("Field dispatch invoice send error:", error);
+      res.status(500).json({ error: "현장출동비용 청구서 발송 중 오류가 발생했습니다" });
     }
   });
 
@@ -4091,7 +4153,7 @@ FLOXN 드림`;
         insuranceCompany, 
         accidentNo,
         damagePreventionAmount,
-        fieldDispatchAmount,
+        propertyRepairAmount,
         totalAmount,
         remarks
       } = req.body;
@@ -4147,7 +4209,7 @@ INVOICE를 전송해드립니다.
 
 청구 금액:
 - 손해방지비용: ${formatAmount(damagePreventionAmount || 0)}원
-- 현장출동비용: ${formatAmount(fieldDispatchAmount || 0)}원
+- 대물복구비용: ${formatAmount(propertyRepairAmount || 0)}원
 - 합계: ${formatAmount(totalAmount || 0)}원
 ${remarks ? `\n비고: ${remarks}` : ''}
 
@@ -4167,6 +4229,104 @@ FLOXN 드림`;
     } catch (error) {
       console.error("Send invoice email error:", error);
       res.status(500).json({ error: "INVOICE 이메일 전송 중 오류가 발생했습니다" });
+    }
+  });
+
+  // ==========================================
+  // POST /api/send-field-dispatch-invoice-email - 현장출동비용 청구서 PDF 이메일 전송 (선견적요청용)
+  // ==========================================
+  app.post("/api/send-field-dispatch-invoice-email", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(403).json({ error: "사용자 정보를 찾을 수 없습니다" });
+    }
+
+    try {
+      const { 
+        email, 
+        pdfBase64, 
+        caseNumber, 
+        insuranceCompany, 
+        accidentNo,
+        fieldDispatchAmount,
+        totalAmount,
+        remarks
+      } = req.body;
+
+      if (!email || !pdfBase64) {
+        return res.status(400).json({ error: "이메일 주소와 PDF 데이터가 필요합니다" });
+      }
+
+      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timestamp = Date.now();
+      const fileName = `field_dispatch_invoice_${caseNumber || 'unknown'}_${timestamp}.pdf`;
+      
+      // Convert base64 to buffer
+      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+
+      // Upload PDF to Object Storage
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+      if (!bucketId) {
+        console.error("[send-field-dispatch-invoice-email] Missing Object Storage bucket ID");
+        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+      }
+
+      const bucket = objectStorageClient.bucket(bucketId);
+      const objectName = `public/invoice-pdfs/${fileName}`;
+      const file = bucket.file(objectName);
+
+      // Upload the PDF
+      await file.save(pdfBuffer, {
+        contentType: 'application/pdf',
+        metadata: {
+          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
+        },
+      });
+
+      // Generate public URL
+      const appDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
+      const protocol = appDomain.includes('localhost') ? 'http' : 'https';
+      const pdfUrl = `${protocol}://${appDomain}/objects/public/invoice-pdfs/${fileName}`;
+
+      console.log(`[PDF Upload] Field dispatch invoice PDF uploaded to: ${pdfUrl}`);
+
+      // Format amounts
+      const formatAmount = (amount: number) => amount.toLocaleString('ko-KR');
+
+      // Send email via Bubble.io API with PDF link
+      const emailContent = `안녕하세요,
+
+현장출동비용 청구서를 전송해드립니다.
+
+- 보험사: ${insuranceCompany || '-'}
+- 사고번호: ${accidentNo || '-'}
+- 사건번호: ${caseNumber || '-'}
+
+청구 금액:
+- 현장출동비용: ${formatAmount(fieldDispatchAmount || 0)}원
+- 합계: ${formatAmount(totalAmount || 0)}원
+${remarks ? `\n비고: ${remarks}` : ''}
+
+아래 링크를 클릭하시면 현장출동비용 청구서 PDF를 다운로드하실 수 있습니다:
+${pdfUrl}
+
+- 발송일: ${dateStr}
+- 발송자: ${user.name || user.username}
+
+감사합니다.
+FLOXN 드림`;
+
+      await sendNotificationEmail(email, `FLOXN 현장출동비용 청구서 - ${caseNumber || dateStr}`, emailContent);
+
+      console.log(`[Email] Field dispatch invoice PDF link sent successfully to ${email} by ${user.username}`);
+      res.json({ success: true, message: "현장출동비용 청구서 이메일이 전송되었습니다", pdfUrl });
+    } catch (error) {
+      console.error("Send field dispatch invoice email error:", error);
+      res.status(500).json({ error: "현장출동비용 청구서 이메일 전송 중 오류가 발생했습니다" });
     }
   });
 

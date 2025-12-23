@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-interface InvoiceSheetProps {
+interface FieldDispatchCostSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   caseData: {
@@ -14,9 +14,8 @@ interface InvoiceSheetProps {
     insuranceCompany?: string | null;
     insuranceAccidentNo?: string | null;
     receptionDate?: string | null;
-    invoiceDamagePreventionAmount?: string | null;
-    invoicePropertyRepairAmount?: string | null;
-    invoiceRemarks?: string | null;
+    fieldDispatchInvoiceAmount?: string | null;
+    fieldDispatchInvoiceRemarks?: string | null;
   } | null;
   relatedCases?: Array<{
     id: string;
@@ -24,12 +23,11 @@ interface InvoiceSheetProps {
   }>;
 }
 
-export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }: InvoiceSheetProps) {
+export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCases = [] }: FieldDispatchCostSheetProps) {
   const { toast } = useToast();
   const invoicePdfRef = useRef<HTMLDivElement>(null);
   
-  const [invoiceDamagePreventionAmount, setInvoiceDamagePreventionAmount] = useState<string>("");
-  const [invoicePropertyRepairAmount, setInvoicePropertyRepairAmount] = useState<string>("");
+  const [fieldDispatchAmount, setFieldDispatchAmount] = useState<string>("");
   const [invoiceRemarks, setInvoiceRemarks] = useState<string>("");
   const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState<string>("");
   const [isSendingPdf, setIsSendingPdf] = useState(false);
@@ -37,25 +35,23 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   useEffect(() => {
     if (open && caseData) {
       // 기존 저장된 값이 있으면 불러오기
-      setInvoiceDamagePreventionAmount(caseData.invoiceDamagePreventionAmount || "");
-      setInvoicePropertyRepairAmount(caseData.invoicePropertyRepairAmount || "");
-      setInvoiceRemarks(caseData.invoiceRemarks || "");
+      setFieldDispatchAmount(caseData.fieldDispatchInvoiceAmount || "");
+      setInvoiceRemarks(caseData.fieldDispatchInvoiceRemarks || "");
       setInvoiceRecipientEmail("");
     } else if (!open) {
-      setInvoiceDamagePreventionAmount("");
-      setInvoicePropertyRepairAmount("");
+      setFieldDispatchAmount("");
       setInvoiceRemarks("");
       setInvoiceRecipientEmail("");
     }
   }, [open, caseData]);
 
-  const totalAmount = (parseInt(invoiceDamagePreventionAmount || "0") || 0) + (parseInt(invoicePropertyRepairAmount || "0") || 0);
+  const totalAmount = parseInt(fieldDispatchAmount || "0") || 0;
 
   const handleSendInvoicePdf = async () => {
     if (!invoicePdfRef.current) {
       toast({
         title: "PDF 생성 실패",
-        description: "변환할 인보이스 정보를 찾을 수 없습니다.",
+        description: "변환할 청구서 정보를 찾을 수 없습니다.",
         variant: "destructive",
       });
       return;
@@ -108,7 +104,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
 
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
 
-      const response = await fetch('/api/send-invoice-email', {
+      const response = await fetch('/api/send-field-dispatch-invoice-email', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -119,8 +115,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           caseNumber: caseData?.caseNumber || '',
           insuranceCompany: caseData?.insuranceCompany || '',
           accidentNo: caseData?.insuranceAccidentNo || '',
-          damagePreventionAmount: parseInt(invoiceDamagePreventionAmount || "0") || 0,
-          propertyRepairAmount: parseInt(invoicePropertyRepairAmount || "0") || 0,
+          fieldDispatchAmount: parseInt(fieldDispatchAmount || "0") || 0,
           totalAmount,
           remarks: invoiceRemarks,
         }),
@@ -131,14 +126,14 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       if (response.ok) {
         toast({
           title: "이메일 전송 완료",
-          description: `${invoiceRecipientEmail}으로 INVOICE PDF가 전송되었습니다.`,
+          description: `${invoiceRecipientEmail}으로 현장출동비용 청구서 PDF가 전송되었습니다.`,
         });
         onOpenChange(false);
       } else {
         throw new Error(result.error || "이메일 전송에 실패했습니다");
       }
     } catch (error) {
-      console.error("INVOICE PDF 이메일 전송 중 오류 발생", error);
+      console.error("현장출동비용 청구서 PDF 이메일 전송 중 오류 발생", error);
       toast({
         title: "이메일 전송 실패",
         description: error instanceof Error ? error.message : "다시 시도해주세요.",
@@ -151,17 +146,16 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
 
   const handleSave = async () => {
     try {
-      await apiRequest("POST", "/api/invoice/send", {
+      await apiRequest("POST", "/api/field-dispatch-invoice/send", {
         caseId: caseData?.id,
         relatedCaseIds: relatedCases.map(c => c.id),
-        damagePreventionAmount: parseInt(invoiceDamagePreventionAmount || "0") || 0,
-        propertyRepairAmount: parseInt(invoicePropertyRepairAmount || "0") || 0,
+        fieldDispatchAmount: parseInt(fieldDispatchAmount || "0") || 0,
         remarks: invoiceRemarks,
         totalAmount: totalAmount,
       });
       toast({
         title: "저장 완료",
-        description: "인보이스가 저장되었습니다.",
+        description: "현장출동비용 청구서가 저장되었습니다.",
       });
       onOpenChange(false);
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
@@ -187,7 +181,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
           borderRadius: "12px 0 0 12px",
         }}
-        data-testid="dialog-invoice"
+        data-testid="dialog-field-dispatch-invoice"
       >
         <div style={{
           display: "flex",
@@ -215,7 +209,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 color: "#0C0C0C",
                 margin: 0,
               }}>
-                INVOICE
+                현장출동비용 청구
               </h2>
             </div>
             <div style={{
@@ -463,13 +457,13 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                   letterSpacing: "-0.01em",
                   color: "rgba(12, 12, 12, 0.7)",
                 }}>
-                  손해방지비용
+                  현장출동비용
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                   <input
                     type="text"
-                    value={invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : ""}
-                    onChange={(e) => setInvoiceDamagePreventionAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                    value={fieldDispatchAmount ? Number(fieldDispatchAmount).toLocaleString() : ""}
+                    onChange={(e) => setFieldDispatchAmount(e.target.value.replace(/[^0-9]/g, ""))}
                     placeholder="0"
                     className="invoice-input-field"
                     style={{
@@ -485,7 +479,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                       textAlign: "right",
                       width: "120px",
                     }}
-                    data-testid="input-damage-prevention-amount"
+                    data-testid="input-field-dispatch-cost"
                   />
                   <span style={{
                     fontFamily: "Pretendard",
@@ -504,73 +498,9 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                       letterSpacing: "-0.01em",
                       color: "rgba(12, 12, 12, 0.9)",
                     }}
-                    data-testid="text-damage-prevention-amount"
+                    data-testid="text-field-dispatch-cost"
                   >
-                    {invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : "0"}원
-                  </span>
-                </div>
-              </div>
-
-              <div style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "16px 0",
-                borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
-              }}>
-                <span style={{
-                  fontFamily: "Pretendard",
-                  fontWeight: 500,
-                  fontSize: "15px",
-                  lineHeight: "128%",
-                  letterSpacing: "-0.01em",
-                  color: "rgba(12, 12, 12, 0.7)",
-                }}>
-                  대물복구비용
-                </span>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <input
-                    type="text"
-                    value={invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : ""}
-                    onChange={(e) => setInvoicePropertyRepairAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="0"
-                    className="invoice-input-field"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 500,
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.01em",
-                      color: "rgba(12, 12, 12, 0.9)",
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
-                      textAlign: "right",
-                      width: "120px",
-                    }}
-                    data-testid="input-property-repair-amount"
-                  />
-                  <span style={{
-                    fontFamily: "Pretendard",
-                    fontWeight: 500,
-                    fontSize: "15px",
-                    color: "rgba(12, 12, 12, 0.9)",
-                  }}>원</span>
-                  <span 
-                    className="invoice-span-field"
-                    style={{
-                      display: "none",
-                      fontFamily: "Pretendard",
-                      fontWeight: 500,
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.01em",
-                      color: "rgba(12, 12, 12, 0.9)",
-                    }}
-                    data-testid="text-property-repair-amount"
-                  >
-                    {invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : "0"}원
+                    {fieldDispatchAmount ? Number(fieldDispatchAmount).toLocaleString() : "0"}원
                   </span>
                 </div>
               </div>
@@ -643,7 +573,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                     resize: "none",
                     outline: "none",
                   }}
-                  data-testid="textarea-invoice-remarks"
+                  data-testid="textarea-field-dispatch-remarks"
                 />
               </div>
 
@@ -783,7 +713,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                   padding: "10px 14px",
                   outline: "none",
                 }}
-                data-testid="input-invoice-email"
+                data-testid="input-field-dispatch-email"
               />
             </div>
 
@@ -796,14 +726,14 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 variant="outline"
                 onClick={handleSendInvoicePdf}
                 disabled={isSendingPdf || !invoiceRecipientEmail}
-                data-testid="button-invoice-pdf"
+                data-testid="button-field-dispatch-pdf"
               >
                 {isSendingPdf ? "발송 중..." : "PDF 발송"}
               </Button>
               <Button
                 onClick={handleSave}
                 style={{ background: "#008FED" }}
-                data-testid="button-invoice-save"
+                data-testid="button-field-dispatch-save"
               >
                 저장
               </Button>
