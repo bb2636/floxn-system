@@ -39,17 +39,6 @@ export default function SettlementAction() {
   const [settlementType, setSettlementType] = useState<"full" | "half" | null>(null);
   const { toast } = useToast();
 
-  // 정산금액 변경 시 수수료 자동 계산 (7.7%)
-  useEffect(() => {
-    if (settlementAmount) {
-      const numericAmount = parseFloat(settlementAmount.replace(/,/g, "")) || 0;
-      const calculatedCommission = Math.round(numericAmount * 0.077);
-      setCommission(calculatedCommission.toLocaleString());
-    } else {
-      setCommission("0");
-    }
-  }, [settlementAmount]);
-
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
   });
@@ -72,6 +61,25 @@ export default function SettlementAction() {
   const { data: allUsers = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
+
+  // 선택된 케이스 가져오기 (수수료 계산에 필요)
+  const selectedCaseForCommission = useMemo(() => {
+    return cases.find((c) => c.id === selectedCaseId);
+  }, [cases, selectedCaseId]);
+
+  // 정산금액 변경 시 수수료 자동 계산 (직접복구: 7.7%, 선견적요청: 50%)
+  useEffect(() => {
+    if (settlementAmount && selectedCaseForCommission) {
+      const numericAmount = parseFloat(settlementAmount.replace(/,/g, "")) || 0;
+      const recoveryType = selectedCaseForCommission.recoveryType;
+      // 선견적요청이면 50%, 그 외(직접복구 등)는 7.7%
+      const commissionRate = recoveryType === "선견적요청" ? 0.5 : 0.077;
+      const calculatedCommission = Math.round(numericAmount * commissionRate);
+      setCommission(calculatedCommission.toLocaleString());
+    } else {
+      setCommission("0");
+    }
+  }, [settlementAmount, selectedCaseForCommission]);
 
   if (!user) {
     return null;
@@ -1331,7 +1339,7 @@ export default function SettlementAction() {
                     marginBottom: "8px",
                   }}
                 >
-                  수수료(원) <span style={{ fontSize: "12px", color: "rgba(12, 12, 12, 0.5)" }}>(자동계산 7.7%)</span>
+                  수수료(원) <span style={{ fontSize: "12px", color: "rgba(12, 12, 12, 0.5)" }}>(자동계산 {selectedCase.caseData.recoveryType === "선견적요청" ? "50%" : "7.7%"})</span>
                 </label>
                 <Input
                   type="text"
