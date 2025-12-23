@@ -407,8 +407,22 @@ export default function SettlementsInquiry() {
       }
     }
     
+    // 기간 필터 적용 (정산일 기준)
+    if (startDate && endDate) {
+      filtered = filtered.filter((row) => {
+        if (!row.settlementDate || row.settlementDate === "-") return false;
+        const rowDate = new Date(row.settlementDate);
+        // 시작일 00:00:00부터 종료일 23:59:59까지 포함
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        return rowDate >= start && rowDate <= end;
+      });
+    }
+    
     return filtered;
-  }, [tableRows, searchQuery, settlementStatus, insuranceCompany, assessor, manager, usersByIdMap, usersByUsernameMap, usersByCompanyMap]);
+  }, [tableRows, searchQuery, settlementStatus, insuranceCompany, assessor, manager, usersByIdMap, usersByUsernameMap, usersByCompanyMap, startDate, endDate]);
 
   const handleReset = () => {
     setSearchQuery("");

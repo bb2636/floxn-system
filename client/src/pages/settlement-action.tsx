@@ -30,7 +30,7 @@ export default function SettlementAction() {
   const [settlementDate, setSettlementDate] = useState<Date | undefined>(undefined);
   const [commission, setCommission] = useState("0");
   const [discount, setDiscount] = useState("0");
-  const [deductible, setDeductible] = useState("0");
+  const [deductible, setDeductible] = useState("");
   const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(undefined);
   const [useTodayInvoice, setUseTodayInvoice] = useState(false);
   const [settlementMemo, setSettlementMemo] = useState("");
@@ -303,7 +303,7 @@ export default function SettlementAction() {
       setSettlementDate(undefined);
       setCommission("0");
       setDiscount("0");
-      setDeductible("0");
+      setDeductible("");
       setInvoiceDate(undefined);
       setUseTodayInvoice(false);
       setSettlementMemo("");
@@ -1331,21 +1331,22 @@ export default function SettlementAction() {
                     marginBottom: "8px",
                   }}
                 >
-                  수수료(원)
+                  수수료(원) <span style={{ fontSize: "12px", color: "rgba(12, 12, 12, 0.5)" }}>(자동계산 7.7%)</span>
                 </label>
                 <Input
                   type="text"
                   value={commission}
-                  onChange={(e) => setCommission(e.target.value)}
+                  readOnly
                   placeholder="0"
                   style={{
                     height: "40px",
-                    background: "#FAFAFA",
+                    background: "#F0F0F0",
                     border: "1px solid rgba(12, 12, 12, 0.1)",
                     borderRadius: "8px",
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     textAlign: "center",
+                    cursor: "not-allowed",
                   }}
                   data-testid="input-commission"
                 />
@@ -1360,12 +1361,13 @@ export default function SettlementAction() {
                     display: "block",
                     marginBottom: "8px",
                   }}
-                >입금액</label>
+                >입금액(원)</label>
                 <Input
-                  type="text"
+                  type="number"
                   value={discount}
                   onChange={(e) => setDiscount(e.target.value)}
                   placeholder="0"
+                  min="0"
                   style={{
                     height: "40px",
                     background: "#FAFAFA",
@@ -1392,10 +1394,11 @@ export default function SettlementAction() {
                   자기부담금(원)
                 </label>
                 <Input
-                  type="text"
+                  type="number"
                   value={deductible}
                   onChange={(e) => setDeductible(e.target.value)}
                   placeholder="0"
+                  min="0"
                   style={{
                     height: "40px",
                     background: "#FAFAFA",
