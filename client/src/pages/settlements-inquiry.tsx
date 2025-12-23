@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { formatCaseNumber } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { InvoiceSheet, getCaseNumberPrefix } from "@/components/InvoiceSheet";
 
 // 정산 테이블 행 타입
 interface SettlementRow {
@@ -60,6 +62,11 @@ export default function SettlementsInquiry() {
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
   const [managementDialogOpen, setManagementDialogOpen] = useState(false);
   const [selectedCaseForManagement, setSelectedCaseForManagement] = useState<SettlementRow | null>(null);
+  
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
+  const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
+  
+  const { toast } = useToast();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -102,12 +109,15 @@ export default function SettlementsInquiry() {
     return map;
   }, [allSettlements]);
 
-  // Helper function to open management dialog
+  // Helper function to open Invoice Sheet
   const handleOpenManagement = (row: SettlementRow) => {
-    setSelectedCaseForManagement(row);
-    setManagementDialogOpen(true);
+    const targetCase = cases.find(c => c.id === row.id);
+    if (targetCase) {
+      setInvoiceCaseId(targetCase.id);
+      setShowInvoiceDialog(true);
+    }
   };
-
+  
   // Get settlements for the selected case
   const selectedCaseSettlements = useMemo(() => {
     if (!selectedCaseForManagement) return [];
@@ -1893,6 +1903,21 @@ export default function SettlementsInquiry() {
           </div>
         </DialogContent>
       </Dialog>
+
+
+      {/* INVOICE Sheet */}
+      <InvoiceSheet
+        open={showInvoiceDialog}
+        onOpenChange={setShowInvoiceDialog}
+        caseData={cases?.find(c => c.id === invoiceCaseId) || null}
+        relatedCases={(() => {
+          const invoiceCase = cases?.find(c => c.id === invoiceCaseId);
+          const invoiceCasePrefix = getCaseNumberPrefix(invoiceCase?.caseNumber);
+          return invoiceCasePrefix 
+            ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix) || []
+            : invoiceCase ? [invoiceCase] : [];
+        })()}
+      />
     </div>
   );
 }
