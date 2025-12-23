@@ -1363,11 +1363,15 @@ export default function SettlementAction() {
                   }}
                 >입금액(원)</label>
                 <Input
-                  type="number"
+                  type="text"
                   value={discount}
-                  onChange={(e) => setDiscount(e.target.value)}
+                  onChange={(e) => {
+                    // 숫자만 허용하고 앞자리 0 제거
+                    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+                    const cleanedValue = numericValue.replace(/^0+/, "") || "";
+                    setDiscount(cleanedValue);
+                  }}
                   placeholder="0"
-                  min="0"
                   style={{
                     height: "40px",
                     background: "#FAFAFA",
