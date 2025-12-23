@@ -30,7 +30,7 @@ export default function SettlementAction() {
   const [settlementDate, setSettlementDate] = useState<Date | undefined>(undefined);
   const [commission, setCommission] = useState("0");
   const [discount, setDiscount] = useState("0");
-  const [deductible, setDeductible] = useState("0");
+  const [deductible, setDeductible] = useState("");
   const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(undefined);
   const [useTodayInvoice, setUseTodayInvoice] = useState(false);
   const [settlementMemo, setSettlementMemo] = useState("");
@@ -303,7 +303,7 @@ export default function SettlementAction() {
       setSettlementDate(undefined);
       setCommission("0");
       setDiscount("0");
-      setDeductible("0");
+      setDeductible("");
       setInvoiceDate(undefined);
       setUseTodayInvoice(false);
       setSettlementMemo("");
@@ -1392,10 +1392,11 @@ export default function SettlementAction() {
                   자기부담금(원)
                 </label>
                 <Input
-                  type="text"
+                  type="number"
                   value={deductible}
                   onChange={(e) => setDeductible(e.target.value)}
                   placeholder="0"
+                  min="0"
                   style={{
                     height: "40px",
                     background: "#FAFAFA",
