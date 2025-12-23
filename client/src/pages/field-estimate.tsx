@@ -1,6 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Case, MasterData, LaborCost, User } from "@shared/schema";
+import { Case, MasterData, LaborCost, User, LaborRateTier } from "@shared/schema";
+import {
+  useLaborRateTiers,
+  calculateIWithTiers,
+  calculateAppliedUnitPriceWithTiers,
+  DEFAULT_LABOR_RATE_TIERS_FALLBACK,
+} from "@/hooks/use-labor-rate-tiers";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Check, Search, Copy, GripVertical } from "lucide-react";
 import {
@@ -29,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LaborCostSection, type LaborCatalogItem, type LaborCostRow } from "@/components/labor-cost-section";
+import { LaborRateTiersButton } from "@/components/labor-rate-tiers-modal";
 import { MaterialCostSection, type MaterialCatalogItem, type MaterialRow } from "@/components/material-cost-section";
 
 interface AreaCalculationRow {
@@ -86,53 +93,12 @@ interface MaterialByWorknameCatalogItem {
 // D = 기준작업량 (일위대가 DB)
 // C = 복구면적 (노무비 계산값)
 // E = 노임단가 (일위대가 DB)
-// F = C/D 비율에 따른 적용단가 (E 기준 할인율 적용)
-// H = C≥D: (C-D)×(E÷D) / C<D: F
+// F = C/D 비율에 따른 적용단가 (E 기준 할인율 적용) - DB에서 가져온 요율 사용
+// H = C≥D: (C-D)×(E÷D) / C<D: 0
 // I = F + H (최종 노임비)
 // 적용단가 = I / C
 // 합계 = I
-
-function calculateF_FieldEstimate(C: number, D: number, E: number): number {
-  if (D <= 0 || E <= 0) return 0;
-  
-  const ratio = C / D;
-  
-  if (ratio >= 0.85) return E;
-  if (ratio >= 0.80) return E * 0.95;
-  if (ratio >= 0.75) return E * 0.82;
-  if (ratio >= 0.70) return E * 0.74;
-  if (ratio >= 0.65) return E * 0.66;
-  if (ratio >= 0.60) return E * 0.58;
-  if (ratio >= 0.50) return E * 0.50;
-  return E * 0.45;
-}
-
-function calculateH_FieldEstimate(C: number, D: number, E: number, F: number): number {
-  if (D <= 0) return 0;
-  
-  if (C >= D) {
-    return (C - D) * (E / D);
-  } else {
-    return 0; // C < D 일 때 H = 0 (추가 금액 없음)
-  }
-}
-
-function calculateI_FieldEstimate(C: number, D: number, E: number): number {
-  if (D <= 0 || C <= 0) return 0;
-  
-  const F = calculateF_FieldEstimate(C, D, E);
-  const H = calculateH_FieldEstimate(C, D, E, F);
-  const I = F + H;
-  
-  return Math.round(I);
-}
-
-function calculateAppliedUnitPrice_FieldEstimate(C: number, D: number, E: number): number {
-  if (C <= 0 || D <= 0) return 0;
-  
-  const I = calculateI_FieldEstimate(C, D, E);
-  return Math.round(I / C);
-}
+// (calculateF, calculateH, calculateI, calculateAppliedUnitPrice는 use-labor-rate-tiers.ts에서 import)
 
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
 
@@ -167,6 +133,10 @@ export default function FieldEstimate() {
   
   // 초기 로드 직후 자동 동기화 방지 (새 행 자동 생성 방지)
   const skipAutoSyncRef = useRef(true);
+
+  // 노임단가 적용비율 데이터 (DB에서 가져옴)
+  const { data: laborRateTiersData } = useLaborRateTiers();
+  const laborRateTiers = laborRateTiersData || DEFAULT_LABOR_RATE_TIERS_FALLBACK;
 
   const [selectedCategory, setSelectedCategory] = useState("복구면적 산출표");
   const [rows, setRows] = useState<AreaCalculationRow[]>([]);
@@ -531,10 +501,10 @@ export default function FieldEstimate() {
     let calculatedPricePerSqm = 0;
     
     if (D > 0 && E > 0 && C > 0) {
-      // I 계산 (최종 노임비 = 합계)
-      calculatedAmount = calculateI_FieldEstimate(C, D, E);
+      // I 계산 (최종 노임비 = 합계) - DB 요율 사용
+      calculatedAmount = calculateIWithTiers(C, D, E, laborRateTiers);
       // 적용단가 = I / C
-      calculatedPricePerSqm = calculateAppliedUnitPrice_FieldEstimate(C, D, E);
+      calculatedPricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
     }
     
     return {
@@ -818,11 +788,11 @@ export default function FieldEstimate() {
             const D = standardWorkQty; // 기준작업량
             const E = catalogItem.노임단가 || 0; // 노임단가(인당)
             
-            // I 계산 (최종 노임비)
+            // I 계산 (최종 노임비) - DB 요율 사용
             let appliedUnitPrice = 0;
             let totalAmount = 0;
             if (D > 0 && E > 0 && C > 0) {
-              const I = calculateI_FieldEstimate(C, D, E);
+              const I = calculateIWithTiers(C, D, E, laborRateTiers);
               appliedUnitPrice = Math.round(I / C); // 적용단가 = I / C
               totalAmount = I; // 합계 = I
             }
@@ -1644,8 +1614,8 @@ export default function FieldEstimate() {
             let calculatedPricePerSqm = 0;
             
             if (D > 0 && E > 0 && C > 0) {
-              calculatedAmount = calculateI_FieldEstimate(C, D, E);
-              calculatedPricePerSqm = calculateAppliedUnitPrice_FieldEstimate(C, D, E);
+              calculatedAmount = calculateIWithTiers(C, D, E, laborRateTiers);
+              calculatedPricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
             }
             
             newLaborRows.push({
@@ -1831,9 +1801,9 @@ export default function FieldEstimate() {
             let newStandardPrice = E;
             
             if (D > 0 && E > 0 && C > 0) {
-              newPricePerSqm = calculateAppliedUnitPrice_FieldEstimate(C, D, E);
+              newPricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
               newQuantity = Math.round((C / D) * 100) / 100;
-              newAmount = calculateI_FieldEstimate(C, D, E);
+              newAmount = calculateIWithTiers(C, D, E, laborRateTiers);
             }
             
             return {
@@ -1887,9 +1857,9 @@ export default function FieldEstimate() {
             let newStandardPrice = E;
             
             if (D > 0 && E > 0 && C > 0) {
-              newPricePerSqm = calculateAppliedUnitPrice_FieldEstimate(C, D, E);
+              newPricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
               newQuantity = Math.round((C / D) * 100) / 100;
-              newAmount = calculateI_FieldEstimate(C, D, E);
+              newAmount = calculateIWithTiers(C, D, E, laborRateTiers);
             }
             
             return {
@@ -2174,8 +2144,8 @@ export default function FieldEstimate() {
           let calculatedAmount = 0;
           let calculatedPricePerSqm = 0;
           if (D > 0 && E > 0 && C > 0) {
-            calculatedAmount = calculateI_FieldEstimate(C, D, E);
-            calculatedPricePerSqm = calculateAppliedUnitPrice_FieldEstimate(C, D, E);
+            calculatedAmount = calculateIWithTiers(C, D, E, laborRateTiers);
+            calculatedPricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
           }
           
           // ID 형식: demolition-<sourceRowId>-<detailItem> (각 복구면적 행별 개별 ID)
@@ -5476,6 +5446,7 @@ export default function FieldEstimate() {
                 onAreaImportToMaterial={handleAreaImportToMaterial}
                 enableAreaImport={!isLossPreventionCase}
                 isHydrated={isHydratedState}
+                laborRateTiers={laborRateTiers}
               />
             </div>
 
@@ -5887,6 +5858,7 @@ export default function FieldEstimate() {
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
+                  <LaborRateTiersButton />
                   <Button
                     onClick={syncLaborFromRecoveryArea}
                     variant="outline"
@@ -5964,6 +5936,7 @@ export default function FieldEstimate() {
                 onAreaImportToMaterial={handleAreaImportToMaterial}
                 enableAreaImport={!isLossPreventionCase}
                 isHydrated={isHydratedState}
+                laborRateTiers={laborRateTiers}
               />
               
               {/* 노무비 총합계 */}
