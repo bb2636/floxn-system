@@ -27,25 +27,24 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
   const { toast } = useToast();
   const invoicePdfRef = useRef<HTMLDivElement>(null);
   
-  const [fieldDispatchAmount, setFieldDispatchAmount] = useState<string>("");
+  // 선견적요청 현장출동비용은 항상 10만원 고정
+  const FIXED_FIELD_DISPATCH_AMOUNT = "100000";
   const [invoiceRemarks, setInvoiceRemarks] = useState<string>("");
   const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState<string>("");
   const [isSendingPdf, setIsSendingPdf] = useState(false);
 
   useEffect(() => {
     if (open && caseData) {
-      // 기존 저장된 값이 있으면 불러오기
-      setFieldDispatchAmount(caseData.fieldDispatchInvoiceAmount || "");
+      // 비고는 기존 저장된 값이 있으면 불러오기
       setInvoiceRemarks(caseData.fieldDispatchInvoiceRemarks || "");
       setInvoiceRecipientEmail("");
     } else if (!open) {
-      setFieldDispatchAmount("");
       setInvoiceRemarks("");
       setInvoiceRecipientEmail("");
     }
   }, [open, caseData]);
 
-  const totalAmount = parseInt(fieldDispatchAmount || "0") || 0;
+  const totalAmount = parseInt(FIXED_FIELD_DISPATCH_AMOUNT) || 0;
 
   const handleSendInvoicePdf = async () => {
     if (!invoicePdfRef.current) {
@@ -115,7 +114,7 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
           caseNumber: caseData?.caseNumber || '',
           insuranceCompany: caseData?.insuranceCompany || '',
           accidentNo: caseData?.insuranceAccidentNo || '',
-          fieldDispatchAmount: parseInt(fieldDispatchAmount || "0") || 0,
+          fieldDispatchAmount: parseInt(FIXED_FIELD_DISPATCH_AMOUNT) || 0,
           totalAmount,
           remarks: invoiceRemarks,
         }),
@@ -149,7 +148,7 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
       await apiRequest("POST", "/api/field-dispatch-invoice/send", {
         caseId: caseData?.id,
         relatedCaseIds: relatedCases.map(c => c.id),
-        fieldDispatchAmount: parseInt(fieldDispatchAmount || "0") || 0,
+        fieldDispatchAmount: parseInt(FIXED_FIELD_DISPATCH_AMOUNT) || 0,
         remarks: invoiceRemarks,
         totalAmount: totalAmount,
       });
@@ -460,11 +459,7 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
                   현장출동비용
                 </span>
                 <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <input
-                    type="text"
-                    value={fieldDispatchAmount ? Number(fieldDispatchAmount).toLocaleString() : ""}
-                    onChange={(e) => setFieldDispatchAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="0"
+                  <span
                     className="invoice-input-field"
                     style={{
                       fontFamily: "Pretendard",
@@ -473,14 +468,12 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
                       lineHeight: "128%",
                       letterSpacing: "-0.01em",
                       color: "rgba(12, 12, 12, 0.9)",
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
                       textAlign: "right",
-                      width: "120px",
                     }}
-                    data-testid="input-field-dispatch-cost"
-                  />
+                    data-testid="text-field-dispatch-cost"
+                  >
+                    {Number(FIXED_FIELD_DISPATCH_AMOUNT).toLocaleString()}
+                  </span>
                   <span style={{
                     fontFamily: "Pretendard",
                     fontWeight: 500,
@@ -498,9 +491,8 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
                       letterSpacing: "-0.01em",
                       color: "rgba(12, 12, 12, 0.9)",
                     }}
-                    data-testid="text-field-dispatch-cost"
                   >
-                    {fieldDispatchAmount ? Number(fieldDispatchAmount).toLocaleString() : "0"}원
+                    {Number(FIXED_FIELD_DISPATCH_AMOUNT).toLocaleString()}원
                   </span>
                 </div>
               </div>
