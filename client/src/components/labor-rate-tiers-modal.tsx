@@ -82,17 +82,6 @@ export function LaborRateTiersModal({ open, onOpenChange }: LaborRateTiersModalP
   };
   
   const sortedTiers = [...editedTiers].sort((a, b) => b.minRatio - a.minRatio);
-  
-  const getRatioLabel = (tier: { minRatio: number }, index: number) => {
-    if (index === 0) {
-      return `${tier.minRatio}% 이상`;
-    }
-    const prevTier = sortedTiers[index - 1];
-    if (tier.minRatio === 0) {
-      return `${prevTier.minRatio}% 미만`;
-    }
-    return `${tier.minRatio}% 이상`;
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -113,11 +102,10 @@ export function LaborRateTiersModal({ open, onOpenChange }: LaborRateTiersModalP
               color: "#0C0C0C",
             }}
           >
-            <Settings className="h-5 w-5" style={{ color: "#008FED" }} />
-            노임단가 적용비율 설정
+            C/D 범주·적용비율 편집
           </DialogTitle>
           <DialogDescription style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#686A6E" }}>
-            C/D 비율에 따른 노임단가 적용률을 설정합니다.
+            C/D 범주의 노임단가 적용비율(%)을 조정해 현장 난이도를 보정합니다.
           </DialogDescription>
         </DialogHeader>
         
@@ -138,10 +126,10 @@ export function LaborRateTiersModal({ open, onOpenChange }: LaborRateTiersModalP
                       borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
                     }}
                   >
-                    C/D 비율
+                    범주
                   </th>
                   <th 
-                    className="text-center px-4 py-3"
+                    className="text-left px-4 py-3"
                     style={{ 
                       fontSize: "13px", 
                       fontWeight: 600,
@@ -149,18 +137,7 @@ export function LaborRateTiersModal({ open, onOpenChange }: LaborRateTiersModalP
                       borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
                     }}
                   >
-                    최소 비율 (%)
-                  </th>
-                  <th 
-                    className="text-center px-4 py-3"
-                    style={{ 
-                      fontSize: "13px", 
-                      fontWeight: 600,
-                      color: "#686A6E",
-                      borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
-                    }}
-                  >
-                    적용률 (%)
+                    적용 비율(%)
                   </th>
                 </tr>
               </thead>
@@ -172,87 +149,64 @@ export function LaborRateTiersModal({ open, onOpenChange }: LaborRateTiersModalP
                       borderBottom: index < sortedTiers.length - 1 ? "1px solid rgba(12, 12, 12, 0.05)" : "none",
                     }}
                   >
-                    <td 
-                      className="px-4 py-3"
-                      style={{ 
-                        fontSize: "14px", 
-                        color: "#0C0C0C",
-                      }}
-                    >
-                      {getRatioLabel(tier, index)}
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={tier.minRatio}
+                          onChange={(e) => handleMinRatioChange(tier.id, e.target.value)}
+                          className="text-center h-9 w-20"
+                          style={{ 
+                            fontSize: "14px",
+                            borderColor: "rgba(12, 12, 12, 0.15)",
+                          }}
+                          min={0}
+                          max={100}
+                          data-testid={`input-min-ratio-${tier.id}`}
+                        />
+                        <span style={{ fontSize: "14px", color: "#686A6E" }}>%</span>
+                        <span style={{ fontSize: "14px", color: "#686A6E" }}>
+                          {index === sortedTiers.length - 1 
+                            ? `< (${sortedTiers[index - 1]?.minRatio || 0}% 미만)` 
+                            : "≥"}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-4 py-2">
-                      <Input
-                        type="number"
-                        value={tier.minRatio}
-                        onChange={(e) => handleMinRatioChange(tier.id, e.target.value)}
-                        className="text-center h-9"
-                        style={{ 
-                          fontSize: "14px",
-                          borderColor: "rgba(12, 12, 12, 0.15)",
-                        }}
-                        min={0}
-                        max={100}
-                        data-testid={`input-min-ratio-${tier.id}`}
-                      />
-                    </td>
-                    <td className="px-4 py-2">
-                      <Input
-                        type="number"
-                        value={tier.rateMultiplier}
-                        onChange={(e) => handleRateMultiplierChange(tier.id, e.target.value)}
-                        className="text-center h-9"
-                        style={{ 
-                          fontSize: "14px",
-                          borderColor: "rgba(12, 12, 12, 0.15)",
-                        }}
-                        min={0}
-                        max={200}
-                        data-testid={`input-rate-multiplier-${tier.id}`}
-                      />
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          value={tier.rateMultiplier}
+                          onChange={(e) => handleRateMultiplierChange(tier.id, e.target.value)}
+                          className="text-center h-9 w-20"
+                          style={{ 
+                            fontSize: "14px",
+                            borderColor: "rgba(12, 12, 12, 0.15)",
+                          }}
+                          min={0}
+                          max={200}
+                          data-testid={`input-rate-multiplier-${tier.id}`}
+                        />
+                        <span style={{ fontSize: "14px", color: "#686A6E" }}>%</span>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          
-          <p 
-            className="mt-3"
-            style={{ 
-              fontFamily: "Pretendard",
-              fontSize: "12px",
-              color: "#9B9DA0",
-            }}
-          >
-            * C = 복구면적, D = 기준작업량, E = 노임단가
-            <br />
-            * F = E × (적용률/100), 최종 노임비 = F + H
-          </p>
         </div>
         
-        <DialogFooter className="mt-6 gap-2">
+        <DialogFooter className="mt-6 flex justify-between w-full">
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={handleReset}
             style={{ 
-              borderColor: "#E5E7EB",
               color: "#686A6E",
             }}
             data-testid="button-reset-tiers"
           >
-            초기화
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            style={{ 
-              borderColor: "#E5E7EB",
-              color: "#686A6E",
-            }}
-            data-testid="button-cancel-tiers"
-          >
-            취소
+            기본값
           </Button>
           <Button
             onClick={handleSave}
