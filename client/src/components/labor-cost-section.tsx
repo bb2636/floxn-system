@@ -278,7 +278,7 @@ export function LaborCostSection({
         }
       }
       const newQuantity = standardWorkQty > 0 
-        ? Math.round((newDamageArea / standardWorkQty) * 100) / 100 
+        ? Math.round((newDamageArea / standardWorkQty) * 10000) / 10000 
         : row.quantity;
       
       // 기존 값과 동일하면 업데이트하지 않음
@@ -513,7 +513,7 @@ export function LaborCostSection({
     // 피해면적과 수량 계산 (수량 = 피해면적 / 기준작업량)
     const damageArea = sourceRow.damageArea || 0;
     const quantity = standardWorkQty > 0 
-      ? Math.round((damageArea / standardWorkQty) * 100) / 100 
+      ? Math.round((damageArea / standardWorkQty) * 10000) / 10000 
       : 1;
     
     const newRow: LaborCostRow = {
@@ -929,8 +929,8 @@ export function LaborCostSection({
             existing.mergedAmount = calculateIWithTiers(C, D, E, laborRateTiers);
             // 적용단가도 재계산: I / C
             existing.pricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
-            // 수량도 재계산: C / D (반올림 오차 방지)
-            existing.mergedQuantity = Math.round((C / D) * 100) / 100;
+            // 수량도 재계산: C / D (소수점 4자리까지)
+            existing.mergedQuantity = Math.round((C / D) * 10000) / 10000;
           } else {
             // 일위대가 공식 적용 불가 시: 기존 방식
             existing.mergedQuantity = (existing.mergedQuantity || existing.quantity) + row.quantity;
