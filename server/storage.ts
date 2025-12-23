@@ -58,6 +58,11 @@ import {
   type Settlement,
   type InsertSettlement,
   settlements,
+  type LaborRateTier,
+  type InsertLaborRateTier,
+  type UpdateLaborRateTier,
+  laborRateTiers,
+  DEFAULT_LABOR_RATE_TIERS,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
@@ -361,6 +366,10 @@ export interface IStorage {
   getSettlementsByCaseId(caseId: string): Promise<Settlement[]>;
   getLatestSettlementByCaseId(caseId: string): Promise<Settlement | null>;
   getAllSettlements(): Promise<Settlement[]>;
+  // Labor rate tiers methods
+  getLaborRateTiers(): Promise<LaborRateTier[]>;
+  updateLaborRateTiers(tiers: UpdateLaborRateTier[]): Promise<LaborRateTier[]>;
+  initializeLaborRateTiers(): Promise<void>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -2479,6 +2488,18 @@ export class MemStorage implements IStorage {
 
   async getAllSettlements(): Promise<Settlement[]> {
     throw new Error("getAllSettlements not implemented in MemStorage");
+  }
+
+  async getLaborRateTiers(): Promise<LaborRateTier[]> {
+    throw new Error("getLaborRateTiers not implemented in MemStorage");
+  }
+
+  async updateLaborRateTiers(tiers: UpdateLaborRateTier[]): Promise<LaborRateTier[]> {
+    throw new Error("updateLaborRateTiers not implemented in MemStorage");
+  }
+
+  async initializeLaborRateTiers(): Promise<void> {
+    throw new Error("initializeLaborRateTiers not implemented in MemStorage");
   }
 }
 
@@ -6389,6 +6410,54 @@ export class DbStorage implements IStorage {
       .select()
       .from(settlements)
       .orderBy(desc(settlements.createdAt));
+  }
+
+  // Labor rate tiers methods
+  async getLaborRateTiers(): Promise<LaborRateTier[]> {
+    const tiers = await db
+      .select()
+      .from(laborRateTiers)
+      .orderBy(asc(laborRateTiers.sortOrder));
+    
+    // 데이터가 없으면 초기화
+    if (tiers.length === 0) {
+      await this.initializeLaborRateTiers();
+      return await db
+        .select()
+        .from(laborRateTiers)
+        .orderBy(asc(laborRateTiers.sortOrder));
+    }
+    
+    return tiers;
+  }
+
+  async updateLaborRateTiers(updates: UpdateLaborRateTier[]): Promise<LaborRateTier[]> {
+    for (const update of updates) {
+      await db
+        .update(laborRateTiers)
+        .set({
+          minRatio: update.minRatio,
+          rateMultiplier: update.rateMultiplier,
+          updatedAt: new Date(),
+        })
+        .where(eq(laborRateTiers.id, update.id));
+    }
+    
+    return await this.getLaborRateTiers();
+  }
+
+  async initializeLaborRateTiers(): Promise<void> {
+    // 기존 데이터 확인
+    const existing = await db.select().from(laborRateTiers);
+    if (existing.length > 0) {
+      return; // 이미 데이터가 있으면 초기화하지 않음
+    }
+
+    // 기본 요율 데이터 삽입
+    for (const tier of DEFAULT_LABOR_RATE_TIERS) {
+      await db.insert(laborRateTiers).values(tier);
+    }
+    console.log("[Storage] Labor rate tiers initialized with default values");
   }
 }
 
