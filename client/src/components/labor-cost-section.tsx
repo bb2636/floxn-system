@@ -277,8 +277,12 @@ export function LaborCostSection({
           standardWorkQty = ilwidaegaItem.기준작업량;
         }
       }
+      // 수량 반올림: 0.1 이상은 소수점 1자리, 미만은 유효숫자 1자리
+      const rawQuantity = newDamageArea / standardWorkQty;
       const newQuantity = standardWorkQty > 0 
-        ? Math.round((newDamageArea / standardWorkQty) * 10000) / 10000 
+        ? (rawQuantity >= 0.1 
+            ? Math.round(rawQuantity * 10) / 10 
+            : parseFloat(rawQuantity.toPrecision(1)))
         : row.quantity;
       
       // 기존 값과 동일하면 업데이트하지 않음
@@ -511,9 +515,13 @@ export function LaborCostSection({
       'D:', standardWorkQty, 'E:', laborUnitPrice);
     
     // 피해면적과 수량 계산 (수량 = 피해면적 / 기준작업량)
+    // 수량 반올림: 0.1 이상은 소수점 1자리, 미만은 유효숫자 1자리
     const damageArea = sourceRow.damageArea || 0;
+    const rawQuantity = standardWorkQty > 0 ? damageArea / standardWorkQty : 1;
     const quantity = standardWorkQty > 0 
-      ? Math.round((damageArea / standardWorkQty) * 10000) / 10000 
+      ? (rawQuantity >= 0.1 
+          ? Math.round(rawQuantity * 10) / 10 
+          : parseFloat(rawQuantity.toPrecision(1)))
       : 1;
     
     const newRow: LaborCostRow = {
@@ -929,8 +937,11 @@ export function LaborCostSection({
             existing.mergedAmount = calculateIWithTiers(C, D, E, laborRateTiers);
             // 적용단가도 재계산: I / C
             existing.pricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
-            // 수량도 재계산: C / D (소수점 4자리까지)
-            existing.mergedQuantity = Math.round((C / D) * 10000) / 10000;
+            // 수량도 재계산: C / D (0.1 이상은 소수점 1자리, 미만은 유효숫자 1자리)
+            const rawMergedQty = C / D;
+            existing.mergedQuantity = rawMergedQty >= 0.1 
+              ? Math.round(rawMergedQty * 10) / 10 
+              : parseFloat(rawMergedQty.toPrecision(1));
           } else {
             // 일위대가 공식 적용 불가 시: 기존 방식
             existing.mergedQuantity = (existing.mergedQuantity || existing.quantity) + row.quantity;
