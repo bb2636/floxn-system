@@ -1580,12 +1580,12 @@ export default function SettlementsInquiry() {
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      color: row.settlementCommission > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                      textAlign: "center",
+                      textAlign: "right",
                     }}
                   >
-                    -
+                    {row.settlementCommission > 0 ? row.settlementCommission.toLocaleString() + "원" : "-"}
                   </td>
                   {/* 협력업체 (지급금액, 지급일) */}
                   <td

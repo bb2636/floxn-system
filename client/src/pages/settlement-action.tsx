@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, CaseWithLatestProgress } from "@shared/schema";
 import { Search, X, Calendar as CalendarIcon } from "lucide-react";
@@ -38,6 +38,17 @@ export default function SettlementAction() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [settlementType, setSettlementType] = useState<"full" | "half" | null>(null);
   const { toast } = useToast();
+
+  // 정산금액 변경 시 수수료 자동 계산 (7.7%)
+  useEffect(() => {
+    if (settlementAmount) {
+      const numericAmount = parseFloat(settlementAmount.replace(/,/g, "")) || 0;
+      const calculatedCommission = Math.round(numericAmount * 0.077);
+      setCommission(calculatedCommission.toLocaleString());
+    } else {
+      setCommission("0");
+    }
+  }, [settlementAmount]);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -260,6 +271,7 @@ export default function SettlementAction() {
       invoiceDate: invoiceDate ? format(invoiceDate, "yyyy-MM-dd") : (useTodayInvoice ? format(new Date(), "yyyy-MM-dd") : null),
       memo: settlementMemo || null,
       bank: null,
+      createdBy: user?.id || "",
     };
 
     console.log("Settlement data:", settlementData);
