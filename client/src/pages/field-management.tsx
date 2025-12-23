@@ -119,7 +119,7 @@ export default function FieldManagement() {
   const [visitDatePickerOpen, setVisitDatePickerOpen] = useState(false);
   const [dispatchLocation, setDispatchLocation] = useState("");
   const [accompaniedPerson, setAccompaniedPerson] = useState("");
-  const [accidentCategory, setAccidentCategory] = useState("배관");
+  const [accidentCategory, setAccidentCategory] = useState("");
   const [accidentCause, setAccidentCause] = useState("");
   const [specialNotes, setSpecialNotes] = useState("");
   const [victimName, setVictimName] = useState("");
@@ -275,13 +275,14 @@ export default function FieldManagement() {
   // 현장입력 완료: 필수 필드 입력 완료 (로컬 state 또는 저장된 데이터 확인)
   const isFieldInputComplete = useMemo(() => {
     // 로컬 state 우선, 없으면 저장된 케이스 데이터 확인
+    // 카테고리는 반드시 로컬에서 선택해야 함 (필수 필드)
     const hasVisitDate = visitDate || selectedCaseData?.visitDate;
     const hasVisitTime = visitTime || selectedCaseData?.visitTime;
-    const hasAccidentCategory = accidentCategory || selectedCaseData?.accidentCategory;
+    const hasAccidentCategory = !!accidentCategory; // 로컬 상태만 확인 (필수)
     const hasVictimName = victimName || selectedCaseData?.victimName;
     
     return !!(hasVisitDate && hasVisitTime && hasAccidentCategory && hasVictimName);
-  }, [visitDate, visitTime, accidentCategory, victimName, selectedCaseData?.visitDate, selectedCaseData?.visitTime, selectedCaseData?.accidentCategory, selectedCaseData?.victimName]);
+  }, [visitDate, visitTime, accidentCategory, victimName, selectedCaseData?.visitDate, selectedCaseData?.visitTime, selectedCaseData?.victimName]);
 
   // 도면 완료: 도면이 저장되어 있으면 완료 (도면 객체에 id가 있으면 저장된 것으로 판단)
   const isDrawingComplete = useMemo(() => {
@@ -451,7 +452,7 @@ export default function FieldManagement() {
       setVisitTime("");
       setDispatchLocation("");
       setAccompaniedPerson("");
-      setAccidentCategory("배관");
+      setAccidentCategory("");
       setAccidentCause("");
       setSpecialNotes("");
       setVictimName("");
@@ -519,7 +520,7 @@ export default function FieldManagement() {
     setDispatchLocation(selectedCaseData.dispatchLocation || "");
 
     // 사고 정보
-    setAccidentCategory(selectedCaseData.accidentCategory || "배관");
+    setAccidentCategory(selectedCaseData.accidentCategory || "");
     setAccidentCause(selectedCaseData.accidentCause || "");
     setSpecialNotes(selectedCaseData.specialNotes || "");
 
@@ -1191,7 +1192,7 @@ export default function FieldManagement() {
                       color: "#686A6E",
                     }}
                   >
-                    카테고리
+                    카테고리 <span style={{ color: "#FF4D4F" }}>*</span>
                   </Label>
                   <div className="flex gap-2">
                     {["배관", "코킹", "방수", "기타"].map((category) => (
@@ -1201,6 +1202,7 @@ export default function FieldManagement() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
+                          handleUserInput();
                           setAccidentCategory(category);
                         }}
                         disabled={isReadOnly}
@@ -1890,11 +1892,11 @@ export default function FieldManagement() {
                       return;
                     }
 
-                    // 누락된 필드 체크 및 표시 (로컬 상태 + 케이스 데이터 모두 확인)
+                    // 누락된 필드 체크 및 표시 (카테고리는 반드시 선택 필요)
                     const missingFields: string[] = [];
                     if (!visitDate) missingFields.push("방문일자");
                     if (!visitTime) missingFields.push("방문시간");
-                    if (!accidentCategory && !selectedCaseData?.accidentCategory) missingFields.push("사고구분");
+                    if (!accidentCategory) missingFields.push("카테고리");
                     if (!victimName && !selectedCaseData?.victimName) missingFields.push("피해자 성명");
                     if (!victimContact && !selectedCaseData?.victimContact) missingFields.push("피해자 연락처");
                     
@@ -1913,10 +1915,9 @@ export default function FieldManagement() {
                       // 상태 자동 변경 로직
                       let status = "현장방문"; // 기본값: 방문일시만 입력된 경우
                       
-                      // 모든 필수 필드가 입력된 경우 → "현장정보 입력" (로컬 상태 + 케이스 데이터 확인)
+                      // 모든 필수 필드가 입력된 경우 → "현장정보 입력" (카테고리는 로컬 상태 필수)
                       const hasVictimName = victimName || selectedCaseData?.victimName;
-                      const hasAccidentCategory = accidentCategory || selectedCaseData?.accidentCategory;
-                      if (visitDate && visitTime && hasAccidentCategory && hasVictimName) {
+                      if (visitDate && visitTime && accidentCategory && hasVictimName) {
                         status = "현장정보 입력";
                       }
 
@@ -1927,7 +1928,7 @@ export default function FieldManagement() {
                         accompaniedPerson,
                         accidentDate: accidentDate ? `${format(accidentDate, "yyyy-MM-dd")} ${accidentTime || "00:00"}` : null,
                         accidentTime,
-                        accidentCategory: accidentCategory || selectedCaseData?.accidentCategory || null,
+                        accidentCategory: accidentCategory || null,
                         accidentCause,
                         specialNotes,
                         victimName: victimName || selectedCaseData?.victimName || null,
@@ -2007,13 +2008,13 @@ export default function FieldManagement() {
                       return;
                     }
 
-                    // 필수 필드 검증 - 현장입력 필수 필드만 체크 (로컬 상태 + 케이스 데이터 확인)
+                    // 필수 필드 검증 - 현장입력 필수 필드만 체크 (카테고리는 반드시 선택 필요)
                     const missingFields: string[] = [];
                     
                     // 현장입력 필수 필드
                     if (!visitDate) missingFields.push("방문일자");
                     if (!visitTime) missingFields.push("방문시간");
-                    if (!accidentCategory && !selectedCaseData?.accidentCategory) missingFields.push("사고구분");
+                    if (!accidentCategory) missingFields.push("카테고리");
                     if (!victimName && !selectedCaseData?.victimName) missingFields.push("피해자 성명");
                     
                     if (missingFields.length > 0) {
@@ -2033,7 +2034,7 @@ export default function FieldManagement() {
                         accompaniedPerson,
                         accidentDate: accidentDate ? `${format(accidentDate, "yyyy-MM-dd")} ${accidentTime || "00:00"}` : null,
                         accidentTime,
-                        accidentCategory: accidentCategory || selectedCaseData?.accidentCategory || null,
+                        accidentCategory: accidentCategory || null,
                         accidentCause,
                         specialNotes,
                         victimName: victimName || selectedCaseData?.victimName || null,
