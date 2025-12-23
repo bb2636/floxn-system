@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { formatCaseNumber } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { InvoiceSheet, getCaseNumberPrefix } from "@/components/InvoiceSheet";
 
 // 정산 테이블 행 타입
 interface SettlementRow {
@@ -25,6 +27,7 @@ interface SettlementRow {
   depositBank: string; // 입금은행
   withdrawalDate: string;
   constructionStatus: string;
+  recoveryType: string | null; // 복구 유형: 직접복구 | 선견적요청
   // 손해방지비용
   preventionEstimateAmount: number;
   preventionApprovedAmount: number;
@@ -59,6 +62,11 @@ export default function SettlementsInquiry() {
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
   const [managementDialogOpen, setManagementDialogOpen] = useState(false);
   const [selectedCaseForManagement, setSelectedCaseForManagement] = useState<SettlementRow | null>(null);
+  
+  const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
+  const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
+  
+  const { toast } = useToast();
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -101,12 +109,15 @@ export default function SettlementsInquiry() {
     return map;
   }, [allSettlements]);
 
-  // Helper function to open management dialog
+  // Helper function to open Invoice Sheet
   const handleOpenManagement = (row: SettlementRow) => {
-    setSelectedCaseForManagement(row);
-    setManagementDialogOpen(true);
+    const targetCase = cases.find(c => c.id === row.id);
+    if (targetCase) {
+      setInvoiceCaseId(targetCase.id);
+      setShowInvoiceDialog(true);
+    }
   };
-
+  
   // Get settlements for the selected case
   const selectedCaseSettlements = useMemo(() => {
     if (!selectedCaseForManagement) return [];
@@ -313,7 +324,10 @@ export default function SettlementsInquiry() {
       // 정산 데이터 파싱 - settlements 테이블에서 가져오기
       const settlement = settlementsByCaseIdMap.get(caseItem.id);
       const settlementAmount = settlement ? parseAmountValue(settlement.settlementAmount) : 0;
-      const settlementCommission = settlement ? parseAmountValue(settlement.commission) : 0;
+      // 선견적요청이면 수수료 10만원 고정, 그 외는 저장된 값 사용
+      const settlementCommission = caseItem.recoveryType === "선견적요청" 
+        ? 100000 
+        : (settlement ? parseAmountValue(settlement.commission) : 0);
       const settlementDeposit = settlement ? parseAmountValue(settlement.discount) : 0;
       const settlementDeductible = settlement ? parseAmountValue(settlement.deductible) : 0;
 
@@ -328,6 +342,7 @@ export default function SettlementsInquiry() {
         depositBank,
         withdrawalDate: caseItem.completionDate || caseItem.claimDate || "-",
         constructionStatus: caseItem.recoveryType ? "수리" : "미수리",
+        recoveryType: caseItem.recoveryType || null,
         preventionEstimateAmount,
         preventionApprovedAmount,
         preventionDifference,
@@ -1888,6 +1903,21 @@ export default function SettlementsInquiry() {
           </div>
         </DialogContent>
       </Dialog>
+
+
+      {/* INVOICE Sheet */}
+      <InvoiceSheet
+        open={showInvoiceDialog}
+        onOpenChange={setShowInvoiceDialog}
+        caseData={cases?.find(c => c.id === invoiceCaseId) || null}
+        relatedCases={(() => {
+          const invoiceCase = cases?.find(c => c.id === invoiceCaseId);
+          const invoiceCasePrefix = getCaseNumberPrefix(invoiceCase?.caseNumber);
+          return invoiceCasePrefix 
+            ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix) || []
+            : invoiceCase ? [invoiceCase] : [];
+        })()}
+      />
     </div>
   );
 }

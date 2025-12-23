@@ -1848,6 +1848,8 @@ export default function FieldReport() {
                 {activeTab === "견적서" && "견적서"}
                 {activeTab === "기타사항/원인" && "기타사항/원인"}
               </h2>
+              {/* 관리자만 다운로드/이메일 버튼 표시 */}
+              {isAdmin && (
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => {
@@ -1909,6 +1911,7 @@ export default function FieldReport() {
                   </span>
                 </button>
               </div>
+              )}
             </div>
           )}
 
