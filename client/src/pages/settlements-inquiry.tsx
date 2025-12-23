@@ -138,6 +138,36 @@ export default function SettlementsInquiry() {
     return map;
   }, [allUsers]);
 
+  // 보험사 목록 (role이 '보험사'인 사용자들의 company 중복 제거)
+  const insuranceCompanyOptions = useMemo(() => {
+    const companies = new Set<string>();
+    allUsers.forEach(u => {
+      if (u.role === '보험사' && u.company) {
+        companies.add(u.company);
+      }
+    });
+    return Array.from(companies).sort();
+  }, [allUsers]);
+
+  // 심사사 목록 (role이 '심사사'인 사용자들의 company 중복 제거)
+  const assessorOptions = useMemo(() => {
+    const companies = new Set<string>();
+    allUsers.forEach(u => {
+      if (u.role === '심사사' && u.company) {
+        companies.add(u.company);
+      }
+    });
+    return Array.from(companies).sort();
+  }, [allUsers]);
+
+  // 담당자 목록 (role이 '관리자'인 사용자들의 이름)
+  const managerOptions = useMemo(() => {
+    return allUsers
+      .filter(u => u.role === '관리자' && u.name)
+      .map(u => u.name)
+      .sort();
+  }, [allUsers]);
+
   // Filter cases with status '청구' and after (claim, payment, settlement)
   const settlementStatuses = ["청구", "입금완료", "일부입금", "정산완료"];
   const claimCases = cases.filter(c => settlementStatuses.includes(c.status));
@@ -322,13 +352,36 @@ export default function SettlementsInquiry() {
 
   const isLoading = casesLoading || estimatesLoading || usersLoading || settlementsLoading;
 
-  // 필터링 (검색어 + 정산여부)
+  // 필터링 (검색어 + 정산여부 + 보험사 + 심사사 + 담당자)
   const filteredRows = useMemo(() => {
     let filtered = tableRows;
     
     // 정산여부 필터 적용
     if (settlementStatus !== "전체") {
       filtered = filtered.filter((row) => row.status === settlementStatus);
+    }
+    
+    // 보험사 필터 적용
+    if (insuranceCompany !== "전체") {
+      filtered = filtered.filter((row) => row.insuranceCompany === insuranceCompany);
+    }
+    
+    // 심사사 필터 적용 (manager는 assessorId이므로 해당 사용자의 company와 비교)
+    if (assessor !== "전체") {
+      filtered = filtered.filter((row) => {
+        const assessorUser = usersByIdMap.get(row.manager);
+        return assessorUser?.company === assessor;
+      });
+    }
+    
+    // 담당자 필터 적용 (admin은 assignedPartner이므로 해당 사용자의 name과 비교)
+    if (manager !== "전체") {
+      filtered = filtered.filter((row) => {
+        const adminUser = usersByIdMap.get(row.admin) 
+          || usersByUsernameMap.get(row.admin)
+          || usersByCompanyMap.get(row.admin);
+        return adminUser?.name === manager;
+      });
     }
     
     // 접수번호 검색 필터 적용
@@ -344,8 +397,22 @@ export default function SettlementsInquiry() {
       }
     }
     
+    // 기간 필터 적용 (정산일 기준)
+    if (startDate && endDate) {
+      filtered = filtered.filter((row) => {
+        if (!row.settlementDate || row.settlementDate === "-") return false;
+        const rowDate = new Date(row.settlementDate);
+        // 시작일 00:00:00부터 종료일 23:59:59까지 포함
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        return rowDate >= start && rowDate <= end;
+      });
+    }
+    
     return filtered;
-  }, [tableRows, searchQuery, settlementStatus]);
+  }, [tableRows, searchQuery, settlementStatus, insuranceCompany, assessor, manager, usersByIdMap, usersByUsernameMap, usersByCompanyMap, startDate, endDate]);
 
   const handleReset = () => {
     setSearchQuery("");
@@ -533,8 +600,9 @@ export default function SettlementsInquiry() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="전체">전체</SelectItem>
-                <SelectItem value="현대해상">현대해상</SelectItem>
-                <SelectItem value="삼성화재">삼성화재</SelectItem>
+                {insuranceCompanyOptions.map((company) => (
+                  <SelectItem key={company} value={company}>{company}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -568,7 +636,9 @@ export default function SettlementsInquiry() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="전체">전체</SelectItem>
-                <SelectItem value="김팀장">김팀장</SelectItem>
+                {assessorOptions.map((company) => (
+                  <SelectItem key={company} value={company}>{company}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -602,7 +672,9 @@ export default function SettlementsInquiry() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="전체">전체</SelectItem>
-                <SelectItem value="김팀장">김팀장</SelectItem>
+                {managerOptions.map((name) => (
+                  <SelectItem key={name} value={name}>{name}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -1508,12 +1580,12 @@ export default function SettlementsInquiry() {
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      color: row.settlementCommission > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                      textAlign: "center",
+                      textAlign: "right",
                     }}
                   >
-                    -
+                    {row.settlementCommission > 0 ? row.settlementCommission.toLocaleString() + "원" : "-"}
                   </td>
                   {/* 협력업체 (지급금액, 지급일) */}
                   <td
