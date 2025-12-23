@@ -25,6 +25,7 @@ interface SettlementRow {
   depositBank: string; // 입금은행
   withdrawalDate: string;
   constructionStatus: string;
+  recoveryType: string | null; // 복구 유형: 직접복구 | 선견적요청
   // 손해방지비용
   preventionEstimateAmount: number;
   preventionApprovedAmount: number;
@@ -313,7 +314,10 @@ export default function SettlementsInquiry() {
       // 정산 데이터 파싱 - settlements 테이블에서 가져오기
       const settlement = settlementsByCaseIdMap.get(caseItem.id);
       const settlementAmount = settlement ? parseAmountValue(settlement.settlementAmount) : 0;
-      const settlementCommission = settlement ? parseAmountValue(settlement.commission) : 0;
+      // 선견적요청이면 수수료 10만원 고정, 그 외는 저장된 값 사용
+      const settlementCommission = caseItem.recoveryType === "선견적요청" 
+        ? 100000 
+        : (settlement ? parseAmountValue(settlement.commission) : 0);
       const settlementDeposit = settlement ? parseAmountValue(settlement.discount) : 0;
       const settlementDeductible = settlement ? parseAmountValue(settlement.deductible) : 0;
 
@@ -328,6 +332,7 @@ export default function SettlementsInquiry() {
         depositBank,
         withdrawalDate: caseItem.completionDate || caseItem.claimDate || "-",
         constructionStatus: caseItem.recoveryType ? "수리" : "미수리",
+        recoveryType: caseItem.recoveryType || null,
         preventionEstimateAmount,
         preventionApprovedAmount,
         preventionDifference,
