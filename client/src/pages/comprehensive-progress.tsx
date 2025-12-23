@@ -52,6 +52,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SmsNotificationDialog } from "@/components/sms-notification-dialog";
 import { InvoiceSheet, getCaseNumberPrefix } from "@/components/InvoiceSheet";
+import { FieldDispatchCostSheet } from "@/components/FieldDispatchCostSheet";
 import type { Case as SchemaCase } from "@shared/schema";
 
 // 진행상태 목록
@@ -106,6 +107,7 @@ export default function ComprehensiveProgress() {
   const [showReceptionDetailDialog, setShowReceptionDetailDialog] = useState(false);
   const [isReceptionEditMode, setIsReceptionEditMode] = useState(false);
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
+  const [showFieldDispatchInvoiceDialog, setShowFieldDispatchInvoiceDialog] = useState(false);
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -1361,20 +1363,13 @@ export default function ComprehensiveProgress() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              // 케이스 번호 prefix로 연관 케이스 찾아 총 견적금액 및 승인금액 계산
-                              const casePrefix = getCaseNumberPrefix(caseItem.caseNumber);
-                              const relatedCasesForEstimate = casePrefix 
-                                ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === casePrefix) || []
-                                : [caseItem];
-                              const totalEstimate = relatedCasesForEstimate.reduce((sum, c) => sum + (Number(c.estimateAmount) || 0), 0);
-                              // 2차승인 시 저장된 승인금액 합계 (없으면 0)
-                              const totalApproved = relatedCasesForEstimate.reduce((sum, c) => sum + (Number(c.approvedAmount) || 0), 0);
-                              setDamagePreventionEstimate(totalEstimate);
-                              setDamagePreventionApproved(totalApproved);
-                              setPropertyEstimate(0);
-                              setPropertyApproved(0);
                               setInvoiceCaseId(caseItem.id);
-                              setShowInvoiceDialog(true);
+                              // recoveryType에 따라 적절한 인보이스 다이얼로그 표시
+                              if (caseItem.recoveryType === "선견적요청") {
+                                setShowFieldDispatchInvoiceDialog(true);
+                              } else {
+                                setShowInvoiceDialog(true);
+                              }
                             }}
                             style={{
                               padding: "6px 12px",
@@ -2421,7 +2416,7 @@ export default function ComprehensiveProgress() {
       </Dialog>
 
 
-      {/* INVOICE 다이얼로그 */}
+      {/* INVOICE 다이얼로그 - 직접복구 케이스용 (손해방지비용 + 대물복구비용) */}
       <InvoiceSheet
         open={showInvoiceDialog}
         onOpenChange={setShowInvoiceDialog}
@@ -2435,6 +2430,19 @@ export default function ComprehensiveProgress() {
         })()}
       />
 
+      {/* 현장출동비용 청구 다이얼로그 - 선견적요청 케이스용 (현장출동비용만) */}
+      <FieldDispatchCostSheet
+        open={showFieldDispatchInvoiceDialog}
+        onOpenChange={setShowFieldDispatchInvoiceDialog}
+        caseData={cases?.find(c => c.id === invoiceCaseId) || null}
+        relatedCases={(() => {
+          const invoiceCase = cases?.find(c => c.id === invoiceCaseId);
+          const invoiceCasePrefix = getCaseNumberPrefix(invoiceCase?.caseNumber);
+          return invoiceCasePrefix 
+            ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix) || []
+            : invoiceCase ? [invoiceCase] : [];
+        })()}
+      />
 
       {/* SMS 알림 발송 다이얼로그 */}
       {smsCaseData && (

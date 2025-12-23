@@ -213,6 +213,13 @@ export const cases = pgTable("cases", {
   estimateAmount: text("estimate_amount"), // 견적금액 (최종 총액)
   approvedAmount: text("approved_amount"), // 승인금액 (2차승인 시점의 견적금액)
   
+  // 인보이스 관련 필드
+  invoiceDamagePreventionAmount: text("invoice_damage_prevention_amount"), // 재사용 인보이스 - 손해방지비용
+  invoicePropertyRepairAmount: text("invoice_property_repair_amount"), // 재사용 인보이스 - 대물복구비용
+  invoiceRemarks: text("invoice_remarks"), // 재사용 인보이스 - 비고
+  fieldDispatchInvoiceAmount: text("field_dispatch_invoice_amount"), // 현장출동비용 청구 - 현장출동비용
+  fieldDispatchInvoiceRemarks: text("field_dispatch_invoice_remarks"), // 현장출동비용 청구 - 비고
+  
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),

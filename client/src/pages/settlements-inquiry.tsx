@@ -14,6 +14,7 @@ import { ko } from "date-fns/locale";
 import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceSheet, getCaseNumberPrefix } from "@/components/InvoiceSheet";
+import { FieldDispatchCostSheet } from "@/components/FieldDispatchCostSheet";
 
 // 정산 테이블 행 타입
 interface SettlementRow {
@@ -64,6 +65,7 @@ export default function SettlementsInquiry() {
   const [selectedCaseForManagement, setSelectedCaseForManagement] = useState<SettlementRow | null>(null);
   
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
+  const [showFieldDispatchInvoiceDialog, setShowFieldDispatchInvoiceDialog] = useState(false);
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
   
   const { toast } = useToast();
@@ -109,12 +111,17 @@ export default function SettlementsInquiry() {
     return map;
   }, [allSettlements]);
 
-  // Helper function to open Invoice Sheet
+  // Helper function to open Invoice Sheet - recoveryType에 따라 적절한 인보이스 표시
   const handleOpenManagement = (row: SettlementRow) => {
     const targetCase = cases.find(c => c.id === row.id);
     if (targetCase) {
       setInvoiceCaseId(targetCase.id);
-      setShowInvoiceDialog(true);
+      // recoveryType에 따라 적절한 인보이스 다이얼로그 표시
+      if (targetCase.recoveryType === "선견적요청") {
+        setShowFieldDispatchInvoiceDialog(true);
+      } else {
+        setShowInvoiceDialog(true);
+      }
     }
   };
   
@@ -1905,10 +1912,24 @@ export default function SettlementsInquiry() {
       </Dialog>
 
 
-      {/* INVOICE Sheet */}
+      {/* INVOICE Sheet - 직접복구 케이스용 (손해방지비용 + 대물복구비용) */}
       <InvoiceSheet
         open={showInvoiceDialog}
         onOpenChange={setShowInvoiceDialog}
+        caseData={cases?.find(c => c.id === invoiceCaseId) || null}
+        relatedCases={(() => {
+          const invoiceCase = cases?.find(c => c.id === invoiceCaseId);
+          const invoiceCasePrefix = getCaseNumberPrefix(invoiceCase?.caseNumber);
+          return invoiceCasePrefix 
+            ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix) || []
+            : invoiceCase ? [invoiceCase] : [];
+        })()}
+      />
+
+      {/* 현장출동비용 청구 Sheet - 선견적요청 케이스용 (현장출동비용만) */}
+      <FieldDispatchCostSheet
+        open={showFieldDispatchInvoiceDialog}
+        onOpenChange={setShowFieldDispatchInvoiceDialog}
         caseData={cases?.find(c => c.id === invoiceCaseId) || null}
         relatedCases={(() => {
           const invoiceCase = cases?.find(c => c.id === invoiceCaseId);
