@@ -671,7 +671,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                       fontSize: "14px",
                       color: "rgba(12, 12, 12, 0.9)",
                     }}>
-                      KB국민은행
+                      신한
                     </span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -689,7 +689,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                       fontSize: "14px",
                       color: "rgba(12, 12, 12, 0.9)",
                     }}>
-                      00000000000
+                      140-015-744120
                     </span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -707,7 +707,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                       fontSize: "14px",
                       color: "rgba(12, 12, 12, 0.9)",
                     }}>
-                      주식회사 블루손
+                      플록슨
                     </span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
