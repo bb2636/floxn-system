@@ -35,7 +35,6 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LaborCostSection, type LaborCatalogItem, type LaborCostRow } from "@/components/labor-cost-section";
-import { LaborRateTiersButton } from "@/components/labor-rate-tiers-modal";
 import { MaterialCostSection, type MaterialCatalogItem, type MaterialRow } from "@/components/material-cost-section";
 
 interface AreaCalculationRow {
@@ -5858,7 +5857,6 @@ export default function FieldEstimate() {
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
-                  <LaborRateTiersButton />
                   <Button
                     onClick={syncLaborFromRecoveryArea}
                     variant="outline"
