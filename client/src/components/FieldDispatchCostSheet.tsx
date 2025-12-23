@@ -209,7 +209,7 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
                 color: "#0C0C0C",
                 margin: 0,
               }}>
-                현장출동비용 청구
+                INVOICE
               </h2>
             </div>
             <div style={{
