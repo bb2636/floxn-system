@@ -2362,7 +2362,7 @@ export default function SettlementsInquiry() {
                       </div>
                     </div>
 
-                    {/* 현장출동비용 */}
+                    {/* 대물복구비용 */}
                     <div style={{
                       display: "flex",
                       flexDirection: "row",
@@ -2379,7 +2379,7 @@ export default function SettlementsInquiry() {
                         letterSpacing: "-0.01em",
                         color: "rgba(12, 12, 12, 0.7)",
                       }}>
-                        현장출동비용
+                        대물복구비용
                       </span>
                       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
                         <input
