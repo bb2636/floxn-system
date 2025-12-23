@@ -765,3 +765,45 @@ export const insertSettlementSchema = createInsertSchema(settlements).omit({
 
 export type Settlement = typeof settlements.$inferSelect;
 export type InsertSettlement = z.infer<typeof insertSettlementSchema>;
+
+// 노임단가 적용비율 테이블 (C/D 비율에 따른 E 적용률)
+export const laborRateTiers = pgTable("labor_rate_tiers", {
+  id: serial("id").primaryKey(),
+  minRatio: integer("min_ratio").notNull(), // 최소 C/D 비율 (백분율, 예: 85 = 85%)
+  rateMultiplier: integer("rate_multiplier").notNull(), // E 적용률 (백분율, 예: 100 = 100%)
+  sortOrder: integer("sort_order").notNull(), // 정렬 순서 (높은 비율부터)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertLaborRateTierSchema = createInsertSchema(laborRateTiers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const updateLaborRateTierSchema = z.object({
+  id: z.number(),
+  minRatio: z.number().min(0).max(100),
+  rateMultiplier: z.number().min(0).max(100),
+});
+
+export const updateLaborRateTiersSchema = z.object({
+  tiers: z.array(updateLaborRateTierSchema),
+});
+
+export type LaborRateTier = typeof laborRateTiers.$inferSelect;
+export type InsertLaborRateTier = z.infer<typeof insertLaborRateTierSchema>;
+export type UpdateLaborRateTier = z.infer<typeof updateLaborRateTierSchema>;
+
+// 기본 노임단가 적용비율 (초기 시드 데이터)
+export const DEFAULT_LABOR_RATE_TIERS: InsertLaborRateTier[] = [
+  { minRatio: 85, rateMultiplier: 100, sortOrder: 1 }, // ≥85%: 100%
+  { minRatio: 80, rateMultiplier: 95, sortOrder: 2 },  // ≥80%: 95%
+  { minRatio: 75, rateMultiplier: 82, sortOrder: 3 },  // ≥75%: 82%
+  { minRatio: 70, rateMultiplier: 74, sortOrder: 4 },  // ≥70%: 74%
+  { minRatio: 65, rateMultiplier: 66, sortOrder: 5 },  // ≥65%: 66%
+  { minRatio: 60, rateMultiplier: 58, sortOrder: 6 },  // ≥60%: 58%
+  { minRatio: 50, rateMultiplier: 50, sortOrder: 7 },  // ≥50%: 50%
+  { minRatio: 0, rateMultiplier: 45, sortOrder: 8 },   // <50%: 45%
+];

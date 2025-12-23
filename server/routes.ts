@@ -5057,6 +5057,41 @@ FLOXN 드림`;
     }
   });
 
+  // =====================
+  // Labor Rate Tiers endpoints (C/D 비율 적용률)
+  // =====================
+
+  // Get all labor rate tiers
+  app.get("/api/labor-rate-tiers", async (req, res) => {
+    try {
+      const tiers = await storage.getLaborRateTiers();
+      res.json(tiers);
+    } catch (error) {
+      console.error("Get labor rate tiers error:", error);
+      res.status(500).json({ error: "노임단가 적용률 조회 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Update labor rate tiers
+  app.put("/api/labor-rate-tiers", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "로그인이 필요합니다" });
+      }
+
+      const { tiers } = req.body;
+      if (!Array.isArray(tiers)) {
+        return res.status(400).json({ error: "tiers 배열이 필요합니다" });
+      }
+
+      const updatedTiers = await storage.updateLaborRateTiers(tiers);
+      res.json(updatedTiers);
+    } catch (error) {
+      console.error("Update labor rate tiers error:", error);
+      res.status(500).json({ error: "노임단가 적용률 수정 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -11,89 +11,24 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Copy, Search, ChevronDown, ChevronRight, GripVertical, Lock } from "lucide-react";
+import type { LaborRateTier } from "@shared/schema";
+import {
+  calculateFWithTiers,
+  calculateHWithTiers,
+  calculateIWithTiers,
+  calculateAppliedUnitPriceWithTiers,
+  DEFAULT_LABOR_RATE_TIERS_FALLBACK,
+} from "@/hooks/use-labor-rate-tiers";
 
 // ===== 노임비 계산 공식 (알파벳 정의) =====
 // D = 기준작업량 (일위대가 DB)
 // C = 복구면적 (노무비 계산값)
 // E = 노임단가 (일위대가 DB)
-// F = C/D 비율에 따른 적용단가 (E 기준 할인율 적용)
-// H = C≥D: (C-D)×(E÷D) / C<D: F
+// F = C/D 비율에 따른 적용단가 (E 기준 할인율 적용) - DB에서 가져온 요율 사용
+// H = C≥D: (C-D)×(E÷D) / C<D: 0
 // I = F + H (최종 노임비)
 // 적용단가 = I / C
 // 합계 = I
-
-/**
- * F 계산: C/D 비율에 따른 적용단가
- * @param C 복구면적
- * @param D 기준작업량
- * @param E 노임단가
- * @returns F (적용단가)
- */
-function calculateF(C: number, D: number, E: number): number {
-  if (D <= 0 || E <= 0) return 0;
-  
-  const ratio = C / D;
-  
-  if (ratio >= 0.85) return E;           // 85% 이상: 100%
-  if (ratio >= 0.80) return E * 0.95;    // 80% 이상: 95%
-  if (ratio >= 0.75) return E * 0.82;    // 75% 이상: 82%
-  if (ratio >= 0.70) return E * 0.74;    // 70% 이상: 74%
-  if (ratio >= 0.65) return E * 0.66;    // 65% 이상: 66%
-  if (ratio >= 0.60) return E * 0.58;    // 60% 이상: 58%
-  if (ratio >= 0.50) return E * 0.50;    // 50% 이상: 50%
-  return E * 0.45;                        // 50% 미만: 45%
-}
-
-/**
- * H 계산
- * @param C 복구면적
- * @param D 기준작업량
- * @param E 노임단가
- * @param F 적용단가 (calculateF로 계산된 값)
- * @returns H
- */
-function calculateH(C: number, D: number, E: number, F: number): number {
-  if (D <= 0) return 0;
-  
-  if (C >= D) {
-    // C ≥ D: (C-D) × (E÷D)
-    return (C - D) * (E / D);
-  } else {
-    // C < D: H = 0 (추가 금액 없음)
-    return 0;
-  }
-}
-
-/**
- * I 계산: 최종 노임비
- * @param C 복구면적
- * @param D 기준작업량
- * @param E 노임단가
- * @returns I (최종 노임비)
- */
-function calculateI(C: number, D: number, E: number): number {
-  if (D <= 0 || C <= 0) return 0;
-  
-  const F = calculateF(C, D, E);
-  const H = calculateH(C, D, E, F);
-  const I = F + H;
-  
-  return Math.round(I); // 원 단위 반올림
-}
-
-/**
- * 적용단가 계산: I / C
- * @param C 복구면적
- * @param D 기준작업량
- * @param E 노임단가
- * @returns 적용단가 (I/C)
- */
-function calculateAppliedUnitPrice(C: number, D: number, E: number): number {
-  if (C <= 0 || D <= 0) return 0;
-  
-  const I = calculateI(C, D, E);
-  return Math.round(I / C); // 원 단위 반올림
-}
 
 // 복구면적 산출표 행 인터페이스
 export interface AreaCalculationRowForLabor {
@@ -179,6 +114,7 @@ interface LaborCostSectionProps {
   onAreaImportToMaterial?: (workType: string, totalArea: number) => void; // 피해면적 산출표 불러오기 시 자재비 수량 업데이트 콜백
   enableAreaImport?: boolean; // 피해면적 불러오기 활성화 (손해방지 케이스만 true)
   isHydrated?: boolean; // 데이터 로딩 완료 여부 (재계산 방지용)
+  laborRateTiers?: LaborRateTier[]; // C/D 비율 적용률 데이터 (DB에서 가져옴)
 }
 
 export function LaborCostSection({
@@ -196,6 +132,7 @@ export function LaborCostSection({
   onAreaImportToMaterial,
   enableAreaImport = true, // 기본값 true (하위 호환)
   isHydrated = true, // 기본값 true (하위 호환)
+  laborRateTiers = DEFAULT_LABOR_RATE_TIERS_FALLBACK, // 기본값: 하드코딩된 요율 (하위 호환)
 }: LaborCostSectionProps) {
   // 드래그 앤 드롭 상태
   const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
@@ -360,10 +297,10 @@ export function LaborCostSection({
         const E = Number(row.standardPrice) || 0;
         
         if (D > 0 && E > 0 && C > 0) {
-          // I 계산 (최종 노임비 = 합계)
-          newAmount = calculateI(C, D, E);
+          // I 계산 (최종 노임비 = 합계) - DB 요율 사용
+          newAmount = calculateIWithTiers(C, D, E, laborRateTiers);
           // 적용단가 = I / C
-          newPricePerSqm = calculateAppliedUnitPrice(C, D, E);
+          newPricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
         } else {
           newAmount = 0;
           newPricePerSqm = 0;
@@ -623,10 +560,10 @@ export function LaborCostSection({
     const E = laborUnitPrice;
     
     if (D > 0 && E > 0 && C > 0) {
-      // I 계산 (최종 노임비)
-      const I = calculateI(C, D, E);
+      // I 계산 (최종 노임비) - DB 요율 사용
+      const I = calculateIWithTiers(C, D, E, laborRateTiers);
       // 적용단가 = I / C
-      const appliedUnitPrice = calculateAppliedUnitPrice(C, D, E);
+      const appliedUnitPrice = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
       
       newRow.pricePerSqm = appliedUnitPrice;
       newRow.amount = I;
@@ -924,10 +861,10 @@ export function LaborCostSection({
           const E = standardPrice;
           
           if (D > 0 && E > 0 && C > 0) {
-            // I 계산 (최종 노임비)
-            const I = calculateI(C, D, E);
+            // I 계산 (최종 노임비) - DB 요율 사용
+            const I = calculateIWithTiers(C, D, E, laborRateTiers);
             // 적용단가 = I / C
-            const appliedUnitPrice = calculateAppliedUnitPrice(C, D, E);
+            const appliedUnitPrice = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
             
             updated.pricePerSqm = appliedUnitPrice;
             updated.amount = I;
@@ -984,14 +921,14 @@ export function LaborCostSection({
           // 면적 합산
           existing.damageArea = (existing.damageArea || 0) + (row.damageArea || 0);
           
-          // 합산된 면적으로 금액, 적용단가, 수량 재계산 (일위대가 공식: I = F + H)
+          // 합산된 면적으로 금액, 적용단가, 수량 재계산 (일위대가 공식: I = F + H) - DB 요율 사용
           const C = existing.damageArea;
           const D = existing.standardWorkQuantity || 0;
           const E = existing.standardPrice || 0;
           if (D > 0 && E > 0 && C > 0) {
-            existing.mergedAmount = calculateI(C, D, E);
+            existing.mergedAmount = calculateIWithTiers(C, D, E, laborRateTiers);
             // 적용단가도 재계산: I / C
-            existing.pricePerSqm = calculateAppliedUnitPrice(C, D, E);
+            existing.pricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
             // 수량도 재계산: C / D (반올림 오차 방지)
             existing.mergedQuantity = Math.round((C / D) * 100) / 100;
           } else {

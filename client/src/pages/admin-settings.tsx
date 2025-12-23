@@ -17,6 +17,7 @@ import { GlobalHeader } from "@/components/global-header";
 import { AccessControlPanel } from "@/components/access-control-panel";
 import * as XLSX from "xlsx";
 import JSZip from "jszip";
+import { LaborRateTiersButton } from "@/components/labor-rate-tiers-modal";
 
 // Fallback xlsx parser for files with XML namespace prefixes that xlsx library can't handle
 async function parseXlsxFallback(file: File): Promise<{ headers: string[], data: any[][] }> {
@@ -2495,6 +2496,9 @@ export default function AdminSettings() {
 
               {/* Action Buttons */}
               <div className="flex gap-3 mb-6">
+                {dbTab === "일위대가" && (
+                  <LaborRateTiersButton />
+                )}
                 <button
                   onClick={() => {
                     const currentData = dbTab === "노무비" ? laborExcelData : dbTab === "자재비" ? materialExcelData : unitPriceExcelData;
