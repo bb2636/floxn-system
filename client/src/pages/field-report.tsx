@@ -2282,9 +2282,7 @@ export default function FieldReport() {
                       color: "#0C0C0C",
                     }}
                   >
-                    {caseData.accidentDate && caseData.accidentTime 
-                      ? `${caseData.accidentDate} ${caseData.accidentTime}` 
-                      : caseData.accidentDate || "-"}
+                    {caseData.accidentDate || "-"}
                   </span>
                 </div>
                 <div className="flex items-center">
