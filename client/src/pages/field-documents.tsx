@@ -112,12 +112,9 @@ export default function FieldDocuments() {
     enabled: !!selectedCaseId,
   });
 
-  // 협력사: 현장출동보고서 제출 후 카테고리(드롭다운) 수정 불가, 증빙자료(파일) 업로드/삭제는 가능
-  // 단, 반려 상태이면 전체 수정 가능
-  const isPartner = user?.role === "협력사";
+  // 증빙자료 등록은 제출 후에도 전체 수정 가능 (파일 업로드/삭제, 카테고리 변경 모두 허용)
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
-  const isRejected = selectedCase?.progressStatus === "반려";
-  const isCategoryReadOnly = isPartner && isSubmitted && !isRejected; // 드롭다운만 수정 불가 (반려 시 수정 가능)
+  const isCategoryReadOnly = false; // 증빙자료는 항상 수정 가능
 
   // 청구자료 탭 활성화 조건: 케이스 상태가 청구자료제출 또는 출동비 청구일 때
   const claimDocumentStatuses = [
