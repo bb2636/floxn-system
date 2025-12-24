@@ -713,7 +713,6 @@ export default function FieldReport() {
             </>
           )}
           
-<<<<<<< HEAD
           {!isUserLoading && canApproveReport && (
             <Button
               data-testid="button-review"
@@ -745,8 +744,6 @@ export default function FieldReport() {
               {approvalMutation.isPending ? "승인 중..." : "승인"}
             </Button>
           )}
-=======
->>>>>>> 0d763a78222d3ba987bfc11cc3fd6224565c6f16
         </div>
       </div>
 
