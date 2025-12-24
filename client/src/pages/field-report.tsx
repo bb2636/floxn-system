@@ -255,6 +255,12 @@ export default function FieldReport() {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSections, setEmailSections] = useState({
+    현장입력: true,
+    도면: true,
+    증빙자료: true,
+    견적서: true,
+  });
   
   // PDF 다운로드 다이얼로그 상태
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
@@ -263,7 +269,6 @@ export default function FieldReport() {
     도면: true,
     증빙자료: true,
     견적서: true,
-    기타사항: true,
   });
   
   // 활성 탭 상태 (PDF 캡처를 위해 제어 컴포넌트로 사용)
@@ -1283,59 +1288,153 @@ export default function FieldReport() {
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
         <DialogContent
           style={{
-            maxWidth: "457px",
-            background: "rgba(253, 253, 253, 0.95)",
-            backdropFilter: "blur(17px)",
+            maxWidth: "747px",
+            width: "747px",
+            background: "#FFFFFF",
+            boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
             border: "none",
             borderRadius: "12px",
-            padding: "32px",
+            padding: "0px",
           }}
         >
-          {/* 제목 */}
+          {/* 헤더 */}
           <div style={{
-            fontFamily: "Pretendard",
-            fontWeight: 600,
-            fontSize: "18px",
-            color: "#0C0C0C",
-            textAlign: "center",
-            marginBottom: "24px",
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "18px 20px",
+            borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
           }}>
-            이메일 전송
-          </div>
-          
-          {/* 이메일 입력 */}
-          <div style={{ marginBottom: "32px" }}>
-            <label style={{
-              display: "block",
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "rgba(12, 12, 12, 0.6)",
-              marginBottom: "8px",
+            <span style={{
+              fontFamily: "'Pretendard'",
+              fontWeight: 600,
+              fontSize: "18px",
+              lineHeight: "128%",
+              letterSpacing: "-0.02em",
+              color: "#0C0C0C",
             }}>
-              받는 이메일 주소
-            </label>
-            <input
-              type="email"
-              value={emailAddress}
-              onChange={(e) => setEmailAddress(e.target.value)}
-              placeholder="example@email.com"
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                borderRadius: "8px",
-                border: "1px solid rgba(12, 12, 12, 0.15)",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                color: "#0C0C0C",
-                outline: "none",
-              }}
-              data-testid="input-email-address"
-            />
+              이메일 전송
+            </span>
           </div>
           
-          {/* 버튼 */}
-          <div style={{ display: "flex", gap: "12px" }}>
+          {/* 콘텐츠 영역 */}
+          <div style={{ padding: "24px 20px 32px" }}>
+            {/* 포함 내용 선택 */}
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{
+                fontFamily: "'Pretendard'",
+                fontSize: "14px",
+                fontWeight: 500,
+                lineHeight: "128%",
+                letterSpacing: "-0.01em",
+                color: "#686A6E",
+                marginBottom: "12px",
+              }}>
+                포함 내용 선택
+              </div>
+              
+              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "20px" }}>
+                {Object.entries(emailSections).map(([key, value]) => (
+                  <label 
+                    key={key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                      height: "44px",
+                    }}
+                    data-testid={`checkbox-email-${key}`}
+                  >
+                    {/* 커스텀 체크박스 아이콘 */}
+                    <div
+                      onClick={() => setEmailSections(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+                      style={{
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "4px",
+                        background: value ? "#008FED" : "rgba(12, 12, 12, 0.24)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "background 0.2s ease",
+                      }}
+                    >
+                      {value && (
+                        <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) => setEmailSections(prev => ({ ...prev, [key]: e.target.checked }))}
+                      style={{ 
+                        position: "absolute",
+                        opacity: 0,
+                        width: 0,
+                        height: 0,
+                      }}
+                    />
+                    <span style={{
+                      fontFamily: "'Pretendard'",
+                      fontWeight: 500,
+                      fontSize: "16px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}>
+                      {key}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            
+            {/* 이메일 입력 */}
+            <div>
+              <label style={{
+                display: "block",
+                fontFamily: "'Pretendard'",
+                fontSize: "14px",
+                fontWeight: 500,
+                lineHeight: "128%",
+                letterSpacing: "-0.01em",
+                color: "#686A6E",
+                marginBottom: "8px",
+              }}>
+                받는 이메일 주소
+              </label>
+              <input
+                type="email"
+                value={emailAddress}
+                onChange={(e) => setEmailAddress(e.target.value)}
+                placeholder="example@email.com"
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(12, 12, 12, 0.15)",
+                  fontFamily: "'Pretendard'",
+                  fontSize: "14px",
+                  color: "#0C0C0C",
+                  outline: "none",
+                }}
+                data-testid="input-email-address"
+              />
+            </div>
+          </div>
+          
+          {/* 버튼 영역 */}
+          <div style={{ 
+            display: "flex", 
+            gap: "12px", 
+            padding: "16px 20px 24px",
+            borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+          }}>
             <button
               onClick={() => {
                 setShowEmailDialog(false);
@@ -1344,13 +1443,13 @@ export default function FieldReport() {
               style={{
                 flex: 1,
                 padding: "14px",
-                background: "rgba(12, 12, 12, 0.05)",
+                background: "transparent",
                 borderRadius: "8px",
                 border: "none",
-                fontFamily: "Pretendard",
-                fontWeight: 500,
+                fontFamily: "'Pretendard'",
+                fontWeight: 600,
                 fontSize: "14px",
-                color: "rgba(12, 12, 12, 0.6)",
+                color: "#008FED",
                 cursor: "pointer",
               }}
               data-testid="button-cancel-email-send"
@@ -1454,14 +1553,26 @@ export default function FieldReport() {
                   const coverImg = coverCanvas.toDataURL('image/jpeg', 0.95);
                   pdf.addImage(coverImg, 'JPEG', 0, 0, pageWidth, pageHeight);
                   
-                  // ===== 2. 각 섹션을 챕터별로 추가 =====
-                  const chapters = [
-                    { name: '현장조사', tabValue: '현장조사', elementId: 'pdf-section-현장조사' },
-                    { name: '도면', tabValue: '도면', elementId: 'pdf-section-도면' },
-                    { name: '증빙자료', tabValue: '증빙자료', elementId: 'pdf-section-증빙자료' },
-                    { name: '견적서', tabValue: '견적서', elementId: 'pdf-section-견적서' },
-                    { name: '기타사항/원인', tabValue: '기타사항/원인', elementId: 'pdf-section-기타사항' },
+                  // ===== 2. 선택된 섹션만 챕터별로 추가 =====
+                  const allChapters = [
+                    { key: '현장입력', name: '현장조사', tabValue: '현장조사', elementId: 'pdf-section-현장조사' },
+                    { key: '도면', name: '도면', tabValue: '도면', elementId: 'pdf-section-도면' },
+                    { key: '증빙자료', name: '증빙자료', tabValue: '증빙자료', elementId: 'pdf-section-증빙자료' },
+                    { key: '견적서', name: '견적서', tabValue: '견적서', elementId: 'pdf-section-견적서' },
                   ];
+                  
+                  // 선택된 섹션만 필터링
+                  const chapters = allChapters.filter(ch => emailSections[ch.key as keyof typeof emailSections]);
+                  
+                  if (chapters.length === 0) {
+                    toast({
+                      title: "섹션 선택 필요",
+                      description: "최소 1개 이상의 섹션을 선택해주세요.",
+                      variant: "destructive",
+                    });
+                    setIsSendingEmail(false);
+                    return;
+                  }
                   
                   const originalTab = activeTab;
                   let chapterNum = 1;
@@ -1699,68 +1810,120 @@ export default function FieldReport() {
       <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
         <DialogContent
           style={{
-            maxWidth: "500px",
-            background: "rgba(253, 253, 253, 0.95)",
-            backdropFilter: "blur(17px)",
+            maxWidth: "747px",
+            width: "747px",
+            background: "#FFFFFF",
+            boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
             border: "none",
             borderRadius: "12px",
-            padding: "32px",
+            padding: "0px",
           }}
         >
+          {/* 헤더 */}
           <div style={{
-            fontFamily: "Pretendard",
-            fontWeight: 600,
-            fontSize: "18px",
-            color: "#0C0C0C",
-            textAlign: "center",
-            marginBottom: "24px",
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "18px 20px",
+            borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
           }}>
-            PDF 다운로드
-          </div>
-          
-          <div style={{ marginBottom: "24px" }}>
-            <div style={{
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "rgba(12, 12, 12, 0.6)",
-              marginBottom: "16px",
+            <span style={{
+              fontFamily: "'Pretendard'",
+              fontWeight: 600,
+              fontSize: "18px",
+              lineHeight: "128%",
+              letterSpacing: "-0.02em",
+              color: "#0C0C0C",
             }}>
-              포함 내용 선택
-            </div>
-            
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-              {Object.entries(downloadSections).map(([key, value]) => (
-                <label 
-                  key={key}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    cursor: "pointer",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    color: "#0C0C0C",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) => setDownloadSections(prev => ({ ...prev, [key]: e.target.checked }))}
-                    style={{ 
-                      width: "18px", 
-                      height: "18px", 
-                      accentColor: "#008FED",
+              PDF 다운로드
+            </span>
+          </div>
+          
+          {/* 콘텐츠 영역 */}
+          <div style={{ padding: "24px 20px 32px" }}>
+            {/* 포함 내용 선택 */}
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{
+                fontFamily: "'Pretendard'",
+                fontSize: "14px",
+                fontWeight: 500,
+                lineHeight: "128%",
+                letterSpacing: "-0.01em",
+                color: "#686A6E",
+                marginBottom: "12px",
+              }}>
+                포함 내용 선택
+              </div>
+              
+              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "20px" }}>
+                {Object.entries(downloadSections).map(([key, value]) => (
+                  <label 
+                    key={key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
                       cursor: "pointer",
+                      height: "44px",
                     }}
-                  />
-                  {key}
-                </label>
-              ))}
+                    data-testid={`checkbox-download-${key}`}
+                  >
+                    {/* 커스텀 체크박스 아이콘 */}
+                    <div
+                      onClick={() => setDownloadSections(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+                      style={{
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "4px",
+                        background: value ? "#008FED" : "rgba(12, 12, 12, 0.24)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "background 0.2s ease",
+                      }}
+                    >
+                      {value && (
+                        <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) => setDownloadSections(prev => ({ ...prev, [key]: e.target.checked }))}
+                      style={{ 
+                        position: "absolute",
+                        opacity: 0,
+                        width: 0,
+                        height: 0,
+                      }}
+                    />
+                    <span style={{
+                      fontFamily: "'Pretendard'",
+                      fontWeight: 500,
+                      fontSize: "16px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}>
+                      {key}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
           
-          <div style={{ display: "flex", gap: "12px" }}>
+          {/* 버튼 영역 */}
+          <div style={{ 
+            display: "flex", 
+            gap: "12px", 
+            padding: "16px 20px 24px",
+            borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+          }}>
             <button
               onClick={() => setShowDownloadDialog(false)}
               style={{
@@ -1769,12 +1932,13 @@ export default function FieldReport() {
                 background: "transparent",
                 borderRadius: "8px",
                 border: "none",
-                fontFamily: "Pretendard",
+                fontFamily: "'Pretendard'",
                 fontWeight: 600,
                 fontSize: "14px",
                 color: "#008FED",
                 cursor: "pointer",
               }}
+              data-testid="button-cancel-download"
             >
               취소
             </button>
@@ -1802,7 +1966,6 @@ export default function FieldReport() {
                     '도면': 'pdf-section-도면',
                     '증빙자료': 'pdf-section-증빙자료',
                     '견적서': 'pdf-section-견적서',
-                    '기타사항': 'pdf-section-기타사항',
                   };
 
                   // 선택된 섹션들
@@ -1827,7 +1990,6 @@ export default function FieldReport() {
                     '도면': '도면',
                     '증빙자료': '증빙자료',
                     '견적서': '견적서',
-                    '기타사항': '기타사항/원인',
                   };
 
                   // 현재 탭 저장
