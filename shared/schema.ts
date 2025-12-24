@@ -814,3 +814,6 @@ export const DEFAULT_LABOR_RATE_TIERS: InsertLaborRateTier[] = [
   { minRatio: 50, rateMultiplier: 50, sortOrder: 7 },  // ≥50%: 50%
   { minRatio: 0, rateMultiplier: 45, sortOrder: 8 },   // <50%: 45%
 ];
+
+// Chat models for AI integration
+export * from "./models/chat";
