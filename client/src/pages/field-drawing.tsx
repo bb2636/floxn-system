@@ -443,6 +443,7 @@ export default function FieldDrawing() {
     entityType: EntityType
   ) => {
     e.stopPropagation();
+    if (isReadOnly) return;
     
     const newTransform = {
       entityType,
@@ -674,6 +675,7 @@ export default function FieldDrawing() {
   // 캔버스 클릭 핸들러
   const handleCanvasClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;
+    if (isReadOnly) return;
     
     const canvasRect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - canvasRect.left;
@@ -699,6 +701,7 @@ export default function FieldDrawing() {
   const handleImageMouseDown = (e: React.MouseEvent, image: UploadedImage) => {
     // In drawing modes (rectangle/accident-area/leak), let event bubble to canvas
     if (selectedTool !== "pointer") return;
+    if (isReadOnly) return;
     
     // In pointer mode, stop propagation and handle selection/drag
     e.stopPropagation();
@@ -732,6 +735,7 @@ export default function FieldDrawing() {
   const handleRectangleMouseDown = (e: React.MouseEvent, rect: DrawnRectangle) => {
     // In drawing modes, let event bubble to canvas
     if (selectedTool !== "pointer") return;
+    if (isReadOnly) return;
     
     // In pointer mode, stop propagation and handle selection/drag
     e.stopPropagation();
@@ -765,6 +769,7 @@ export default function FieldDrawing() {
   const handleAccidentAreaMouseDown = (e: React.MouseEvent, area: AccidentArea) => {
     // In drawing modes, let event bubble to canvas
     if (selectedTool !== "pointer") return;
+    if (isReadOnly) return;
     
     // In pointer mode, stop propagation and handle selection/drag
     e.stopPropagation();
@@ -999,6 +1004,7 @@ export default function FieldDrawing() {
   // 사각형/사고영역 그리기 시작
   const handleCanvasMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!canvasRef.current) return;
+    if (isReadOnly) return;
     
     const canvasRect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - canvasRect.left;

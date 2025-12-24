@@ -4376,6 +4376,7 @@ export default function FieldEstimate() {
                                 onValueChange={(value) => {
                                   group.rows.forEach(r => updateRow(r.id, 'category', value));
                                 }}
+                                disabled={isReadOnly}
                               >
                                 <SelectTrigger 
                                   className="border focus:ring-0"
@@ -4460,6 +4461,7 @@ export default function FieldEstimate() {
                             <Select
                               value={row.location}
                               onValueChange={(value) => updateRow(row.id, 'location', value)}
+                              disabled={isReadOnly}
                             >
                               <SelectTrigger 
                                 className="border focus:ring-0"
@@ -4494,7 +4496,7 @@ export default function FieldEstimate() {
                             updateRow(row.id, 'workType', value);
                             updateRow(row.id, 'workName', '');
                           }}
-                          disabled={!row.location}
+                          disabled={isReadOnly || !row.location}
                         >
                           <SelectTrigger 
                             className="border focus:ring-0"
@@ -4523,7 +4525,7 @@ export default function FieldEstimate() {
                         <Select
                           value={row.workName || undefined}
                           onValueChange={(value) => updateRow(row.id, 'workName', value)}
-                          disabled={!row.workType}
+                          disabled={isReadOnly || !row.workType}
                         >
                           <SelectTrigger 
                             className="border focus:ring-0"
@@ -4563,6 +4565,7 @@ export default function FieldEstimate() {
                               updateRow(row.id, 'damageWidth', '0000');
                             }
                           }}
+                          disabled={isReadOnly}
                           className="input-focus-blue"
                           style={{
                             width: "100%",
@@ -4572,6 +4575,7 @@ export default function FieldEstimate() {
                             border: "1px solid rgba(12, 12, 12, 0.1)",
                             borderRadius: "8px",
                             textAlign: "center",
+                            background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                           }}
                           data-testid={`input-damage-width-${globalIndex}`}
                         />
@@ -4591,6 +4595,7 @@ export default function FieldEstimate() {
                               updateRow(row.id, 'damageHeight', '0000');
                             }
                           }}
+                          disabled={isReadOnly}
                           readOnly={isLinearWorkName(row.workName)}
                           className="input-focus-blue"
                           style={{
@@ -4601,7 +4606,7 @@ export default function FieldEstimate() {
                             border: "1px solid rgba(12, 12, 12, 0.1)",
                             borderRadius: "8px",
                             textAlign: "center",
-                            background: isLinearWorkName(row.workName) ? "rgba(12, 12, 12, 0.02)" : undefined,
+                            background: (isReadOnly || isLinearWorkName(row.workName)) ? "rgba(12, 12, 12, 0.02)" : undefined,
                           }}
                           data-testid={`input-damage-height-${globalIndex}`}
                         />
@@ -4639,6 +4644,7 @@ export default function FieldEstimate() {
                               updateRow(row.id, 'repairWidth', '0000');
                             }
                           }}
+                          disabled={isReadOnly}
                           className="input-focus-blue"
                           style={{
                             width: "100%",
@@ -4648,6 +4654,7 @@ export default function FieldEstimate() {
                             border: "1px solid rgba(12, 12, 12, 0.1)",
                             borderRadius: "8px",
                             textAlign: "center",
+                            background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                           }}
                           data-testid={`input-repair-width-${globalIndex}`}
                         />
@@ -4667,6 +4674,7 @@ export default function FieldEstimate() {
                               updateRow(row.id, 'repairHeight', '0000');
                             }
                           }}
+                          disabled={isReadOnly}
                           readOnly={isLinearWorkName(row.workName)}
                           className="input-focus-blue"
                           style={{
@@ -4677,7 +4685,7 @@ export default function FieldEstimate() {
                             border: "1px solid rgba(12, 12, 12, 0.1)",
                             borderRadius: "8px",
                             textAlign: "center",
-                            background: isLinearWorkName(row.workName) ? "rgba(12, 12, 12, 0.02)" : undefined,
+                            background: (isReadOnly || isLinearWorkName(row.workName)) ? "rgba(12, 12, 12, 0.02)" : undefined,
                           }}
                           data-testid={`input-repair-height-${globalIndex}`}
                         />
@@ -4705,6 +4713,7 @@ export default function FieldEstimate() {
                           type="text"
                           value={row.note}
                           onChange={(e) => updateRow(row.id, 'note', e.target.value)}
+                          disabled={isReadOnly}
                           className="input-focus-blue"
                           style={{
                             width: "100%",
@@ -4713,6 +4722,7 @@ export default function FieldEstimate() {
                             fontSize: "14px",
                             border: "1px solid rgba(12, 12, 12, 0.1)",
                             borderRadius: "8px",
+                            background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                           }}
                           data-testid={`input-note-${globalIndex}`}
                         />
@@ -5210,6 +5220,7 @@ export default function FieldEstimate() {
                             <select
                               value={row.category || ""}
                               onChange={(e) => updateRow(row.id, 'category', e.target.value)}
+                              disabled={isReadOnly}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -5218,6 +5229,7 @@ export default function FieldEstimate() {
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
                                 color: row.category ? "#0C0C0C" : "rgba(12, 12, 12, 0.4)",
+                                background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                               }}
                             >
                               <option value="">선택</option>
@@ -5230,6 +5242,7 @@ export default function FieldEstimate() {
                             <select
                               value={row.location || ""}
                               onChange={(e) => updateRow(row.id, 'location', e.target.value)}
+                              disabled={isReadOnly}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -5238,6 +5251,7 @@ export default function FieldEstimate() {
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
                                 color: row.location ? "#0C0C0C" : "rgba(12, 12, 12, 0.4)",
+                                background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                               }}
                             >
                               <option value="">선택</option>
@@ -5253,7 +5267,7 @@ export default function FieldEstimate() {
                                 updateRow(row.id, 'workType', e.target.value);
                                 updateRow(row.id, 'workName', '');
                               }}
-                              disabled={!row.location}
+                              disabled={isReadOnly || !row.location}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -5262,6 +5276,7 @@ export default function FieldEstimate() {
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
                                 color: row.workType ? "#0C0C0C" : "rgba(12, 12, 12, 0.4)",
+                                background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                               }}
                             >
                               <option value="">공종 선택</option>
@@ -5274,7 +5289,7 @@ export default function FieldEstimate() {
                             <select
                               value={row.workName || ""}
                               onChange={(e) => updateRow(row.id, 'workName', e.target.value)}
-                              disabled={!row.workType}
+                              disabled={isReadOnly || !row.workType}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -5283,6 +5298,7 @@ export default function FieldEstimate() {
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
                                 color: row.workName ? "#0C0C0C" : "rgba(12, 12, 12, 0.4)",
+                                background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                               }}
                             >
                               <option value="">공사명 선택</option>
@@ -5296,6 +5312,7 @@ export default function FieldEstimate() {
                               type="text"
                               value={row.damageWidth}
                               onChange={(e) => updateRow(row.id, 'damageWidth', e.target.value)}
+                              disabled={isReadOnly}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -5304,6 +5321,7 @@ export default function FieldEstimate() {
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
                                 textAlign: "right",
+                                background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                               }}
                             />
                           </td>
@@ -5312,6 +5330,7 @@ export default function FieldEstimate() {
                               type="text"
                               value={row.damageHeight}
                               onChange={(e) => updateRow(row.id, 'damageHeight', e.target.value)}
+                              disabled={isReadOnly}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -5320,6 +5339,7 @@ export default function FieldEstimate() {
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
                                 textAlign: "right",
+                                background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                               }}
                             />
                           </td>
@@ -5329,6 +5349,7 @@ export default function FieldEstimate() {
                               type="text"
                               value={row.repairWidth}
                               onChange={(e) => updateRow(row.id, 'repairWidth', e.target.value)}
+                              disabled={isReadOnly}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -5337,6 +5358,7 @@ export default function FieldEstimate() {
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
                                 textAlign: "right",
+                                background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                               }}
                             />
                           </td>
@@ -5345,6 +5367,7 @@ export default function FieldEstimate() {
                               type="text"
                               value={row.repairHeight}
                               onChange={(e) => updateRow(row.id, 'repairHeight', e.target.value)}
+                              disabled={isReadOnly}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -5353,6 +5376,7 @@ export default function FieldEstimate() {
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
                                 textAlign: "right",
+                                background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                               }}
                             />
                           </td>
@@ -5362,6 +5386,7 @@ export default function FieldEstimate() {
                               type="text"
                               value={row.note}
                               onChange={(e) => updateRow(row.id, 'note', e.target.value)}
+                              disabled={isReadOnly}
                               style={{
                                 width: "100%",
                                 padding: "6px 8px",
@@ -5369,6 +5394,7 @@ export default function FieldEstimate() {
                                 borderRadius: "4px",
                                 fontFamily: "Pretendard",
                                 fontSize: "14px",
+                                background: isReadOnly ? "rgba(12, 12, 12, 0.02)" : undefined,
                               }}
                             />
                           </td>
