@@ -1976,16 +1976,18 @@ export default function FieldManagement() {
                       });
                     }
                   }}
+                  disabled={isReadOnly}
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "16px",
                     fontWeight: 600,
                     height: "52px",
                     padding: "12px 32px",
-                    background: "#FFFFFF",
-                    color: "rgba(12, 12, 12, 0.7)",
+                    background: isReadOnly ? "rgba(12, 12, 12, 0.1)" : "#FFFFFF",
+                    color: isReadOnly ? "rgba(12, 12, 12, 0.3)" : "rgba(12, 12, 12, 0.7)",
                     border: "1px solid rgba(12, 12, 12, 0.2)",
                     borderRadius: "8px",
+                    cursor: isReadOnly ? "not-allowed" : "pointer",
                   }}
                   data-testid="button-temp-save"
                 >
@@ -2085,18 +2087,18 @@ export default function FieldManagement() {
                       });
                     }
                   }}
-                  disabled={!canSubmit}
+                  disabled={!canSubmit || isReadOnly}
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "16px",
                     fontWeight: 600,
                     height: "52px",
                     padding: "12px 32px",
-                    background: canSubmit ? "#008FED" : "rgba(12, 12, 12, 0.1)",
-                    color: canSubmit ? "#FFFFFF" : "rgba(12, 12, 12, 0.3)",
+                    background: (canSubmit && !isReadOnly) ? "#008FED" : "rgba(12, 12, 12, 0.1)",
+                    color: (canSubmit && !isReadOnly) ? "#FFFFFF" : "rgba(12, 12, 12, 0.3)",
                     border: "none",
                     borderRadius: "8px",
-                    cursor: canSubmit ? "pointer" : "not-allowed",
+                    cursor: (canSubmit && !isReadOnly) ? "pointer" : "not-allowed",
                   }}
                   data-testid="button-submit"
                 >
