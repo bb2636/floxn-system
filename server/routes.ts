@@ -5252,6 +5252,105 @@ FLOXN 드림`;
     }
   });
 
+  // =====================
+  // Invoice endpoints (인보이스 관리)
+  // =====================
+
+  // Create invoice
+  app.post("/api/invoices", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "로그인이 필요합니다" });
+      }
+
+      const invoice = await storage.createInvoice(req.body, req.session.userId);
+      res.status(201).json(invoice);
+    } catch (error) {
+      console.error("Create invoice error:", error);
+      res.status(500).json({ error: "인보이스 생성 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Update invoice
+  app.patch("/api/invoices/:id", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "로그인이 필요합니다" });
+      }
+
+      const { id } = req.params;
+      const invoice = await storage.updateInvoice(id, req.body);
+      if (!invoice) {
+        return res.status(404).json({ error: "인보이스를 찾을 수 없습니다" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      console.error("Update invoice error:", error);
+      res.status(500).json({ error: "인보이스 수정 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get all invoices
+  app.get("/api/invoices", async (req, res) => {
+    try {
+      const invoices = await storage.getAllInvoices();
+      res.json(invoices);
+    } catch (error) {
+      console.error("Get all invoices error:", error);
+      res.status(500).json({ error: "인보이스 목록 조회 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get approved invoices only
+  app.get("/api/invoices/approved", async (req, res) => {
+    try {
+      const invoices = await storage.getApprovedInvoices();
+      res.json(invoices);
+    } catch (error) {
+      console.error("Get approved invoices error:", error);
+      res.status(500).json({ error: "승인된 인보이스 조회 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get invoice by ID
+  app.get("/api/invoices/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const invoice = await storage.getInvoiceById(id);
+      if (!invoice) {
+        return res.status(404).json({ error: "인보이스를 찾을 수 없습니다" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      console.error("Get invoice error:", error);
+      res.status(500).json({ error: "인보이스 조회 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get invoice by case ID
+  app.get("/api/invoices/case/:caseId", async (req, res) => {
+    try {
+      const { caseId } = req.params;
+      const invoice = await storage.getInvoiceByCaseId(caseId);
+      res.json(invoice);
+    } catch (error) {
+      console.error("Get invoice by case error:", error);
+      res.status(500).json({ error: "케이스별 인보이스 조회 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get invoice by case group prefix
+  app.get("/api/invoices/group/:prefix", async (req, res) => {
+    try {
+      const { prefix } = req.params;
+      const invoice = await storage.getInvoiceByCaseGroupPrefix(prefix);
+      res.json(invoice);
+    } catch (error) {
+      console.error("Get invoice by group prefix error:", error);
+      res.status(500).json({ error: "그룹별 인보이스 조회 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
