@@ -1008,8 +1008,8 @@ export default function FieldDocuments() {
         </div>
       )}
 
-      {/* 청구자료 탭 서브 필터 (청구 후에만 표시) */}
-      {selectedCategory === "청구자료" && isSubmitted && (
+      {/* 청구자료 탭 서브 필터 (청구자료 탭 활성화 시 표시) */}
+      {selectedCategory === "청구자료" && isClaimDocumentEnabled && (
         <div className="mb-6">
           <div
             className="inline-flex items-center p-1 gap-1.5"
