@@ -536,14 +536,8 @@ export default function ComprehensiveProgress() {
     ...CASE_STATUSES.map((status) => ({ name: status, key: status })),
   ];
 
-  // 인보이스 기반 사전 필터링: 승인된 인보이스가 있고 그룹 내 모든 케이스가 청구 상태인 경우만 표시
-  // 종합진행관리는 인보이스 승인 및 청구 완료된 케이스만 표시
-  const preFilteredByInvoice = (cases || []).filter((caseItem) => {
-    return isGroupReadyForComprehensiveProgress(caseItem, cases);
-  });
-
-  // 진행상태 필터링 + 협력사 필터링
-  const filteredByStatus = preFilteredByInvoice.filter((caseItem) => {
+  // 진행상태 필터링 + 협력사 필터링 (모든 케이스 표시)
+  const filteredByStatus = (cases || []).filter((caseItem) => {
     // 협력사인 경우: 자신에게 배정된 모든 케이스 표시 (배당대기 제외)
     if (user?.role === "협력사") {
       const isAssignedToMe = caseItem.assignedPartner === user.company;
