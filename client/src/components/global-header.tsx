@@ -60,13 +60,110 @@ export function GlobalHeader() {
 
   const activeMenu = getActiveMenu();
 
+  // Check if we're on a mobile route
+  const isMobileRoute = location.startsWith("/mobile");
+
   if (!user) {
     return null;
   }
 
+  // Mobile route: simplified header (logo + profile only, no navigation)
+  if (isMobileRoute) {
+    return (
+      <>
+        <header 
+          className="flex relative w-full"
+          style={{
+            background: 'rgba(255, 255, 255, 0.06)',
+            backdropFilter: 'blur(22px)',
+            borderBottom: '1px solid rgba(0, 143, 237, 0.2)',
+          }}
+        >
+          <div 
+            className="flex items-center justify-between w-full"
+            style={{
+              height: '58px',
+              padding: '0px 20px',
+            }}
+          >
+            {/* Logo */}
+            <div 
+              className="flex items-center gap-2"
+              style={{
+                filter: 'drop-shadow(0px 0px 20px #DBE9F5)',
+              }}
+            >
+              <img 
+                src={logoIcon} 
+                alt="FLOXN Logo" 
+                style={{
+                  width: '28px',
+                  height: '26px',
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: 'Pretendard',
+                  fontSize: '18px',
+                  fontWeight: 700,
+                  color: '#0C0C0C',
+                }}
+              >
+                FLOXN
+              </span>
+            </div>
+
+            {/* User Profile */}
+            <button
+              onClick={() => setMyPageOpen(true)}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-gray-100/50 transition-colors"
+              data-testid="button-mobile-profile"
+            >
+              <div 
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-[#008FED]"
+                style={{ background: 'rgba(0, 143, 237, 0.2)' }}
+              >
+                {user.name ? user.name.charAt(0) : "U"}
+              </div>
+              <div className="flex items-center gap-1">
+                <span 
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    letterSpacing: '-0.02em',
+                    color: 'rgba(12, 12, 12, 0.7)',
+                  }}
+                >
+                  {user.username}
+                </span>
+                <span 
+                  style={{
+                    fontFamily: 'Pretendard',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    letterSpacing: '-0.01em',
+                    color: 'rgba(12, 12, 12, 0.4)',
+                  }}
+                >
+                  {user.position || user.role || "사용자"}
+                </span>
+              </div>
+            </button>
+          </div>
+        </header>
+        <MyPageDialog
+          open={myPageOpen}
+          onOpenChange={setMyPageOpen}
+          user={user}
+        />
+      </>
+    );
+  }
+
   return (
     <>
-      {/* Mobile Header */}
+      {/* Mobile Header (viewport responsive) */}
       <header 
         className="lg:hidden flex relative w-full"
         style={{
