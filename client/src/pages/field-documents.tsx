@@ -368,7 +368,7 @@ export default function FieldDocuments() {
   const categories: DocumentCategory[] = ["전체", "사진", "기본자료", "증빙자료", "청구자료"];
 
   // 탭별 서브카테고리 옵션 반환 (전체 제외)
-  const getSubCategoryOptions = (tab: DocumentCategory, submitted: boolean): string[] => {
+  const getSubCategoryOptions = (tab: DocumentCategory, submitted: boolean, claimEnabled: boolean): string[] => {
     switch (tab) {
       case "사진":
         return submitted 
@@ -379,12 +379,13 @@ export default function FieldDocuments() {
       case "증빙자료":
         return ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"];
       case "청구자료":
-        return submitted 
+        return claimEnabled 
           ? ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"]
           : [];
       case "전체":
       default:
         // 전체 탭에서는 모든 카테고리 옵션 표시 (파일 이동 가능)
+        // 청구자료 항목은 청구자료 탭이 활성화된 경우에만 표시
         const allOptions = [
           "현장출동사진",
           ...(submitted ? ["수리중 사진", "복구완료 사진"] : []),
@@ -394,14 +395,14 @@ export default function FieldDocuments() {
           "등기부등본",
           "건축물대장",
           "기타증빙자료(민원일지 등)",
-          ...(submitted ? ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"] : []),
+          ...(claimEnabled ? ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"] : []),
         ];
         return allOptions;
     }
   };
 
   // 현재 탭의 서브카테고리 옵션
-  const currentSubCategories = getSubCategoryOptions(selectedCategory, isSubmitted);
+  const currentSubCategories = getSubCategoryOptions(selectedCategory, isSubmitted, isClaimDocumentEnabled);
 
   // 파일 선택 핸들러
   const handleFileSelect = async (files: FileList | null) => {
