@@ -1299,7 +1299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update case field survey endpoint (협력사: 언제든지, 관리자: 제출 후에만)
+  // Update case field survey endpoint (협력사: 1차승인 전까지만, 관리자: 제출 후에만)
   app.patch("/api/cases/:caseId/field-survey", async (req, res) => {
     // Check authentication
     if (!req.session?.userId) {
@@ -1309,19 +1309,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userRole = req.session.userRole;
     const { caseId } = req.params;
 
-    // 협력사: 언제든지 수정 가능
+    // 협력사: 1차승인 전까지만 수정 가능
     // 관리자: 협력사가 제출(submitted) 후에만 수정 가능
     if (userRole !== "협력사" && userRole !== "관리자") {
       return res.status(403).json({ error: "협력사 또는 관리자 권한이 필요합니다" });
     }
 
+    // 케이스 조회
+    const existingCase = await storage.getCaseById(caseId);
+    if (!existingCase) {
+      return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+    }
+
+    // 반려 상태 확인 (반려 시 협력사도 수정 가능)
+    const isRejected = existingCase.progressStatus === "반려";
+    const isFirstApproved = existingCase.status === "1차승인";
+    const isSubmitted = existingCase.fieldSurveyStatus === "submitted";
+
+    // 협력사인 경우, 1차승인 또는 제출된 케이스는 수정 불가 (반려 시 제외)
+    if (userRole === "협력사" && (isFirstApproved || isSubmitted) && !isRejected) {
+      return res.status(403).json({ error: "제출되거나 1차승인된 케이스는 현장조사정보를 수정할 수 없습니다" });
+    }
+
     // 관리자인 경우, 케이스가 제출된 상태인지 확인
     if (userRole === "관리자") {
-      const existingCase = await storage.getCaseById(caseId);
-      if (!existingCase) {
-        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
-      }
-      if (existingCase.fieldSurveyStatus !== "submitted") {
+      if (!isSubmitted) {
         return res.status(403).json({ error: "협력사가 보고서를 제출한 후에만 수정할 수 있습니다" });
       }
     }
@@ -1915,8 +1927,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // Note: Additional permission checks could be added here based on user role
-      // Currently relying on frontend filtering (field-management page shows only accessible cases)
+      // 협력사인 경우, 1차승인 또는 제출된 케이스는 도면 수정 불가 (반려 시 제외)
+      const userRole = req.session.userRole;
+      const isRejected = requestedCase.progressStatus === "반려";
+      const isFirstApproved = requestedCase.status === "1차승인";
+      const isSubmitted = requestedCase.fieldSurveyStatus === "submitted";
+      if (userRole === "협력사" && (isFirstApproved || isSubmitted) && !isRejected) {
+        return res.status(403).json({ error: "제출되거나 1차승인된 케이스는 도면을 수정할 수 없습니다" });
+      }
       
       let drawing;
       
@@ -2410,6 +2428,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingCase = await storage.getCaseById(caseId);
       if (!existingCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 협력사인 경우, 1차승인 또는 제출된 케이스는 견적서 수정 불가 (반려 시 제외)
+      const userRole = req.session.userRole;
+      const isRejected = existingCase.progressStatus === "반려";
+      const isFirstApproved = existingCase.status === "1차승인";
+      const isSubmitted = existingCase.fieldSurveyStatus === "submitted";
+      if (userRole === "협력사" && (isFirstApproved || isSubmitted) && !isRejected) {
+        return res.status(403).json({ error: "제출되거나 1차승인된 케이스는 견적서를 수정할 수 없습니다" });
       }
 
       // Validation schema for estimate row from UI

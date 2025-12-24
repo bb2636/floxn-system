@@ -255,6 +255,12 @@ export default function FieldReport() {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSections, setEmailSections] = useState({
+    현장입력: true,
+    도면: true,
+    증빙자료: true,
+    견적서: true,
+  });
   
   // PDF 다운로드 다이얼로그 상태
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
@@ -263,7 +269,6 @@ export default function FieldReport() {
     도면: true,
     증빙자료: true,
     견적서: true,
-    기타사항: true,
   });
   
   // 활성 탭 상태 (PDF 캡처를 위해 제어 컴포넌트로 사용)
@@ -527,6 +532,7 @@ export default function FieldReport() {
       style={{
         background: "linear-gradient(0deg, #E7EDFE, #E7EDFE), #FFFFFF",
         padding: "32px",
+        paddingBottom: isAdmin ? "140px" : "32px",
       }}
     >
       {/* 배경 블러 원형 효과 */}
@@ -665,20 +671,6 @@ export default function FieldReport() {
             </>
           )}
           
-          {!isUserLoading && isAdmin && (
-            <Button
-              data-testid="button-review"
-              onClick={() => setShowReviewDialog(true)}
-              disabled={caseData.fieldSurveyStatus !== "submitted" || reviewMutation.isPending}
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: "500",
-              }}
-            >
-              {reviewMutation.isPending ? "심사 중..." : "심사"}
-            </Button>
-          )}
         </div>
       </div>
 
@@ -729,211 +721,720 @@ export default function FieldReport() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* 심사 다이얼로그 */}
-      <AlertDialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "18px",
-                fontWeight: "600",
-              }}
-            >
-              심사하기
-            </AlertDialogTitle>
-          </AlertDialogHeader>
-
-          {/* 심사중인 건 정보 */}
-          <div className="space-y-2 mb-4">
+      {/* 심사 다이얼로그 - 새 디자인 */}
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent
+          style={{
+            width: "747px",
+            maxWidth: "747px",
+            height: "570px",
+            padding: "0px",
+            background: "#FFFFFF",
+            boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
+            borderRadius: "12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0px",
+            border: "none",
+          }}
+        >
+          {/* 상단 콘텐츠 영역 */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              padding: "0px",
+              gap: "16px",
+              flex: 1,
+              overflow: "hidden",
+            }}
+          >
+            {/* 제목 */}
             <div
               style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 400,
-                color: "rgba(12, 12, 12, 0.5)",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+                height: "60px",
               }}
             >
-              심사중인 건
-            </div>
-            <div 
-              className="p-3 rounded-lg" 
-              style={{ background: "rgba(12, 12, 12, 0.03)" }}
-            >
-              <div
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                }}
-              >
-                {caseData.insuranceCompany || "보험사 미정"} {caseData.insuranceAccidentNo || ""}
-              </div>
-              <div
-                className="mt-1"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "13px",
-                  color: "rgba(12, 12, 12, 0.6)",
-                }}
-              >
-                접수일: {caseData.createdAt ? new Date(caseData.createdAt).toLocaleDateString('ko-KR') : "-"} | 
-                처리담당: {caseData.assignedPartner || "-"} | 
-                의뢰일: {caseData.assignmentDate || "-"} | 
-                긴급여부: {caseData.urgency || "-"}
-              </div>
-            </div>
-          </div>
-
-          {/* 심사결과 */}
-          <div className="space-y-3 mb-4">
-            <Label
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-              }}
-            >
-              심사결과
-            </Label>
-            <RadioGroup value={reviewDecision} onValueChange={(value) => setReviewDecision(value as "승인" | "비승인")}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="승인" id="approve" data-testid="radio-approve" />
-                <Label htmlFor="approve" style={{ fontFamily: "Pretendard", fontSize: "14px", cursor: "pointer" }}>
-                  승인
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="비승인" id="reject" data-testid="radio-reject" />
-                <Label htmlFor="reject" style={{ fontFamily: "Pretendard", fontSize: "14px", cursor: "pointer" }}>
-                  비승인
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* 검토 의견 */}
-          <div className="space-y-2 mb-4">
-            <div className="flex justify-between items-center">
-              <Label
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                }}
-              >
-                검토 의견(선택)
-              </Label>
               <span
                 style={{
                   fontFamily: "Pretendard",
-                  fontSize: "12px",
-                  color: "rgba(12, 12, 12, 0.5)",
+                  fontWeight: 600,
+                  fontSize: "18px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
                 }}
               >
-                {reviewComment.length}/800
+                심사하기
               </span>
             </div>
-            <Textarea
-              data-testid="textarea-review-comment"
-              value={reviewComment}
-              onChange={(e) => setReviewComment(e.target.value.slice(0, 800))}
-              placeholder="검토 의견을 입력해주세요"
-              className="resize-none"
-              rows={4}
+
+            {/* 메인 콘텐츠 */}
+            <div
               style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                padding: "0px 20px",
+                gap: "20px",
+                width: "100%",
               }}
-            />
+            >
+              {/* 심사중인 건 */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                  width: "100%",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
+                  심사중인 건
+                </span>
+
+                {/* 케이스 정보 카드 */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: "16px",
+                    gap: "54px",
+                    width: "100%",
+                    background: "rgba(12, 12, 12, 0.04)",
+                    backdropFilter: "blur(7px)",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: "8px",
+                    }}
+                  >
+                    {/* 보험사 + 사고번호 */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: "9px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "18px",
+                          lineHeight: "128%",
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {caseData.insuranceCompany || "보험사 미정"}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "18px",
+                          lineHeight: "128%",
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {caseData.insuranceAccidentNo || "-"}
+                      </span>
+                    </div>
+
+                    {/* 접수번호, 계약자, 담당자 */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: "24px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.5)",
+                          }}
+                        >
+                          접수번호
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                          }}
+                        >
+                          {caseData.caseNumber || "-"}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.5)",
+                          }}
+                        >
+                          계약자
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                          }}
+                        >
+                          {caseData.insuredName || "-"}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.5)",
+                          }}
+                        >
+                          담당자
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                          }}
+                        >
+                          {caseData.assignedPartner || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 심사결과 */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
+                  심사결과
+                </span>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: "20px",
+                  }}
+                  role="radiogroup"
+                  aria-label="심사결과"
+                >
+                  {/* 승인 라디오 */}
+                  <label
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="reviewDecision"
+                      value="승인"
+                      checked={reviewDecision === "승인"}
+                      onChange={() => setReviewDecision("승인")}
+                      style={{
+                        position: "absolute",
+                        opacity: 0,
+                        width: 0,
+                        height: 0,
+                      }}
+                      data-testid="radio-approve"
+                    />
+                    <div
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        borderRadius: "50%",
+                        background: reviewDecision === "승인" ? "#008FED" : "transparent",
+                        border: reviewDecision === "승인" ? "none" : "1px solid rgba(12, 12, 12, 0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {reviewDecision === "승인" && (
+                        <div
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            background: "#FDFDFD",
+                          }}
+                        />
+                      )}
+                    </div>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "16px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.02em",
+                        color: "#0C0C0C",
+                      }}
+                    >
+                      승인
+                    </span>
+                  </label>
+
+                  {/* 미승인 라디오 */}
+                  <label
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="reviewDecision"
+                      value="비승인"
+                      checked={reviewDecision === "비승인"}
+                      onChange={() => setReviewDecision("비승인")}
+                      style={{
+                        position: "absolute",
+                        opacity: 0,
+                        width: 0,
+                        height: 0,
+                      }}
+                      data-testid="radio-reject"
+                    />
+                    <div
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        borderRadius: "50%",
+                        background: reviewDecision === "비승인" ? "#008FED" : "transparent",
+                        border: reviewDecision === "비승인" ? "none" : "1px solid rgba(12, 12, 12, 0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {reviewDecision === "비승인" && (
+                        <div
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            background: "#FDFDFD",
+                          }}
+                        />
+                      )}
+                    </div>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "16px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.02em",
+                        color: "#0C0C0C",
+                      }}
+                    >
+                      미승인
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* 검토 의견(선택) */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                  width: "100%",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
+                  검토 의견(선택)
+                </span>
+
+                <textarea
+                  data-testid="textarea-review-comment"
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value.slice(0, 800))}
+                  placeholder="검토 의견을 입력해주세요"
+                  style={{
+                    boxSizing: "border-box",
+                    width: "100%",
+                    height: "103px",
+                    padding: "20px",
+                    background: "#FDFDFD",
+                    border: "2px solid rgba(12, 12, 12, 0.08)",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontWeight: 600,
+                    fontSize: "16px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                    resize: "none",
+                    outline: "none",
+                  }}
+                />
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
+                    width: "100%",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                    }}
+                  >
+                    {reviewComment.length}/800
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              data-testid="button-cancel-review"
-              onClick={() => {
-                setReviewDecision("승인");
-                setReviewComment("");
-              }}
+          {/* 하단 버튼 영역 */}
+          <div
+            style={{
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              padding: "20px",
+              width: "100%",
+              background: "#FDFDFD",
+              borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+            }}
+          >
+            <div
               style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                gap: "0px",
               }}
             >
-              취소
-            </AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="button-confirm-review"
-              onClick={() => reviewMutation.mutate()}
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-              }}
-            >
-              제출
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              {/* 취소 버튼 */}
+              <button
+                onClick={() => {
+                  setShowReviewDialog(false);
+                  setReviewDecision("승인");
+                  setReviewComment("");
+                }}
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: "10px",
+                  flex: 1,
+                  height: "48px",
+                  background: "transparent",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                data-testid="button-cancel-review"
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "16px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#D02B20",
+                  }}
+                >
+                  취소
+                </span>
+              </button>
+
+              {/* 제출 버튼 */}
+              <button
+                onClick={() => reviewMutation.mutate()}
+                disabled={reviewMutation.isPending}
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: "10px",
+                  flex: 1,
+                  height: "48px",
+                  background: reviewMutation.isPending ? "rgba(0, 143, 237, 0.5)" : "#008FED",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: reviewMutation.isPending ? "not-allowed" : "pointer",
+                }}
+                data-testid="button-confirm-review"
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 700,
+                    fontSize: "16px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#FDFDFD",
+                  }}
+                >
+                  {reviewMutation.isPending ? "제출 중..." : "제출"}
+                </span>
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* 이메일 전송 Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
         <DialogContent
           style={{
-            maxWidth: "457px",
-            background: "rgba(253, 253, 253, 0.95)",
-            backdropFilter: "blur(17px)",
+            maxWidth: "747px",
+            width: "747px",
+            background: "#FFFFFF",
+            boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
             border: "none",
             borderRadius: "12px",
-            padding: "32px",
+            padding: "0px",
           }}
         >
-          {/* 제목 */}
+          {/* 헤더 */}
           <div style={{
-            fontFamily: "Pretendard",
-            fontWeight: 600,
-            fontSize: "18px",
-            color: "#0C0C0C",
-            textAlign: "center",
-            marginBottom: "24px",
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "18px 20px",
+            borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
           }}>
-            이메일 전송
-          </div>
-          
-          {/* 이메일 입력 */}
-          <div style={{ marginBottom: "32px" }}>
-            <label style={{
-              display: "block",
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "rgba(12, 12, 12, 0.6)",
-              marginBottom: "8px",
+            <span style={{
+              fontFamily: "'Pretendard'",
+              fontWeight: 600,
+              fontSize: "18px",
+              lineHeight: "128%",
+              letterSpacing: "-0.02em",
+              color: "#0C0C0C",
             }}>
-              받는 이메일 주소
-            </label>
-            <input
-              type="email"
-              value={emailAddress}
-              onChange={(e) => setEmailAddress(e.target.value)}
-              placeholder="example@email.com"
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                borderRadius: "8px",
-                border: "1px solid rgba(12, 12, 12, 0.15)",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                color: "#0C0C0C",
-                outline: "none",
-              }}
-              data-testid="input-email-address"
-            />
+              이메일 전송
+            </span>
           </div>
           
-          {/* 버튼 */}
-          <div style={{ display: "flex", gap: "12px" }}>
+          {/* 콘텐츠 영역 */}
+          <div style={{ padding: "24px 20px 32px" }}>
+            {/* 포함 내용 선택 */}
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{
+                fontFamily: "'Pretendard'",
+                fontSize: "14px",
+                fontWeight: 500,
+                lineHeight: "128%",
+                letterSpacing: "-0.01em",
+                color: "#686A6E",
+                marginBottom: "12px",
+              }}>
+                포함 내용 선택
+              </div>
+              
+              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "20px" }}>
+                {Object.entries(emailSections).map(([key, value]) => (
+                  <label 
+                    key={key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                      height: "44px",
+                    }}
+                    data-testid={`checkbox-email-${key}`}
+                  >
+                    {/* 커스텀 체크박스 아이콘 */}
+                    <div
+                      onClick={() => setEmailSections(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+                      style={{
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "4px",
+                        background: value ? "#008FED" : "rgba(12, 12, 12, 0.24)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "background 0.2s ease",
+                      }}
+                    >
+                      {value && (
+                        <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) => setEmailSections(prev => ({ ...prev, [key]: e.target.checked }))}
+                      style={{ 
+                        position: "absolute",
+                        opacity: 0,
+                        width: 0,
+                        height: 0,
+                      }}
+                    />
+                    <span style={{
+                      fontFamily: "'Pretendard'",
+                      fontWeight: 500,
+                      fontSize: "16px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}>
+                      {key}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            
+            {/* 이메일 입력 */}
+            <div>
+              <label style={{
+                display: "block",
+                fontFamily: "'Pretendard'",
+                fontSize: "14px",
+                fontWeight: 500,
+                lineHeight: "128%",
+                letterSpacing: "-0.01em",
+                color: "#686A6E",
+                marginBottom: "8px",
+              }}>
+                받는 이메일 주소
+              </label>
+              <input
+                type="email"
+                value={emailAddress}
+                onChange={(e) => setEmailAddress(e.target.value)}
+                placeholder="example@email.com"
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(12, 12, 12, 0.15)",
+                  fontFamily: "'Pretendard'",
+                  fontSize: "14px",
+                  color: "#0C0C0C",
+                  outline: "none",
+                }}
+                data-testid="input-email-address"
+              />
+            </div>
+          </div>
+          
+          {/* 버튼 영역 */}
+          <div style={{ 
+            display: "flex", 
+            gap: "12px", 
+            padding: "16px 20px 24px",
+            borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+          }}>
             <button
               onClick={() => {
                 setShowEmailDialog(false);
@@ -942,13 +1443,13 @@ export default function FieldReport() {
               style={{
                 flex: 1,
                 padding: "14px",
-                background: "rgba(12, 12, 12, 0.05)",
+                background: "transparent",
                 borderRadius: "8px",
                 border: "none",
-                fontFamily: "Pretendard",
-                fontWeight: 500,
+                fontFamily: "'Pretendard'",
+                fontWeight: 600,
                 fontSize: "14px",
-                color: "rgba(12, 12, 12, 0.6)",
+                color: "#008FED",
                 cursor: "pointer",
               }}
               data-testid="button-cancel-email-send"
@@ -1052,14 +1553,26 @@ export default function FieldReport() {
                   const coverImg = coverCanvas.toDataURL('image/jpeg', 0.95);
                   pdf.addImage(coverImg, 'JPEG', 0, 0, pageWidth, pageHeight);
                   
-                  // ===== 2. 각 섹션을 챕터별로 추가 =====
-                  const chapters = [
-                    { name: '현장조사', tabValue: '현장조사', elementId: 'pdf-section-현장조사' },
-                    { name: '도면', tabValue: '도면', elementId: 'pdf-section-도면' },
-                    { name: '증빙자료', tabValue: '증빙자료', elementId: 'pdf-section-증빙자료' },
-                    { name: '견적서', tabValue: '견적서', elementId: 'pdf-section-견적서' },
-                    { name: '기타사항/원인', tabValue: '기타사항/원인', elementId: 'pdf-section-기타사항' },
+                  // ===== 2. 선택된 섹션만 챕터별로 추가 =====
+                  const allChapters = [
+                    { key: '현장입력', name: '현장조사', tabValue: '현장조사', elementId: 'pdf-section-현장조사' },
+                    { key: '도면', name: '도면', tabValue: '도면', elementId: 'pdf-section-도면' },
+                    { key: '증빙자료', name: '증빙자료', tabValue: '증빙자료', elementId: 'pdf-section-증빙자료' },
+                    { key: '견적서', name: '견적서', tabValue: '견적서', elementId: 'pdf-section-견적서' },
                   ];
+                  
+                  // 선택된 섹션만 필터링
+                  const chapters = allChapters.filter(ch => emailSections[ch.key as keyof typeof emailSections]);
+                  
+                  if (chapters.length === 0) {
+                    toast({
+                      title: "섹션 선택 필요",
+                      description: "최소 1개 이상의 섹션을 선택해주세요.",
+                      variant: "destructive",
+                    });
+                    setIsSendingEmail(false);
+                    return;
+                  }
                   
                   const originalTab = activeTab;
                   let chapterNum = 1;
@@ -1297,68 +1810,120 @@ export default function FieldReport() {
       <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
         <DialogContent
           style={{
-            maxWidth: "500px",
-            background: "rgba(253, 253, 253, 0.95)",
-            backdropFilter: "blur(17px)",
+            maxWidth: "747px",
+            width: "747px",
+            background: "#FFFFFF",
+            boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
             border: "none",
             borderRadius: "12px",
-            padding: "32px",
+            padding: "0px",
           }}
         >
+          {/* 헤더 */}
           <div style={{
-            fontFamily: "Pretendard",
-            fontWeight: 600,
-            fontSize: "18px",
-            color: "#0C0C0C",
-            textAlign: "center",
-            marginBottom: "24px",
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "18px 20px",
+            borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
           }}>
-            PDF 다운로드
-          </div>
-          
-          <div style={{ marginBottom: "24px" }}>
-            <div style={{
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "rgba(12, 12, 12, 0.6)",
-              marginBottom: "16px",
+            <span style={{
+              fontFamily: "'Pretendard'",
+              fontWeight: 600,
+              fontSize: "18px",
+              lineHeight: "128%",
+              letterSpacing: "-0.02em",
+              color: "#0C0C0C",
             }}>
-              포함 내용 선택
-            </div>
-            
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-              {Object.entries(downloadSections).map(([key, value]) => (
-                <label 
-                  key={key}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    cursor: "pointer",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    color: "#0C0C0C",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) => setDownloadSections(prev => ({ ...prev, [key]: e.target.checked }))}
-                    style={{ 
-                      width: "18px", 
-                      height: "18px", 
-                      accentColor: "#008FED",
+              PDF 다운로드
+            </span>
+          </div>
+          
+          {/* 콘텐츠 영역 */}
+          <div style={{ padding: "24px 20px 32px" }}>
+            {/* 포함 내용 선택 */}
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{
+                fontFamily: "'Pretendard'",
+                fontSize: "14px",
+                fontWeight: 500,
+                lineHeight: "128%",
+                letterSpacing: "-0.01em",
+                color: "#686A6E",
+                marginBottom: "12px",
+              }}>
+                포함 내용 선택
+              </div>
+              
+              <div style={{ display: "flex", flexDirection: "row", alignItems: "center", gap: "20px" }}>
+                {Object.entries(downloadSections).map(([key, value]) => (
+                  <label 
+                    key={key}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "10px",
                       cursor: "pointer",
+                      height: "44px",
                     }}
-                  />
-                  {key}
-                </label>
-              ))}
+                    data-testid={`checkbox-download-${key}`}
+                  >
+                    {/* 커스텀 체크박스 아이콘 */}
+                    <div
+                      onClick={() => setDownloadSections(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+                      style={{
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "4px",
+                        background: value ? "#008FED" : "rgba(12, 12, 12, 0.24)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "background 0.2s ease",
+                      }}
+                    >
+                      {value && (
+                        <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+                          <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={value}
+                      onChange={(e) => setDownloadSections(prev => ({ ...prev, [key]: e.target.checked }))}
+                      style={{ 
+                        position: "absolute",
+                        opacity: 0,
+                        width: 0,
+                        height: 0,
+                      }}
+                    />
+                    <span style={{
+                      fontFamily: "'Pretendard'",
+                      fontWeight: 500,
+                      fontSize: "16px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }}>
+                      {key}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
           
-          <div style={{ display: "flex", gap: "12px" }}>
+          {/* 버튼 영역 */}
+          <div style={{ 
+            display: "flex", 
+            gap: "12px", 
+            padding: "16px 20px 24px",
+            borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+          }}>
             <button
               onClick={() => setShowDownloadDialog(false)}
               style={{
@@ -1367,12 +1932,13 @@ export default function FieldReport() {
                 background: "transparent",
                 borderRadius: "8px",
                 border: "none",
-                fontFamily: "Pretendard",
+                fontFamily: "'Pretendard'",
                 fontWeight: 600,
                 fontSize: "14px",
                 color: "#008FED",
                 cursor: "pointer",
               }}
+              data-testid="button-cancel-download"
             >
               취소
             </button>
@@ -1400,7 +1966,6 @@ export default function FieldReport() {
                     '도면': 'pdf-section-도면',
                     '증빙자료': 'pdf-section-증빙자료',
                     '견적서': 'pdf-section-견적서',
-                    '기타사항': 'pdf-section-기타사항',
                   };
 
                   // 선택된 섹션들
@@ -1425,7 +1990,6 @@ export default function FieldReport() {
                     '도면': '도면',
                     '증빙자료': '증빙자료',
                     '견적서': '견적서',
-                    '기타사항': '기타사항/원인',
                   };
 
                   // 현재 탭 저장
@@ -1849,70 +2413,6 @@ export default function FieldReport() {
                 {activeTab === "견적서" && "견적서"}
                 {activeTab === "기타사항/원인" && "기타사항/원인"}
               </h2>
-              {/* 관리자만 다운로드/이메일 버튼 표시 */}
-              {isAdmin && (
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    setShowEmailDialog(true);
-                  }}
-                  className="flex items-center gap-2 px-4 py-3"
-                  style={{
-                    background: "#FDFDFD",
-                    boxShadow: "2px 4px 30px #BDD1F0",
-                    borderRadius: "10px",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                  data-testid="button-email-report"
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <polyline points="22,6 12,13 2,6" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "18px",
-                      fontWeight: 600,
-                      letterSpacing: "-0.02em",
-                      color: "#008FED",
-                    }}
-                  >
-                    이메일 전송
-                  </span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowDownloadDialog(true);
-                  }}
-                  className="flex items-center gap-2 px-4 py-3"
-                  style={{
-                    background: "#FDFDFD",
-                    boxShadow: "2px 4px 30px #BDD1F0",
-                    borderRadius: "10px",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                  data-testid="button-download-report"
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  <span
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "18px",
-                      fontWeight: 600,
-                      letterSpacing: "-0.02em",
-                      color: "#008FED",
-                    }}
-                  >
-                    전체 다운로드
-                  </span>
-                </button>
-              </div>
-              )}
             </div>
           )}
 
@@ -3002,251 +3502,6 @@ export default function FieldReport() {
                   >
                     견적서 {estimate.estimate.createdAt ? new Date(estimate.estimate.createdAt).toISOString().split('T')[0] : ''}
                   </h2>
-                  {/* 관리자만 다운로드/이메일 버튼 표시 */}
-                  {isAdmin && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={async () => {
-                        // PDF 다운로드 - 체크된 항목만 포함 (html2canvas 사용)
-                        const dateStr = estimate.estimate?.createdAt ? new Date(estimate.estimate.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-                        const caseNo = caseData?.caseNumber || 'estimate';
-                        
-                        // 체크된 항목 필터링
-                        const checkedAreaRows = estimate.rows.filter((_, idx) => areaChecked[idx] !== false);
-                        const checkedLaborRows = parsedLaborCosts.filter((_, idx) => laborChecked[idx] !== false);
-                        const checkedMaterialRows = parsedMaterialCosts.filter((_, idx) => materialChecked[idx] !== false);
-                        
-                        // 임시 HTML 컨테이너 생성
-                        const container = document.createElement('div');
-                        container.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 1100px; background: white; padding: 40px; font-family: Pretendard, sans-serif;';
-                        
-                        // HTML 내용 생성
-                        let html = `
-                          <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 30px; color: #0C0C0C;">견적서 ${dateStr}</h1>
-                        `;
-                        
-                        // 복구면적 산출표
-                        if (checkedAreaRows.length > 0) {
-                          html += `
-                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">복구면적 산출표 ${dateStr}</h2>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 30px;">
-                              <thead>
-                                <tr style="background: rgba(12,12,12,0.03);">
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">장소</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">위치</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사내용</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">가로(mm)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세로(mm)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">면적(㎡)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">가로(mm)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세로(mm)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">면적(㎡)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">비고</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                ${checkedAreaRows.map(row => `
-                                  <tr>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.category || '-'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.location || '-'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.workName || '-'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageWidth || '0'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageHeight || '0'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageArea ? (row.damageArea / 1_000_000).toFixed(2) : '0'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairWidth || '0'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairHeight || '0'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairArea ? (row.repairArea / 1_000_000).toFixed(2) : '0'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.note || '-'}</td>
-                                  </tr>
-                                `).join('')}
-                              </tbody>
-                            </table>
-                          `;
-                        }
-                        
-                        // 노무비
-                        if (checkedLaborRows.length > 0) {
-                          html += `
-                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">노무비 ${dateStr}</h2>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 30px;">
-                              <thead>
-                                <tr style="background: rgba(12,12,12,0.03);">
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공종</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사명</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">노임항목</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">복구면적</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">적용단가</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">수량(인)</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">합계</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">경비 여부</th>
-                                  <th style="padding: 6px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">비고</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                ${checkedLaborRows.map(row => `
-                                  <tr>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.category || '-'}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.workName || '-'}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.detailItem || '-'}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.damageArea || 0).toLocaleString()}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.pricePerSqm || 0).toLocaleString()}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.quantity || 0}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.amount || 0).toLocaleString()}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.includeInEstimate ? '포함' : '경비'}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.request || '-'}</td>
-                                  </tr>
-                                `).join('')}
-                              </tbody>
-                            </table>
-                          `;
-                        }
-                        
-                        // 자재비
-                        if (checkedMaterialRows.length > 0) {
-                          html += `
-                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">자재비 ${dateStr}</h2>
-                            <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 30px;">
-                              <thead>
-                                <tr style="background: rgba(12,12,12,0.03);">
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공종</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사명</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">자재항목</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">단가</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">수량</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">단위</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">합계</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">비고</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                ${checkedMaterialRows.map(row => `
-                                  <tr>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.공종 || '-'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.공사명 || '-'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.자재항목 || row.자재 || '-'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.단가 || row.기준단가 || 0).toLocaleString()}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.수량 || 0}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.단위 || '-'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.합계 || row.금액 || 0).toLocaleString()}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.비고 || '-'}</td>
-                                  </tr>
-                                `).join('')}
-                              </tbody>
-                            </table>
-                          `;
-                        }
-                        
-                        // 합계 (page-break-inside: avoid로 페이지 분할 방지)
-                        html += `
-                          <div style="page-break-inside: avoid;">
-                            <h2 style="font-size: 18px; font-weight: 600; margin: 20px 0 15px; color: rgba(12,12,12,0.8);">합계</h2>
-                            <table style="width: 320px; border-collapse: collapse; font-size: 14px; margin-left: auto;">
-                              <tbody>
-                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">소계</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.subtotal.toLocaleString()} 원</td></tr>
-                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">일반관리비 (6%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.managementFee.toLocaleString()} 원</td></tr>
-                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">이윤 (15%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.profit.toLocaleString()} 원</td></tr>
-                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">VAT (10%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.vat.toLocaleString()} 원</td></tr>
-                                <tr style="background: rgba(0,143,237,0.05);"><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 700; font-size: 16px;">총계 (VAT 포함)</td><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 700; font-size: 16px; color: #008FED;">${calculateTotals.total.toLocaleString()} 원</td></tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        `;
-                        
-                        container.innerHTML = html;
-                        document.body.appendChild(container);
-                        
-                        try {
-                          // html2canvas로 캡처
-                          const canvas = await html2canvas(container, {
-                            scale: 2,
-                            useCORS: true,
-                            logging: false,
-                            backgroundColor: '#ffffff'
-                          });
-                          
-                          // PDF 생성 - 내용 길이에 따라 페이지 크기 자동 조절
-                          const imgWidth = 277; // A4 가로 (landscape)
-                          const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                          
-                          // 페이지 높이를 내용에 맞게 설정 (단일 페이지)
-                          const pageWidth = 297; // A4 가로
-                          const pageHeight = Math.max(210, imgHeight + 20); // 최소 A4 세로 or 내용 높이
-                          
-                          const doc = new jsPDF({ 
-                            orientation: 'landscape', 
-                            unit: 'mm', 
-                            format: [pageWidth, pageHeight] 
-                          });
-                          const imgData = canvas.toDataURL('image/png');
-                          
-                          doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-                          
-                          doc.save(`견적서_${caseNo}_${dateStr}.pdf`);
-                          
-                          toast({
-                            title: "PDF 다운로드 완료",
-                            description: "체크된 항목만 포함된 견적서가 다운로드되었습니다.",
-                          });
-                        } catch (error) {
-                          console.error('PDF 생성 오류:', error);
-                          toast({
-                            title: "PDF 생성 실패",
-                            description: "PDF 파일 생성 중 오류가 발생했습니다.",
-                            variant: "destructive",
-                          });
-                        } finally {
-                          document.body.removeChild(container);
-                        }
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
-                      style={{
-                        background: "rgba(0, 143, 237, 0.1)",
-                        border: "1px solid rgba(0, 143, 237, 0.3)",
-                      }}
-                      data-testid="button-download-estimate"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "#008FED",
-                        }}
-                      >
-                        다운로드
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        // TODO: 이메일 전송 기능 구현
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 rounded hover-elevate"
-                      style={{
-                        background: "rgba(0, 143, 237, 0.1)",
-                        border: "1px solid rgba(0, 143, 237, 0.3)",
-                      }}
-                      data-testid="button-email-estimate"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <path d="M22 6l-10 7L2 6" stroke="#008FED" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "#008FED",
-                        }}
-                      >
-                        이메일 전송
-                      </span>
-                    </button>
-                  </div>
-                  )}
                 </div>
 
                 {/* 복구면적 산출표 */}
@@ -3613,6 +3868,161 @@ export default function FieldReport() {
           stage={smsStage}
           onSuccess={() => setSmsDialogOpen(false)}
         />
+      )}
+
+      {/* 하단 고정 액션바 - 관리자만 표시 */}
+      {!isUserLoading && isAdmin && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "calc(100% - 260px)",
+            maxWidth: "1596px",
+            height: "104px",
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "20px 24px",
+            background: "rgba(255, 255, 255, 0.2)",
+            boxShadow: "0px 0px 60px #AAB1C2",
+            backdropFilter: "blur(17px)",
+            borderRadius: "12px 12px 0px 0px",
+            zIndex: 50,
+          }}
+        >
+          {/* 왼쪽 버튼 그룹: PDF + 메일 전송 */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            {/* PDF 다운로드 버튼 */}
+            <button
+              onClick={() => setShowDownloadDialog(true)}
+              style={{
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "10px 24px 10px 32px",
+                gap: "10px",
+                width: "127px",
+                height: "64px",
+                background: "#FDFDFD",
+                border: "1px solid #008FED",
+                borderRadius: "10px",
+                cursor: "pointer",
+              }}
+              data-testid="button-bottom-pdf-download"
+            >
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "20px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.8)",
+                }}
+              >
+                PDF
+              </span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="rgba(12, 12, 12, 0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            {/* 메일 전송 버튼 */}
+            <button
+              onClick={() => setShowEmailDialog(true)}
+              style={{
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "10px 24px 10px 32px",
+                gap: "10px",
+                width: "163px",
+                height: "64px",
+                background: "#FDFDFD",
+                border: "1px solid #008FED",
+                borderRadius: "10px",
+                cursor: "pointer",
+              }}
+              data-testid="button-bottom-email-send"
+            >
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "20px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.8)",
+                }}
+              >
+                메일 전송
+              </span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="rgba(12, 12, 12, 0.8)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* 오른쪽 버튼: 심사 */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
+            <button
+              onClick={() => setShowReviewDialog(true)}
+              disabled={caseData.fieldSurveyStatus !== "submitted" || reviewMutation.isPending}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "10px 32px",
+                gap: "10px",
+                width: "106px",
+                height: "64px",
+                background: caseData.fieldSurveyStatus !== "submitted" || reviewMutation.isPending ? "#B0B0B0" : "#008FED",
+                boxShadow: "2px 4px 30px #BDD1F0",
+                borderRadius: "10px",
+                border: "none",
+                cursor: caseData.fieldSurveyStatus !== "submitted" || reviewMutation.isPending ? "not-allowed" : "pointer",
+              }}
+              data-testid="button-bottom-review"
+            >
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "20px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "#FDFDFD",
+                }}
+              >
+                {reviewMutation.isPending ? "심사중" : "심사"}
+              </span>
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
