@@ -50,7 +50,7 @@ export function GlobalHeader() {
   });
 
   const getActiveMenu = () => {
-    if (location === "/dashboard") return "홈";
+    if (location === "/dashboard" || location === "/mobile-home") return "홈";
     if (location === "/intake") return "접수하기";
     if (location === "/comprehensive-progress") return "종합진행관리";
     if (location.startsWith("/statistics") || location === "/settlements") return "통계 및 정산";
@@ -149,7 +149,12 @@ export function GlobalHeader() {
               type="button"
               onClick={() => {
                 if (item.name === "홈") {
-                  setLocation("/dashboard");
+                  // 모바일 홈에서는 모바일 홈으로 유지
+                  if (location.startsWith("/mobile")) {
+                    setLocation("/mobile-home");
+                  } else {
+                    setLocation("/dashboard");
+                  }
                 } else if (item.name === "접수하기") {
                   setLocation("/intake");
                 } else if (item.name === "종합진행관리") {
