@@ -1601,11 +1601,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Get user's role from session
     const userRole = req.session.userRole;
+    const userId = req.session.userId;
     if (!userRole) {
       return res.status(400).json({ error: "사용자 역할 정보를 찾을 수 없습니다" });
     }
 
     try {
+      // For admin users, check for individual admin permissions first
+      if (userRole === "관리자") {
+        const individualKey = `관리자_${userId}`;
+        const individualPermission = await storage.getRolePermission(individualKey);
+        if (individualPermission) {
+          return res.json(individualPermission);
+        }
+      }
+      
+      // Fall back to role-based permissions
       const permission = await storage.getRolePermission(userRole);
       if (!permission) {
         // If no permissions set for this role, return empty permissions

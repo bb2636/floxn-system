@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { VALID_ROLES, PERMISSION_CATEGORIES, type RolePermission } from "@shared/schema";
+import { VALID_ROLES, PERMISSION_CATEGORIES, type RolePermission, type User } from "@shared/schema";
 
 type PermissionCategory = keyof typeof PERMISSION_CATEGORIES;
 
@@ -29,10 +29,17 @@ interface RolePermissions {
 export function AccessControlPanel() {
   const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<string>("협력사");
+  const [selectedAdminId, setSelectedAdminId] = useState<string>("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(["현장조사"])
   );
   const [rolePermissions, setRolePermissions] = useState<RolePermissions>({});
+
+  // Fetch all admin users (관리자 역할)
+  const { data: adminUsers = [] } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    select: (users) => users.filter((user) => user.role === "관리자"),
+  });
 
   const categories = Object.keys(PERMISSION_CATEGORIES) as PermissionCategory[];
 
@@ -89,16 +96,36 @@ export function AccessControlPanel() {
     });
   };
 
+  // Get permission key based on selected role and admin
+  const getPermissionKey = (): string => {
+    if (selectedRole === "관리자" && selectedAdminId && selectedAdminId !== "__all__") {
+      return `관리자_${selectedAdminId}`;
+    }
+    return selectedRole;
+  };
+
   const getCurrentPermissions = (): PermissionState => {
-    return rolePermissions[selectedRole] || {};
+    const key = getPermissionKey();
+    return rolePermissions[key] || {};
   };
 
   const updateCurrentPermissions = (newPermissions: PermissionState) => {
+    const key = getPermissionKey();
     setRolePermissions((prev) => ({
       ...prev,
-      [selectedRole]: newPermissions,
+      [key]: newPermissions,
     }));
   };
+
+  // Reset admin selection when role changes
+  useEffect(() => {
+    if (selectedRole !== "관리자") {
+      setSelectedAdminId("");
+    } else if (!selectedAdminId) {
+      // Default to "전체 관리자" when 관리자 role is selected
+      setSelectedAdminId("__all__");
+    }
+  }, [selectedRole]);
 
   const toggleCategoryPermission = (category: string, checked: boolean) => {
     const currentPerms = getCurrentPermissions();
@@ -161,10 +188,23 @@ export function AccessControlPanel() {
 
   const handleSave = () => {
     const currentPerms = getCurrentPermissions();
+    const key = getPermissionKey();
     savePermissionMutation.mutate({
-      roleName: selectedRole,
+      roleName: key,
       permissions: JSON.stringify(currentPerms),
     });
+  };
+
+  // Get display name for selected role/admin
+  const getDisplayName = (): string => {
+    if (selectedRole === "관리자") {
+      if (selectedAdminId && selectedAdminId !== "__all__") {
+        const admin = adminUsers.find((u) => u.id === selectedAdminId);
+        return admin ? `${admin.name || admin.username} (관리자)` : "관리자";
+      }
+      return "전체 관리자";
+    }
+    return selectedRole;
   };
 
   return (
@@ -215,49 +255,105 @@ export function AccessControlPanel() {
           </div>
 
           {/* Role Selection */}
-          <div className="px-5 py-6">
-            <label
-              className="mb-2 block"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-                letterSpacing: "-0.01em",
-                color: "#686A6E",
-              }}
-            >
-              역할 선택
-            </label>
-            <Select value={selectedRole} onValueChange={setSelectedRole}>
-              <SelectTrigger
-                className="w-full"
+          <div className="px-5 py-6 space-y-5">
+            <div>
+              <label
+                className="mb-2 block"
                 style={{
-                  height: "68px",
-                  background: "#FDFDFD",
-                  border: "2px solid rgba(12, 12, 12, 0.08)",
-                  borderRadius: "8px",
                   fontFamily: "Pretendard",
-                  fontSize: "16px",
-                  fontWeight: 600,
-                  letterSpacing: "-0.02em",
-                  color: "rgba(12, 12, 12, 0.9)",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  letterSpacing: "-0.01em",
+                  color: "#686A6E",
                 }}
-                data-testid="select-role"
               >
-                <SelectValue placeholder="접근 가능 범위를 역할별 파악을 선택하세요." />
-              </SelectTrigger>
-              <SelectContent>
-                {VALID_ROLES.map((role) => (
-                  <SelectItem 
-                    key={role} 
-                    value={role}
-                    data-testid={`select-role-option-${role}`}
+                역할 선택
+              </label>
+              <Select value={selectedRole} onValueChange={setSelectedRole}>
+                <SelectTrigger
+                  className="w-full"
+                  style={{
+                    height: "68px",
+                    background: "#FDFDFD",
+                    border: "2px solid rgba(12, 12, 12, 0.08)",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.9)",
+                  }}
+                  data-testid="select-role"
+                >
+                  <SelectValue placeholder="접근 가능 범위를 역할별 파악을 선택하세요." />
+                </SelectTrigger>
+                <SelectContent>
+                  {VALID_ROLES.map((role) => (
+                    <SelectItem 
+                      key={role} 
+                      value={role}
+                      data-testid={`select-role-option-${role}`}
+                    >
+                      {role}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Admin User Selection - Only shows when 관리자 is selected */}
+            {selectedRole === "관리자" && (
+              <div>
+                <label
+                  className="mb-2 block"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
+                  관리자 선택
+                </label>
+                <Select value={selectedAdminId} onValueChange={setSelectedAdminId}>
+                  <SelectTrigger
+                    className="w-full"
+                    style={{
+                      height: "68px",
+                      background: "#FDFDFD",
+                      border: "2px solid rgba(12, 12, 12, 0.08)",
+                      borderRadius: "8px",
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      letterSpacing: "-0.02em",
+                      color: "rgba(12, 12, 12, 0.9)",
+                    }}
+                    data-testid="select-admin"
                   >
-                    {role}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    <SelectValue placeholder="관리자를 선택하세요." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem 
+                      value="__all__"
+                      data-testid="select-admin-option-all"
+                    >
+                      전체 관리자 (기본)
+                    </SelectItem>
+                    {adminUsers.map((admin) => (
+                      <SelectItem 
+                        key={admin.id} 
+                        value={admin.id}
+                        data-testid={`select-admin-option-${admin.id}`}
+                      >
+                        {admin.name || admin.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -311,7 +407,7 @@ export function AccessControlPanel() {
                 }}
                 data-testid="text-selected-role-value"
               >
-                {selectedRole}
+                {getDisplayName()}
               </span>
             </div>
 
@@ -383,14 +479,15 @@ export function AccessControlPanel() {
                     };
                   });
                   
+                  const key = getPermissionKey();
                   setRolePermissions((prev) => ({
                     ...prev,
-                    [selectedRole]: emptyPermissions,
+                    [key]: emptyPermissions,
                   }));
                   
                   toast({
                     title: "권한 초기화",
-                    description: `${selectedRole} 역할의 모든 권한이 초기화되었습니다.`,
+                    description: `${getDisplayName()}의 모든 권한이 초기화되었습니다.`,
                   });
                 }}
                 className="flex items-center gap-1.5"
