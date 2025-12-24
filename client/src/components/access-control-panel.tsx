@@ -222,6 +222,14 @@ export function AccessControlPanel() {
 
   const isCategoryChecked = (category: string) => {
     const currentPerms = getCurrentPermissions();
+    const items = PERMISSION_CATEGORIES[category as PermissionCategory];
+    
+    // For categories with sub-items, check if ALL items are checked
+    if (items && items.length > 0) {
+      return items.every((item) => currentPerms[category]?.items[item] === true);
+    }
+    
+    // For categories without sub-items, use the enabled flag
     return currentPerms[category]?.enabled || false;
   };
 
