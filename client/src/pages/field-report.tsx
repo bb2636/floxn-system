@@ -256,6 +256,11 @@ export default function FieldReport() {
   const [reviewDecision, setReviewDecision] = useState<"승인" | "비승인">("승인");
   const [reviewComment, setReviewComment] = useState("");
   
+  // 보고서 승인 다이얼로그 상태 (2차 승인)
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [approvalDecision, setApprovalDecision] = useState<"승인" | "비승인">("승인");
+  const [approvalComment, setApprovalComment] = useState("");
+  
   // 이메일 전송 다이얼로그 상태
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
@@ -487,6 +492,38 @@ export default function FieldReport() {
     },
   });
 
+  // 보고서 승인 mutation (2차 승인)
+  const approvalMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(
+        "PATCH",
+        `/api/cases/${selectedCaseId}/approve-report`,
+        {
+          decision: approvalDecision,
+          approvalComment: approvalComment || "",
+        }
+      );
+    },
+    onSuccess: () => {
+      toast({
+        title: "승인 완료",
+        description: `보고서가 ${approvalDecision} 처리되었습니다.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      setShowApprovalDialog(false);
+      setApprovalDecision("승인");
+      setApprovalComment("");
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "승인 실패",
+        description: error.message || "보고서 승인 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!selectedCaseId) {
     return (
       <div className="p-8">
@@ -684,6 +721,23 @@ export default function FieldReport() {
               {reviewMutation.isPending ? "심사 중..." : "심사"}
             </Button>
           )}
+          
+          {/* 보고서 승인 버튼 (1차승인 상태 + 승인 권한 있는 사용자) */}
+          {!isUserLoading && canApproveReport && caseData.status === "1차승인" && (
+            <Button
+              data-testid="button-approve-report"
+              onClick={() => setShowApprovalDialog(true)}
+              disabled={approvalMutation.isPending}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: "500",
+                background: "#22C55E",
+              }}
+            >
+              {approvalMutation.isPending ? "승인 중..." : "승인"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -871,6 +925,154 @@ export default function FieldReport() {
             <AlertDialogAction
               data-testid="button-confirm-review"
               onClick={() => reviewMutation.mutate()}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              제출
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 보고서 승인 다이얼로그 (2차 승인) */}
+      <AlertDialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "18px",
+                fontWeight: "600",
+              }}
+            >
+              보고서 승인
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+
+          {/* 승인대상 건 정보 */}
+          <div className="space-y-2 mb-4">
+            <div
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 400,
+                color: "rgba(12, 12, 12, 0.5)",
+              }}
+            >
+              승인대상 건
+            </div>
+            <div 
+              className="p-3 rounded-lg" 
+              style={{ background: "rgba(12, 12, 12, 0.03)" }}
+            >
+              <div
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  color: "#0C0C0C",
+                }}
+              >
+                {caseData.insuranceCompany || "보험사 미정"} {caseData.insuranceAccidentNo || ""}
+              </div>
+              <div
+                className="mt-1"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "13px",
+                  color: "rgba(12, 12, 12, 0.6)",
+                }}
+              >
+                접수일: {caseData.createdAt ? new Date(caseData.createdAt).toLocaleDateString('ko-KR') : "-"} | 
+                처리담당: {caseData.assignedPartner || "-"} | 
+                의뢰일: {caseData.assignmentDate || "-"} | 
+                긴급여부: {caseData.urgency || "-"}
+              </div>
+            </div>
+          </div>
+
+          {/* 승인결과 */}
+          <div className="space-y-3 mb-4">
+            <Label
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+            >
+              승인결과
+            </Label>
+            <RadioGroup value={approvalDecision} onValueChange={(value) => setApprovalDecision(value as "승인" | "비승인")}>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="승인" id="approve-report" data-testid="radio-approve-report" />
+                <Label htmlFor="approve-report" style={{ fontFamily: "Pretendard", fontSize: "14px", cursor: "pointer" }}>
+                  승인
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="비승인" id="reject-report" data-testid="radio-reject-report" />
+                <Label htmlFor="reject-report" style={{ fontFamily: "Pretendard", fontSize: "14px", cursor: "pointer" }}>
+                  비승인
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* 승인 의견 */}
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between items-center">
+              <Label
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                }}
+              >
+                승인 의견(선택)
+              </Label>
+              <span
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "12px",
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}
+              >
+                {approvalComment.length}/800
+              </span>
+            </div>
+            <Textarea
+              data-testid="textarea-approval-comment"
+              value={approvalComment}
+              onChange={(e) => setApprovalComment(e.target.value.slice(0, 800))}
+              placeholder="승인 의견을 입력해주세요"
+              className="resize-none"
+              rows={4}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              data-testid="button-cancel-approval"
+              onClick={() => {
+                setApprovalDecision("승인");
+                setApprovalComment("");
+              }}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-approval"
+              onClick={() => approvalMutation.mutate()}
               style={{
                 fontFamily: "Pretendard",
                 fontSize: "14px",
