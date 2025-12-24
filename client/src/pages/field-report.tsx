@@ -728,11 +728,11 @@ export default function FieldReport() {
               data-testid="button-approve-report"
               onClick={() => setShowApprovalDialog(true)}
               disabled={approvalMutation.isPending}
+              className="bg-green-500 hover:bg-green-600"
               style={{
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: "500",
-                background: "#22C55E",
               }}
             >
               {approvalMutation.isPending ? "승인 중..." : "승인"}

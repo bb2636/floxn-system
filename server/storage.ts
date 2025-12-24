@@ -4485,8 +4485,15 @@ export class DbStorage implements IStorage {
     const currentDate = getKSTDate();
     const currentTimestamp = getKSTTimestamp();
 
-    // 승인 시 2차 승인일 자동 기록 (기존 값이 없을 때만)
+    // 현재 케이스 조회
     const existingCase = await this.getCaseById(caseId);
+    
+    // 1차승인 상태가 아니면 보고서 승인 불가
+    if (!existingCase || existingCase.status !== "1차승인") {
+      return null;
+    }
+    
+    // 승인 시 2차 승인일 자동 기록 (기존 값이 없을 때만)
     const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
 
     if (
