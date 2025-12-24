@@ -113,9 +113,11 @@ export default function FieldDocuments() {
   });
 
   // 협력사: 현장출동보고서 제출 후 수정 불가
+  // 단, 관리자가 "반려" 상태로 변경하면 협력사도 수정 가능
   const isPartner = user?.role === "협력사";
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
-  const isReadOnly = isPartner && isSubmitted;
+  const isRejected = selectedCase?.progressStatus === "반려";
+  const isReadOnly = isPartner && isSubmitted && !isRejected;
 
   // 청구자료 탭 활성화 조건: 케이스 상태가 청구자료제출 또는 출동비 청구일 때
   const claimDocumentStatuses = [

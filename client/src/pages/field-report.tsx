@@ -70,6 +70,7 @@ interface Case {
   additionalNotes: string | null;
   // 추가 필드
   fieldSurveyStatus?: string | null;
+  progressStatus?: string | null;
   createdAt?: string | null;
   assignmentDate?: string | null;
   urgency?: string | null;
@@ -631,7 +632,7 @@ export default function FieldReport() {
                 data-testid="button-save-notes"
                 variant="outline"
                 onClick={() => saveNotesMutation.mutate(additionalNotes)}
-                disabled={saveNotesMutation.isPending || caseData.fieldSurveyStatus === "submitted"}
+                disabled={saveNotesMutation.isPending || (caseData.fieldSurveyStatus === "submitted" && caseData.progressStatus !== "반려")}
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",
@@ -652,7 +653,7 @@ export default function FieldReport() {
                   console.log("================================");
                   setShowSubmitDialog(true);
                 }}
-                disabled={submitReportMutation.isPending || !completionStatus.isComplete || caseData.fieldSurveyStatus === "submitted"}
+                disabled={submitReportMutation.isPending || !completionStatus.isComplete || (caseData.fieldSurveyStatus === "submitted" && caseData.progressStatus !== "반려")}
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",

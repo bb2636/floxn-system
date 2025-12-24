@@ -1293,9 +1293,11 @@ export default function FieldEstimate() {
   }, [documentsData, isLoadingDocuments]);
 
   // 협력사: 현장출동보고서 제출 후 수정 불가
+  // 단, 관리자가 "반려" 상태로 변경하면 협력사도 수정 가능
   const isPartner = currentUser?.role === "협력사";
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
-  const isReadOnly = isPartner && isSubmitted;
+  const isRejected = selectedCase?.progressStatus === "반려";
+  const isReadOnly = isPartner && isSubmitted && !isRejected;
   
   // 손해방지 공종 목록 (노무비 탭에서 사용) - 원인세대 항목
   const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지', '원인철거', '원인공사'];
