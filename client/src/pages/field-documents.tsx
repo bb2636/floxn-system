@@ -112,12 +112,12 @@ export default function FieldDocuments() {
     enabled: !!selectedCaseId,
   });
 
-  // 협력사: 현장출동보고서 제출 후 수정 불가
-  // 단, 관리자가 "반려" 상태로 변경하면 협력사도 수정 가능
+  // 협력사: 현장출동보고서 제출 후 카테고리(드롭다운) 수정 불가, 증빙자료(파일) 업로드/삭제는 가능
+  // 단, 반려 상태이면 전체 수정 가능
   const isPartner = user?.role === "협력사";
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
   const isRejected = selectedCase?.progressStatus === "반려";
-  const isReadOnly = isPartner && isSubmitted && !isRejected;
+  const isCategoryReadOnly = isPartner && isSubmitted && !isRejected; // 드롭다운만 수정 불가 (반려 시 수정 가능)
 
   // 청구자료 탭 활성화 조건: 케이스 상태가 청구자료제출 또는 출동비 청구일 때
   const claimDocumentStatuses = [
@@ -1123,38 +1123,8 @@ export default function FieldDocuments() {
         </div>
       )}
 
-      {/* 파일 업로드 영역 */}
-      {isReadOnly ? (
-        <div
-          className="mb-6 rounded-xl p-12"
-          style={{
-            background: "rgba(12, 12, 12, 0.03)",
-            border: "none",
-            opacity: 0.5,
-          }}
-          data-testid="upload-area-disabled"
-        >
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(12, 12, 12, 0.1)" }}>
-              <Upload className="w-8 h-8" style={{ color: "#999" }} />
-            </div>
-            <div className="text-center">
-              <div
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 400,
-                  letterSpacing: "-0.02em",
-                  color: "rgba(12, 12, 12, 0.3)",
-                }}
-              >
-                현장출동보고서 제출 후 수정 불가
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div
+      {/* 파일 업로드 영역 - 제출 후에도 파일 업로드 가능 */}
+      <div
           className="mb-6 rounded-xl p-12 transition-all cursor-pointer"
           style={{
             background: isDragging ? "rgba(0, 143, 237, 0.08)" : "rgba(0, 143, 237, 0.03)",
@@ -1209,8 +1179,7 @@ export default function FieldDocuments() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+      </div>
 
       {/* Uploading files (progress) */}
       {uploadingFiles.length > 0 && (
