@@ -523,10 +523,40 @@ export default function FieldDocuments() {
     return "사진"; // 기본값
   };
 
+  // 현재 탭에 해당하는 서브필터 값 가져오기
+  const getCurrentSubFilter = (): string => {
+    switch (selectedCategory) {
+      case "사진":
+        return photoSubFilter;
+      case "기본자료":
+        return basicDataSubFilter;
+      case "증빙자료":
+        return evidenceSubFilter;
+      case "청구자료":
+        return claimDataSubFilter;
+      default:
+        return "전체";
+    }
+  };
+
   // 필터링된 파일 목록 (탭별 서브카테고리로 필터링)
-  const filteredDocuments = selectedCategory === "전체"
-    ? documents
-    : documents.filter(d => getParentTab(d.category) === selectedCategory);
+  const filteredDocuments = (() => {
+    if (selectedCategory === "전체") {
+      return documents;
+    }
+    
+    // 먼저 탭별 필터링
+    const tabFilteredDocs = documents.filter(d => getParentTab(d.category) === selectedCategory);
+    
+    // 서브 필터 적용
+    const currentSubFilter = getCurrentSubFilter();
+    if (currentSubFilter === "전체") {
+      return tabFilteredDocs;
+    }
+    
+    // 서브 필터가 선택되면 해당 카테고리만 표시
+    return tabFilteredDocs.filter(d => d.category === currentSubFilter);
+  })();
 
   // 저장 핸들러
   const handleSave = () => {
