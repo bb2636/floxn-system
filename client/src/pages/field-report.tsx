@@ -716,153 +716,568 @@ export default function FieldReport() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* 심사 다이얼로그 */}
-      <AlertDialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-        <AlertDialogContent className="max-w-md">
-          <AlertDialogHeader>
-            <AlertDialogTitle
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "18px",
-                fontWeight: "600",
-              }}
-            >
-              심사하기
-            </AlertDialogTitle>
-          </AlertDialogHeader>
-
-          {/* 심사중인 건 정보 */}
-          <div className="space-y-2 mb-4">
+      {/* 심사 다이얼로그 - 새 디자인 */}
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent
+          style={{
+            width: "747px",
+            maxWidth: "747px",
+            height: "570px",
+            padding: "0px",
+            background: "#FFFFFF",
+            boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
+            borderRadius: "12px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0px",
+            border: "none",
+          }}
+        >
+          {/* 상단 콘텐츠 영역 */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              padding: "0px",
+              gap: "16px",
+              flex: 1,
+              overflow: "hidden",
+            }}
+          >
+            {/* 제목 */}
             <div
               style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 400,
-                color: "rgba(12, 12, 12, 0.5)",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                width: "100%",
+                height: "60px",
               }}
             >
-              심사중인 건
-            </div>
-            <div 
-              className="p-3 rounded-lg" 
-              style={{ background: "rgba(12, 12, 12, 0.03)" }}
-            >
-              <div
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  color: "#0C0C0C",
-                }}
-              >
-                {caseData.insuranceCompany || "보험사 미정"} {caseData.insuranceAccidentNo || ""}
-              </div>
-              <div
-                className="mt-1"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "13px",
-                  color: "rgba(12, 12, 12, 0.6)",
-                }}
-              >
-                접수일: {caseData.createdAt ? new Date(caseData.createdAt).toLocaleDateString('ko-KR') : "-"} | 
-                처리담당: {caseData.assignedPartner || "-"} | 
-                의뢰일: {caseData.assignmentDate || "-"} | 
-                긴급여부: {caseData.urgency || "-"}
-              </div>
-            </div>
-          </div>
-
-          {/* 심사결과 */}
-          <div className="space-y-3 mb-4">
-            <Label
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: 500,
-              }}
-            >
-              심사결과
-            </Label>
-            <RadioGroup value={reviewDecision} onValueChange={(value) => setReviewDecision(value as "승인" | "비승인")}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="승인" id="approve" data-testid="radio-approve" />
-                <Label htmlFor="approve" style={{ fontFamily: "Pretendard", fontSize: "14px", cursor: "pointer" }}>
-                  승인
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="비승인" id="reject" data-testid="radio-reject" />
-                <Label htmlFor="reject" style={{ fontFamily: "Pretendard", fontSize: "14px", cursor: "pointer" }}>
-                  비승인
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* 검토 의견 */}
-          <div className="space-y-2 mb-4">
-            <div className="flex justify-between items-center">
-              <Label
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                }}
-              >
-                검토 의견(선택)
-              </Label>
               <span
                 style={{
                   fontFamily: "Pretendard",
-                  fontSize: "12px",
-                  color: "rgba(12, 12, 12, 0.5)",
+                  fontWeight: 600,
+                  fontSize: "18px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "#0C0C0C",
                 }}
               >
-                {reviewComment.length}/800
+                심사하기
               </span>
             </div>
-            <Textarea
-              data-testid="textarea-review-comment"
-              value={reviewComment}
-              onChange={(e) => setReviewComment(e.target.value.slice(0, 800))}
-              placeholder="검토 의견을 입력해주세요"
-              className="resize-none"
-              rows={4}
+
+            {/* 메인 콘텐츠 */}
+            <div
               style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                padding: "0px 20px",
+                gap: "20px",
+                width: "100%",
               }}
-            />
+            >
+              {/* 심사중인 건 */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                  width: "100%",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
+                  심사중인 건
+                </span>
+
+                {/* 케이스 정보 카드 */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: "16px",
+                    gap: "54px",
+                    width: "100%",
+                    background: "rgba(12, 12, 12, 0.04)",
+                    backdropFilter: "blur(7px)",
+                    borderRadius: "12px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: "8px",
+                    }}
+                  >
+                    {/* 보험사 + 사고번호 */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: "9px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "18px",
+                          lineHeight: "128%",
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {caseData.insuranceCompany || "보험사 미정"}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontWeight: 600,
+                          fontSize: "18px",
+                          lineHeight: "128%",
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                      >
+                        {caseData.insuranceAccidentNo || "-"}
+                      </span>
+                    </div>
+
+                    {/* 접수번호, 계약자, 담당자 */}
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: "24px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.5)",
+                          }}
+                        >
+                          접수번호
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                          }}
+                        >
+                          {caseData.caseNumber || "-"}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.5)",
+                          }}
+                        >
+                          계약자
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                          }}
+                        >
+                          {caseData.insuredName || "-"}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.5)",
+                          }}
+                        >
+                          담당자
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontWeight: 400,
+                            fontSize: "16px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                          }}
+                        >
+                          {caseData.assignedPartner || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 심사결과 */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
+                  심사결과
+                </span>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: "20px",
+                  }}
+                  role="radiogroup"
+                  aria-label="심사결과"
+                >
+                  {/* 승인 라디오 */}
+                  <label
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="reviewDecision"
+                      value="승인"
+                      checked={reviewDecision === "승인"}
+                      onChange={() => setReviewDecision("승인")}
+                      style={{
+                        position: "absolute",
+                        opacity: 0,
+                        width: 0,
+                        height: 0,
+                      }}
+                      data-testid="radio-approve"
+                    />
+                    <div
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        borderRadius: "50%",
+                        background: reviewDecision === "승인" ? "#008FED" : "transparent",
+                        border: reviewDecision === "승인" ? "none" : "1px solid rgba(12, 12, 12, 0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {reviewDecision === "승인" && (
+                        <div
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            background: "#FDFDFD",
+                          }}
+                        />
+                      )}
+                    </div>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "16px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.02em",
+                        color: "#0C0C0C",
+                      }}
+                    >
+                      승인
+                    </span>
+                  </label>
+
+                  {/* 미승인 라디오 */}
+                  <label
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: "10px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="reviewDecision"
+                      value="비승인"
+                      checked={reviewDecision === "비승인"}
+                      onChange={() => setReviewDecision("비승인")}
+                      style={{
+                        position: "absolute",
+                        opacity: 0,
+                        width: 0,
+                        height: 0,
+                      }}
+                      data-testid="radio-reject"
+                    />
+                    <div
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        borderRadius: "50%",
+                        background: reviewDecision === "비승인" ? "#008FED" : "transparent",
+                        border: reviewDecision === "비승인" ? "none" : "1px solid rgba(12, 12, 12, 0.4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                      }}
+                    >
+                      {reviewDecision === "비승인" && (
+                        <div
+                          style={{
+                            width: "8px",
+                            height: "8px",
+                            borderRadius: "50%",
+                            background: "#FDFDFD",
+                          }}
+                        />
+                      )}
+                    </div>
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "16px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.02em",
+                        color: "#0C0C0C",
+                      }}
+                    >
+                      미승인
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* 검토 의견(선택) */}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: "8px",
+                  width: "100%",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "#686A6E",
+                  }}
+                >
+                  검토 의견(선택)
+                </span>
+
+                <textarea
+                  data-testid="textarea-review-comment"
+                  value={reviewComment}
+                  onChange={(e) => setReviewComment(e.target.value.slice(0, 800))}
+                  placeholder="검토 의견을 입력해주세요"
+                  style={{
+                    boxSizing: "border-box",
+                    width: "100%",
+                    height: "103px",
+                    padding: "20px",
+                    background: "#FDFDFD",
+                    border: "2px solid rgba(12, 12, 12, 0.08)",
+                    borderRadius: "8px",
+                    fontFamily: "Pretendard",
+                    fontWeight: 600,
+                    fontSize: "16px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#0C0C0C",
+                    resize: "none",
+                    outline: "none",
+                  }}
+                />
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
+                    width: "100%",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "#686A6E",
+                    }}
+                  >
+                    {reviewComment.length}/800
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              data-testid="button-cancel-review"
-              onClick={() => {
-                setReviewDecision("승인");
-                setReviewComment("");
-              }}
+          {/* 하단 버튼 영역 */}
+          <div
+            style={{
+              boxSizing: "border-box",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              padding: "20px",
+              width: "100%",
+              background: "#FDFDFD",
+              borderTop: "1px solid rgba(12, 12, 12, 0.08)",
+            }}
+          >
+            <div
               style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                gap: "0px",
               }}
             >
-              취소
-            </AlertDialogCancel>
-            <AlertDialogAction
-              data-testid="button-confirm-review"
-              onClick={() => reviewMutation.mutate()}
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-              }}
-            >
-              제출
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              {/* 취소 버튼 */}
+              <button
+                onClick={() => {
+                  setShowReviewDialog(false);
+                  setReviewDecision("승인");
+                  setReviewComment("");
+                }}
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: "10px",
+                  flex: 1,
+                  height: "48px",
+                  background: "transparent",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                data-testid="button-cancel-review"
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "16px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#D02B20",
+                  }}
+                >
+                  취소
+                </span>
+              </button>
+
+              {/* 제출 버튼 */}
+              <button
+                onClick={() => reviewMutation.mutate()}
+                disabled={reviewMutation.isPending}
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: "10px",
+                  flex: 1,
+                  height: "48px",
+                  background: reviewMutation.isPending ? "rgba(0, 143, 237, 0.5)" : "#008FED",
+                  borderRadius: "6px",
+                  border: "none",
+                  cursor: reviewMutation.isPending ? "not-allowed" : "pointer",
+                }}
+                data-testid="button-confirm-review"
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 700,
+                    fontSize: "16px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.02em",
+                    color: "#FDFDFD",
+                  }}
+                >
+                  {reviewMutation.isPending ? "제출 중..." : "제출"}
+                </span>
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* 이메일 전송 Dialog */}
       <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
