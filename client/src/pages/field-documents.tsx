@@ -1388,7 +1388,7 @@ export default function FieldDocuments() {
                   <Select
                     value={doc.category}
                     onValueChange={(value) => handleCategoryChange(doc.id, value)}
-                    disabled={isReadOnly}
+                    disabled={isCategoryReadOnly}
                   >
                     <SelectTrigger
                       className="w-40 h-8"
@@ -1396,8 +1396,8 @@ export default function FieldDocuments() {
                         fontFamily: "Pretendard",
                         fontSize: "12px",
                         fontWeight: 400,
-                        opacity: isReadOnly ? 0.5 : 1,
-                        cursor: isReadOnly ? "not-allowed" : "pointer",
+                        opacity: isCategoryReadOnly ? 0.5 : 1,
+                        cursor: isCategoryReadOnly ? "not-allowed" : "pointer",
                       }}
                     >
                       <SelectValue />
@@ -1449,8 +1449,7 @@ export default function FieldDocuments() {
                   >
                     <Download className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.5)" }} />
                   </button>
-                  {!isReadOnly && (
-                    <button
+                  <button
                       type="button"
                       onClick={() => handleFileRemove(doc.id)}
                       className="p-1.5 rounded-lg hover-elevate active-elevate-2"
@@ -1462,7 +1461,6 @@ export default function FieldDocuments() {
                     >
                       <X className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.5)" }} />
                     </button>
-                  )}
                 </div>
               </div>
             );
