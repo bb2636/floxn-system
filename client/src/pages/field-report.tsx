@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
@@ -233,6 +234,10 @@ export default function FieldReport() {
   
   const isAdmin = currentUser?.role === "관리자";
   const isPartner = currentUser?.role === "협력사";
+  
+  // 권한 체크 - 보고서 승인 권한
+  const { hasItem } = usePermissions();
+  const canApproveReport = hasItem("관리자 설정", "보고서 승인");
   
   // 통합 보고서 데이터 가져오기
   const { data: reportData, isLoading } = useQuery<ReportData>({
@@ -665,7 +670,7 @@ export default function FieldReport() {
             </>
           )}
           
-          {!isUserLoading && isAdmin && (
+          {!isUserLoading && canApproveReport && (
             <Button
               data-testid="button-review"
               onClick={() => setShowReviewDialog(true)}

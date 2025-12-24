@@ -4,6 +4,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { usePermissions } from "@/hooks/use-permissions";
 
 interface FieldDispatchCostSheetProps {
   open: boolean;
@@ -25,7 +26,11 @@ interface FieldDispatchCostSheetProps {
 
 export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCases = [] }: FieldDispatchCostSheetProps) {
   const { toast } = useToast();
+  const { hasItem } = usePermissions();
   const invoicePdfRef = useRef<HTMLDivElement>(null);
+  
+  // 인보이스 승인 권한 체크
+  const canApproveInvoice = hasItem("관리자 설정", "인보이스 승인");
   
   // 선견적요청 현장출동비용은 항상 10만원 고정
   const FIXED_FIELD_DISPATCH_AMOUNT = "100000";
@@ -714,21 +719,34 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
               justifyContent: "flex-end",
               gap: "12px",
             }}>
-              <Button
-                variant="outline"
-                onClick={handleSendInvoicePdf}
-                disabled={isSendingPdf || !invoiceRecipientEmail}
-                data-testid="button-field-dispatch-pdf"
-              >
-                {isSendingPdf ? "발송 중..." : "PDF 발송"}
-              </Button>
-              <Button
-                onClick={handleSave}
-                style={{ background: "#008FED" }}
-                data-testid="button-field-dispatch-save"
-              >
-                저장
-              </Button>
+              {canApproveInvoice ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={handleSendInvoicePdf}
+                    disabled={isSendingPdf || !invoiceRecipientEmail}
+                    data-testid="button-field-dispatch-pdf"
+                  >
+                    {isSendingPdf ? "발송 중..." : "PDF 발송"}
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    style={{ background: "#008FED" }}
+                    data-testid="button-field-dispatch-save"
+                  >
+                    저장
+                  </Button>
+                </>
+              ) : (
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 400,
+                  fontSize: "14px",
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}>
+                  인보이스 승인 권한이 필요합니다
+                </span>
+              )}
             </div>
           </div>
         </div>
