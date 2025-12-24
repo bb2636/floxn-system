@@ -1465,7 +1465,10 @@ export default function FieldDocuments() {
                               background: isSelected 
                                 ? "linear-gradient(0deg, rgba(0, 143, 237, 0.07), rgba(0, 143, 237, 0.07)), #FDFDFD"
                                 : "#FFFFFF",
-                              padding: "12px",
+                              paddingTop: "12px",
+                              paddingBottom: "12px",
+                              paddingRight: "12px",
+                              paddingLeft: "32px",
                             }}
                           >
                             {subCategory}
