@@ -2896,41 +2896,6 @@ export default function FieldReport() {
               </CardContent>
             </Card>
 
-            {/* 첨부된 파일 */}
-            {drawing && (
-              <Card>
-                <CardHeader>
-                  <CardTitle
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      color: "rgba(12, 12, 12, 0.8)",
-                    }}
-                  >
-                    첨부된 파일
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-3 p-3 rounded" style={{ background: "rgba(12, 12, 12, 0.03)" }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        color: "#0C0C0C",
-                      }}
-                    >
-                      {caseData.insuranceCompany}회보_{caseData.caseNumber}.png
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </TabsContent>
 
