@@ -6150,14 +6150,23 @@ export class DbStorage implements IStorage {
   }
 
   // Case number helpers
-  // 손해방지 케이스 확인 (prefix만 있는 케이스 = 손해방지)
+  // 손해방지 케이스 확인 (prefix-0 형식 = 손해방지, 기존 prefix만 있는 것도 체크)
   async getPreventionCaseByPrefix(prefix: string): Promise<Case | null> {
-    const result = await db
+    // 새 형식 (prefix-0) 먼저 확인
+    const newFormat = await db
+      .select()
+      .from(cases)
+      .where(eq(cases.caseNumber, `${prefix}-0`))
+      .limit(1);
+    if (newFormat[0]) return newFormat[0];
+    
+    // 기존 형식 (prefix만) 호환성 체크
+    const oldFormat = await db
       .select()
       .from(cases)
       .where(eq(cases.caseNumber, prefix))
       .limit(1);
-    return result[0] || null;
+    return oldFormat[0] || null;
   }
 
   // 피해세대복구 다음 suffix 계산

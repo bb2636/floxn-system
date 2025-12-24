@@ -497,10 +497,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const createdCases: any[] = [];
         
         if (hasDamagePrevention && !hasVictimRecovery) {
-          // Only damage prevention: create single draft (no suffix)
+          // Only damage prevention: create single draft with -0 suffix
           const draftCase = await storage.createCase({
             ...validatedData,
-            caseNumber: prefix,
+            caseNumber: `${prefix}-0`,
             caseGroupId,
             createdBy: req.session.userId,
           });
@@ -521,11 +521,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const existingPrevention = await storage.getPreventionCaseByPrefix(prefix);
           
           if (!existingPrevention) {
-            // Create prevention case (no suffix)
+            // Create prevention case with -0 suffix
             const preventionData = JSON.parse(JSON.stringify(validatedData));
             const preventionDraft = await storage.createCase({
               ...preventionData,
-              caseNumber: prefix,
+              caseNumber: `${prefix}-0`,
               caseGroupId,
               createdBy: req.session.userId,
             });
@@ -589,8 +589,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (hasDamagePrevention && !hasVictimRecovery) {
           // Only damage prevention
-          // Damage prevention cases display without suffix (just prefix like 251124001)
-          const caseNumber = prefix;
+          // Damage prevention cases display with -0 suffix (like 251124001-0)
+          const caseNumber = `${prefix}-0`;
           const newCase = await storage.createCase({
             ...validatedData,
             caseNumber,
@@ -615,11 +615,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const existingPrevention = await storage.getPreventionCaseByPrefix(prefix);
           
           if (!existingPrevention) {
-            // Create prevention case (no suffix)
+            // Create prevention case with -0 suffix
             const preventionData = JSON.parse(JSON.stringify(validatedData));
             const preventionCase = await storage.createCase({
               ...preventionData,
-              caseNumber: prefix,
+              caseNumber: `${prefix}-0`,
               caseGroupId,
               createdBy: req.session.userId,
             });
