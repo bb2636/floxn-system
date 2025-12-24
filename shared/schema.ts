@@ -773,6 +773,49 @@ export const insertSettlementSchema = createInsertSchema(settlements).omit({
 export type Settlement = typeof settlements.$inferSelect;
 export type InsertSettlement = z.infer<typeof insertSettlementSchema>;
 
+// 인보이스 테이블
+export const invoices = pgTable("invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  caseId: varchar("case_id").notNull().references(() => cases.id, { onDelete: "cascade" }),
+  caseGroupPrefix: text("case_group_prefix"), // 사건번호 그룹 접두사 (예: "251217005")
+  type: text("type").notNull(), // "직접복구" | "선견적요청"
+  status: text("status").notNull().default("draft"), // "draft" | "approved" | "partial" | "rejected"
+  
+  // 금액 정보
+  damagePreventionEstimate: text("damage_prevention_estimate"), // 손해방지비용 견적금액
+  damagePreventionApproved: text("damage_prevention_approved"), // 손해방지비용 승인금액
+  propertyRepairEstimate: text("property_repair_estimate"), // 대물복구비용 견적금액
+  propertyRepairApproved: text("property_repair_approved"), // 대물복구비용 승인금액
+  fieldDispatchAmount: text("field_dispatch_amount"), // 현장출동비용 (선견적요청)
+  totalApprovedAmount: text("total_approved_amount"), // 총 승인 금액
+  deductible: text("deductible"), // 자기부담금
+  
+  // 승인 정보
+  submissionDate: text("submission_date"), // 제출일
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: text("approved_at"), // 승인일시
+  settlementStatus: text("settlement_status"), // "정산" | "부분입금" | "청구변경"
+  remarks: text("remarks"), // 비고
+  
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at"),
+});
+
+export const INVOICE_TYPES = ["직접복구", "선견적요청"] as const;
+export type InvoiceType = typeof INVOICE_TYPES[number];
+
+export const INVOICE_STATUSES = ["draft", "approved", "partial", "rejected"] as const;
+export type InvoiceStatus = typeof INVOICE_STATUSES[number];
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+
 // 노임단가 적용비율 테이블 (C/D 비율에 따른 E 적용률)
 export const laborRateTiers = pgTable("labor_rate_tiers", {
   id: serial("id").primaryKey(),

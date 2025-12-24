@@ -63,6 +63,9 @@ import {
   type UpdateLaborRateTier,
   laborRateTiers,
   DEFAULT_LABOR_RATE_TIERS,
+  type Invoice,
+  type InsertInvoice,
+  invoices,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
@@ -370,6 +373,14 @@ export interface IStorage {
   getLaborRateTiers(): Promise<LaborRateTier[]>;
   updateLaborRateTiers(tiers: UpdateLaborRateTier[]): Promise<LaborRateTier[]>;
   initializeLaborRateTiers(): Promise<void>;
+  // Invoice methods
+  createInvoice(data: InsertInvoice, createdBy: string): Promise<Invoice>;
+  updateInvoice(id: string, data: Partial<InsertInvoice>): Promise<Invoice | null>;
+  getInvoiceById(id: string): Promise<Invoice | null>;
+  getInvoiceByCaseId(caseId: string): Promise<Invoice | null>;
+  getInvoiceByCaseGroupPrefix(caseGroupPrefix: string): Promise<Invoice | null>;
+  getAllInvoices(): Promise<Invoice[]>;
+  getApprovedInvoices(): Promise<Invoice[]>;
 }
 
 // @deprecated - MemStorage is not used in production. Use DbStorage instead.
@@ -2500,6 +2511,35 @@ export class MemStorage implements IStorage {
 
   async initializeLaborRateTiers(): Promise<void> {
     throw new Error("initializeLaborRateTiers not implemented in MemStorage");
+  }
+
+  // Invoice methods (stub)
+  async createInvoice(data: InsertInvoice, createdBy: string): Promise<Invoice> {
+    throw new Error("createInvoice not implemented in MemStorage");
+  }
+
+  async updateInvoice(id: string, data: Partial<InsertInvoice>): Promise<Invoice | null> {
+    throw new Error("updateInvoice not implemented in MemStorage");
+  }
+
+  async getInvoiceById(id: string): Promise<Invoice | null> {
+    throw new Error("getInvoiceById not implemented in MemStorage");
+  }
+
+  async getInvoiceByCaseId(caseId: string): Promise<Invoice | null> {
+    throw new Error("getInvoiceByCaseId not implemented in MemStorage");
+  }
+
+  async getInvoiceByCaseGroupPrefix(caseGroupPrefix: string): Promise<Invoice | null> {
+    throw new Error("getInvoiceByCaseGroupPrefix not implemented in MemStorage");
+  }
+
+  async getAllInvoices(): Promise<Invoice[]> {
+    throw new Error("getAllInvoices not implemented in MemStorage");
+  }
+
+  async getApprovedInvoices(): Promise<Invoice[]> {
+    throw new Error("getApprovedInvoices not implemented in MemStorage");
   }
 }
 
@@ -6458,6 +6498,76 @@ export class DbStorage implements IStorage {
       await db.insert(laborRateTiers).values(tier);
     }
     console.log("[Storage] Labor rate tiers initialized with default values");
+  }
+
+  // Invoice methods
+  async createInvoice(data: InsertInvoice, createdBy: string): Promise<Invoice> {
+    const [invoice] = await db
+      .insert(invoices)
+      .values({
+        ...data,
+        createdAt: getKSTTimestamp(),
+      })
+      .returning();
+    return invoice;
+  }
+
+  async updateInvoice(id: string, data: Partial<InsertInvoice>): Promise<Invoice | null> {
+    const [updated] = await db
+      .update(invoices)
+      .set({
+        ...data,
+        updatedAt: getKSTTimestamp(),
+      })
+      .where(eq(invoices.id, id))
+      .returning();
+    return updated || null;
+  }
+
+  async getInvoiceById(id: string): Promise<Invoice | null> {
+    const [invoice] = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.id, id));
+    return invoice || null;
+  }
+
+  async getInvoiceByCaseId(caseId: string): Promise<Invoice | null> {
+    const [invoice] = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.caseId, caseId))
+      .orderBy(desc(invoices.createdAt))
+      .limit(1);
+    return invoice || null;
+  }
+
+  async getInvoiceByCaseGroupPrefix(caseGroupPrefix: string): Promise<Invoice | null> {
+    const [invoice] = await db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.caseGroupPrefix, caseGroupPrefix))
+      .orderBy(desc(invoices.createdAt))
+      .limit(1);
+    return invoice || null;
+  }
+
+  async getAllInvoices(): Promise<Invoice[]> {
+    return await db
+      .select()
+      .from(invoices)
+      .orderBy(desc(invoices.createdAt));
+  }
+
+  async getApprovedInvoices(): Promise<Invoice[]> {
+    return await db
+      .select()
+      .from(invoices)
+      .where(or(
+        eq(invoices.status, "approved"),
+        eq(invoices.status, "partial")
+      ))
+      .orderBy(desc(invoices.createdAt));
   }
 }
 
