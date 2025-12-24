@@ -82,11 +82,54 @@ export function InvoiceManagementPopup({
 
   const totalApprovedAmount = (parseInt(preventionApprovedAmount || "0") || 0) + (parseInt(propertyApprovedAmount || "0") || 0);
 
+  const getCaseNumberPrefix = (caseNumber: string | null | undefined): string => {
+    if (!caseNumber) return "";
+    const parts = caseNumber.split("-");
+    return parts[0] || caseNumber;
+  };
+
   const handleApprove = async () => {
     if (!caseData) return;
     
     setIsSubmitting(true);
     try {
+      const caseGroupPrefix = getCaseNumberPrefix(caseData.caseNumber);
+      const isFieldDispatchType = caseData.recoveryType === "선견적요청";
+      
+      // Create invoice record in the invoices table
+      const invoiceData = {
+        caseId: caseData.id,
+        caseGroupPrefix,
+        type: caseData.recoveryType || "직접복구",
+        status: "approved" as const,
+        damagePreventionEstimate: estimateData?.preventionEstimate?.toString() || "0",
+        damagePreventionApproved: preventionApprovedAmount || "0",
+        propertyRepairEstimate: estimateData?.propertyEstimate?.toString() || "0",
+        propertyRepairApproved: propertyApprovedAmount || "0",
+        fieldDispatchAmount: isFieldDispatchType ? "100000" : null,
+        totalApprovedAmount: totalApprovedAmount.toString(),
+        deductible: deductibleAmount || "0",
+        submissionDate: submissionDate ? format(submissionDate, "yyyy-MM-dd") : null,
+        settlementStatus,
+        remarks: null,
+      };
+      
+      // Check if invoice exists for this case group prefix
+      const existingInvoice = await fetch(`/api/invoices/group/${encodeURIComponent(caseGroupPrefix)}`);
+      const existingInvoiceData = await existingInvoice.json();
+      
+      if (existingInvoiceData && existingInvoiceData.id) {
+        // Update existing invoice
+        await apiRequest("PATCH", `/api/invoices/${existingInvoiceData.id}`, {
+          ...invoiceData,
+          approvedAt: new Date().toISOString(),
+        });
+      } else {
+        // Create new invoice
+        await apiRequest("POST", "/api/invoices", invoiceData);
+      }
+      
+      // Also update the case status
       await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
         invoiceDamagePreventionAmount: preventionApprovedAmount,
         invoicePropertyRepairAmount: propertyApprovedAmount,
@@ -96,6 +139,7 @@ export function InvoiceManagementPopup({
       });
       
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       
       toast({
         title: "인보이스 승인 완료",
