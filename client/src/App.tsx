@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { FloatingIntakeButton } from "@/components/floating-intake-button";
 import Login from "@/pages/login";
 import MobileLogin from "@/pages/mobile-login";
+import MobileHome from "@/pages/mobile-home";
 import Dashboard from "@/pages/dashboard";
 import AdminSettings from "@/pages/admin-settings";
 import Intake from "@/pages/intake";
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/" component={Login} />
       <Route path="/login" component={Login} />
       <Route path="/mobile-login" component={MobileLogin} />
+      <Route path="/mobile-home" component={MobileHome} />
       <Route path="/forbidden" component={Forbidden} />
       
       <Route path="/home" component={Dashboard} />
