@@ -6,7 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Calendar as CalendarIcon, X } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -132,12 +132,11 @@ export function InvoiceManagementPopup({
         }}
       >
         <DialogHeader
-          className="flex flex-row items-center justify-between px-6 py-6"
+          className="flex flex-row items-center justify-center px-6 py-6"
           style={{
             borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
           }}
         >
-          <div style={{ width: "28px" }} />
           <DialogTitle 
             style={{ 
               fontFamily: "Pretendard", 
@@ -149,15 +148,6 @@ export function InvoiceManagementPopup({
           >
             인보이스 관리
           </DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onOpenChange(false)}
-            data-testid="button-close-invoice-management"
-            style={{ width: "28px", height: "28px" }}
-          >
-            <X size={20} style={{ color: "rgba(12, 12, 12, 0.8)" }} />
-          </Button>
         </DialogHeader>
 
         <div 
