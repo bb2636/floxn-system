@@ -186,7 +186,7 @@ export default function MobileLogin() {
                         >
                           <input
                             {...field}
-                            placeholder="성함"
+                            placeholder="아이디"
                             aria-label="아이디"
                             className="w-full bg-transparent outline-none"
                             style={{
