@@ -185,6 +185,7 @@ export interface IStorage {
   getStatisticsFilters(): Promise<StatisticsFilters>;
   getRolePermission(roleName: string): Promise<RolePermission | undefined>;
   saveRolePermission(data: InsertRolePermission): Promise<RolePermission>;
+  deleteRolePermission(roleName: string): Promise<boolean>;
   getAllRolePermissions(): Promise<RolePermission[]>;
   listExcelData(type: string): Promise<ExcelData[]>;
   getExcelDataById(id: string): Promise<ExcelData | null>;
@@ -1904,6 +1905,10 @@ export class MemStorage implements IStorage {
 
     this.rolePermissions.set(data.roleName, rolePermission);
     return rolePermission;
+  }
+
+  async deleteRolePermission(roleName: string): Promise<boolean> {
+    return this.rolePermissions.delete(roleName);
   }
 
   async getAllRolePermissions(): Promise<RolePermission[]> {
@@ -4770,6 +4775,14 @@ export class DbStorage implements IStorage {
         .returning();
       return created[0];
     }
+  }
+
+  async deleteRolePermission(roleName: string): Promise<boolean> {
+    const deleted = await db
+      .delete(rolePermissions)
+      .where(eq(rolePermissions.roleName, roleName))
+      .returning();
+    return deleted.length > 0;
   }
 
   async getAllRolePermissions(): Promise<RolePermission[]> {

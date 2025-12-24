@@ -1663,6 +1663,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete role permission endpoint (admin only)
+  app.delete("/api/role-permissions/:roleName", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { roleName } = req.params;
+      const deleted = await storage.deleteRolePermission(roleName);
+      if (deleted) {
+        console.log("[DELETE /api/role-permissions] Deleted permission for role:", roleName);
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ error: "권한을 찾을 수 없습니다" });
+      }
+    } catch (error) {
+      console.error("Delete role permission error:", error);
+      res.status(500).json({ error: "권한 삭제 중 오류가 발생했습니다" });
+    }
+  });
+
   // Excel Data APIs (노무비/자재비)
   // Get latest version for a type (backward compatibility - original behavior)
   app.get("/api/excel-data/:type", async (req, res) => {

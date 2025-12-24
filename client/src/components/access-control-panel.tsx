@@ -69,6 +69,27 @@ export function AccessControlPanel() {
     },
   });
 
+  // Delete role permission mutation (for resetting individual admin permissions)
+  const deletePermissionMutation = useMutation({
+    mutationFn: async (roleName: string) => {
+      return await apiRequest("DELETE", `/api/role-permissions/${encodeURIComponent(roleName)}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/role-permissions"] });
+      toast({
+        title: "초기화 완료",
+        description: "개별 권한이 삭제되어 전체 관리자 권한으로 복원되었습니다.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "초기화 실패",
+        description: "권한 초기화 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Load permissions from API when data is fetched
   useEffect(() => {
     if (allPermissions) {
@@ -104,9 +125,32 @@ export function AccessControlPanel() {
     return selectedRole;
   };
 
+  // Check if individual admin has custom permissions saved
+  const hasIndividualPermissions = (): boolean => {
+    if (selectedRole !== "관리자" || !selectedAdminId || selectedAdminId === "__all__") {
+      return false;
+    }
+    const key = `관리자_${selectedAdminId}`;
+    return !!rolePermissions[key] && Object.keys(rolePermissions[key]).length > 0;
+  };
+
   const getCurrentPermissions = (): PermissionState => {
     const key = getPermissionKey();
-    return rolePermissions[key] || {};
+    const individualPermissions = rolePermissions[key];
+    
+    // For individual admins, inherit from global admin permissions if no individual permissions exist
+    if (selectedRole === "관리자" && selectedAdminId && selectedAdminId !== "__all__") {
+      if (!individualPermissions || Object.keys(individualPermissions).length === 0) {
+        // Deep clone global admin permissions to prevent mutation of the original
+        const globalPerms = rolePermissions["관리자"];
+        if (globalPerms) {
+          return JSON.parse(JSON.stringify(globalPerms));
+        }
+        return {};
+      }
+    }
+    
+    return individualPermissions || {};
   };
 
   const updateCurrentPermissions = (newPermissions: PermissionState) => {
@@ -192,6 +236,19 @@ export function AccessControlPanel() {
     savePermissionMutation.mutate({
       roleName: key,
       permissions: JSON.stringify(currentPerms),
+    });
+  };
+
+  // Reset individual admin permissions (delete from database)
+  const handleResetIndividualPermissions = () => {
+    if (!hasIndividualPermissions()) return;
+    const key = `관리자_${selectedAdminId}`;
+    deletePermissionMutation.mutate(key);
+    // Also remove from local state
+    setRolePermissions((prev) => {
+      const newState = { ...prev };
+      delete newState[key];
+      return newState;
     });
   };
 
@@ -463,6 +520,33 @@ export function AccessControlPanel() {
                 >
                   {savePermissionMutation.isPending ? "저장 중..." : "저장"}
                 </button>
+                {/* Reset Individual Admin Permissions Button */}
+                {selectedRole === "관리자" && selectedAdminId && selectedAdminId !== "__all__" && hasIndividualPermissions() && (
+                  <button
+                    onClick={handleResetIndividualPermissions}
+                    disabled={deletePermissionMutation.isPending}
+                    className="flex justify-center items-center gap-2"
+                    style={{
+                      padding: "12px 16px",
+                      background: deletePermissionMutation.isPending ? "#CCCCCC" : "rgba(239, 68, 68, 0.1)",
+                      border: "2px solid rgba(255, 255, 255, 0.04)",
+                      boxShadow: "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
+                      backdropFilter: "blur(7px)",
+                      borderRadius: "6px",
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: deletePermissionMutation.isPending ? "#666666" : "#EF4444",
+                      cursor: deletePermissionMutation.isPending ? "not-allowed" : "pointer",
+                    }}
+                    data-testid="button-reset-permissions"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    {deletePermissionMutation.isPending ? "초기화 중..." : "권한 초기화"}
+                  </button>
+                )}
               </div>
               <button
                 onClick={() => {
