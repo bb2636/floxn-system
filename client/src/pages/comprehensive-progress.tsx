@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { User, CaseWithLatestProgress, type UserFavorite } from "@shared/schema";
+import { User, CaseWithLatestProgress, type UserFavorite, type Invoice } from "@shared/schema";
 import { Search, Cloud, Star, Plus, CalendarIcon, X } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -153,11 +153,51 @@ export default function ComprehensiveProgress() {
     queryKey: ["/api/users/basic"],
   });
 
+  // 승인된 인보이스 목록 가져오기
+  const { data: approvedInvoices = [] } = useQuery<Invoice[]>({
+    queryKey: ["/api/invoices/approved"],
+  });
+
   // 사용자 ID로 이름 가져오기
   const getUserName = (userId: string | null | undefined): string => {
     if (!userId) return "-";
     const foundUser = allUsers.find(u => u.id === userId);
     return foundUser?.name || foundUser?.username || userId;
+  };
+
+  // 인보이스 승인된 그룹 프리픽스 목록 (Set for O(1) lookup)
+  const approvedInvoicePrefixes = new Set(
+    approvedInvoices.map(inv => inv.caseGroupPrefix)
+  );
+
+  // 케이스 그룹별로 모든 케이스가 "청구" 상태인지 확인
+  const isGroupReadyForComprehensiveProgress = (caseItem: CaseWithLatestProgress, allCases: CaseWithLatestProgress[] | undefined): boolean => {
+    if (!allCases) return false;
+    
+    const groupPrefix = getCaseNumberPrefix(caseItem.caseNumber);
+    if (!groupPrefix) return false;
+    
+    // 1. 인보이스가 승인되었는지 확인
+    if (!approvedInvoicePrefixes.has(groupPrefix)) {
+      return false;
+    }
+    
+    // 2. 같은 그룹의 모든 케이스가 "청구" 관련 상태인지 확인
+    const casesInGroup = allCases.filter(c => getCaseNumberPrefix(c.caseNumber) === groupPrefix);
+    const claimRelatedStatuses = [
+      "청구",
+      "(직접복구인 경우) 청구자료제출",
+      "(선견적요청인 경우) 출동비 청구",
+      "입금완료",
+      "일부입금",
+      "정산완료",
+    ];
+    
+    const allHaveClaimStatus = casesInGroup.every(c => 
+      claimRelatedStatuses.includes(c.status || "")
+    );
+    
+    return allHaveClaimStatus;
   };
 
   const isFavorite = favorites.some((f) => f.menuName === "종합진행관리");
@@ -450,8 +490,14 @@ export default function ComprehensiveProgress() {
     ...CASE_STATUSES.map((status) => ({ name: status, key: status })),
   ];
 
+  // 인보이스 기반 사전 필터링: 승인된 인보이스가 있고 그룹 내 모든 케이스가 청구 상태인 경우만 표시
+  // 종합진행관리는 인보이스 승인 및 청구 완료된 케이스만 표시
+  const preFilteredByInvoice = (cases || []).filter((caseItem) => {
+    return isGroupReadyForComprehensiveProgress(caseItem, cases);
+  });
+
   // 진행상태 필터링 + 협력사 필터링
-  const filteredByStatus = (cases || []).filter((caseItem) => {
+  const filteredByStatus = preFilteredByInvoice.filter((caseItem) => {
     // 협력사인 경우: 자신에게 배정된 모든 케이스 표시 (배당대기 제외)
     if (user?.role === "협력사") {
       const isAssignedToMe = caseItem.assignedPartner === user.company;
