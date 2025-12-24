@@ -15,6 +15,7 @@ import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceSheet, getCaseNumberPrefix } from "@/components/InvoiceSheet";
 import { FieldDispatchCostSheet } from "@/components/FieldDispatchCostSheet";
+import { InvoiceManagementPopup } from "@/components/InvoiceManagementPopup";
 
 // 정산 테이블 행 타입
 interface SettlementRow {
@@ -67,6 +68,14 @@ export default function SettlementsInquiry() {
   const [showInvoiceDialog, setShowInvoiceDialog] = useState(false);
   const [showFieldDispatchInvoiceDialog, setShowFieldDispatchInvoiceDialog] = useState(false);
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
+  const [showInvoiceManagementPopup, setShowInvoiceManagementPopup] = useState(false);
+  const [selectedCaseForInvoice, setSelectedCaseForInvoice] = useState<CaseWithLatestProgress | null>(null);
+  const [selectedEstimateData, setSelectedEstimateData] = useState<{
+    preventionEstimate: number;
+    preventionApproved: number;
+    propertyEstimate: number;
+    propertyApproved: number;
+  } | null>(null);
   
   const { toast } = useToast();
 
@@ -111,8 +120,23 @@ export default function SettlementsInquiry() {
     return map;
   }, [allSettlements]);
 
-  // Helper function to open Invoice Sheet - recoveryType에 따라 적절한 인보이스 표시
+  // Helper function to open Invoice Management Popup
   const handleOpenManagement = (row: SettlementRow) => {
+    const targetCase = cases.find(c => c.id === row.id);
+    if (targetCase) {
+      setSelectedCaseForInvoice(targetCase);
+      setSelectedEstimateData({
+        preventionEstimate: row.preventionEstimateAmount || 0,
+        preventionApproved: row.preventionApprovedAmount || 0,
+        propertyEstimate: row.propertyEstimateAmount || 0,
+        propertyApproved: row.propertyApprovedAmount || 0,
+      });
+      setShowInvoiceManagementPopup(true);
+    }
+  };
+  
+  // Helper function to open Invoice Sheet - recoveryType에 따라 적절한 인보이스 표시
+  const handleOpenInvoiceSheet = (row: SettlementRow) => {
     const targetCase = cases.find(c => c.id === row.id);
     if (targetCase) {
       setInvoiceCaseId(targetCase.id);
@@ -1937,6 +1961,24 @@ export default function SettlementsInquiry() {
           return invoiceCasePrefix 
             ? cases?.filter(c => getCaseNumberPrefix(c.caseNumber) === invoiceCasePrefix) || []
             : invoiceCase ? [invoiceCase] : [];
+        })()}
+      />
+
+      {/* 인보이스 관리 팝업 */}
+      <InvoiceManagementPopup
+        open={showInvoiceManagementPopup}
+        onOpenChange={setShowInvoiceManagementPopup}
+        caseData={selectedCaseForInvoice}
+        estimateData={selectedEstimateData}
+        managerName={(() => {
+          if (!selectedCaseForInvoice?.managerId) return "-";
+          const manager = usersByIdMap.get(selectedCaseForInvoice.managerId);
+          return manager?.name || "-";
+        })()}
+        managerContact={(() => {
+          if (!selectedCaseForInvoice?.managerId) return "-";
+          const manager = usersByIdMap.get(selectedCaseForInvoice.managerId);
+          return manager?.phone || "-";
         })()}
       />
     </div>
