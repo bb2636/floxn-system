@@ -5225,10 +5225,10 @@ FLOXN 드림`;
       }
 
       const validatedData = insertSettlementSchema.parse(req.body);
-      const settlement = await storage.createSettlement({
-        ...validatedData,
-        createdBy: req.session.userId,
-      });
+      const settlement = await storage.createSettlement(
+        validatedData,
+        req.session.userId
+      );
 
       res.status(201).json(settlement);
     } catch (error) {

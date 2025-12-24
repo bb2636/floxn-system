@@ -371,7 +371,7 @@ export interface IStorage {
     dateTo?: string;
   }): Promise<(CaseChangeLog & { caseNumber: string })[]>;
   // Settlement methods
-  createSettlement(data: InsertSettlement): Promise<Settlement>;
+  createSettlement(data: InsertSettlement, createdBy: string): Promise<Settlement>;
   getSettlementsByCaseId(caseId: string): Promise<Settlement[]>;
   getLatestSettlementByCaseId(caseId: string): Promise<Settlement | null>;
   getAllSettlements(): Promise<Settlement[]>;
@@ -2491,7 +2491,7 @@ export class MemStorage implements IStorage {
   }
 
   // Settlement methods (stub)
-  async createSettlement(data: InsertSettlement): Promise<Settlement> {
+  async createSettlement(data: InsertSettlement, createdBy: string): Promise<Settlement> {
     throw new Error("createSettlement not implemented in MemStorage");
   }
 
@@ -6475,11 +6475,12 @@ export class DbStorage implements IStorage {
   }
 
   // Settlement methods
-  async createSettlement(data: InsertSettlement): Promise<Settlement> {
+  async createSettlement(data: InsertSettlement, createdBy: string): Promise<Settlement> {
     const [settlement] = await db
       .insert(settlements)
       .values({
         ...data,
+        createdBy,
         createdAt: getKSTTimestamp(),
       })
       .returning();
