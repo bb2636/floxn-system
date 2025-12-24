@@ -8,12 +8,8 @@ export function cn(...inputs: ClassValue[]) {
 export function formatCaseNumber(caseNumber: string | null | undefined): string {
   if (!caseNumber) return "";
   
-  // Remove -0 suffix for damage prevention cases
-  // 251124001-0 -> 251124001
-  // 251124001-1 -> 251124001-1 (keep as is)
-  if (caseNumber.endsWith("-0")) {
-    return caseNumber.slice(0, -2);
-  }
-  
+  // 손방건의 경우 -0 접미사 유지
+  // 251124001-0 -> 251124001-0 (그대로 유지)
+  // 251124001-1 -> 251124001-1 (그대로 유지)
   return caseNumber;
 }

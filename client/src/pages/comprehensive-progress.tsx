@@ -50,10 +50,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
-import { SmsNotificationDialog } from "@/components/sms-notification-dialog";
+import { SmsNotificationDialog, type NotificationStage, type RecipientConfig } from "@/components/sms-notification-dialog";
 import { InvoiceSheet, getCaseNumberPrefix } from "@/components/InvoiceSheet";
 import { FieldDispatchCostSheet } from "@/components/FieldDispatchCostSheet";
 import type { Case as SchemaCase } from "@shared/schema";
+
+// SMS 자동 발송을 위한 수신자 기본 설정
+const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
+  "접수완료": { partner: true, manager: true, assessorInvestigator: true },
+  "현장정보입력": { partner: false, manager: true, assessorInvestigator: false },
+  "반려": { partner: true, manager: false, assessorInvestigator: false },
+  "현장정보제출": { partner: false, manager: false, assessorInvestigator: true },
+  "복구요청": { partner: true, manager: false, assessorInvestigator: false },
+  "직접복구": { partner: true, manager: true, assessorInvestigator: false },
+  "미복구": { partner: true, manager: true, assessorInvestigator: false },
+  "청구자료제출": { partner: false, manager: true, assessorInvestigator: false },
+  "청구": { partner: false, manager: false, assessorInvestigator: true },
+  "결정금액/수수료": { partner: true, manager: false, assessorInvestigator: false },
+  "접수취소": { partner: false, manager: false, assessorInvestigator: true },
+  "입금완료": { partner: true, manager: true, assessorInvestigator: false },
+  "일부입금": { partner: true, manager: true, assessorInvestigator: false },
+  "정산완료": { partner: true, manager: true, assessorInvestigator: false },
+  "선견적요청": { partner: true, manager: true, assessorInvestigator: false },
+};
 
 // 진행상태 목록
 const CASE_STATUSES = [
@@ -112,11 +131,10 @@ export default function ComprehensiveProgress() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  // SMS 알림 다이얼로그 상태
+  // SMS 알림 다이얼로그 상태 (추가 정보가 필요한 상태에서만 사용)
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
-  const [smsStage, setSmsStage] = useState<"접수완료" | "현장정보입력" | "반려" | "현장정보제출" | "복구요청" | "직접복구" | "미복구" | "청구자료제출" | "청구" | "결정금액/수수료" | "접수취소" | "입금완료" | "일부입금" | "정산완료" | "선견적요청">("복구요청");
+  const [smsStage, setSmsStage] = useState<NotificationStage>("복구요청");
   const [smsCaseData, setSmsCaseData] = useState<CaseWithLatestProgress | null>(null);
-  
 
   // 청구하기 버튼 표시 조건: "청구" 상태인 경우 개별적으로 버튼 표시
   const canShowClaimButton = (caseItem: CaseWithLatestProgress, allCases: CaseWithLatestProgress[] | undefined): boolean => {
@@ -312,7 +330,7 @@ export default function ComprehensiveProgress() {
       
       return { previousCases, targetCase };
     },
-    onSuccess: (data, variables, context) => {
+    onSuccess: async (data, variables, context) => {
       // 백엔드에서 반환된 실제 데이터로 업데이트
       // 서버에서 { success: true, case: updatedCase } 형태로 반환
       let updatedCaseData: CaseWithLatestProgress | null = null;
@@ -333,17 +351,41 @@ export default function ComprehensiveProgress() {
       // 백그라운드 refetch로 전체 데이터 동기화
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       
+      // SMS 자동 발송 (Dialog 없이 바로 발송) - 추가 정보가 필요없는 상태에 사용
+      const sendSmsAutomatically = async (caseData: CaseWithLatestProgress, stage: NotificationStage) => {
+        try {
+          const recipients = STAGE_RECIPIENT_DEFAULTS[stage];
+          await apiRequest("POST", "/api/send-stage-notification", {
+            caseId: caseData.id,
+            stage,
+            recipients,
+          });
+          toast({
+            title: "문자 발송 완료",
+            description: `${stage} 알림이 자동 발송되었습니다.`,
+          });
+        } catch (error) {
+          console.error("SMS 자동 발송 실패:", error);
+          toast({
+            title: "문자 발송 실패",
+            description: "문자 발송 중 오류가 발생했습니다.",
+            variant: "destructive",
+          });
+        }
+      };
+      
+      // 추가 정보 입력이 필요한 상태 (취소 사유, 결정금액 등)
+      const stagesRequiringDialog: NotificationStage[] = ["접수취소", "결정금액/수수료"];
+      
       // 미복구 선택 시 자동 전환 알림 (백엔드에서 출동비 청구로 변경됨)
       if (variables.status === "미복구") {
         toast({
           title: "상태 자동 변경",
           description: "미복구 선택으로 인해 상태가 '출동비 청구'로 자동 변경되었습니다.",
         });
-        // 미복구 SMS 알림 다이얼로그
+        // 미복구 SMS 자동 발송
         if (updatedCaseData) {
-          setSmsCaseData(updatedCaseData);
-          setSmsStage("미복구");
-          setSmsDialogOpen(true);
+          sendSmsAutomatically(updatedCaseData, "미복구");
         }
       } else {
         toast({
@@ -351,9 +393,8 @@ export default function ComprehensiveProgress() {
           description: "진행상태가 성공적으로 변경되었습니다.",
         });
         
-        // 특정 상태 변경 시 SMS 알림 다이얼로그 표시 (표에 맞게 전체 상태 매핑)
-        const smsRequiredStages: Record<string, "접수완료" | "현장정보입력" | "반려" | "현장정보제출" | "복구요청" | "직접복구" | "미복구" | "청구자료제출" | "청구" | "결정금액/수수료" | "접수취소" | "입금완료" | "일부입금" | "정산완료" | "선견적요청"> = {
-          // 기본 상태
+        // 특정 상태 변경 시 SMS 발송 (표에 맞게 전체 상태 매핑)
+        const smsRequiredStages: Record<string, NotificationStage> = {
           "접수완료": "접수완료",
           "현장정보입력": "현장정보입력",
           "반려": "반려",
@@ -374,9 +415,14 @@ export default function ComprehensiveProgress() {
         
         const stage = smsRequiredStages[variables.status];
         if (stage && updatedCaseData) {
-          setSmsCaseData(updatedCaseData);
-          setSmsStage(stage);
-          setSmsDialogOpen(true);
+          // 추가 정보가 필요한 상태는 Dialog 표시, 나머지는 자동 발송
+          if (stagesRequiringDialog.includes(stage)) {
+            setSmsCaseData(updatedCaseData);
+            setSmsStage(stage);
+            setSmsDialogOpen(true);
+          } else {
+            sendSmsAutomatically(updatedCaseData, stage);
+          }
         }
       }
     },
@@ -2490,7 +2536,7 @@ export default function ComprehensiveProgress() {
         })()}
       />
 
-      {/* SMS 알림 발송 다이얼로그 */}
+      {/* SMS 알림 발송 다이얼로그 - 추가 정보 입력이 필요한 상태에서만 사용 (접수취소, 결정금액/수수료) */}
       {smsCaseData && (
         <SmsNotificationDialog
           open={smsDialogOpen}

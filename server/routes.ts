@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema, insertSettlementSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema, approveReportSchema, insertSettlementSchema } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
 import { estimates, cases } from "@shared/schema";
@@ -1296,6 +1296,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Review case error:", error);
       res.status(500).json({ error: "보고서 심사 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Approve report endpoint (관리자 only - 2차 승인)
+  app.patch("/api/cases/:caseId/approve-report", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check authorization (관리자만 가능)
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      
+      // Validate approval data with Zod
+      const parsed = approveReportSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          error: "입력 데이터가 유효하지 않습니다",
+          details: parsed.error.errors 
+        });
+      }
+
+      const { decision, approvalComment } = parsed.data;
+
+      // 케이스 확인
+      const existingCase = await storage.getCaseById(caseId);
+      if (!existingCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 1차승인 상태만 보고서 승인 가능
+      if (existingCase.status !== "1차승인") {
+        return res.status(400).json({ 
+          error: "1차승인 상태인 보고서만 승인할 수 있습니다" 
+        });
+      }
+
+      // 보고서 승인 처리
+      const updatedCase = await storage.approveReport(
+        caseId, 
+        decision, 
+        approvalComment || null, 
+        req.session.userId
+      );
+      
+      if (!updatedCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      res.json({ success: true, case: updatedCase });
+    } catch (error) {
+      console.error("Approve report error:", error);
+      res.status(500).json({ error: "보고서 승인 중 오류가 발생했습니다" });
     }
   });
 

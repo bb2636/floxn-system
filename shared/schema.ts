@@ -203,11 +203,17 @@ export const cases = pgTable("cases", {
   completionDate: text("completion_date"), // 완공일
   claimDate: text("claim_date"), // 청구일 (청구 상태로 변경된 날짜)
   
-  // 심사 관련 필드
+  // 심사 관련 필드 (1차 승인)
   reviewDecision: text("review_decision"), // 심사결과: "승인" | "비승인" | null
   reviewComment: text("review_comment"), // 검토 의견
   reviewedAt: text("reviewed_at"), // 심사 일시
   reviewedBy: varchar("reviewed_by").references(() => users.id), // 심사자 ID
+  
+  // 보고서 승인 관련 필드 (2차 승인)
+  reportApprovalDecision: text("report_approval_decision"), // 보고서 승인결과: "승인" | "비승인" | null
+  reportApprovalComment: text("report_approval_comment"), // 보고서 승인 의견
+  reportApprovedAt: text("report_approved_at"), // 보고서 승인 일시
+  reportApprovedBy: varchar("report_approved_by").references(() => users.id), // 보고서 승인자 ID
   
   // 금액 관련 필드
   estimateAmount: text("estimate_amount"), // 견적금액 (최종 총액)
@@ -304,6 +310,14 @@ export const reviewCaseSchema = z.object({
 });
 
 export type ReviewCaseInput = z.infer<typeof reviewCaseSchema>;
+
+// 보고서 승인 스키마 (2차승인)
+export const approveReportSchema = z.object({
+  decision: z.enum(["승인", "비승인"]),
+  approvalComment: z.string().max(800, "승인 의견은 800자를 초과할 수 없습니다").optional().or(z.literal("")),
+});
+
+export type ApproveReportInput = z.infer<typeof approveReportSchema>;
 
 // 역할 권한 관리 테이블
 export const rolePermissions = pgTable("role_permissions", {

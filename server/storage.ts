@@ -173,6 +173,12 @@ export interface IStorage {
     reviewComment: string | null,
     reviewedBy: string,
   ): Promise<Case | null>;
+  approveReport(
+    caseId: string,
+    decision: "승인" | "비승인",
+    approvalComment: string | null,
+    approvedBy: string,
+  ): Promise<Case | null>;
   getPartnerStats(): Promise<PartnerStats[]>;
   createProgressUpdate(data: InsertProgressUpdate): Promise<ProgressUpdate>;
   getProgressUpdatesByCaseId(caseId: string): Promise<ProgressUpdate[]>;
@@ -4497,6 +4503,59 @@ export class DbStorage implements IStorage {
         reviewedAt: currentTimestamp,
         reviewedBy: reviewedBy,
         status: decision === "승인" ? "1차승인" : "반려",
+        ...additionalUpdates,
+        updatedAt: currentDate,
+      })
+      .where(eq(cases.id, caseId))
+      .returning();
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return result[0];
+  }
+
+  async approveReport(
+    caseId: string,
+    decision: "승인" | "비승인",
+    approvalComment: string | null,
+    approvedBy: string,
+  ): Promise<Case | null> {
+    const currentDate = getKSTDate();
+    const currentTimestamp = getKSTTimestamp();
+
+    // 현재 케이스 조회
+    const existingCase = await this.getCaseById(caseId);
+    
+    // 1차승인 상태가 아니면 보고서 승인 불가
+    if (!existingCase || existingCase.status !== "1차승인") {
+      return null;
+    }
+    
+    // 승인 시 2차 승인일 자동 기록 (기존 값이 없을 때만)
+    const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
+
+    if (
+      decision === "승인" &&
+      existingCase &&
+      !existingCase.secondApprovalDate
+    ) {
+      additionalUpdates.secondApprovalDate = currentDate;
+      // 승인금액 저장 (현재 견적금액을 승인금액으로)
+      if (existingCase.estimateAmount) {
+        additionalUpdates.approvedAmount = existingCase.estimateAmount;
+      }
+    }
+
+    const result = await db
+      .update(cases)
+      .set({
+        reportApprovalDecision: decision,
+        reportApprovalComment: approvalComment || null,
+        reportApprovedAt: currentTimestamp,
+        reportApprovedBy: approvedBy,
+        status: decision === "승인" ? "복구요청(2차승인)" : "1차승인", // 비승인 시 1차승인 상태 유지
         ...additionalUpdates,
         updatedAt: currentDate,
       })
