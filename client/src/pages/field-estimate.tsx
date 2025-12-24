@@ -996,22 +996,25 @@ export default function FieldEstimate() {
             console.log(`[자재비 집계] ${autoKey}: isOverridden=true, 사용자 값 보존`);
           } else if (existingRow) {
             // 기존 자동 행: 값 업데이트 (ID 유지)
+            // 단, 사용자가 이미 입력한 단가는 보존 (0이 아닌 경우)
+            const existingPrice = existingRow.단가 || existingRow.기준단가 || 0;
+            const preservedPrice = existingPrice > 0 ? existingPrice : unitPrice;
             resultRowsMap.set(autoKey, {
               ...existingRow,
               autoKey,
               단위: calculatedUnit,
-              단가: unitPrice,
-              기준단가: unitPrice,
+              단가: preservedPrice,
+              기준단가: preservedPrice,
               수량m2: autoUnitType === 'm2' ? calculatedQty : data.totalArea,
               수량EA: autoUnitType === 'EA' ? calculatedQty : 0,
               수량: calculatedQty,
-              합계: Math.round(unitPrice * calculatedQty),
-              금액: Math.round(unitPrice * calculatedQty),
+              합계: Math.round(preservedPrice * calculatedQty),
+              금액: Math.round(preservedPrice * calculatedQty),
               sourceAreaRowIds: data.sourceAreaRowIds,
               autoQuantity: calculatedQty,
               autoUnitType,
             });
-            console.log(`[자재비 집계] ${autoKey}: 기존 행 업데이트`);
+            console.log(`[자재비 집계] ${autoKey}: 기존 행 업데이트 (단가 보존: ${existingPrice > 0})`);
           } else {
             // 새 자동 생성 행
             resultRowsMap.set(autoKey, {
