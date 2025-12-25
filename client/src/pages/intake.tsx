@@ -3654,18 +3654,18 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   
                   <button
                     onClick={handleSubmit}
-                    disabled={!isFormValid || submitMutation.isPending}
+                    disabled={submitMutation.isPending}
                     className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
                     style={{
                       fontFamily: 'Pretendard',
                       fontWeight: 600,
                       lineHeight: '128%',
                       letterSpacing: '-0.01em',
-                      background: !isFormValid || submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : '#008FED',
+                      background: submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : '#008FED',
                       border: 'none',
                       color: '#FFFFFF',
-                      cursor: !isFormValid || submitMutation.isPending ? 'not-allowed' : 'pointer',
-                      opacity: !isFormValid || submitMutation.isPending ? 0.5 : 1,
+                      cursor: submitMutation.isPending ? 'not-allowed' : 'pointer',
+                      opacity: submitMutation.isPending ? 0.5 : 1,
                     }}
                     data-testid="button-submit"
                   >
@@ -3674,18 +3674,18 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   
                   <button
                     onClick={handleSendSms}
-                    disabled={isSendingSms || !formData.assignedPartnerContact}
+                    disabled={isSendingSms}
                     className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
                     style={{
                       fontFamily: 'Pretendard',
                       fontWeight: 600,
                       lineHeight: '128%',
                       letterSpacing: '-0.01em',
-                      background: isSendingSms || !formData.assignedPartnerContact ? 'rgba(76, 175, 80, 0.3)' : '#4CAF50',
+                      background: isSendingSms ? 'rgba(76, 175, 80, 0.3)' : '#4CAF50',
                       border: 'none',
                       color: '#FFFFFF',
-                      cursor: isSendingSms || !formData.assignedPartnerContact ? 'not-allowed' : 'pointer',
-                      opacity: isSendingSms || !formData.assignedPartnerContact ? 0.5 : 1,
+                      cursor: isSendingSms ? 'not-allowed' : 'pointer',
+                      opacity: isSendingSms ? 0.5 : 1,
                     }}
                     data-testid="button-send-sms"
                   >
