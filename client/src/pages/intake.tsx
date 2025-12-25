@@ -969,7 +969,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
         ...(editCaseId ? { id: editCaseId } : {})
       };
       
-      const result = await apiRequest("POST", "/api/cases", payload);
+      const response = await apiRequest("POST", "/api/cases", payload);
+      const result = await response.json();
       return result;
     },
     onSuccess: async (result, variables) => {
