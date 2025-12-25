@@ -506,43 +506,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (validatedData.id) {
           const existingCase = await storage.getCaseById(validatedData.id);
           if (existingCase && existingCase.status === "배당대기") {
-            // 기존 케이스 업데이트 (접수번호 유지)
+            // 기존 케이스 업데이트 (접수번호 prefix 유지, suffix는 처리구분에 따라 변경)
             const existingCaseNumber = existingCase.caseNumber || "";
-            const existingPrefix = existingCaseNumber.includes('-') 
+            let existingPrefix = existingCaseNumber.includes('-') 
               ? existingCaseNumber.split('-')[0] 
               : existingCaseNumber;
+            const existingSuffix = existingCaseNumber.includes('-')
+              ? existingCaseNumber.split('-')[1]
+              : null;
             
-            // 접수번호가 없으면 새로 생성
-            let newCaseNumber = existingCaseNumber;
+            // 접수번호 prefix가 없으면 새로 생성
             if (!existingPrefix) {
               const draftDate = validatedData.accidentDate || new Date().toISOString().split('T')[0];
               const { prefix } = await storage.getNextCaseSequence(draftDate, validatedData.insuranceAccidentNo || undefined);
-              if (hasDamagePrevention && !hasVictimRecovery) {
-                newCaseNumber = `${prefix}-0`;
-              } else if (!hasDamagePrevention && hasVictimRecovery) {
-                const nextSuffix = await storage.getNextVictimSuffix(prefix);
-                newCaseNumber = `${prefix}-${nextSuffix}`;
+              existingPrefix = prefix;
+            }
+            
+            // 처리구분에 따라 접수번호 suffix 결정
+            let newCaseNumber: string;
+            const createdCases: any[] = [];
+            
+            if (!hasDamagePrevention && !hasVictimRecovery) {
+              // 아무것도 선택 안함 → prefix만 (suffix 없음)
+              newCaseNumber = existingPrefix;
+            } else if (hasDamagePrevention && !hasVictimRecovery) {
+              // 손해방지만 선택 → -0 suffix
+              newCaseNumber = `${existingPrefix}-0`;
+            } else if (!hasDamagePrevention && hasVictimRecovery) {
+              // 피해세대만 선택 → -1 이상 suffix
+              // 기존이 피해세대 suffix (-1 이상)이면 유지, 아니면 새로 할당
+              if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+                newCaseNumber = existingCaseNumber; // 기존 피해세대 번호 유지
               } else {
-                newCaseNumber = prefix;
+                const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                newCaseNumber = `${existingPrefix}-${nextSuffix}`;
               }
             } else {
-              // 처리구분이 변경된 경우 접수번호 suffix 업데이트
-              if (hasDamagePrevention && !hasVictimRecovery) {
-                // 손해방지만 선택: -0 suffix
-                newCaseNumber = `${existingPrefix}-0`;
-              } else if (!hasDamagePrevention && hasVictimRecovery) {
-                // 피해세대만 선택: -1 이상 suffix
-                if (!existingCaseNumber.includes('-') || existingCaseNumber.endsWith('-0')) {
-                  const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-                  newCaseNumber = `${existingPrefix}-${nextSuffix}`;
-                }
-              } else if (hasDamagePrevention && hasVictimRecovery) {
-                // 둘 다 선택: 기존 케이스는 -0으로, 새 피해세대 케이스 추가 생성
-                // (이 경우는 접수완료 시 처리)
-              } else if (!existingCaseNumber.includes('-')) {
-                // 선택 안 함: prefix만 유지 (suffix 없음)
-                newCaseNumber = existingPrefix;
-              }
+              // 둘 다 선택 → 기존 케이스는 -0, 새 피해세대 케이스 추가 생성
+              newCaseNumber = `${existingPrefix}-0`;
+              
+              // 기존 케이스를 손해방지 케이스로 업데이트
+              const updatedCase = await storage.updateCase(validatedData.id, {
+                ...validatedData,
+                caseNumber: newCaseNumber,
+                caseGroupId,
+              });
+              createdCases.push(updatedCase);
+              
+              // 피해세대 케이스 새로 생성
+              const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+              const recoveryData = JSON.parse(JSON.stringify(validatedData));
+              const recoveryCase = await storage.createCase({
+                ...recoveryData,
+                caseNumber: `${existingPrefix}-${nextSuffix}`,
+                caseGroupId,
+                status: "배당대기",
+                createdBy: req.session.userId,
+              });
+              createdCases.push(recoveryCase);
+              
+              return res.status(200).json({ success: true, cases: createdCases });
             }
             
             const updatedCase = await storage.updateCase(validatedData.id, {
@@ -638,31 +661,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (validatedData.id) {
           const existingCase = await storage.getCaseById(validatedData.id);
           if (existingCase && existingCase.status === "배당대기") {
-            // 기존 케이스의 접수번호 prefix 추출
+            // 기존 케이스의 접수번호 prefix/suffix 추출
             const existingCaseNumber = existingCase.caseNumber || "";
             let existingPrefix = existingCaseNumber.includes('-') 
               ? existingCaseNumber.split('-')[0] 
               : existingCaseNumber;
+            const existingSuffix = existingCaseNumber.includes('-')
+              ? existingCaseNumber.split('-')[1]
+              : null;
             
-            // 접수번호가 없으면 새로 생성
+            // 접수번호 prefix가 없으면 새로 생성
             if (!existingPrefix) {
               const { prefix } = await storage.getNextCaseSequence(fullDate, validatedData.insuranceAccidentNo || undefined);
               existingPrefix = prefix;
             }
             
             // 처리구분에 따라 접수번호 suffix 결정
-            let newCaseNumber = existingCaseNumber;
-            if (hasDamagePrevention && !hasVictimRecovery) {
-              // 손해방지만: -0 suffix
-              newCaseNumber = `${existingPrefix}-0`;
-            } else if (!hasDamagePrevention && hasVictimRecovery) {
-              // 피해세대만: -1 이상 suffix
-              if (!existingCaseNumber.includes('-') || existingCaseNumber.endsWith('-0')) {
+            let newCaseNumber: string;
+            
+            if (!hasDamagePrevention && !hasVictimRecovery) {
+              // 아무것도 선택 안함 → 기본 피해세대 (-1)로 처리
+              if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+                newCaseNumber = existingCaseNumber;
+              } else {
                 const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
                 newCaseNumber = `${existingPrefix}-${nextSuffix}`;
               }
-            } else if (hasDamagePrevention && hasVictimRecovery) {
-              // 둘 다 선택: 기존 케이스를 -0으로 업데이트하고, 피해세대 케이스 새로 생성
+            } else if (hasDamagePrevention && !hasVictimRecovery) {
+              // 손해방지만 선택 → -0 suffix
+              newCaseNumber = `${existingPrefix}-0`;
+            } else if (!hasDamagePrevention && hasVictimRecovery) {
+              // 피해세대만 선택 → -1 이상 suffix
+              if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+                newCaseNumber = existingCaseNumber; // 기존 피해세대 번호 유지
+              } else {
+                const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                newCaseNumber = `${existingPrefix}-${nextSuffix}`;
+              }
+            } else {
+              // 둘 다 선택 → 기존 케이스는 -0, 새 피해세대 케이스 추가 생성
               newCaseNumber = `${existingPrefix}-0`;
               
               // 기존 케이스 업데이트 (손해방지 케이스로)
@@ -698,11 +735,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
               return res.status(200).json({ success: true, cases: completedCases });
-            } else {
-              // 선택 안 함: -1 suffix (기본 피해세대)
-              if (!existingCaseNumber.includes('-')) {
-                newCaseNumber = `${existingPrefix}-1`;
-              }
             }
             
             // 기존 케이스 업데이트
