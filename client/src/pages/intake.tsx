@@ -577,7 +577,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
           managerId: caseData.managerId || "",
           managerDepartment: manager?.department || "",
           managerPosition: manager?.position || "",
-          managerContact: manager?.contact || "",
+          managerContact: manager?.phone || "",
           accidentDate: caseData.accidentDate || getTodayDate(),
           insuranceCompany: caseData.insuranceCompany || "",
           insurancePolicyNo: caseData.insurancePolicyNo || "",
@@ -702,7 +702,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             managerId: caseData.managerId || "",
             managerDepartment: manager?.department || "",
             managerPosition: manager?.position || "",
-            managerContact: manager?.contact || "",
+            managerContact: manager?.phone || "",
             // 기본 정보
             accidentDate: caseData.accidentDate || getTodayDate(),
             insuranceCompany: caseData.insuranceCompany || "",
