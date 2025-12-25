@@ -508,15 +508,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (existingCase && existingCase.status === "배당대기") {
             // 기존 케이스 업데이트 (접수번호 prefix 유지, suffix는 처리구분에 따라 변경)
             const existingCaseNumber = existingCase.caseNumber || "";
-            let existingPrefix = existingCaseNumber.includes('-') 
-              ? existingCaseNumber.split('-')[0] 
-              : existingCaseNumber;
-            const existingSuffix = existingCaseNumber.includes('-')
-              ? existingCaseNumber.split('-')[1]
-              : null;
+            
+            // "-"이거나 빈 값이면 새 prefix 생성 필요
+            const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-";
+            
+            let existingPrefix = "";
+            let existingSuffix: string | null = null;
+            
+            if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-") {
+              existingPrefix = existingCaseNumber.split('-')[0];
+              existingSuffix = existingCaseNumber.split('-')[1];
+            } else if (!needsNewPrefix) {
+              existingPrefix = existingCaseNumber;
+            }
             
             // 접수번호 prefix가 없으면 새로 생성
-            if (!existingPrefix) {
+            if (needsNewPrefix || !existingPrefix) {
               const draftDate = validatedData.accidentDate || new Date().toISOString().split('T')[0];
               const { prefix } = await storage.getNextCaseSequence(draftDate, validatedData.insuranceAccidentNo || undefined);
               existingPrefix = prefix;
@@ -527,8 +534,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const createdCases: any[] = [];
             
             if (!hasDamagePrevention && !hasVictimRecovery) {
-              // 아무것도 선택 안함 → prefix만 (suffix 없음)
-              newCaseNumber = existingPrefix;
+              // 아무것도 선택 안함 → "-" 표시
+              newCaseNumber = "-";
             } else if (hasDamagePrevention && !hasVictimRecovery) {
               // 손해방지만 선택 → -0 suffix
               newCaseNumber = `${existingPrefix}-0`;
@@ -634,10 +641,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           createdCases.push(recoveryDraft);
         } else {
-          // No processing type selected - create draft WITHOUT suffix (prefix only)
+          // No processing type selected - create draft with "-" as case number
           const draftCase = await storage.createCase({
             ...validatedData,
-            caseNumber: prefix,
+            caseNumber: "-",
             caseGroupId,
             createdBy: req.session.userId,
           });
@@ -663,15 +670,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (existingCase && existingCase.status === "배당대기") {
             // 기존 케이스의 접수번호 prefix/suffix 추출
             const existingCaseNumber = existingCase.caseNumber || "";
-            let existingPrefix = existingCaseNumber.includes('-') 
-              ? existingCaseNumber.split('-')[0] 
-              : existingCaseNumber;
-            const existingSuffix = existingCaseNumber.includes('-')
-              ? existingCaseNumber.split('-')[1]
-              : null;
+            
+            // "-"이거나 빈 값이면 새 prefix 생성 필요
+            const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-";
+            
+            let existingPrefix = "";
+            let existingSuffix: string | null = null;
+            
+            if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-") {
+              existingPrefix = existingCaseNumber.split('-')[0];
+              existingSuffix = existingCaseNumber.split('-')[1];
+            } else if (!needsNewPrefix) {
+              existingPrefix = existingCaseNumber;
+            }
             
             // 접수번호 prefix가 없으면 새로 생성
-            if (!existingPrefix) {
+            if (needsNewPrefix || !existingPrefix) {
               const { prefix } = await storage.getNextCaseSequence(fullDate, validatedData.insuranceAccidentNo || undefined);
               existingPrefix = prefix;
             }
@@ -681,12 +695,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (!hasDamagePrevention && !hasVictimRecovery) {
               // 아무것도 선택 안함 → 기본 피해세대 (-1)로 처리
-              if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
-                newCaseNumber = existingCaseNumber;
-              } else {
-                const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-                newCaseNumber = `${existingPrefix}-${nextSuffix}`;
-              }
+              const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+              newCaseNumber = `${existingPrefix}-${nextSuffix}`;
             } else if (hasDamagePrevention && !hasVictimRecovery) {
               // 손해방지만 선택 → -0 suffix
               newCaseNumber = `${existingPrefix}-0`;
