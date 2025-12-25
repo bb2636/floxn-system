@@ -491,9 +491,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ Validated assignedPartner:", validatedData.assignedPartner);
       
       // Determine case types based on damagePreventionCost and victimIncidentAssistance fields
-      // 프론트엔드에서 "true"/"false" 문자열로 전송됨
-      const hasDamagePrevention = validatedData.damagePreventionCost === "true";
-      const hasVictimRecovery = validatedData.victimIncidentAssistance === "true";
+      // 프론트엔드에서 boolean 또는 "true"/"false" 문자열로 전송될 수 있음
+      const hasDamagePrevention = validatedData.damagePreventionCost === "true" || (validatedData.damagePreventionCost as unknown) === true;
+      const hasVictimRecovery = validatedData.victimIncidentAssistance === "true" || (validatedData.victimIncidentAssistance as unknown) === true;
       
       console.log("🔍 Processing types:", { hasDamagePrevention, hasVictimRecovery, damagePreventionCost: validatedData.damagePreventionCost, victimIncidentAssistance: validatedData.victimIncidentAssistance });
       
