@@ -2035,8 +2035,9 @@ export default function FieldReport() {
           style={{
             background: "rgba(12, 12, 12, 0.04)",
             backdropFilter: "blur(7px)",
-            borderRadius: "0 0 12px 12px",
+            borderRadius: "12px",
             padding: "8px 0 20px",
+            marginTop: "16px",
           }}
         >
           {/* 탭 콘텐츠 헤더 및 다운로드 버튼 - 증빙자료 탭 제외 (증빙자료는 자체 헤더 사용) */}
