@@ -486,6 +486,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Debug: log validated sameAsPolicyHolder with type
       console.log("✅ Validated sameAsPolicyHolder:", validatedData.sameAsPolicyHolder, "type:", typeof validatedData.sameAsPolicyHolder);
       console.log("✅ Validated managerId:", validatedData.managerId);
+      console.log("✅ Validated assignedPartnerManager:", validatedData.assignedPartnerManager);
+      console.log("✅ Validated assignedPartnerContact:", validatedData.assignedPartnerContact);
+      console.log("✅ Validated assignedPartner:", validatedData.assignedPartner);
       
       // Determine case types based on damagePreventionCost and victimIncidentAssistance fields
       // 프론트엔드에서 "true"/"false" 문자열로 전송됨
