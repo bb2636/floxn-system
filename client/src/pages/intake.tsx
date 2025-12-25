@@ -3671,6 +3671,26 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   >
                     {submitMutation.isPending ? '접수 중...' : '접수완료'}
                   </button>
+                  
+                  <button
+                    onClick={handleSendSms}
+                    disabled={isSendingSms || !formData.assignedPartnerContact}
+                    className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
+                    style={{
+                      fontFamily: 'Pretendard',
+                      fontWeight: 600,
+                      lineHeight: '128%',
+                      letterSpacing: '-0.01em',
+                      background: isSendingSms || !formData.assignedPartnerContact ? 'rgba(76, 175, 80, 0.3)' : '#4CAF50',
+                      border: 'none',
+                      color: '#FFFFFF',
+                      cursor: isSendingSms || !formData.assignedPartnerContact ? 'not-allowed' : 'pointer',
+                      opacity: isSendingSms || !formData.assignedPartnerContact ? 0.5 : 1,
+                    }}
+                    data-testid="button-send-sms"
+                  >
+                    {isSendingSms ? '전송 중...' : '문자전송'}
+                  </button>
                 </>
               )}
             </div>
