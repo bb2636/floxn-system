@@ -1107,6 +1107,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         existingPrefix = prefix;
       }
       
+      // 기존 처리구분 확인
+      const hadDamagePrevention = existingCase.damagePreventionCost === "true" || (existingCase.damagePreventionCost as unknown) === true;
+      const hadVictimRecovery = existingCase.victimIncidentAssistance === "true" || (existingCase.victimIncidentAssistance as unknown) === true;
+      
+      // 처리구분 변경 감지 및 관련 케이스 삭제 처리
+      const caseGroupId = existingCase.caseGroupId;
+      let deletedCases: string[] = [];
+      
+      // 둘 다 선택 → 하나만 선택으로 변경된 경우
+      if (caseGroupId && existingPrefix) {
+        // 같은 그룹의 모든 케이스 조회
+        const allCases = await storage.getAllCases();
+        const siblingCases = allCases.filter(c => 
+          c.id !== id && 
+          c.caseGroupId === caseGroupId
+        );
+        
+        // 손해방지만 선택 → 피해세대 케이스 삭제 (-1 이상)
+        if (hasDamagePrevention && !hasVictimRecovery) {
+          for (const sibling of siblingCases) {
+            const siblingNumber = sibling.caseNumber || "";
+            const siblingParts = siblingNumber.split('-');
+            const siblingSuffix = siblingParts.length > 1 ? siblingParts[siblingParts.length - 1] : null;
+            
+            // 피해세대 케이스 (-1 이상)인 경우
+            if (siblingSuffix && parseInt(siblingSuffix) >= 1) {
+              // 배당대기 상태만 삭제 가능
+              if (sibling.status === "배당대기") {
+                await storage.deleteCase(sibling.id);
+                deletedCases.push(sibling.caseNumber || sibling.id);
+                console.log(`[Case Delete] Deleted victim recovery case ${sibling.caseNumber} (status: ${sibling.status})`);
+              }
+            }
+          }
+        }
+        
+        // 피해세대만 선택 → 손해방지 케이스 삭제 (-0)
+        if (!hasDamagePrevention && hasVictimRecovery) {
+          for (const sibling of siblingCases) {
+            const siblingNumber = sibling.caseNumber || "";
+            const siblingParts = siblingNumber.split('-');
+            const siblingSuffix = siblingParts.length > 1 ? siblingParts[siblingParts.length - 1] : null;
+            
+            // 손해방지 케이스 (-0)인 경우
+            if (siblingSuffix === '0') {
+              // 배당대기 상태만 삭제 가능
+              if (sibling.status === "배당대기") {
+                await storage.deleteCase(sibling.id);
+                deletedCases.push(sibling.caseNumber || sibling.id);
+                console.log(`[Case Delete] Deleted damage prevention case ${sibling.caseNumber} (status: ${sibling.status})`);
+              }
+            }
+          }
+        }
+        
+        // 아무것도 선택 안함 → 모든 형제 케이스 삭제
+        if (!hasDamagePrevention && !hasVictimRecovery) {
+          for (const sibling of siblingCases) {
+            if (sibling.status === "배당대기") {
+              await storage.deleteCase(sibling.id);
+              deletedCases.push(sibling.caseNumber || sibling.id);
+              console.log(`[Case Delete] Deleted sibling case ${sibling.caseNumber} (status: ${sibling.status})`);
+            }
+          }
+        }
+      }
+      
       // 처리구분에 따른 접수번호 결정
       let newCaseNumber = existingCaseNumber;
       if (!hasDamagePrevention && !hasVictimRecovery) {
