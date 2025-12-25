@@ -470,45 +470,54 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       .map(name => ({ name }));
   }, [investigatorCompanies, investigatorSearchQuery]);
 
-  // 예상 접수번호 계산 (B-style: 손해방지는 접미사 없이, 피해세대복구는 -N 형식)
-  // 기존 케이스 편집 시에는 loadedCaseNumber를 우선 표시
+  // 예상 접수번호 계산 - 처리구분 선택에 따라 실시간 반영
   const displayCaseNumber = useMemo(() => {
-    // 기존 케이스 편집 시 실제 접수번호 표시
-    if (loadedCaseNumber) {
-      return loadedCaseNumber;
+    const hasDamagePrevention = formData.damagePreventionCost === true || (formData.damagePreventionCost as unknown) === "true";
+    const hasVictimRecovery = formData.victimIncidentAssistance === true || (formData.victimIncidentAssistance as unknown) === "true";
+    
+    // 기존 케이스의 prefix 추출 또는 predictedPrefix 사용
+    let basePrefix = "";
+    if (loadedCaseNumber && loadedCaseNumber !== "-") {
+      // 기존 케이스에서 prefix 추출
+      if (loadedCaseNumber.includes('-')) {
+        basePrefix = loadedCaseNumber.split('-')[0];
+      } else {
+        basePrefix = loadedCaseNumber;
+      }
+    } else if (predictedPrefix) {
+      basePrefix = predictedPrefix;
     }
     
-    if (!predictedPrefix) {
-      return "입력 정보를 채우면 표시됩니다";
+    // prefix가 없으면 안내 메시지
+    if (!basePrefix) {
+      return "-";
     }
-
-    const hasDamagePrevention = formData.damagePreventionCost;
-    const hasVictimRecovery = formData.victimIncidentAssistance;
-
-    // 둘 다 선택
+    
+    // 처리구분에 따른 접수번호 결정
+    if (!hasDamagePrevention && !hasVictimRecovery) {
+      // 아무것도 선택 안함 → "-"
+      return "-";
+    }
+    
     if (hasDamagePrevention && hasVictimRecovery) {
-      if (predictedSuffix === 0) {
-        // 손해방지: prefix만, 피해세대복구: prefix-1
-        return `${predictedPrefix}, ${predictedPrefix}-1`;
-      } else {
-        return `기존 사고에는 손해방지를 추가할 수 없습니다`;
-      }
+      // 둘 다 선택 → -0, -1
+      return `${basePrefix}-0, ${basePrefix}-1`;
     }
     
-    // 손해방지만 선택
     if (hasDamagePrevention && !hasVictimRecovery) {
-      if (predictedSuffix === 0) {
-        // 새 사고: 손해방지는 prefix만 (접미사 없음)
-        return `${predictedPrefix}`;
-      } else {
-        // 기존 사고: 손해방지 추가 불가
-        return `기존 사고에는 손해방지를 추가할 수 없습니다`;
-      }
+      // 손해방지만 선택 → -0
+      return `${basePrefix}-0`;
     }
     
-    // 피해세대복구만 또는 둘 다 선택 안함 (기본값)
-    const suffix = predictedSuffix === 0 ? 1 : predictedSuffix;
-    return `${predictedPrefix}-${suffix}`;
+    // 피해세대복구만 선택 → -1 (또는 기존 suffix 유지)
+    if (loadedCaseNumber && loadedCaseNumber.includes('-')) {
+      const existingSuffix = loadedCaseNumber.split('-')[1];
+      if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+        return loadedCaseNumber; // 기존 피해세대 번호 유지
+      }
+    }
+    const victimSuffix = predictedSuffix === 0 ? 1 : predictedSuffix;
+    return `${basePrefix}-${victimSuffix}`;
   }, [loadedCaseNumber, predictedPrefix, predictedSuffix, formData.damagePreventionCost, formData.victimIncidentAssistance]);
 
   useEffect(() => {
@@ -1057,8 +1066,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
 
     // 의뢰범위 생성 (formData의 값은 string "true"/"false" 또는 boolean일 수 있음)
     const requestScopeItems = [];
-    if (formData.damagePreventionCost === "true" || formData.damagePreventionCost === true) requestScopeItems.push("손방");
-    if (formData.victimIncidentAssistance === "true" || formData.victimIncidentAssistance === true) requestScopeItems.push("대물");
+    if (formData.damagePreventionCost === true || (formData.damagePreventionCost as unknown) === "true") requestScopeItems.push("손방");
+    if (formData.victimIncidentAssistance === true || (formData.victimIncidentAssistance as unknown) === "true") requestScopeItems.push("대물");
     if (requestScopeItems.length === 0) requestScopeItems.push("기타");
     const requestScope = requestScopeItems.join(", ");
     
