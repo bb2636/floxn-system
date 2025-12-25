@@ -972,7 +972,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       const result = await apiRequest("POST", "/api/cases", payload);
       return result;
     },
-    onSuccess: async (result) => {
+    onSuccess: async (result, variables) => {
       // 응답 형식: { success: true, cases: [...] }
       const cases = (result && typeof result === 'object' && 'cases' in result) 
         ? (result as any).cases 
@@ -993,39 +993,40 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       localStorage.removeItem('editCaseId');
       setEditCaseId(null);
       
-      // 접수완료 시 자동으로 SMS 발송
+      // 접수완료 시 자동으로 SMS 발송 (variables.data 사용하여 클로저 문제 해결)
+      const submittedData = variables.data;
       if (cases.length > 0) {
         const firstCase = cases[0];
-        const rawPartnerContact = formData.assignedPartnerContact?.trim() || "";
+        const rawPartnerContact = submittedData.assignedPartnerContact?.trim() || "";
         const partnerContact = rawPartnerContact.replace(/[^0-9]/g, "");
         
         if (partnerContact.length >= 10 && partnerContact.length <= 11) {
           // 의뢰범위 생성
           const requestScopeItems = [];
-          if (formData.damagePreventionCost === true || (formData.damagePreventionCost as unknown) === "true") requestScopeItems.push("손방");
-          if (formData.victimIncidentAssistance === true || (formData.victimIncidentAssistance as unknown) === "true") requestScopeItems.push("대물");
+          if (submittedData.damagePreventionCost === true || (submittedData.damagePreventionCost as unknown) === "true") requestScopeItems.push("손방");
+          if (submittedData.victimIncidentAssistance === true || (submittedData.victimIncidentAssistance as unknown) === "true") requestScopeItems.push("대물");
           if (requestScopeItems.length === 0) requestScopeItems.push("기타");
           const requestScope = requestScopeItems.join(", ");
           
           // 담당자 이름 조회
-          const managerName = formData.managerId 
-            ? allUsers?.find(u => u.id === formData.managerId)?.name || user?.name || "-"
+          const managerName = submittedData.managerId 
+            ? allUsers?.find(u => u.id === submittedData.managerId)?.name || user?.name || "-"
             : user?.name || "-";
           
           const smsPayload = {
             to: partnerContact,
             caseNumber: formatCaseNumber(firstCase.caseNumber),
-            insuranceCompany: formData.insuranceCompany || "-",
+            insuranceCompany: submittedData.insuranceCompany || "-",
             managerName: managerName,
-            insurancePolicyNo: formData.insurancePolicyNo || "-",
-            insuranceAccidentNo: formData.insuranceAccidentNo || "-",
-            insuredName: formData.insuredName || "-",
-            insuredContact: formData.insuredContact || "-",
-            victimName: formData.victimName || "-",
-            victimContact: formData.victimContact || "-",
-            investigatorTeamName: formData.investigatorTeamName || "-",
-            investigatorContact: formData.investigatorContact || "-",
-            accidentLocation: formData.insuredAddress || "-",
+            insurancePolicyNo: submittedData.insurancePolicyNo || "-",
+            insuranceAccidentNo: submittedData.insuranceAccidentNo || "-",
+            insuredName: submittedData.insuredName || "-",
+            insuredContact: submittedData.insuredContact || "-",
+            victimName: submittedData.victimName || "-",
+            victimContact: submittedData.victimContact || "-",
+            investigatorTeamName: submittedData.investigatorTeamName || "-",
+            investigatorContact: submittedData.investigatorContact || "-",
+            accidentLocation: submittedData.insuredAddress || "-",
             requestScope: requestScope,
           };
           
@@ -1044,6 +1045,8 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               duration: 3000,
             });
           }
+        } else {
+          console.log("📱 SMS not sent - invalid partner contact:", rawPartnerContact);
         }
       }
       
