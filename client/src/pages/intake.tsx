@@ -1595,7 +1595,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                           managerId: value,
                           managerDepartment: selectedAdmin?.department || "",
                           managerPosition: selectedAdmin?.position || "",
-                          managerContact: selectedAdmin?.contact || "",
+                          managerContact: selectedAdmin?.phone || "",
                         }));
                       }}
                       disabled={readOnly}
