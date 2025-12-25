@@ -2125,7 +2125,7 @@ export default function FieldReport() {
           )}
 
         {/* 현장조사 탭 */}
-        <TabsContent value="현장조사" className="space-y-6" id="pdf-section-현장조사">
+        <TabsContent value="현장조사" className="space-y-6 px-6" id="pdf-section-현장조사">
           {/* 현장조사 정보 섹션 */}
           <div>
             <h2
@@ -2628,7 +2628,7 @@ export default function FieldReport() {
         </TabsContent>
 
         {/* 도면 탭 */}
-        <TabsContent value="도면" id="pdf-section-도면">
+        <TabsContent value="도면" className="px-6" id="pdf-section-도면">
           <div>
             <h2
               style={{
@@ -2899,7 +2899,7 @@ export default function FieldReport() {
         </TabsContent>
 
         {/* 증빙자료 탭 */}
-        <TabsContent value="증빙자료" id="pdf-section-증빙자료">
+        <TabsContent value="증빙자료" className="px-6" id="pdf-section-증빙자료">
           {/* 증빙자료 헤더 - 하나만 표시 */}
           <div className="flex items-center justify-between px-6 py-6">
             <h2
@@ -3156,7 +3156,7 @@ export default function FieldReport() {
         </TabsContent>
 
         {/* 견적서 탭 */}
-        <TabsContent value="견적서" id="pdf-section-견적서">
+        <TabsContent value="견적서" className="px-6" id="pdf-section-견적서">
           <div className="min-w-0">
             {estimate.estimate && estimate.rows && estimate.rows.length > 0 ? (
               <>
@@ -3693,7 +3693,7 @@ export default function FieldReport() {
         </TabsContent>
 
         {/* 기타사항/원인 탭 */}
-        <TabsContent value="기타사항/원인" id="pdf-section-기타사항">
+        <TabsContent value="기타사항/원인" className="px-6" id="pdf-section-기타사항">
           <div
             style={{
               fontFamily: "Pretendard",
