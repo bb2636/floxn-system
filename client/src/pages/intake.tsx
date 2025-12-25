@@ -993,10 +993,58 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       localStorage.removeItem('editCaseId');
       setEditCaseId(null);
       
-      // SMS 알림 다이얼로그 표시 (첫 번째 케이스 기준)
+      // 접수완료 시 자동으로 SMS 발송
       if (cases.length > 0) {
-        setCompletedCase(cases[0] as Case);
-        setSmsDialogOpen(true);
+        const firstCase = cases[0];
+        const rawPartnerContact = formData.assignedPartnerContact?.trim() || "";
+        const partnerContact = rawPartnerContact.replace(/[^0-9]/g, "");
+        
+        if (partnerContact.length >= 10 && partnerContact.length <= 11) {
+          // 의뢰범위 생성
+          const requestScopeItems = [];
+          if (formData.damagePreventionCost === true || (formData.damagePreventionCost as unknown) === "true") requestScopeItems.push("손방");
+          if (formData.victimIncidentAssistance === true || (formData.victimIncidentAssistance as unknown) === "true") requestScopeItems.push("대물");
+          if (requestScopeItems.length === 0) requestScopeItems.push("기타");
+          const requestScope = requestScopeItems.join(", ");
+          
+          // 담당자 이름 조회
+          const managerName = formData.managerId 
+            ? allUsers?.find(u => u.id === formData.managerId)?.name || user?.name || "-"
+            : user?.name || "-";
+          
+          const smsPayload = {
+            to: partnerContact,
+            caseNumber: formatCaseNumber(firstCase.caseNumber),
+            insuranceCompany: formData.insuranceCompany || "-",
+            managerName: managerName,
+            insurancePolicyNo: formData.insurancePolicyNo || "-",
+            insuranceAccidentNo: formData.insuranceAccidentNo || "-",
+            insuredName: formData.insuredName || "-",
+            insuredContact: formData.insuredContact || "-",
+            victimName: formData.victimName || "-",
+            victimContact: formData.victimContact || "-",
+            investigatorTeamName: formData.investigatorTeamName || "-",
+            investigatorContact: formData.investigatorContact || "-",
+            accidentLocation: formData.insuredAddress || "-",
+            requestScope: requestScope,
+          };
+          
+          try {
+            console.log("📱 Sending SMS automatically on submit:", smsPayload);
+            await apiRequest("POST", "/api/send-sms", smsPayload);
+            toast({ 
+              description: "접수 완료 문자가 전송되었습니다.",
+              duration: 3000,
+            });
+          } catch (error) {
+            console.error("📱 Auto SMS send failed:", error);
+            toast({ 
+              description: "문자 전송에 실패했습니다. 수동으로 전송해주세요.",
+              variant: "destructive",
+              duration: 3000,
+            });
+          }
+        }
       }
       
       // 모달 모드인 경우 onSuccess 콜백 호출
@@ -3594,26 +3642,6 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   </button>
                   
                   <button
-                    onClick={handleSendSms}
-                    disabled={isSendingSms}
-                    className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 600,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.01em',
-                      background: isSendingSms ? 'rgba(16, 185, 129, 0.5)' : '#10B981',
-                      border: 'none',
-                      color: '#FFFFFF',
-                      cursor: isSendingSms ? 'not-allowed' : 'pointer',
-                      opacity: isSendingSms ? 0.6 : 1,
-                    }}
-                    data-testid="button-send-sms"
-                  >
-                    {isSendingSms ? '전송 중...' : '문자전송'}
-                  </button>
-                  
-                  <button
                     onClick={handleSubmit}
                     disabled={!isFormValid || submitMutation.isPending}
                     className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
@@ -4435,28 +4463,6 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
         document.body
       )}
       
-      {/* SMS 알림 발송 다이얼로그 */}
-      {completedCase && (
-        <SmsNotificationDialog
-          open={smsDialogOpen}
-          onOpenChange={(open) => {
-            setSmsDialogOpen(open);
-            if (!open) {
-              // 다이얼로그 닫힐 때 대시보드로 이동
-              if (!isModal) {
-                setLocation("/dashboard");
-              }
-            }
-          }}
-          caseData={completedCase}
-          stage="접수완료"
-          onSuccess={() => {
-            if (!isModal) {
-              setLocation("/dashboard");
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
