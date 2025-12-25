@@ -1002,6 +1002,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
         damagePreventionCost: submittedData.damagePreventionCost,
         victimIncidentAssistance: submittedData.victimIncidentAssistance,
       });
+      console.log("📱 SMS 자동 발송 - cases 배열:", cases, "길이:", cases.length);
       if (cases.length > 0) {
         const firstCase = cases[0];
         const rawPartnerContact = submittedData.assignedPartnerContact?.trim() || "";
