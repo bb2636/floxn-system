@@ -1124,8 +1124,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
           newCaseNumber = `${existingPrefix}-${nextSuffix}`;
         }
       } else {
-        // 둘 다 선택 → -0 (피해세대 케이스는 별도 생성 필요)
+        // 둘 다 선택 → 기존 케이스는 -0으로 업데이트, 피해세대 케이스(-1) 새로 생성
         newCaseNumber = `${existingPrefix}-0`;
+        
+        // 기존 케이스 업데이트 (손해방지 케이스로)
+        const updateDataWithCaseNumber = { ...updateData, caseNumber: newCaseNumber };
+        const updatedCase = await storage.updateCase(id, updateDataWithCaseNumber);
+        
+        if (!updatedCase) {
+          return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+        }
+        
+        // 피해세대 케이스 새로 생성
+        const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+        const caseGroupId = existingCase.caseGroupId || `group-${Date.now()}`;
+        
+        // 피해세대 케이스용 데이터 복사
+        const recoveryData = JSON.parse(JSON.stringify(updateData));
+        delete recoveryData.id; // 새 케이스이므로 id 제거
+        
+        const recoveryCase = await storage.createCase({
+          ...recoveryData,
+          caseNumber: `${existingPrefix}-${nextSuffix}`,
+          caseGroupId,
+          status: existingCase.status, // 기존 상태 유지
+          createdBy: req.session.userId,
+        });
+        
+        // 변경 로그 저장
+        if (changes.length > 0) {
+          try {
+            const user = await storage.getUser(req.session.userId);
+            await storage.createCaseChangeLog({
+              caseId: id,
+              changedBy: req.session.userId,
+              changedByName: user?.name || "알 수 없음",
+              changeType: "update",
+              changes,
+              note: null,
+            });
+          } catch (logError) {
+            console.error("Failed to create change log:", logError);
+          }
+        }
+        
+        // 동기화
+        try {
+          await storage.syncIntakeDataToRelatedCases(id);
+        } catch (syncError) {
+          console.error("Failed to sync intake data:", syncError);
+        }
+        
+        return res.json({ success: true, cases: [updatedCase, recoveryCase] });
       }
       
       // 접수번호 업데이트 포함
