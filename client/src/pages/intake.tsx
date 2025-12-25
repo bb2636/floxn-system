@@ -995,10 +995,18 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       
       // 접수완료 시 자동으로 SMS 발송 (variables.data 사용하여 클로저 문제 해결)
       const submittedData = variables.data;
+      console.log("📱 SMS 자동 발송 시도 - submittedData:", {
+        assignedPartnerContact: submittedData.assignedPartnerContact,
+        assignedPartner: submittedData.assignedPartner,
+        assignedPartnerManager: submittedData.assignedPartnerManager,
+        damagePreventionCost: submittedData.damagePreventionCost,
+        victimIncidentAssistance: submittedData.victimIncidentAssistance,
+      });
       if (cases.length > 0) {
         const firstCase = cases[0];
         const rawPartnerContact = submittedData.assignedPartnerContact?.trim() || "";
         const partnerContact = rawPartnerContact.replace(/[^0-9]/g, "");
+        console.log("📱 SMS 연락처 확인:", { rawPartnerContact, partnerContact, length: partnerContact.length });
         
         if (partnerContact.length >= 10 && partnerContact.length <= 11) {
           // 의뢰범위 생성
