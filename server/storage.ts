@@ -146,7 +146,7 @@ export interface IStorage {
   getAllCases(user?: User): Promise<CaseWithLatestProgress[]>;
   updateCase(
     caseId: string,
-    caseData: Partial<InsertCase>,
+    caseData: Partial<InsertCase> & { caseNumber?: string },
   ): Promise<Case | null>;
   deleteCase(caseId: string): Promise<void>;
   updateCaseStatus(caseId: string, status: string): Promise<Case | null>;
@@ -1552,7 +1552,7 @@ export class MemStorage implements IStorage {
 
   async updateCase(
     caseId: string,
-    caseData: Partial<InsertCase>,
+    caseData: Partial<InsertCase> & { caseNumber?: string },
   ): Promise<Case | null> {
     const caseItem = this.cases.get(caseId);
     if (!caseItem) {
@@ -4225,7 +4225,7 @@ export class DbStorage implements IStorage {
 
   async updateCase(
     caseId: string,
-    caseData: Partial<InsertCase>,
+    caseData: Partial<InsertCase> & { caseNumber?: string },
   ): Promise<Case | null> {
     const currentDate = getKSTDate();
 
@@ -4241,9 +4241,12 @@ export class DbStorage implements IStorage {
       additionalUpdates.assignmentDate = currentDate;
     }
 
+    // caseNumber도 업데이트 대상에 포함
+    const updateData: any = { ...caseData, ...additionalUpdates, updatedAt: currentDate };
+
     const result = await db
       .update(cases)
-      .set({ ...caseData, ...additionalUpdates, updatedAt: currentDate })
+      .set(updateData)
       .where(eq(cases.id, caseId))
       .returning();
 

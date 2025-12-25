@@ -502,16 +502,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Handle draft cases (배당대기 status)
       if (validatedData.status === "배당대기") {
-        // Delete existing draft if resuming (only delete if it's still a draft)
+        // 기존 임시저장 건이 있으면 업데이트
         if (validatedData.id) {
           const existingCase = await storage.getCaseById(validatedData.id);
           if (existingCase && existingCase.status === "배당대기") {
-            await storage.deleteCase(validatedData.id);
+            // 기존 케이스 업데이트 (접수번호 유지)
+            const existingCaseNumber = existingCase.caseNumber || "";
+            const existingPrefix = existingCaseNumber.includes('-') 
+              ? existingCaseNumber.split('-')[0] 
+              : existingCaseNumber;
+            
+            // 접수번호가 없으면 새로 생성
+            let newCaseNumber = existingCaseNumber;
+            if (!existingPrefix) {
+              const draftDate = validatedData.accidentDate || new Date().toISOString().split('T')[0];
+              const { prefix } = await storage.getNextCaseSequence(draftDate, validatedData.insuranceAccidentNo || undefined);
+              if (hasDamagePrevention && !hasVictimRecovery) {
+                newCaseNumber = `${prefix}-0`;
+              } else if (!hasDamagePrevention && hasVictimRecovery) {
+                const nextSuffix = await storage.getNextVictimSuffix(prefix);
+                newCaseNumber = `${prefix}-${nextSuffix}`;
+              } else {
+                newCaseNumber = prefix;
+              }
+            } else {
+              // 처리구분이 변경된 경우 접수번호 suffix 업데이트
+              if (hasDamagePrevention && !hasVictimRecovery) {
+                // 손해방지만 선택: -0 suffix
+                newCaseNumber = `${existingPrefix}-0`;
+              } else if (!hasDamagePrevention && hasVictimRecovery) {
+                // 피해세대만 선택: -1 이상 suffix
+                if (!existingCaseNumber.includes('-') || existingCaseNumber.endsWith('-0')) {
+                  const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                  newCaseNumber = `${existingPrefix}-${nextSuffix}`;
+                }
+              } else if (hasDamagePrevention && hasVictimRecovery) {
+                // 둘 다 선택: 기존 케이스는 -0으로, 새 피해세대 케이스 추가 생성
+                // (이 경우는 접수완료 시 처리)
+              } else if (!existingCaseNumber.includes('-')) {
+                // 선택 안 함: prefix만 유지 (suffix 없음)
+                newCaseNumber = existingPrefix;
+              }
+            }
+            
+            const updatedCase = await storage.updateCase(validatedData.id, {
+              ...validatedData,
+              caseNumber: newCaseNumber,
+              caseGroupId,
+            });
+            return res.status(200).json({ success: true, cases: [updatedCase] });
           }
         }
         
-        // 임시저장 시에도 실제 접수번호 형식 사용 (접수하기 페이지와 일치)
-        // 사고일자를 기준으로 접수번호 생성
+        // 새 임시저장 생성
         const draftDate = validatedData.accidentDate || new Date().toISOString().split('T')[0];
         const { prefix, suffix } = await storage.getNextCaseSequence(
           draftDate,
@@ -568,11 +611,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           createdCases.push(recoveryDraft);
         } else {
-          // No processing type selected - create single draft with -1 suffix (default victim recovery)
-          const caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
+          // No processing type selected - create draft WITHOUT suffix (prefix only)
           const draftCase = await storage.createCase({
             ...validatedData,
-            caseNumber,
+            caseNumber: prefix,
             caseGroupId,
             createdBy: req.session.userId,
           });
@@ -584,37 +626,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Handle case completion (접수완료 status)
       if (validatedData.status === "접수완료") {
-        // Delete existing draft if resuming (only delete if it's still a draft)
-        if (validatedData.id) {
-          const existingCase = await storage.getCaseById(validatedData.id);
-          if (existingCase && existingCase.status === "배당대기") {
-            await storage.deleteCase(validatedData.id);
-          }
-        }
-        
-        // Generate case number based on reception date
         const receptionDate = validatedData.receptionDate;
         if (!receptionDate) {
           return res.status(400).json({ error: "접수일이 필요합니다" });
         }
         
-        // Parse date (format: YYYY-MM-DD or KST timestamp)
-        const fullDate = receptionDate.split('T')[0]; // "2025-11-24"
+        const fullDate = receptionDate.split('T')[0];
+        const completedCases: any[] = [];
         
-        // ⚠️ CRITICAL: Get case prefix and suffix based on insurance accident number
-        // If same accident number exists, reuses the same prefix (B 방식)
+        // 기존 임시저장 건이 있으면 업데이트
+        if (validatedData.id) {
+          const existingCase = await storage.getCaseById(validatedData.id);
+          if (existingCase && existingCase.status === "배당대기") {
+            // 기존 케이스의 접수번호 prefix 추출
+            const existingCaseNumber = existingCase.caseNumber || "";
+            let existingPrefix = existingCaseNumber.includes('-') 
+              ? existingCaseNumber.split('-')[0] 
+              : existingCaseNumber;
+            
+            // 접수번호가 없으면 새로 생성
+            if (!existingPrefix) {
+              const { prefix } = await storage.getNextCaseSequence(fullDate, validatedData.insuranceAccidentNo || undefined);
+              existingPrefix = prefix;
+            }
+            
+            // 처리구분에 따라 접수번호 suffix 결정
+            let newCaseNumber = existingCaseNumber;
+            if (hasDamagePrevention && !hasVictimRecovery) {
+              // 손해방지만: -0 suffix
+              newCaseNumber = `${existingPrefix}-0`;
+            } else if (!hasDamagePrevention && hasVictimRecovery) {
+              // 피해세대만: -1 이상 suffix
+              if (!existingCaseNumber.includes('-') || existingCaseNumber.endsWith('-0')) {
+                const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                newCaseNumber = `${existingPrefix}-${nextSuffix}`;
+              }
+            } else if (hasDamagePrevention && hasVictimRecovery) {
+              // 둘 다 선택: 기존 케이스를 -0으로 업데이트하고, 피해세대 케이스 새로 생성
+              newCaseNumber = `${existingPrefix}-0`;
+              
+              // 기존 케이스 업데이트 (손해방지 케이스로)
+              const updatedCase = await storage.updateCase(validatedData.id, {
+                ...validatedData,
+                caseNumber: newCaseNumber,
+                caseGroupId,
+                status: "접수완료",
+              });
+              completedCases.push(updatedCase);
+              
+              // 피해세대 케이스 새로 생성
+              const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+              const recoveryData = JSON.parse(JSON.stringify(validatedData));
+              const recoveryCase = await storage.createCase({
+                ...recoveryData,
+                caseNumber: `${existingPrefix}-${nextSuffix}`,
+                caseGroupId,
+                status: "접수완료",
+                createdBy: req.session.userId,
+              });
+              completedCases.push(recoveryCase);
+              
+              // 동기화 및 응답
+              if (completedCases.length > 0) {
+                try {
+                  const syncCount = await storage.syncIntakeDataToRelatedCases(completedCases[0].id);
+                  if (syncCount > 0) {
+                    console.log(`[Case Complete] Auto-synced intake data to ${syncCount} related cases`);
+                  }
+                } catch (syncError) {
+                  console.error("Failed to sync intake data:", syncError);
+                }
+              }
+              return res.status(200).json({ success: true, cases: completedCases });
+            } else {
+              // 선택 안 함: -1 suffix (기본 피해세대)
+              if (!existingCaseNumber.includes('-')) {
+                newCaseNumber = `${existingPrefix}-1`;
+              }
+            }
+            
+            // 기존 케이스 업데이트
+            const updatedCase = await storage.updateCase(validatedData.id, {
+              ...validatedData,
+              caseNumber: newCaseNumber,
+              caseGroupId,
+              status: "접수완료",
+            });
+            completedCases.push(updatedCase);
+            
+            // 동기화 및 응답
+            if (completedCases.length > 0) {
+              try {
+                const syncCount = await storage.syncIntakeDataToRelatedCases(completedCases[0].id);
+                if (syncCount > 0) {
+                  console.log(`[Case Complete] Auto-synced intake data to ${syncCount} related cases`);
+                }
+              } catch (syncError) {
+                console.error("Failed to sync intake data:", syncError);
+              }
+            }
+            return res.status(200).json({ success: true, cases: completedCases });
+          }
+        }
+        
+        // 새 케이스 생성 (임시저장 없이 바로 접수완료)
         const { prefix, suffix } = await storage.getNextCaseSequence(
           fullDate, 
           validatedData.insuranceAccidentNo || undefined
         );
-        // prefix: e.g., "251124001" (yyMMddxxx)
-        // suffix: 0 for new accident, incremented for existing accident
-        
-        const createdCases: any[] = [];
         
         if (hasDamagePrevention && !hasVictimRecovery) {
-          // Only damage prevention
-          // Damage prevention cases display with -0 suffix (like 251124001-0)
           const caseNumber = `${prefix}-0`;
           const newCase = await storage.createCase({
             ...validatedData,
@@ -622,10 +743,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             caseGroupId,
             createdBy: req.session.userId,
           });
-          createdCases.push(newCase);
+          completedCases.push(newCase);
         } else if (!hasDamagePrevention && hasVictimRecovery) {
-          // Only victim recovery
-          // For new accident (suffix=0), use 1; for existing, use returned suffix
           const caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
           const newCase = await storage.createCase({
             ...validatedData,
@@ -633,14 +752,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             caseGroupId,
             createdBy: req.session.userId,
           });
-          createdCases.push(newCase);
+          completedCases.push(newCase);
         } else if (hasDamagePrevention && hasVictimRecovery) {
-          // Both types selected
-          // 1. Check if prevention case already exists for this prefix
           const existingPrevention = await storage.getPreventionCaseByPrefix(prefix);
           
           if (!existingPrevention) {
-            // Create prevention case with -0 suffix
             const preventionData = JSON.parse(JSON.stringify(validatedData));
             const preventionCase = await storage.createCase({
               ...preventionData,
@@ -648,10 +764,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               caseGroupId,
               createdBy: req.session.userId,
             });
-            createdCases.push(preventionCase);
+            completedCases.push(preventionCase);
           }
           
-          // 2. Always create victim recovery case with next available suffix
           const nextSuffix = await storage.getNextVictimSuffix(prefix);
           const recoveryData = JSON.parse(JSON.stringify(validatedData));
           const recoveryCase = await storage.createCase({
@@ -660,9 +775,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             caseGroupId,
             createdBy: req.session.userId,
           });
-          createdCases.push(recoveryCase);
+          completedCases.push(recoveryCase);
         } else {
-          // No processing type - create single case with -1 suffix (default victim recovery)
           const caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
           const newCase = await storage.createCase({
             ...validatedData,
@@ -670,24 +784,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             caseGroupId,
             createdBy: req.session.userId,
           });
-          createdCases.push(newCase);
+          completedCases.push(newCase);
         }
         
-        // 케이스 생성 후 같은 prefix를 가진 기존 케이스들에 접수 정보 동기화
-        if (createdCases.length > 0) {
-          const firstCreatedCase = createdCases[0];
+        // 동기화
+        if (completedCases.length > 0) {
           try {
-            const syncCount = await storage.syncIntakeDataToRelatedCases(firstCreatedCase.id);
+            const syncCount = await storage.syncIntakeDataToRelatedCases(completedCases[0].id);
             if (syncCount > 0) {
               console.log(`[Case Create] Auto-synced intake data to ${syncCount} related cases`);
             }
           } catch (syncError) {
             console.error("Failed to sync intake data to related cases:", syncError);
-            // Don't fail the request if sync fails
           }
         }
         
-        return res.status(201).json({ success: true, cases: createdCases });
+        return res.status(201).json({ success: true, cases: completedCases });
       }
       
       // Fallback: single case creation for other statuses
