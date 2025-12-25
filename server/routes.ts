@@ -280,7 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get unique company names from users with role '보험사'
       const companySet = new Set<string>();
       users
-        .filter(u => u.role === '보험사' && u.company && u.company !== 'test')
+        .filter(u => u.role === '보험사' && u.company)
         .forEach(u => companySet.add(u.company!));
       const insuranceCompanies = Array.from(companySet).sort();
       res.json(insuranceCompanies);
