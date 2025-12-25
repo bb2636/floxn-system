@@ -238,6 +238,11 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
     select: (users) => users.filter(u => u.role === "관리자"),
   });
 
+  // 보험사 목록 가져오기 (DB에서 동적으로)
+  const { data: insuranceCompanies = [] } = useQuery<string[]>({
+    queryKey: ["/api/insurance-companies"],
+  });
+
   // 협력사 회사 목록 (중복 제거)
   const partnerCompanies = useMemo(() => {
     if (!partners) return [];
@@ -1876,7 +1881,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                             <SelectValue placeholder="보험사 선택" />
                           </SelectTrigger>
                           <SelectContent>
-                            {["삼성화재", "현대해상", "DB손해보험", "KB손해보험", "메리츠화재"].map((company) => (
+                            {insuranceCompanies.map((company) => (
                               <SelectItem key={company} value={company} data-testid={`select-option-insurance-company-${company}`}>{company}</SelectItem>
                             ))}
                           </SelectContent>

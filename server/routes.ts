@@ -268,6 +268,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all insurance companies (unique company names from users with role '보험사')
+  app.get("/api/insurance-companies", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const users = await storage.getAllUsers();
+      // Get unique company names from users with role '보험사'
+      const companySet = new Set<string>();
+      users
+        .filter(u => u.role === '보험사' && u.company && u.company !== 'test')
+        .forEach(u => companySet.add(u.company!));
+      const insuranceCompanies = Array.from(companySet).sort();
+      res.json(insuranceCompanies);
+    } catch (error) {
+      console.error("Get insurance companies error:", error);
+      res.status(500).json({ error: "보험사 목록을 불러오는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Get all users endpoint (admin only)
   app.get("/api/users", async (req, res) => {
     // Check authentication
