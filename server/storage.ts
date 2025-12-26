@@ -1771,6 +1771,15 @@ export class MemStorage implements IStorage {
       return null;
     }
 
+    // 1차승인 시 승인금액 확정 (최신 견적 총액을 승인금액으로)
+    let approvedAmount = caseItem.approvedAmount;
+    if (decision === "승인" && !caseItem.firstApprovalDate) {
+      const latestEstimate = await this.getLatestEstimate(caseId);
+      if (latestEstimate?.totalAmount) {
+        approvedAmount = latestEstimate.totalAmount.toString();
+      }
+    }
+
     const updatedCase: Case = {
       ...caseItem,
       reviewDecision: decision,
@@ -1778,6 +1787,8 @@ export class MemStorage implements IStorage {
       reviewedAt: getKSTTimestamp(),
       reviewedBy: reviewedBy,
       status: decision === "승인" ? "1차승인" : "반려",
+      firstApprovalDate: decision === "승인" && !caseItem.firstApprovalDate ? getKSTDate() : caseItem.firstApprovalDate,
+      approvedAmount: approvedAmount,
       updatedAt: getKSTDate(),
     };
 
@@ -4501,7 +4512,7 @@ export class DbStorage implements IStorage {
     const currentDate = getKSTDate();
     const currentTimestamp = getKSTTimestamp();
 
-    // 승인 시 1차 승인일(내부) 자동 기록 (기존 값이 없을 때만)
+    // 승인 시 1차 승인일(내부) 자동 기록 및 승인금액 확정 (기존 값이 없을 때만)
     const existingCase = await this.getCaseById(caseId);
     const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
 
@@ -4511,6 +4522,11 @@ export class DbStorage implements IStorage {
       !existingCase.firstApprovalDate
     ) {
       additionalUpdates.firstApprovalDate = currentDate;
+      // 1차승인 시 승인금액 확정 (현재 견적 총액을 승인금액으로 저장)
+      const latestEstimate = await this.getLatestEstimate(caseId);
+      if (latestEstimate?.totalAmount) {
+        additionalUpdates.approvedAmount = latestEstimate.totalAmount.toString();
+      }
     }
 
     const result = await db
@@ -4552,6 +4568,7 @@ export class DbStorage implements IStorage {
     }
     
     // 승인 시 2차 승인일 자동 기록 (기존 값이 없을 때만)
+    // 승인금액은 1차승인 시 이미 확정됨 (reviewCase에서 처리)
     const additionalUpdates: Partial<typeof cases.$inferInsert> = {};
 
     if (
@@ -4560,10 +4577,6 @@ export class DbStorage implements IStorage {
       !existingCase.secondApprovalDate
     ) {
       additionalUpdates.secondApprovalDate = currentDate;
-      // 승인금액 저장 (현재 견적금액을 승인금액으로)
-      if (existingCase.estimateAmount) {
-        additionalUpdates.approvedAmount = existingCase.estimateAmount;
-      }
     }
 
     const result = await db

@@ -3033,9 +3033,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         vatIncluded ?? true // VAT 포함/별도 옵션
       );
       
-      // 견적 총액을 케이스에 업데이트
+      // 견적 총액을 케이스에 업데이트 (최초 제출 시에만 - 이미 값이 있으면 덮어쓰지 않음)
       if (totalAmount !== undefined && totalAmount !== null) {
-        await storage.updateCaseEstimateAmount(caseId, totalAmount.toString());
+        const currentCase = await storage.getCaseById(caseId);
+        // 견적금액이 없거나 "0"인 경우에만 업데이트 (최초 제출 금액 유지)
+        if (!currentCase?.estimateAmount || currentCase.estimateAmount === "0") {
+          await storage.updateCaseEstimateAmount(caseId, totalAmount.toString());
+        }
       }
       
       // Auto-sync estimate to all related cases (same insuranceAccidentNo)
