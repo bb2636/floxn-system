@@ -110,8 +110,6 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
   // 다음 포스트코드 상태 (피보험자 주소)
   const [showInsuredAddressSearch, setShowInsuredAddressSearch] = useState(false);
   
-  // SMS 발송 상태
-  const [isSendingSms, setIsSendingSms] = useState(false);
   
   // SMS 알림 다이얼로그 상태
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
@@ -1121,83 +1119,6 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
   // 수정하기 핸들러 (기존 케이스 업데이트)
   const handleUpdateCase = () => {
     updateMutation.mutate(formData);
-  };
-
-  // 문자전송 핸들러 (폼 데이터로 SMS 발송)
-  const handleSendSms = async () => {
-    // 협력사 담당자 연락처 확인
-    const rawPartnerContact = formData.assignedPartnerContact?.trim() || "";
-    const partnerContact = rawPartnerContact.replace(/[^0-9]/g, "");
-    
-    if (partnerContact.length < 10 || partnerContact.length > 11) {
-      toast({
-        description: "협력사 담당자 연락처가 유효하지 않습니다. 10-11자리 전화번호를 입력해주세요.",
-        variant: "destructive",
-        duration: 3000,
-      });
-      return;
-    }
-
-    // 의뢰범위 생성 (formData의 값은 string "true"/"false" 또는 boolean일 수 있음)
-    const requestScopeItems = [];
-    if (formData.damagePreventionCost === true || (formData.damagePreventionCost as unknown) === "true") requestScopeItems.push("손방");
-    if (formData.victimIncidentAssistance === true || (formData.victimIncidentAssistance as unknown) === "true") requestScopeItems.push("대물");
-    if (requestScopeItems.length === 0) requestScopeItems.push("기타");
-    const requestScope = requestScopeItems.join(", ");
-    
-    // 담당자 이름 조회
-    const managerName = formData.managerId 
-      ? allUsers?.find(u => u.id === formData.managerId)?.name || user?.name || "-"
-      : user?.name || "-";
-    
-    // 접수번호 (저장된 번호만 사용 - 저장되지 않은 케이스는 문자 발송 불가)
-    const displayCaseNumber = loadedCaseNumber ? formatCaseNumber(loadedCaseNumber) : "";
-    
-    // 접수번호가 없으면 문자 발송 불가
-    if (!displayCaseNumber || displayCaseNumber === "-" || displayCaseNumber.trim() === "") {
-      toast({
-        description: "접수가 완료되지 않아 문자를 발송할 수 없습니다. 먼저 접수완료 버튼을 눌러주세요.",
-        variant: "destructive",
-        duration: 5000,
-      });
-      return;
-    }
-    
-    const smsPayload = {
-      to: partnerContact,
-      caseNumber: displayCaseNumber,
-      insuranceCompany: formData.insuranceCompany || "-",
-      managerName: managerName,
-      insurancePolicyNo: formData.insurancePolicyNo || "-",
-      insuranceAccidentNo: formData.insuranceAccidentNo || "-",
-      insuredName: formData.insuredName || "-",
-      insuredContact: formData.insuredContact || "-",
-      victimName: formData.victimName || "-",
-      victimContact: formData.victimContact || "-",
-      investigatorTeamName: formData.investigatorTeamName || "-",
-      investigatorContact: formData.investigatorContact || "-",
-      accidentLocation: formData.insuredAddress || "-",
-      requestScope: requestScope,
-    };
-    
-    setIsSendingSms(true);
-    try {
-      console.log("📱 Sending SMS manually:", smsPayload);
-      await apiRequest("POST", "/api/send-sms", smsPayload);
-      toast({ 
-        description: "문자가 전송되었습니다.",
-        duration: 3000,
-      });
-    } catch (error) {
-      console.error("📱 SMS send failed:", error);
-      toast({ 
-        description: "문자 전송에 실패했습니다.",
-        variant: "destructive",
-        duration: 3000,
-      });
-    } finally {
-      setIsSendingSms(false);
-    }
   };
 
   const handleInputChange = (field: keyof typeof formData, value: string | boolean) => {
@@ -3675,42 +3596,22 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   
                   <button
                     onClick={handleSubmit}
-                    disabled={submitMutation.isPending}
+                    disabled={submitMutation.isPending || !isFormValid}
                     className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
                     style={{
                       fontFamily: 'Pretendard',
                       fontWeight: 600,
                       lineHeight: '128%',
                       letterSpacing: '-0.01em',
-                      background: submitMutation.isPending ? 'rgba(12, 12, 12, 0.2)' : '#008FED',
+                      background: (submitMutation.isPending || !isFormValid) ? 'rgba(12, 12, 12, 0.2)' : '#008FED',
                       border: 'none',
                       color: '#FFFFFF',
-                      cursor: submitMutation.isPending ? 'not-allowed' : 'pointer',
-                      opacity: submitMutation.isPending ? 0.5 : 1,
+                      cursor: (submitMutation.isPending || !isFormValid) ? 'not-allowed' : 'pointer',
+                      opacity: (submitMutation.isPending || !isFormValid) ? 0.5 : 1,
                     }}
                     data-testid="button-submit"
                   >
                     {submitMutation.isPending ? '접수 중...' : '접수완료'}
-                  </button>
-                  
-                  <button
-                    onClick={handleSendSms}
-                    disabled={isSendingSms}
-                    className="h-12 md:h-14 px-6 md:px-8 rounded-lg text-sm md:text-base"
-                    style={{
-                      fontFamily: 'Pretendard',
-                      fontWeight: 600,
-                      lineHeight: '128%',
-                      letterSpacing: '-0.01em',
-                      background: isSendingSms ? 'rgba(76, 175, 80, 0.3)' : '#4CAF50',
-                      border: 'none',
-                      color: '#FFFFFF',
-                      cursor: isSendingSms ? 'not-allowed' : 'pointer',
-                      opacity: isSendingSms ? 0.5 : 1,
-                    }}
-                    data-testid="button-send-sms"
-                  >
-                    {isSendingSms ? '전송 중...' : '문자전송'}
                   </button>
                 </>
               )}
