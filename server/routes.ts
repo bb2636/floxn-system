@@ -709,29 +709,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 newCaseNumber = `${existingPrefix}-${nextSuffix}`;
               }
             } else {
-              // 둘 다 선택 → 기존 케이스는 -0, 새 피해세대 케이스 추가 생성
-              newCaseNumber = `${existingPrefix}-0`;
+              // 둘 다 선택 → 손해방지(-0)와 피해세대(-1+) 케이스 필요
               
-              // 기존 케이스 업데이트 (손해방지 케이스로)
-              const updatedCase = await storage.updateCase(validatedData.id, {
-                ...validatedData,
-                caseNumber: newCaseNumber,
-                caseGroupId,
-                status: "접수완료",
-              });
-              completedCases.push(updatedCase);
+              // 먼저 -0 케이스가 이미 존재하는지 확인
+              const existingPreventionCase = await storage.getPreventionCaseByPrefix(existingPrefix);
               
-              // 피해세대 케이스 새로 생성
-              const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-              const recoveryData = JSON.parse(JSON.stringify(validatedData));
-              const recoveryCase = await storage.createCase({
-                ...recoveryData,
-                caseNumber: `${existingPrefix}-${nextSuffix}`,
-                caseGroupId,
-                status: "접수완료",
-                createdBy: req.session.userId,
-              });
-              completedCases.push(recoveryCase);
+              if (existingPreventionCase) {
+                // -0 케이스가 이미 존재함 → 현재 케이스는 피해세대로 유지하고 업데이트만
+                // 기존 suffix가 유효하면 유지, 아니면 새로 생성
+                if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+                  newCaseNumber = existingCaseNumber; // 기존 피해세대 번호 유지
+                } else {
+                  const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                  newCaseNumber = `${existingPrefix}-${nextSuffix}`;
+                }
+                
+                // 현재 케이스 업데이트 (피해세대 케이스로)
+                const updatedCase = await storage.updateCase(validatedData.id, {
+                  ...validatedData,
+                  caseNumber: newCaseNumber,
+                  caseGroupId,
+                  status: "접수완료",
+                });
+                completedCases.push(updatedCase);
+                
+                // 기존 -0 케이스도 동기화 (정보 업데이트)
+                await storage.updateCase(existingPreventionCase.id, {
+                  ...validatedData,
+                  caseNumber: existingPreventionCase.caseNumber || undefined,
+                  caseGroupId,
+                  status: existingPreventionCase.status === "배당대기" ? "접수완료" as const : existingPreventionCase.status as any,
+                });
+                
+                console.log(`[Case Complete] Updated existing prevention case ${existingPreventionCase.caseNumber} and victim case ${newCaseNumber}`);
+              } else {
+                // -0 케이스가 없음 → 기존 케이스를 -0으로, 새 피해세대 케이스 생성
+                newCaseNumber = `${existingPrefix}-0`;
+                
+                // 기존 케이스 업데이트 (손해방지 케이스로)
+                const updatedCase = await storage.updateCase(validatedData.id, {
+                  ...validatedData,
+                  caseNumber: newCaseNumber,
+                  caseGroupId,
+                  status: "접수완료",
+                });
+                completedCases.push(updatedCase);
+                
+                // 피해세대 케이스 새로 생성
+                const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                const recoveryData = JSON.parse(JSON.stringify(validatedData));
+                const recoveryCase = await storage.createCase({
+                  ...recoveryData,
+                  caseNumber: `${existingPrefix}-${nextSuffix}`,
+                  caseGroupId,
+                  status: "접수완료",
+                  createdBy: req.session.userId,
+                });
+                completedCases.push(recoveryCase);
+              }
               
               // 동기화 및 응답
               if (completedCases.length > 0) {
