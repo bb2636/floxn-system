@@ -1006,9 +1006,22 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       console.log("📱 SMS 자동 발송 - cases 배열:", cases, "길이:", cases.length);
       if (cases.length > 0) {
         const firstCase = cases[0];
+        const caseNumber = firstCase.caseNumber;
+        
+        // 접수번호가 없거나 유효하지 않으면 SMS 발송하지 않음
+        if (!caseNumber || caseNumber === "-" || caseNumber.trim() === "") {
+          console.error("📱 SMS not sent - invalid case number:", caseNumber);
+          toast({ 
+            description: "접수번호 생성 오류로 문자가 발송되지 않았습니다. 수동으로 전송해주세요.",
+            variant: "destructive",
+            duration: 5000,
+          });
+          return;
+        }
+        
         const rawPartnerContact = submittedData.assignedPartnerContact?.trim() || "";
         const partnerContact = rawPartnerContact.replace(/[^0-9]/g, "");
-        console.log("📱 SMS 연락처 확인:", { rawPartnerContact, partnerContact, length: partnerContact.length });
+        console.log("📱 SMS 연락처 확인:", { rawPartnerContact, partnerContact, length: partnerContact.length, caseNumber });
         
         if (partnerContact.length >= 10 && partnerContact.length <= 11) {
           // 의뢰범위 생성
@@ -1025,7 +1038,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
           
           const smsPayload = {
             to: partnerContact,
-            caseNumber: formatCaseNumber(firstCase.caseNumber),
+            caseNumber: formatCaseNumber(caseNumber),
             insuranceCompany: submittedData.insuranceCompany || "-",
             managerName: managerName,
             insurancePolicyNo: submittedData.insurancePolicyNo || "-",
@@ -1137,12 +1150,18 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       ? allUsers?.find(u => u.id === formData.managerId)?.name || user?.name || "-"
       : user?.name || "-";
     
-    // 접수번호 (예측된 번호 또는 로드된 번호)
-    const displayCaseNumber = loadedCaseNumber 
-      ? formatCaseNumber(loadedCaseNumber) 
-      : (predictedPrefix && predictedSuffix > 0 
-          ? formatCaseNumber(`${predictedPrefix}-${String(predictedSuffix).padStart(4, '0')}`)
-          : "(미생성)");
+    // 접수번호 (저장된 번호만 사용 - 저장되지 않은 케이스는 문자 발송 불가)
+    const displayCaseNumber = loadedCaseNumber ? formatCaseNumber(loadedCaseNumber) : "";
+    
+    // 접수번호가 없으면 문자 발송 불가
+    if (!displayCaseNumber || displayCaseNumber === "-" || displayCaseNumber.trim() === "") {
+      toast({
+        description: "접수가 완료되지 않아 문자를 발송할 수 없습니다. 먼저 접수완료 버튼을 눌러주세요.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      return;
+    }
     
     const smsPayload = {
       to: partnerContact,
