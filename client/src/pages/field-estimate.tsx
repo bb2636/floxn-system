@@ -1309,7 +1309,7 @@ export default function FieldEstimate() {
   // 협력사는 추가로 1차승인 이후에도 수정 불가
   const isPartner = currentUser?.role === "협력사";
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
-  const isRejected = selectedCase?.progressStatus === "반려";
+  const isRejected = selectedCase?.status === "반려";
   const isFirstApproved = selectedCase?.status === "1차승인";
   const isReadOnly = (isSubmitted && !isRejected) || (isPartner && isFirstApproved && !isRejected);
   

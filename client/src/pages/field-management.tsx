@@ -268,7 +268,7 @@ export default function FieldManagement() {
   // 협력사는 추가로 1차승인 이후에도 수정 불가
   const canEdit = isPartner || isAdmin;
   const isSubmitted = selectedCaseData?.fieldSurveyStatus === "submitted";
-  const isRejected = selectedCaseData?.progressStatus === "반려";
+  const isRejected = selectedCaseData?.status === "반려";
   const isFirstApproved = selectedCaseData?.status === "1차승인";
   const isReadOnly = !canEdit || (isSubmitted && !isRejected) || (isPartner && isFirstApproved && !isRejected);
 
