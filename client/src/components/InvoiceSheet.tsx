@@ -29,7 +29,7 @@ interface InvoiceSheetProps {
 }
 
 const getCaseSuffix = (caseNumber: string | null | undefined): number => {
-  if (!caseNumber) return -1;
+  if (!caseNumber) return 0; // 기본값 0 (손해방지 버킷으로 분류)
   const parts = caseNumber.split("-");
   return parts.length > 1 ? parseInt(parts[parts.length - 1]) || 0 : 0;
 };
