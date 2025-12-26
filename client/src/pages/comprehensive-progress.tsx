@@ -1445,7 +1445,7 @@ export default function ComprehensiveProgress() {
                         >
                           자세히 보기
                         </button>
-                        {canShowClaimButton(caseItem, cases) && (
+                        {canShowClaimButton(caseItem, cases) && user?.role !== "협력사" && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
