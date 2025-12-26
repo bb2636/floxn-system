@@ -7230,14 +7230,41 @@ export default function AdminSettings() {
                         queryKey: ["/api/users"],
                       });
 
+                      // Send notifications if requested
+                      let notificationResult = { emailSent: false, smsSent: false };
+                      if (sendEmailNotification || sendSmsNotification) {
+                        try {
+                          const response = await apiRequest("POST", "/api/send-account-notification", {
+                            sendEmail: sendEmailNotification,
+                            sendSms: sendSmsNotification,
+                            email: createAccountForm.email,
+                            phone: createAccountForm.phone,
+                            name: createAccountForm.name,
+                            username: createAccountForm.username,
+                            password: generatedPassword,
+                            role: createAccountForm.role,
+                            company: createAccountForm.company,
+                          });
+                          const result = await response.json() as { emailSent?: boolean; smsSent?: boolean };
+                          notificationResult = {
+                            emailSent: result.emailSent || false,
+                            smsSent: result.smsSent || false,
+                          };
+                        } catch (notifyError) {
+                          console.error("Notification send error:", notifyError);
+                        }
+                      }
+
                       // Show success message
                       let description = `${createAccountForm.name}님의 계정이 생성되었습니다. 초기 비밀번호: ${generatedPassword}`;
-                      if (sendEmailNotification && sendSmsNotification) {
-                        description += "\n이메일과 문자로 안내가 발송됩니다.";
-                      } else if (sendEmailNotification) {
-                        description += "\n이메일로 안내가 발송됩니다.";
-                      } else if (sendSmsNotification) {
-                        description += "\n문자로 안내가 발송됩니다.";
+                      if (notificationResult.emailSent && notificationResult.smsSent) {
+                        description += "\n이메일과 문자로 안내가 발송되었습니다.";
+                      } else if (notificationResult.emailSent) {
+                        description += "\n이메일로 안내가 발송되었습니다.";
+                      } else if (notificationResult.smsSent) {
+                        description += "\n문자로 안내가 발송되었습니다.";
+                      } else if (sendEmailNotification || sendSmsNotification) {
+                        description += "\n안내 발송에 실패했습니다. (이메일/전화번호를 확인해주세요)";
                       }
 
                       toast({
