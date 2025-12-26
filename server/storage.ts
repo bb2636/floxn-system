@@ -1772,11 +1772,12 @@ export class MemStorage implements IStorage {
     }
 
     // 1차승인 시 승인금액 확정 (최신 견적 총액을 승인금액으로)
+    // MemStorage에서는 getLatestEstimate가 구현되지 않으므로 estimateAmount 사용
     let approvedAmount = caseItem.approvedAmount;
     if (decision === "승인" && !caseItem.firstApprovalDate) {
-      const latestEstimate = await this.getLatestEstimate(caseId);
-      if (latestEstimate?.totalAmount) {
-        approvedAmount = latestEstimate.totalAmount.toString();
+      // MemStorage에서는 견적 기능이 없으므로 기존 estimateAmount 사용
+      if (caseItem.estimateAmount) {
+        approvedAmount = caseItem.estimateAmount;
       }
     }
 
@@ -4523,9 +4524,9 @@ export class DbStorage implements IStorage {
     ) {
       additionalUpdates.firstApprovalDate = currentDate;
       // 1차승인 시 승인금액 확정 (현재 견적 총액을 승인금액으로 저장)
-      const latestEstimate = await this.getLatestEstimate(caseId);
-      if (latestEstimate?.totalAmount) {
-        additionalUpdates.approvedAmount = latestEstimate.totalAmount.toString();
+      const latestEstimateResult = await this.getLatestEstimate(caseId);
+      if (latestEstimateResult?.estimate?.totalAmount) {
+        additionalUpdates.approvedAmount = latestEstimateResult.estimate.totalAmount.toString();
       }
     }
 
@@ -6158,8 +6159,8 @@ export class DbStorage implements IStorage {
           });
         }
 
-        // Update case's estimate amount if available
-        if (sourceCase.estimateAmount) {
+        // Update case's estimate amount if available (최초 제출 시에만 - 이미 값이 있으면 덮어쓰지 않음)
+        if (sourceCase.estimateAmount && (!relatedCase.estimateAmount || relatedCase.estimateAmount === "0")) {
           await db
             .update(cases)
             .set({ estimateAmount: sourceCase.estimateAmount })
