@@ -6072,6 +6072,64 @@ FLOXN 플랫폼 계정이 생성되었습니다.
     }
   });
 
+  // Get approved amounts for invoice by case group prefix
+  // Returns damage prevention amount (from -0 case) and property repair amount (from -1+ cases)
+  app.get("/api/invoice-amounts/:prefix", async (req, res) => {
+    try {
+      const { prefix } = req.params;
+      const allCases = await storage.getAllCases();
+      
+      // Filter cases by prefix
+      const groupCases = allCases.filter((c: { caseNumber?: string | null }) => {
+        if (!c.caseNumber) return false;
+        const casePrefix = c.caseNumber.split("-")[0];
+        return casePrefix === prefix;
+      });
+      
+      // Approved statuses (1차승인 or later in the workflow)
+      const approvedStatuses = [
+        "1차승인",
+        "현장정보제출",
+        "복구요청(2차승인)",
+        "직접복구",
+        "선견적요청",
+        "(직접복구인 경우) 청구자료제출",
+        "(선견적요청인 경우) 출동비 청구",
+        "청구",
+        "입금완료",
+        "일부입금",
+        "정산완료"
+      ];
+      
+      let damagePreventionAmount = 0;
+      let propertyRepairAmount = 0;
+      
+      for (const c of groupCases) {
+        if (!c.caseNumber || !approvedStatuses.includes(c.status || "")) continue;
+        
+        const suffix = c.caseNumber.split("-")[1];
+        const amount = parseInt(c.estimateAmount || "0") || 0;
+        
+        if (suffix === "0") {
+          // Damage prevention case (-0)
+          damagePreventionAmount += amount;
+        } else if (suffix && parseInt(suffix) >= 1) {
+          // Property repair case (-1, -2, ...)
+          propertyRepairAmount += amount;
+        }
+      }
+      
+      res.json({
+        damagePreventionAmount,
+        propertyRepairAmount,
+        totalAmount: damagePreventionAmount + propertyRepairAmount,
+      });
+    } catch (error) {
+      console.error("Get invoice amounts error:", error);
+      res.status(500).json({ error: "인보이스 금액 조회 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

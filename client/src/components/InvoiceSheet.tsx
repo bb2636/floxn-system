@@ -33,20 +33,45 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [invoiceRemarks, setInvoiceRemarks] = useState<string>("");
   const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState<string>("");
   const [isSendingPdf, setIsSendingPdf] = useState(false);
+  const [isLoadingAmounts, setIsLoadingAmounts] = useState(false);
 
   useEffect(() => {
-    if (open && caseData) {
-      // 기존 저장된 값이 있으면 불러오기
-      setInvoiceDamagePreventionAmount(caseData.invoiceDamagePreventionAmount || "");
-      setInvoicePropertyRepairAmount(caseData.invoicePropertyRepairAmount || "");
-      setInvoiceRemarks(caseData.invoiceRemarks || "");
-      setInvoiceRecipientEmail("");
-    } else if (!open) {
-      setInvoiceDamagePreventionAmount("");
-      setInvoicePropertyRepairAmount("");
-      setInvoiceRemarks("");
-      setInvoiceRecipientEmail("");
-    }
+    const fetchApprovedAmounts = async () => {
+      if (open && caseData) {
+        // 기존 저장된 값이 있으면 불러오기
+        if (caseData.invoiceDamagePreventionAmount || caseData.invoicePropertyRepairAmount) {
+          setInvoiceDamagePreventionAmount(caseData.invoiceDamagePreventionAmount || "");
+          setInvoicePropertyRepairAmount(caseData.invoicePropertyRepairAmount || "");
+        } else {
+          // 승인금액을 API에서 가져오기
+          const prefix = getCaseNumberPrefix(caseData.caseNumber);
+          if (prefix) {
+            setIsLoadingAmounts(true);
+            try {
+              const response = await fetch(`/api/invoice-amounts/${encodeURIComponent(prefix)}`);
+              if (response.ok) {
+                const data = await response.json();
+                setInvoiceDamagePreventionAmount(data.damagePreventionAmount?.toString() || "");
+                setInvoicePropertyRepairAmount(data.propertyRepairAmount?.toString() || "");
+              }
+            } catch (error) {
+              console.error("Failed to fetch approved amounts:", error);
+            } finally {
+              setIsLoadingAmounts(false);
+            }
+          }
+        }
+        setInvoiceRemarks(caseData.invoiceRemarks || "");
+        setInvoiceRecipientEmail("");
+      } else if (!open) {
+        setInvoiceDamagePreventionAmount("");
+        setInvoicePropertyRepairAmount("");
+        setInvoiceRemarks("");
+        setInvoiceRecipientEmail("");
+      }
+    };
+    
+    fetchApprovedAmounts();
   }, [open, caseData]);
 
   const totalAmount = (parseInt(invoiceDamagePreventionAmount || "0") || 0) + (parseInt(invoicePropertyRepairAmount || "0") || 0);
