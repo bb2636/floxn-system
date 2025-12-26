@@ -1655,11 +1655,20 @@ export class MemStorage implements IStorage {
         break;
     }
 
+    // 상태에 따라 recoveryType 자동 설정
+    let recoveryTypeUpdate: Partial<Case> = {};
+    if (normalizedStatus === "직접복구" || normalizedStatus === "(직접복구인 경우) 청구자료제출") {
+      recoveryTypeUpdate.recoveryType = "직접복구";
+    } else if (normalizedStatus === "선견적요청" || normalizedStatus === "(선견적요청인 경우) 출동비 청구") {
+      recoveryTypeUpdate.recoveryType = "선견적요청";
+    }
+
     const updatedCase: Case = {
       ...caseItem,
       status: normalizedStatus,
       updatedAt: currentDate,
       ...dateUpdates,
+      ...recoveryTypeUpdate,
     };
 
     this.cases.set(caseId, updatedCase);
@@ -4378,12 +4387,21 @@ export class DbStorage implements IStorage {
         break;
     }
 
+    // 상태에 따라 recoveryType 자동 설정
+    let recoveryTypeUpdate: { recoveryType?: string } = {};
+    if (normalizedStatus === "직접복구" || normalizedStatus === "(직접복구인 경우) 청구자료제출") {
+      recoveryTypeUpdate.recoveryType = "직접복구";
+    } else if (normalizedStatus === "선견적요청" || normalizedStatus === "(선견적요청인 경우) 출동비 청구") {
+      recoveryTypeUpdate.recoveryType = "선견적요청";
+    }
+
     const result = await db
       .update(cases)
       .set({
         status: normalizedStatus,
         updatedAt: currentDate,
         ...dateUpdates,
+        ...recoveryTypeUpdate,
       })
       .where(eq(cases.id, caseId))
       .returning();
