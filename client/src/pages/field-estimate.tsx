@@ -980,7 +980,11 @@ export default function FieldEstimate() {
           const autoKey = `${norm(data.공종)}|${norm(data.공사명)}|${itemKey}`;
           nextAutoKeys.add(autoKey);
           
-          const unitPrice = typeof material.금액 === 'number' ? material.금액 : 0;
+          // 단가가 '입력', '직접입력' 문자열인 경우 직접 입력 필요
+          const priceValue = material.금액;
+          const isManualEntry = typeof priceValue === 'string' && 
+            (priceValue.includes('입력') || priceValue === '입력' || priceValue === '직접입력');
+          const unitPrice = typeof priceValue === 'number' ? priceValue : 0;
           
           // 기존 행이 있는지 확인
           const existingRow = existingAutoRowsMap.get(autoKey);
@@ -992,6 +996,7 @@ export default function FieldEstimate() {
               autoKey,
               autoQuantity: calculatedQty,
               sourceAreaRowIds: data.sourceAreaRowIds,
+              isManualPriceEntry: existingRow.isManualPriceEntry ?? isManualEntry,
             });
             console.log(`[자재비 집계] ${autoKey}: isOverridden=true, 사용자 값 보존`);
           } else if (existingRow) {
@@ -999,6 +1004,8 @@ export default function FieldEstimate() {
             // 단, 사용자가 이미 입력한 단가는 보존 (0이 아닌 경우)
             const existingPrice = existingRow.단가 || existingRow.기준단가 || 0;
             const preservedPrice = existingPrice > 0 ? existingPrice : unitPrice;
+            // 사용자가 단가를 입력한 경우 isManualPriceEntry 유지 (isOverridden도 설정)
+            const shouldPreserveManualFlag = existingRow.isManualPriceEntry && existingPrice > 0;
             resultRowsMap.set(autoKey, {
               ...existingRow,
               autoKey,
@@ -1013,8 +1020,10 @@ export default function FieldEstimate() {
               sourceAreaRowIds: data.sourceAreaRowIds,
               autoQuantity: calculatedQty,
               autoUnitType,
+              isManualPriceEntry: shouldPreserveManualFlag ? false : (existingRow.isManualPriceEntry ?? isManualEntry),
+              isOverridden: shouldPreserveManualFlag ? true : existingRow.isOverridden,
             });
-            console.log(`[자재비 집계] ${autoKey}: 기존 행 업데이트 (단가 보존: ${existingPrice > 0})`);
+            console.log(`[자재비 집계] ${autoKey}: 기존 행 업데이트 (단가 보존: ${existingPrice > 0}, 직접입력: ${existingRow.isManualPriceEntry ?? isManualEntry})`);
           } else {
             // 새 자동 생성 행
             resultRowsMap.set(autoKey, {
@@ -1040,8 +1049,9 @@ export default function FieldEstimate() {
               isOverridden: false,
               autoQuantity: calculatedQty,
               autoUnitType,
+              isManualPriceEntry: isManualEntry,
             });
-            console.log(`[자재비 집계] ${autoKey}: 새 행 생성`);
+            console.log(`[자재비 집계] ${autoKey}: 새 행 생성 (직접입력: ${isManualEntry})`);
           }
         });
       } else {
