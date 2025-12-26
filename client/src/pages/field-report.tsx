@@ -807,7 +807,7 @@ export default function FieldReport() {
             </>
           )}
           
-          {!isUserLoading && canApproveReport && (
+          {!isUserLoading && isAdmin && (
             <Button
               data-testid="button-review"
               onClick={() => setShowReviewDialog(true)}
