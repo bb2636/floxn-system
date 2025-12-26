@@ -8,28 +8,22 @@ neonConfig.webSocketConstructor = ws;
 // 환경에 따라 적절한 DB URL 선택
 const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
 
-// Replit PostgreSQL 환경변수로 URL 구성 (우선 사용)
-const buildPgUrl = () => {
-  const { PGHOST, PGUSER, PGPASSWORD, PGDATABASE } = process.env;
-  if (PGHOST && PGUSER && PGPASSWORD && PGDATABASE) {
-    return `postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}/${PGDATABASE}?sslmode=require`;
-  }
-  return null;
-};
-
-// 환경별 DB URL 선택 (Replit PostgreSQL 우선 - 개발/프로덕션 모두)
-const replitPgUrl = buildPgUrl();
-const databaseUrl = replitPgUrl 
-  || (isProduction ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL)
-  || process.env.DATABASE_URL;
+// 환경별 DB URL 선택 (DEV_DATABASE_URL / PROD_DATABASE_URL 우선)
+const databaseUrl = isProduction 
+  ? (process.env.PROD_DATABASE_URL || process.env.DATABASE_URL)
+  : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
 
 if (!databaseUrl) {
   throw new Error(
-    "DATABASE_URL must be set. Please configure the database connection.",
+    "DATABASE_URL must be set. Please configure DEV_DATABASE_URL for development or PROD_DATABASE_URL for production.",
   );
 }
 
-console.log(`[DB] Connected to ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} database`);
+// DB 호스트 추출하여 로그에 표시
+const hostMatch = databaseUrl.match(/@([^/]+)\//);
+const dbHost = hostMatch ? hostMatch[1] : 'unknown';
+
+console.log(`[DB] Connected to ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} database (${dbHost})`);
 
 export const pool = new Pool({ connectionString: databaseUrl });
 export const db = drizzle({ client: pool, schema });
