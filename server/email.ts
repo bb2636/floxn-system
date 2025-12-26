@@ -171,6 +171,65 @@ export async function sendCaseNotificationEmail(
   }
 }
 
+export async function sendAccountCreationEmail(
+  email: string,
+  accountInfo: {
+    name: string;
+    username: string;
+    password: string;
+    role: string;
+    company?: string;
+  }
+): Promise<boolean> {
+  const roleNames: Record<string, string> = {
+    admin: '관리자',
+    insurer: '보험사',
+    partner: '협력사',
+    assessor: '심사사',
+    investigator: '조사사',
+    client: '의뢰사',
+  };
+
+  const roleName = roleNames[accountInfo.role] || accountInfo.role;
+  
+  const content = `[FLOXN 계정 생성 안내]
+
+안녕하세요, ${accountInfo.name}님.
+
+FLOXN 플랫폼 계정이 생성되었습니다.
+
+━━━━━━━━━━━━━━━━━━━━
+■ 계정 정보
+━━━━━━━━━━━━━━━━━━━━
+- 이름: ${accountInfo.name}
+- 소속: ${accountInfo.company || '-'}
+- 역할: ${roleName}
+- 아이디: ${accountInfo.username}
+- 비밀번호: ${accountInfo.password}
+
+━━━━━━━━━━━━━━━━━━━━
+■ 로그인 안내
+━━━━━━━━━━━━━━━━━━━━
+아래 주소에서 로그인하실 수 있습니다.
+로그인 후 반드시 비밀번호를 변경해 주세요.
+
+FLOXN 드림`;
+
+  try {
+    await callBubbleWF({
+      sender: 'FLOXN',
+      title: '[FLOXN] 계정 생성 안내',
+      to: email,
+      content: content,
+    });
+    console.log(`[Email] Account creation notification sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('[Email] Failed to send account creation email:', error);
+    throw new Error('이메일 전송에 실패했습니다');
+  }
+}
+
 export function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }

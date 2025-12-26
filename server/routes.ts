@@ -10,7 +10,7 @@ import nodemailer from "nodemailer";
 import https from "https";
 import crypto from "crypto";
 import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from "./replit_integrations/object_storage";
-import { sendNotificationEmail } from "./email";
+import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
@@ -5324,6 +5324,168 @@ FLOXN 드림`;
         details: errorMessage,
         stack: errorDetails
       });
+    }
+  });
+
+  // ==========================================
+  // POST /api/send-account-notification - 계정 생성 안내 발송 (이메일/SMS)
+  // ==========================================
+  const accountNotificationSchema = z.object({
+    sendEmail: z.boolean().default(false),
+    sendSms: z.boolean().default(false),
+    email: z.string().email().optional().nullable(),
+    phone: z.string().optional().nullable(),
+    name: z.string(),
+    username: z.string(),
+    password: z.string(),
+    role: z.string(),
+    company: z.string().optional().nullable(),
+  });
+
+  app.post("/api/send-account-notification", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const currentUser = await storage.getUser(req.session.userId);
+    if (!currentUser) {
+      return res.status(401).json({ error: "사용자를 찾을 수 없습니다" });
+    }
+
+    // 관리자만 계정 생성 안내 발송 가능
+    if (currentUser.role !== "관리자") {
+      return res.status(403).json({ error: "계정 생성 안내 발송 권한이 없습니다" });
+    }
+
+    try {
+      const validatedData = accountNotificationSchema.parse(req.body);
+      const { sendEmail, sendSms, email, phone, name, username, password, role, company } = validatedData;
+
+      const results = {
+        emailSent: false,
+        smsSent: false,
+        errors: [] as string[],
+      };
+
+      // 역할명 변환
+      const roleNames: Record<string, string> = {
+        admin: '관리자',
+        insurer: '보험사',
+        partner: '협력사',
+        assessor: '심사사',
+        investigator: '조사사',
+        client: '의뢰사',
+        관리자: '관리자',
+        보험사: '보험사',
+        협력사: '협력사',
+        심사사: '심사사',
+        조사사: '조사사',
+        의뢰사: '의뢰사',
+      };
+      const roleName = roleNames[role] || role;
+
+      // 이메일 발송
+      if (sendEmail && email) {
+        try {
+          await sendAccountCreationEmail(email, {
+            name,
+            username,
+            password,
+            role,
+            company: company || undefined,
+          });
+          results.emailSent = true;
+          console.log(`[send-account-notification] Email sent to ${email}`);
+        } catch (emailError) {
+          console.error("[send-account-notification] Email error:", emailError);
+          results.errors.push("이메일 전송 실패");
+        }
+      }
+
+      // SMS 발송
+      if (sendSms && phone) {
+        const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+        const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+        const SOLAPI_SENDER = process.env.SOLAPI_SENDER;
+
+        if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !SOLAPI_SENDER) {
+          results.errors.push("SMS 서비스가 설정되지 않았습니다");
+        } else {
+          const normalizedPhone = phone.replace(/[^0-9]/g, "");
+          const normalizedSender = SOLAPI_SENDER.replace(/[^0-9]/g, "");
+
+          if (normalizedPhone.length < 10 || normalizedPhone.length > 11) {
+            results.errors.push("유효하지 않은 전화번호 형식입니다");
+          } else {
+            const messageText = `[FLOXN 계정 생성 안내]
+
+안녕하세요, ${name}님.
+FLOXN 플랫폼 계정이 생성되었습니다.
+
+▶ 계정 정보
+- 이름: ${name}
+- 소속: ${company || '-'}
+- 역할: ${roleName}
+- 아이디: ${username}
+- 비밀번호: ${password}
+
+로그인 후 반드시 비밀번호를 변경해 주세요.`;
+
+            try {
+              const payload = {
+                message: {
+                  to: normalizedPhone,
+                  from: normalizedSender,
+                  text: messageText,
+                  subject: 'FLOXN 계정 생성 안내',
+                  type: 'LMS',
+                },
+              };
+              const body = JSON.stringify(payload);
+
+              await solapiHttpsRequest({
+                method: "POST",
+                path: "/messages/v4/send",
+                headers: {
+                  Authorization: createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET),
+                  "Content-Type": "application/json",
+                  "Content-Length": Buffer.byteLength(body),
+                },
+                body,
+              });
+
+              results.smsSent = true;
+              console.log(`[send-account-notification] SMS sent to ${normalizedPhone}`);
+            } catch (smsError) {
+              console.error("[send-account-notification] SMS error:", smsError);
+              results.errors.push("SMS 전송 실패");
+            }
+          }
+        }
+      }
+
+      // 결과 반환
+      if (results.emailSent || results.smsSent) {
+        let message = "";
+        if (results.emailSent && results.smsSent) {
+          message = "이메일과 문자가 전송되었습니다";
+        } else if (results.emailSent) {
+          message = "이메일이 전송되었습니다";
+        } else {
+          message = "문자가 전송되었습니다";
+        }
+        res.json({ success: true, message, ...results });
+      } else if (results.errors.length > 0) {
+        res.status(500).json({ success: false, error: results.errors.join(", "), ...results });
+      } else {
+        res.json({ success: true, message: "발송 대상이 없습니다", ...results });
+      }
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "요청 데이터가 올바르지 않습니다", details: error.errors });
+      }
+      console.error("[send-account-notification] Error:", error);
+      res.status(500).json({ error: "알림 발송에 실패했습니다" });
     }
   });
 
