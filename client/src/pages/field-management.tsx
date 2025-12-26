@@ -2050,7 +2050,7 @@ export default function FieldManagement() {
                         processingTypes: JSON.stringify(Array.from(processingTypes)),
                         processingTypeOther,
                         recoveryMethodType,
-                        fieldSurveyStatus: "submitted",
+                        fieldSurveyStatus: "draft", // 현장입력만 저장, 현장출동보고서 제출 시 "submitted"로 변경됨
                         status: "현장정보 입력", // 제출 시 상태 변경
                       };
 
