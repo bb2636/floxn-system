@@ -2049,8 +2049,8 @@ export default function FieldManagement() {
                         processingTypes: JSON.stringify(Array.from(processingTypes)),
                         processingTypeOther,
                         recoveryMethodType,
-                        fieldSurveyStatus: "draft", // 현장입력만 저장, 현장출동보고서 제출 시 "submitted"로 변경됨
-                        status: "현장정보 입력", // 제출 시 상태 변경
+                        fieldSurveyStatus: "submitted", // 제출 시 submitted로 변경 (협력사 수정 불가)
+                        status: "제출", // 제출 시 상태 변경
                       };
 
                       const data = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
