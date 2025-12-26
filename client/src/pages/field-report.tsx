@@ -26,7 +26,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft } from "lucide-react";
-import type { Drawing, CaseDocument as SchemaDocument, Case as SchemaCase } from "@shared/schema";
+import type { Drawing, CaseDocument as SchemaDocument, Case as SchemaCase, CaseDocument } from "@shared/schema";
 import { SmsNotificationDialog } from "@/components/sms-notification-dialog";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -245,6 +245,12 @@ export default function FieldReport() {
     enabled: !!selectedCaseId,
   });
 
+  // 증빙자료 문서 목록 조회 (팝업용)
+  const { data: allDocuments = [] } = useQuery<CaseDocument[]>({
+    queryKey: ["/api/documents/case", selectedCaseId],
+    enabled: !!selectedCaseId,
+  });
+
   // 기타사항 상태
   const [additionalNotes, setAdditionalNotes] = useState('');
   
@@ -261,13 +267,14 @@ export default function FieldReport() {
   const [approvalDecision, setApprovalDecision] = useState<"승인" | "비승인">("승인");
   const [approvalComment, setApprovalComment] = useState("");
   
-  // 이메일 전송 다이얼로그 상태
-  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  // 이메일 입력 다이얼로그 상태 (Step 2)
+  const [showEmailInputDialog, setShowEmailInputDialog] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   
-  // PDF 다운로드 다이얼로그 상태
-  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
+  // 통합 PDF 다운로드/이메일 다이얼로그 상태 (Step 1)
+  const [showPdfDialog, setShowPdfDialog] = useState(false);
+  const [pdfDialogMode, setPdfDialogMode] = useState<"download" | "email">("download");
   const [downloadSections, setDownloadSections] = useState({
     현장입력: true,
     도면: true,
@@ -275,6 +282,99 @@ export default function FieldReport() {
     견적서: true,
     기타사항: true,
   });
+  
+  // 증빙자료 문서 선택 상태
+  type DocumentTabCategory = "전체" | "현장사진" | "기본자료" | "증빙자료" | "청구자료";
+  const [documentTab, setDocumentTab] = useState<DocumentTabCategory>("전체");
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
+  const [documentsInitialized, setDocumentsInitialized] = useState(false);
+  
+  // 증빙자료 체크 시 모든 문서 자동 선택 (다이얼로그 열릴 때만)
+  useEffect(() => {
+    if (showPdfDialog && downloadSections.증빙자료 && allDocuments.length > 0 && !documentsInitialized) {
+      setSelectedDocuments(new Set(allDocuments.map(d => d.id)));
+      setDocumentsInitialized(true);
+    }
+  }, [showPdfDialog, downloadSections.증빙자료, allDocuments, documentsInitialized]);
+  
+  // 다이얼로그 닫힐 때 초기화 플래그 리셋
+  useEffect(() => {
+    if (!showPdfDialog) {
+      setDocumentsInitialized(false);
+    }
+  }, [showPdfDialog]);
+  
+  // 탭별 문서 필터링
+  const getFilteredDocuments = useMemo(() => {
+    if (!allDocuments) return [];
+    
+    const categoryMapping: Record<DocumentTabCategory, string[]> = {
+      "전체": [],
+      "현장사진": ["현장출동사진", "수리중 사진", "복구완료 사진"],
+      "기본자료": ["보험금 청구서", "개인정보 동의서(가족용)"],
+      "증빙자료": ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"],
+      "청구자료": ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"],
+    };
+    
+    if (documentTab === "전체") {
+      return allDocuments;
+    }
+    
+    const allowedCategories = categoryMapping[documentTab];
+    return allDocuments.filter(doc => allowedCategories.includes(doc.category));
+  }, [allDocuments, documentTab]);
+  
+  // 탭별 선택 상태 계산
+  const getTabSelectedCount = (tab: DocumentTabCategory) => {
+    if (tab === "전체") {
+      return allDocuments.filter(d => selectedDocuments.has(d.id)).length;
+    }
+    
+    const categoryMapping: Record<DocumentTabCategory, string[]> = {
+      "전체": [],
+      "현장사진": ["현장출동사진", "수리중 사진", "복구완료 사진"],
+      "기본자료": ["보험금 청구서", "개인정보 동의서(가족용)"],
+      "증빙자료": ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"],
+      "청구자료": ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"],
+    };
+    
+    const allowedCategories = categoryMapping[tab];
+    return allDocuments.filter(d => allowedCategories.includes(d.category) && selectedDocuments.has(d.id)).length;
+  };
+  
+  // 탭별 문서 전체 선택/해제
+  const toggleTabDocuments = (tab: DocumentTabCategory, checked: boolean) => {
+    const categoryMapping: Record<DocumentTabCategory, string[]> = {
+      "전체": [],
+      "현장사진": ["현장출동사진", "수리중 사진", "복구완료 사진"],
+      "기본자료": ["보험금 청구서", "개인정보 동의서(가족용)"],
+      "증빙자료": ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"],
+      "청구자료": ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"],
+    };
+    
+    const newSelected = new Set(selectedDocuments);
+    
+    if (tab === "전체") {
+      if (checked) {
+        allDocuments.forEach(d => newSelected.add(d.id));
+      } else {
+        allDocuments.forEach(d => newSelected.delete(d.id));
+      }
+    } else {
+      const allowedCategories = categoryMapping[tab];
+      allDocuments
+        .filter(d => allowedCategories.includes(d.category))
+        .forEach(d => {
+          if (checked) {
+            newSelected.add(d.id);
+          } else {
+            newSelected.delete(d.id);
+          }
+        });
+    }
+    
+    setSelectedDocuments(newSelected);
+  };
   
   // 활성 탭 상태 (PDF 캡처를 위해 제어 컴포넌트로 사용)
   const [activeTab, setActiveTab] = useState("현장조사");
@@ -1084,8 +1184,523 @@ export default function FieldReport() {
         </AlertDialogContent>
       </AlertDialog>
       
-      {/* 이메일 전송 Dialog */}
-      <Dialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>
+      {/* 통합 PDF 다운로드/이메일 전송 Dialog */}
+      <Dialog open={showPdfDialog} onOpenChange={setShowPdfDialog}>
+        <DialogContent
+          style={{
+            maxWidth: "700px",
+            background: "rgba(253, 253, 253, 0.95)",
+            backdropFilter: "blur(17px)",
+            border: "none",
+            borderRadius: "12px",
+            padding: "32px",
+          }}
+        >
+          <div style={{
+            fontFamily: "Pretendard",
+            fontWeight: 600,
+            fontSize: "18px",
+            color: "#0C0C0C",
+            textAlign: "center",
+            marginBottom: "24px",
+          }}>
+            PDF 다운로드
+          </div>
+          
+          <div style={{ marginBottom: "24px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
+              {Object.entries(downloadSections).map(([key, value]) => (
+                <label 
+                  key={key}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    cursor: "pointer",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    color: "#0C0C0C",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={value}
+                    onChange={(e) => setDownloadSections(prev => ({ ...prev, [key]: e.target.checked }))}
+                    style={{ 
+                      width: "18px", 
+                      height: "18px", 
+                      accentColor: "#008FED",
+                      cursor: "pointer",
+                    }}
+                  />
+                  {key}
+                </label>
+              ))}
+            </div>
+          </div>
+          
+          {downloadSections.증빙자료 && (
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                justifyContent: "space-between",
+                borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                marginBottom: "16px",
+              }}>
+                <div style={{ display: "flex", gap: "0px" }}>
+                  {(["전체", "현장사진", "기본자료", "증빙자료", "청구자료"] as DocumentTabCategory[]).map((tab) => {
+                    const count = getTabSelectedCount(tab);
+                    const categoryMapping: Record<DocumentTabCategory, string[]> = {
+                      "전체": [],
+                      "현장사진": ["현장출동사진", "수리중 사진", "복구완료 사진"],
+                      "기본자료": ["보험금 청구서", "개인정보 동의서(가족용)"],
+                      "증빙자료": ["주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"],
+                      "청구자료": ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"],
+                    };
+                    const totalInTab = tab === "전체" 
+                      ? allDocuments.length 
+                      : allDocuments.filter(d => categoryMapping[tab].includes(d.category)).length;
+                    const isAllSelected = totalInTab > 0 && count === totalInTab;
+                    
+                    return (
+                      <button
+                        key={tab}
+                        onClick={() => setDocumentTab(tab)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          padding: "12px 16px",
+                          background: "transparent",
+                          border: "none",
+                          borderBottom: documentTab === tab ? "2px solid #008FED" : "2px solid transparent",
+                          marginBottom: "-1px",
+                          cursor: "pointer",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: documentTab === tab ? 600 : 400,
+                          color: documentTab === tab ? "#008FED" : "rgba(12, 12, 12, 0.6)",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isAllSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleTabDocuments(tab, e.target.checked);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          style={{ 
+                            width: "14px", 
+                            height: "14px", 
+                            accentColor: "#008FED",
+                            cursor: "pointer",
+                          }}
+                        />
+                        {tab}
+                        {count > 0 && (
+                          <span style={{ 
+                            fontSize: "12px", 
+                            color: "#008FED",
+                            fontWeight: 500,
+                          }}>
+                            ✓
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  color: "#008FED",
+                }}>
+                  {selectedDocuments.size}개
+                </span>
+              </div>
+              
+              <div style={{ 
+                display: "grid", 
+                gridTemplateColumns: "repeat(4, 1fr)", 
+                gap: "12px",
+                maxHeight: "300px",
+                overflowY: "auto",
+                padding: "4px",
+              }}>
+                {getFilteredDocuments.map((doc) => {
+                  const isSelected = selectedDocuments.has(doc.id);
+                  const isImage = doc.fileName?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                  
+                  return (
+                    <div
+                      key={doc.id}
+                      onClick={() => {
+                        const newSelected = new Set(selectedDocuments);
+                        if (isSelected) {
+                          newSelected.delete(doc.id);
+                        } else {
+                          newSelected.add(doc.id);
+                        }
+                        setSelectedDocuments(newSelected);
+                      }}
+                      style={{
+                        position: "relative",
+                        width: "100%",
+                        aspectRatio: "1",
+                        borderRadius: "8px",
+                        overflow: "hidden",
+                        cursor: "pointer",
+                        border: isSelected ? "2px solid #008FED" : "1px solid rgba(12, 12, 12, 0.1)",
+                        background: "rgba(12, 12, 12, 0.03)",
+                      }}
+                    >
+                      {isImage && doc.fileUrl ? (
+                        <img
+                          src={doc.fileUrl}
+                          alt={doc.fileName || ""}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "rgba(12, 12, 12, 0.05)",
+                        }}>
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="rgba(12,12,12,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <polyline points="14 2 14 8 20 8" stroke="rgba(12,12,12,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      )}
+                      
+                      <div style={{
+                        position: "absolute",
+                        top: "6px",
+                        right: "6px",
+                        width: "20px",
+                        height: "20px",
+                        borderRadius: "4px",
+                        background: isSelected ? "#008FED" : "rgba(255, 255, 255, 0.9)",
+                        border: isSelected ? "none" : "1px solid rgba(12, 12, 12, 0.2)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}>
+                        {isSelected && (
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+                      
+                      <div style={{
+                        position: "absolute",
+                        bottom: "0",
+                        left: "0",
+                        right: "0",
+                        padding: "6px 8px",
+                        background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
+                      }}>
+                        <span style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "11px",
+                          color: "white",
+                          display: "block",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}>
+                          {doc.fileName || doc.category}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {getFilteredDocuments.length === 0 && (
+                  <div style={{
+                    gridColumn: "1 / -1",
+                    textAlign: "center",
+                    padding: "32px",
+                    color: "rgba(12, 12, 12, 0.5)",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                  }}>
+                    해당 카테고리에 문서가 없습니다.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
+          <div style={{ display: "flex", gap: "12px" }}>
+            <button
+              onClick={() => setShowPdfDialog(false)}
+              style={{
+                flex: 1,
+                padding: "14px",
+                background: "transparent",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "14px",
+                color: "#008FED",
+                cursor: "pointer",
+              }}
+              data-testid="button-cancel-pdf-dialog"
+            >
+              취소
+            </button>
+            <button
+              onClick={async () => {
+                if (pdfDialogMode === "email") {
+                  setShowPdfDialog(false);
+                  setShowEmailInputDialog(true);
+                } else {
+                  try {
+                    toast({
+                      title: "PDF 생성 중",
+                      description: "보고서를 생성하고 있습니다...",
+                    });
+
+                    const pdf = new jsPDF('p', 'mm', 'a4');
+                    
+                    pdf.addFileToVFS('NotoSansKR-Regular.ttf', NotoSansKR_Regular);
+                    pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal', 'Identity-H');
+                    
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+                    const margin = 10;
+                    
+                    const sectionMap: Record<string, string> = {
+                      '현장입력': 'pdf-section-현장조사',
+                      '도면': 'pdf-section-도면',
+                      '증빙자료': 'pdf-section-증빙자료',
+                      '견적서': 'pdf-section-견적서',
+                      '기타사항': 'pdf-section-기타사항',
+                    };
+
+                    const selectedSections = Object.entries(downloadSections)
+                      .filter(([_, checked]) => checked)
+                      .map(([key]) => key);
+
+                    if (selectedSections.length === 0) {
+                      toast({
+                        title: "섹션 선택 필요",
+                        description: "최소 1개 이상의 섹션을 선택해주세요.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    let isFirstPage = true;
+
+                    const tabValueMap: Record<string, string> = {
+                      '현장입력': '현장조사',
+                      '도면': '도면',
+                      '증빙자료': '증빙자료',
+                      '견적서': '견적서',
+                      '기타사항': '기타사항/원인',
+                    };
+
+                    const originalTab = activeTab;
+                    
+                    setShowPdfDialog(false);
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    
+                    for (const sectionKey of selectedSections) {
+                      const tabValue = tabValueMap[sectionKey];
+                      const elementId = sectionMap[sectionKey];
+                      
+                      setActiveTab(tabValue);
+                      
+                      await new Promise(resolve => setTimeout(resolve, 500));
+                      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                      
+                      const element = document.getElementById(elementId);
+                      
+                      if (!element) {
+                        continue;
+                      }
+
+                      let drawingContainer: HTMLElement | null = null;
+                      let originalDrawingStyles = { height: '', width: '', overflow: '', maxHeight: '', maxWidth: '', minHeight: '' };
+                      
+                      if (sectionKey === '도면') {
+                        drawingContainer = element.querySelector('.overflow-auto') as HTMLElement;
+                        if (drawingContainer) {
+                          originalDrawingStyles = {
+                            height: drawingContainer.style.height,
+                            width: drawingContainer.style.width,
+                            overflow: drawingContainer.style.overflow,
+                            maxHeight: drawingContainer.style.maxHeight,
+                            maxWidth: drawingContainer.style.maxWidth,
+                            minHeight: drawingContainer.style.minHeight,
+                          };
+                          
+                          const absoluteElements = drawingContainer.querySelectorAll('[style*="position: absolute"], [style*="position:absolute"]');
+                          let maxRight = 0;
+                          let maxBottom = 0;
+                          
+                          absoluteElements.forEach((el) => {
+                            const rect = el.getBoundingClientRect();
+                            const containerRect = drawingContainer!.getBoundingClientRect();
+                            const relativeRight = rect.right - containerRect.left + 50;
+                            const relativeBottom = rect.bottom - containerRect.top + 50;
+                            maxRight = Math.max(maxRight, relativeRight);
+                            maxBottom = Math.max(maxBottom, relativeBottom);
+                          });
+                          
+                          const contentWidth = Math.max(maxRight, drawingContainer.scrollWidth, 1200);
+                          const contentHeight = Math.max(maxBottom, drawingContainer.scrollHeight, 800);
+                          
+                          drawingContainer.style.height = `${contentHeight}px`;
+                          drawingContainer.style.width = `${contentWidth}px`;
+                          drawingContainer.style.minHeight = `${contentHeight}px`;
+                          drawingContainer.style.maxHeight = 'none';
+                          drawingContainer.style.maxWidth = 'none';
+                          drawingContainer.style.overflow = 'visible';
+                          
+                          await new Promise(resolve => setTimeout(resolve, 300));
+                        }
+                      }
+
+                      try {
+                        const canvas = await html2canvas(element, {
+                          scale: 2,
+                          useCORS: true,
+                          allowTaint: true,
+                          logging: false,
+                          backgroundColor: '#ffffff',
+                          windowWidth: 1200,
+                          scrollX: 0,
+                          scrollY: 0,
+                        });
+
+                        if (canvas.width === 0 || canvas.height === 0) {
+                          continue;
+                        }
+
+                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                        const maxWidth = pageWidth - (margin * 2);
+                        const maxHeight = pageHeight - (margin * 2);
+                        
+                        const imgAspectRatio = canvas.width / canvas.height;
+                        const pageAspectRatio = maxWidth / maxHeight;
+                        
+                        let imgWidth: number;
+                        let imgHeight: number;
+                        
+                        if (sectionKey === '도면') {
+                          if (imgAspectRatio > pageAspectRatio) {
+                            imgWidth = maxWidth;
+                            imgHeight = maxWidth / imgAspectRatio;
+                          } else {
+                            imgHeight = maxHeight;
+                            imgWidth = maxHeight * imgAspectRatio;
+                          }
+                          
+                          if (!isFirstPage) {
+                            pdf.addPage();
+                          }
+                          isFirstPage = false;
+                          
+                          const xOffset = margin + (maxWidth - imgWidth) / 2;
+                          const yOffset = margin + (maxHeight - imgHeight) / 2;
+                          pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
+                        } else {
+                          imgWidth = maxWidth;
+                          imgHeight = (canvas.height * imgWidth) / canvas.width;
+                          
+                          let heightLeft = imgHeight;
+                          let position = 0;
+
+                          if (!isFirstPage) {
+                            pdf.addPage();
+                          }
+                          isFirstPage = false;
+
+                          pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
+                          heightLeft -= maxHeight;
+                          position = -maxHeight;
+
+                          while (heightLeft > 0) {
+                            pdf.addPage();
+                            pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
+                            heightLeft -= maxHeight;
+                            position -= maxHeight;
+                          }
+                        }
+                      } catch (captureError) {
+                        console.error(`캡처 오류 (${sectionKey}):`, captureError);
+                      } finally {
+                        if (drawingContainer) {
+                          drawingContainer.style.height = originalDrawingStyles.height || '600px';
+                          drawingContainer.style.width = originalDrawingStyles.width || '100%';
+                          drawingContainer.style.minHeight = originalDrawingStyles.minHeight || '';
+                          drawingContainer.style.maxHeight = originalDrawingStyles.maxHeight || '';
+                          drawingContainer.style.maxWidth = originalDrawingStyles.maxWidth || '';
+                          drawingContainer.style.overflow = originalDrawingStyles.overflow || 'auto';
+                        }
+                      }
+                    }
+                    
+                    setActiveTab(originalTab);
+
+                    const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                    pdf.save(fileName);
+
+                    toast({
+                      title: "PDF 다운로드 완료",
+                      description: "보고서가 성공적으로 다운로드되었습니다.",
+                    });
+                  } catch (error) {
+                    console.error('PDF 생성 오류:', error);
+                    toast({
+                      title: "PDF 생성 실패",
+                      description: "보고서 생성 중 오류가 발생했습니다.",
+                      variant: "destructive",
+                    });
+                  }
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: "14px",
+                background: "#008FED",
+                borderRadius: "8px",
+                border: "none",
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "14px",
+                color: "#FFFFFF",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+              data-testid="button-confirm-pdf-action"
+            >
+              {pdfDialogMode === "download" ? "다운 ↓" : "전송"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 이메일 입력 Dialog (Step 2) */}
+      <Dialog open={showEmailInputDialog} onOpenChange={setShowEmailInputDialog}>
         <DialogContent
           style={{
             maxWidth: "457px",
@@ -1096,7 +1711,6 @@ export default function FieldReport() {
             padding: "32px",
           }}
         >
-          {/* 제목 */}
           <div style={{
             fontFamily: "Pretendard",
             fontWeight: 600,
@@ -1108,7 +1722,6 @@ export default function FieldReport() {
             이메일 전송
           </div>
           
-          {/* 이메일 입력 */}
           <div style={{ marginBottom: "32px" }}>
             <label style={{
               display: "block",
@@ -1139,11 +1752,10 @@ export default function FieldReport() {
             />
           </div>
           
-          {/* 버튼 */}
           <div style={{ display: "flex", gap: "12px" }}>
             <button
               onClick={() => {
-                setShowEmailDialog(false);
+                setShowEmailInputDialog(false);
                 setEmailAddress("");
               }}
               style={{
@@ -1186,7 +1798,6 @@ export default function FieldReport() {
                   
                   const pdf = new jsPDF('p', 'mm', 'a4');
                   
-                  // 한글 폰트 등록 (Identity-H 인코딩 필수 - Unicode 지원)
                   pdf.addFileToVFS('NotoSansKR-Regular.ttf', NotoSansKR_Regular);
                   pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal', 'Identity-H');
                   
@@ -1194,7 +1805,6 @@ export default function FieldReport() {
                   const pageHeight = pdf.internal.pageSize.getHeight();
                   const margin = 10;
                   
-                  // ===== 1. 표지 페이지 (HTML로 생성 후 캡처) =====
                   const today = new Date();
                   const dateStr = `${today.getFullYear()}년 ${String(today.getMonth() + 1).padStart(2, '0')}월 ${String(today.getDate()).padStart(2, '0')}일`;
                   
@@ -1259,7 +1869,6 @@ export default function FieldReport() {
                   const coverImg = coverCanvas.toDataURL('image/jpeg', 0.95);
                   pdf.addImage(coverImg, 'JPEG', 0, 0, pageWidth, pageHeight);
                   
-                  // ===== 2. 각 섹션을 챕터별로 추가 =====
                   const chapters = [
                     { name: '현장조사', tabValue: '현장조사', elementId: 'pdf-section-현장조사' },
                     { name: '도면', tabValue: '도면', elementId: 'pdf-section-도면' },
@@ -1500,360 +2109,6 @@ export default function FieldReport() {
         </DialogContent>
       </Dialog>
 
-      {/* PDF 다운로드 Dialog */}
-      <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
-        <DialogContent
-          style={{
-            maxWidth: "500px",
-            background: "rgba(253, 253, 253, 0.95)",
-            backdropFilter: "blur(17px)",
-            border: "none",
-            borderRadius: "12px",
-            padding: "32px",
-          }}
-        >
-          <div style={{
-            fontFamily: "Pretendard",
-            fontWeight: 600,
-            fontSize: "18px",
-            color: "#0C0C0C",
-            textAlign: "center",
-            marginBottom: "24px",
-          }}>
-            PDF 다운로드
-          </div>
-          
-          <div style={{ marginBottom: "24px" }}>
-            <div style={{
-              fontFamily: "Pretendard",
-              fontSize: "14px",
-              fontWeight: 500,
-              color: "rgba(12, 12, 12, 0.6)",
-              marginBottom: "16px",
-            }}>
-              포함 내용 선택
-            </div>
-            
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "16px" }}>
-              {Object.entries(downloadSections).map(([key, value]) => (
-                <label 
-                  key={key}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    cursor: "pointer",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    color: "#0C0C0C",
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={value}
-                    onChange={(e) => setDownloadSections(prev => ({ ...prev, [key]: e.target.checked }))}
-                    style={{ 
-                      width: "18px", 
-                      height: "18px", 
-                      accentColor: "#008FED",
-                      cursor: "pointer",
-                    }}
-                  />
-                  {key}
-                </label>
-              ))}
-            </div>
-          </div>
-          
-          <div style={{ display: "flex", gap: "12px" }}>
-            <button
-              onClick={() => setShowDownloadDialog(false)}
-              style={{
-                flex: 1,
-                padding: "14px",
-                background: "transparent",
-                borderRadius: "8px",
-                border: "none",
-                fontFamily: "Pretendard",
-                fontWeight: 600,
-                fontSize: "14px",
-                color: "#008FED",
-                cursor: "pointer",
-              }}
-            >
-              취소
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  toast({
-                    title: "PDF 생성 중",
-                    description: "보고서를 생성하고 있습니다...",
-                  });
-
-                  const pdf = new jsPDF('p', 'mm', 'a4');
-                  
-                  // 한글 폰트 등록 (Identity-H 인코딩 필수 - Unicode 지원)
-                  pdf.addFileToVFS('NotoSansKR-Regular.ttf', NotoSansKR_Regular);
-                  pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal', 'Identity-H');
-                  
-                  const pageWidth = pdf.internal.pageSize.getWidth();
-                  const pageHeight = pdf.internal.pageSize.getHeight();
-                  const margin = 10;
-                  
-                  // 섹션 매핑: 체크박스 키 -> DOM ID
-                  const sectionMap: Record<string, string> = {
-                    '현장입력': 'pdf-section-현장조사',
-                    '도면': 'pdf-section-도면',
-                    '증빙자료': 'pdf-section-증빙자료',
-                    '견적서': 'pdf-section-견적서',
-                    '기타사항': 'pdf-section-기타사항',
-                  };
-
-                  // 선택된 섹션들
-                  const selectedSections = Object.entries(downloadSections)
-                    .filter(([_, checked]) => checked)
-                    .map(([key]) => key);
-
-                  if (selectedSections.length === 0) {
-                    toast({
-                      title: "섹션 선택 필요",
-                      description: "최소 1개 이상의 섹션을 선택해주세요.",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-
-                  let isFirstPage = true;
-
-                  // 체크박스 키와 탭 value 매핑
-                  const tabValueMap: Record<string, string> = {
-                    '현장입력': '현장조사',
-                    '도면': '도면',
-                    '증빙자료': '증빙자료',
-                    '견적서': '견적서',
-                    '기타사항': '기타사항/원인',
-                  };
-
-                  // 현재 탭 저장
-                  const originalTab = activeTab;
-                  
-                  // 다이얼로그 닫기
-                  setShowDownloadDialog(false);
-                  await new Promise(resolve => setTimeout(resolve, 200));
-                  
-                  // 각 섹션을 순차적으로 캡처
-                  for (const sectionKey of selectedSections) {
-                    const tabValue = tabValueMap[sectionKey];
-                    const elementId = sectionMap[sectionKey];
-                    
-                    // React 상태로 탭 변경
-                    setActiveTab(tabValue);
-                    
-                    // 렌더링 완료 대기 (충분한 시간)
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                    
-                    const element = document.getElementById(elementId);
-                    console.log(`Processing section: ${sectionKey}, tabValue: ${tabValue}, elementId: ${elementId}`);
-                    console.log(`Element found: ${!!element}`, element);
-                    
-                    if (!element) {
-                      console.warn(`Element not found: ${elementId}`);
-                      continue;
-                    }
-
-                    // 도면 섹션의 경우 스크롤 컨테이너를 실제 컨텐츠 크기로 확장
-                    let drawingContainer: HTMLElement | null = null;
-                    let originalDrawingStyles = { height: '', width: '', overflow: '', maxHeight: '', maxWidth: '', minHeight: '' };
-                    
-                    if (sectionKey === '도면') {
-                      // overflow-auto가 있는 도면 컨테이너 찾기
-                      drawingContainer = element.querySelector('.overflow-auto') as HTMLElement;
-                      if (drawingContainer) {
-                        // 원래 스타일 저장
-                        originalDrawingStyles = {
-                          height: drawingContainer.style.height,
-                          width: drawingContainer.style.width,
-                          overflow: drawingContainer.style.overflow,
-                          maxHeight: drawingContainer.style.maxHeight,
-                          maxWidth: drawingContainer.style.maxWidth,
-                          minHeight: drawingContainer.style.minHeight,
-                        };
-                        
-                        // 절대 위치 요소들의 실제 경계 박스 계산
-                        const absoluteElements = drawingContainer.querySelectorAll('[style*="position: absolute"], [style*="position:absolute"]');
-                        let maxRight = 0;
-                        let maxBottom = 0;
-                        
-                        absoluteElements.forEach((el) => {
-                          const rect = el.getBoundingClientRect();
-                          const containerRect = drawingContainer!.getBoundingClientRect();
-                          const relativeRight = rect.right - containerRect.left + 50; // 여유 공간
-                          const relativeBottom = rect.bottom - containerRect.top + 50;
-                          maxRight = Math.max(maxRight, relativeRight);
-                          maxBottom = Math.max(maxBottom, relativeBottom);
-                        });
-                        
-                        // 최소 크기 보장
-                        const contentWidth = Math.max(maxRight, drawingContainer.scrollWidth, 1200);
-                        const contentHeight = Math.max(maxBottom, drawingContainer.scrollHeight, 800);
-                        
-                        console.log(`Drawing container actual content size: ${contentWidth}x${contentHeight}`);
-                        
-                        // 컨테이너를 실제 컨텐츠 크기로 확장
-                        drawingContainer.style.height = `${contentHeight}px`;
-                        drawingContainer.style.width = `${contentWidth}px`;
-                        drawingContainer.style.minHeight = `${contentHeight}px`;
-                        drawingContainer.style.maxHeight = 'none';
-                        drawingContainer.style.maxWidth = 'none';
-                        drawingContainer.style.overflow = 'visible';
-                        
-                        // 스타일 적용 대기
-                        await new Promise(resolve => setTimeout(resolve, 300));
-                      }
-                    }
-
-                    try {
-                      // html2canvas로 현재 화면에 표시된 요소 캡처
-                      const canvas = await html2canvas(element, {
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: true,
-                        logging: false,
-                        backgroundColor: '#ffffff',
-                        windowWidth: 1200,
-                        scrollX: 0,
-                        scrollY: 0,
-                      });
-
-                      // 캔버스 유효성 검사
-                      if (canvas.width === 0 || canvas.height === 0) {
-                        console.warn(`Empty canvas for section: ${sectionKey}`);
-                        continue;
-                      }
-
-                      // 캔버스를 PDF에 추가 (JPEG 형식 사용)
-                      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                      const maxWidth = pageWidth - (margin * 2);
-                      const maxHeight = pageHeight - (margin * 2);
-                      
-                      // 이미지 비율 계산
-                      const imgAspectRatio = canvas.width / canvas.height;
-                      const pageAspectRatio = maxWidth / maxHeight;
-                      
-                      let imgWidth: number;
-                      let imgHeight: number;
-                      
-                      // 도면 섹션은 한 페이지에 맞게 축소
-                      if (sectionKey === '도면') {
-                        // 이미지를 페이지에 맞게 축소 (비율 유지)
-                        if (imgAspectRatio > pageAspectRatio) {
-                          // 이미지가 더 넓음 - 너비에 맞춤
-                          imgWidth = maxWidth;
-                          imgHeight = maxWidth / imgAspectRatio;
-                        } else {
-                          // 이미지가 더 높음 - 높이에 맞춤
-                          imgHeight = maxHeight;
-                          imgWidth = maxHeight * imgAspectRatio;
-                        }
-                        
-                        if (!isFirstPage) {
-                          pdf.addPage();
-                        }
-                        isFirstPage = false;
-                        
-                        // 중앙 정렬
-                        const xOffset = margin + (maxWidth - imgWidth) / 2;
-                        const yOffset = margin + (maxHeight - imgHeight) / 2;
-                        pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
-                      } else {
-                        // 다른 섹션은 기존 방식대로 처리
-                        imgWidth = maxWidth;
-                        imgHeight = (canvas.height * imgWidth) / canvas.width;
-                        
-                        let heightLeft = imgHeight;
-                        let position = 0;
-
-                        if (!isFirstPage) {
-                          pdf.addPage();
-                        }
-                        isFirstPage = false;
-
-                        // 첫 페이지
-                        pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
-                        heightLeft -= maxHeight;
-                        position = -maxHeight;
-
-                        // 추가 페이지 (이미지가 한 페이지보다 긴 경우)
-                        while (heightLeft > 0) {
-                          pdf.addPage();
-                          pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
-                          heightLeft -= maxHeight;
-                          position -= maxHeight;
-                        }
-                      }
-                    } catch (captureError) {
-                      console.error(`캡처 오류 (${sectionKey}):`, captureError);
-                    } finally {
-                      // 도면 섹션 스타일 복원
-                      if (drawingContainer) {
-                        drawingContainer.style.height = originalDrawingStyles.height || '600px';
-                        drawingContainer.style.width = originalDrawingStyles.width || '100%';
-                        drawingContainer.style.minHeight = originalDrawingStyles.minHeight || '';
-                        drawingContainer.style.maxHeight = originalDrawingStyles.maxHeight || '';
-                        drawingContainer.style.maxWidth = originalDrawingStyles.maxWidth || '';
-                        drawingContainer.style.overflow = originalDrawingStyles.overflow || 'auto';
-                      }
-                    }
-                  }
-                  
-                  // 원래 탭으로 복원
-                  setActiveTab(originalTab);
-
-                  // PDF 저장
-                  const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
-                  pdf.save(fileName);
-
-                  toast({
-                    title: "PDF 다운로드 완료",
-                    description: "보고서가 성공적으로 다운로드되었습니다.",
-                  });
-
-                  setShowDownloadDialog(false);
-                } catch (error) {
-                  console.error('PDF 생성 오류:', error);
-                  toast({
-                    title: "PDF 생성 실패",
-                    description: "보고서 생성 중 오류가 발생했습니다.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              style={{
-                flex: 1,
-                padding: "14px",
-                background: "#008FED",
-                borderRadius: "8px",
-                border: "none",
-                fontFamily: "Pretendard",
-                fontWeight: 600,
-                fontSize: "14px",
-                color: "#FFFFFF",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-              }}
-              data-testid="button-confirm-download"
-            >
-              다운 ↓
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       {/* 작성중인 건 */}
       <div className="relative mb-4" style={{ zIndex: 1 }}>
         <div
@@ -2062,7 +2317,8 @@ export default function FieldReport() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => {
-                    setShowEmailDialog(true);
+                    setPdfDialogMode("email");
+                    setShowPdfDialog(true);
                   }}
                   className="flex items-center gap-2 px-4 py-3"
                   style={{
@@ -2092,7 +2348,8 @@ export default function FieldReport() {
                 </button>
                 <button
                   onClick={() => {
-                    setShowDownloadDialog(true);
+                    setPdfDialogMode("download");
+                    setShowPdfDialog(true);
                   }}
                   className="flex items-center gap-2 px-4 py-3"
                   style={{
