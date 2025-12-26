@@ -4587,7 +4587,7 @@ export class DbStorage implements IStorage {
         reportApprovalComment: approvalComment || null,
         reportApprovedAt: currentTimestamp,
         reportApprovedBy: approvedBy,
-        status: decision === "승인" ? "복구요청(2차승인)" : "1차승인", // 비승인 시 1차승인 상태 유지
+        // 상태는 변경하지 않음 - 이메일 전송 후 유선 승인 받으면 관리자가 수동으로 2차승인 상태 변경
         ...additionalUpdates,
         updatedAt: currentDate,
       })
