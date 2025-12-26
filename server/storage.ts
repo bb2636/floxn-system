@@ -1216,6 +1216,11 @@ export class MemStorage implements IStorage {
       return null;
     }
 
+    // Block login for deleted accounts (soft delete)
+    if (user.status === "deleted") {
+      return null;
+    }
+
     const isValid = await bcrypt.compare(password, user.password);
     return isValid ? user : null;
   }
@@ -3889,6 +3894,11 @@ export class DbStorage implements IStorage {
   ): Promise<User | null> {
     const user = await this.getUserByUsername(username);
     if (!user) {
+      return null;
+    }
+
+    // Block login for deleted accounts (soft delete)
+    if (user.status === "deleted") {
       return null;
     }
 
