@@ -721,7 +721,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
               newCaseNumber = `${existingPrefix}-${nextSuffix}`;
             } else if (hasDamagePrevention && !hasVictimRecovery) {
               // 손해방지만 선택 → -0 suffix
-              newCaseNumber = `${existingPrefix}-0`;
+              // 먼저 -0 케이스가 이미 존재하는지 확인
+              const existingPreventionCase = await storage.getPreventionCaseByPrefix(existingPrefix);
+              
+              if (existingPreventionCase && existingPreventionCase.id !== validatedData.id) {
+                // -0 케이스가 이미 존재함 (현재 케이스와 다른 케이스)
+                // 기존 -0 케이스가 배당대기(임시저장) 상태이면 삭제 후 현재 케이스를 -0으로 변경
+                if (existingPreventionCase.status === "배당대기") {
+                  await storage.deleteCase(existingPreventionCase.id);
+                  console.log(`[Case Complete] Deleted existing draft prevention case ${existingPreventionCase.caseNumber} to replace with current case`);
+                  newCaseNumber = `${existingPrefix}-0`;
+                } else {
+                  // -0 케이스가 이미 접수완료 상태이면 현재 케이스 번호 유지
+                  console.log(`[Case Complete] Prevention case ${existingPreventionCase.caseNumber} already exists and completed, keeping current case number`);
+                  newCaseNumber = existingCaseNumber; // 기존 번호 유지
+                }
+              } else {
+                // -0 케이스가 없거나 현재 케이스가 -0인 경우
+                newCaseNumber = `${existingPrefix}-0`;
+              }
             } else if (!hasDamagePrevention && hasVictimRecovery) {
               // 피해세대만 선택 → -1 이상 suffix
               if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
