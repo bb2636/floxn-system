@@ -2315,6 +2315,8 @@ export default function FieldReport() {
               {/* 관리자만 다운로드/이메일 버튼 표시 */}
               {isAdmin && (
               <div className="flex items-center gap-3">
+                {/* 이메일 전송 버튼: 보고서 승인(2차승인) 완료 후에만 활성화 */}
+                {caseData.status === "복구요청(2차승인)" && (
                 <button
                   onClick={() => {
                     setPdfDialogMode("email");
@@ -2346,6 +2348,7 @@ export default function FieldReport() {
                     이메일 전송
                   </span>
                 </button>
+                )}
                 <button
                   onClick={() => {
                     setPdfDialogMode("download");
@@ -3647,6 +3650,8 @@ export default function FieldReport() {
                         다운로드
                       </span>
                     </button>
+                    {/* 이메일 전송 버튼: 보고서 승인(2차승인) 완료 후에만 활성화 */}
+                    {caseData.status === "복구요청(2차승인)" && (
                     <button
                       onClick={() => {
                         // TODO: 이메일 전송 기능 구현
@@ -3673,6 +3678,7 @@ export default function FieldReport() {
                         이메일 전송
                       </span>
                     </button>
+                    )}
                   </div>
                   )}
                 </div>
