@@ -572,6 +572,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               });
               createdCases.push(recoveryCase);
               
+              // 임시저장 시에도 관련 케이스에 동기화
+              if (createdCases.length > 0) {
+                try {
+                  const syncCount = await storage.syncIntakeDataToRelatedCases(createdCases[0].id);
+                  if (syncCount > 0) {
+                    console.log(`[Case Draft] Auto-synced intake data to ${syncCount} related cases`);
+                  }
+                } catch (syncError) {
+                  console.error("Failed to sync intake data:", syncError);
+                }
+              }
               return res.status(200).json({ success: true, cases: createdCases });
             }
             
@@ -580,6 +591,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
               caseNumber: newCaseNumber,
               caseGroupId,
             });
+            
+            // 임시저장 시에도 관련 케이스에 동기화
+            try {
+              const syncCount = await storage.syncIntakeDataToRelatedCases(updatedCase!.id);
+              if (syncCount > 0) {
+                console.log(`[Case Draft] Auto-synced intake data to ${syncCount} related cases`);
+              }
+            } catch (syncError) {
+              console.error("Failed to sync intake data:", syncError);
+            }
+            
             return res.status(200).json({ success: true, cases: [updatedCase] });
           }
         }
