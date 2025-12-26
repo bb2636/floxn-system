@@ -17,10 +17,11 @@ const buildPgUrl = () => {
   return null;
 };
 
-// 환경별 DB URL 선택 (Replit PostgreSQL 우선, 그 다음 기존 환경변수)
-const databaseUrl = isProduction 
-  ? (process.env.PROD_DATABASE_URL || process.env.DATABASE_URL)
-  : (buildPgUrl() || process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
+// 환경별 DB URL 선택 (Replit PostgreSQL 우선 - 개발/프로덕션 모두)
+const replitPgUrl = buildPgUrl();
+const databaseUrl = replitPgUrl 
+  || (isProduction ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL)
+  || process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
