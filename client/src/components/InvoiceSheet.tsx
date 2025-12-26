@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,22 @@ interface InvoiceSheetProps {
     invoiceDamagePreventionAmount?: string | null;
     invoicePropertyRepairAmount?: string | null;
     invoiceRemarks?: string | null;
+    recoveryType?: string | null;
+    estimateAmount?: string | null;
   } | null;
   relatedCases?: Array<{
     id: string;
     caseNumber?: string | null;
+    recoveryType?: string | null;
+    estimateAmount?: string | null;
   }>;
 }
+
+const getCaseSuffix = (caseNumber: string | null | undefined): number => {
+  if (!caseNumber) return -1;
+  const parts = caseNumber.split("-");
+  return parts.length > 1 ? parseInt(parts[parts.length - 1]) || 0 : 0;
+};
 
 export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }: InvoiceSheetProps) {
   const { toast } = useToast();
@@ -30,20 +40,59 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   
   const [invoiceDamagePreventionAmount, setInvoiceDamagePreventionAmount] = useState<string>("");
   const [invoicePropertyRepairAmount, setInvoicePropertyRepairAmount] = useState<string>("");
+  const [fieldDispatchPreventionAmount, setFieldDispatchPreventionAmount] = useState<string>("");
+  const [fieldDispatchPropertyAmount, setFieldDispatchPropertyAmount] = useState<string>("");
   const [invoiceRemarks, setInvoiceRemarks] = useState<string>("");
   const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState<string>("");
   const [isSendingPdf, setIsSendingPdf] = useState(false);
   const [isLoadingAmounts, setIsLoadingAmounts] = useState(false);
 
+  const categorizedAmounts = useMemo(() => {
+    let damagePreventionAmount = 0;
+    let damagePreventionFieldDispatch = 0;
+    let propertyRepairAmount = 0;
+    let propertyFieldDispatch = 0;
+    
+    const allCases = relatedCases.length > 0 ? relatedCases : (caseData ? [caseData] : []);
+    
+    for (const c of allCases) {
+      const suffix = getCaseSuffix(c.caseNumber);
+      const isFieldDispatch = c.recoveryType === "선견적요청";
+      
+      if (suffix === 0) {
+        if (isFieldDispatch) {
+          damagePreventionFieldDispatch++;
+        } else {
+          damagePreventionAmount += parseInt(c.estimateAmount || "0") || 0;
+        }
+      } else if (suffix > 0) {
+        if (isFieldDispatch) {
+          propertyFieldDispatch++;
+        } else {
+          propertyRepairAmount += parseInt(c.estimateAmount || "0") || 0;
+        }
+      }
+    }
+    
+    return {
+      damagePreventionAmount,
+      damagePreventionFieldDispatch,
+      propertyRepairAmount,
+      propertyFieldDispatch,
+      hasDirectRecoveryPrevention: damagePreventionAmount > 0 || allCases.some(c => getCaseSuffix(c.caseNumber) === 0 && c.recoveryType !== "선견적요청"),
+      hasFieldDispatchPrevention: damagePreventionFieldDispatch > 0,
+      hasDirectRecoveryProperty: propertyRepairAmount > 0 || allCases.some(c => getCaseSuffix(c.caseNumber) > 0 && c.recoveryType !== "선견적요청"),
+      hasFieldDispatchProperty: propertyFieldDispatch > 0,
+    };
+  }, [relatedCases, caseData]);
+
   useEffect(() => {
     const fetchApprovedAmounts = async () => {
       if (open && caseData) {
-        // 기존 저장된 값이 있으면 불러오기
         if (caseData.invoiceDamagePreventionAmount || caseData.invoicePropertyRepairAmount) {
           setInvoiceDamagePreventionAmount(caseData.invoiceDamagePreventionAmount || "");
           setInvoicePropertyRepairAmount(caseData.invoicePropertyRepairAmount || "");
         } else {
-          // 승인금액을 API에서 가져오기
           const prefix = getCaseNumberPrefix(caseData.caseNumber);
           if (prefix) {
             setIsLoadingAmounts(true);
@@ -61,20 +110,36 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
             }
           }
         }
+        
+        if (categorizedAmounts.damagePreventionAmount > 0) {
+          setInvoiceDamagePreventionAmount(categorizedAmounts.damagePreventionAmount.toString());
+        }
+        if (categorizedAmounts.propertyRepairAmount > 0) {
+          setInvoicePropertyRepairAmount(categorizedAmounts.propertyRepairAmount.toString());
+        }
+        setFieldDispatchPreventionAmount((categorizedAmounts.damagePreventionFieldDispatch * 100000).toString());
+        setFieldDispatchPropertyAmount((categorizedAmounts.propertyFieldDispatch * 100000).toString());
+        
         setInvoiceRemarks(caseData.invoiceRemarks || "");
         setInvoiceRecipientEmail("");
       } else if (!open) {
         setInvoiceDamagePreventionAmount("");
         setInvoicePropertyRepairAmount("");
+        setFieldDispatchPreventionAmount("");
+        setFieldDispatchPropertyAmount("");
         setInvoiceRemarks("");
         setInvoiceRecipientEmail("");
       }
     };
     
     fetchApprovedAmounts();
-  }, [open, caseData]);
+  }, [open, caseData, categorizedAmounts]);
 
-  const totalAmount = (parseInt(invoiceDamagePreventionAmount || "0") || 0) + (parseInt(invoicePropertyRepairAmount || "0") || 0);
+  const totalAmount = 
+    (parseInt(invoiceDamagePreventionAmount || "0") || 0) + 
+    (parseInt(invoicePropertyRepairAmount || "0") || 0) +
+    (parseInt(fieldDispatchPreventionAmount || "0") || 0) +
+    (parseInt(fieldDispatchPropertyAmount || "0") || 0);
 
   const handleSendInvoicePdf = async () => {
     if (!invoicePdfRef.current) {
@@ -146,6 +211,8 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           accidentNo: caseData?.insuranceAccidentNo || '',
           damagePreventionAmount: parseInt(invoiceDamagePreventionAmount || "0") || 0,
           propertyRepairAmount: parseInt(invoicePropertyRepairAmount || "0") || 0,
+          fieldDispatchPreventionAmount: parseInt(fieldDispatchPreventionAmount || "0") || 0,
+          fieldDispatchPropertyAmount: parseInt(fieldDispatchPropertyAmount || "0") || 0,
           totalAmount,
           remarks: invoiceRemarks,
         }),
@@ -181,6 +248,8 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         relatedCaseIds: relatedCases.map(c => c.id),
         damagePreventionAmount: parseInt(invoiceDamagePreventionAmount || "0") || 0,
         propertyRepairAmount: parseInt(invoicePropertyRepairAmount || "0") || 0,
+        fieldDispatchPreventionAmount: parseInt(fieldDispatchPreventionAmount || "0") || 0,
+        fieldDispatchPropertyAmount: parseInt(fieldDispatchPropertyAmount || "0") || 0,
         remarks: invoiceRemarks,
         totalAmount: totalAmount,
       });
@@ -472,133 +541,241 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 </span>
               </div>
 
-              <div style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "16px 0",
-                borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
-              }}>
-                <span style={{
-                  fontFamily: "Pretendard",
-                  fontWeight: 500,
-                  fontSize: "15px",
-                  lineHeight: "128%",
-                  letterSpacing: "-0.01em",
-                  color: "rgba(12, 12, 12, 0.7)",
+              {categorizedAmounts.hasDirectRecoveryPrevention && (
+                <div style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "16px 0",
+                  borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
                 }}>
-                  손해방지비용
-                </span>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <input
-                    type="text"
-                    value={invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : ""}
-                    onChange={(e) => setInvoiceDamagePreventionAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="0"
-                    className="invoice-input-field"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 500,
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.01em",
-                      color: "rgba(12, 12, 12, 0.9)",
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
-                      textAlign: "right",
-                      width: "120px",
-                    }}
-                    data-testid="input-damage-prevention-amount"
-                  />
                   <span style={{
                     fontFamily: "Pretendard",
                     fontWeight: 500,
                     fontSize: "15px",
-                    color: "rgba(12, 12, 12, 0.9)",
-                  }}>원</span>
-                  <span 
-                    className="invoice-span-field"
-                    style={{
-                      display: "none",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}>
+                    손해방지비용
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <input
+                      type="text"
+                      value={invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : ""}
+                      onChange={(e) => setInvoiceDamagePreventionAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                      placeholder="0"
+                      className="invoice-input-field"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "15px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        textAlign: "right",
+                        width: "120px",
+                      }}
+                      data-testid="input-damage-prevention-amount"
+                    />
+                    <span style={{
                       fontFamily: "Pretendard",
                       fontWeight: 500,
                       fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.01em",
                       color: "rgba(12, 12, 12, 0.9)",
-                    }}
-                    data-testid="text-damage-prevention-amount"
-                  >
-                    {invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : "0"}원
-                  </span>
+                    }}>원</span>
+                    <span 
+                      className="invoice-span-field"
+                      style={{
+                        display: "none",
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "15px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                      data-testid="text-damage-prevention-amount"
+                    >
+                      {invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : "0"}원
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div style={{
-                display: "flex",
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "16px 0",
-                borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
-              }}>
-                <span style={{
-                  fontFamily: "Pretendard",
-                  fontWeight: 500,
-                  fontSize: "15px",
-                  lineHeight: "128%",
-                  letterSpacing: "-0.01em",
-                  color: "rgba(12, 12, 12, 0.7)",
+              {categorizedAmounts.hasFieldDispatchPrevention && (
+                <div style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "16px 0",
+                  borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
                 }}>
-                  대물복구비용
-                </span>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <input
-                    type="text"
-                    value={invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : ""}
-                    onChange={(e) => setInvoicePropertyRepairAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="0"
-                    className="invoice-input-field"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontWeight: 500,
-                      fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.01em",
-                      color: "rgba(12, 12, 12, 0.9)",
-                      background: "transparent",
-                      border: "none",
-                      outline: "none",
-                      textAlign: "right",
-                      width: "120px",
-                    }}
-                    data-testid="input-property-repair-amount"
-                  />
                   <span style={{
                     fontFamily: "Pretendard",
                     fontWeight: 500,
                     fontSize: "15px",
-                    color: "rgba(12, 12, 12, 0.9)",
-                  }}>원</span>
-                  <span 
-                    className="invoice-span-field"
-                    style={{
-                      display: "none",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}>
+                    현장출동비용 (손해방지)
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span 
+                      className="invoice-span-field"
+                      style={{
+                        display: "none",
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "15px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                    >
+                      100,000 × {categorizedAmounts.damagePreventionFieldDispatch}건 = {Number(fieldDispatchPreventionAmount).toLocaleString()}원
+                    </span>
+                    <span 
+                      className="invoice-input-field"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "15px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                      data-testid="text-field-dispatch-prevention-amount"
+                    >
+                      100,000 × {categorizedAmounts.damagePreventionFieldDispatch}건 = {Number(fieldDispatchPreventionAmount).toLocaleString()}원
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {categorizedAmounts.hasDirectRecoveryProperty && (
+                <div style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "16px 0",
+                  borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                }}>
+                  <span style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "15px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}>
+                    대물복구비용
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <input
+                      type="text"
+                      value={invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : ""}
+                      onChange={(e) => setInvoicePropertyRepairAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                      placeholder="0"
+                      className="invoice-input-field"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "15px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                        background: "transparent",
+                        border: "none",
+                        outline: "none",
+                        textAlign: "right",
+                        width: "120px",
+                      }}
+                      data-testid="input-property-repair-amount"
+                    />
+                    <span style={{
                       fontFamily: "Pretendard",
                       fontWeight: 500,
                       fontSize: "15px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.01em",
                       color: "rgba(12, 12, 12, 0.9)",
-                    }}
-                    data-testid="text-property-repair-amount"
-                  >
-                    {invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : "0"}원
-                  </span>
+                    }}>원</span>
+                    <span 
+                      className="invoice-span-field"
+                      style={{
+                        display: "none",
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "15px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                      data-testid="text-property-repair-amount"
+                    >
+                      {invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : "0"}원
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {categorizedAmounts.hasFieldDispatchProperty && (
+                <div style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "16px 0",
+                  borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                }}>
+                  <span style={{
+                    fontFamily: "Pretendard",
+                    fontWeight: 500,
+                    fontSize: "15px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}>
+                    현장출동비용 (피해세대)
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    <span 
+                      className="invoice-span-field"
+                      style={{
+                        display: "none",
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "15px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                    >
+                      100,000 × {categorizedAmounts.propertyFieldDispatch}건 = {Number(fieldDispatchPropertyAmount).toLocaleString()}원
+                    </span>
+                    <span 
+                      className="invoice-input-field"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "15px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "rgba(12, 12, 12, 0.9)",
+                      }}
+                      data-testid="text-field-dispatch-property-amount"
+                    >
+                      100,000 × {categorizedAmounts.propertyFieldDispatch}건 = {Number(fieldDispatchPropertyAmount).toLocaleString()}원
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div style={{
                 display: "flex",

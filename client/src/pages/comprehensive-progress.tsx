@@ -1450,12 +1450,8 @@ export default function ComprehensiveProgress() {
                             onClick={(e) => {
                               e.stopPropagation();
                               setInvoiceCaseId(caseItem.id);
-                              // recoveryType에 따라 적절한 인보이스 다이얼로그 표시
-                              if (caseItem.recoveryType === "선견적요청") {
-                                setShowFieldDispatchInvoiceDialog(true);
-                              } else {
-                                setShowInvoiceDialog(true);
-                              }
+                              // 통합 인보이스 다이얼로그 표시 (혼합 복구타입 지원)
+                              setShowInvoiceDialog(true);
                             }}
                             style={{
                               padding: "6px 12px",
