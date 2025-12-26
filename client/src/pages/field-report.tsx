@@ -3735,13 +3735,13 @@ export default function FieldReport() {
                     }
                   }}
                   rows={10}
-                  readOnly={isAdmin || (caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려")}
-                  disabled={caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려"}
+                  readOnly={isAdmin || (isPartner && caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려")}
+                  disabled={isPartner && caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려"}
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     resize: "none",
-                    opacity: (caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려") ? 0.6 : 1,
+                    opacity: (isPartner && caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려") ? 0.6 : 1,
                   }}
                 />
                 <div
@@ -3761,7 +3761,7 @@ export default function FieldReport() {
                 <Button
                   data-testid="button-save-notes"
                   onClick={() => saveNotesMutation.mutate(additionalNotes)}
-                  disabled={saveNotesMutation.isPending || (caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려")}
+                  disabled={saveNotesMutation.isPending || (isPartner && caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려")}
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",

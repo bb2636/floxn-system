@@ -1311,7 +1311,8 @@ export default function FieldEstimate() {
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
   const isRejected = selectedCase?.status === "반려";
   const isFirstApproved = selectedCase?.status === "1차승인";
-  const isReadOnly = (isSubmitted && !isRejected) || (isPartner && isFirstApproved && !isRejected);
+  // 협력사만 제출 후 또는 1차승인 후 수정 불가 (관리자는 항상 수정 가능)
+  const isReadOnly = isPartner && (isSubmitted || isFirstApproved) && !isRejected;
   
   // 손해방지 공종 목록 (노무비 탭에서 사용) - 원인세대 항목
   const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지', '원인철거', '원인공사'];

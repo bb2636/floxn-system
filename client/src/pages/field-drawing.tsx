@@ -235,7 +235,8 @@ export default function FieldDrawing() {
   const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
   const isRejected = selectedCase?.status === "반려";
   const isFirstApproved = selectedCase?.status === "1차승인";
-  const isReadOnly = (isSubmitted && !isRejected) || (isPartner && isFirstApproved && !isRejected);
+  // 협력사만 제출 후 또는 1차승인 후 수정 불가 (관리자는 항상 수정 가능)
+  const isReadOnly = isPartner && (isSubmitted || isFirstApproved) && !isRejected;
 
   // 도면 저장 mutation
   const saveDrawingMutation = useMutation({
