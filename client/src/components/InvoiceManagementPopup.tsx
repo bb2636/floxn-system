@@ -233,9 +233,14 @@ export function InvoiceManagementPopup({
         await apiRequest("POST", "/api/invoices", invoiceData);
       }
       
+      // 인보이스 확인 날짜 자동 저장 (승인 시점의 현재 날짜)
+      const today = new Date();
+      const invoiceConfirmDateValue = format(today, "yyyy.MM.dd");
+      
       await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
         invoiceDamagePreventionAmount: preventionApprovedAmount,
         invoicePropertyRepairAmount: propertyApprovedAmount,
+        invoiceConfirmDate: invoiceConfirmDateValue,
         status: settlementStatus === "정산" ? "정산완료" : 
                 settlementStatus === "부분입금" ? "일부입금" : 
                 caseData.status,
