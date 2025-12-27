@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Case, CaseDocument } from "@shared/schema";
-import { Upload, X, Check, Download, Search } from "lucide-react";
+import { Upload, X, Check, Download, Search, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { formatCaseNumber } from "@/lib/utils";
@@ -718,30 +719,102 @@ export default function FieldDocuments() {
       >
         {categories.map((category) => {
           const isDisabled = category === "청구자료" && !isClaimDocumentEnabled;
+          
+          const getTooltipContent = (cat: DocumentCategory) => {
+            switch (cat) {
+              case "사진":
+                return (
+                  <div className="text-left">
+                    <div className="font-semibold mb-1">필수 서류 안내</div>
+                    <div>• 제출 전: 현장출동사진 필수</div>
+                    <div>• 청구 단계: 수리중 사진, 복구완료 사진 필수</div>
+                  </div>
+                );
+              case "기본자료":
+                return (
+                  <div className="text-left">
+                    <div className="font-semibold mb-1">필수 서류 안내</div>
+                    <div>• 제출 전: 보험금 청구서, 개인정보 동의서 필수</div>
+                  </div>
+                );
+              case "증빙자료":
+                return (
+                  <div className="text-left">
+                    <div className="font-semibold mb-1">필수 서류 안내</div>
+                    <div>• 제출 전: 건축물대장 또는 등기부등본 (택1) 필수</div>
+                  </div>
+                );
+              case "청구자료":
+                return (
+                  <div className="text-left">
+                    <div className="font-semibold mb-1">필수 서류 안내</div>
+                    <div>• 청구 단계: 위임장, 도급계약서, 복구완료확인서, 부가세 청구자료 모두 필수</div>
+                  </div>
+                );
+              default:
+                return null;
+            }
+          };
+
+          const tooltipContent = getTooltipContent(category);
+
           return (
-            <button
-              key={category}
-              type="button"
-              onClick={() => !isDisabled && setSelectedCategory(category)}
-              disabled={isDisabled}
-              className="pb-3 transition-all relative"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "16px",
-                fontWeight: selectedCategory === category ? 600 : 400,
-                letterSpacing: "-0.02em",
-                background: "transparent",
-                color: isDisabled 
-                  ? "rgba(12, 12, 12, 0.25)" 
-                  : selectedCategory === category 
-                    ? "#008FED" 
-                    : "rgba(12, 12, 12, 0.5)",
-                border: "none",
-                cursor: isDisabled ? "not-allowed" : "pointer",
-              }}
-              data-testid={`tab-${category}`}
-            >
-              {category}
+            <div key={category} className="flex items-center gap-1 pb-3 relative">
+              <button
+                type="button"
+                onClick={() => !isDisabled && setSelectedCategory(category)}
+                disabled={isDisabled}
+                className="transition-all"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "16px",
+                  fontWeight: selectedCategory === category ? 600 : 400,
+                  letterSpacing: "-0.02em",
+                  background: "transparent",
+                  color: isDisabled 
+                    ? "rgba(12, 12, 12, 0.25)" 
+                    : selectedCategory === category 
+                      ? "#008FED" 
+                      : "rgba(12, 12, 12, 0.5)",
+                  border: "none",
+                  cursor: isDisabled ? "not-allowed" : "pointer",
+                }}
+                data-testid={`tab-${category}`}
+              >
+                {category}
+              </button>
+              
+              {tooltipContent && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="p-0.5 rounded-full hover:bg-gray-100 transition-colors"
+                      data-testid={`tab-info-${category}`}
+                    >
+                      <Info 
+                        className="w-4 h-4" 
+                        style={{ 
+                          color: selectedCategory === category 
+                            ? "#008FED" 
+                            : "rgba(12, 12, 12, 0.35)" 
+                        }} 
+                      />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    side="top" 
+                    className="max-w-xs"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {tooltipContent}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+              
               {selectedCategory === category && (
                 <div
                   style={{
@@ -754,7 +827,7 @@ export default function FieldDocuments() {
                   }}
                 />
               )}
-            </button>
+            </div>
           );
         })}
       </div>
