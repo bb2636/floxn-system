@@ -1045,11 +1045,7 @@ export function InvoiceManagementPopup({
                       value="정산" 
                       id="status-settlement"
                       data-testid="radio-status-settlement"
-                      style={{ 
-                        width: "16px", 
-                        height: "16px",
-                        borderColor: settlementStatus === "정산" ? "#008FED" : "rgba(12, 12, 12, 0.1)",
-                      }}
+                      className={settlementStatus === "정산" ? "border-[#008FED] text-[#008FED]" : "border-gray-300"}
                     />
                     <Label 
                       htmlFor="status-settlement"
@@ -1069,11 +1065,7 @@ export function InvoiceManagementPopup({
                       value="부분입금" 
                       id="status-partial"
                       data-testid="radio-status-partial"
-                      style={{ 
-                        width: "16px", 
-                        height: "16px",
-                        borderColor: settlementStatus === "부분입금" ? "#008FED" : "rgba(12, 12, 12, 0.1)",
-                      }}
+                      className={settlementStatus === "부분입금" ? "border-[#008FED] text-[#008FED]" : "border-gray-300"}
                     />
                     <Label 
                       htmlFor="status-partial"
@@ -1093,11 +1085,7 @@ export function InvoiceManagementPopup({
                       value="청구변경" 
                       id="status-change"
                       data-testid="radio-status-change"
-                      style={{ 
-                        width: "16px", 
-                        height: "16px",
-                        borderColor: settlementStatus === "청구변경" ? "#008FED" : "rgba(12, 12, 12, 0.1)",
-                      }}
+                      className={settlementStatus === "청구변경" ? "border-[#008FED] text-[#008FED]" : "border-gray-300"}
                     />
                     <Label 
                       htmlFor="status-change"
