@@ -76,8 +76,6 @@ export function InvoiceManagementPopup({
   
   const [preventionApprovedAmount, setPreventionApprovedAmount] = useState<string>("");
   const [propertyApprovedAmount, setPropertyApprovedAmount] = useState<string>("");
-  const [fieldDispatchPreventionAmount, setFieldDispatchPreventionAmount] = useState<string>("0");
-  const [fieldDispatchPropertyAmount, setFieldDispatchPropertyAmount] = useState<string>("0");
   const [deductibleAmount, setDeductibleAmount] = useState<string>("0");
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,11 +120,6 @@ export function InvoiceManagementPopup({
     return { prevention, property };
   }, [relatedCases, caseData, estimateData]);
 
-  const hasPreventionDirectRecovery = categorizedCases.prevention.directRecovery.length > 0;
-  const hasPreventionFieldDispatch = categorizedCases.prevention.fieldDispatch.length > 0;
-  const hasPropertyDirectRecovery = categorizedCases.property.directRecovery.length > 0;
-  const hasPropertyFieldDispatch = categorizedCases.property.fieldDispatch.length > 0;
-
   const calculatedEstimates = useMemo(() => {
     const preventionEstimate = categorizedCases.prevention.directRecovery.reduce(
       (sum, c) => sum + (c.estimateAmount || 0), 0
@@ -151,49 +144,28 @@ export function InvoiceManagementPopup({
       setAcceptanceDate(caseData.receptionDate || "");
       setSettlementStatus("정산");
       
-      if (hasPreventionDirectRecovery) {
-        setPreventionApprovedAmount(
-          caseData.invoiceDamagePreventionAmount || 
-          calculatedEstimates.preventionEstimate.toString() ||
-          estimateData?.preventionApproved?.toString() || 
-          ""
-        );
-      } else {
-        setPreventionApprovedAmount("0");
-      }
+      // 승인금액 설정 - 저장된 값이 있으면 사용, 없으면 견적금액 사용
+      setPreventionApprovedAmount(
+        caseData.invoiceDamagePreventionAmount || 
+        calculatedEstimates.preventionEstimate.toString() ||
+        estimateData?.preventionApproved?.toString() || 
+        "0"
+      );
 
-      if (hasPreventionFieldDispatch) {
-        setFieldDispatchPreventionAmount(calculatedEstimates.preventionFieldDispatchEstimate.toString());
-      } else {
-        setFieldDispatchPreventionAmount("0");
-      }
-
-      if (hasPropertyDirectRecovery) {
-        setPropertyApprovedAmount(
-          caseData.invoicePropertyRepairAmount || 
-          calculatedEstimates.propertyEstimate.toString() ||
-          estimateData?.propertyApproved?.toString() || 
-          ""
-        );
-      } else {
-        setPropertyApprovedAmount("0");
-      }
-
-      if (hasPropertyFieldDispatch) {
-        setFieldDispatchPropertyAmount(calculatedEstimates.propertyFieldDispatchEstimate.toString());
-      } else {
-        setFieldDispatchPropertyAmount("0");
-      }
+      setPropertyApprovedAmount(
+        caseData.invoicePropertyRepairAmount || 
+        calculatedEstimates.propertyEstimate.toString() ||
+        estimateData?.propertyApproved?.toString() || 
+        "0"
+      );
 
       setDeductibleAmount("0");
     }
-  }, [open, caseData, estimateData, hasPreventionDirectRecovery, hasPreventionFieldDispatch, hasPropertyDirectRecovery, hasPropertyFieldDispatch, calculatedEstimates]);
+  }, [open, caseData, estimateData, calculatedEstimates]);
 
   const totalApprovedAmount = 
     (parseInt(preventionApprovedAmount || "0") || 0) + 
-    (parseInt(propertyApprovedAmount || "0") || 0) +
-    (parseInt(fieldDispatchPreventionAmount || "0") || 0) +
-    (parseInt(fieldDispatchPropertyAmount || "0") || 0);
+    (parseInt(propertyApprovedAmount || "0") || 0);
 
   const getCaseNumberPrefix = (caseNumber: string | null | undefined): string => {
     if (!caseNumber) return "";
@@ -207,8 +179,6 @@ export function InvoiceManagementPopup({
     setIsSubmitting(true);
     try {
       const caseGroupPrefix = getCaseNumberPrefix(caseData.caseNumber);
-      const hasAnyFieldDispatch = hasPreventionFieldDispatch || hasPropertyFieldDispatch;
-      const totalFieldDispatch = (parseInt(fieldDispatchPreventionAmount || "0") || 0) + (parseInt(fieldDispatchPropertyAmount || "0") || 0);
       
       const invoiceData = {
         caseId: caseData.id,
@@ -219,7 +189,7 @@ export function InvoiceManagementPopup({
         damagePreventionApproved: preventionApprovedAmount || "0",
         propertyRepairEstimate: calculatedEstimates.propertyEstimate.toString(),
         propertyRepairApproved: propertyApprovedAmount || "0",
-        fieldDispatchAmount: hasAnyFieldDispatch ? totalFieldDispatch.toString() : null,
+        fieldDispatchAmount: null,
         totalApprovedAmount: totalApprovedAmount.toString(),
         deductible: deductibleAmount || "0",
         submissionDate: submissionDate ? format(submissionDate, "yyyy-MM-dd") : null,
@@ -268,8 +238,6 @@ export function InvoiceManagementPopup({
   };
 
   if (!caseData) return null;
-
-  const showAnyAmountRow = hasPreventionDirectRecovery || hasPreventionFieldDispatch || hasPropertyDirectRecovery || hasPropertyFieldDispatch;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -443,376 +411,219 @@ export function InvoiceManagementPopup({
             </div>
 
             {/* 금액 섹션 */}
-            {showAnyAmountRow && (
-              <div className="flex flex-col gap-2">
-                <div 
-                  className="flex items-center py-2.5 px-1"
-                  style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
-                >
-                  금액
+            <div className="flex flex-col gap-2">
+              <div 
+                className="flex items-center py-2.5 px-1"
+                style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
+              >
+                금액
+              </div>
+
+              <div 
+                className="flex flex-col"
+                style={{ borderRadius: "6px", overflow: "hidden", border: "1px solid rgba(12, 12, 12, 0.08)" }}
+              >
+                {/* 헤더 행 */}
+                <div className="flex items-center" style={{ height: "48px" }}>
+                  <div 
+                    className="flex items-center justify-center"
+                    style={{ 
+                      width: "120px", 
+                      height: "48px", 
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  />
+                  <div 
+                    className="flex items-center justify-center flex-1"
+                    style={{ 
+                      height: "48px", 
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                      손해방지비용
+                    </span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-center flex-1"
+                    style={{ 
+                      height: "48px", 
+                      background: "rgba(12, 12, 12, 0.04)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                      대물비용
+                    </span>
+                  </div>
                 </div>
 
-                <div 
-                  className="flex flex-col"
-                  style={{ borderRadius: "6px", overflow: "hidden" }}
-                >
-                  {/* 헤더 행 */}
-                  <div className="flex items-center" style={{ height: "43px" }}>
-                    <div 
-                      className="flex items-center justify-center"
-                      style={{ 
-                        width: "129px", 
-                        height: "43px", 
-                        background: "rgba(12, 12, 12, 0.04)",
-                        padding: "17.5px 8px",
-                      }}
-                    />
-                    <div 
-                      className="flex items-center flex-1"
-                      style={{ 
-                        height: "43px", 
-                        background: "rgba(12, 12, 12, 0.04)",
-                        padding: "17.5px 12px",
-                      }}
-                    >
-                      <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                        항목
-                      </span>
-                    </div>
-                    <div 
-                      className="flex items-center"
-                      style={{ 
-                        width: "150px",
-                        height: "43px", 
-                        background: "rgba(12, 12, 12, 0.04)",
-                        padding: "17.5px 12px",
-                      }}
-                    >
-                      <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                        견적금액
-                      </span>
-                    </div>
-                    <div 
-                      className="flex items-center"
-                      style={{ 
-                        width: "180px",
-                        height: "43px", 
-                        background: "rgba(12, 12, 12, 0.04)",
-                        padding: "17.5px 12px",
-                      }}
-                    >
-                      <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                        승인금액
-                      </span>
-                    </div>
+                {/* 견적금액 행 */}
+                <div className="flex items-center" style={{ height: "48px", borderTop: "1px solid rgba(12, 12, 12, 0.08)" }}>
+                  <div 
+                    className="flex items-center justify-center"
+                    style={{ 
+                      width: "120px", 
+                      height: "48px", 
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
+                      견적금액(원)
+                    </span>
                   </div>
+                  <div 
+                    className="flex items-center justify-center flex-1"
+                    style={{ 
+                      height: "48px", 
+                      background: "#FFFFFF",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                      {calculatedEstimates.preventionEstimate.toLocaleString()}원
+                    </span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-center flex-1"
+                    style={{ 
+                      height: "48px", 
+                      background: "#FFFFFF",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                      {calculatedEstimates.propertyEstimate.toLocaleString()}원
+                    </span>
+                  </div>
+                </div>
 
-                  {/* 손해방지비용 (직접복구 -0 cases) */}
-                  {hasPreventionDirectRecovery && (
-                    <div className="flex items-center" style={{ height: "54px" }}>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "129px", 
-                          height: "54px", 
-                          background: "rgba(12, 12, 12, 0.04)",
-                          padding: "17.5px 12px",
-                        }}
-                      >
-                        <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                          손해방지
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center flex-1"
-                        style={{ 
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "17.5px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                          손해방지비용
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "150px",
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "17.5px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                          {calculatedEstimates.preventionEstimate.toLocaleString()}원
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "180px",
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "8px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <Input
-                          type="text"
-                          value={preventionApprovedAmount ? parseInt(preventionApprovedAmount).toLocaleString() : ""}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                            setPreventionApprovedAmount(value);
-                          }}
-                          data-testid="input-prevention-approved-amount"
-                          style={{
-                            fontWeight: 500,
-                            fontSize: "15px",
-                            color: "rgba(12, 12, 12, 0.8)",
-                            border: "none",
-                            background: "transparent",
-                            padding: 0,
-                            height: "auto",
-                          }}
-                        />
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)", marginLeft: "4px" }}>원</span>
-                      </div>
-                    </div>
-                  )}
+                {/* 승인금액 행 */}
+                <div className="flex items-center" style={{ height: "48px", borderTop: "1px solid rgba(12, 12, 12, 0.08)" }}>
+                  <div 
+                    className="flex items-center justify-center"
+                    style={{ 
+                      width: "120px", 
+                      height: "48px", 
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
+                      승인금액(원)
+                    </span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-center flex-1"
+                    style={{ 
+                      height: "48px", 
+                      background: "#FFFFFF",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                      {(parseInt(preventionApprovedAmount || "0") || 0).toLocaleString()}원
+                    </span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-center flex-1"
+                    style={{ 
+                      height: "48px", 
+                      background: "#FFFFFF",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                      {(parseInt(propertyApprovedAmount || "0") || 0).toLocaleString()}원
+                    </span>
+                  </div>
+                </div>
 
-                  {/* 현장출동비용 - 손해방지 (선견적요청 -0 cases) */}
-                  {hasPreventionFieldDispatch && (
-                    <div className="flex items-center" style={{ height: "54px" }}>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "129px", 
-                          height: "54px", 
-                          background: "rgba(12, 12, 12, 0.04)",
-                          padding: "17.5px 12px",
-                        }}
-                      >
-                        <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                          손해방지
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center flex-1"
-                        style={{ 
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "17.5px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                          현장출동비용 ({categorizedCases.prevention.fieldDispatch.length}건)
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "150px",
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "17.5px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                          {calculatedEstimates.preventionFieldDispatchEstimate.toLocaleString()}원
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "180px",
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "8px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <Input
-                          type="text"
-                          value={fieldDispatchPreventionAmount ? parseInt(fieldDispatchPreventionAmount).toLocaleString() : ""}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                            setFieldDispatchPreventionAmount(value);
-                          }}
-                          data-testid="input-field-dispatch-prevention-amount"
-                          style={{
-                            fontWeight: 500,
-                            fontSize: "15px",
-                            color: "rgba(12, 12, 12, 0.8)",
-                            border: "none",
-                            background: "transparent",
-                            padding: 0,
-                            height: "auto",
-                          }}
-                        />
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)", marginLeft: "4px" }}>원</span>
-                      </div>
-                    </div>
-                  )}
+                {/* 차액 행 */}
+                <div className="flex items-center" style={{ height: "48px", borderTop: "1px solid rgba(12, 12, 12, 0.08)" }}>
+                  <div 
+                    className="flex items-center justify-center"
+                    style={{ 
+                      width: "120px", 
+                      height: "48px", 
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
+                      차액(원)
+                    </span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-center flex-1"
+                    style={{ 
+                      height: "48px", 
+                      background: "#FFFFFF",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                      {((parseInt(preventionApprovedAmount || "0") || 0) - calculatedEstimates.preventionEstimate).toLocaleString()}원
+                    </span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-center flex-1"
+                    style={{ 
+                      height: "48px", 
+                      background: "#FFFFFF",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                      {((parseInt(propertyApprovedAmount || "0") || 0) - calculatedEstimates.propertyEstimate).toLocaleString()}원
+                    </span>
+                  </div>
+                </div>
 
-                  {/* 대물복구비용 (직접복구 -1+ cases) */}
-                  {hasPropertyDirectRecovery && (
-                    <div className="flex items-center" style={{ height: "54px" }}>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "129px", 
-                          height: "54px", 
-                          background: "rgba(12, 12, 12, 0.04)",
-                          padding: "17.5px 12px",
-                        }}
-                      >
-                        <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                          피해세대
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center flex-1"
-                        style={{ 
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "17.5px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                          대물복구비용
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "150px",
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "17.5px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                          {calculatedEstimates.propertyEstimate.toLocaleString()}원
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "180px",
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "8px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <Input
-                          type="text"
-                          value={propertyApprovedAmount ? parseInt(propertyApprovedAmount).toLocaleString() : ""}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                            setPropertyApprovedAmount(value);
-                          }}
-                          data-testid="input-property-approved-amount"
-                          style={{
-                            fontWeight: 500,
-                            fontSize: "15px",
-                            color: "rgba(12, 12, 12, 0.8)",
-                            border: "none",
-                            background: "transparent",
-                            padding: 0,
-                            height: "auto",
-                          }}
-                        />
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)", marginLeft: "4px" }}>원</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 현장출동비용 - 피해세대 (선견적요청 -1+ cases) */}
-                  {hasPropertyFieldDispatch && (
-                    <div className="flex items-center" style={{ height: "54px" }}>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "129px", 
-                          height: "54px", 
-                          background: "rgba(12, 12, 12, 0.04)",
-                          padding: "17.5px 12px",
-                        }}
-                      >
-                        <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                          피해세대
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center flex-1"
-                        style={{ 
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "17.5px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                          현장출동비용 ({categorizedCases.property.fieldDispatch.length}건)
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "150px",
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "17.5px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                          {calculatedEstimates.propertyFieldDispatchEstimate.toLocaleString()}원
-                        </span>
-                      </div>
-                      <div 
-                        className="flex items-center"
-                        style={{ 
-                          width: "180px",
-                          height: "54px", 
-                          background: "#FFFFFF",
-                          padding: "8px 12px",
-                          border: "1px solid rgba(12, 12, 12, 0.08)",
-                        }}
-                      >
-                        <Input
-                          type="text"
-                          value={fieldDispatchPropertyAmount ? parseInt(fieldDispatchPropertyAmount).toLocaleString() : ""}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                            setFieldDispatchPropertyAmount(value);
-                          }}
-                          data-testid="input-field-dispatch-property-amount"
-                          style={{
-                            fontWeight: 500,
-                            fontSize: "15px",
-                            color: "rgba(12, 12, 12, 0.8)",
-                            border: "none",
-                            background: "transparent",
-                            padding: 0,
-                            height: "auto",
-                          }}
-                        />
-                        <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)", marginLeft: "4px" }}>원</span>
-                      </div>
-                    </div>
-                  )}
+                {/* 수정률 행 */}
+                <div className="flex items-center" style={{ height: "48px", borderTop: "1px solid rgba(12, 12, 12, 0.08)" }}>
+                  <div 
+                    className="flex items-center justify-center"
+                    style={{ 
+                      width: "120px", 
+                      height: "48px", 
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
+                      수정률(%)
+                    </span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-center flex-1"
+                    style={{ 
+                      height: "48px", 
+                      background: "#FFFFFF",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                      {calculatedEstimates.preventionEstimate > 0 
+                        ? ((((parseInt(preventionApprovedAmount || "0") || 0) - calculatedEstimates.preventionEstimate) / calculatedEstimates.preventionEstimate) * 100).toFixed(1) + "%"
+                        : "0%"}
+                    </span>
+                  </div>
+                  <div 
+                    className="flex items-center justify-center flex-1"
+                    style={{ 
+                      height: "48px", 
+                      background: "#FFFFFF",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                      {calculatedEstimates.propertyEstimate > 0 
+                        ? ((((parseInt(propertyApprovedAmount || "0") || 0) - calculatedEstimates.propertyEstimate) / calculatedEstimates.propertyEstimate) * 100).toFixed(1) + "%"
+                        : "0%"}
+                    </span>
+                  </div>
                 </div>
               </div>
-            )}
+            </div>
 
             {/* 상태 선택 섹션 */}
             <div 
