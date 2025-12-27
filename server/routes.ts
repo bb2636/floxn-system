@@ -1207,8 +1207,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 처리구분(손해방지/피해세대)에 따른 접수번호 suffix 재계산
-      const hasDamagePrevention = updateData.damagePreventionCost === "true" || (updateData.damagePreventionCost as unknown) === true;
-      const hasVictimRecovery = updateData.victimIncidentAssistance === "true" || (updateData.victimIncidentAssistance as unknown) === true;
+      // 중요: 처리구분 필드가 요청 데이터에 포함된 경우에만 접수번호 재계산
+      const hasDamagePreventionField = 'damagePreventionCost' in updateData;
+      const hasVictimRecoveryField = 'victimIncidentAssistance' in updateData;
+      
+      // 처리구분 필드가 없으면 기존 값 사용, 있으면 새 값 사용
+      const hasDamagePrevention = hasDamagePreventionField 
+        ? (updateData.damagePreventionCost === "true" || (updateData.damagePreventionCost as unknown) === true)
+        : (existingCase.damagePreventionCost === "true" || (existingCase.damagePreventionCost as unknown) === true);
+      const hasVictimRecovery = hasVictimRecoveryField
+        ? (updateData.victimIncidentAssistance === "true" || (updateData.victimIncidentAssistance as unknown) === true)
+        : (existingCase.victimIncidentAssistance === "true" || (existingCase.victimIncidentAssistance as unknown) === true);
       
       // 기존 접수번호에서 prefix 추출
       const existingCaseNumber = existingCase.caseNumber || "";
