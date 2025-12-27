@@ -91,7 +91,8 @@ export function InvoiceManagementPopup({
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const canApproveInvoice = hasItem("관리자 설정", "인보이스 승인") || isAdmin;
+  // 인보이스 승인 권한이 있는 관리자만 확인 가능 (일반 관리자는 불가)
+  const canApproveInvoice = hasItem("관리자 설정", "인보이스 승인");
 
   const categorizedCases = useMemo(() => {
     const allCases = relatedCases.length > 0 ? relatedCases : 
