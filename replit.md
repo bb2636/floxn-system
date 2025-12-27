@@ -63,6 +63,11 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Frontend**: React with TypeScript, Wouter for routing, TanStack Query for data fetching, React Hook Form with Zod for form validation, Shadcn UI and Tailwind CSS for component styling, and Lucide React for icons.
 - **Backend**: Express.js, bcrypt, express-session, memorystore, and Zod for API validation.
 - **Database**: PostgreSQL (Neon-backed) with Drizzle ORM for persistent data storage and automatic schema management.
+  - **IMPORTANT**: 스키마 변경 시 반드시 DEV 데이터베이스에 동기화해야 합니다:
+    ```bash
+    DATABASE_URL="$DEV_DATABASE_URL" npm run db:push
+    ```
+  - 또는 스크립트 사용: `bash scripts/db-push-dev.sh`
 
 ## External Dependencies
 - **Frontend Libraries**: React, TypeScript, Wouter, TanStack Query, React Hook Form, Zod, Shadcn UI, Tailwind CSS, Lucide React.
