@@ -974,6 +974,29 @@ export function InvoiceManagementPopup({
                   </span>
                 </div>
               </div>
+
+              {/* 비고란 */}
+              <div className="flex flex-col gap-2 mt-4">
+                <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
+                  비고
+                </span>
+                <textarea
+                  placeholder="내용을 입력하세요"
+                  data-testid="textarea-invoice-remarks"
+                  className="w-full resize-none"
+                  rows={4}
+                  style={{
+                    padding: "12px 16px",
+                    border: "1px solid rgba(12, 12, 12, 0.12)",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: 400,
+                    color: "rgba(12, 12, 12, 0.8)",
+                    background: "#FFFFFF",
+                    outline: "none",
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>
