@@ -25,5 +25,9 @@ const dbHost = hostMatch ? hostMatch[1] : 'unknown';
 
 console.log(`[DB] Connected to ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} database (${dbHost})`);
 
-export const pool = new Pool({ connectionString: databaseUrl });
+export const pool = new Pool({ 
+  connectionString: databaseUrl,
+  // prepared statement 캐싱 비활성화하여 스키마 변경 시 즉시 반영
+  max: 10,
+});
 export const db = drizzle({ client: pool, schema });
