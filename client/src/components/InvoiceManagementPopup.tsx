@@ -134,17 +134,20 @@ export function InvoiceManagementPopup({
     setPartnerPaymentDate(today);
   };
 
-  // 수수료 계산 (7.7%)
-  const feeAmount = useMemo(() => {
-    const total = parseInt(totalApprovedAmountInput.replace(/,/g, "") || "0");
-    return Math.round(total * 0.077);
-  }, [totalApprovedAmountInput]);
+  // 총 승인금액 (손해방지비용 + 대물복구비용 승인금액)
+  const totalApprovedAmount = 
+    (parseInt(preventionApprovedAmount || "0") || 0) + 
+    (parseInt(propertyApprovedAmount || "0") || 0);
 
-  // 협력업체 지급액 계산
+  // 수수료 계산 (7.7%) - 위쪽 승인금액 (손해방지비용 + 대물복구비용 승인금액) 기준
+  const feeAmount = useMemo(() => {
+    return Math.round(totalApprovedAmount * 0.077);
+  }, [totalApprovedAmount]);
+
+  // 협력업체 지급액 계산 - 위쪽 승인금액 기준
   const partnerPaymentAmount = useMemo(() => {
-    const total = parseInt(totalApprovedAmountInput.replace(/,/g, "") || "0");
-    return total - feeAmount;
-  }, [totalApprovedAmountInput, feeAmount]);
+    return totalApprovedAmount - feeAmount;
+  }, [totalApprovedAmount, feeAmount]);
 
   // 입금내역 합계 계산
   const depositTotals = useMemo(() => {
@@ -363,10 +366,6 @@ export function InvoiceManagementPopup({
       }
     }
   }, [open, caseData, displayEstimates]);
-
-  const totalApprovedAmount = 
-    (parseInt(preventionApprovedAmount || "0") || 0) + 
-    (parseInt(propertyApprovedAmount || "0") || 0);
 
   const getCaseNumberPrefix = (caseNumber: string | null | undefined): string => {
     if (!caseNumber) return "";
