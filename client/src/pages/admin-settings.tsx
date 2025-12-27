@@ -446,6 +446,9 @@ export default function AdminSettings() {
   const [showRegionModal, setShowRegionModal] = useState(false);
   const [selectedProvince, setSelectedProvince] = useState("서울");
   const [tempSelectedRegions, setTempSelectedRegions] = useState<string[]>([]);
+  
+  // 다음 포스트코드 상태 (협력사 주소)
+  const [showAddressSearch, setShowAddressSearch] = useState(false);
 
   // Check authentication
   const { data: user, isLoading: userLoading } = useQuery<User>({
@@ -730,6 +733,19 @@ export default function AdminSettings() {
       setLocation("/");
     }
   }, [user, userLoading, setLocation]);
+
+  // 다음 포스트코드 스크립트 로드
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+    script.async = true;
+    document.head.appendChild(script);
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, []);
 
   const sidebarMenus = [
     { name: "사용자 계정 관리", active: true },
@@ -6277,15 +6293,11 @@ export default function AdminSettings() {
                       </label>
                       <input
                         type="text"
-                        placeholder="주소"
+                        placeholder="클릭하여 주소 검색"
                         value={createAccountForm.address}
-                        onChange={(e) =>
-                          setCreateAccountForm({
-                            ...createAccountForm,
-                            address: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-3 outline-none"
+                        onClick={() => setShowAddressSearch(true)}
+                        readOnly
+                        className="w-full px-4 py-3 outline-none cursor-pointer"
                         style={{
                           background: "#FDFDFD",
                           border: "2px solid rgba(12, 12, 12, 0.08)",
@@ -6298,6 +6310,69 @@ export default function AdminSettings() {
                         }}
                         data-testid="input-address"
                       />
+                      {/* 다음 포스트코드 주소 검색 */}
+                      {showAddressSearch && (
+                        <div 
+                          style={{
+                            marginTop: '8px',
+                            border: '1px solid rgba(12, 12, 12, 0.12)',
+                            borderRadius: '8px',
+                            overflow: 'hidden',
+                            position: 'relative',
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setShowAddressSearch(false)}
+                            style={{
+                              position: 'absolute',
+                              right: '8px',
+                              top: '8px',
+                              zIndex: 10,
+                              background: 'white',
+                              border: '1px solid #ddd',
+                              borderRadius: '4px',
+                              padding: '4px 8px',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                            }}
+                          >
+                            닫기
+                          </button>
+                          <div
+                            ref={(el) => {
+                              if (el && (window as any).daum?.Postcode) {
+                                el.innerHTML = '';
+                                new (window as any).daum.Postcode({
+                                  oncomplete: function(data: any) {
+                                    let fullAddress = data.address;
+                                    let extraAddress = '';
+                                    
+                                    if (data.addressType === 'R') {
+                                      if (data.bname !== '') {
+                                        extraAddress += data.bname;
+                                      }
+                                      if (data.buildingName !== '') {
+                                        extraAddress += (extraAddress !== '' ? ', ' + data.buildingName : data.buildingName);
+                                      }
+                                      fullAddress += (extraAddress !== '' ? ` (${extraAddress})` : '');
+                                    }
+                                    
+                                    setCreateAccountForm({
+                                      ...createAccountForm,
+                                      address: fullAddress,
+                                    });
+                                    setShowAddressSearch(false);
+                                  },
+                                  width: '100%',
+                                  height: 400,
+                                }).embed(el);
+                              }
+                            }}
+                            style={{ width: '100%', height: '400px' }}
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* 협력사 정보: Row 4 - 출동가능지역선택 */}
