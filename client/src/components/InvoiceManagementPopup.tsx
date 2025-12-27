@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Calendar as CalendarIcon } from "lucide-react";
@@ -67,6 +68,7 @@ interface DepositEntry {
   depositDate: string;
   insuranceCompany: string;
   claimAmount: number;
+  depositStatus: "입금" | "미입금";
   depositAmount: number;
   memo: string;
 }
@@ -111,8 +113,9 @@ export function InvoiceManagementPopup({
   const [newDeposit, setNewDeposit] = useState<DepositEntry>({
     id: "",
     depositDate: format(new Date(), "yyyy-MM-dd"),
-    insuranceCompany: caseData?.insuranceCompany || "",
+    insuranceCompany: caseData?.insuranceCompany || "전체",
     claimAmount: 0,
+    depositStatus: "미입금",
     depositAmount: 0,
     memo: "",
   });
@@ -168,8 +171,9 @@ export function InvoiceManagementPopup({
     setNewDeposit({
       id: "",
       depositDate: format(new Date(), "yyyy-MM-dd"),
-      insuranceCompany: caseData?.insuranceCompany || "",
+      insuranceCompany: caseData?.insuranceCompany || "전체",
       claimAmount: 0,
+      depositStatus: "미입금",
       depositAmount: 0,
       memo: "",
     });
@@ -192,8 +196,9 @@ export function InvoiceManagementPopup({
     setNewDeposit({
       id: "",
       depositDate: format(new Date(), "yyyy-MM-dd"),
-      insuranceCompany: caseData?.insuranceCompany || "",
+      insuranceCompany: caseData?.insuranceCompany || "전체",
       claimAmount: 0,
+      depositStatus: "미입금",
       depositAmount: 0,
       memo: "",
     });
@@ -1202,8 +1207,9 @@ export function InvoiceManagementPopup({
                         setNewDeposit({
                           id: "",
                           depositDate: format(new Date(), "yyyy-MM-dd"),
-                          insuranceCompany: caseData?.insuranceCompany || "",
+                          insuranceCompany: caseData?.insuranceCompany || "전체",
                           claimAmount: 0,
+                          depositStatus: "미입금",
                           depositAmount: 0,
                           memo: "",
                         });
@@ -1462,97 +1468,235 @@ export function InvoiceManagementPopup({
       <Dialog open={showDepositForm} onOpenChange={setShowDepositForm}>
         <DialogContent
           style={{
-            maxWidth: "450px",
-            padding: "24px",
+            maxWidth: "480px",
+            padding: "32px",
             borderRadius: "16px",
             background: "#FFFFFF",
           }}
         >
           <DialogHeader>
-            <DialogTitle style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}>
-              {editingDepositId ? "입금내역 수정" : "입금내역 추가"}
+            <DialogTitle style={{ fontWeight: 700, fontSize: "20px", color: "#0C0C0C" }}>
+              {newDeposit.depositDate} 입금 관리
             </DialogTitle>
           </DialogHeader>
           
-          <div className="flex flex-col gap-4 mt-4">
+          <div className="flex flex-col gap-5 mt-6">
             {/* 입금일자 */}
-            <div className="flex flex-col gap-1">
-              <label style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>입금일자</label>
-              <Input
-                type="date"
-                value={newDeposit.depositDate}
-                onChange={(e) => setNewDeposit({ ...newDeposit, depositDate: e.target.value })}
-                data-testid="input-deposit-date"
-              />
+            <div className="flex items-center gap-4">
+              <label style={{ fontWeight: 600, fontSize: "15px", color: "#0C0C0C", width: "70px" }}>입금일자</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="justify-start text-left font-normal"
+                    data-testid="button-deposit-entry-date"
+                    style={{
+                      height: "40px",
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(12, 12, 12, 0.12)",
+                      borderRadius: "8px",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      color: newDeposit.depositDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.4)",
+                    }}
+                  >
+                    <CalendarIcon size={16} style={{ marginRight: "8px", color: "rgba(12, 12, 12, 0.5)" }} />
+                    {newDeposit.depositDate || "날짜 선택"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={newDeposit.depositDate ? new Date(newDeposit.depositDate) : undefined}
+                    onSelect={(date) => setNewDeposit({ ...newDeposit, depositDate: date ? format(date, "yyyy-MM-dd") : "" })}
+                    locale={ko}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             {/* 보험사 */}
-            <div className="flex flex-col gap-1">
-              <label style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>보험사</label>
-              <Input
-                type="text"
+            <div className="flex items-center gap-4">
+              <label style={{ fontWeight: 600, fontSize: "15px", color: "#0C0C0C", width: "70px" }}>보험사</label>
+              <Select
                 value={newDeposit.insuranceCompany}
-                onChange={(e) => setNewDeposit({ ...newDeposit, insuranceCompany: e.target.value })}
-                data-testid="input-deposit-insurance"
-                placeholder="보험사명"
-              />
+                onValueChange={(value) => setNewDeposit({ ...newDeposit, insuranceCompany: value })}
+              >
+                <SelectTrigger 
+                  data-testid="select-deposit-insurance"
+                  style={{
+                    flex: 1,
+                    height: "40px",
+                    background: "#FFFFFF",
+                    border: "1px solid rgba(12, 12, 12, 0.12)",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <SelectValue placeholder="전체" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="전체">전체</SelectItem>
+                  <SelectItem value="현대해상">현대해상</SelectItem>
+                  <SelectItem value="삼성화재">삼성화재</SelectItem>
+                  <SelectItem value="DB손해보험">DB손해보험</SelectItem>
+                  <SelectItem value="KB손해보험">KB손해보험</SelectItem>
+                  <SelectItem value="메리츠화재">메리츠화재</SelectItem>
+                  <SelectItem value="한화손해보험">한화손해보험</SelectItem>
+                  <SelectItem value="롯데손해보험">롯데손해보험</SelectItem>
+                  <SelectItem value="흥국화재">흥국화재</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* 청구액 */}
-            <div className="flex flex-col gap-1">
-              <label style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>청구액(원)</label>
-              <Input
-                type="text"
-                value={newDeposit.claimAmount ? newDeposit.claimAmount.toLocaleString() : ""}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                  setNewDeposit({ ...newDeposit, claimAmount: parseInt(value) || 0 });
-                }}
-                data-testid="input-deposit-claim"
-                placeholder="0"
-                className="text-right"
-              />
+            <div className="flex flex-col gap-2">
+              <label style={{ fontWeight: 600, fontSize: "15px", color: "#0C0C0C" }}>청구액</label>
+              <div className="flex items-center" style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.12)", paddingBottom: "8px" }}>
+                <Input
+                  type="text"
+                  value={newDeposit.claimAmount ? newDeposit.claimAmount.toLocaleString() : ""}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
+                    setNewDeposit({ ...newDeposit, claimAmount: parseInt(value) || 0 });
+                  }}
+                  data-testid="input-deposit-claim"
+                  placeholder="금액입력"
+                  className="border-0 text-left focus-visible:ring-0"
+                  style={{
+                    flex: 1,
+                    fontWeight: 400,
+                    fontSize: "15px",
+                    color: "rgba(12, 12, 12, 0.8)",
+                    padding: "0",
+                  }}
+                />
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>원</span>
+              </div>
+            </div>
+
+            {/* 입금 상태 */}
+            <div className="flex items-center gap-4">
+              <label style={{ fontWeight: 600, fontSize: "15px", color: "#0C0C0C", width: "70px" }}>입금</label>
+              <RadioGroup 
+                value={newDeposit.depositStatus} 
+                onValueChange={(value: "입금" | "미입금") => setNewDeposit({ ...newDeposit, depositStatus: value })}
+                className="flex items-center gap-6"
+              >
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem 
+                    value="입금" 
+                    id="deposit-status-done"
+                    data-testid="radio-deposit-done"
+                    style={{ 
+                      width: "18px", 
+                      height: "18px",
+                      borderColor: newDeposit.depositStatus === "입금" ? "#008FED" : "rgba(12, 12, 12, 0.2)",
+                    }}
+                  />
+                  <Label 
+                    htmlFor="deposit-status-done"
+                    style={{ 
+                      fontWeight: 500, 
+                      fontSize: "15px", 
+                      color: newDeposit.depositStatus === "입금" ? "#008FED" : "rgba(12, 12, 12, 0.6)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    입금
+                  </Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <RadioGroupItem 
+                    value="미입금" 
+                    id="deposit-status-pending"
+                    data-testid="radio-deposit-pending"
+                    style={{ 
+                      width: "18px", 
+                      height: "18px",
+                      borderColor: newDeposit.depositStatus === "미입금" ? "#008FED" : "rgba(12, 12, 12, 0.2)",
+                    }}
+                  />
+                  <Label 
+                    htmlFor="deposit-status-pending"
+                    style={{ 
+                      fontWeight: 500, 
+                      fontSize: "15px", 
+                      color: newDeposit.depositStatus === "미입금" ? "#008FED" : "rgba(12, 12, 12, 0.6)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    미입금
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
 
             {/* 입금액 */}
-            <div className="flex flex-col gap-1">
-              <label style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>입금액(원)</label>
-              <Input
-                type="text"
-                value={newDeposit.depositAmount ? newDeposit.depositAmount.toLocaleString() : ""}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                  setNewDeposit({ ...newDeposit, depositAmount: parseInt(value) || 0 });
-                }}
-                data-testid="input-deposit-amount"
-                placeholder="0"
-                className="text-right"
-              />
+            <div className="flex flex-col gap-2">
+              <label style={{ fontWeight: 600, fontSize: "15px", color: "#0C0C0C" }}>입금액</label>
+              <div className="flex items-center" style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.12)", paddingBottom: "8px" }}>
+                <Input
+                  type="text"
+                  value={newDeposit.depositAmount ? newDeposit.depositAmount.toLocaleString() : ""}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
+                    setNewDeposit({ ...newDeposit, depositAmount: parseInt(value) || 0 });
+                  }}
+                  data-testid="input-deposit-amount"
+                  placeholder="금액입력"
+                  className="border-0 text-left focus-visible:ring-0"
+                  style={{
+                    flex: 1,
+                    fontWeight: 400,
+                    fontSize: "15px",
+                    color: "rgba(12, 12, 12, 0.8)",
+                    padding: "0",
+                  }}
+                />
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>원</span>
+              </div>
             </div>
 
             {/* 메모 */}
-            <div className="flex flex-col gap-1">
-              <label style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>메모</label>
-              <Input
-                type="text"
+            <div className="flex flex-col gap-2">
+              <label style={{ fontWeight: 600, fontSize: "15px", color: "#0C0C0C" }}>메모</label>
+              <textarea
                 value={newDeposit.memo}
                 onChange={(e) => setNewDeposit({ ...newDeposit, memo: e.target.value })}
-                data-testid="input-deposit-memo"
-                placeholder="메모 (선택)"
+                data-testid="textarea-deposit-memo"
+                placeholder="내용을 입력하세요"
+                className="w-full resize-none"
+                rows={3}
+                style={{
+                  padding: "0",
+                  paddingBottom: "8px",
+                  border: "none",
+                  borderBottom: "1px solid rgba(12, 12, 12, 0.12)",
+                  fontSize: "15px",
+                  fontWeight: 400,
+                  color: "rgba(12, 12, 12, 0.8)",
+                  background: "transparent",
+                  outline: "none",
+                }}
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-6">
+          <div 
+            className="flex justify-center gap-3 mt-8 pt-6"
+            style={{ borderTop: "1px solid rgba(12, 12, 12, 0.08)" }}
+          >
             <Button
               variant="ghost"
               onClick={() => setShowDepositForm(false)}
               data-testid="button-cancel-deposit"
               style={{
-                padding: "8px 16px",
+                padding: "10px 24px",
+                height: "44px",
                 fontWeight: 500,
-                fontSize: "15px",
-                color: "rgba(12, 12, 12, 0.7)",
+                fontSize: "16px",
+                color: "rgba(12, 12, 12, 0.6)",
               }}
             >
               취소
@@ -1561,10 +1705,12 @@ export function InvoiceManagementPopup({
               onClick={editingDepositId ? handleSaveEditDeposit : handleAddDeposit}
               data-testid="button-save-deposit"
               style={{
-                padding: "8px 24px",
+                padding: "10px 32px",
+                height: "44px",
                 background: "#008FED",
+                borderRadius: "6px",
                 fontWeight: 600,
-                fontSize: "15px",
+                fontSize: "16px",
                 color: "#FFFFFF",
               }}
             >
