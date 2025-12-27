@@ -4654,6 +4654,12 @@ export class DbStorage implements IStorage {
       additionalUpdates.siteVisitDate = currentDate;
     }
 
+    // fieldSurveyStatus가 "submitted"로 변경될 때 status도 함께 "제출"로 변경
+    // 데이터 일관성 보장: 두 상태 값이 불일치하는 것을 방지
+    if (fieldData.fieldSurveyStatus === "submitted" && !fieldData.status) {
+      additionalUpdates.status = "제출";
+    }
+
     const result = await db
       .update(cases)
       .set({ ...fieldData, ...additionalUpdates, updatedAt: currentDate })
