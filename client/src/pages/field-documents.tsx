@@ -1360,6 +1360,70 @@ export default function FieldDocuments() {
             업로드된 파일이 없습니다
           </div>
         </div>
+      ) : selectedCategory === "사진" ? (
+        <div className="grid grid-cols-4 gap-3">
+          {filteredDocuments.map((doc, index) => {
+            const isImage = doc.fileType.startsWith('image/');
+            return (
+              <div
+                key={doc.id}
+                className="relative rounded-lg overflow-hidden cursor-pointer group"
+                style={{
+                  aspectRatio: "4/3",
+                  background: "rgba(12, 12, 12, 0.04)",
+                  border: "1px solid rgba(12, 12, 12, 0.08)",
+                }}
+                onClick={() => downloadFile(doc.fileName, doc.fileType, doc.fileData)}
+                data-testid={`photo-thumbnail-${doc.id}`}
+              >
+                {isImage ? (
+                  <img
+                    src={`data:${doc.fileType};base64,${doc.fileData}`}
+                    alt={doc.fileName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Upload className="w-8 h-8" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
+                  </div>
+                )}
+                
+                <div 
+                  className="absolute bottom-0 left-0 right-0 px-2 py-1"
+                  style={{
+                    background: "linear-gradient(transparent, rgba(0,0,0,0.5))",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "12px",
+                      fontWeight: 500,
+                      color: "white",
+                    }}
+                  >
+                    사진{index + 1}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleFileRemove(doc.id);
+                  }}
+                  className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{
+                    background: "rgba(255, 255, 255, 0.9)",
+                  }}
+                  data-testid={`button-delete-photo-${doc.id}`}
+                >
+                  <X className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-4">
           {filteredDocuments.map((doc) => {
