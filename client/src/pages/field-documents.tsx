@@ -1365,61 +1365,115 @@ export default function FieldDocuments() {
           {filteredDocuments.map((doc, index) => {
             const isImage = doc.fileType.startsWith('image/');
             return (
-              <div
-                key={doc.id}
-                className="relative rounded-lg overflow-hidden cursor-pointer group"
-                style={{
-                  aspectRatio: "4/3",
-                  background: "rgba(12, 12, 12, 0.04)",
-                  border: "1px solid rgba(12, 12, 12, 0.08)",
-                }}
-                onClick={() => downloadFile(doc.fileName, doc.fileType, doc.fileData)}
-                data-testid={`photo-thumbnail-${doc.id}`}
-              >
-                {isImage ? (
-                  <img
-                    src={`data:${doc.fileType};base64,${doc.fileData}`}
-                    alt={doc.fileName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Upload className="w-8 h-8" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
-                  </div>
-                )}
-                
-                <div 
-                  className="absolute bottom-0 left-0 right-0 px-2 py-1"
+              <div key={doc.id} className="flex flex-col gap-2">
+                <div
+                  className="relative rounded-lg overflow-hidden cursor-pointer group"
                   style={{
-                    background: "linear-gradient(transparent, rgba(0,0,0,0.5))",
+                    aspectRatio: "4/3",
+                    background: "rgba(12, 12, 12, 0.04)",
+                    border: "1px solid rgba(12, 12, 12, 0.08)",
                   }}
+                  onClick={() => downloadFile(doc.fileName, doc.fileType, doc.fileData)}
+                  data-testid={`photo-thumbnail-${doc.id}`}
                 >
-                  <span
+                  {isImage ? (
+                    <img
+                      src={`data:${doc.fileType};base64,${doc.fileData}`}
+                      alt={doc.fileName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Upload className="w-8 h-8" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
+                    </div>
+                  )}
+                  
+                  <div 
+                    className="absolute bottom-0 left-0 right-0 px-2 py-1"
+                    style={{
+                      background: "linear-gradient(transparent, rgba(0,0,0,0.5))",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 500,
+                        color: "white",
+                      }}
+                    >
+                      사진{index + 1}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFileRemove(doc.id);
+                    }}
+                    className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{
+                      background: "rgba(255, 255, 255, 0.9)",
+                    }}
+                    data-testid={`button-delete-photo-${doc.id}`}
+                  >
+                    <X className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
+                  </button>
+                </div>
+                
+                {/* Category dropdown */}
+                <Select
+                  value={doc.category}
+                  onValueChange={(value) => handleCategoryChange(doc.id, value)}
+                  disabled={isCategoryReadOnly}
+                >
+                  <SelectTrigger
+                    className="w-full h-8"
                     style={{
                       fontFamily: "Pretendard",
                       fontSize: "12px",
-                      fontWeight: 500,
-                      color: "white",
+                      fontWeight: 400,
+                      opacity: isCategoryReadOnly ? 0.5 : 1,
+                      cursor: isCategoryReadOnly ? "not-allowed" : "pointer",
                     }}
                   >
-                    사진{index + 1}
-                  </span>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleFileRemove(doc.id);
-                  }}
-                  className="absolute top-1 right-1 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{
-                    background: "rgba(255, 255, 255, 0.9)",
-                  }}
-                  data-testid={`button-delete-photo-${doc.id}`}
-                >
-                  <X className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.6)" }} />
-                </button>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    style={{
+                      filter: "drop-shadow(12px 12px 50px #C7D5E1)",
+                      borderRadius: "8px",
+                    }}
+                  >
+                    {currentSubCategories.map((subCategory) => {
+                      const isSelected = doc.category === subCategory;
+                      return (
+                        <SelectItem 
+                          key={subCategory} 
+                          value={subCategory}
+                          className="flex items-center justify-between"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: isSelected ? 600 : 500,
+                            letterSpacing: "-0.02em",
+                            color: isSelected ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.4)",
+                            background: isSelected 
+                              ? "linear-gradient(0deg, rgba(0, 143, 237, 0.07), rgba(0, 143, 237, 0.07)), #FDFDFD"
+                              : "#FFFFFF",
+                            paddingTop: "10px",
+                            paddingBottom: "10px",
+                            paddingRight: "12px",
+                            paddingLeft: "32px",
+                          }}
+                        >
+                          {subCategory}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
             );
           })}
