@@ -11,11 +11,6 @@ const menuItems = [
     url: "/settlements",
     testId: "submenu-settlement-inquiry",
   },
-  {
-    title: "정산하기",
-    url: "/statistics/settlement-action",
-    testId: "submenu-settlement",
-  },
 ];
 
 export function AppSidebarStatistics() {
