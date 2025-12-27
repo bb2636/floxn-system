@@ -559,6 +559,33 @@ export default function FieldDocuments() {
     return tabFilteredDocs.filter(d => d.category === currentSubFilter);
   })();
 
+  // 청구자료 단계 필수 서류 검증 함수
+  const validateClaimDocuments = (): { valid: boolean; missingDocs: string[] } => {
+    const missingDocs: string[] = [];
+    
+    // 청구자료 단계 필수 서류 목록
+    const requiredCategories = [
+      "수리중 사진",
+      "복구완료 사진",
+      "위임장",
+      "도급계약서",
+      "복구완료확인서",
+      "부가세 청구자료"
+    ];
+    
+    for (const category of requiredCategories) {
+      const hasDocument = documents.some(doc => doc.category === category);
+      if (!hasDocument) {
+        missingDocs.push(category);
+      }
+    }
+    
+    return {
+      valid: missingDocs.length === 0,
+      missingDocs
+    };
+  };
+
   // 저장 핸들러
   const handleSave = () => {
     // 제출 조건 상태 콘솔 로그
@@ -568,7 +595,21 @@ export default function FieldDocuments() {
     console.log("증빙자료 완료:", isDocumentsComplete);
     console.log("견적 완료:", isEstimateComplete);
     console.log("제출 가능:", canSubmit);
+    console.log("청구자료 단계:", isClaimDocumentEnabled);
     console.log("====================================");
+    
+    // 청구자료 단계일 때만 필수 서류 검증
+    if (isClaimDocumentEnabled) {
+      const validation = validateClaimDocuments();
+      if (!validation.valid) {
+        toast({
+          title: "필수 서류 누락",
+          description: `다음 서류가 누락되었습니다:\n${validation.missingDocs.join(", ")}`,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     
     toast({
       title: "증빙자료가 저장되었습니다",
