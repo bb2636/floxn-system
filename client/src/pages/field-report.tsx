@@ -382,6 +382,41 @@ export default function FieldReport() {
   // SMS 알림 다이얼로그 상태
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
   const [smsStage, setSmsStage] = useState<"현장정보입력" | "반려" | "현장정보제출">("현장정보입력");
+
+  // 필수 서류 검증 함수 (현장출동보고서 제출 전)
+  const validateRequiredDocuments = (): { valid: boolean; missingDocs: string[] } => {
+    const missingDocs: string[] = [];
+    
+    // 1. 사진 탭 - 현장출동사진 필수
+    const hasFieldPhoto = allDocuments.some(doc => doc.category === "현장출동사진");
+    if (!hasFieldPhoto) {
+      missingDocs.push("현장출동사진");
+    }
+    
+    // 2. 기본자료 탭 - 보험금 청구서 필수
+    const hasInsuranceClaim = allDocuments.some(doc => doc.category === "보험금 청구서");
+    if (!hasInsuranceClaim) {
+      missingDocs.push("보험금 청구서");
+    }
+    
+    // 3. 기본자료 탭 - 개인정보 동의서 필수
+    const hasPrivacyConsent = allDocuments.some(doc => doc.category === "개인정보 동의서(가족용)");
+    if (!hasPrivacyConsent) {
+      missingDocs.push("개인정보 동의서(가족용)");
+    }
+    
+    // 4. 증빙자료 탭 - 건축물대장 또는 등기부등본 (택1) 필수
+    const hasBuildingLedger = allDocuments.some(doc => doc.category === "건축물대장");
+    const hasPropertyRegistry = allDocuments.some(doc => doc.category === "등기부등본");
+    if (!hasBuildingLedger && !hasPropertyRegistry) {
+      missingDocs.push("건축물대장 또는 등기부등본");
+    }
+    
+    return {
+      valid: missingDocs.length === 0,
+      missingDocs
+    };
+  };
   
   // 테이블 체크박스 상태 관리
   const [areaChecked, setAreaChecked] = useState<Record<number, boolean>>({});
@@ -793,6 +828,18 @@ export default function FieldReport() {
                   console.log("견적 완료:", completionStatus.estimate);
                   console.log("전체 완료 (isComplete):", completionStatus.isComplete);
                   console.log("================================");
+                  
+                  // 필수 서류 검증
+                  const validation = validateRequiredDocuments();
+                  if (!validation.valid) {
+                    toast({
+                      title: "필수 서류 누락",
+                      description: `다음 서류가 누락되었습니다:\n${validation.missingDocs.join(", ")}`,
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
                   setShowSubmitDialog(true);
                 }}
                 disabled={submitReportMutation.isPending || !completionStatus.isComplete || (caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려")}
