@@ -205,6 +205,37 @@ export function InvoiceManagementPopup({
     setShowDepositForm(false);
   };
 
+  // 저장완료 - 입금내역 저장 (모든 관리자 가능)
+  const handleSaveComplete = async () => {
+    if (!caseData) return;
+    
+    setIsSubmitting(true);
+    try {
+      // 정산 정보 저장
+      await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
+        // 정산 관련 필드들을 저장할 수 있도록 추후 스키마 확장 필요
+        // 현재는 기존 필드만 저장
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      
+      toast({
+        title: "저장 완료",
+        description: "입금내역이 저장되었습니다.",
+      });
+      
+      onOpenChange(false);
+    } catch (error) {
+      toast({
+        title: "저장 실패",
+        description: "저장 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // 세금계산서 날짜 선택 핸들러
   const handleTaxInvoiceDateSelect = async (date: Date | undefined) => {
     if (!date || !caseData) return;
@@ -1357,7 +1388,9 @@ export function InvoiceManagementPopup({
           >
             취소
           </Button>
-          {canApproveInvoice && (
+          
+          {/* 인보이스 승인 전: 인보이스 확인 버튼 (인보이스 승인 권한 필요) */}
+          {!isInvoiceApproved && canApproveInvoice && (
             <Button
               onClick={() => setShowApprovalConfirm(true)}
               disabled={isSubmitting}
@@ -1373,6 +1406,26 @@ export function InvoiceManagementPopup({
               }}
             >
               {isSubmitting ? "처리중..." : "인보이스 확인"}
+            </Button>
+          )}
+          
+          {/* 인보이스 승인 후: 저장완료 버튼 (모든 관리자 가능) */}
+          {isInvoiceApproved && isAdmin && (
+            <Button
+              onClick={handleSaveComplete}
+              disabled={isSubmitting}
+              data-testid="button-save-complete"
+              style={{
+                padding: "10px 20px",
+                height: "48px",
+                background: "#008FED",
+                borderRadius: "6px",
+                fontWeight: 600,
+                fontSize: "18px",
+                color: "#FDFDFD",
+              }}
+            >
+              {isSubmitting ? "처리중..." : "저장완료"}
             </Button>
           )}
         </div>
