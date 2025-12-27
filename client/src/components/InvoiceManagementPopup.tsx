@@ -36,6 +36,7 @@ interface InvoiceManagementPopupProps {
     invoicePropertyRepairAmount?: string | null;
     fieldDispatchInvoiceAmount?: string | null;
     status?: string | null;
+    claimDate?: string | null; // 청구일 (청구 상태로 변경된 날짜)
   } | null;
   estimateData?: {
     preventionEstimate: number;
@@ -150,7 +151,12 @@ export function InvoiceManagementPopup({
   
   useEffect(() => {
     if (open && caseData) {
-      setSubmissionDate(undefined);
+      // 제출일: 청구일(claimDate)이 있으면 자동 설정
+      if (caseData.claimDate) {
+        setSubmissionDate(new Date(caseData.claimDate));
+      } else {
+        setSubmissionDate(undefined);
+      }
       setAcceptanceDate(caseData.receptionDate || "");
       setSettlementStatus("정산");
       
