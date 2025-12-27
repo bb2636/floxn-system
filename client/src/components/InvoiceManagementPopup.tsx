@@ -120,23 +120,33 @@ export function InvoiceManagementPopup({
     return { prevention, property };
   }, [relatedCases, caseData, estimateData]);
 
-  const calculatedEstimates = useMemo(() => {
+  // estimateData가 넘어오면 사용, 없으면 relatedCases에서 계산
+  const displayEstimates = useMemo(() => {
+    // estimateData가 있으면 해당 값 사용 (정산조회에서 전달)
+    if (estimateData) {
+      return {
+        preventionEstimate: estimateData.preventionEstimate || 0,
+        preventionApproved: estimateData.preventionApproved || 0,
+        propertyEstimate: estimateData.propertyEstimate || 0,
+        propertyApproved: estimateData.propertyApproved || 0,
+      };
+    }
+    
+    // estimateData가 없으면 relatedCases에서 계산
     const preventionEstimate = categorizedCases.prevention.directRecovery.reduce(
       (sum, c) => sum + (c.estimateAmount || 0), 0
     );
-    const preventionFieldDispatchEstimate = categorizedCases.prevention.fieldDispatch.length * FIXED_FIELD_DISPATCH_COST;
     const propertyEstimate = categorizedCases.property.directRecovery.reduce(
       (sum, c) => sum + (c.estimateAmount || 0), 0
     );
-    const propertyFieldDispatchEstimate = categorizedCases.property.fieldDispatch.length * FIXED_FIELD_DISPATCH_COST;
 
     return {
       preventionEstimate,
-      preventionFieldDispatchEstimate,
+      preventionApproved: preventionEstimate,
       propertyEstimate,
-      propertyFieldDispatchEstimate,
+      propertyApproved: propertyEstimate,
     };
-  }, [categorizedCases]);
+  }, [categorizedCases, estimateData]);
   
   useEffect(() => {
     if (open && caseData) {
@@ -144,24 +154,22 @@ export function InvoiceManagementPopup({
       setAcceptanceDate(caseData.receptionDate || "");
       setSettlementStatus("정산");
       
-      // 승인금액 설정 - 저장된 값이 있으면 사용, 없으면 견적금액 사용
+      // 승인금액 설정 - 저장된 값이 있으면 사용, 없으면 displayEstimates의 승인금액 사용
       setPreventionApprovedAmount(
         caseData.invoiceDamagePreventionAmount || 
-        calculatedEstimates.preventionEstimate.toString() ||
-        estimateData?.preventionApproved?.toString() || 
+        displayEstimates.preventionApproved.toString() ||
         "0"
       );
 
       setPropertyApprovedAmount(
         caseData.invoicePropertyRepairAmount || 
-        calculatedEstimates.propertyEstimate.toString() ||
-        estimateData?.propertyApproved?.toString() || 
+        displayEstimates.propertyApproved.toString() ||
         "0"
       );
 
       setDeductibleAmount("0");
     }
-  }, [open, caseData, estimateData, calculatedEstimates]);
+  }, [open, caseData, displayEstimates]);
 
   const totalApprovedAmount = 
     (parseInt(preventionApprovedAmount || "0") || 0) + 
@@ -185,9 +193,9 @@ export function InvoiceManagementPopup({
         caseGroupPrefix,
         type: caseData.recoveryType || "직접복구",
         status: "approved" as const,
-        damagePreventionEstimate: calculatedEstimates.preventionEstimate.toString(),
+        damagePreventionEstimate: displayEstimates.preventionEstimate.toString(),
         damagePreventionApproved: preventionApprovedAmount || "0",
-        propertyRepairEstimate: calculatedEstimates.propertyEstimate.toString(),
+        propertyRepairEstimate: displayEstimates.propertyEstimate.toString(),
         propertyRepairApproved: propertyApprovedAmount || "0",
         fieldDispatchAmount: null,
         totalApprovedAmount: totalApprovedAmount.toString(),
@@ -483,7 +491,7 @@ export function InvoiceManagementPopup({
                     }}
                   >
                     <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {calculatedEstimates.preventionEstimate.toLocaleString()}원
+                      {displayEstimates.preventionEstimate.toLocaleString()}원
                     </span>
                   </div>
                   <div 
@@ -494,7 +502,7 @@ export function InvoiceManagementPopup({
                     }}
                   >
                     <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {calculatedEstimates.propertyEstimate.toLocaleString()}원
+                      {displayEstimates.propertyEstimate.toLocaleString()}원
                     </span>
                   </div>
                 </div>
@@ -563,7 +571,7 @@ export function InvoiceManagementPopup({
                     }}
                   >
                     <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {((parseInt(preventionApprovedAmount || "0") || 0) - calculatedEstimates.preventionEstimate).toLocaleString()}원
+                      {((parseInt(preventionApprovedAmount || "0") || 0) - displayEstimates.preventionEstimate).toLocaleString()}원
                     </span>
                   </div>
                   <div 
@@ -574,7 +582,7 @@ export function InvoiceManagementPopup({
                     }}
                   >
                     <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {((parseInt(propertyApprovedAmount || "0") || 0) - calculatedEstimates.propertyEstimate).toLocaleString()}원
+                      {((parseInt(propertyApprovedAmount || "0") || 0) - displayEstimates.propertyEstimate).toLocaleString()}원
                     </span>
                   </div>
                 </div>
@@ -603,8 +611,8 @@ export function InvoiceManagementPopup({
                     }}
                   >
                     <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {calculatedEstimates.preventionEstimate > 0 
-                        ? ((((parseInt(preventionApprovedAmount || "0") || 0) - calculatedEstimates.preventionEstimate) / calculatedEstimates.preventionEstimate) * 100).toFixed(1) + "%"
+                      {displayEstimates.preventionEstimate > 0 
+                        ? ((((parseInt(preventionApprovedAmount || "0") || 0) - displayEstimates.preventionEstimate) / displayEstimates.preventionEstimate) * 100).toFixed(1) + "%"
                         : "0%"}
                     </span>
                   </div>
@@ -616,8 +624,8 @@ export function InvoiceManagementPopup({
                     }}
                   >
                     <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {calculatedEstimates.propertyEstimate > 0 
-                        ? ((((parseInt(propertyApprovedAmount || "0") || 0) - calculatedEstimates.propertyEstimate) / calculatedEstimates.propertyEstimate) * 100).toFixed(1) + "%"
+                      {displayEstimates.propertyEstimate > 0 
+                        ? ((((parseInt(propertyApprovedAmount || "0") || 0) - displayEstimates.propertyEstimate) / displayEstimates.propertyEstimate) * 100).toFixed(1) + "%"
                         : "0%"}
                     </span>
                   </div>
