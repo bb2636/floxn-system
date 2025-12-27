@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -94,6 +95,7 @@ export function InvoiceManagementPopup({
   const [partnerPaymentDate, setPartnerPaymentDate] = useState<string>("");
   const [depositDate, setDepositDate] = useState<Date | undefined>(undefined);
   const [totalApprovedAmountInput, setTotalApprovedAmountInput] = useState<string>("0");
+  const [showApprovalConfirm, setShowApprovalConfirm] = useState(false);
   
   // 인보이스 승인 권한이 있는 관리자만 확인 가능 (일반 관리자는 불가)
   const canApproveInvoice = hasItem("관리자 설정", "인보이스 승인");
@@ -1135,7 +1137,7 @@ export function InvoiceManagementPopup({
           </Button>
           {canApproveInvoice && (
             <Button
-              onClick={handleApprove}
+              onClick={() => setShowApprovalConfirm(true)}
               disabled={isSubmitting}
               data-testid="button-confirm-invoice"
               style={{
@@ -1153,6 +1155,80 @@ export function InvoiceManagementPopup({
           )}
         </div>
       </DialogContent>
+
+      {/* 인보이스 승인 확인 팝업 */}
+      <AlertDialog open={showApprovalConfirm} onOpenChange={setShowApprovalConfirm}>
+        <AlertDialogContent
+          style={{
+            maxWidth: "400px",
+            padding: "32px",
+            borderRadius: "16px",
+            background: "#FFFFFF",
+          }}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle
+              style={{
+                fontWeight: 700,
+                fontSize: "20px",
+                color: "#0C0C0C",
+                textAlign: "center",
+                marginBottom: "8px",
+              }}
+            >
+              인보이스를 승인하시겠습니까?
+            </AlertDialogTitle>
+            <AlertDialogDescription
+              style={{
+                fontWeight: 400,
+                fontSize: "15px",
+                color: "rgba(12, 12, 12, 0.6)",
+                textAlign: "center",
+              }}
+            >
+              승인 후 인보이스 발행·전송 기능이 활성화됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter
+            className="flex justify-center gap-3 mt-6"
+            style={{ justifyContent: "center" }}
+          >
+            <AlertDialogCancel
+              data-testid="button-cancel-approval"
+              style={{
+                padding: "10px 24px",
+                height: "44px",
+                borderRadius: "6px",
+                fontWeight: 500,
+                fontSize: "16px",
+                color: "#008FED",
+                background: "transparent",
+                border: "none",
+              }}
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowApprovalConfirm(false);
+                handleApprove();
+              }}
+              data-testid="button-confirm-approval"
+              style={{
+                padding: "10px 32px",
+                height: "44px",
+                background: "#008FED",
+                borderRadius: "6px",
+                fontWeight: 600,
+                fontSize: "16px",
+                color: "#FFFFFF",
+              }}
+            >
+              승인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
