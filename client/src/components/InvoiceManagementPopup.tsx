@@ -90,9 +90,37 @@ export function InvoiceManagementPopup({
   const [deductibleAmount, setDeductibleAmount] = useState<string>("0");
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taxInvoiceDate, setTaxInvoiceDate] = useState<Date | undefined>(undefined);
   
   // 인보이스 승인 권한이 있는 관리자만 확인 가능 (일반 관리자는 불가)
   const canApproveInvoice = hasItem("관리자 설정", "인보이스 승인");
+  
+  // 세금계산서 날짜 선택 핸들러
+  const handleTaxInvoiceDateSelect = async (date: Date | undefined) => {
+    if (!date || !caseData) return;
+    
+    setTaxInvoiceDate(date);
+    const formattedDate = format(date, "yyyy-MM-dd");
+    
+    try {
+      await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
+        taxInvoiceConfirmDate: formattedDate,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      
+      toast({
+        title: "세금계산서 확인일 저장",
+        description: `${formattedDate}로 저장되었습니다.`,
+      });
+    } catch (error) {
+      toast({
+        title: "저장 실패",
+        description: "세금계산서 확인일 저장 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const categorizedCases = useMemo(() => {
     const allCases = relatedCases.length > 0 ? relatedCases : 
@@ -185,6 +213,13 @@ export function InvoiceManagementPopup({
       );
 
       setDeductibleAmount("0");
+      
+      // 세금계산서 확인일 초기화
+      if (caseData.taxInvoiceConfirmDate) {
+        setTaxInvoiceDate(new Date(caseData.taxInvoiceConfirmDate));
+      } else {
+        setTaxInvoiceDate(undefined);
+      }
     }
   }, [open, caseData, displayEstimates]);
 
@@ -539,16 +574,18 @@ export function InvoiceManagementPopup({
                             borderRadius: "6px",
                             fontWeight: 500,
                             fontSize: "13px",
-                            color: caseData.taxInvoiceConfirmDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.7)",
+                            color: taxInvoiceDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.7)",
                           }}
                         >
                           <CalendarIcon size={14} style={{ marginRight: "4px", color: "rgba(12, 12, 12, 0.7)" }} />
-                          {caseData.taxInvoiceConfirmDate || "날짜 선택"}
+                          {taxInvoiceDate ? format(taxInvoiceDate, "yyyy-MM-dd") : "날짜 선택"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="end">
                         <Calendar
                           mode="single"
+                          selected={taxInvoiceDate}
+                          onSelect={handleTaxInvoiceDateSelect}
                           locale={ko}
                         />
                       </PopoverContent>

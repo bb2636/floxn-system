@@ -226,6 +226,7 @@ export const cases = pgTable("cases", {
   fieldDispatchInvoiceAmount: text("field_dispatch_invoice_amount"), // 현장출동비용 청구 - 현장출동비용
   fieldDispatchInvoiceRemarks: text("field_dispatch_invoice_remarks"), // 현장출동비용 청구 - 비고
   invoiceConfirmDate: text("invoice_confirm_date"), // 인보이스 확인 날짜 (승인 권한자가 확인한 날짜)
+  taxInvoiceConfirmDate: text("tax_invoice_confirm_date"), // 세금계산서 확인 날짜
   
   assignedTo: varchar("assigned_to").references(() => users.id),
   createdBy: varchar("created_by").notNull().references(() => users.id),
