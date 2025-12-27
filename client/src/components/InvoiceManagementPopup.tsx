@@ -91,10 +91,33 @@ export function InvoiceManagementPopup({
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [taxInvoiceDate, setTaxInvoiceDate] = useState<Date | undefined>(undefined);
+  const [partnerPaymentDate, setPartnerPaymentDate] = useState<string>("");
+  const [depositDate, setDepositDate] = useState<Date | undefined>(undefined);
+  const [totalApprovedAmountInput, setTotalApprovedAmountInput] = useState<string>("0");
   
   // 인보이스 승인 권한이 있는 관리자만 확인 가능 (일반 관리자는 불가)
   const canApproveInvoice = hasItem("관리자 설정", "인보이스 승인");
   
+  // 입금구분 변경 핸들러 - 상태 변경 시 협력업체 지급일 자동 설정
+  const handleSettlementStatusChange = (value: string) => {
+    setSettlementStatus(value);
+    // 상태가 변경되면 현재 날짜를 협력업체 지급일로 자동 설정
+    const today = format(new Date(), "yyyy-MM-dd");
+    setPartnerPaymentDate(today);
+  };
+
+  // 수수료 계산 (7.7%)
+  const feeAmount = useMemo(() => {
+    const total = parseInt(totalApprovedAmountInput.replace(/,/g, "") || "0");
+    return Math.round(total * 0.077);
+  }, [totalApprovedAmountInput]);
+
+  // 협력업체 지급액 계산
+  const partnerPaymentAmount = useMemo(() => {
+    const total = parseInt(totalApprovedAmountInput.replace(/,/g, "") || "0");
+    return total - feeAmount;
+  }, [totalApprovedAmountInput, feeAmount]);
+
   // 세금계산서 날짜 선택 핸들러
   const handleTaxInvoiceDateSelect = async (date: Date | undefined) => {
     if (!date || !caseData) return;
@@ -840,7 +863,7 @@ export function InvoiceManagementPopup({
               </div>
             </div>
 
-            {/* 상태 선택 섹션 */}
+            {/* 정산 섹션 */}
             <div 
               className="flex flex-col gap-3 p-7"
               style={{
@@ -850,109 +873,194 @@ export function InvoiceManagementPopup({
               }}
             >
               <div style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C", marginBottom: "8px" }}>
-                상태
+                정산
               </div>
 
-              <RadioGroup 
-                value={settlementStatus} 
-                onValueChange={setSettlementStatus}
-                className="flex items-center gap-6"
-              >
-                <div className="flex items-center gap-1">
-                  <RadioGroupItem 
-                    value="정산" 
-                    id="status-settlement"
-                    data-testid="radio-status-settlement"
-                    style={{ 
-                      width: "18px", 
-                      height: "18px",
-                      borderColor: settlementStatus === "정산" ? "#008FED" : "rgba(12, 12, 12, 0.1)",
-                    }}
-                  />
-                  <Label 
-                    htmlFor="status-settlement"
-                    style={{ 
-                      fontWeight: 500, 
-                      fontSize: "15px", 
-                      color: settlementStatus === "정산" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    정산
-                  </Label>
-                </div>
+              {/* 수수료(원) */}
+              <div className="flex items-center justify-between py-2">
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                  수수료(원)
+                </span>
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                  {feeAmount.toLocaleString()}원
+                </span>
+              </div>
 
-                <div className="flex items-center gap-1">
-                  <RadioGroupItem 
-                    value="부분입금" 
-                    id="status-partial"
-                    data-testid="radio-status-partial"
-                    style={{ 
-                      width: "18px", 
-                      height: "18px",
-                      borderColor: settlementStatus === "부분입금" ? "#008FED" : "rgba(12, 12, 12, 0.1)",
-                    }}
-                  />
-                  <Label 
-                    htmlFor="status-partial"
-                    style={{ 
-                      fontWeight: 500, 
-                      fontSize: "15px", 
-                      color: settlementStatus === "부분입금" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    부분입금
-                  </Label>
-                </div>
+              {/* 협력업체 지급액(원) */}
+              <div className="flex items-center justify-between py-2">
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                  협력업체 지급액(원)
+                </span>
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                  {partnerPaymentAmount.toLocaleString()}원
+                </span>
+              </div>
 
-                <div className="flex items-center gap-1">
-                  <RadioGroupItem 
-                    value="청구변경" 
-                    id="status-change"
-                    data-testid="radio-status-change"
-                    style={{ 
-                      width: "18px", 
-                      height: "18px",
-                      borderColor: settlementStatus === "청구변경" ? "#008FED" : "rgba(12, 12, 12, 0.1)",
-                    }}
-                  />
-                  <Label 
-                    htmlFor="status-change"
-                    style={{ 
-                      fontWeight: 500, 
-                      fontSize: "15px", 
-                      color: settlementStatus === "청구변경" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    청구변경
-                  </Label>
-                </div>
-              </RadioGroup>
+              {/* 협력업체 지급일 */}
+              <div className="flex items-center justify-between py-2">
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                  협력업체 지급일
+                </span>
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                  {partnerPaymentDate || "-"}
+                </span>
+              </div>
+
+              {/* 입금일 */}
+              <div className="flex items-center justify-between py-2">
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                  입금일
+                </span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="justify-start text-left font-normal"
+                      data-testid="button-deposit-date"
+                      style={{
+                        width: "140px",
+                        height: "32px",
+                        background: "rgba(255, 255, 255, 0.04)",
+                        border: "1px solid rgba(12, 12, 12, 0.3)",
+                        borderRadius: "6px",
+                        fontWeight: 500,
+                        fontSize: "13px",
+                        color: depositDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.7)",
+                      }}
+                    >
+                      <CalendarIcon size={14} style={{ marginRight: "4px", color: "rgba(12, 12, 12, 0.7)" }} />
+                      {depositDate ? format(depositDate, "yyyy-MM-dd") : "날짜 선택"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <Calendar
+                      mode="single"
+                      selected={depositDate}
+                      onSelect={setDepositDate}
+                      locale={ko}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* 입금 구분 */}
+              <div className="flex items-center justify-between py-2">
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                  입금 구분
+                </span>
+                <RadioGroup 
+                  value={settlementStatus} 
+                  onValueChange={handleSettlementStatusChange}
+                  className="flex items-center gap-4"
+                >
+                  <div className="flex items-center gap-1">
+                    <RadioGroupItem 
+                      value="정산" 
+                      id="status-settlement"
+                      data-testid="radio-status-settlement"
+                      style={{ 
+                        width: "16px", 
+                        height: "16px",
+                        borderColor: settlementStatus === "정산" ? "#008FED" : "rgba(12, 12, 12, 0.1)",
+                      }}
+                    />
+                    <Label 
+                      htmlFor="status-settlement"
+                      style={{ 
+                        fontWeight: 500, 
+                        fontSize: "14px", 
+                        color: settlementStatus === "정산" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      정산
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <RadioGroupItem 
+                      value="부분입금" 
+                      id="status-partial"
+                      data-testid="radio-status-partial"
+                      style={{ 
+                        width: "16px", 
+                        height: "16px",
+                        borderColor: settlementStatus === "부분입금" ? "#008FED" : "rgba(12, 12, 12, 0.1)",
+                      }}
+                    />
+                    <Label 
+                      htmlFor="status-partial"
+                      style={{ 
+                        fontWeight: 500, 
+                        fontSize: "14px", 
+                        color: settlementStatus === "부분입금" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      부분입금
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <RadioGroupItem 
+                      value="청구변경" 
+                      id="status-change"
+                      data-testid="radio-status-change"
+                      style={{ 
+                        width: "16px", 
+                        height: "16px",
+                        borderColor: settlementStatus === "청구변경" ? "#008FED" : "rgba(12, 12, 12, 0.1)",
+                      }}
+                    />
+                    <Label 
+                      htmlFor="status-change"
+                      style={{ 
+                        fontWeight: 500, 
+                        fontSize: "14px", 
+                        color: settlementStatus === "청구변경" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      청구변경
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
 
               {/* 총 승인 금액 */}
-              <div className="flex items-center justify-between py-0 h-11 mt-4">
-                <div className="flex items-center px-1">
-                  <span style={{ fontWeight: 600, fontSize: "16px", color: "rgba(12, 12, 12, 0.7)" }}>
-                    총 승인 금액
-                  </span>
-                </div>
-                <div className="flex items-center px-1">
-                  <span style={{ fontWeight: 600, fontSize: "16px", color: "#008FED" }}>
-                    {totalApprovedAmount.toLocaleString()}원
+              <div className="flex items-center justify-between py-2">
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                  총 승인 금액
+                </span>
+                <div className="flex items-center">
+                  <Input
+                    type="text"
+                    value={totalApprovedAmountInput ? parseInt(totalApprovedAmountInput.replace(/,/g, "") || "0").toLocaleString() : "0"}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
+                      setTotalApprovedAmountInput(value);
+                    }}
+                    data-testid="input-total-approved-amount"
+                    className="text-right"
+                    style={{
+                      width: "140px",
+                      fontWeight: 500,
+                      fontSize: "15px",
+                      color: "rgba(12, 12, 12, 0.8)",
+                    }}
+                  />
+                  <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)", marginLeft: "4px" }}>
+                    원
                   </span>
                 </div>
               </div>
 
               {/* 자기부담금 */}
-              <div className="flex items-center justify-between py-0 h-11">
-                <div className="flex items-center px-1">
-                  <span style={{ fontWeight: 600, fontSize: "16px", color: "rgba(12, 12, 12, 0.7)" }}>
-                    자기부담금
-                  </span>
-                </div>
-                <div className="flex items-center px-1">
+              <div className="flex items-center justify-between py-2">
+                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                  자기부담금
+                </span>
+                <div className="flex items-center">
                   <Input
                     type="text"
                     value={deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}
@@ -963,13 +1071,13 @@ export function InvoiceManagementPopup({
                     data-testid="input-deductible-amount"
                     className="text-right"
                     style={{
-                      width: "120px",
+                      width: "140px",
                       fontWeight: 500,
-                      fontSize: "16px",
+                      fontSize: "15px",
                       color: "rgba(12, 12, 12, 0.8)",
                     }}
                   />
-                  <span style={{ fontWeight: 500, fontSize: "16px", color: "rgba(12, 12, 12, 0.8)", marginLeft: "4px" }}>
+                  <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)", marginLeft: "4px" }}>
                     원
                   </span>
                 </div>
