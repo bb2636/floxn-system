@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>현장출동확인서</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 15mm;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+      font-size: 11pt;
+      line-height: 1.6;
+      color: #000;
+      background: #fff;
+    }
+    
+    .document {
+      width: 100%;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 10mm 0;
+    }
+    
+    .title {
+      text-align: center;
+      font-size: 24pt;
+      font-weight: bold;
+      margin-bottom: 30mm;
+      letter-spacing: 3px;
+    }
+    
+    .recipient-section {
+      margin-bottom: 15mm;
+    }
+    
+    .recipient-line {
+      display: flex;
+      align-items: baseline;
+      margin-bottom: 3mm;
+    }
+    
+    .recipient-label {
+      font-size: 12pt;
+      font-weight: bold;
+      min-width: 20mm;
+    }
+    
+    .recipient-value {
+      font-size: 12pt;
+      border-bottom: 1px solid #000;
+      flex: 1;
+      padding-bottom: 2mm;
+      margin-left: 5mm;
+    }
+    
+    .recipient-suffix {
+      font-size: 12pt;
+      margin-left: 3mm;
+    }
+    
+    .case-info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15mm;
+    }
+    
+    .case-info-table th,
+    .case-info-table td {
+      border: 1px solid #000;
+      padding: 3mm 4mm;
+      text-align: left;
+      vertical-align: middle;
+    }
+    
+    .case-info-table th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+      width: 25%;
+      text-align: center;
+    }
+    
+    .case-info-table td {
+      width: 25%;
+    }
+    
+    .case-info-table .full-width {
+      width: 75%;
+    }
+    
+    .confirmation-section {
+      margin: 20mm 0;
+      text-align: center;
+    }
+    
+    .confirmation-text {
+      font-size: 12pt;
+      line-height: 2;
+      text-align: justify;
+      margin-bottom: 10mm;
+    }
+    
+    .confirmation-statement {
+      font-size: 12pt;
+      font-weight: bold;
+      margin-top: 15mm;
+    }
+    
+    .date-section {
+      text-align: center;
+      font-size: 14pt;
+      margin: 20mm 0;
+    }
+    
+    .sender-section {
+      margin-top: 20mm;
+    }
+    
+    .sender-line {
+      display: flex;
+      justify-content: flex-end;
+      align-items: baseline;
+      margin-bottom: 3mm;
+    }
+    
+    .sender-label {
+      font-size: 12pt;
+      font-weight: bold;
+      min-width: 30mm;
+      text-align: right;
+    }
+    
+    .sender-value {
+      font-size: 12pt;
+      min-width: 50mm;
+      text-align: center;
+      margin-left: 5mm;
+    }
+    
+    .seal-placeholder {
+      display: inline-block;
+      width: 15mm;
+      height: 15mm;
+      margin-left: 3mm;
+      vertical-align: middle;
+    }
+    
+    .footer {
+      margin-top: 30mm;
+      text-align: center;
+      font-size: 10pt;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="document">
+    <h1 class="title">현장출동확인서</h1>
+    
+    <div class="recipient-section">
+      <div class="recipient-line">
+        <span class="recipient-label">수 신</span>
+        <span class="recipient-value">{{recipientName}}</span>
+        <span class="recipient-suffix">귀하</span>
+      </div>
+    </div>
+    
+    <table class="case-info-table">
+      <tbody>
+        <tr>
+          <th>사고접수번호</th>
+          <td>{{insuranceAccidentNo}}</td>
+          <th>피보험자명</th>
+          <td>{{insuredName}}</td>
+        </tr>
+        <tr>
+          <th>조사자</th>
+          <td>{{investigatorName}}</td>
+          <th>협력업체</th>
+          <td>{{partnerCompany}}</td>
+        </tr>
+        <tr>
+          <th>주소</th>
+          <td class="full-width" colspan="3">{{address}}</td>
+        </tr>
+        <tr>
+          <th>출동일시</th>
+          <td class="full-width" colspan="3">{{dispatchDateTime}}</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div class="confirmation-section">
+      <p class="confirmation-text">
+        상기 건에 대하여 현장 출동 조사를 실시하였으며,<br>
+        조사 결과를 별첨 보고서와 같이 제출합니다.
+      </p>
+      
+      <p class="confirmation-statement">
+        위 내용이 사실과 다름없음을 확인합니다.
+      </p>
+    </div>
+    
+    <div class="date-section">
+      {{documentDate}}
+    </div>
+    
+    <div class="sender-section">
+      <div class="sender-line">
+        <span class="sender-label">회 사 명 :</span>
+        <span class="sender-value">{{senderCompany}}</span>
+      </div>
+      <div class="sender-line">
+        <span class="sender-label">담 당 자 :</span>
+        <span class="sender-value">{{senderName}}</span>
+        <span class="seal-placeholder"></span>
+      </div>
+      <div class="sender-line">
+        <span class="sender-label">연 락 처 :</span>
+        <span class="sender-value">{{senderContact}}</span>
+      </div>
+    </div>
+    
+    <div class="footer">
+      {{footerText}}
+    </div>
+  </div>
+</body>
+</html>

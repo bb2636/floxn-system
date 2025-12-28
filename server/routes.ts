@@ -11,6 +11,7 @@ import https from "https";
 import crypto from "crypto";
 import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from "./replit_integrations/object_storage";
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
+import { generatePdf } from "./pdf-service";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
@@ -6134,6 +6135,47 @@ FLOXN 플랫폼 계정이 생성되었습니다.
     } catch (error) {
       console.error("Get invoice amounts error:", error);
       res.status(500).json({ error: "인보이스 금액 조회 중 오류가 발생했습니다" });
+    }
+  });
+
+  // PDF 다운로드 엔드포인트
+  const pdfDownloadSchema = z.object({
+    caseId: z.string().min(1),
+    sections: z.object({
+      cover: z.boolean().default(false),
+      fieldReport: z.boolean().default(false),
+      drawing: z.boolean().default(false),
+      evidence: z.boolean().default(false),
+      estimate: z.boolean().default(false),
+      etc: z.boolean().default(false),
+    }),
+    evidence: z.object({
+      tab: z.string().default("전체"),
+      selectedFileIds: z.array(z.string()).default([]),
+    }).default({ tab: "전체", selectedFileIds: [] }),
+  });
+
+  app.post("/api/pdf/download", async (req, res) => {
+    try {
+      const payload = pdfDownloadSchema.parse(req.body);
+      
+      const pdfBuffer = await generatePdf(payload);
+      
+      const caseData = await storage.getCaseById(payload.caseId);
+      const filename = caseData?.caseNumber 
+        ? `현장출동보고서_${caseData.caseNumber}.pdf`
+        : `현장출동보고서_${payload.caseId}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("PDF generation error:", error);
+      res.status(500).json({ error: "PDF 생성 중 오류가 발생했습니다" });
     }
   });
 

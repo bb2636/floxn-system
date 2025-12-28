@@ -1521,28 +1521,11 @@ export default function FieldReport() {
                       description: "보고서를 생성하고 있습니다...",
                     });
 
-                    const pdf = new jsPDF('p', 'mm', 'a4');
-                    
-                    pdf.addFileToVFS('NotoSansKR-Regular.ttf', NotoSansKR_Regular);
-                    pdf.addFont('NotoSansKR-Regular.ttf', 'NotoSansKR', 'normal', 'Identity-H');
-                    
-                    const pageWidth = pdf.internal.pageSize.getWidth();
-                    const pageHeight = pdf.internal.pageSize.getHeight();
-                    const margin = 10;
-                    
-                    const sectionMap: Record<string, string> = {
-                      '현장입력': 'pdf-section-현장조사',
-                      '도면': 'pdf-section-도면',
-                      '증빙자료': 'pdf-section-증빙자료',
-                      '견적서': 'pdf-section-견적서',
-                      '기타사항': 'pdf-section-기타사항',
-                    };
-
-                    const selectedSections = Object.entries(downloadSections)
+                    const selectedSectionKeys = Object.entries(downloadSections)
                       .filter(([_, checked]) => checked)
                       .map(([key]) => key);
 
-                    if (selectedSections.length === 0) {
+                    if (selectedSectionKeys.length === 0) {
                       toast({
                         title: "섹션 선택 필요",
                         description: "최소 1개 이상의 섹션을 선택해주세요.",
@@ -1551,163 +1534,52 @@ export default function FieldReport() {
                       return;
                     }
 
-                    let isFirstPage = true;
-
-                    const tabValueMap: Record<string, string> = {
-                      '현장입력': '현장조사',
-                      '도면': '도면',
-                      '증빙자료': '증빙자료',
-                      '견적서': '견적서',
-                      '기타사항': '기타사항/원인',
+                    const payload = {
+                      caseId: selectedCaseId,
+                      sections: {
+                        cover: true,
+                        fieldReport: downloadSections['현장입력'] || false,
+                        drawing: downloadSections['도면'] || false,
+                        evidence: downloadSections['증빙자료'] || false,
+                        estimate: downloadSections['견적서'] || false,
+                        etc: downloadSections['기타사항'] || false,
+                      },
+                      evidence: {
+                        tab: documentTab || "전체",
+                        selectedFileIds: downloadSections['증빙자료'] ? Array.from(selectedDocuments) : [],
+                      },
                     };
 
-                    const originalTab = activeTab;
+                    const response = await fetch("/api/pdf/download", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                      credentials: "include",
+                    });
                     
-                    setShowPdfDialog(false);
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    
-                    for (const sectionKey of selectedSections) {
-                      const tabValue = tabValueMap[sectionKey];
-                      const elementId = sectionMap[sectionKey];
-                      
-                      setActiveTab(tabValue);
-                      
-                      await new Promise(resolve => setTimeout(resolve, 500));
-                      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-                      
-                      const element = document.getElementById(elementId);
-                      
-                      if (!element) {
-                        continue;
-                      }
-
-                      let drawingContainer: HTMLElement | null = null;
-                      let originalDrawingStyles = { height: '', width: '', overflow: '', maxHeight: '', maxWidth: '', minHeight: '' };
-                      
-                      if (sectionKey === '도면') {
-                        drawingContainer = element.querySelector('.overflow-auto') as HTMLElement;
-                        if (drawingContainer) {
-                          originalDrawingStyles = {
-                            height: drawingContainer.style.height,
-                            width: drawingContainer.style.width,
-                            overflow: drawingContainer.style.overflow,
-                            maxHeight: drawingContainer.style.maxHeight,
-                            maxWidth: drawingContainer.style.maxWidth,
-                            minHeight: drawingContainer.style.minHeight,
-                          };
-                          
-                          const absoluteElements = drawingContainer.querySelectorAll('[style*="position: absolute"], [style*="position:absolute"]');
-                          let maxRight = 0;
-                          let maxBottom = 0;
-                          
-                          absoluteElements.forEach((el) => {
-                            const rect = el.getBoundingClientRect();
-                            const containerRect = drawingContainer!.getBoundingClientRect();
-                            const relativeRight = rect.right - containerRect.left + 50;
-                            const relativeBottom = rect.bottom - containerRect.top + 50;
-                            maxRight = Math.max(maxRight, relativeRight);
-                            maxBottom = Math.max(maxBottom, relativeBottom);
-                          });
-                          
-                          const contentWidth = Math.max(maxRight, drawingContainer.scrollWidth, 1200);
-                          const contentHeight = Math.max(maxBottom, drawingContainer.scrollHeight, 800);
-                          
-                          drawingContainer.style.height = `${contentHeight}px`;
-                          drawingContainer.style.width = `${contentWidth}px`;
-                          drawingContainer.style.minHeight = `${contentHeight}px`;
-                          drawingContainer.style.maxHeight = 'none';
-                          drawingContainer.style.maxWidth = 'none';
-                          drawingContainer.style.overflow = 'visible';
-                          
-                          await new Promise(resolve => setTimeout(resolve, 300));
-                        }
-                      }
-
+                    if (!response.ok) {
+                      const errorText = await response.text();
+                      let errorMessage = "PDF 생성 실패";
                       try {
-                        const canvas = await html2canvas(element, {
-                          scale: 2,
-                          useCORS: true,
-                          allowTaint: true,
-                          logging: false,
-                          backgroundColor: '#ffffff',
-                          windowWidth: 1200,
-                          scrollX: 0,
-                          scrollY: 0,
-                        });
-
-                        if (canvas.width === 0 || canvas.height === 0) {
-                          continue;
-                        }
-
-                        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                        const maxWidth = pageWidth - (margin * 2);
-                        const maxHeight = pageHeight - (margin * 2);
-                        
-                        const imgAspectRatio = canvas.width / canvas.height;
-                        const pageAspectRatio = maxWidth / maxHeight;
-                        
-                        let imgWidth: number;
-                        let imgHeight: number;
-                        
-                        if (sectionKey === '도면') {
-                          if (imgAspectRatio > pageAspectRatio) {
-                            imgWidth = maxWidth;
-                            imgHeight = maxWidth / imgAspectRatio;
-                          } else {
-                            imgHeight = maxHeight;
-                            imgWidth = maxHeight * imgAspectRatio;
-                          }
-                          
-                          if (!isFirstPage) {
-                            pdf.addPage();
-                          }
-                          isFirstPage = false;
-                          
-                          const xOffset = margin + (maxWidth - imgWidth) / 2;
-                          const yOffset = margin + (maxHeight - imgHeight) / 2;
-                          pdf.addImage(imgData, 'JPEG', xOffset, yOffset, imgWidth, imgHeight);
-                        } else {
-                          imgWidth = maxWidth;
-                          imgHeight = (canvas.height * imgWidth) / canvas.width;
-                          
-                          let heightLeft = imgHeight;
-                          let position = 0;
-
-                          if (!isFirstPage) {
-                            pdf.addPage();
-                          }
-                          isFirstPage = false;
-
-                          pdf.addImage(imgData, 'JPEG', margin, margin, imgWidth, imgHeight);
-                          heightLeft -= maxHeight;
-                          position = -maxHeight;
-
-                          while (heightLeft > 0) {
-                            pdf.addPage();
-                            pdf.addImage(imgData, 'JPEG', margin, position + margin, imgWidth, imgHeight);
-                            heightLeft -= maxHeight;
-                            position -= maxHeight;
-                          }
-                        }
-                      } catch (captureError) {
-                        console.error(`캡처 오류 (${sectionKey}):`, captureError);
-                      } finally {
-                        if (drawingContainer) {
-                          drawingContainer.style.height = originalDrawingStyles.height || '600px';
-                          drawingContainer.style.width = originalDrawingStyles.width || '100%';
-                          drawingContainer.style.minHeight = originalDrawingStyles.minHeight || '';
-                          drawingContainer.style.maxHeight = originalDrawingStyles.maxHeight || '';
-                          drawingContainer.style.maxWidth = originalDrawingStyles.maxWidth || '';
-                          drawingContainer.style.overflow = originalDrawingStyles.overflow || 'auto';
-                        }
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.error || errorMessage;
+                      } catch {
+                        errorMessage = errorText || errorMessage;
                       }
+                      throw new Error(errorMessage);
                     }
-                    
-                    setActiveTab(originalTab);
 
-                    const fileName = `현장출동보고서_${caseData.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
-                    pdf.save(fileName);
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = `현장출동보고서_${caseData?.caseNumber || 'report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
 
+                    setShowPdfDialog(false);
                     toast({
                       title: "PDF 다운로드 완료",
                       description: "보고서가 성공적으로 다운로드되었습니다.",
@@ -1716,7 +1588,7 @@ export default function FieldReport() {
                     console.error('PDF 생성 오류:', error);
                     toast({
                       title: "PDF 생성 실패",
-                      description: "보고서 생성 중 오류가 발생했습니다.",
+                      description: error instanceof Error ? error.message : "보고서 생성 중 오류가 발생했습니다.",
                       variant: "destructive",
                     });
                   }

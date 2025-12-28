@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>견적서</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 10mm;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+      font-size: 9pt;
+      line-height: 1.4;
+      color: #000;
+      background: #fff;
+    }
+    
+    .document {
+      width: 100%;
+      max-width: 210mm;
+      margin: 0 auto;
+    }
+    
+    .title {
+      text-align: center;
+      font-size: 20pt;
+      font-weight: bold;
+      margin-bottom: 6mm;
+      padding-bottom: 4mm;
+      border-bottom: 2px solid #000;
+    }
+    
+    .case-info {
+      margin-bottom: 6mm;
+      padding: 3mm;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+    }
+    
+    .case-info-row {
+      display: flex;
+      gap: 10mm;
+      margin-bottom: 1mm;
+    }
+    
+    .case-info-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .case-info-item {
+      display: flex;
+      gap: 2mm;
+    }
+    
+    .case-info-label {
+      font-weight: bold;
+      color: #555;
+    }
+    
+    .section {
+      margin-bottom: 6mm;
+      page-break-inside: avoid;
+    }
+    
+    .section-header {
+      background-color: #404040;
+      color: #fff;
+      padding: 2mm 4mm;
+      font-weight: bold;
+      font-size: 10pt;
+    }
+    
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .data-table th,
+    .data-table td {
+      border: 1px solid #333;
+      padding: 1.5mm 2mm;
+      vertical-align: middle;
+    }
+    
+    .data-table th {
+      background-color: #e8e8e8;
+      font-weight: bold;
+      text-align: center;
+      font-size: 8pt;
+    }
+    
+    .data-table td {
+      font-size: 8pt;
+    }
+    
+    .data-table .text-center { text-align: center; }
+    .data-table .text-right { text-align: right; }
+    .data-table .text-left { text-align: left; }
+    
+    .data-table .col-no { width: 5%; }
+    .data-table .col-category { width: 10%; }
+    .data-table .col-location { width: 8%; }
+    .data-table .col-work-type { width: 10%; }
+    .data-table .col-work-name { width: 12%; }
+    .data-table .col-damage { width: 18%; }
+    .data-table .col-repair { width: 18%; }
+    .data-table .col-note { width: 19%; }
+    
+    .cost-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .cost-table th,
+    .cost-table td {
+      border: 1px solid #333;
+      padding: 1.5mm 2.5mm;
+      font-size: 8pt;
+    }
+    
+    .cost-table th {
+      background-color: #e8e8e8;
+      font-weight: bold;
+      text-align: center;
+    }
+    
+    .cost-table td {
+      text-align: right;
+    }
+    
+    .cost-table td.text-left {
+      text-align: left;
+    }
+    
+    .cost-table td.text-center {
+      text-align: center;
+    }
+    
+    .cost-table .col-item { width: 30%; }
+    .cost-table .col-spec { width: 15%; }
+    .cost-table .col-unit { width: 8%; }
+    .cost-table .col-qty { width: 10%; }
+    .cost-table .col-price { width: 12%; }
+    .cost-table .col-amount { width: 15%; }
+    .cost-table .col-note { width: 10%; }
+    
+    .subtotal-row {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+    
+    .total-section {
+      margin-top: 8mm;
+      page-break-inside: avoid;
+    }
+    
+    .total-table {
+      width: 50%;
+      margin-left: auto;
+      border-collapse: collapse;
+    }
+    
+    .total-table th,
+    .total-table td {
+      border: 1px solid #333;
+      padding: 2.5mm 4mm;
+      font-size: 10pt;
+    }
+    
+    .total-table th {
+      background-color: #404040;
+      color: #fff;
+      font-weight: bold;
+      text-align: center;
+      width: 40%;
+    }
+    
+    .total-table td {
+      text-align: right;
+      font-weight: bold;
+      background-color: #f5f5f5;
+    }
+    
+    .grand-total-row th {
+      background-color: #1a1a1a;
+    }
+    
+    .grand-total-row td {
+      font-size: 12pt;
+      background-color: #fff3cd;
+    }
+    
+    .footer {
+      margin-top: 10mm;
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      color: #666;
+      padding-top: 3mm;
+      border-top: 1px solid #ddd;
+    }
+    
+    .amount-format {
+      font-family: 'Courier New', monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="document">
+    <h1 class="title">견 적 서</h1>
+    
+    <div class="case-info">
+      <div class="case-info-row">
+        <div class="case-info-item">
+          <span class="case-info-label">접수번호:</span>
+          <span>{{caseNumber}}</span>
+        </div>
+        <div class="case-info-item">
+          <span class="case-info-label">사고접수번호:</span>
+          <span>{{insuranceAccidentNo}}</span>
+        </div>
+        <div class="case-info-item">
+          <span class="case-info-label">보험사:</span>
+          <span>{{insuranceCompany}}</span>
+        </div>
+      </div>
+      <div class="case-info-row">
+        <div class="case-info-item">
+          <span class="case-info-label">피보험자:</span>
+          <span>{{insuredName}}</span>
+        </div>
+        <div class="case-info-item">
+          <span class="case-info-label">주소:</span>
+          <span>{{address}}</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-header">복구면적 산출표</div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th class="col-no">No.</th>
+            <th class="col-category">장소</th>
+            <th class="col-location">위치</th>
+            <th class="col-work-type">공종</th>
+            <th class="col-work-name">공사명</th>
+            <th class="col-damage">피해면적 (가로×세로=면적)</th>
+            <th class="col-repair">복구면적 (가로×세로=면적)</th>
+            <th class="col-note">비고</th>
+          </tr>
+        </thead>
+        <tbody id="area-rows">
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="section">
+      <div class="section-header">노무비</div>
+      <table class="cost-table">
+        <thead>
+          <tr>
+            <th class="col-item">항목</th>
+            <th class="col-spec">규격</th>
+            <th class="col-unit">단위</th>
+            <th class="col-qty">수량</th>
+            <th class="col-price">단가</th>
+            <th class="col-amount">금액</th>
+            <th class="col-note">비고</th>
+          </tr>
+        </thead>
+        <tbody id="labor-rows">
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="section">
+      <div class="section-header">자재비</div>
+      <table class="cost-table">
+        <thead>
+          <tr>
+            <th class="col-item">항목</th>
+            <th class="col-spec">규격</th>
+            <th class="col-unit">단위</th>
+            <th class="col-qty">수량</th>
+            <th class="col-price">단가</th>
+            <th class="col-amount">금액</th>
+            <th class="col-note">비고</th>
+          </tr>
+        </thead>
+        <tbody id="material-rows">
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="total-section">
+      <table class="total-table">
+        <tbody>
+          <tr>
+            <th>노무비 합계</th>
+            <td class="amount-format">{{laborTotal}}</td>
+          </tr>
+          <tr>
+            <th>자재비 합계</th>
+            <td class="amount-format">{{materialTotal}}</td>
+          </tr>
+          <tr>
+            <th>부가세 (10%)</th>
+            <td class="amount-format">{{vat}}</td>
+          </tr>
+          <tr class="grand-total-row">
+            <th>총 합계</th>
+            <td class="amount-format">{{grandTotal}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="footer">
+      <div>작성일: {{documentDate}}</div>
+      <div>{{partnerCompany}}</div>
+    </div>
+  </div>
+</body>
+</html>
