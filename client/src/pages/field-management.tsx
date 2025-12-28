@@ -1376,7 +1376,7 @@ export default function FieldManagement() {
                           color: "rgba(12, 12, 12, 0.6)",
                         }}
                       >
-                        {caseItem.victimAddress || "-"}
+                        {caseItem.insuredAddress || caseItem.victimAddress || "-"}
                       </span>
                     </div>
                   </div>
