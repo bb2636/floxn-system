@@ -5,7 +5,7 @@ import { Search, X, ChevronDown, Upload, ChevronRight, Download, Printer, CheckC
 import logoIcon from "@assets/Frame 2_1762217940686.png";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { User, VALID_ROLES, type ExcelData, type Inquiry, type MasterData, type InsertMasterData, type Notice, type CaseChangeLog } from "@shared/schema";
+import { User, VALID_ROLES, type ExcelData, type Inquiry, type MasterData, type InsertMasterData, type Notice, type CaseChangeLog, type UnitPriceOverride } from "@shared/schema";
 import {
   Select,
   SelectContent,
@@ -399,6 +399,8 @@ export default function AdminSettings() {
   // 일위대가 데이터
   const [unitPriceExcelData, setUnitPriceExcelData] = useState<any[]>([]);
   const [unitPriceExcelHeaders, setUnitPriceExcelHeaders] = useState<string[]>([]);
+  // 일위대가 D값 편집 상태 (key: `${category}|${workName}|${laborItem}`, value: 편집된 D값)
+  const [editedDValues, setEditedDValues] = useState<Record<string, string>>({});
   
   // 기준정보 관리 states
   const [selectedCategory, setSelectedCategory] = useState("장소");
@@ -633,6 +635,40 @@ export default function AdminSettings() {
   const { data: selectedUnitPriceVersion } = useQuery<ExcelData | null>({
     queryKey: [`/api/excel-data/detail/${selectedUnitPriceVersionId}`],
     enabled: !!selectedUnitPriceVersionId && activeMenu === "DB 관리",
+  });
+
+  // Fetch D value overrides for 일위대가
+  const { data: unitPriceOverrides = [] } = useQuery<UnitPriceOverride[]>({
+    queryKey: ["/api/unit-price-overrides"],
+    enabled: !!user && activeMenu === "DB 관리" && dbTab === "일위대가",
+  });
+
+  // Create a lookup map for D value overrides (key: `${category}|${workName}|${laborItem}`)
+  const overridesMap = new Map<string, number>();
+  unitPriceOverrides.forEach((override) => {
+    const key = `${override.category}|${override.workName}|${override.laborItem}`;
+    overridesMap.set(key, override.standardWorkQuantity);
+  });
+
+  // Mutation for saving D value override
+  const saveDValueMutation = useMutation({
+    mutationFn: async (data: { category: string; workName: string; laborItem: string; standardWorkQuantity: number }) => {
+      return await apiRequest("POST", "/api/unit-price-overrides", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/unit-price-overrides"] });
+      toast({
+        title: "저장 완료",
+        description: "기준작업량이 성공적으로 저장되었습니다.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "저장 실패",
+        description: error.message || "기준작업량을 저장하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Auto-select latest version when versions change (validates selection still exists)
@@ -2741,45 +2777,176 @@ export default function AdminSettings() {
                         }
                       });
                       
-                      return currentData.map((row: any, rowIdx: number) => (
-                        <tr key={rowIdx}>
-                          {Array.isArray(row) && row.map((cell: any, cellIdx: number) => {
-                            // 병합 가능 컬럼: skip이면 렌더링 안함
-                            const cellMerge = mergeInfo[rowIdx]?.[cellIdx];
-                            if (cellMerge?.skip) {
-                              return null;
+                      // Find 기준작업량(D) column index for 일위대가 editable D values
+                      const currentHeaders = dbTab === "노무비" ? laborExcelHeaders : dbTab === "자재비" ? materialExcelHeaders : unitPriceExcelHeaders;
+                      const dValueColIndex = dbTab === "일위대가" ? currentHeaders.findIndex(h => 
+                        h.includes("기준작업량") || h.includes("기준 작업량") || h === "D" || h.includes("D값") || h.includes("D 값")
+                      ) : -1;
+                      
+                      return currentData.map((row: any, rowIdx: number) => {
+                        // Forward-fill for 일위대가 rows
+                        let category = '';
+                        let workName = '';
+                        let laborItem = '';
+                        
+                        if (dbTab === "일위대가" && Array.isArray(row)) {
+                          // Forward-fill 로직
+                          category = String(row[0] || '').trim();
+                          workName = String(row[1] || '').trim();
+                          laborItem = String(row[2] || '').trim();
+                          
+                          // If empty, try to get from previous rows
+                          if (!category || !workName) {
+                            for (let i = rowIdx - 1; i >= 0; i--) {
+                              const prevRow = currentData[i];
+                              if (Array.isArray(prevRow)) {
+                                if (!category && prevRow[0]) category = String(prevRow[0]).trim();
+                                if (!workName && prevRow[1]) workName = String(prevRow[1]).trim();
+                                if (category && workName) break;
+                              }
                             }
-                            
-                            // 숫자인 경우 반올림해서 표시
-                            let displayValue = cell;
-                            if (typeof cell === 'number' && !Number.isInteger(cell)) {
-                              displayValue = Math.round(cell);
-                            }
-                            
-                            const rowspan = cellMerge?.rowspan || 1;
-                            return (
-                              <td
-                                key={cellIdx}
-                                className="px-4 py-4"
-                                rowSpan={rowspan > 1 ? rowspan : undefined}
-                                style={{
-                                  fontFamily: "Pretendard",
-                                  fontSize: "14px",
-                                  fontWeight: 400,
-                                  color: "#0C0C0C",
-                                  whiteSpace: "nowrap",
-                                  verticalAlign: rowspan > 1 ? "middle" : undefined,
-                                  borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                                  borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                                  background: rowspan > 1 ? "rgba(248, 248, 248, 0.5)" : undefined,
-                                }}
-                              >
-                                {displayValue}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ));
+                          }
+                        }
+                        
+                        const overrideKey = `${category}|${workName}|${laborItem}`;
+                        
+                        return (
+                          <tr key={rowIdx}>
+                            {Array.isArray(row) && row.map((cell: any, cellIdx: number) => {
+                              // 병합 가능 컬럼: skip이면 렌더링 안함
+                              const cellMerge = mergeInfo[rowIdx]?.[cellIdx];
+                              if (cellMerge?.skip) {
+                                return null;
+                              }
+                              
+                              // 숫자인 경우 반올림해서 표시
+                              let displayValue = cell;
+                              if (typeof cell === 'number' && !Number.isInteger(cell)) {
+                                displayValue = Math.round(cell);
+                              }
+                              
+                              const rowspan = cellMerge?.rowspan || 1;
+                              
+                              // 일위대가 탭에서 기준작업량(D) 컬럼인 경우 편집 가능하게 렌더링
+                              const isEditableDColumn = dbTab === "일위대가" && cellIdx === dValueColIndex && dValueColIndex !== -1;
+                              const isAdmin = user?.role === "관리자";
+                              const originalDValue = typeof cell === 'number' ? Math.round(cell) : cell;
+                              const overriddenDValue = overridesMap.get(overrideKey);
+                              const hasOverride = overriddenDValue !== undefined;
+                              const currentEditValue = editedDValues[overrideKey];
+                              
+                              if (isEditableDColumn && isAdmin && laborItem) {
+                                const inputValue = currentEditValue !== undefined 
+                                  ? currentEditValue 
+                                  : (hasOverride ? overriddenDValue.toString() : (originalDValue?.toString() || ''));
+                                
+                                return (
+                                  <td
+                                    key={cellIdx}
+                                    className="px-2 py-2"
+                                    rowSpan={rowspan > 1 ? rowspan : undefined}
+                                    style={{
+                                      fontFamily: "Pretendard",
+                                      fontSize: "14px",
+                                      fontWeight: 400,
+                                      color: "#0C0C0C",
+                                      whiteSpace: "nowrap",
+                                      verticalAlign: rowspan > 1 ? "middle" : undefined,
+                                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                                      borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                                      background: hasOverride ? "rgba(0, 143, 237, 0.1)" : "rgba(255, 255, 255, 1)",
+                                    }}
+                                  >
+                                    <div className="flex items-center gap-1">
+                                      <input
+                                        type="number"
+                                        value={inputValue}
+                                        onChange={(e) => {
+                                          setEditedDValues(prev => ({
+                                            ...prev,
+                                            [overrideKey]: e.target.value
+                                          }));
+                                        }}
+                                        onBlur={(e) => {
+                                          const newValue = parseInt(e.target.value, 10);
+                                          if (!isNaN(newValue) && newValue > 0) {
+                                            saveDValueMutation.mutate({
+                                              category,
+                                              workName,
+                                              laborItem,
+                                              standardWorkQuantity: newValue
+                                            });
+                                          }
+                                          // Clear edited state after save
+                                          setEditedDValues(prev => {
+                                            const newState = { ...prev };
+                                            delete newState[overrideKey];
+                                            return newState;
+                                          });
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            (e.target as HTMLInputElement).blur();
+                                          }
+                                        }}
+                                        className="w-20 px-2 py-1 text-center outline-none"
+                                        style={{
+                                          border: "1px solid rgba(12, 12, 12, 0.2)",
+                                          borderRadius: "4px",
+                                          fontFamily: "Pretendard",
+                                          fontSize: "13px",
+                                          background: hasOverride ? "rgba(0, 143, 237, 0.05)" : "#FFFFFF",
+                                        }}
+                                        data-testid={`input-d-value-${rowIdx}`}
+                                      />
+                                      {hasOverride && (
+                                        <span
+                                          title="사용자 지정값 (기본값과 다름)"
+                                          style={{
+                                            display: "inline-flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "16px",
+                                            height: "16px",
+                                            borderRadius: "50%",
+                                            background: "#008FED",
+                                            color: "#FFFFFF",
+                                            fontSize: "10px",
+                                            fontWeight: 700,
+                                          }}
+                                        >
+                                          ✓
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
+                                );
+                              }
+                              
+                              return (
+                                <td
+                                  key={cellIdx}
+                                  className="px-4 py-4"
+                                  rowSpan={rowspan > 1 ? rowspan : undefined}
+                                  style={{
+                                    fontFamily: "Pretendard",
+                                    fontSize: "14px",
+                                    fontWeight: 400,
+                                    color: "#0C0C0C",
+                                    whiteSpace: "nowrap",
+                                    verticalAlign: rowspan > 1 ? "middle" : undefined,
+                                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                                    background: rowspan > 1 ? "rgba(248, 248, 248, 0.5)" : undefined,
+                                  }}
+                                >
+                                  {displayValue}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        );
+                      });
                     })()}
                   </tbody>
                 </table>
