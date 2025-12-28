@@ -1371,7 +1371,7 @@ export default function FieldReport() {
               
               <div style={{ 
                 display: "grid", 
-                gridTemplateColumns: "repeat(4, 1fr)", 
+                gridTemplateColumns: "repeat(4, minmax(0, 1fr))", 
                 gap: "12px",
                 maxHeight: "300px",
                 overflowY: "auto",
@@ -1396,79 +1396,91 @@ export default function FieldReport() {
                       style={{
                         position: "relative",
                         width: "100%",
-                        aspectRatio: "1",
+                        height: "0",
+                        paddingBottom: "100%",
                         borderRadius: "8px",
                         overflow: "hidden",
                         cursor: "pointer",
                         border: isSelected ? "2px solid #008FED" : "1px solid rgba(12, 12, 12, 0.1)",
                         background: "rgba(12, 12, 12, 0.03)",
+                        boxSizing: "border-box",
                       }}
                     >
-                      {isImage && doc.fileUrl ? (
-                        <img
-                          src={doc.fileUrl}
-                          alt={doc.fileName || ""}
-                          style={{
+                      <div style={{
+                        position: "absolute",
+                        top: "0",
+                        left: "0",
+                        right: "0",
+                        bottom: "0",
+                        display: "flex",
+                        flexDirection: "column",
+                      }}>
+                        {isImage && doc.fileUrl ? (
+                          <img
+                            src={doc.fileUrl}
+                            alt={doc.fileName || ""}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <div style={{
                             width: "100%",
                             height: "100%",
-                            objectFit: "cover",
-                          }}
-                        />
-                      ) : (
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "rgba(12, 12, 12, 0.05)",
+                          }}>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="rgba(12,12,12,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              <polyline points="14 2 14 8 20 8" stroke="rgba(12,12,12,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </div>
+                        )}
+                        
                         <div style={{
-                          width: "100%",
-                          height: "100%",
+                          position: "absolute",
+                          top: "6px",
+                          right: "6px",
+                          width: "20px",
+                          height: "20px",
+                          borderRadius: "4px",
+                          background: isSelected ? "#008FED" : "rgba(255, 255, 255, 0.9)",
+                          border: isSelected ? "none" : "1px solid rgba(12, 12, 12, 0.2)",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          background: "rgba(12, 12, 12, 0.05)",
                         }}>
-                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="rgba(12,12,12,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <polyline points="14 2 14 8 20 8" stroke="rgba(12,12,12,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
+                          {isSelected && (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                              <polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
                         </div>
-                      )}
-                      
-                      <div style={{
-                        position: "absolute",
-                        top: "6px",
-                        right: "6px",
-                        width: "20px",
-                        height: "20px",
-                        borderRadius: "4px",
-                        background: isSelected ? "#008FED" : "rgba(255, 255, 255, 0.9)",
-                        border: isSelected ? "none" : "1px solid rgba(12, 12, 12, 0.2)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}>
-                        {isSelected && (
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                            <polyline points="20 6 9 17 4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        )}
-                      </div>
-                      
-                      <div style={{
-                        position: "absolute",
-                        bottom: "0",
-                        left: "0",
-                        right: "0",
-                        padding: "6px 8px",
-                        background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
-                      }}>
-                        <span style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "11px",
-                          color: "white",
-                          display: "block",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
+                        
+                        <div style={{
+                          position: "absolute",
+                          bottom: "0",
+                          left: "0",
+                          right: "0",
+                          padding: "6px 8px",
+                          background: "linear-gradient(transparent, rgba(0,0,0,0.7))",
                         }}>
-                          {doc.fileName || doc.category}
-                        </span>
+                          <span style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "11px",
+                            color: "white",
+                            display: "block",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}>
+                            {doc.fileName || doc.category}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
