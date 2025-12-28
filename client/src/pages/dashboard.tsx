@@ -2204,7 +2204,7 @@ export default function Dashboard() {
                               color: '#0C0C0C',
                             }}
                           >
-                            {formatCaseNumber(caseItem.caseNumber)} · {caseItem.accidentLocation || '위치 미정'}
+                            {formatCaseNumber(caseItem.caseNumber)} · {[caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(' ') || '위치 미정'}
                           </span>
                           <div className="flex items-center gap-1">
                             <span
