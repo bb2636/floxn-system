@@ -1596,9 +1596,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: `허용되지 않은 상태값입니다: ${status}` });
       }
 
-      // 협력사는 직접복구/선견적요청만 변경 가능
+      // 협력사는 직접복구/선견적요청 및 그 자동전환 상태만 변경 가능
       if (userRole === "협력사") {
-        const PARTNER_ALLOWED = ["직접복구", "선견적요청"];
+        const PARTNER_ALLOWED = [
+          "직접복구", 
+          "선견적요청",
+          "(직접복구인 경우) 청구자료제출",
+          "(선견적요청인 경우) 출동비 청구"
+        ];
         if (!PARTNER_ALLOWED.includes(status)) {
           return res.status(403).json({ error: "협력사는 직접복구/선견적요청만 선택할 수 있습니다" });
         }
