@@ -19,8 +19,10 @@ import { InvoiceManagementPopup } from "@/components/InvoiceManagementPopup";
 
 // 정산 테이블 행 타입
 interface SettlementRow {
-  id: string;
-  caseNumber: string | null;
+  id: string; // Primary case ID (first in group)
+  caseIds: string[]; // All case IDs in the group
+  caseNumber: string | null; // Combined case numbers (e.g., "251225001-0, 251225001-1")
+  caseNumberPrefix: string | null; // Case number prefix for grouping
   insuranceCompany: string;
   manager: string;
   withdrawalNumber: string;
@@ -30,12 +32,12 @@ interface SettlementRow {
   withdrawalDate: string;
   constructionStatus: string;
   recoveryType: string | null; // 복구 유형: 직접복구 | 선견적요청
-  // 손해방지비용
+  // 손해방지비용 (from -0 cases)
   preventionEstimateAmount: number;
   preventionApprovedAmount: number;
   preventionDifference: number;
   preventionAdjustmentRate: string;
-  // 대물비용
+  // 대물비용 (sum of -1, -2, etc. cases)
   propertyEstimateAmount: number;
   propertyApprovedAmount: number;
   propertyDifference: number;
@@ -248,114 +250,70 @@ export default function SettlementsInquiry() {
     return map;
   }, [estimatesData]);
 
-  // Build table rows using useMemo to ensure proper reactivity
+  // Helper function for parsing amounts
+  const parseAmountValue = (value: string | number | null | undefined): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === 'number') return isNaN(value) ? 0 : value;
+    const cleaned = String(value).replace(/,/g, '');
+    const parsed = Number(cleaned);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  // Helper function to get case suffix (e.g., -0, -1, -2)
+  const getCaseSuffix = (caseNumber: string | null): number => {
+    if (!caseNumber) return 0;
+    const dashIndex = caseNumber.lastIndexOf('-');
+    if (dashIndex > 0) {
+      const suffix = parseInt(caseNumber.substring(dashIndex + 1), 10);
+      return isNaN(suffix) ? 0 : suffix;
+    }
+    return 0;
+  };
+
+  // Build table rows using useMemo with grouping by case number prefix
   const tableRows = useMemo(() => {
     if (!user) return [];
     
-    return claimCases.map((caseItem) => {
+    // First, build individual case data
+    const individualCaseData = claimCases.map((caseItem) => {
       const estimateData = estimatesMap.get(caseItem.id);
       
       // Calculate estimate total from labor cost data (노무비)
-      // This is the most accurate source as it reflects the actual saved estimate
       let estimateTotal = 0;
       
       if (estimateData?.estimate?.laborCostData) {
         const laborData = estimateData.estimate.laborCostData as any[];
-        
-        // Sum up all labor costs
         const laborTotal = laborData.reduce((sum, row) => sum + (row.amount || 0), 0);
-        
-        // Calculate fees and taxes
-        const managementFee = Math.round(laborTotal * 0.06); // 일반관리비 6%
-        const profit = Math.round(laborTotal * 0.15); // 이윤 15%
+        const managementFee = Math.round(laborTotal * 0.06);
+        const profit = Math.round(laborTotal * 0.15);
         const subtotalBeforeVAT = laborTotal + managementFee + profit;
-        const vat = Math.round(subtotalBeforeVAT * 0.1); // VAT 10%
-        
+        const vat = Math.round(subtotalBeforeVAT * 0.1);
         estimateTotal = subtotalBeforeVAT + vat;
       } else {
-        // Fallback to cases.estimateAmount if no estimate data exists
-        const parseAmount = (value: string | number | null | undefined): number => {
-          if (value === null || value === undefined) return 0;
-          if (typeof value === 'number') return isNaN(value) ? 0 : value;
-          const cleaned = String(value).replace(/,/g, '');
-          const parsed = Number(cleaned);
-          return isNaN(parsed) ? 0 : parsed;
-        };
-        
-        estimateTotal = parseAmount(caseItem.estimateAmount);
+        estimateTotal = parseAmountValue(caseItem.estimateAmount);
       }
 
-      // Check processing types from individual fields (damagePreventionCost, victimIncidentAssistance)
-      // and also from processingTypes JSON array for backward compatibility
-      let hasPreventionCost = caseItem.damagePreventionCost === "true";
-      let hasPropertyCost = caseItem.victimIncidentAssistance === "true";
-      
-      // Also check case number pattern: if case number contains "-" it's 피해세대복구, otherwise 손해방지
-      if (!hasPreventionCost && !hasPropertyCost && caseItem.caseNumber) {
-        if (caseItem.caseNumber.includes('-')) {
-          hasPropertyCost = true;
-        } else {
-          hasPreventionCost = true;
-        }
-      }
-      
-      // Fallback to processingTypes JSON array if still not determined
-      if (!hasPreventionCost && !hasPropertyCost && caseItem.processingTypes) {
-        try {
-          const parsed = JSON.parse(caseItem.processingTypes);
-          if (Array.isArray(parsed)) {
-            hasPreventionCost = parsed.includes("손해방지");
-            hasPropertyCost = parsed.includes("피해세대복구");
-          }
-        } catch (error) {
-          console.error(`Error parsing processingTypes for case ${caseItem.id}:`, error);
-        }
-      }
+      // Determine if this is prevention (-0) or property (-1, -2, etc.) based on case number suffix
+      const casePrefix = getCaseNumberPrefix(caseItem.caseNumber);
+      const caseSuffix = getCaseSuffix(caseItem.caseNumber);
+      const isPrevention = caseSuffix === 0; // -0 is prevention cost
+      const isProperty = caseSuffix > 0; // -1, -2, etc. are property costs
 
-      // Calculate estimate amounts
-      const preventionEstimateAmount = (hasPreventionCost && estimateTotal > 0) ? estimateTotal : 0;
-      const propertyEstimateAmount = (hasPropertyCost && estimateTotal > 0) ? estimateTotal : 0;
-
-      // Helper function for parsing amounts (reuse if defined above)
-      const parseAmountValue = (value: string | number | null | undefined): number => {
-        if (value === null || value === undefined) return 0;
-        if (typeof value === 'number') return isNaN(value) ? 0 : value;
-        const cleaned = String(value).replace(/,/g, '');
-        const parsed = Number(cleaned);
-        return isNaN(parsed) ? 0 : parsed;
-      };
-      
-      // Use approvedAmount field if available, otherwise fall back to estimate if approved
+      // Use approvedAmount field if available
       const caseApprovedAmount = parseAmountValue(caseItem.approvedAmount);
       const isApproved = caseItem.reviewDecision === "승인" || caseApprovedAmount > 0;
       const approvedValue = caseApprovedAmount > 0 ? caseApprovedAmount : (isApproved ? estimateTotal : 0);
-      
-      const preventionApprovedAmount = (hasPreventionCost && approvedValue > 0) ? approvedValue : 0;
-      const propertyApprovedAmount = (hasPropertyCost && approvedValue > 0) ? approvedValue : 0;
-
-      // Calculate differences and adjustment rates
-      const preventionDifference = preventionApprovedAmount - preventionEstimateAmount;
-      const preventionAdjustmentRate = preventionEstimateAmount > 0 
-        ? ((preventionDifference / preventionEstimateAmount) * 100).toFixed(1) + "%"
-        : "-";
-
-      const propertyDifference = propertyApprovedAmount - propertyEstimateAmount;
-      const propertyAdjustmentRate = propertyEstimateAmount > 0
-        ? ((propertyDifference / propertyEstimateAmount) * 100).toFixed(1) + "%"
-        : "-";
 
       // Get assigned partner's bank information
-      // Try both ID and username lookup for backward compatibility
       const assignedPartnerValue = caseItem.assignedPartner || user.username;
       const partnerUser = usersByIdMap.get(assignedPartnerValue) 
         || usersByUsernameMap.get(assignedPartnerValue)
         || usersByCompanyMap.get(assignedPartnerValue);
       const depositBank = partnerUser?.bankName || "-";
 
-      // 정산 데이터 파싱 - settlements 테이블에서 가져오기
+      // 정산 데이터 파싱
       const settlement = settlementsByCaseIdMap.get(caseItem.id);
       const settlementAmount = settlement ? parseAmountValue(settlement.settlementAmount) : 0;
-      // 선견적요청이면 수수료 10만원 고정, 그 외는 저장된 값 사용
       const settlementCommission = caseItem.recoveryType === "선견적요청" 
         ? 100000 
         : (settlement ? parseAmountValue(settlement.commission) : 0);
@@ -365,6 +323,12 @@ export default function SettlementsInquiry() {
       return {
         id: caseItem.id,
         caseNumber: caseItem.caseNumber,
+        casePrefix,
+        caseSuffix,
+        isPrevention,
+        isProperty,
+        estimateTotal,
+        approvedValue,
         insuranceCompany: caseItem.insuranceCompany || "-",
         manager: caseItem.assessorId || "-",
         withdrawalNumber: caseItem.insurancePolicyNo || "-",
@@ -374,16 +338,6 @@ export default function SettlementsInquiry() {
         withdrawalDate: caseItem.completionDate || caseItem.claimDate || "-",
         constructionStatus: caseItem.recoveryType === "직접복구" ? "수리" : (caseItem.recoveryType === "선견적요청" ? "미수리" : "-"),
         recoveryType: caseItem.recoveryType || null,
-        preventionEstimateAmount,
-        preventionApprovedAmount,
-        preventionDifference,
-        preventionAdjustmentRate,
-        propertyEstimateAmount,
-        propertyApprovedAmount,
-        propertyDifference,
-        propertyAdjustmentRate,
-        claimAmount: estimateTotal,
-        // 정산 데이터 추가 - settlements 테이블에서
         settlementAmount,
         settlementDate: settlement?.settlementDate || "-",
         settlementCommission,
@@ -394,6 +348,97 @@ export default function SettlementsInquiry() {
         status: caseItem.status,
       };
     });
+
+    // Group cases by prefix
+    const groupedByPrefix = new Map<string, typeof individualCaseData>();
+    individualCaseData.forEach(caseData => {
+      const prefix = caseData.casePrefix || caseData.id; // Use ID if no prefix
+      if (!groupedByPrefix.has(prefix)) {
+        groupedByPrefix.set(prefix, []);
+      }
+      groupedByPrefix.get(prefix)!.push(caseData);
+    });
+
+    // Build combined rows for each group
+    const combinedRows: SettlementRow[] = [];
+    groupedByPrefix.forEach((casesInGroup, prefix) => {
+      // Sort by suffix
+      casesInGroup.sort((a, b) => a.caseSuffix - b.caseSuffix);
+
+      // Combine case numbers
+      const combinedCaseNumbers = casesInGroup
+        .map(c => c.caseNumber)
+        .filter(Boolean)
+        .join(", ");
+
+      // Collect all case IDs
+      const allCaseIds = casesInGroup.map(c => c.id);
+
+      // Use first case for common data (typically -0 case has main info)
+      const primaryCase = casesInGroup[0];
+
+      // Calculate prevention costs (from -0 cases)
+      const preventionCases = casesInGroup.filter(c => c.isPrevention);
+      const preventionEstimateAmount = preventionCases.reduce((sum, c) => sum + c.estimateTotal, 0);
+      const preventionApprovedAmount = preventionCases.reduce((sum, c) => sum + c.approvedValue, 0);
+      const preventionDifference = preventionApprovedAmount - preventionEstimateAmount;
+      const preventionAdjustmentRate = preventionEstimateAmount > 0 
+        ? ((preventionDifference / preventionEstimateAmount) * 100).toFixed(1) + "%"
+        : "-";
+
+      // Calculate property costs (from -1, -2, etc. cases - summed)
+      const propertyCases = casesInGroup.filter(c => c.isProperty);
+      const propertyEstimateAmount = propertyCases.reduce((sum, c) => sum + c.estimateTotal, 0);
+      const propertyApprovedAmount = propertyCases.reduce((sum, c) => sum + c.approvedValue, 0);
+      const propertyDifference = propertyApprovedAmount - propertyEstimateAmount;
+      const propertyAdjustmentRate = propertyEstimateAmount > 0
+        ? ((propertyDifference / propertyEstimateAmount) * 100).toFixed(1) + "%"
+        : "-";
+
+      // Total claim amount
+      const claimAmount = preventionEstimateAmount + propertyEstimateAmount;
+
+      // Sum settlement amounts for all cases in group
+      const totalSettlementAmount = casesInGroup.reduce((sum, c) => sum + c.settlementAmount, 0);
+      const totalSettlementCommission = casesInGroup.reduce((sum, c) => sum + c.settlementCommission, 0);
+      const totalSettlementDeposit = casesInGroup.reduce((sum, c) => sum + c.settlementDeposit, 0);
+      const totalSettlementDeductible = casesInGroup.reduce((sum, c) => sum + c.settlementDeductible, 0);
+
+      combinedRows.push({
+        id: primaryCase.id,
+        caseIds: allCaseIds,
+        caseNumber: combinedCaseNumbers || primaryCase.caseNumber,
+        caseNumberPrefix: prefix,
+        insuranceCompany: primaryCase.insuranceCompany,
+        manager: primaryCase.manager,
+        withdrawalNumber: primaryCase.withdrawalNumber,
+        accidentNumber: primaryCase.accidentNumber,
+        admin: primaryCase.admin,
+        depositBank: primaryCase.depositBank,
+        withdrawalDate: primaryCase.withdrawalDate,
+        constructionStatus: primaryCase.constructionStatus,
+        recoveryType: primaryCase.recoveryType,
+        preventionEstimateAmount,
+        preventionApprovedAmount,
+        preventionDifference,
+        preventionAdjustmentRate,
+        propertyEstimateAmount,
+        propertyApprovedAmount,
+        propertyDifference,
+        propertyAdjustmentRate,
+        claimAmount,
+        settlementAmount: totalSettlementAmount,
+        settlementDate: primaryCase.settlementDate,
+        settlementCommission: totalSettlementCommission,
+        settlementDeposit: totalSettlementDeposit,
+        settlementDeductible: totalSettlementDeductible,
+        settlementInvoiceDate: primaryCase.settlementInvoiceDate,
+        settlementMemo: primaryCase.settlementMemo,
+        status: primaryCase.status,
+      });
+    });
+
+    return combinedRows;
   }, [claimCases, estimatesMap, user, usersByIdMap, usersByUsernameMap, usersByCompanyMap, settlementsByCaseIdMap]);
 
   const isLoading = casesLoading || estimatesLoading || usersLoading || settlementsLoading;
