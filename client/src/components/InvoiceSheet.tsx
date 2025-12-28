@@ -89,34 +89,70 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   useEffect(() => {
     const fetchApprovedAmounts = async () => {
       if (open && caseData) {
-        if (caseData.invoiceDamagePreventionAmount || caseData.invoicePropertyRepairAmount) {
-          setInvoiceDamagePreventionAmount(caseData.invoiceDamagePreventionAmount || "");
-          setInvoicePropertyRepairAmount(caseData.invoicePropertyRepairAmount || "");
+        // 선견적요청 케이스 판단: 현재 케이스가 선견적요청이거나, 직접복구 케이스가 없는 경우
+        const allCases = relatedCases.length > 0 ? relatedCases : (caseData ? [caseData] : []);
+        const hasOnlyFieldDispatchPrevention = !categorizedAmounts.hasDirectRecoveryPrevention && categorizedAmounts.hasFieldDispatchPrevention;
+        const hasOnlyFieldDispatchProperty = !categorizedAmounts.hasDirectRecoveryProperty && categorizedAmounts.hasFieldDispatchProperty;
+        
+        // 손해방지 금액 설정
+        if (hasOnlyFieldDispatchPrevention) {
+          // 선견적요청만 있는 경우: 견적금액 무시하고 현장출동비용만 표시
+          setInvoiceDamagePreventionAmount("0");
+        } else if (caseData.invoiceDamagePreventionAmount) {
+          setInvoiceDamagePreventionAmount(caseData.invoiceDamagePreventionAmount);
+        } else if (categorizedAmounts.damagePreventionAmount > 0) {
+          setInvoiceDamagePreventionAmount(categorizedAmounts.damagePreventionAmount.toString());
         } else {
+          // API에서 가져오기
           const prefix = getCaseNumberPrefix(caseData.caseNumber);
-          if (prefix) {
+          if (prefix && categorizedAmounts.hasDirectRecoveryPrevention) {
             setIsLoadingAmounts(true);
             try {
               const response = await fetch(`/api/invoice-amounts/${encodeURIComponent(prefix)}`);
               if (response.ok) {
                 const data = await response.json();
-                setInvoiceDamagePreventionAmount(data.damagePreventionAmount?.toString() || "");
-                setInvoicePropertyRepairAmount(data.propertyRepairAmount?.toString() || "");
+                setInvoiceDamagePreventionAmount(data.damagePreventionAmount?.toString() || "0");
               }
             } catch (error) {
               console.error("Failed to fetch approved amounts:", error);
             } finally {
               setIsLoadingAmounts(false);
             }
+          } else {
+            setInvoiceDamagePreventionAmount("0");
           }
         }
         
-        if (categorizedAmounts.damagePreventionAmount > 0) {
-          setInvoiceDamagePreventionAmount(categorizedAmounts.damagePreventionAmount.toString());
-        }
-        if (categorizedAmounts.propertyRepairAmount > 0) {
+        // 대물복구 금액 설정
+        if (hasOnlyFieldDispatchProperty) {
+          // 선견적요청만 있는 경우: 견적금액 무시하고 현장출동비용만 표시
+          setInvoicePropertyRepairAmount("0");
+        } else if (caseData.invoicePropertyRepairAmount) {
+          setInvoicePropertyRepairAmount(caseData.invoicePropertyRepairAmount);
+        } else if (categorizedAmounts.propertyRepairAmount > 0) {
           setInvoicePropertyRepairAmount(categorizedAmounts.propertyRepairAmount.toString());
+        } else {
+          // API에서 가져오기
+          const prefix = getCaseNumberPrefix(caseData.caseNumber);
+          if (prefix && categorizedAmounts.hasDirectRecoveryProperty) {
+            setIsLoadingAmounts(true);
+            try {
+              const response = await fetch(`/api/invoice-amounts/${encodeURIComponent(prefix)}`);
+              if (response.ok) {
+                const data = await response.json();
+                setInvoicePropertyRepairAmount(data.propertyRepairAmount?.toString() || "0");
+              }
+            } catch (error) {
+              console.error("Failed to fetch approved amounts:", error);
+            } finally {
+              setIsLoadingAmounts(false);
+            }
+          } else {
+            setInvoicePropertyRepairAmount("0");
+          }
         }
+        
+        // 현장출동비용 설정 (선견적요청 케이스당 10만원)
         setFieldDispatchPreventionAmount((categorizedAmounts.damagePreventionFieldDispatch * 100000).toString());
         setFieldDispatchPropertyAmount((categorizedAmounts.propertyFieldDispatch * 100000).toString());
         
@@ -133,7 +169,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     };
     
     fetchApprovedAmounts();
-  }, [open, caseData, categorizedAmounts]);
+  }, [open, caseData, categorizedAmounts, relatedCases]);
 
   const totalAmount = 
     (parseInt(invoiceDamagePreventionAmount || "0") || 0) + 
