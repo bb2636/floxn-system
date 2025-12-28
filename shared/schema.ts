@@ -679,7 +679,8 @@ export const laborCosts = pgTable("labor_costs", {
   detailItem: text("detail_item"), // 세부항목: 선택적
   priceStandard: text("price_standard").notNull(), // 단가기준: 인, 일, 시간 등
   unit: text("unit").notNull(), // 단위: 일, 시간, ㎡ 등
-  standardPrice: integer("standard_price").notNull(), // 기준가(원)
+  standardPrice: integer("standard_price").notNull(), // 기준가(원) = 노임단가(E)
+  standardWorkQuantity: integer("standard_work_quantity").notNull().default(100), // 기준작업량(D값), 일위대가 = E/D
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -889,6 +890,30 @@ export const DEFAULT_LABOR_RATE_TIERS: InsertLaborRateTier[] = [
   { minRatio: 50, rateMultiplier: 50, sortOrder: 7 },  // ≥50%: 50%
   { minRatio: 0, rateMultiplier: 45, sortOrder: 8 },   // <50%: 45%
 ];
+
+// 일위대가 기준작업량(D값) 오버라이드 테이블
+// Excel 데이터의 D값을 사용자가 수정할 수 있도록 저장
+export const unitPriceOverrides = pgTable("unit_price_overrides", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull(), // 공종
+  workName: text("work_name").notNull(), // 공사명
+  laborItem: text("labor_item").notNull(), // 노임항목
+  standardWorkQuantity: integer("standard_work_quantity").notNull().default(100), // 기준작업량(D값)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // unique constraint: 공종+공사명+노임항목 조합은 유일해야 함
+  unqKey: unique().on(table.category, table.workName, table.laborItem),
+}));
+
+export const insertUnitPriceOverrideSchema = createInsertSchema(unitPriceOverrides).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type UnitPriceOverride = typeof unitPriceOverrides.$inferSelect;
+export type InsertUnitPriceOverride = z.infer<typeof insertUnitPriceOverrideSchema>;
 
 // Chat models for AI integration
 export * from "./models/chat";
