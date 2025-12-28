@@ -854,22 +854,24 @@ export default function FieldReport() {
             </>
           )}
           
-          {!isUserLoading && isAdmin && (
+          {/* 심사 버튼: 제출 완료 후, 아직 1차승인 전인 경우만 표시 (반려 상태일 때 재심사 가능) */}
+          {!isUserLoading && isAdmin && caseData.fieldSurveyStatus === "submitted" && 
+           (caseData.status === "제출" || caseData.status === "반려") && (
             <Button
               data-testid="button-review"
               onClick={() => setShowReviewDialog(true)}
-              disabled={caseData.fieldSurveyStatus !== "submitted" || reviewMutation.isPending}
+              disabled={reviewMutation.isPending}
               style={{
                 fontFamily: "Pretendard",
                 fontSize: "14px",
                 fontWeight: "500",
               }}
             >
-              {reviewMutation.isPending ? "심사 중..." : "심사"}
+              {reviewMutation.isPending ? "심사 중..." : (caseData.status === "반려" ? "재심사" : "심사")}
             </Button>
           )}
           
-          {/* 보고서 승인 버튼 (1차승인 상태 + 승인 권한 있는 사용자) */}
+          {/* 보고서 승인 버튼 (1차승인 상태 + 승인 권한 있는 사용자, 비승인 후 재승인 가능) */}
           {!isUserLoading && canApproveReport && caseData.status === "1차승인" && (
             <Button
               data-testid="button-approve-report"
@@ -882,7 +884,7 @@ export default function FieldReport() {
                 fontWeight: "500",
               }}
             >
-              {approvalMutation.isPending ? "승인 중..." : "승인"}
+              {approvalMutation.isPending ? "승인 중..." : (caseData.reportApprovalDecision === "비승인" ? "재승인" : "승인")}
             </Button>
           )}
         </div>
