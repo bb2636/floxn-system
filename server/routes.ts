@@ -6268,7 +6268,8 @@ https://floxn.replit.app
         if (!c.caseNumber || !approvedStatuses.includes(c.status || "")) continue;
         
         const suffix = c.caseNumber.split("-")[1];
-        const amount = parseInt(c.estimateAmount || "0") || 0;
+        // 인보이스에는 승인금액(approvedAmount)을 사용, 없으면 estimateAmount 사용
+        const amount = parseInt(c.approvedAmount || c.estimateAmount || "0") || 0;
         
         if (suffix === "0") {
           // Damage prevention case (-0)

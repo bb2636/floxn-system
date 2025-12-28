@@ -1258,7 +1258,7 @@ export default function ComprehensiveProgress() {
                     {caseItem.assignedPartner || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    {caseItem.estimateAmount ? `₩${parseInt(caseItem.estimateAmount).toLocaleString()}` : "-"}
+                    {(caseItem.approvedAmount || caseItem.estimateAmount) ? `₩${parseInt(caseItem.approvedAmount || caseItem.estimateAmount || "0").toLocaleString()}` : "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     -
@@ -1725,7 +1725,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              {selectedCase.estimateAmount ? `₩${parseInt(selectedCase.estimateAmount).toLocaleString()}` : "-"}
+                              {(selectedCase.approvedAmount || selectedCase.estimateAmount) ? `₩${parseInt(selectedCase.approvedAmount || selectedCase.estimateAmount || "0").toLocaleString()}` : "-"}
                             </div>
                           </div>
 
@@ -1752,7 +1752,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              -
+                              {selectedCase.approvedAmount ? `₩${parseInt(selectedCase.approvedAmount).toLocaleString()}` : "-"}
                             </div>
                           </div>
                         </div>
