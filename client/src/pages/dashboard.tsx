@@ -147,9 +147,9 @@ export default function Dashboard() {
         // 접수된 케이스 (all active cases)
         return filteredCasesByPeriod;
       case 'pending':
-        // 미결 케이스 (제출, 검토중, 1차승인)
+        // 미결 케이스 (접수 후 종결 전까지 모두 - 완료, 취소, 종결 제외)
         return filteredCasesByPeriod.filter(c => 
-          c.status === '제출' || c.status === '검토중' || c.status === '1차승인'
+          c.status !== '완료' && c.status !== '취소' && c.status !== '종결' && c.status !== '접수취소'
         );
       case 'insurance':
         // 보험사 미정산 케이스 (완료된 케이스)
