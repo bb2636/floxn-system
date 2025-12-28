@@ -436,6 +436,7 @@ export default function AdminSettings() {
     phone: "",
     office: "",
     address: "",
+    addressDetail: "",
     bankName: "",
     accountNumber: "",
     accountHolder: "",
@@ -6373,6 +6374,30 @@ export default function AdminSettings() {
                           />
                         </div>
                       )}
+                      {/* 상세주소 입력 */}
+                      <input
+                        type="text"
+                        placeholder="상세주소 입력 (동/호수 등)"
+                        value={createAccountForm.addressDetail}
+                        onChange={(e) =>
+                          setCreateAccountForm({
+                            ...createAccountForm,
+                            addressDetail: e.target.value,
+                          })
+                        }
+                        className="w-full px-4 py-3 outline-none mt-2"
+                        style={{
+                          background: "#FDFDFD",
+                          border: "2px solid rgba(12, 12, 12, 0.08)",
+                          borderRadius: "8px",
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                          letterSpacing: "-0.02em",
+                          color: "rgba(12, 12, 12, 0.9)",
+                        }}
+                        data-testid="input-address-detail"
+                      />
                     </div>
 
                     {/* 협력사 정보: Row 4 - 출동가능지역선택 */}
