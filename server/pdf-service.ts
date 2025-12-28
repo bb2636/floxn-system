@@ -184,8 +184,11 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
   
   const categoryToTab: Record<string, string> = {
     '현장출동사진': '현장사진',
+    '현장': '현장사진',
     '수리중 사진': '현장사진',
+    '수리중': '현장사진',
     '복구완료 사진': '현장사진',
+    '복구완료': '현장사진',
     '보험금 청구서': '기본자료',
     '개인정보 동의서(가족용)': '기본자료',
     '주민등록등본': '증빙자료',
@@ -196,6 +199,7 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
     '도급계약서': '청구자료',
     '복구완료확인서': '청구자료',
     '부가세 청구자료': '청구자료',
+    '청구': '청구자료',
   };
   
   for (const doc of documents) {
