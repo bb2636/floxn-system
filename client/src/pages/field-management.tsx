@@ -265,13 +265,13 @@ export default function FieldManagement() {
   }, [selectedCaseData?.id]);
 
   // 현장출동보고서 제출 후 모든 사용자 수정 불가 (반려 시 제외)
-  // 협력사는 추가로 1차승인 이후에도 수정 불가
+  // 협력사는 1차승인 이후에만 수정 불가 (제출 후에도 1차승인 전까지는 수정 가능)
   const canEdit = isPartner || isAdmin;
   const isSubmitted = selectedCaseData?.fieldSurveyStatus === "submitted";
   const isRejected = selectedCaseData?.status === "반려";
   const isFirstApproved = selectedCaseData?.status === "1차승인";
-  // 협력사만 제출 후 또는 1차승인 후 수정 불가 (관리자는 항상 수정 가능)
-  const isReadOnly = !canEdit || (isPartner && (isSubmitted || isFirstApproved) && !isRejected);
+  // 협력사는 1차승인 후에만 수정 불가 (제출 후에도 1차승인 전까지 수정 가능, 관리자는 항상 수정 가능)
+  const isReadOnly = !canEdit || (isPartner && isFirstApproved && !isRejected);
 
   // 각 섹션 완료 상태 체크
   // 현장입력 완료: 필수 필드 입력 완료 (로컬 state 또는 저장된 데이터 확인)
