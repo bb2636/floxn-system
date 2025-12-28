@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
@@ -92,6 +92,9 @@ export function InvoiceManagementPopup({
 }: InvoiceManagementPopupProps) {
   const { toast } = useToast();
   const { hasItem, isAdmin } = usePermissions();
+  
+  // 초기 로드 상태 추적 (팝업이 열릴 때만 데이터 로드)
+  const lastLoadedCaseId = useRef<string | null>(null);
   
   const [submissionDate, setSubmissionDate] = useState<Date | undefined>(undefined);
   const [acceptanceDate, setAcceptanceDate] = useState<string>("");
@@ -332,37 +335,76 @@ export function InvoiceManagementPopup({
     };
   }, [categorizedCases, estimateData]);
   
+  // 팝업이 닫힐 때 로드 상태 초기화
+  useEffect(() => {
+    if (!open) {
+      lastLoadedCaseId.current = null;
+    }
+  }, [open]);
+  
   useEffect(() => {
     if (open && caseData) {
-      // 제출일: 청구일(claimDate)이 있으면 자동 설정
-      if (caseData.claimDate) {
-        setSubmissionDate(new Date(caseData.claimDate));
-      } else {
-        setSubmissionDate(undefined);
-      }
-      setAcceptanceDate(caseData.receptionDate || "");
-      setSettlementStatus("정산");
+      // 이미 로드된 케이스인 경우 displayEstimates만 업데이트 (자기부담금은 유지)
+      const alreadyLoaded = lastLoadedCaseId.current === caseData.id;
       
-      // 승인금액 설정 - 저장된 값이 있으면 사용, 없으면 displayEstimates의 승인금액 사용
-      setPreventionApprovedAmount(
-        caseData.invoiceDamagePreventionAmount || 
-        displayEstimates.preventionApproved.toString() ||
-        "0"
-      );
+      if (!alreadyLoaded) {
+        // 최초 로드: 모든 필드 초기화
+        lastLoadedCaseId.current = caseData.id;
+        
+        // 제출일: 청구일(claimDate)이 있으면 자동 설정
+        if (caseData.claimDate) {
+          setSubmissionDate(new Date(caseData.claimDate));
+        } else {
+          setSubmissionDate(undefined);
+        }
+        setAcceptanceDate(caseData.receptionDate || "");
+        setSettlementStatus("정산");
+        
+        // 승인금액 설정 - 저장된 값이 있으면 사용, 없으면 displayEstimates의 승인금액 사용
+        setPreventionApprovedAmount(
+          caseData.invoiceDamagePreventionAmount || 
+          displayEstimates.preventionApproved.toString() ||
+          "0"
+        );
 
-      setPropertyApprovedAmount(
-        caseData.invoicePropertyRepairAmount || 
-        displayEstimates.propertyApproved.toString() ||
-        "0"
-      );
+        setPropertyApprovedAmount(
+          caseData.invoicePropertyRepairAmount || 
+          displayEstimates.propertyApproved.toString() ||
+          "0"
+        );
 
-      setDeductibleAmount("0");
-      
-      // 세금계산서 확인일 초기화
-      if (caseData.taxInvoiceConfirmDate) {
-        setTaxInvoiceDate(new Date(caseData.taxInvoiceConfirmDate));
-      } else {
-        setTaxInvoiceDate(undefined);
+        // 자기부담금: 저장된 인보이스에서 로드
+        const loadInvoiceData = async () => {
+          try {
+            const caseGroupPrefix = caseData.caseNumber?.split("-")[0] || "";
+            if (caseGroupPrefix) {
+              const response = await fetch(`/api/invoices/group/${encodeURIComponent(caseGroupPrefix)}`);
+              if (response.ok) {
+                const invoiceData = await response.json();
+                if (invoiceData && invoiceData.deductible) {
+                  setDeductibleAmount(invoiceData.deductible);
+                } else {
+                  setDeductibleAmount("0");
+                }
+              } else {
+                setDeductibleAmount("0");
+              }
+            } else {
+              setDeductibleAmount("0");
+            }
+          } catch (error) {
+            console.error("Failed to load invoice data:", error);
+            setDeductibleAmount("0");
+          }
+        };
+        loadInvoiceData();
+        
+        // 세금계산서 확인일 초기화
+        if (caseData.taxInvoiceConfirmDate) {
+          setTaxInvoiceDate(new Date(caseData.taxInvoiceConfirmDate));
+        } else {
+          setTaxInvoiceDate(undefined);
+        }
       }
     }
   }, [open, caseData, displayEstimates]);
