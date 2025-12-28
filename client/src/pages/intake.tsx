@@ -1048,6 +1048,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             investigatorTeamName: submittedData.investigatorTeamName || "-",
             investigatorContact: submittedData.investigatorContact || "-",
             accidentLocation: submittedData.insuredAddress || "-",
+            accidentLocationDetail: submittedData.insuredAddressDetail || "",
             requestScope: requestScope,
           };
           

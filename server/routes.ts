@@ -5325,6 +5325,7 @@ FLOXN 드림`;
     investigatorTeamName: z.string().optional(),
     investigatorContact: z.string().optional(),
     accidentLocation: z.string().optional(),
+    accidentLocationDetail: z.string().optional(),
     requestScope: z.string().optional(),
   });
 
@@ -5363,6 +5364,7 @@ FLOXN 드림`;
         investigatorTeamName,
         investigatorContact,
         accidentLocation,
+        accidentLocationDetail,
         requestScope
       } = validatedData;
 
@@ -5398,7 +5400,7 @@ FLOXN 드림`;
 피보험자 : ${insuredName || "-"}  연락처 ${insuredContact || "-"}
 피해자 : ${victimName || "-"}  연락처 ${victimContact || "-"}
 조사자 : ${investigatorTeamName || "-"}  연락처 ${investigatorContact || "-"}
-사고장소 : ${accidentLocation || "-"}
+사고장소 : ${[accidentLocation, accidentLocationDetail].filter(Boolean).join(" ") || "-"}
 의뢰범위 : ${requestScope || "-"}`;
 
       console.log(`[send-sms] Sending LMS to: ${normalizedTo} (user: ${req.session.userId})`);
@@ -5767,7 +5769,7 @@ FLOXN 플랫폼 계정이 생성되었습니다.
 피보험자 : ${caseData.insuredName || "-"}  연락처 ${caseData.insuredContact || "-"}
 피해자 : ${caseData.victimName || "-"}  연락처 ${caseData.victimContact || "-"}
 조사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}
-사고장소 : ${caseData.insuredAddress || "-"}
+사고장소 : ${[caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
 의뢰범위 : ${[caseData.damagePreventionCost === "true" ? "손방" : null, caseData.victimIncidentAssistance === "true" ? "대물" : null].filter(Boolean).join(", ") || "기타"}`;
       } else if (stage === "접수취소") {
         subject = "접수취소 알림";
@@ -5778,7 +5780,7 @@ FLOXN 플랫폼 계정이 생성되었습니다.
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${caseData.insuredAddress || "-"}
+사고장소 : ${[caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
 
 위 접수건은 접수 취소 되었음을 알려드립니다.
 취소 사유 : ${cancelReason || "-"}`;
@@ -5791,7 +5793,7 @@ FLOXN 플랫폼 계정이 생성되었습니다.
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${caseData.insuredAddress || "-"}
+사고장소 : ${[caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
 복구금액 : ${recoveryAmount?.toLocaleString() || "-"}원
 수수료 : 최종금액의 ${feeRate || "-"}%
 지급금액 : ${paymentAmount?.toLocaleString() || "-"}원`;
@@ -5808,7 +5810,7 @@ FLOXN 플랫폼 계정이 생성되었습니다.
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${caseData.insuredAddress || "-"}
+사고장소 : ${[caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
 진행사항 : ${stageDisplayName}`;
       }
 
