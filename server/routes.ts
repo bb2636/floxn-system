@@ -1358,8 +1358,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const caseGroupId = existingCase.caseGroupId;
       let deletedCases: string[] = [];
       
+      // 중요: 처리구분 필드가 업데이트에 포함되지 않으면 케이스 생성/삭제 로직 스킵
+      // 이렇게 하면 인보이스 관리 팝업 등에서 단순 필드 업데이트 시 새 케이스가 생성되지 않음
+      const shouldProcessCaseNumberLogic = hasDamagePreventionField || hasVictimRecoveryField;
+      
       // 둘 다 선택 → 하나만 선택으로 변경된 경우
-      if (existingPrefix) {
+      if (shouldProcessCaseNumberLogic && existingPrefix) {
         // 같은 그룹 또는 같은 prefix의 모든 케이스 조회
         const allCases = await storage.getAllCases();
         const siblingCases = allCases.filter(c => {
@@ -1413,79 +1417,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // 처리구분에 따른 접수번호 결정
+      // 처리구분에 따른 접수번호 결정 (처리구분 필드가 업데이트에 포함된 경우에만 실행)
       let newCaseNumber = existingCaseNumber;
-      if (!hasDamagePrevention && !hasVictimRecovery) {
-        // 아무것도 선택 안함 → 고유한 임시 접수번호 생성
-        newCaseNumber = `DRAFT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
-      } else if (hasDamagePrevention && !hasVictimRecovery) {
-        // 손해방지만 → -0
-        newCaseNumber = `${existingPrefix}-0`;
-      } else if (!hasDamagePrevention && hasVictimRecovery) {
-        // 피해세대만 → 기존 피해세대 suffix 유지 또는 새로 할당
-        if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
-          newCaseNumber = existingCaseNumber;
-        } else {
-          const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-          newCaseNumber = `${existingPrefix}-${nextSuffix}`;
-        }
-      } else {
-        // 둘 다 선택 → 기존 케이스는 -0으로 업데이트, 피해세대 케이스(-1) 새로 생성
-        newCaseNumber = `${existingPrefix}-0`;
-        
-        // 기존 케이스 업데이트 (손해방지 케이스로)
-        const updateDataWithCaseNumber = { ...updateData, caseNumber: newCaseNumber };
-        const updatedCase = await storage.updateCase(id, updateDataWithCaseNumber);
-        
-        if (!updatedCase) {
-          return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
-        }
-        
-        // 피해세대 케이스 새로 생성
-        const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-        const caseGroupId = existingCase.caseGroupId || `group-${Date.now()}`;
-        
-        // 피해세대 케이스용 데이터 복사
-        const recoveryData = JSON.parse(JSON.stringify(updateData));
-        delete recoveryData.id; // 새 케이스이므로 id 제거
-        
-        const recoveryCase = await storage.createCase({
-          ...recoveryData,
-          caseNumber: `${existingPrefix}-${nextSuffix}`,
-          caseGroupId,
-          status: existingCase.status, // 기존 상태 유지
-          createdBy: req.session.userId,
-        });
-        
-        // 변경 로그 저장
-        if (changes.length > 0) {
-          try {
-            const user = await storage.getUser(req.session.userId);
-            await storage.createCaseChangeLog({
-              caseId: id,
-              changedBy: req.session.userId,
-              changedByName: user?.name || "알 수 없음",
-              changeType: "update",
-              changes,
-              note: null,
-            });
-          } catch (logError) {
-            console.error("Failed to create change log:", logError);
+      
+      if (shouldProcessCaseNumberLogic) {
+        if (!hasDamagePrevention && !hasVictimRecovery) {
+          // 아무것도 선택 안함 → 고유한 임시 접수번호 생성
+          newCaseNumber = `DRAFT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+        } else if (hasDamagePrevention && !hasVictimRecovery) {
+          // 손해방지만 → -0
+          newCaseNumber = `${existingPrefix}-0`;
+        } else if (!hasDamagePrevention && hasVictimRecovery) {
+          // 피해세대만 → 기존 피해세대 suffix 유지 또는 새로 할당
+          if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+            newCaseNumber = existingCaseNumber;
+          } else {
+            const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+            newCaseNumber = `${existingPrefix}-${nextSuffix}`;
           }
+        } else {
+          // 둘 다 선택 → 기존 케이스는 -0으로 업데이트, 피해세대 케이스(-1) 새로 생성
+          newCaseNumber = `${existingPrefix}-0`;
+          
+          // 기존 케이스 업데이트 (손해방지 케이스로)
+          const updateDataWithCaseNumber = { ...updateData, caseNumber: newCaseNumber };
+          const updatedCase = await storage.updateCase(id, updateDataWithCaseNumber);
+          
+          if (!updatedCase) {
+            return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+          }
+          
+          // 피해세대 케이스 새로 생성
+          const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+          const caseGroupIdForNew = existingCase.caseGroupId || `group-${Date.now()}`;
+          
+          // 피해세대 케이스용 데이터 복사
+          const recoveryData = JSON.parse(JSON.stringify(updateData));
+          delete recoveryData.id; // 새 케이스이므로 id 제거
+          
+          const recoveryCase = await storage.createCase({
+            ...recoveryData,
+            caseNumber: `${existingPrefix}-${nextSuffix}`,
+            caseGroupId: caseGroupIdForNew,
+            status: existingCase.status, // 기존 상태 유지
+            createdBy: req.session.userId,
+          });
+          
+          // 변경 로그 저장
+          if (changes.length > 0) {
+            try {
+              const user = await storage.getUser(req.session.userId);
+              await storage.createCaseChangeLog({
+                caseId: id,
+                changedBy: req.session.userId,
+                changedByName: user?.name || "알 수 없음",
+                changeType: "update",
+                changes,
+                note: null,
+              });
+            } catch (logError) {
+              console.error("Failed to create change log:", logError);
+            }
+          }
+          
+          // 동기화
+          try {
+            await storage.syncIntakeDataToRelatedCases(id);
+          } catch (syncError) {
+            console.error("Failed to sync intake data:", syncError);
+          }
+          
+          return res.json({ success: true, cases: [updatedCase, recoveryCase] });
         }
-        
-        // 동기화
-        try {
-          await storage.syncIntakeDataToRelatedCases(id);
-        } catch (syncError) {
-          console.error("Failed to sync intake data:", syncError);
-        }
-        
-        return res.json({ success: true, cases: [updatedCase, recoveryCase] });
       }
       
-      // 접수번호 업데이트 포함
-      const updateDataWithCaseNumber = { ...updateData, caseNumber: newCaseNumber };
+      // 접수번호 업데이트 포함 (처리구분 로직을 실행한 경우에만 접수번호 변경)
+      const updateDataWithCaseNumber = shouldProcessCaseNumberLogic 
+        ? { ...updateData, caseNumber: newCaseNumber }
+        : updateData;
       
       // 케이스 업데이트
       const updatedCase = await storage.updateCase(id, updateDataWithCaseNumber);
