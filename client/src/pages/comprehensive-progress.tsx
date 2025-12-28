@@ -136,18 +136,33 @@ export default function ComprehensiveProgress() {
   const [smsStage, setSmsStage] = useState<NotificationStage>("복구요청");
   const [smsCaseData, setSmsCaseData] = useState<CaseWithLatestProgress | null>(null);
 
-  // 청구하기 버튼 표시 조건: "청구" 상태인 경우 개별적으로 버튼 표시
+  // 청구하기 버튼 표시 조건: 연관된 모든 케이스가 "청구" 상태인 경우에만 버튼 표시
   const canShowClaimButton = (caseItem: CaseWithLatestProgress, allCases: CaseWithLatestProgress[] | undefined): boolean => {
     if (!allCases) return false;
     
-    // 해당 케이스가 "청구" 또는 청구자료제출 관련 상태인 경우 버튼 표시
+    // 해당 케이스가 "청구" 또는 청구자료제출 관련 상태인 경우에만 체크
     const claimStatuses = [
       "청구",
       "(직접복구인 경우) 청구자료제출",
       "(선견적요청인 경우) 출동비 청구"
     ];
     
-    return claimStatuses.includes(caseItem.status || "");
+    // 현재 케이스가 청구 상태가 아니면 버튼 숨김
+    if (!claimStatuses.includes(caseItem.status || "")) {
+      return false;
+    }
+    
+    // 같은 prefix를 가진 모든 연관 케이스 찾기
+    const groupPrefix = getCaseNumberPrefix(caseItem.caseNumber);
+    if (!groupPrefix) return false;
+    
+    const relatedCases = allCases.filter(c => {
+      const prefix = getCaseNumberPrefix(c.caseNumber);
+      return prefix === groupPrefix;
+    });
+    
+    // 연관된 모든 케이스가 청구 관련 상태인지 확인
+    return relatedCases.every(c => claimStatuses.includes(c.status || ""));
   };
 
   const { data: user, isLoading: userLoading } = useQuery<User>({
