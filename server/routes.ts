@@ -4893,12 +4893,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
-      // Generate public URL
-      const appDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
-      const protocol = appDomain.includes('localhost') ? 'http' : 'https';
-      const pdfUrl = `${protocol}://${appDomain}/objects/public/dashboard-pdfs/${fileName}`;
+      // Generate signed URL for PDF (7 days validity)
+      const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
+      const pdfUrl = await signObjectURL({
+        bucketName: bucketId,
+        objectName: objectName,
+        method: 'GET',
+        ttlSec: SIGNED_URL_TTL_SEC,
+      });
 
-      console.log(`[PDF Upload] Dashboard PDF uploaded to: ${pdfUrl}`);
+      console.log(`[PDF Upload] Dashboard PDF uploaded with signed URL`);
 
       // Send email via Bubble.io API with PDF link
       const emailContent = `안녕하세요,
@@ -4980,12 +4984,16 @@ FLOXN 드림`;
         },
       });
 
-      // Generate public URL
-      const appDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
-      const protocol = appDomain.includes('localhost') ? 'http' : 'https';
-      const pdfUrl = `${protocol}://${appDomain}/objects/public/invoice-pdfs/${fileName}`;
+      // Generate signed URL for PDF (7 days validity)
+      const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
+      const pdfUrl = await signObjectURL({
+        bucketName: bucketId,
+        objectName: objectName,
+        method: 'GET',
+        ttlSec: SIGNED_URL_TTL_SEC,
+      });
 
-      console.log(`[PDF Upload] Invoice PDF uploaded to: ${pdfUrl}`);
+      console.log(`[PDF Upload] Invoice PDF uploaded with signed URL`);
 
       // Format amounts
       const formatAmount = (amount: number) => amount.toLocaleString('ko-KR');
@@ -5079,12 +5087,16 @@ FLOXN 드림`;
         },
       });
 
-      // Generate public URL
-      const appDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
-      const protocol = appDomain.includes('localhost') ? 'http' : 'https';
-      const pdfUrl = `${protocol}://${appDomain}/objects/public/invoice-pdfs/${fileName}`;
+      // Generate signed URL for PDF (7 days validity)
+      const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
+      const pdfUrl = await signObjectURL({
+        bucketName: bucketId,
+        objectName: objectName,
+        method: 'GET',
+        ttlSec: SIGNED_URL_TTL_SEC,
+      });
 
-      console.log(`[PDF Upload] Field dispatch invoice PDF uploaded to: ${pdfUrl}`);
+      console.log(`[PDF Upload] Field dispatch invoice PDF uploaded with signed URL`);
 
       // Format amounts
       const formatAmount = (amount: number) => amount.toLocaleString('ko-KR');
@@ -5325,12 +5337,16 @@ FLOXN 드림`;
         },
       });
 
-      // Generate public URL
-      const appDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
-      const protocol = appDomain.includes('localhost') ? 'http' : 'https';
-      const pdfUrl = `${protocol}://${appDomain}/objects/public/field-report-pdfs/${fileName}`;
+      // Generate signed URL for PDF (7 days validity)
+      const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
+      const pdfUrl = await signObjectURL({
+        bucketName: bucketId,
+        objectName: objectName,
+        method: 'GET',
+        ttlSec: SIGNED_URL_TTL_SEC,
+      });
 
-      console.log(`[PDF Upload] Field Report PDF uploaded to: ${pdfUrl}`);
+      console.log(`[PDF Upload] Field Report PDF uploaded with signed URL`);
 
       // 증빙자료 다운로드 링크 생성
       let documentLinksSection = '';
