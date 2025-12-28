@@ -25,6 +25,7 @@ interface SettlementRow {
   caseNumberPrefix: string | null; // Case number prefix for grouping
   insuranceCompany: string;
   manager: string;
+  managerId: string | null; // 담당자 ID (관리자)
   withdrawalNumber: string;
   accidentNumber: string;
   admin: string;
@@ -331,6 +332,7 @@ export default function SettlementsInquiry() {
         approvedValue,
         insuranceCompany: caseItem.insuranceCompany || "-",
         manager: caseItem.assessorId || "-",
+        managerId: caseItem.managerId || null,
         withdrawalNumber: caseItem.insurancePolicyNo || "-",
         accidentNumber: caseItem.insuranceAccidentNo || "-",
         admin: assignedPartnerValue,
@@ -411,6 +413,7 @@ export default function SettlementsInquiry() {
         caseNumberPrefix: prefix,
         insuranceCompany: primaryCase.insuranceCompany,
         manager: primaryCase.manager,
+        managerId: primaryCase.managerId,
         withdrawalNumber: primaryCase.withdrawalNumber,
         accidentNumber: primaryCase.accidentNumber,
         admin: primaryCase.admin,
@@ -465,13 +468,12 @@ export default function SettlementsInquiry() {
       });
     }
     
-    // 담당자 필터 적용 (admin은 assignedPartner이므로 해당 사용자의 name과 비교)
+    // 담당자 필터 적용 (managerId는 관리자 ID이므로 해당 사용자의 name과 비교)
     if (manager !== "전체") {
       filtered = filtered.filter((row) => {
-        const adminUser = usersByIdMap.get(row.admin) 
-          || usersByUsernameMap.get(row.admin)
-          || usersByCompanyMap.get(row.admin);
-        return adminUser?.name === manager;
+        if (!row.managerId) return false;
+        const managerUser = usersByIdMap.get(row.managerId);
+        return managerUser?.name === manager;
       });
     }
     
