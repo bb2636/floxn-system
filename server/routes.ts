@@ -5601,6 +5601,9 @@ FLOXN 플랫폼 계정이 생성되었습니다.
 - 아이디: ${username}
 - 비밀번호: ${password}
 
+▶ 로그인 주소
+https://floxn.replit.app
+
 로그인 후 반드시 비밀번호를 변경해 주세요.`;
 
             try {
