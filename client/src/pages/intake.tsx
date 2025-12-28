@@ -1007,7 +1007,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
         const caseNumber = firstCase.caseNumber;
         
         // 접수번호가 없거나 유효하지 않으면 SMS 발송하지 않음
-        if (!caseNumber || caseNumber === "-" || caseNumber.trim() === "") {
+        if (!caseNumber || caseNumber === "-" || caseNumber.startsWith("DRAFT-") || caseNumber.trim() === "") {
           console.error("📱 SMS not sent - invalid case number:", caseNumber);
           toast({ 
             description: "접수번호 생성 오류로 문자가 발송되지 않았습니다. 수동으로 전송해주세요.",

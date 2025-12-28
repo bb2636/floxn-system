@@ -550,13 +550,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // 기존 케이스 업데이트 (접수번호 prefix 유지, suffix는 처리구분에 따라 변경)
             const existingCaseNumber = existingCase.caseNumber || "";
             
-            // "-"이거나 빈 값이면 새 prefix 생성 필요
-            const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-";
+            // "-"이거나 "DRAFT-"로 시작하거나 빈 값이면 새 prefix 생성 필요
+            const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-" || existingCaseNumber.startsWith("DRAFT-");
             
             let existingPrefix = "";
             let existingSuffix: string | null = null;
             
-            if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-") {
+            if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-" && !existingCaseNumber.startsWith("DRAFT-")) {
               existingPrefix = existingCaseNumber.split('-')[0];
               existingSuffix = existingCaseNumber.split('-')[1];
             } else if (!needsNewPrefix) {
@@ -575,8 +575,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const createdCases: any[] = [];
             
             if (!hasDamagePrevention && !hasVictimRecovery) {
-              // 아무것도 선택 안함 → "-" 표시
-              newCaseNumber = "-";
+              // 아무것도 선택 안함 → 고유한 임시 접수번호 생성
+              newCaseNumber = `DRAFT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
             } else if (hasDamagePrevention && !hasVictimRecovery) {
               // 손해방지만 선택 → -0 suffix
               // 먼저 -0 케이스가 이미 존재하는지 확인
@@ -753,10 +753,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           createdCases.push(recoveryDraft);
         } else {
-          // No processing type selected - create draft with "-" as case number
+          // No processing type selected - create draft with unique temporary case number
+          // 처리구분 미선택 시에도 고유한 접수번호 생성 (나중에 접수완료 시 정식 번호로 변경됨)
           const draftCase = await storage.createCase({
             ...validatedData,
-            caseNumber: "-",
+            caseNumber: `DRAFT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
             caseGroupId,
             createdBy: req.session.userId,
           });
@@ -783,13 +784,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // 기존 케이스의 접수번호 prefix/suffix 추출
             const existingCaseNumber = existingCase.caseNumber || "";
             
-            // "-"이거나 빈 값이면 새 prefix 생성 필요
-            const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-";
+            // "-"이거나 "DRAFT-"로 시작하거나 빈 값이면 새 prefix 생성 필요
+            const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-" || existingCaseNumber.startsWith("DRAFT-");
             
             let existingPrefix = "";
             let existingSuffix: string | null = null;
             
-            if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-") {
+            if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-" && !existingCaseNumber.startsWith("DRAFT-")) {
               existingPrefix = existingCaseNumber.split('-')[0];
               existingSuffix = existingCaseNumber.split('-')[1];
             } else if (!needsNewPrefix) {
@@ -840,62 +841,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } else {
               // 둘 다 선택 → 손해방지(-0)와 피해세대(-1+) 케이스 필요
+              // 저장 시 이미 두 케이스가 생성되었을 수 있으므로 모두 업데이트
               
-              // 먼저 -0 케이스가 이미 존재하는지 확인
-              const existingPreventionCase = await storage.getPreventionCaseByPrefix(existingPrefix);
+              // 먼저 같은 prefix를 가진 모든 draft 케이스를 찾음
+              const relatedDraftCases = await storage.getCasesByPrefix(existingPrefix);
+              const draftCases = relatedDraftCases.filter(c => c.status === "배당대기");
               
-              if (existingPreventionCase) {
-                // -0 케이스가 이미 존재함 → 현재 케이스는 피해세대로 유지하고 업데이트만
-                // 기존 suffix가 유효하면 유지, 아니면 새로 생성
-                if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
-                  newCaseNumber = existingCaseNumber; // 기존 피해세대 번호 유지
-                } else {
-                  const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-                  newCaseNumber = `${existingPrefix}-${nextSuffix}`;
+              console.log(`[Case Complete] Found ${draftCases.length} draft cases with prefix ${existingPrefix}`);
+              
+              if (draftCases.length >= 2) {
+                // 이미 두 케이스가 존재함 (저장 시 생성됨) → 모두 접수완료로 업데이트
+                for (const draftCase of draftCases) {
+                  const updatedCase = await storage.updateCase(draftCase.id, {
+                    ...validatedData,
+                    caseNumber: draftCase.caseNumber || undefined,
+                    caseGroupId,
+                    status: "접수완료",
+                  });
+                  completedCases.push(updatedCase);
+                  console.log(`[Case Complete] Updated draft case ${draftCase.caseNumber} to 접수완료`);
                 }
-                
-                // 현재 케이스 업데이트 (피해세대 케이스로)
-                const updatedCase = await storage.updateCase(validatedData.id, {
-                  ...validatedData,
-                  caseNumber: newCaseNumber,
-                  caseGroupId,
-                  status: "접수완료",
-                });
-                completedCases.push(updatedCase);
-                
-                // 기존 -0 케이스도 동기화 (정보 업데이트)
-                await storage.updateCase(existingPreventionCase.id, {
-                  ...validatedData,
-                  caseNumber: existingPreventionCase.caseNumber || undefined,
-                  caseGroupId,
-                  status: existingPreventionCase.status === "배당대기" ? "접수완료" as const : existingPreventionCase.status as any,
-                });
-                
-                console.log(`[Case Complete] Updated existing prevention case ${existingPreventionCase.caseNumber} and victim case ${newCaseNumber}`);
               } else {
-                // -0 케이스가 없음 → 기존 케이스를 -0으로, 새 피해세대 케이스 생성
-                newCaseNumber = `${existingPrefix}-0`;
+                // 기존 케이스만 있거나 새로 생성 필요
+                const existingPreventionCase = await storage.getPreventionCaseByPrefix(existingPrefix);
                 
-                // 기존 케이스 업데이트 (손해방지 케이스로)
-                const updatedCase = await storage.updateCase(validatedData.id, {
-                  ...validatedData,
-                  caseNumber: newCaseNumber,
-                  caseGroupId,
-                  status: "접수완료",
-                });
-                completedCases.push(updatedCase);
-                
-                // 피해세대 케이스 새로 생성
-                const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-                const recoveryData = JSON.parse(JSON.stringify(validatedData));
-                const recoveryCase = await storage.createCase({
-                  ...recoveryData,
-                  caseNumber: `${existingPrefix}-${nextSuffix}`,
-                  caseGroupId,
-                  status: "접수완료",
-                  createdBy: req.session.userId,
-                });
-                completedCases.push(recoveryCase);
+                if (existingPreventionCase && existingPreventionCase.id !== validatedData.id) {
+                  // -0 케이스가 다른 케이스로 존재함 → 현재 케이스는 피해세대로 유지
+                  if (existingSuffix && existingSuffix !== '0' && parseInt(existingSuffix) >= 1) {
+                    newCaseNumber = existingCaseNumber;
+                  } else {
+                    const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                    newCaseNumber = `${existingPrefix}-${nextSuffix}`;
+                  }
+                  
+                  // 현재 케이스 업데이트 (피해세대 케이스로)
+                  const updatedCase = await storage.updateCase(validatedData.id, {
+                    ...validatedData,
+                    caseNumber: newCaseNumber,
+                    caseGroupId,
+                    status: "접수완료",
+                  });
+                  completedCases.push(updatedCase);
+                  
+                  // 기존 -0 케이스도 동기화 (정보 업데이트 및 접수완료)
+                  if (existingPreventionCase.status === "배당대기") {
+                    await storage.updateCase(existingPreventionCase.id, {
+                      ...validatedData,
+                      caseNumber: existingPreventionCase.caseNumber || undefined,
+                      caseGroupId,
+                      status: "접수완료",
+                    });
+                  }
+                  
+                  console.log(`[Case Complete] Updated existing prevention case ${existingPreventionCase.caseNumber} and victim case ${newCaseNumber}`);
+                } else if (existingPreventionCase && existingPreventionCase.id === validatedData.id) {
+                  // 현재 케이스가 -0 케이스임 → -0은 유지하고 피해세대 케이스 확인/생성
+                  newCaseNumber = `${existingPrefix}-0`;
+                  
+                  // 기존 피해세대 케이스가 있는지 확인
+                  const existingVictimCases = relatedDraftCases.filter(c => 
+                    c.id !== validatedData.id && 
+                    c.caseNumber?.includes('-') && 
+                    parseInt(c.caseNumber.split('-')[1]) >= 1
+                  );
+                  
+                  // 현재 케이스(손방-0) 업데이트
+                  const updatedPrevention = await storage.updateCase(validatedData.id, {
+                    ...validatedData,
+                    caseNumber: newCaseNumber,
+                    caseGroupId,
+                    status: "접수완료",
+                  });
+                  completedCases.push(updatedPrevention);
+                  
+                  if (existingVictimCases.length > 0) {
+                    // 기존 피해세대 케이스 업데이트
+                    for (const victimCase of existingVictimCases) {
+                      const updatedVictim = await storage.updateCase(victimCase.id, {
+                        ...validatedData,
+                        caseNumber: victimCase.caseNumber || undefined,
+                        caseGroupId,
+                        status: "접수완료",
+                      });
+                      completedCases.push(updatedVictim);
+                    }
+                  } else {
+                    // 피해세대 케이스 새로 생성
+                    const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                    const recoveryData = JSON.parse(JSON.stringify(validatedData));
+                    const recoveryCase = await storage.createCase({
+                      ...recoveryData,
+                      caseNumber: `${existingPrefix}-${nextSuffix}`,
+                      caseGroupId,
+                      status: "접수완료",
+                      createdBy: req.session.userId,
+                    });
+                    completedCases.push(recoveryCase);
+                  }
+                  
+                  console.log(`[Case Complete] Updated prevention case and ${existingVictimCases.length > 0 ? 'existing' : 'new'} victim case`);
+                } else {
+                  // -0 케이스가 없음 → 기존 케이스를 -0으로, 새 피해세대 케이스 생성
+                  newCaseNumber = `${existingPrefix}-0`;
+                  
+                  const updatedCase = await storage.updateCase(validatedData.id, {
+                    ...validatedData,
+                    caseNumber: newCaseNumber,
+                    caseGroupId,
+                    status: "접수완료",
+                  });
+                  completedCases.push(updatedCase);
+                  
+                  const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+                  const recoveryData = JSON.parse(JSON.stringify(validatedData));
+                  const recoveryCase = await storage.createCase({
+                    ...recoveryData,
+                    caseNumber: `${existingPrefix}-${nextSuffix}`,
+                    caseGroupId,
+                    status: "접수완료",
+                    createdBy: req.session.userId,
+                  });
+                  completedCases.push(recoveryCase);
+                  
+                  console.log(`[Case Complete] Created prevention case ${newCaseNumber} and victim case`);
+                }
               }
               
               // 동기화 및 응답
@@ -1262,12 +1331,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 기존 접수번호에서 prefix 추출
       const existingCaseNumber = existingCase.caseNumber || "";
-      const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-";
+      const needsNewPrefix = !existingCaseNumber || existingCaseNumber === "-" || existingCaseNumber.startsWith("DRAFT-");
       
       let existingPrefix = "";
       let existingSuffix: string | null = null;
       
-      if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-") {
+      if (!needsNewPrefix && existingCaseNumber.includes('-') && existingCaseNumber !== "-" && !existingCaseNumber.startsWith("DRAFT-")) {
         existingPrefix = existingCaseNumber.split('-')[0];
         existingSuffix = existingCaseNumber.split('-')[1];
       } else if (!needsNewPrefix) {
@@ -1301,7 +1370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // caseGroupId가 없으면 prefix로 비교
           const siblingNumber = c.caseNumber || "";
-          if (siblingNumber.includes('-') && siblingNumber !== "-") {
+          if (siblingNumber.includes('-') && siblingNumber !== "-" && !siblingNumber.startsWith("DRAFT-")) {
             const siblingPrefix = siblingNumber.split('-')[0];
             return siblingPrefix === existingPrefix;
           }
@@ -1347,8 +1416,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 처리구분에 따른 접수번호 결정
       let newCaseNumber = existingCaseNumber;
       if (!hasDamagePrevention && !hasVictimRecovery) {
-        // 아무것도 선택 안함 → "-"
-        newCaseNumber = "-";
+        // 아무것도 선택 안함 → 고유한 임시 접수번호 생성
+        newCaseNumber = `DRAFT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
       } else if (hasDamagePrevention && !hasVictimRecovery) {
         // 손해방지만 → -0
         newCaseNumber = `${existingPrefix}-0`;
