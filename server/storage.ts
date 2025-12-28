@@ -66,6 +66,9 @@ import {
   type Invoice,
   type InsertInvoice,
   invoices,
+  type UnitPriceOverride,
+  type InsertUnitPriceOverride,
+  unitPriceOverrides,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
@@ -6701,6 +6704,57 @@ export class DbStorage implements IStorage {
         eq(invoices.status, "partial")
       ))
       .orderBy(desc(invoices.createdAt));
+  }
+
+  // Unit Price Override methods (D값 관리)
+  async getAllUnitPriceOverrides(): Promise<UnitPriceOverride[]> {
+    return await db
+      .select()
+      .from(unitPriceOverrides)
+      .orderBy(asc(unitPriceOverrides.category), asc(unitPriceOverrides.workName));
+  }
+
+  async getUnitPriceOverride(category: string, workName: string, laborItem: string): Promise<UnitPriceOverride | null> {
+    const [override] = await db
+      .select()
+      .from(unitPriceOverrides)
+      .where(and(
+        eq(unitPriceOverrides.category, category),
+        eq(unitPriceOverrides.workName, workName),
+        eq(unitPriceOverrides.laborItem, laborItem)
+      ));
+    return override || null;
+  }
+
+  async upsertUnitPriceOverride(data: InsertUnitPriceOverride): Promise<UnitPriceOverride> {
+    const existing = await this.getUnitPriceOverride(data.category, data.workName, data.laborItem);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(unitPriceOverrides)
+        .set({
+          standardWorkQuantity: data.standardWorkQuantity,
+          updatedAt: new Date(),
+        })
+        .where(eq(unitPriceOverrides.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(unitPriceOverrides)
+        .values(data)
+        .returning();
+      return created;
+    }
+  }
+
+  async bulkUpsertUnitPriceOverrides(items: InsertUnitPriceOverride[]): Promise<UnitPriceOverride[]> {
+    const results: UnitPriceOverride[] = [];
+    for (const item of items) {
+      const result = await this.upsertUnitPriceOverride(item);
+      results.push(result);
+    }
+    return results;
   }
 }
 

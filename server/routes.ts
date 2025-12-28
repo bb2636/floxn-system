@@ -3828,6 +3828,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 일위대가 기준작업량(D값) 오버라이드 관리 endpoints
+  // Get all D value overrides
+  app.get("/api/unit-price-overrides", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const overrides = await storage.getAllUnitPriceOverrides();
+      res.json(overrides);
+    } catch (error) {
+      console.error("Get unit price overrides error:", error);
+      res.status(500).json({ error: "기준작업량 데이터를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Update or create a single D value override
+  app.post("/api/unit-price-overrides", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const userRole = req.session.userRole;
+    if (userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자만 기준작업량을 수정할 수 있습니다" });
+    }
+
+    try {
+      const { category, workName, laborItem, standardWorkQuantity } = req.body;
+      
+      if (!category || !laborItem || standardWorkQuantity === undefined) {
+        return res.status(400).json({ error: "필수 필드가 누락되었습니다" });
+      }
+
+      const result = await storage.upsertUnitPriceOverride({
+        category,
+        workName: workName || '',
+        laborItem,
+        standardWorkQuantity: Number(standardWorkQuantity),
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Update unit price override error:", error);
+      res.status(500).json({ error: "기준작업량 저장 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Bulk update D value overrides
+  app.post("/api/unit-price-overrides/bulk", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const userRole = req.session.userRole;
+    if (userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자만 기준작업량을 수정할 수 있습니다" });
+    }
+
+    try {
+      const { items } = req.body;
+      
+      if (!Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: "업데이트할 항목이 없습니다" });
+      }
+
+      const results = await storage.bulkUpsertUnitPriceOverrides(items.map((item: any) => ({
+        category: item.category,
+        workName: item.workName || '',
+        laborItem: item.laborItem,
+        standardWorkQuantity: Number(item.standardWorkQuantity),
+      })));
+      
+      res.json({ success: true, count: results.length });
+    } catch (error) {
+      console.error("Bulk update unit price overrides error:", error);
+      res.status(500).json({ error: "기준작업량 일괄 저장 중 오류가 발생했습니다" });
+    }
+  });
+
   // 자재비DB catalog endpoint - Query by 공사명 to get matching materials
   app.get("/api/materials-by-workname", async (req, res) => {
     if (!req.session?.userId) {
