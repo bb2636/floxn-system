@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Case, MasterData, LaborCost, User, LaborRateTier } from "@shared/schema";
+import { Case, MasterData, LaborCost, User, LaborRateTier, UnitPriceOverride } from "@shared/schema";
 import {
   useLaborRateTiers,
   calculateIWithTiers,
@@ -340,6 +340,43 @@ export default function FieldEstimate() {
   const { data: ilwidaegaCatalog = [] } = useQuery<IlwidaegaCatalogItem[]>({
     queryKey: ['/api/ilwidaega-catalog'],
   });
+
+  // 단가 오버라이드 조회 (admin-configured D values)
+  const { data: unitPriceOverrides = [] } = useQuery<UnitPriceOverride[]>({
+    queryKey: ['/api/unit-price-overrides'],
+  });
+
+  // 일위대가 카탈로그에 오버라이드 적용 (D값 덮어쓰기, 일위대가 재계산)
+  const mergedIlwidaegaCatalog = useMemo(() => {
+    if (!ilwidaegaCatalog.length) return [];
+    
+    // Create lookup map for overrides
+    const overrideMap = new Map<string, number>();
+    unitPriceOverrides.forEach(override => {
+      const key = `${override.category}|${override.workName}|${override.laborItem}`;
+      overrideMap.set(key, override.standardWorkQuantity);
+    });
+    
+    return ilwidaegaCatalog.map(item => {
+      const key = `${item.공종}|${item.공사명}|${item.노임항목}`;
+      const overrideD = overrideMap.get(key);
+      
+      if (overrideD !== undefined && overrideD > 0) {
+        const newD = overrideD;
+        const E = item.노임단가;
+        // Guard against division by zero - D must be positive
+        const newIlwidaega = (E && Number.isFinite(newD) && newD > 0) ? E / newD : null;
+        return {
+          ...item,
+          기준작업량: newD,
+          일위대가: newIlwidaega,
+        };
+      }
+      return item;
+    });
+  }, [ilwidaegaCatalog, unitPriceOverrides]);
+
+  // NOTE: 이후 모든 일위대가 카탈로그 사용은 mergedIlwidaegaCatalog를 사용 (오버라이드 적용된 값)
 
   // 자재비 카탈로그 조회 (공사명 기준) - 복구면적 → 자재비 자동생성용
   const { data: materialByWorknameCatalog = [] } = useQuery<MaterialByWorknameCatalogItem[]>({
@@ -759,8 +796,8 @@ export default function FieldEstimate() {
         const sourceAreaRowId = workNameData.areaRows[0]?.id || '';
         const totalArea = Math.round(workNameData.totalArea * 10) / 10;
         
-        // 일위대가DB에서 공종+공사명으로 ALL matching 노임항목 조회
-        const matchingCatalogItems = ilwidaegaCatalog.filter(
+        // 일위대가DB에서 공종+공사명으로 ALL matching 노임항목 조회 (오버라이드 적용된 값 사용)
+        const matchingCatalogItems = mergedIlwidaegaCatalog.filter(
           item => normalizeForMatch(item.공종 || '') === normalizeForMatch(workType) && 
                  normalizeForMatch(item.공사명 || '') === normalizeForMatch(workName)
         );
@@ -836,9 +873,9 @@ export default function FieldEstimate() {
         
         // 철거공사 자동 추가 규칙: 일위대가DB 철거공사 조회
         if (needsDemolitionRow(workType, workName)) {
-          // 일위대가DB 철거공사에서 매칭 아이템 찾기
+          // 일위대가DB 철거공사에서 매칭 아이템 찾기 (오버라이드 적용된 값 사용)
           const { demolitionWorkName } = getDemolitionMapping(workType, workName);
-          const demolitionCatalogItems = ilwidaegaCatalog.filter(
+          const demolitionCatalogItems = mergedIlwidaegaCatalog.filter(
             item => normalizeForMatch(item.공종 || '') === normalizeForMatch('철거공사') && 
                    normalizeForMatch(item.공사명 || '') === normalizeForMatch(demolitionWorkName)
           );
@@ -1567,8 +1604,8 @@ export default function FieldEstimate() {
       return;
     }
 
-    // 일위대가 카탈로그가 로드되지 않았으면 대기
-    if (!ilwidaegaCatalog || ilwidaegaCatalog.length === 0) {
+    // 일위대가 카탈로그가 로드되지 않았으면 대기 (오버라이드 적용된 값 사용)
+    if (!mergedIlwidaegaCatalog || mergedIlwidaegaCatalog.length === 0) {
       return;
     }
 
@@ -1604,8 +1641,8 @@ export default function FieldEstimate() {
         const damageAreaValue = Number(areaRow.repairArea) || 0;
         const laborCategory = getLaborCategory(workType, workName);
         
-        // 일위대가DB에서 공종+공사명으로 ALL matching 노임항목 조회
-        const matchingCatalogItems = ilwidaegaCatalog.filter(
+        // 일위대가DB에서 공종+공사명으로 ALL matching 노임항목 조회 (오버라이드 적용된 값 사용)
+        const matchingCatalogItems = mergedIlwidaegaCatalog.filter(
           item => normalizeForMatch(item.공종 || '') === normalizeForMatch(laborCategory) && 
                  normalizeForMatch(item.공사명 || '') === normalizeForMatch(workName)
         );
@@ -1676,8 +1713,8 @@ export default function FieldEstimate() {
         if (needsDemolitionRow(workType, workName)) {
           const { demolitionWorkName } = getDemolitionMapping(workType, workName);
           
-          // 일위대가DB 철거공사에서 매칭 아이템 찾기 (공종=철거공사)
-          const demolitionCatalogItems = ilwidaegaCatalog.filter(
+          // 일위대가DB 철거공사에서 매칭 아이템 찾기 (공종=철거공사, 오버라이드 적용된 값 사용)
+          const demolitionCatalogItems = mergedIlwidaegaCatalog.filter(
             item => normalizeForMatch(item.공종 || '') === normalizeForMatch('철거공사') && 
                    normalizeForMatch(item.공사명 || '') === normalizeForMatch(demolitionWorkName)
           );
@@ -1796,9 +1833,9 @@ export default function FieldEstimate() {
             let D = laborRow.standardWorkQuantity || 0;
             let E = laborRow.standardPrice || 0;
             
-            // D가 0이면 일위대가 카탈로그에서 조회
+            // D가 0이면 일위대가 카탈로그에서 조회 (오버라이드 적용된 값 사용)
             if (D === 0 && laborRow.category && laborRow.workName) {
-              const catalogItem = ilwidaegaCatalog.find(item => 
+              const catalogItem = mergedIlwidaegaCatalog.find(item => 
                 normalizeForMatch(item.공종) === normalizeForMatch(laborRow.category) &&
                 normalizeForMatch(item.공사명) === normalizeForMatch(laborRow.workName) &&
                 (!laborRow.detailItem || normalizeForMatch(item.노임항목) === normalizeForMatch(laborRow.detailItem))
@@ -1852,9 +1889,9 @@ export default function FieldEstimate() {
             let D = laborRow.standardWorkQuantity || 0;
             let E = laborRow.standardPrice || 0;
             
-            // D가 0이면 일위대가 카탈로그에서 조회 (새로 계산된 laborCategory와 linkedAreaRow.workName 사용)
+            // D가 0이면 일위대가 카탈로그에서 조회 (새로 계산된 laborCategory와 linkedAreaRow.workName 사용, 오버라이드 적용된 값 사용)
             if (D === 0 && laborCategory && linkedAreaRow.workName) {
-              const catalogItem = ilwidaegaCatalog.find(item => 
+              const catalogItem = mergedIlwidaegaCatalog.find(item => 
                 normalizeForMatch(item.공종) === normalizeForMatch(laborCategory) &&
                 normalizeForMatch(item.공사명) === normalizeForMatch(linkedAreaRow.workName) &&
                 (!laborRow.detailItem || normalizeForMatch(item.노임항목) === normalizeForMatch(laborRow.detailItem))
@@ -1895,7 +1932,7 @@ export default function FieldEstimate() {
         return laborRow;
       });
     });
-  }, [rows, ilwidaegaCatalog]); // rows(복구면적 산출표), 일위대가 카탈로그 변경 시 실행
+  }, [rows, mergedIlwidaegaCatalog]); // rows(복구면적 산출표), 일위대가 카탈로그 변경 시 실행 (오버라이드 적용된 값 사용)
 
   // ========== 철거공사 Reconcile useEffect ==========
   // 복구면적 산출표(rows)의 공사명을 기반으로 철거공사 노무비를 자동 생성/삭제
@@ -1911,8 +1948,8 @@ export default function FieldEstimate() {
       return;
     }
     
-    // 일위대가 카탈로그가 로드되지 않았으면 대기
-    if (!ilwidaegaCatalog || ilwidaegaCatalog.length === 0) {
+    // 일위대가 카탈로그가 로드되지 않았으면 대기 (오버라이드 적용된 값 사용)
+    if (!mergedIlwidaegaCatalog || mergedIlwidaegaCatalog.length === 0) {
       demolitionPendingRef.current = false;
       return;
     }
@@ -2017,8 +2054,8 @@ export default function FieldEstimate() {
     const requiredDemolitionKeys: RequiredDemolitionKey[] = [];
     
     requiredDemolitionEntries.forEach(entry => {
-      // 일위대가DB에서 표준화된 공사명으로 조회
-      const items = ilwidaegaCatalog.filter(
+      // 일위대가DB에서 표준화된 공사명으로 조회 (오버라이드 적용된 값 사용)
+      const items = mergedIlwidaegaCatalog.filter(
         item => normalizeForMatch(item.공종 || '') === normalizeForMatch('철거공사') && 
                normalizeForMatch(item.공사명 || '') === normalizeForMatch(entry.matchedWorkName)
       );
@@ -2203,7 +2240,7 @@ export default function FieldEstimate() {
         return [...updatedRows, ...newDemolitionRows];
       });
     });
-  }, [rows, laborCostRows, ilwidaegaCatalog, deletedDemolitionKeys]); // laborCostRows 포함 (수동 편집 감지)
+  }, [rows, laborCostRows, mergedIlwidaegaCatalog, deletedDemolitionKeys]); // laborCostRows 포함 (수동 편집 감지) - 오버라이드 적용된 값 사용
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
@@ -3234,7 +3271,7 @@ export default function FieldEstimate() {
     const normalizedWorkType = normalizeForMatch(workType);
     const normalizedWorkName = normalizeForMatch(workName);
     
-    const matchingIlwidaegaItems = ilwidaegaCatalog.filter(item => {
+    const matchingIlwidaegaItems = mergedIlwidaegaCatalog.filter(item => {
       const itemWorkType = normalizeForMatch(item.공종 || '');
       const itemWorkName = normalizeForMatch(item.공사명 || '');
       return itemWorkType === normalizedWorkType && itemWorkName === normalizedWorkName;
@@ -3409,7 +3446,7 @@ export default function FieldEstimate() {
           console.log('[일위대가 연동] 철거공사 중복 건너뛰기:', demolitionWorkName, existingDemolitionRows.length, '개 이미 존재');
           // 이미 철거공사 행이 존재하면 생성하지 않음
         } else {
-          const demolitionCatalogItems = ilwidaegaCatalog.filter(item => {
+          const demolitionCatalogItems = mergedIlwidaegaCatalog.filter(item => {
             const itemWorkType = normalizeForMatch(item.공종 || '');
             const itemWorkName = normalizeForMatch(item.공사명 || '');
             return itemWorkType === normalizeForMatch('철거공사') && itemWorkName === normalizeForMatch(demolitionWorkName);
@@ -5460,7 +5497,7 @@ export default function FieldEstimate() {
                 rows={laborCostRows}
                 onRowsChange={handleLaborRowsChange}
                 catalog={laborCatalog}
-                ilwidaegaCatalog={ilwidaegaCatalog}
+                ilwidaegaCatalog={mergedIlwidaegaCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
                 onSelectAll={() => {
@@ -5949,7 +5986,7 @@ export default function FieldEstimate() {
                 rows={laborCostRows}
                 onRowsChange={handleLaborRowsChange}
                 catalog={laborCatalog}
-                ilwidaegaCatalog={ilwidaegaCatalog}
+                ilwidaegaCatalog={mergedIlwidaegaCatalog}
                 selectedRows={selectedLaborRows}
                 onSelectRow={toggleLaborRow}
                 onSelectAll={() => {

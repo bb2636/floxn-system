@@ -3862,11 +3862,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "필수 필드가 누락되었습니다" });
       }
 
+      // Validate standardWorkQuantity is a positive finite number
+      const parsedValue = Number(standardWorkQuantity);
+      if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+        return res.status(400).json({ error: "기준작업량은 0보다 큰 숫자여야 합니다" });
+      }
+
       const result = await storage.upsertUnitPriceOverride({
         category,
         workName: workName || '',
         laborItem,
-        standardWorkQuantity: Number(standardWorkQuantity),
+        standardWorkQuantity: parsedValue,
       });
       
       res.json(result);
@@ -3894,12 +3900,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "업데이트할 항목이 없습니다" });
       }
 
-      const results = await storage.bulkUpsertUnitPriceOverrides(items.map((item: any) => ({
-        category: item.category,
-        workName: item.workName || '',
-        laborItem: item.laborItem,
-        standardWorkQuantity: Number(item.standardWorkQuantity),
-      })));
+      // Validate all items have valid standardWorkQuantity values before processing
+      const validationErrors: string[] = [];
+      const validatedItems = items.map((item: any, index: number) => {
+        const parsedValue = Number(item.standardWorkQuantity);
+        if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+          validationErrors.push(`[${index + 1}] ${item.category || '(없음)'} - ${item.laborItem || '(없음)'}: 기준작업량은 0보다 큰 숫자여야 합니다`);
+          return null;
+        }
+        return {
+          category: item.category,
+          workName: item.workName || '',
+          laborItem: item.laborItem,
+          standardWorkQuantity: parsedValue,
+        };
+      }).filter((item): item is NonNullable<typeof item> => item !== null);
+
+      if (validationErrors.length > 0) {
+        return res.status(400).json({ 
+          error: "일부 항목의 기준작업량이 유효하지 않습니다",
+          details: validationErrors 
+        });
+      }
+
+      const results = await storage.bulkUpsertUnitPriceOverrides(validatedItems);
       
       res.json({ success: true, count: results.length });
     } catch (error) {
