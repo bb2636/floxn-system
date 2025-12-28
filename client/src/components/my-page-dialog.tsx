@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { X, Pencil, Star, Home, CalendarPlus, AlertCircle, Building2, TrendingUp, Settings, FileText, Plus, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Pencil, Star, Home, CalendarPlus, AlertCircle, Building2, TrendingUp, Settings, FileText, Plus, MessageCircle, ChevronDown, ChevronUp, Eye, EyeOff, Lock } from "lucide-react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
 
@@ -30,6 +30,13 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
   const [respondingInquiryId, setRespondingInquiryId] = useState<string | null>(null);
   const [responseTitle, setResponseTitle] = useState("");
   const [responseContent, setResponseContent] = useState("");
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
   const qc = useQueryClient();
   const [, setLocation] = useLocation();
@@ -205,6 +212,28 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
     },
   });
 
+  const changePasswordMutation = useMutation({
+    mutationFn: (data: { currentPassword: string; newPassword: string; confirmPassword: string }) =>
+      apiRequest("PATCH", "/api/me/password", data),
+    onSuccess: () => {
+      toast({
+        title: "비밀번호 변경 완료",
+        description: "비밀번호가 성공적으로 변경되었습니다.",
+      });
+      setShowPasswordChange(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "비밀번호 변경 실패",
+        description: error?.message || "비밀번호 변경 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleEdit = (field: string, currentValue: string) => {
     setIsEditing(field);
     setEditValue(currentValue || "");
@@ -362,6 +391,133 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
                 {renderReadOnlyField("회사명", user.company, user.role)}
                 {renderReadOnlyField("부서", user.department)}
                 {renderEditableField("회사 연락처", "office", user.office)}
+
+                <div className="mt-6 pt-6 border-t border-gray-100">
+                  {!showPasswordChange ? (
+                    <button
+                      onClick={() => setShowPasswordChange(true)}
+                      className="flex items-center gap-2 text-sm text-[#008FED] hover:text-[#0070BE] transition-colors"
+                      data-testid="button-show-password-change"
+                    >
+                      <Lock className="w-4 h-4" />
+                      비밀번호 변경
+                    </button>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-gray-900">비밀번호 변경</h4>
+                        <button
+                          onClick={() => {
+                            setShowPasswordChange(false);
+                            setCurrentPassword("");
+                            setNewPassword("");
+                            setConfirmPassword("");
+                          }}
+                          className="text-sm text-gray-500 hover:text-gray-700"
+                          data-testid="button-cancel-password-change"
+                        >
+                          취소
+                        </button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">현재 비밀번호</label>
+                          <div className="relative">
+                            <Input
+                              type={showCurrentPassword ? "text" : "password"}
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                              placeholder="현재 비밀번호를 입력하세요"
+                              className="pr-10"
+                              data-testid="input-current-password"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                              data-testid="button-toggle-current-password"
+                            >
+                              {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">새 비밀번호</label>
+                          <div className="relative">
+                            <Input
+                              type={showNewPassword ? "text" : "password"}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="8자 이상, 영문+숫자 포함"
+                              className="pr-10"
+                              data-testid="input-new-password"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowNewPassword(!showNewPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                              data-testid="button-toggle-new-password"
+                            >
+                              {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-400 mt-1">8자 이상, 영문자와 숫자를 포함해야 합니다</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-gray-500 mb-1">새 비밀번호 확인</label>
+                          <div className="relative">
+                            <Input
+                              type={showConfirmPassword ? "text" : "password"}
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              placeholder="새 비밀번호를 다시 입력하세요"
+                              className="pr-10"
+                              data-testid="input-confirm-password"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                              data-testid="button-toggle-confirm-password"
+                            >
+                              {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+                          {confirmPassword && newPassword !== confirmPassword && (
+                            <p className="text-xs text-red-500 mt-1">새 비밀번호가 일치하지 않습니다</p>
+                          )}
+                        </div>
+
+                        <Button
+                          onClick={() => {
+                            changePasswordMutation.mutate({
+                              currentPassword,
+                              newPassword,
+                              confirmPassword,
+                            });
+                          }}
+                          disabled={
+                            !currentPassword || 
+                            !newPassword || 
+                            !confirmPassword || 
+                            newPassword !== confirmPassword ||
+                            newPassword.length < 8 ||
+                            !/[A-Za-z]/.test(newPassword) ||
+                            !/[0-9]/.test(newPassword) ||
+                            changePasswordMutation.isPending
+                          }
+                          className="w-full bg-[#008FED] hover:bg-[#0070BE]"
+                          data-testid="button-submit-password-change"
+                        >
+                          {changePasswordMutation.isPending ? "변경 중..." : "비밀번호 변경"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
 
                 <div className="mt-8 text-center">
                   <button

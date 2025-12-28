@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema, approveReportSchema, insertSettlementSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, changeMyPasswordSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema, approveReportSchema, insertSettlementSchema } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
 import { estimates, cases } from "@shared/schema";
@@ -346,6 +346,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.errors });
       }
       console.error("Password update error:", error);
+      res.status(500).json({ error: "비밀번호 변경 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Change my password endpoint (for logged-in user to change their own password)
+  app.patch("/api/me/password", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      // Validate request body with Zod
+      const validatedData = changeMyPasswordSchema.parse(req.body);
+
+      // Get current user
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+
+      // Verify current password
+      const isPasswordValid = await storage.verifyPassword(user.username, validatedData.currentPassword);
+      if (!isPasswordValid) {
+        return res.status(400).json({ error: "현재 비밀번호가 올바르지 않습니다" });
+      }
+
+      // Update password
+      const updatedUser = await storage.updatePassword(user.username, validatedData.newPassword);
+      if (!updatedUser) {
+        return res.status(500).json({ error: "비밀번호 변경 중 오류가 발생했습니다" });
+      }
+
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json({ success: true, message: "비밀번호가 성공적으로 변경되었습니다" });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors[0]?.message || "입력 값이 올바르지 않습니다" });
+      }
+      console.error("Change my password error:", error);
       res.status(500).json({ error: "비밀번호 변경 중 오류가 발생했습니다" });
     }
   });
