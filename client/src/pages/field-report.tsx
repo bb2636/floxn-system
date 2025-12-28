@@ -75,6 +75,15 @@ interface Case {
   createdAt?: string | null;
   assignmentDate?: string | null;
   urgency?: string | null;
+  status?: string | null;
+  reportApprovalDecision?: string | null;
+  // 심사사/조사사 정보
+  assessorId?: string | null;
+  assessorTeam?: string | null;
+  assessorEmail?: string | null;
+  investigatorTeam?: string | null;
+  investigatorTeamName?: string | null;
+  investigatorEmail?: string | null;
 }
 
 
@@ -271,6 +280,13 @@ export default function FieldReport() {
   const [showEmailInputDialog, setShowEmailInputDialog] = useState(false);
   const [emailAddress, setEmailAddress] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  
+  // 이메일 수신자 선택 상태 (심사사, 조사사 체크박스)
+  const [selectedEmailRecipients, setSelectedEmailRecipients] = useState<{
+    assessor: boolean;
+    investigator: boolean;
+    custom: boolean;
+  }>({ assessor: false, investigator: false, custom: false });
   
   // 통합 PDF 다운로드/이메일 다이얼로그 상태 (Step 1)
   const [showPdfDialog, setShowPdfDialog] = useState(false);
@@ -1417,9 +1433,9 @@ export default function FieldReport() {
                         display: "flex",
                         flexDirection: "column",
                       }}>
-                        {isImage && doc.fileUrl ? (
+                        {isImage && doc.fileData ? (
                           <img
-                            src={doc.fileUrl}
+                            src={`data:${doc.fileType};base64,${doc.fileData}`}
                             alt={doc.fileName || ""}
                             style={{
                               width: "100%",
@@ -1636,7 +1652,7 @@ export default function FieldReport() {
       <Dialog open={showEmailInputDialog} onOpenChange={setShowEmailInputDialog}>
         <DialogContent
           style={{
-            maxWidth: "457px",
+            maxWidth: "500px",
             background: "rgba(253, 253, 253, 0.95)",
             backdropFilter: "blur(17px)",
             border: "none",
@@ -1655,41 +1671,170 @@ export default function FieldReport() {
             이메일 전송
           </div>
           
-          <div style={{ marginBottom: "32px" }}>
+          {/* 수신자 선택 체크박스 */}
+          <div style={{ marginBottom: "24px" }}>
             <label style={{
               display: "block",
               fontFamily: "Pretendard",
               fontSize: "14px",
               fontWeight: 500,
               color: "rgba(12, 12, 12, 0.6)",
-              marginBottom: "8px",
+              marginBottom: "12px",
             }}>
-              받는 이메일 주소
+              수신자 선택
             </label>
-            <input
-              type="email"
-              value={emailAddress}
-              onChange={(e) => setEmailAddress(e.target.value)}
-              placeholder="example@email.com"
-              style={{
-                width: "100%",
+            
+            {/* 심사사 이메일 */}
+            {caseData?.assessorEmail && (
+              <div 
+                style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "10px",
+                  padding: "12px 16px",
+                  background: selectedEmailRecipients.assessor ? "rgba(0, 143, 237, 0.1)" : "rgba(12, 12, 12, 0.02)",
+                  borderRadius: "8px",
+                  marginBottom: "8px",
+                  cursor: "pointer",
+                  border: selectedEmailRecipients.assessor ? "1px solid rgba(0, 143, 237, 0.3)" : "1px solid rgba(12, 12, 12, 0.08)",
+                }}
+                onClick={() => setSelectedEmailRecipients(prev => ({ ...prev, assessor: !prev.assessor }))}
+                data-testid="checkbox-recipient-assessor"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedEmailRecipients.assessor}
+                  onChange={(e) => setSelectedEmailRecipients(prev => ({ ...prev, assessor: e.target.checked }))}
+                  style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C" }}>
+                    심사사 ({caseData.assessorTeam || caseData.assessorId || "미지정"})
+                  </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "12px", color: "rgba(12, 12, 12, 0.5)" }}>
+                    {caseData.assessorEmail}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* 조사사 이메일 */}
+            {caseData?.investigatorEmail && (
+              <div 
+                style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  gap: "10px",
+                  padding: "12px 16px",
+                  background: selectedEmailRecipients.investigator ? "rgba(0, 143, 237, 0.1)" : "rgba(12, 12, 12, 0.02)",
+                  borderRadius: "8px",
+                  marginBottom: "8px",
+                  cursor: "pointer",
+                  border: selectedEmailRecipients.investigator ? "1px solid rgba(0, 143, 237, 0.3)" : "1px solid rgba(12, 12, 12, 0.08)",
+                }}
+                onClick={() => setSelectedEmailRecipients(prev => ({ ...prev, investigator: !prev.investigator }))}
+                data-testid="checkbox-recipient-investigator"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedEmailRecipients.investigator}
+                  onChange={(e) => setSelectedEmailRecipients(prev => ({ ...prev, investigator: e.target.checked }))}
+                  style={{ width: "18px", height: "18px", cursor: "pointer" }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C" }}>
+                    조사사 ({caseData.investigatorTeamName || caseData.investigatorTeam || "미지정"})
+                  </div>
+                  <div style={{ fontFamily: "Pretendard", fontSize: "12px", color: "rgba(12, 12, 12, 0.5)" }}>
+                    {caseData.investigatorEmail}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* 심사사/조사사 이메일이 없는 경우 안내 메시지 */}
+            {!caseData?.assessorEmail && !caseData?.investigatorEmail && (
+              <div style={{
                 padding: "12px 16px",
+                background: "rgba(12, 12, 12, 0.02)",
                 borderRadius: "8px",
-                border: "1px solid rgba(12, 12, 12, 0.15)",
+                marginBottom: "8px",
+                fontFamily: "Pretendard",
+                fontSize: "13px",
+                color: "rgba(12, 12, 12, 0.5)",
+              }}>
+                등록된 심사사/조사사 이메일이 없습니다. 접수 시 이메일 정보를 입력해주세요.
+              </div>
+            )}
+            
+            {/* 직접 입력 체크박스 */}
+            <div 
+              style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "10px",
+                padding: "12px 16px",
+                background: selectedEmailRecipients.custom ? "rgba(0, 143, 237, 0.1)" : "rgba(12, 12, 12, 0.02)",
+                borderRadius: "8px",
+                cursor: "pointer",
+                border: selectedEmailRecipients.custom ? "1px solid rgba(0, 143, 237, 0.3)" : "1px solid rgba(12, 12, 12, 0.08)",
+              }}
+              onClick={() => setSelectedEmailRecipients(prev => ({ ...prev, custom: !prev.custom }))}
+              data-testid="checkbox-recipient-custom"
+            >
+              <input
+                type="checkbox"
+                checked={selectedEmailRecipients.custom}
+                onChange={(e) => setSelectedEmailRecipients(prev => ({ ...prev, custom: e.target.checked }))}
+                style={{ width: "18px", height: "18px", cursor: "pointer" }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "#0C0C0C" }}>
+                  직접 입력
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* 직접 입력 이메일 주소 */}
+          {selectedEmailRecipients.custom && (
+            <div style={{ marginBottom: "24px" }}>
+              <label style={{
+                display: "block",
                 fontFamily: "Pretendard",
                 fontSize: "14px",
-                color: "#0C0C0C",
-                outline: "none",
-              }}
-              data-testid="input-email-address"
-            />
-          </div>
+                fontWeight: 500,
+                color: "rgba(12, 12, 12, 0.6)",
+                marginBottom: "8px",
+              }}>
+                직접 입력 이메일 주소
+              </label>
+              <input
+                type="email"
+                value={emailAddress}
+                onChange={(e) => setEmailAddress(e.target.value)}
+                placeholder="example@email.com"
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  border: "1px solid rgba(12, 12, 12, 0.15)",
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  color: "#0C0C0C",
+                  outline: "none",
+                }}
+                data-testid="input-email-address"
+              />
+            </div>
+          )}
           
           <div style={{ display: "flex", gap: "12px" }}>
             <button
               onClick={() => {
                 setShowEmailInputDialog(false);
                 setEmailAddress("");
+                setSelectedEmailRecipients({ assessor: false, investigator: false, custom: false });
               }}
               style={{
                 flex: 1,
@@ -1709,7 +1854,28 @@ export default function FieldReport() {
             </button>
             <button
               onClick={async () => {
-                if (!emailAddress || !emailAddress.includes("@")) {
+                // 선택된 이메일 주소 수집
+                const emailRecipients: string[] = [];
+                if (selectedEmailRecipients.assessor && caseData?.assessorEmail) {
+                  emailRecipients.push(caseData.assessorEmail);
+                }
+                if (selectedEmailRecipients.investigator && caseData?.investigatorEmail) {
+                  emailRecipients.push(caseData.investigatorEmail);
+                }
+                if (selectedEmailRecipients.custom && emailAddress && emailAddress.includes("@")) {
+                  emailRecipients.push(emailAddress);
+                }
+                
+                if (emailRecipients.length === 0) {
+                  toast({
+                    title: "입력 오류",
+                    description: "최소 하나의 수신자를 선택해주세요.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                
+                if (selectedEmailRecipients.custom && (!emailAddress || !emailAddress.includes("@"))) {
                   toast({
                     title: "입력 오류",
                     description: "올바른 이메일 주소를 입력해주세요.",
@@ -1976,14 +2142,15 @@ export default function FieldReport() {
                   // PDF를 Base64로 변환
                   const pdfBase64 = pdf.output('datauristring').split(',')[1];
                   
-                  // API 호출하여 이메일 전송
+                  // API 호출하여 이메일 전송 (여러 수신자 지원)
                   const response = await fetch('/api/send-field-report-email', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                      email: emailAddress,
+                      emails: emailRecipients, // 여러 이메일 주소 지원
+                      email: emailRecipients[0], // 하위 호환성
                       pdfBase64,
                       caseId: selectedCaseId,
                       caseNumber: caseData?.caseNumber,
@@ -2001,12 +2168,14 @@ export default function FieldReport() {
                   const result = await response.json();
                   
                   if (response.ok) {
+                    const recipientList = emailRecipients.join(", ");
                     toast({
                       title: "전송 완료",
-                      description: `${emailAddress}로 보고서가 전송되었습니다.`,
+                      description: `${recipientList}로 보고서가 전송되었습니다.`,
                     });
-                    setShowEmailDialog(false);
+                    setShowEmailInputDialog(false);
                     setEmailAddress("");
+                    setSelectedEmailRecipients({ assessor: false, investigator: false, custom: false });
                   } else {
                     throw new Error(result.error || "이메일 전송에 실패했습니다");
                   }

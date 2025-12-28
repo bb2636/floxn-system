@@ -121,12 +121,14 @@ export const cases = pgTable("cases", {
   assessorDepartment: text("assessor_department"),
   assessorTeam: text("assessor_team"),
   assessorContact: text("assessor_contact"),
+  assessorEmail: text("assessor_email"), // 심사사 이메일
   
   // 조사자 정보
   investigatorTeam: text("investigator_team"),
   investigatorDepartment: text("investigator_department"),
   investigatorTeamName: text("investigator_team_name"),
   investigatorContact: text("investigator_contact"),
+  investigatorEmail: text("investigator_email"), // 조사사 이메일
   
   // 피보험자 및 피해자 정보
   // 보험계약자 정보

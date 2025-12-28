@@ -303,10 +303,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
     assessorDepartment: "",
     assessorTeam: "",
     assessorContact: "",
+    assessorEmail: "",
     investigatorTeam: "",
     investigatorDepartment: "",
     investigatorTeamName: "",
     investigatorContact: "",
+    investigatorEmail: "",
     policyHolderName: "",
     policyHolderIdNumber: "",
     policyHolderAddress: "",
@@ -597,10 +599,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
           assessorDepartment: caseData.assessorDepartment || "",
           assessorTeam: caseData.assessorTeam || "",
           assessorContact: caseData.assessorContact || "",
+          assessorEmail: caseData.assessorEmail || "",
           investigatorTeam: caseData.investigatorTeam || "",
           investigatorDepartment: caseData.investigatorDepartment || "",
           investigatorTeamName: caseData.investigatorTeamName || "",
           investigatorContact: caseData.investigatorContact || "",
+          investigatorEmail: caseData.investigatorEmail || "",
           policyHolderName: caseData.policyHolderName || "",
           policyHolderIdNumber: caseData.policyHolderIdNumber || "",
           policyHolderAddress: caseData.policyHolderAddress || "",
@@ -723,10 +727,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             assessorDepartment: caseData.assessorDepartment || "",
             assessorTeam: caseData.assessorTeam || "",
             assessorContact: caseData.assessorContact || "",
+            assessorEmail: caseData.assessorEmail || "",
             investigatorTeam: caseData.investigatorTeam || "",
             investigatorDepartment: caseData.investigatorDepartment || "",
             investigatorTeamName: caseData.investigatorTeamName || "",
             investigatorContact: caseData.investigatorContact || "",
+            investigatorEmail: caseData.investigatorEmail || "",
             policyHolderName: caseData.policyHolderName || "",
             policyHolderIdNumber: caseData.policyHolderIdNumber || "",
             policyHolderAddress: caseData.policyHolderAddress || "",
@@ -1155,16 +1161,18 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
         } else {
           updated.assessorDepartment = "";
         }
-        // 심사사 변경 시 심사자, 연락처 초기화
+        // 심사사 변경 시 심사자, 연락처, 이메일 초기화
         updated.assessorTeam = "";
         updated.assessorContact = "";
+        updated.assessorEmail = "";
       }
       
-      // 심사자를 선택하면 해당 심사자의 연락처를 자동으로 설정
+      // 심사자를 선택하면 해당 심사자의 연락처와 이메일을 자동으로 설정
       if (field === "assessorTeam" && value) {
         const selectedAssessor = filteredAssessorEmployees.find(assessor => assessor.name === value);
         if (selectedAssessor) {
           updated.assessorContact = selectedAssessor.phone || "";
+          updated.assessorEmail = selectedAssessor.email || "";
         }
       }
       
@@ -1176,16 +1184,18 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
         } else {
           updated.investigatorDepartment = "";
         }
-        // 손사명 변경 시 조사자, 연락처 초기화
+        // 손사명 변경 시 조사자, 연락처, 이메일 초기화
         updated.investigatorTeamName = "";
         updated.investigatorContact = "";
+        updated.investigatorEmail = "";
       }
       
-      // 조사자를 선택하면 해당 조사자의 연락처를 자동으로 설정
+      // 조사자를 선택하면 해당 조사자의 연락처와 이메일을 자동으로 설정
       if (field === "investigatorTeamName" && value) {
         const selectedInvestigator = filteredInvestigatorEmployees.find(inv => inv.name === value);
         if (selectedInvestigator) {
           updated.investigatorContact = selectedInvestigator.phone || "";
+          updated.investigatorEmail = selectedInvestigator.email || "";
         }
       }
       
@@ -1229,10 +1239,12 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       assessorDepartment: "",
       assessorTeam: "",
       assessorContact: "",
+      assessorEmail: "",
       investigatorTeam: "",
       investigatorDepartment: "",
       investigatorTeamName: "",
       investigatorContact: "",
+      investigatorEmail: "",
       policyHolderName: "",
       policyHolderIdNumber: "",
       policyHolderAddress: "",

@@ -5117,7 +5117,8 @@ FLOXN 드림`;
   // POST /api/send-field-report-email - 현장조사 리포트 PDF 이메일 전송 (Bubble.io)
   // ==========================================
   const sendFieldReportEmailSchema = z.object({
-    email: z.string().email("올바른 이메일 형식이 아닙니다"),
+    email: z.string().email("올바른 이메일 형식이 아닙니다").optional(), // 하위 호환성
+    emails: z.array(z.string().email("올바른 이메일 형식이 아닙니다")).optional(), // 여러 수신자 지원
     pdfBase64: z.string().min(1, "PDF 데이터가 필요합니다"),
     caseId: z.string().optional(),
     caseNumber: z.string().optional(),
@@ -5157,6 +5158,7 @@ FLOXN 드림`;
 
       const { 
         email, 
+        emails: emailsList,
         pdfBase64, 
         caseId,
         caseNumber, 
@@ -5169,6 +5171,15 @@ FLOXN 드림`;
         accidentCause,
         recoveryMethodType
       } = validationResult.data;
+
+      // 이메일 수신자 결정 (emails 배열 우선, 없으면 단일 email 사용)
+      const recipients = emailsList && emailsList.length > 0 
+        ? emailsList 
+        : (email ? [email] : []);
+      
+      if (recipients.length === 0) {
+        return res.status(400).json({ error: "수신자 이메일이 필요합니다" });
+      }
 
       const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
       const timestamp = Date.now();
@@ -5325,10 +5336,39 @@ ${documentLinksSection}
 감사합니다.
 FLOXN 드림`;
 
-      await sendNotificationEmail(email, `FLOXN 현장조사 리포트 - ${caseNumber || dateStr}`, emailContent);
+      // 모든 수신자에게 이메일 전송
+      const sendResults: { email: string; success: boolean; error?: string }[] = [];
+      
+      for (const recipientEmail of recipients) {
+        try {
+          await sendNotificationEmail(recipientEmail, `FLOXN 현장조사 리포트 - ${caseNumber || dateStr}`, emailContent);
+          sendResults.push({ email: recipientEmail, success: true });
+          console.log(`[Email] Field Report PDF link sent successfully to ${recipientEmail} by ${user.username}`);
+        } catch (sendError) {
+          console.error(`[Email] Failed to send to ${recipientEmail}:`, sendError);
+          sendResults.push({ 
+            email: recipientEmail, 
+            success: false, 
+            error: sendError instanceof Error ? sendError.message : '전송 실패'
+          });
+        }
+      }
 
-      console.log(`[Email] Field Report PDF link sent successfully to ${email} by ${user.username}`);
-      res.json({ success: true, message: "현장조사 리포트 이메일이 전송되었습니다", pdfUrl });
+      const successCount = sendResults.filter(r => r.success).length;
+      const failedCount = sendResults.filter(r => !r.success).length;
+
+      if (successCount === 0) {
+        return res.status(500).json({ 
+          error: "모든 이메일 전송에 실패했습니다",
+          details: sendResults.filter(r => !r.success)
+        });
+      }
+
+      const message = failedCount > 0
+        ? `${successCount}명에게 전송 완료, ${failedCount}명 전송 실패`
+        : `${successCount}명에게 현장조사 리포트 이메일이 전송되었습니다`;
+
+      res.json({ success: true, message, pdfUrl, results: sendResults });
     } catch (error) {
       console.error("Send field report email error:", error);
       res.status(500).json({ error: "현장조사 리포트 이메일 전송 중 오류가 발생했습니다" });
