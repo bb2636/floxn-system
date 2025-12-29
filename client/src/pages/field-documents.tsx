@@ -1293,8 +1293,12 @@ export default function FieldDocuments() {
         </div>
       )}
 
-      {/* 파일 업로드 영역 - 전체 탭이 아닐 때만 표시 */}
-      {selectedCategory !== "전체" && (
+      {/* 파일 업로드 영역 - 전체 탭이 아닐 때와 하위탭이 전체가 아닐 때만 표시 */}
+      {selectedCategory !== "전체" && 
+       !((selectedCategory === "사진" && photoSubFilter === "전체") ||
+         (selectedCategory === "기본자료" && basicDataSubFilter === "전체") ||
+         (selectedCategory === "증빙자료" && evidenceSubFilter === "전체") ||
+         (selectedCategory === "청구자료" && claimDataSubFilter === "전체")) && (
         <div
             className="mb-6 rounded-xl p-12 transition-all cursor-pointer"
             style={{
