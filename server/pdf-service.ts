@@ -315,6 +315,99 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
   return template;
 }
 
+async function generateRecoveryAreaPage(caseData: any, estimateRowsData: any[]): Promise<string> {
+  const templatePath = path.join(TEMPLATES_DIR, 'recovery-area.html');
+  let template = fs.readFileSync(templatePath, 'utf-8');
+  
+  const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
+    .filter(Boolean).join(' ');
+  
+  // Group rows by category (장소)
+  const categoryGroups: Record<string, any[]> = {};
+  if (estimateRowsData && estimateRowsData.length > 0) {
+    estimateRowsData.forEach((row) => {
+      const category = row.category || '기타';
+      if (!categoryGroups[category]) {
+        categoryGroups[category] = [];
+      }
+      categoryGroups[category].push(row);
+    });
+  }
+  
+  let areaRowsHtml = '';
+  const categories = Object.keys(categoryGroups);
+  
+  if (categories.length > 0) {
+    categories.forEach((category) => {
+      const rows = categoryGroups[category];
+      const rowSpan = rows.length;
+      
+      rows.forEach((row, index) => {
+        // 피해면적 - mm to m conversion (stored as mm, display as m)
+        const damageW = row.damageWidth ? (Number(row.damageWidth) / 1000).toFixed(1) : '0.0';
+        const damageH = row.damageHeight ? (Number(row.damageHeight) / 1000).toFixed(1) : '0.0';
+        const damageAreaM2 = row.damageArea ? (Number(row.damageArea) / 1000000).toFixed(1) : '0.0';
+        
+        // 복구면적 - mm to m conversion
+        const repairW = row.repairWidth ? (Number(row.repairWidth) / 1000).toFixed(1) : '0.0';
+        const repairH = row.repairHeight ? (Number(row.repairHeight) / 1000).toFixed(1) : '0.0';
+        const repairAreaM2 = row.repairArea ? (Number(row.repairArea) / 1000000).toFixed(1) : '0.0';
+        
+        // 공사내용 = location (위치), 공사분류 = workName (공사명)
+        const workContent = row.location || '-';
+        const workType = row.workName || '-';
+        const note = row.note || '-';
+        
+        if (index === 0) {
+          areaRowsHtml += `
+            <tr>
+              <td class="category-cell" rowspan="${rowSpan}">${category}</td>
+              <td>${workContent}</td>
+              <td>${workType}</td>
+              <td>${damageAreaM2}</td>
+              <td>${damageW}</td>
+              <td>${damageH}</td>
+              <td>${repairAreaM2}</td>
+              <td>${repairW}</td>
+              <td>${repairH}</td>
+              <td>${note}</td>
+            </tr>
+          `;
+        } else {
+          areaRowsHtml += `
+            <tr>
+              <td>${workContent}</td>
+              <td>${workType}</td>
+              <td>${damageAreaM2}</td>
+              <td>${damageW}</td>
+              <td>${damageH}</td>
+              <td>${repairAreaM2}</td>
+              <td>${repairW}</td>
+              <td>${repairH}</td>
+              <td>${note}</td>
+            </tr>
+          `;
+        }
+      });
+    });
+  } else {
+    areaRowsHtml = '<tr><td colspan="10" style="text-align:center;padding:10mm;">등록된 복구면적 데이터가 없습니다.</td></tr>';
+  }
+  
+  const data = {
+    caseNumber: caseData.caseNumber || '',
+    insuranceCompany: caseData.insuranceCompany || '',
+    insuranceAccidentNo: caseData.insuranceAccidentNo || '',
+    address: fullAddress,
+    documentDate: formatDate(new Date().toISOString()),
+    areaRowsHtml: areaRowsHtml,
+  };
+  
+  template = template.replace('{{areaRowsHtml}}', areaRowsHtml);
+  
+  return replaceTemplateVariables(template, data);
+}
+
 async function generateEstimatePage(caseData: any, estimateData: any, estimateRowsData: any[]): Promise<string> {
   const templatePath = path.join(TEMPLATES_DIR, 'estimate.html');
   let template = fs.readFileSync(templatePath, 'utf-8');
@@ -619,6 +712,21 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
           .orderBy(estimateRows.rowOrder);
       }
       
+      // Generate recovery area page first (복구면적 산출표)
+      if (estimateRowsData.length > 0) {
+        const recoveryAreaHtml = await generateRecoveryAreaPage(caseData, estimateRowsData);
+        const recoveryPage = await browser.newPage();
+        await recoveryPage.setContent(recoveryAreaHtml, { waitUntil: 'networkidle0' });
+        const recoveryPdfBuffer = await recoveryPage.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: { top: '0', right: '0', bottom: '0', left: '0' },
+        });
+        pdfParts.push(Buffer.from(recoveryPdfBuffer));
+        await recoveryPage.close();
+      }
+      
+      // Generate estimate page (노무비/자재비 견적서)
       const estimateHtml = await generateEstimatePage(caseData, estimateData, estimateRowsData);
       const page = await browser.newPage();
       await page.setContent(estimateHtml, { waitUntil: 'networkidle0' });
