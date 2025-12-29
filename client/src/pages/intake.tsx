@@ -3695,15 +3695,24 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                 <div className="flex flex-row items-center w-full h-[58px]">
                   <input
                     type="text"
-                    placeholder="성함을 입력해주세요."
+                    placeholder="업체명을 입력해주세요."
                     value={partnerSearchQuery}
-                    onChange={(e) => setPartnerSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      setPartnerSearchQuery(e.target.value);
+                    }}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    autoComplete="off"
                     className="flex-1"
-                    style={{ boxSizing: 'border-box', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', height: '58px', background: '#FDFDFD', border: '1px solid rgba(12, 12, 12, 0.08)', borderRadius: '6px 0px 0px 6px', fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#0C0C0C' }}
+                    style={{ boxSizing: 'border-box', padding: '10px 12px', height: '58px', background: '#FDFDFD', border: '1px solid rgba(12, 12, 12, 0.08)', borderRadius: '6px 0px 0px 6px', fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#0C0C0C', outline: 'none' }}
                     data-testid="input-partner-search"
                   />
                   <button
-                    onClick={() => {}}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
                     style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: '0px 16px', height: '58px', background: '#008FED', borderRadius: '0px 6px 6px 0px', border: 'none', cursor: 'pointer', flexShrink: 0 }}
                     data-testid="button-partner-search"
                   >
