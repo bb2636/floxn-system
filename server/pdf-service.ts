@@ -383,25 +383,33 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
   let laborRowsHtml = '';
   if (laborCostData.length > 0) {
     laborCostData.forEach((item) => {
-      const category = item.category || item.workType || '-';
+      // Match exact field names from LaborCostRow interface
+      const category = item.category || '-';
       const workName = item.workName || '-';
-      const detailItem = item.detailItem || item.detailWork || '-';
-      const damageArea = item.damageArea ? `${formatNumber(item.damageArea)}㎡` : '-';
-      const pricePerSqm = item.pricePerSqm || item.unitPrice || item.standardPrice || 0;
+      const detailItem = item.detailItem || '-';
+      // 복구면적 - damageArea field (in mm² stored, display as m²)
+      const damageAreaValue = item.damageArea || 0;
+      const damageAreaDisplay = damageAreaValue > 0 ? `${Number(damageAreaValue).toFixed(0)}㎡` : '-';
+      // 적용단가 - pricePerSqm (기준가 m²)
+      const pricePerSqm = item.pricePerSqm || item.standardPrice || 0;
+      // 수량(인) - quantity
       const quantity = item.quantity || 0;
+      // 합계 - amount
       const amount = item.amount || 0;
+      // 경비 - includeInEstimate (경비여부)
       const isExpense = item.includeInEstimate === true || item.includeInEstimate === 'true' ? 'O' : '-';
-      const note = item.request || item.note || '-';
+      // 비고 - request
+      const note = item.request || '-';
       
       laborRowsHtml += `
         <tr>
           <td style="text-align:center">${category}</td>
           <td style="text-align:center">${workName}</td>
           <td style="text-align:center">${detailItem}</td>
-          <td style="text-align:right">${damageArea}</td>
-          <td style="text-align:right">${formatNumber(pricePerSqm)}</td>
-          <td style="text-align:center">${formatNumber(quantity)}</td>
-          <td style="text-align:right">${formatNumber(amount)}</td>
+          <td style="text-align:right">${damageAreaDisplay}</td>
+          <td style="text-align:right">${formatNumber(Math.round(pricePerSqm))}</td>
+          <td style="text-align:center">${Number(quantity).toFixed(2)}</td>
+          <td style="text-align:right">${formatNumber(Math.round(amount))}</td>
           <td style="text-align:center">${isExpense}</td>
           <td style="text-align:left">${note}</td>
         </tr>
@@ -410,7 +418,7 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     laborRowsHtml += `
       <tr style="background-color:#f5f5f5;font-weight:bold;">
         <td colspan="6" style="text-align:center">노무비 소계</td>
-        <td style="text-align:right">${formatNumber(laborTotal)}</td>
+        <td style="text-align:right">${formatNumber(Math.round(laborTotal))}</td>
         <td colspan="2"></td>
       </tr>
     `;
@@ -421,24 +429,25 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
   let materialRowsHtml = '';
   if (materialCostData.length > 0) {
     materialCostData.forEach((item) => {
-      const category = item.공종 || item.workType || item.category || '-';
+      // Match exact field names from MaterialRow interface
+      const category = item.공종 || item.category || '-';
       const workName = item.공사명 || item.workName || '-';
-      const materialItem = item.자재항목 || item.자재 || item.materialName || '-';
-      const unitPrice = item.단가 || item.기준단가 || item.unitPrice || 0;
-      const quantity = item.수량 || item.quantity || 0;
-      const unit = item.단위 || item.unit || '-';
-      const amount = item.합계 || item.금액 || item.amount || 0;
-      const note = item.비고 || item.note || '-';
+      const materialItem = item.자재항목 || item.자재 || '-';
+      const unitPrice = item.단가 || item.기준단가 || 0;
+      const quantity = item.수량 || 0;
+      const unit = item.단위 || '-';
+      const amount = item.합계 || item.금액 || 0;
+      const note = item.비고 || '-';
       
       materialRowsHtml += `
         <tr>
           <td style="text-align:center">${category}</td>
           <td style="text-align:center">${workName}</td>
           <td style="text-align:left">${materialItem}</td>
-          <td style="text-align:right">${formatNumber(unitPrice)}</td>
-          <td style="text-align:center">${formatNumber(quantity)}</td>
+          <td style="text-align:right">${formatNumber(Math.round(unitPrice))}</td>
+          <td style="text-align:center">${Number(quantity).toFixed(2)}</td>
           <td style="text-align:center">${unit}</td>
-          <td style="text-align:right">${formatNumber(amount)}</td>
+          <td style="text-align:right">${formatNumber(Math.round(amount))}</td>
           <td style="text-align:left">${note}</td>
         </tr>
       `;
@@ -446,7 +455,7 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     materialRowsHtml += `
       <tr style="background-color:#f5f5f5;font-weight:bold;">
         <td colspan="6" style="text-align:center">자재비 소계</td>
-        <td style="text-align:right">${formatNumber(materialTotal)}</td>
+        <td style="text-align:right">${formatNumber(Math.round(materialTotal))}</td>
         <td></td>
       </tr>
     `;
