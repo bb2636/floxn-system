@@ -463,17 +463,31 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     }
     if (estimateData.materialCostData) {
       try {
-        materialCostData = typeof estimateData.materialCostData === 'string'
+        let rawMaterialData = typeof estimateData.materialCostData === 'string'
           ? JSON.parse(estimateData.materialCostData)
           : estimateData.materialCostData;
-        if (Array.isArray(materialCostData)) {
+        
+        // Handle both formats: {"rows": [...]} or direct array [...]
+        if (rawMaterialData && typeof rawMaterialData === 'object') {
+          if (Array.isArray(rawMaterialData)) {
+            materialCostData = rawMaterialData;
+          } else if (rawMaterialData.rows && Array.isArray(rawMaterialData.rows)) {
+            materialCostData = rawMaterialData.rows;
+          }
+        }
+        
+        if (Array.isArray(materialCostData) && materialCostData.length > 0) {
           // MaterialRow uses Korean field names: 합계 or 금액 for amount
           materialTotal = materialCostData.reduce((sum, item) => {
             const amount = Number(item.합계) || Number(item.금액) || Number(item.amount) || 0;
             return sum + amount;
           }, 0);
+          console.log(`[PDF 자재비] ${materialCostData.length}개 항목, 합계: ${materialTotal}`);
         }
-      } catch { materialCostData = []; }
+      } catch (err) { 
+        console.error('[PDF 자재비 파싱 오류]:', err);
+        materialCostData = []; 
+      }
     }
   }
   
