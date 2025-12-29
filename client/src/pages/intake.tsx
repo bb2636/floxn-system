@@ -932,6 +932,14 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       // 임시저장 성공 후 localStorage에서 임시 데이터 삭제
       localStorage.removeItem('intakeFormDraft');
+      localStorage.removeItem('editCaseId');
+      
+      // 모달이 아닌 경우에만 종합진행관리 페이지로 이동 (중복 저장 방지)
+      if (!isModal) {
+        setLocation('/comprehensive-progress');
+      } else if (onSuccess) {
+        onSuccess();
+      }
     },
     onError: (error: Error) => {
       toast({ description: error.message, variant: "destructive" });
