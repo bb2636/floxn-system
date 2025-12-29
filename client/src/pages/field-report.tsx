@@ -870,38 +870,86 @@ export default function FieldReport() {
             </>
           )}
           
-          {/* 심사 버튼: 제출 완료 후, 아직 1차승인 전인 경우만 표시 (반려 상태일 때 재심사 가능) */}
-          {!isUserLoading && isAdmin && caseData.fieldSurveyStatus === "submitted" && 
-           (caseData.status === "제출" || caseData.status === "반려") && (
-            <Button
-              data-testid="button-review"
-              onClick={() => setShowReviewDialog(true)}
-              disabled={reviewMutation.isPending}
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: "500",
-              }}
-            >
-              {reviewMutation.isPending ? "심사 중..." : (caseData.status === "반려" ? "재심사" : "심사")}
-            </Button>
+          {/* 심사 영역: 상태에 따라 버튼 또는 상태 라벨 표시 */}
+          {!isUserLoading && isAdmin && caseData.fieldSurveyStatus === "submitted" && (
+            <>
+              {/* 심사 버튼: 검토중, 제출, 반려 상태일 때 표시 */}
+              {(caseData.status === "검토중" || caseData.status === "제출" || caseData.status === "반려") && (
+                <Button
+                  data-testid="button-review"
+                  onClick={() => setShowReviewDialog(true)}
+                  disabled={reviewMutation.isPending}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                  }}
+                >
+                  {reviewMutation.isPending ? "심사 중..." : (caseData.status === "반려" ? "재심사" : "심사")}
+                </Button>
+              )}
+              {/* 심사완료 라벨: 1차승인 또는 승인완료 상태일 때 */}
+              {(caseData.status === "1차승인" || caseData.status === "승인완료") && (
+                <span
+                  data-testid="label-review-completed"
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-md font-medium"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                  }}
+                >
+                  심사완료
+                </span>
+              )}
+            </>
           )}
           
-          {/* 보고서 승인 버튼 (1차승인 상태 + 승인 권한 있는 사용자, 비승인 후 재승인 가능) */}
-          {!isUserLoading && canApproveReport && caseData.status === "1차승인" && (
-            <Button
-              data-testid="button-approve-report"
-              onClick={() => setShowApprovalDialog(true)}
-              disabled={approvalMutation.isPending}
-              className="bg-green-500 hover:bg-green-600"
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: "500",
-              }}
-            >
-              {approvalMutation.isPending ? "승인 중..." : (caseData.reportApprovalDecision === "비승인" ? "재승인" : "승인")}
-            </Button>
+          {/* 승인 영역: 상태에 따라 버튼 또는 상태 라벨 표시 */}
+          {!isUserLoading && canApproveReport && (
+            <>
+              {/* 승인 버튼: 1차승인 상태일 때만 표시 */}
+              {caseData.status === "1차승인" && (
+                <Button
+                  data-testid="button-approve-report"
+                  onClick={() => setShowApprovalDialog(true)}
+                  disabled={approvalMutation.isPending}
+                  className="bg-green-500 hover:bg-green-600"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                  }}
+                >
+                  {approvalMutation.isPending ? "승인 중..." : "승인"}
+                </Button>
+              )}
+              {/* 승인완료 라벨 */}
+              {caseData.status === "승인완료" && caseData.reportApprovalDecision === "승인" && (
+                <span
+                  data-testid="label-approval-completed"
+                  className="px-4 py-2 bg-green-100 text-green-700 rounded-md font-medium"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                  }}
+                >
+                  승인완료
+                </span>
+              )}
+              {/* 승인반려 라벨 */}
+              {caseData.reportApprovalDecision === "비승인" && (
+                <span
+                  data-testid="label-approval-rejected"
+                  className="px-4 py-2 bg-red-100 text-red-700 rounded-md font-medium"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                  }}
+                >
+                  승인반려
+                </span>
+              )}
+            </>
           )}
         </div>
       </div>
