@@ -680,11 +680,13 @@ export function LaborCostSection({
               updated.pricePerSqm = 0;
             }
             
-            // 반자틀설치에 대한 피해철거공사(반자틀해체) 행 자동 추가
-            const demolitionSourceId = `demolition-${rowId}`;
-            const existingDemolition = rows.find(r => r.sourceAreaRowId === demolitionSourceId);
-            if (!existingDemolition) {
-              demolitionRowToAdd = createDemolitionRow({ ...updated }, '반자틀해체');
+            // 반자틀설치에 대한 피해철거공사(반자틀해체) 행 자동 추가 (연동 행만, 수동 추가 행은 제외)
+            if (updated.isLinkedFromRecovery) {
+              const demolitionSourceId = `demolition-${rowId}`;
+              const existingDemolition = rows.find(r => r.sourceAreaRowId === demolitionSourceId);
+              if (!existingDemolition) {
+                demolitionRowToAdd = createDemolitionRow({ ...updated }, '반자틀해체');
+              }
             }
           }
           // 목공사-걸레받이 선택 시 자동으로 일위대가-내장공 설정 (일위대가DB 기준)
@@ -847,8 +849,8 @@ export function LaborCostSection({
             }
           }
           
-          // 반자틀설치, 석고보드설치, 합판설치 선택 시 피해철거공사 행 자동 추가
-          if (updated.category === '목공사' && (value === '반자틀설치' || value === '석고보드설치' || value === '합판설치')) {
+          // 반자틀설치, 석고보드설치, 합판설치 선택 시 피해철거공사 행 자동 추가 (연동 행만, 수동 추가 행은 제외)
+          if (updated.isLinkedFromRecovery && updated.category === '목공사' && (value === '반자틀설치' || value === '석고보드설치' || value === '합판설치')) {
             // 반자틀설치 → 반자틀해체, 석고보드설치/합판설치 → 석고보드해체
             const demolitionDetailItem = value === '반자틀설치' ? '반자틀해체' : '석고보드해체';
             const demolitionSourceId = `demolition-${rowId}`;
