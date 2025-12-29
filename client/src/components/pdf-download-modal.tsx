@@ -179,8 +179,23 @@ export function PdfDownloadModal({ open, onOpenChange, caseId, caseNumber }: Pdf
   const hasAnySectionSelected = Object.values(sections).some(v => v);
   
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+    <Dialog open={open} onOpenChange={downloadMutation.isPending ? undefined : onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col relative">
+        {/* 다운로드 중 로딩 오버레이 */}
+        {downloadMutation.isPending && (
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center rounded-lg">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="w-12 h-12 animate-spin text-primary" />
+              <div className="text-center">
+                <p className="text-lg font-medium">PDF 생성 중...</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  잠시만 기다려주세요. 페이지를 벗어나지 마세요.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Download className="w-5 h-5" />
