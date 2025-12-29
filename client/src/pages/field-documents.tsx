@@ -1293,63 +1293,65 @@ export default function FieldDocuments() {
         </div>
       )}
 
-      {/* 파일 업로드 영역 - 제출 후에도 파일 업로드 가능 */}
-      <div
-          className="mb-6 rounded-xl p-12 transition-all cursor-pointer"
-          style={{
-            background: isDragging ? "rgba(0, 143, 237, 0.08)" : "rgba(0, 143, 237, 0.03)",
-            border: "none",
-          }}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          data-testid="upload-area"
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            onChange={(e) => handleFileSelect(e.target.files)}
-            className="hidden"
-            data-testid="file-input"
-          />
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0, 143, 237, 0.1)" }}>
-              <Upload className="w-8 h-8" style={{ color: "#008FED" }} />
-            </div>
-            <div className="text-center">
-              <div
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 400,
-                  letterSpacing: "-0.02em",
-                  color: "rgba(12, 12, 12, 0.5)",
-                  marginBottom: "12px",
-                }}
-              >
-                파일 또는 이미지를 이곳에 올려주세요
+      {/* 파일 업로드 영역 - 전체 탭이 아닐 때만 표시 */}
+      {selectedCategory !== "전체" && (
+        <div
+            className="mb-6 rounded-xl p-12 transition-all cursor-pointer"
+            style={{
+              background: isDragging ? "rgba(0, 143, 237, 0.08)" : "rgba(0, 143, 237, 0.03)",
+              border: "none",
+            }}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            data-testid="upload-area"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={(e) => handleFileSelect(e.target.files)}
+              className="hidden"
+              data-testid="file-input"
+            />
+            <div className="flex flex-col items-center gap-4">
+              <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(0, 143, 237, 0.1)" }}>
+                <Upload className="w-8 h-8" style={{ color: "#008FED" }} />
               </div>
-              <button
-                type="button"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "15px",
-                  fontWeight: 500,
-                  letterSpacing: "-0.02em",
-                  color: "#008FED",
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
-                }}
-                data-testid="button-select-file"
-              >
-                파일 찾기
-              </button>
+              <div className="text-center">
+                <div
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 400,
+                    letterSpacing: "-0.02em",
+                    color: "rgba(12, 12, 12, 0.5)",
+                    marginBottom: "12px",
+                  }}
+                >
+                  파일 또는 이미지를 이곳에 올려주세요
+                </div>
+                <button
+                  type="button"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                    fontWeight: 500,
+                    letterSpacing: "-0.02em",
+                    color: "#008FED",
+                    border: "none",
+                    background: "transparent",
+                    cursor: "pointer",
+                  }}
+                  data-testid="button-select-file"
+                >
+                  파일 찾기
+                </button>
+              </div>
             </div>
-          </div>
-      </div>
+        </div>
+      )}
 
       {/* Uploading files (progress) */}
       {uploadingFiles.length > 0 && (
