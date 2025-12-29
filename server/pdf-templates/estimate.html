@@ -289,7 +289,19 @@
             <td class="amount-format">{{materialTotal}}</td>
           </tr>
           <tr>
-            <th>부가세 (10%)</th>
+            <th>소계</th>
+            <td class="amount-format">{{subtotal}}</td>
+          </tr>
+          <tr>
+            <th style="background-color:#5a5a5a;">일반관리비 (6%)</th>
+            <td class="amount-format">{{managementFee}}</td>
+          </tr>
+          <tr>
+            <th style="background-color:#5a5a5a;">이윤 (15%)</th>
+            <td class="amount-format">{{profit}}</td>
+          </tr>
+          <tr>
+            <th>부가세 (10%) - {{vatStatus}}</th>
             <td class="amount-format">{{vat}}</td>
           </tr>
           <tr class="grand-total-row">

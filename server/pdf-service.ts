@@ -574,9 +574,53 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     materialRowsHtml = '<tr><td colspan="8" style="text-align:center;padding:5mm;">등록된 자재비가 없습니다.</td></tr>';
   }
   
+  // VAT 포함/별도 옵션 확인 (materialCostData에 저장됨)
+  let vatIncluded = true; // 기본값: 포함
+  if (estimateData?.materialCostData) {
+    try {
+      const rawData = typeof estimateData.materialCostData === 'string'
+        ? JSON.parse(estimateData.materialCostData)
+        : estimateData.materialCostData;
+      if (rawData && typeof rawData === 'object' && rawData.vatIncluded !== undefined) {
+        vatIncluded = rawData.vatIncluded;
+      }
+    } catch {}
+  }
+  
+  // 경비 여부 구분 (includeInEstimate: true = 일반관리비/이윤에 포함, false = 경비)
+  let laborTotalNonExpense = 0; // 경비 아닌 노무비
+  let laborTotalExpense = 0; // 경비인 노무비
+  if (Array.isArray(laborCostData)) {
+    laborCostData.forEach(item => {
+      const amount = Number(item.amount) || 0;
+      if (item.includeInEstimate === true || item.includeInEstimate === 'true') {
+        laborTotalNonExpense += amount;
+      } else {
+        laborTotalExpense += amount;
+      }
+    });
+  }
+  
+  // 소계 (전체)
   const subtotal = laborTotal + materialTotal;
-  const vat = Math.round(subtotal * 0.1);
-  const grandTotal = subtotal + vat;
+  
+  // 일반관리비와 이윤 계산 대상 (경비 아닌 항목 + 자재비)
+  const baseForFees = laborTotalNonExpense + materialTotal;
+  
+  // 일반관리비 (6%)
+  const managementFee = Math.round(baseForFees * 0.06);
+  
+  // 이윤 (15%)
+  const profit = Math.round(baseForFees * 0.15);
+  
+  // VAT 기준액 (소계 + 일반관리비 + 이윤)
+  const vatBase = subtotal + managementFee + profit;
+  
+  // VAT (10%)
+  const vat = Math.round(vatBase * 0.1);
+  
+  // 총 합계
+  const grandTotal = vatIncluded ? vatBase + vat : vatBase;
   
   const data = {
     caseNumber: caseData.caseNumber || '',
@@ -591,7 +635,10 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     laborTotal: formatNumber(laborTotal),
     materialTotal: formatNumber(materialTotal),
     subtotal: formatNumber(subtotal),
+    managementFee: formatNumber(managementFee),
+    profit: formatNumber(profit),
     vat: formatNumber(vat),
+    vatStatus: vatIncluded ? '포함' : '별도',
     grandTotal: formatNumber(grandTotal),
     estimateAmount: formatNumber(Number(caseData.estimateAmount) || grandTotal),
   };
