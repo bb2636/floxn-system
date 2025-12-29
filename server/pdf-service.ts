@@ -158,14 +158,74 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
   
   let drawingContent = '<div class="no-image">도면 이미지가 없습니다.</div>';
   
-  if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
-    let imageUrl = drawingData.uploadedImages[0].src || '';
-    if (imageUrl && !imageUrl.startsWith('data:')) {
-      imageUrl = `data:image/png;base64,${imageUrl}`;
+  // Check if drawing has any content
+  const hasUploadedImages = drawingData?.uploadedImages && drawingData.uploadedImages.length > 0;
+  const hasRectangles = drawingData?.rectangles && drawingData.rectangles.length > 0;
+  const hasLeakMarkers = drawingData?.leakMarkers && drawingData.leakMarkers.length > 0;
+  const hasAccidentAreas = drawingData?.accidentAreas && drawingData.accidentAreas.length > 0;
+  
+  console.log(`[PDF 도면] 이미지: ${hasUploadedImages ? drawingData.uploadedImages.length : 0}, 사각형: ${hasRectangles ? drawingData.rectangles.length : 0}, 누수마커: ${hasLeakMarkers ? drawingData.leakMarkers.length : 0}`);
+  
+  if (hasUploadedImages || hasRectangles || hasLeakMarkers || hasAccidentAreas) {
+    // Build composite drawing with all elements
+    const SCALE = 2; // Scale factor for display
+    let elements = '';
+    
+    // Add uploaded images
+    if (hasUploadedImages) {
+      for (const img of drawingData.uploadedImages) {
+        let imageUrl = img.src || '';
+        if (imageUrl && !imageUrl.startsWith('data:')) {
+          imageUrl = `data:image/png;base64,${imageUrl}`;
+        }
+        if (imageUrl) {
+          const x = (img.x || 0) * SCALE;
+          const y = (img.y || 0) * SCALE;
+          const width = (img.width || 200) * SCALE;
+          const height = (img.height || 200) * SCALE;
+          elements += `<img src="${imageUrl}" style="position:absolute;left:${x}px;top:${y}px;width:${width}px;height:${height}px;object-fit:contain;" />`;
+        }
+      }
     }
-    if (imageUrl) {
-      drawingContent = `<img src="${imageUrl}" alt="현장 피해상황 도면" class="drawing-image" onerror="this.style.display='none'" />`;
+    
+    // Add rectangles
+    if (hasRectangles) {
+      for (const rect of drawingData.rectangles) {
+        const x = (rect.x || 0) * SCALE;
+        const y = (rect.y || 0) * SCALE;
+        const width = (rect.width || 50) * SCALE;
+        const height = (rect.height || 50) * SCALE;
+        const color = rect.color || '#FF0000';
+        elements += `<div style="position:absolute;left:${x}px;top:${y}px;width:${width}px;height:${height}px;border:2px solid ${color};background:${color}20;"></div>`;
+        
+        // Add label if exists
+        if (rect.label) {
+          elements += `<div style="position:absolute;left:${x}px;top:${y - 16}px;font-size:10px;color:${color};font-weight:bold;">${rect.label}</div>`;
+        }
+      }
     }
+    
+    // Add leak markers
+    if (hasLeakMarkers) {
+      for (const marker of drawingData.leakMarkers) {
+        const x = (marker.x || 0) * SCALE;
+        const y = (marker.y || 0) * SCALE;
+        elements += `<div style="position:absolute;left:${x - 8}px;top:${y - 8}px;width:16px;height:16px;background:#3B82F6;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:8px;font-weight:bold;">💧</div>`;
+      }
+    }
+    
+    // Add accident areas
+    if (hasAccidentAreas) {
+      for (const area of drawingData.accidentAreas) {
+        const x = (area.x || 0) * SCALE;
+        const y = (area.y || 0) * SCALE;
+        const width = (area.width || 50) * SCALE;
+        const height = (area.height || 50) * SCALE;
+        elements += `<div style="position:absolute;left:${x}px;top:${y}px;width:${width}px;height:${height}px;border:2px dashed #EF4444;background:rgba(239,68,68,0.1);"></div>`;
+      }
+    }
+    
+    drawingContent = `<div class="drawing-canvas" style="position:relative;width:100%;height:500px;border:1px solid #ddd;background:#f9f9f9;overflow:hidden;">${elements}</div>`;
   }
   
   const data = {
