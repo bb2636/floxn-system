@@ -29,8 +29,8 @@
     
     .page {
       width: 100%;
-      max-width: 210mm;
-      min-height: 277mm;
+      max-width: 190mm;
+      height: 277mm;
       margin: 0 auto;
       page-break-after: always;
       display: flex;
@@ -64,19 +64,35 @@
       background-color: #e0e0e0;
       border: 1px solid #999;
       border-top: none;
-      padding: 3mm 5mm;
+      padding: 2mm 5mm;
       font-weight: bold;
-      font-size: 11pt;
+      font-size: 10pt;
       flex-shrink: 0;
     }
     
-    .subcategory-header {
+    .images-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3mm;
+      padding: 3mm;
+    }
+    
+    .image-block {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #ddd;
+      background-color: #fafafa;
+      max-height: 125mm;
+    }
+    
+    .image-block-header {
       background-color: #f5f5f5;
-      border: 1px solid #ccc;
-      border-top: none;
-      padding: 2mm 5mm;
-      font-size: 10pt;
+      padding: 1.5mm 4mm;
+      font-size: 9pt;
       color: #555;
+      border-bottom: 1px solid #ddd;
       flex-shrink: 0;
     }
     
@@ -85,27 +101,22 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 5mm;
-      border: 1px solid #ddd;
-      border-top: none;
-      background-color: #fafafa;
-      min-height: 220mm;
+      padding: 3mm;
       overflow: hidden;
     }
     
     .evidence-image {
       max-width: 100%;
-      max-height: 100%;
+      max-height: 100mm;
       width: auto;
       height: auto;
       object-fit: contain;
     }
     
     .image-info {
-      background-color: #f5f5f5;
-      border: 1px solid #ddd;
-      border-top: none;
-      padding: 2mm 5mm;
+      background-color: #f0f0f0;
+      border-top: 1px solid #ddd;
+      padding: 1.5mm 4mm;
       display: flex;
       justify-content: space-between;
       font-size: 8pt;
@@ -127,43 +138,10 @@
       color: #999;
       font-size: 12pt;
     }
-    
-    .category-section {
-      page-break-before: always;
-    }
-    
-    .category-section:first-child {
-      page-break-before: avoid;
-    }
   </style>
 </head>
 <body>
-  {{#each categories}}
-  <div class="category-section">
-    {{#each this.subcategories}}
-    {{#each this.images}}
-    <div class="page">
-      <div class="header-bar">
-        <div class="header-title">증빙자료</div>
-        <div class="header-info">접수번호: {{../../../caseNumber}}</div>
-      </div>
-      
-      <div class="category-header">{{../../categoryName}}</div>
-      <div class="subcategory-header">{{../subcategoryName}}</div>
-      
-      <div class="image-container">
-        <img src="{{this.imageUrl}}" alt="{{this.fileName}}" class="evidence-image" />
-      </div>
-      
-      <div class="image-info">
-        <span class="image-name">{{this.fileName}}</span>
-        <span class="image-date">{{this.uploadDate}}</span>
-      </div>
-    </div>
-    {{/each}}
-    {{/each}}
-  </div>
-  {{/each}}
+  {{imagesHtml}}
   
   {{#unless hasImages}}
   <div class="page">

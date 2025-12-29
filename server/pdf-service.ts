@@ -215,7 +215,8 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
     categoryGroups[tab].push(doc);
   }
   
-  let pagesHtml = '';
+  // Collect all image documents
+  const allImages: { doc: any; tab: string }[] = [];
   const tabOrder = ['현장사진', '기본자료', '증빙자료', '청구자료', '기타'];
   
   for (const tab of tabOrder) {
@@ -224,51 +225,92 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
     
     for (const doc of docs) {
       const isImage = doc.fileType?.startsWith('image/');
-      const isPdf = doc.fileType === 'application/pdf';
-      
       if (isImage) {
-        const uploadDate = doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('ko-KR') : '';
-        
-        let imageDataUri = doc.fileData || '';
-        if (imageDataUri && !imageDataUri.startsWith('data:')) {
-          imageDataUri = `data:${doc.fileType || 'image/jpeg'};base64,${imageDataUri}`;
-        }
-        
-        pagesHtml += `
-          <div class="page">
-            <div class="category-header">${tab}</div>
-            <div class="subcategory">${doc.category}</div>
-            <div class="image-container">
-              <img src="${imageDataUri}" alt="${doc.fileName}" onerror="this.style.display='none'"/>
-            </div>
-            <div class="image-info">
-              <span class="filename">${doc.fileName}</span>
-              <span class="upload-date">업로드: ${uploadDate}</span>
-            </div>
-          </div>
-        `;
+        allImages.push({ doc, tab });
       }
     }
+  }
+  
+  let pagesHtml = '';
+  
+  // Generate pages with 2 images each
+  for (let i = 0; i < allImages.length; i += 2) {
+    const firstImage = allImages[i];
+    const secondImage = allImages[i + 1];
+    
+    let imagesBlockHtml = '';
+    
+    // First image block
+    const firstUploadDate = firstImage.doc.createdAt ? new Date(firstImage.doc.createdAt).toLocaleDateString('ko-KR') : '';
+    let firstImageDataUri = firstImage.doc.fileData || '';
+    if (firstImageDataUri && !firstImageDataUri.startsWith('data:')) {
+      firstImageDataUri = `data:${firstImage.doc.fileType || 'image/jpeg'};base64,${firstImageDataUri}`;
+    }
+    
+    imagesBlockHtml += `
+      <div class="image-block">
+        <div class="image-block-header">${firstImage.tab} - ${firstImage.doc.category}</div>
+        <div class="image-container">
+          <img src="${firstImageDataUri}" alt="${firstImage.doc.fileName}" class="evidence-image" onerror="this.style.display='none'"/>
+        </div>
+        <div class="image-info">
+          <span class="image-name">${firstImage.doc.fileName}</span>
+          <span class="image-date">업로드: ${firstUploadDate}</span>
+        </div>
+      </div>
+    `;
+    
+    // Second image block (if exists)
+    if (secondImage) {
+      const secondUploadDate = secondImage.doc.createdAt ? new Date(secondImage.doc.createdAt).toLocaleDateString('ko-KR') : '';
+      let secondImageDataUri = secondImage.doc.fileData || '';
+      if (secondImageDataUri && !secondImageDataUri.startsWith('data:')) {
+        secondImageDataUri = `data:${secondImage.doc.fileType || 'image/jpeg'};base64,${secondImageDataUri}`;
+      }
+      
+      imagesBlockHtml += `
+        <div class="image-block">
+          <div class="image-block-header">${secondImage.tab} - ${secondImage.doc.category}</div>
+          <div class="image-container">
+            <img src="${secondImageDataUri}" alt="${secondImage.doc.fileName}" class="evidence-image" onerror="this.style.display='none'"/>
+          </div>
+          <div class="image-info">
+            <span class="image-name">${secondImage.doc.fileName}</span>
+            <span class="image-date">업로드: ${secondUploadDate}</span>
+          </div>
+        </div>
+      `;
+    }
+    
+    pagesHtml += `
+      <div class="page">
+        <div class="header-bar">
+          <div class="header-title">증빙자료</div>
+          <div class="header-info">접수번호: ${caseData.caseNumber || ''}</div>
+        </div>
+        <div class="images-wrapper">
+          ${imagesBlockHtml}
+        </div>
+      </div>
+    `;
   }
   
   if (!pagesHtml) {
     pagesHtml = `
       <div class="page">
-        <div class="category-header">증빙자료</div>
-        <div class="no-content">선택된 이미지 파일이 없습니다.</div>
+        <div class="header-bar">
+          <div class="header-title">증빙자료</div>
+          <div class="header-info">접수번호: ${caseData.caseNumber || ''}</div>
+        </div>
+        <div class="no-images">선택된 이미지 파일이 없습니다.</div>
       </div>
     `;
   }
   
-  template = template.replace('{{#each categories}}', '');
-  template = template.replace('{{/each}}', '');
-  
-  const pageContainerRegex = /(<div class="pages">)([\s\S]*?)(<\/div>\s*<\/body>)/i;
-  if (pageContainerRegex.test(template)) {
-    template = template.replace(pageContainerRegex, `$1${pagesHtml}$3`);
-  } else {
-    template = template.replace('</body>', `<div class="pages">${pagesHtml}</div></body>`);
-  }
+  template = template.replace('{{imagesHtml}}', pagesHtml);
+  template = template.replace('{{#unless hasImages}}', allImages.length === 0 ? '' : '<!--');
+  template = template.replace('{{/unless}}', allImages.length === 0 ? '' : '-->');
+  template = template.replace('{{caseNumber}}', caseData.caseNumber || '');
   
   return template;
 }
