@@ -1514,7 +1514,7 @@ export default function SettlementsInquiry() {
                       textAlign: "center",
                     }}
                   >
-                    {row.manager}
+                    {row.managerId ? (usersByIdMap.get(row.managerId)?.name || "-") : "-"}
                   </td>
                   <td
                     style={{
