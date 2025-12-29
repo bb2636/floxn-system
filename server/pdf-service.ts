@@ -572,8 +572,11 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
   }
   
   const subtotal = laborTotal + materialTotal;
-  const vat = Math.round(subtotal * 0.1);
-  const grandTotal = subtotal + vat;
+  const managementFee = Math.round(subtotal * 0.06); // 일반관리비 6%
+  const profit = Math.round(subtotal * 0.15); // 이윤 15%
+  const vatBase = subtotal + managementFee + profit;
+  const vat = Math.round(vatBase * 0.1); // 부가세 10%
+  const grandTotal = vatBase + vat;
   
   const data = {
     caseNumber: caseData.caseNumber || '',
@@ -588,6 +591,8 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     laborTotal: formatNumber(laborTotal),
     materialTotal: formatNumber(materialTotal),
     subtotal: formatNumber(subtotal),
+    managementFee: formatNumber(managementFee),
+    profit: formatNumber(profit),
     vat: formatNumber(vat),
     grandTotal: formatNumber(grandTotal),
     estimateAmount: formatNumber(Number(caseData.estimateAmount) || grandTotal),
