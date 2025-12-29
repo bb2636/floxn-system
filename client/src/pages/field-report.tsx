@@ -870,21 +870,21 @@ export default function FieldReport() {
             </>
           )}
           
-          {/* 심사 버튼: 항상 표시, 상태에 따라 텍스트/스타일 변경 */}
+          {/* 심사 버튼: 항상 표시, reviewDecision에 따라 텍스트/스타일 변경 */}
           {!isUserLoading && isAdmin && caseData.fieldSurveyStatus === "submitted" && (
             <Button
               data-testid="button-review"
               onClick={() => {
-                // 심사 가능 상태일 때만 다이얼로그 열기
-                if (caseData.status === "검토중" || caseData.status === "제출" || caseData.status === "반려") {
+                // 심사 안됐거나 반려된 경우만 다이얼로그 열기
+                if (!caseData.reviewDecision || caseData.reviewDecision === "비승인") {
                   setShowReviewDialog(true);
                 }
               }}
-              disabled={reviewMutation.isPending || (caseData.status !== "검토중" && caseData.status !== "제출" && caseData.status !== "반려")}
+              disabled={reviewMutation.isPending || (caseData.reviewDecision === "승인")}
               className={
-                caseData.status === "1차승인" || caseData.status === "승인완료"
+                caseData.reviewDecision === "승인"
                   ? "bg-blue-100 text-blue-700 hover:bg-blue-100 cursor-default"
-                  : caseData.status === "반려"
+                  : caseData.reviewDecision === "비승인"
                   ? "bg-red-100 text-red-700 hover:bg-red-200"
                   : ""
               }
@@ -896,27 +896,27 @@ export default function FieldReport() {
             >
               {reviewMutation.isPending 
                 ? "심사 중..." 
-                : caseData.status === "1차승인" || caseData.status === "승인완료"
+                : caseData.reviewDecision === "승인"
                 ? "심사완료"
-                : caseData.status === "반려"
+                : caseData.reviewDecision === "비승인"
                 ? "심사반려"
                 : "심사"}
             </Button>
           )}
           
-          {/* 승인 버튼: 항상 표시, 상태에 따라 텍스트/스타일 변경 */}
+          {/* 승인 버튼: 항상 표시, reportApprovalDecision에 따라 텍스트/스타일 변경 */}
           {!isUserLoading && canApproveReport && caseData.fieldSurveyStatus === "submitted" && (
             <Button
               data-testid="button-approve-report"
               onClick={() => {
-                // 승인 가능 상태일 때만 다이얼로그 열기
-                if (caseData.status === "1차승인") {
+                // 승인 가능 상태일 때만 다이얼로그 열기 (1차승인 상태 + 아직 보고서 승인 안됨)
+                if (caseData.status === "1차승인" && !caseData.reportApprovalDecision) {
                   setShowApprovalDialog(true);
                 }
               }}
-              disabled={approvalMutation.isPending || caseData.status !== "1차승인"}
+              disabled={approvalMutation.isPending || caseData.status !== "1차승인" || !!caseData.reportApprovalDecision}
               className={
-                caseData.status === "승인완료" && caseData.reportApprovalDecision === "승인"
+                caseData.reportApprovalDecision === "승인"
                   ? "bg-green-100 text-green-700 hover:bg-green-100 cursor-default"
                   : caseData.reportApprovalDecision === "비승인"
                   ? "bg-red-100 text-red-700 hover:bg-red-100 cursor-default"
@@ -932,7 +932,7 @@ export default function FieldReport() {
             >
               {approvalMutation.isPending 
                 ? "승인 중..." 
-                : caseData.status === "승인완료" && caseData.reportApprovalDecision === "승인"
+                : caseData.reportApprovalDecision === "승인"
                 ? "승인완료"
                 : caseData.reportApprovalDecision === "비승인"
                 ? "승인반려"
