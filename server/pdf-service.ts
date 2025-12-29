@@ -158,8 +158,16 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
   
   let drawingContent = '<div class="no-image">도면 이미지가 없습니다.</div>';
   
+  console.log('[PDF Drawing] drawingData exists:', !!drawingData);
+  console.log('[PDF Drawing] uploadedImages:', drawingData?.uploadedImages?.length || 0);
+  console.log('[PDF Drawing] rectangles:', drawingData?.rectangles?.length || 0);
+  console.log('[PDF Drawing] accidentAreas:', drawingData?.accidentAreas?.length || 0);
+  console.log('[PDF Drawing] leakMarkers:', drawingData?.leakMarkers?.length || 0);
+  
   if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
     let imageUrl = drawingData.uploadedImages[0].src || '';
+    console.log('[PDF Drawing] First image src length:', imageUrl?.length || 0);
+    console.log('[PDF Drawing] First image src starts with data:', imageUrl?.startsWith('data:'));
     if (imageUrl && !imageUrl.startsWith('data:')) {
       imageUrl = `data:image/png;base64,${imageUrl}`;
     }
