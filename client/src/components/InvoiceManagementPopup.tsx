@@ -81,6 +81,12 @@ function getCaseSuffix(caseNumber: string | null | undefined): number {
   return isNaN(suffix) ? -1 : suffix;
 }
 
+function getCaseNumberPrefix(caseNumber: string | null | undefined): string {
+  if (!caseNumber) return "";
+  const parts = caseNumber.split("-");
+  return parts[0] || caseNumber;
+}
+
 export function InvoiceManagementPopup({ 
   open, 
   onOpenChange, 
@@ -211,23 +217,32 @@ export function InvoiceManagementPopup({
     setShowDepositForm(false);
   };
 
-  // 저장완료 - 입금내역 저장 (모든 관리자 가능)
+  // 저장완료 - 입금내역 및 자기부담금 저장 (모든 관리자 가능)
   const handleSaveComplete = async () => {
     if (!caseData) return;
     
     setIsSubmitting(true);
     try {
-      // 정산 정보 저장
-      await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
-        // 정산 관련 필드들을 저장할 수 있도록 추후 스키마 확장 필요
-        // 현재는 기존 필드만 저장
-      });
+      const caseGroupPrefix = getCaseNumberPrefix(caseData.caseNumber);
+      
+      // 인보이스에 자기부담금 저장
+      if (caseGroupPrefix) {
+        const existingInvoice = await fetch(`/api/invoices/group/${encodeURIComponent(caseGroupPrefix)}`);
+        const existingInvoiceData = await existingInvoice.json();
+        
+        if (existingInvoiceData && existingInvoiceData.id) {
+          await apiRequest("PATCH", `/api/invoices/${existingInvoiceData.id}`, {
+            deductible: deductibleAmount || "0",
+          });
+        }
+      }
       
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       
       toast({
         title: "저장 완료",
-        description: "입금내역이 저장되었습니다.",
+        description: "자기부담금이 저장되었습니다.",
       });
       
       onOpenChange(false);
@@ -408,12 +423,6 @@ export function InvoiceManagementPopup({
       }
     }
   }, [open, caseData, displayEstimates]);
-
-  const getCaseNumberPrefix = (caseNumber: string | null | undefined): string => {
-    if (!caseNumber) return "";
-    const parts = caseNumber.split("-");
-    return parts[0] || caseNumber;
-  };
 
   const handleApprove = async () => {
     if (!caseData) return;
