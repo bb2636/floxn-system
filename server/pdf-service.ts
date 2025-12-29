@@ -683,7 +683,10 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
         );
       
       const imageDocs = selectedDocs.filter(doc => doc.fileType?.startsWith('image/'));
-      const pdfDocs = selectedDocs.filter(doc => doc.fileType === 'application/pdf');
+      const pdfDocs = selectedDocs.filter(doc => doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf'));
+      
+      console.log(`[PDF 생성] 선택된 문서 수: ${selectedDocs.length}, 이미지: ${imageDocs.length}, PDF: ${pdfDocs.length}`);
+      console.log('[PDF 생성] PDF 문서 목록:', pdfDocs.map(d => ({ id: d.id, name: d.fileName, type: d.fileType })));
       
       if (imageDocs.length > 0) {
         const evidenceHtml = await generateEvidencePages(caseData, imageDocs);
