@@ -405,14 +405,29 @@ export default function FieldDocuments() {
   // 현재 탭의 서브카테고리 옵션
   const currentSubCategories = getSubCategoryOptions(selectedCategory, isSubmitted, isClaimDocumentEnabled);
 
+  // 현재 선택된 서브필터 값 가져오기
+  const getCurrentSubFilter = (): string => {
+    switch (selectedCategory) {
+      case "사진":
+        return photoSubFilter === "전체" ? "현장출동사진" : photoSubFilter;
+      case "기본자료":
+        return basicDataSubFilter === "전체" ? "보험금 청구서" : basicDataSubFilter;
+      case "증빙자료":
+        return evidenceSubFilter === "전체" ? "주민등록등본" : evidenceSubFilter;
+      case "청구자료":
+        return claimDataSubFilter === "전체" ? "위임장" : claimDataSubFilter;
+      case "전체":
+      default:
+        return "현장출동사진";
+    }
+  };
+
   // 파일 선택 핸들러
   const handleFileSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    // 현재 탭의 첫 번째 서브카테고리를 기본값으로 사용
-    const defaultSubCategory = currentSubCategories.length > 0 
-      ? currentSubCategories[0] 
-      : "현장출동사진";
+    // 현재 선택된 서브필터를 카테고리로 사용 (전체일 경우 해당 탭의 첫 번째 옵션)
+    const defaultSubCategory = getCurrentSubFilter();
 
     const newFiles: UploadingFile[] = Array.from(files).map(file => ({
       id: `${Date.now()}-${Math.random()}`,
@@ -524,8 +539,8 @@ export default function FieldDocuments() {
     return "사진"; // 기본값
   };
 
-  // 현재 탭에 해당하는 서브필터 값 가져오기
-  const getCurrentSubFilter = (): string => {
+  // 현재 서브필터 원본 값 가져오기 (필터링용 - "전체" 포함)
+  const getCurrentSubFilterRaw = (): string => {
     switch (selectedCategory) {
       case "사진":
         return photoSubFilter;
@@ -549,8 +564,8 @@ export default function FieldDocuments() {
     // 먼저 탭별 필터링
     const tabFilteredDocs = documents.filter(d => getParentTab(d.category) === selectedCategory);
     
-    // 서브 필터 적용
-    const currentSubFilter = getCurrentSubFilter();
+    // 서브 필터 적용 (원본 값 사용)
+    const currentSubFilter = getCurrentSubFilterRaw();
     if (currentSubFilter === "전체") {
       return tabFilteredDocs;
     }
