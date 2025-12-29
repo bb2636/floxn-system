@@ -2441,6 +2441,7 @@ export default function ComprehensiveProgress() {
             setIsReceptionEditMode(false); // 닫을 때 수정 모드 리셋
           }
         }}
+        modal={false}
       >
         <DialogContent 
           style={{
@@ -2453,6 +2454,8 @@ export default function ComprehensiveProgress() {
             border: "none",
             borderRadius: "16px",
           }}
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
           data-testid="dialog-reception-detail"
         >
           {/* 수정 버튼 - 다이얼로그 상단 우측 */}
