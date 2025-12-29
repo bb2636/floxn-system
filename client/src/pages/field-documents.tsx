@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Case, CaseDocument } from "@shared/schema";
-import { Upload, X, Check, Download, Search, Info } from "lucide-react";
+import { Upload, X, Check, Search, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -1474,7 +1474,8 @@ export default function FieldDocuments() {
             업로드된 파일이 없습니다
           </div>
         </div>
-      ) : selectedCategory === "사진" ? (
+      ) : (
+        /* 모든 탭에서 동일한 그리드 형식으로 사진/파일 표시 (사진 탭과 동일한 스타일) */
         <div className="grid grid-cols-4 gap-3">
           {filteredDocuments.map((doc, index) => {
             const isImage = doc.fileType.startsWith('image/');
@@ -1516,7 +1517,7 @@ export default function FieldDocuments() {
                         color: "white",
                       }}
                     >
-                      사진{index + 1}
+                      {isImage ? `사진${index + 1}` : doc.fileName.substring(0, 15)}
                     </span>
                   </div>
 
@@ -1588,156 +1589,6 @@ export default function FieldDocuments() {
                     })}
                   </SelectContent>
                 </Select>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {filteredDocuments.map((doc) => {
-            const isImage = doc.fileType.startsWith('image/');
-            return (
-              <div
-                key={doc.id}
-                className="relative p-4 rounded-xl flex items-start gap-4"
-                style={{
-                  background: "white",
-                  border: "1px solid rgba(12, 12, 12, 0.08)",
-                }}
-              >
-                {/* 썸네일 */}
-                <div
-                  className="flex-shrink-0 rounded-lg overflow-hidden"
-                  style={{
-                    width: "64px",
-                    height: "64px",
-                    background: "rgba(12, 12, 12, 0.04)",
-                  }}
-                >
-                  {isImage ? (
-                    <img
-                      src={`data:${doc.fileType};base64,${doc.fileData}`}
-                      alt={doc.fileName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Upload className="w-6 h-6" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
-                    </div>
-                  )}
-                </div>
-
-                {/* 파일 정보 */}
-                <div className="flex-1 min-w-0">
-                  <button
-                    type="button"
-                    onClick={() => downloadFile(doc.fileName, doc.fileType, doc.fileData)}
-                    className="truncate mb-1 text-left w-full hover:underline"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      letterSpacing: "-0.02em",
-                      color: "#0C0C0C",
-                    }}
-                    data-testid={`button-download-${doc.id}`}
-                  >
-                    {doc.fileName}
-                  </button>
-                  <div
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "12px",
-                      fontWeight: 400,
-                      letterSpacing: "-0.02em",
-                      color: "rgba(12, 12, 12, 0.5)",
-                      marginBottom: "8px",
-                    }}
-                  >
-                    {formatFileSize(doc.fileSize)}
-                  </div>
-
-                  {/* Category dropdown - 서브카테고리 옵션 표시 */}
-                  <Select
-                    value={doc.category}
-                    onValueChange={(value) => handleCategoryChange(doc.id, value)}
-                    disabled={isCategoryReadOnly}
-                  >
-                    <SelectTrigger
-                      className="w-40 h-8"
-                      style={{
-                        fontFamily: "Pretendard",
-                        fontSize: "12px",
-                        fontWeight: 400,
-                        opacity: isCategoryReadOnly ? 0.5 : 1,
-                        cursor: isCategoryReadOnly ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent
-                      style={{
-                        filter: "drop-shadow(12px 12px 50px #C7D5E1)",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      {currentSubCategories.map((subCategory) => {
-                        const isSelected = doc.category === subCategory;
-                        return (
-                          <SelectItem 
-                            key={subCategory} 
-                            value={subCategory}
-                            className="flex items-center justify-between"
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "16px",
-                              fontWeight: isSelected ? 600 : 500,
-                              letterSpacing: "-0.02em",
-                              color: isSelected ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.4)",
-                              background: isSelected 
-                                ? "linear-gradient(0deg, rgba(0, 143, 237, 0.07), rgba(0, 143, 237, 0.07)), #FDFDFD"
-                                : "#FFFFFF",
-                              paddingTop: "12px",
-                              paddingBottom: "12px",
-                              paddingRight: "12px",
-                              paddingLeft: "32px",
-                            }}
-                          >
-                            {subCategory}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* 다운로드 및 삭제 버튼 */}
-                <div className="absolute top-2 right-2 flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => downloadFile(doc.fileName, doc.fileType, doc.fileData)}
-                    className="p-1.5 rounded-lg hover-elevate active-elevate-2"
-                    style={{
-                      background: "rgba(255, 255, 255, 0.9)",
-                      border: "1px solid rgba(12, 12, 12, 0.1)",
-                    }}
-                    data-testid={`button-download-icon-${doc.id}`}
-                  >
-                    <Download className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.5)" }} />
-                  </button>
-                  <button
-                      type="button"
-                      onClick={() => handleFileRemove(doc.id)}
-                      className="p-1.5 rounded-lg hover-elevate active-elevate-2"
-                      style={{
-                        background: "rgba(255, 255, 255, 0.9)",
-                        border: "1px solid rgba(12, 12, 12, 0.1)",
-                      }}
-                      data-testid={`button-delete-${doc.id}`}
-                    >
-                      <X className="w-4 h-4" style={{ color: "rgba(12, 12, 12, 0.5)" }} />
-                    </button>
-                </div>
               </div>
             );
           })}
