@@ -133,7 +133,7 @@ async function generateFieldReportPage(caseData: any, partnerData: any, repairIt
     accidentCategory: caseData.accidentCategory || '-',
     accidentCause: caseData.accidentCause || '-',
     siteNotes: caseData.siteNotes || caseData.specialNotes || '특이사항 없음',
-    vocContent: caseData.vocContent || caseData.additionalNotes || '-',
+    vocContent: caseData.specialRequests || caseData.vocContent || caseData.additionalNotes || '-',
     victimName: caseData.victimName || '-',
     victimContact: caseData.victimContact || '-',
     victimAddress: victimFullAddress || insuredFullAddress || '-',
