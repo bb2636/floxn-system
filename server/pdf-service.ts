@@ -275,7 +275,7 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
     categoryGroups[tab].push(doc);
   }
   
-  // Collect all image documents
+  // Collect all image documents with valid data
   const allImages: { doc: any; tab: string }[] = [];
   const tabOrder = ['현장사진', '기본자료', '증빙자료', '청구자료', '기타'];
   
@@ -285,10 +285,22 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
     
     for (const doc of docs) {
       const isImage = doc.fileType?.startsWith('image/');
-      if (isImage) {
+      // Only include images that have valid file data
+      const hasValidData = doc.fileData && doc.fileData.length > 100;
+      if (isImage && hasValidData) {
         allImages.push({ doc, tab });
+      } else if (isImage && !hasValidData) {
+        console.log(`[PDF 증빙자료] 이미지 데이터 없음 - 건너뜀: ${doc.fileName}`);
       }
     }
+  }
+  
+  console.log(`[PDF 증빙자료] 유효한 이미지 수: ${allImages.length}`);
+  
+  // If no valid images, return empty string immediately
+  if (allImages.length === 0) {
+    console.log('[PDF 증빙자료] 유효한 이미지 없음 - 빈 페이지 생성하지 않음');
+    return '';
   }
   
   let pagesHtml = '';
@@ -355,11 +367,8 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
     `;
   }
   
-  // If no images, return empty string - no page should be generated
-  if (!pagesHtml || allImages.length === 0) {
-    console.log('[PDF 증빙자료] 이미지 없음 - 빈 페이지 생성하지 않음');
-    return '';
-  }
+  // Note: Already checked allImages.length at start, so pagesHtml should have content
+  console.log(`[PDF 증빙자료] 생성된 페이지 수: ${Math.ceil(allImages.length / 2)}`);
   
   template = template.replace('{{imagesHtml}}', pagesHtml);
   template = template.replace('{{#unless hasImages}}', '<!--');
@@ -808,7 +817,18 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
         // Only add to PDF if there's actual content
         if (evidenceHtml && evidenceHtml.trim().length > 0) {
           const page = await browser.newPage();
-          await page.setContent(evidenceHtml, { waitUntil: 'networkidle0' });
+          await page.setContent(evidenceHtml, { waitUntil: 'networkidle0', timeout: 60000 });
+          // Wait for all images to load
+          await page.evaluate(() => {
+            return Promise.all(
+              Array.from(document.images)
+                .filter(img => !img.complete)
+                .map(img => new Promise((resolve, reject) => {
+                  img.onload = resolve;
+                  img.onerror = resolve; // Continue even if image fails
+                }))
+            );
+          });
           const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
