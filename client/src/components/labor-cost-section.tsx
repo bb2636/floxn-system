@@ -406,13 +406,32 @@ export function LaborCostSection({
     // 걸레받이 -> 목공사 변환하여 조회
     const lookupWorkName = mapWorkNameForLookup(workName);
     
-    // 일위대가인 경우: ilwidaegaCatalog에서 노임항목 조회
-    if (detailWork === '일위대가' && ilwidaegaCatalog.length > 0) {
-      const ilwidaegaFiltered = ilwidaegaCatalog.filter(item => 
-        item.공종 === category && 
-        item.공사명 === lookupWorkName
-      );
-      const unique = new Set(ilwidaegaFiltered.map(item => item.노임항목).filter(Boolean));
+    // 일위대가인 경우: ilwidaegaCatalog에서 먼저 조회하고, 없으면 노무비 DB에서 조회
+    if (detailWork === '일위대가') {
+      const unique = new Set<string>();
+      
+      // 1. 일위대가 DB에서 노임항목 조회
+      if (ilwidaegaCatalog.length > 0) {
+        const ilwidaegaFiltered = ilwidaegaCatalog.filter(item => 
+          item.공종 === category && 
+          item.공사명 === lookupWorkName
+        );
+        ilwidaegaFiltered.forEach(item => {
+          if (item.노임항목) unique.add(item.노임항목);
+        });
+      }
+      
+      // 2. 노무비 DB에서도 노임항목 조회 (수동 추가 행을 위한 폴백)
+      if (catalog.length > 0) {
+        const laborFiltered = catalog.filter(item => 
+          item.공종 === category && 
+          item.세부공사 === '노무비'
+        );
+        laborFiltered.forEach(item => {
+          if (item.세부항목) unique.add(item.세부항목);
+        });
+      }
+      
       return Array.from(unique);
     }
     
@@ -778,9 +797,25 @@ export function LaborCostSection({
               console.log('[일위대가 detailItem 선택]', updated.category, lookupWorkName, value, 
                 'D:', ilwidaegaItem.기준작업량, 'E:', ilwidaegaItem.노임단가);
             } else {
-              updated.standardPrice = 0;
-              updated.standardWorkQuantity = 0;
-              console.log('[일위대가 항목 못찾음]', updated.category, lookupWorkName, value);
+              // 일위대가DB에 없으면 노무비DB에서 조회 (수동 추가 행의 폴백)
+              const laborCatalogItem = catalog.find(item =>
+                item.공종 === updated.category &&
+                item.세부항목 === value
+              );
+              if (laborCatalogItem) {
+                updated.unit = '인';
+                updated.standardPrice = laborCatalogItem.단가_인 || 0;
+                updated.standardWorkQuantity = 0; // 노무비DB는 기준작업량 없음
+                updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+                // pricePerSqm에 단가_인 설정 (수량 기반 계산용)
+                updated.pricePerSqm = laborCatalogItem.단가_인 || 0;
+                console.log('[노무비DB 폴백 detailItem 선택]', updated.category, value, 
+                  '단가_인:', laborCatalogItem.단가_인);
+              } else {
+                updated.standardPrice = 0;
+                updated.standardWorkQuantity = 0;
+                console.log('[일위대가+노무비 항목 못찾음]', updated.category, lookupWorkName, value);
+              }
             }
           } else {
             // 노무비인 경우: 기존 노무비 catalog에서 가져오기
@@ -876,6 +911,10 @@ export function LaborCostSection({
             
             updated.pricePerSqm = appliedUnitPrice;
             updated.amount = I;
+          } else if (D === 0 && E > 0) {
+            // 노무비DB 폴백 케이스: D가 없으면 단순 계산 (단가 × 수량)
+            updated.amount = Math.round(E * quantity);
+            // pricePerSqm은 이미 설정되어 있음 (단가_인)
           } else {
             updated.pricePerSqm = 0;
             updated.amount = 0;
