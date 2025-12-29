@@ -82,10 +82,16 @@ async function generateFieldReportPage(caseData: any, partnerData: any, repairIt
   const templatePath = path.join(TEMPLATES_DIR, 'field-report.html');
   let template = fs.readFileSync(templatePath, 'utf-8');
   
-  const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
+  const insuredFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
     .filter(Boolean).join(' ');
   
-  const dispatchDateTime = [caseData.visitDate, caseData.visitTime]
+  const victimFullAddress = [caseData.victimAddress, caseData.victimAddressDetail]
+    .filter(Boolean).join(' ');
+  
+  const visitDateTime = [caseData.visitDate, caseData.visitTime]
+    .filter(Boolean).join(' ');
+  
+  const accidentDateTime = [caseData.accidentDate, caseData.accidentTime]
     .filter(Boolean).join(' ');
   
   let processingTypesStr = '';
@@ -94,7 +100,7 @@ async function generateFieldReportPage(caseData: any, partnerData: any, repairIt
       const types = JSON.parse(caseData.processingTypes);
       processingTypesStr = Array.isArray(types) ? types.join(', ') : '';
     } catch {
-      processingTypesStr = '';
+      processingTypesStr = caseData.processingTypes || '';
     }
   }
 
@@ -118,35 +124,27 @@ async function generateFieldReportPage(caseData: any, partnerData: any, repairIt
   }
   
   const data = {
-    caseNumber: caseData.caseNumber || '',
-    insuranceAccidentNo: caseData.insuranceAccidentNo || '',
-    insuranceCompany: caseData.insuranceCompany || '',
-    dispatchDateTime: dispatchDateTime,
-    travelDistance: caseData.travelDistance || '',
-    partnerCompany: caseData.assignedPartner || '',
-    investigatorName: partnerData?.name || '',
-    investigatorContact: partnerData?.phone || '',
-    victimName: caseData.victimName || '',
-    victimContact: caseData.victimContact || '',
-    address: fullAddress,
-    accidentDate: caseData.accidentDate || '',
-    accidentTime: caseData.accidentTime || '',
-    accidentCategory: caseData.accidentCategory || '',
-    accidentCause: caseData.accidentCause || '',
-    accidentDescription: caseData.accidentDescription || '',
-    recoveryMethodType: caseData.recoveryMethodType || '',
-    processingTypes: processingTypesStr,
+    visitDateTime: visitDateTime || '-',
+    dispatchManager: caseData.dispatchManager || partnerData?.name || '-',
+    dispatchLocation: caseData.dispatchLocation || '-',
+    partnerCompany: caseData.assignedPartner || '-',
+    insuredFullAddress: insuredFullAddress || '-',
+    accidentDateTime: accidentDateTime || '-',
+    accidentCategory: caseData.accidentCategory || '-',
+    accidentCause: caseData.accidentCause || '-',
+    siteNotes: caseData.siteNotes || caseData.specialNotes || '특이사항 없음',
+    vocContent: caseData.vocContent || caseData.additionalNotes || '-',
+    victimName: caseData.victimName || '-',
+    victimContact: caseData.victimContact || '-',
+    victimAddress: victimFullAddress || insuredFullAddress || '-',
+    processingTypes: processingTypesStr || '-',
+    recoveryMethodType: caseData.recoveryMethodType || '-',
     repairItemsHtml: repairItemsHtml,
-    additionalNotes: caseData.additionalNotes || '특이사항 없음',
-    specialNotes: caseData.specialNotes || '',
+    documentDate: formatDate(new Date().toISOString()),
+    authorName: partnerData?.name || caseData.dispatchManager || '-',
   };
   
-  template = template.replace('{{#each repairItems}}', '');
-  template = template.replace('{{/each}}', '');
-  template = template.replace(/<tr>\s*<td>\{\{@index\}\}<\/td>[\s\S]*?<\/tr>/g, '');
-  
-  const repairTableRegex = /(<tbody[^>]*>)([\s\S]*?)(<\/tbody>)/i;
-  template = template.replace(repairTableRegex, `$1${repairItemsHtml}$3`);
+  template = template.replace('{{repairItemsHtml}}', repairItemsHtml);
   
   return replaceTemplateVariables(template, data);
 }
@@ -158,9 +156,16 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
   const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
     .filter(Boolean).join(' ');
   
-  let drawingImageUrl = '';
+  let drawingContent = '<div class="no-image">도면 이미지가 없습니다.</div>';
+  
   if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
-    drawingImageUrl = drawingData.uploadedImages[0].src || '';
+    let imageUrl = drawingData.uploadedImages[0].src || '';
+    if (imageUrl && !imageUrl.startsWith('data:')) {
+      imageUrl = `data:image/png;base64,${imageUrl}`;
+    }
+    if (imageUrl) {
+      drawingContent = `<img src="${imageUrl}" alt="현장 피해상황 도면" class="drawing-image" onerror="this.style.display='none'" />`;
+    }
   }
   
   const data = {
@@ -170,7 +175,7 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
     address: fullAddress,
     insuranceAccidentNo: caseData.insuranceAccidentNo || '',
     documentDate: formatDate(new Date().toISOString()),
-    drawingImageUrl: drawingImageUrl,
+    drawingContent: drawingContent,
   };
   
   return replaceTemplateVariables(template, data);

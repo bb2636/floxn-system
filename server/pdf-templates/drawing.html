@@ -167,11 +167,7 @@
     </div>
     
     <div class="drawing-container">
-      {{#if drawingImageUrl}}
-      <img src="{{drawingImageUrl}}" alt="현장 피해상황 도면" class="drawing-image" />
-      {{else}}
-      <div class="no-image">도면 이미지가 없습니다.</div>
-      {{/if}}
+      {{drawingContent}}
     </div>
     
     <div class="footer">

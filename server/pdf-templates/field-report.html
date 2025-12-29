@@ -91,7 +91,7 @@
       border: 1px solid #000;
       border-top: none;
       padding: 4mm;
-      min-height: 25mm;
+      min-height: 15mm;
     }
     
     .content-box p {
@@ -127,17 +127,6 @@
     .damage-table .col-area { width: 22%; }
     .damage-table .col-note { width: 20%; }
     
-    .voc-section {
-      margin-top: 6mm;
-    }
-    
-    .voc-content {
-      border: 1px solid #000;
-      border-top: none;
-      padding: 4mm;
-      min-height: 40mm;
-    }
-    
     .footer-info {
       margin-top: 8mm;
       display: flex;
@@ -160,78 +149,74 @@
     <h1 class="title">출동보고서</h1>
     
     <div class="section">
-      <div class="section-header">출동 기본정보</div>
+      <div class="section-header">현장정보</div>
       <table class="info-table">
         <tbody>
           <tr>
-            <th>접수번호</th>
-            <td class="value-cell">{{caseNumber}}</td>
-            <th>사고접수번호</th>
-            <td class="value-cell">{{insuranceAccidentNo}}</td>
-          </tr>
-          <tr>
-            <th>보험사</th>
-            <td class="value-cell">{{insuranceCompany}}</td>
-            <th>증권번호</th>
-            <td class="value-cell">{{insurancePolicyNo}}</td>
-          </tr>
-          <tr>
-            <th>출동일시</th>
-            <td class="value-cell">{{dispatchDateTime}}</td>
-            <th>출동담당자</th>
+            <th>방문일시</th>
+            <td class="value-cell">{{visitDateTime}}</td>
+            <th>출동 담당자</th>
             <td class="value-cell">{{dispatchManager}}</td>
           </tr>
           <tr>
+            <th>출동 담당지</th>
+            <td class="value-cell">{{dispatchLocation}}</td>
             <th>협력업체</th>
             <td class="value-cell">{{partnerCompany}}</td>
-            <th>이동거리</th>
-            <td class="value-cell">{{travelDistance}}</td>
+          </tr>
+          <tr>
+            <th>피보험자 주소</th>
+            <td class="full-value" colspan="3">{{insuredFullAddress}}</td>
           </tr>
         </tbody>
       </table>
     </div>
     
     <div class="section">
-      <div class="section-header">피해자정보</div>
+      <div class="section-header">사고 원인(+수리항목)</div>
       <table class="info-table">
         <tbody>
           <tr>
-            <th>피보험자명</th>
-            <td class="value-cell">{{insuredName}}</td>
-            <th>연락처</th>
-            <td class="value-cell">{{insuredContact}}</td>
-          </tr>
-          <tr>
-            <th>주소</th>
-            <td class="full-value" colspan="3">{{insuredAddress}}</td>
-          </tr>
-          <tr>
-            <th>피해자명</th>
-            <td class="value-cell">{{victimName}}</td>
-            <th>연락처</th>
-            <td class="value-cell">{{victimContact}}</td>
-          </tr>
-          <tr>
-            <th>피해주소</th>
-            <td class="full-value" colspan="3">{{victimAddress}}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    
-    <div class="section">
-      <div class="section-header">사고정보</div>
-      <table class="info-table">
-        <tbody>
-          <tr>
-            <th>사고일시</th>
+            <th>사고 발생일시</th>
             <td class="value-cell">{{accidentDateTime}}</td>
-            <th>사고유형</th>
+            <th>카테고리</th>
             <td class="value-cell">{{accidentCategory}}</td>
           </tr>
           <tr>
             <th>사고원인</th>
             <td class="full-value" colspan="3">{{accidentCause}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="section">
+      <div class="section-header">현장 특이사항</div>
+      <div class="content-box">
+        {{siteNotes}}
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-header">특이사항 및 요청사항 (VOC)</div>
+      <div class="content-box">
+        {{vocContent}}
+      </div>
+    </div>
+    
+    <div class="section">
+      <div class="section-header">피해 복구방식 및 처리 유형</div>
+      <table class="info-table">
+        <tbody>
+          <tr>
+            <th>피해자명</th>
+            <td class="value-cell">{{victimName}}</td>
+            <th>피해자 연락처</th>
+            <td class="value-cell">{{victimContact}}</td>
+          </tr>
+          <tr>
+            <th>피해주소</th>
+            <td class="full-value" colspan="3">{{victimAddress}}</td>
           </tr>
           <tr>
             <th>처리유형</th>
@@ -254,30 +239,14 @@
             <th class="col-category">장소</th>
             <th class="col-location">위치</th>
             <th class="col-work">공사명</th>
-            <th class="col-area">복구면적(mm)</th>
+            <th class="col-area">복구면적(㎡)</th>
             <th class="col-note">비고</th>
           </tr>
         </thead>
         <tbody>
-          {{#each repairItems}}
-          <tr>
-            <td>{{this.no}}</td>
-            <td>{{this.category}}</td>
-            <td>{{this.location}}</td>
-            <td>{{this.workName}}</td>
-            <td>{{this.repairArea}}</td>
-            <td>{{this.note}}</td>
-          </tr>
-          {{/each}}
+          {{repairItemsHtml}}
         </tbody>
       </table>
-    </div>
-    
-    <div class="section voc-section">
-      <div class="section-header">현장특이사항 (VOC)</div>
-      <div class="voc-content">
-        {{vocContent}}
-      </div>
     </div>
     
     <div class="footer-info">
