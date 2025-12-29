@@ -596,6 +596,7 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     vat: formatNumber(vat),
     grandTotal: formatNumber(grandTotal),
     estimateAmount: formatNumber(Number(caseData.estimateAmount) || grandTotal),
+    partnerCompany: caseData.assignedPartner || '',
   };
   
   const areaTableRegex = /(<tbody id="area-rows">)([\s\S]*?)(<\/tbody>)/i;
@@ -699,7 +700,18 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
         );
       
       const imageDocs = selectedDocs.filter(doc => doc.fileType?.startsWith('image/'));
-      const pdfDocs = selectedDocs.filter(doc => doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf'));
+      // Filter out previously generated reports (현장출동보고서, 견적서 등) to avoid duplicate content
+      const pdfDocs = selectedDocs.filter(doc => {
+        const isPdf = doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf');
+        if (!isPdf) return false;
+        // Exclude previously generated reports that would cause duplicate content
+        const fileName = doc.fileName?.toLowerCase() || '';
+        const isGeneratedReport = fileName.includes('현장출동보고서') || 
+                                  fileName.includes('견적서') || 
+                                  fileName.includes('보고서_') ||
+                                  fileName.includes('report_');
+        return !isGeneratedReport;
+      });
       
       console.log(`[PDF 생성] 선택된 문서 수: ${selectedDocs.length}, 이미지: ${imageDocs.length}, PDF: ${pdfDocs.length}`);
       console.log('[PDF 생성] PDF 문서 목록:', pdfDocs.map(d => ({ id: d.id, name: d.fileName, type: d.fileType })));
