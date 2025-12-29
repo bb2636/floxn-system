@@ -1305,11 +1305,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
     if (!formData.clientResidence) return false;
     if (!formData.clientName) return false;
     
-    // 2. 피보험자 및 피해자 정보
+    // 2. 피보험자 정보 (피해자 정보는 선택사항)
     if (!formData.policyHolderName && !formData.insuredName) return false;
-    if (!formData.victimName) return false;
-    if (!formData.victimContact) return false;
-    // victimAddress는 입력 필드가 없으므로 필수 체크에서 제외
+    // victimName, victimContact, victimAddress는 선택사항이므로 필수 체크에서 제외
     
     // 3. 사고 및 피해 현황
     if (!formData.assignedPartner) return false;
@@ -1384,25 +1382,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       return;
     }
     
-    // Validation: 피해자 성명 필수
-    if (!formData.victimName) {
-      toast({
-        description: "피해자 성명을 입력해주세요.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Validation: 피해자 연락처 필수
-    if (!formData.victimContact) {
-      toast({
-        description: "피해자 연락처를 입력해주세요.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // victimAddress는 입력 필드가 없으므로 검증 제외
+    // 피해자 정보(victimName, victimContact)는 선택사항이므로 검증 제외
     
     // Validation: 협력사 필수
     if (!formData.assignedPartner) {
