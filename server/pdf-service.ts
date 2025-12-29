@@ -467,7 +467,11 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
           ? JSON.parse(estimateData.materialCostData)
           : estimateData.materialCostData;
         if (Array.isArray(materialCostData)) {
-          materialTotal = materialCostData.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+          // MaterialRow uses Korean field names: 합계 or 금액 for amount
+          materialTotal = materialCostData.reduce((sum, item) => {
+            const amount = Number(item.합계) || Number(item.금액) || Number(item.amount) || 0;
+            return sum + amount;
+          }, 0);
         }
       } catch { materialCostData = []; }
     }
