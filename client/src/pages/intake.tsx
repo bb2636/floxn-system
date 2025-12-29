@@ -3632,8 +3632,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
           )}
         </div>
       </main>
-      {/* 협력사 검색 팝업 - Portal로 body에 직접 렌더링 */}
-      {isPartnerSearchOpen && createPortal(
+      {/* 협력사 검색 팝업 - isModal이면 직접 렌더링, 아니면 Portal 사용 */}
+      {isPartnerSearchOpen && ((() => {
+        const modalContent = (
         <div 
           style={{
             position: 'fixed',
@@ -3897,9 +3898,10 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               </div>
             </div>
           </div>
-        </div>,
-        document.body
-      )}
+        </div>
+        );
+        return isModal ? modalContent : createPortal(modalContent, document.body);
+      })())}
 
       {/* 의뢰사 검색 팝업 - Portal로 body에 직접 렌더링 */}
       {isClientSearchOpen && createPortal(
