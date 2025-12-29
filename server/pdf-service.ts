@@ -355,21 +355,15 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
     `;
   }
   
-  if (!pagesHtml) {
-    pagesHtml = `
-      <div class="page">
-        <div class="header-bar">
-          <div class="header-title">증빙자료</div>
-          <div class="header-info">접수번호: ${caseData.caseNumber || ''}</div>
-        </div>
-        <div class="no-images">선택된 이미지 파일이 없습니다.</div>
-      </div>
-    `;
+  // If no images, return empty string - no page should be generated
+  if (!pagesHtml || allImages.length === 0) {
+    console.log('[PDF 증빙자료] 이미지 없음 - 빈 페이지 생성하지 않음');
+    return '';
   }
   
   template = template.replace('{{imagesHtml}}', pagesHtml);
-  template = template.replace('{{#unless hasImages}}', allImages.length === 0 ? '' : '<!--');
-  template = template.replace('{{/unless}}', allImages.length === 0 ? '' : '-->');
+  template = template.replace('{{#unless hasImages}}', '<!--');
+  template = template.replace('{{/unless}}', '-->');
   template = template.replace('{{caseNumber}}', caseData.caseNumber || '');
   
   return template;
@@ -811,15 +805,20 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
       
       if (imageDocs.length > 0) {
         const evidenceHtml = await generateEvidencePages(caseData, imageDocs);
-        const page = await browser.newPage();
-        await page.setContent(evidenceHtml, { waitUntil: 'networkidle0' });
-        const pdfBuffer = await page.pdf({
-          format: 'A4',
-          printBackground: true,
-          margin: { top: '0', right: '0', bottom: '0', left: '0' },
-        });
-        pdfParts.push(Buffer.from(pdfBuffer));
-        await page.close();
+        // Only add to PDF if there's actual content
+        if (evidenceHtml && evidenceHtml.trim().length > 0) {
+          const page = await browser.newPage();
+          await page.setContent(evidenceHtml, { waitUntil: 'networkidle0' });
+          const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: { top: '0', right: '0', bottom: '0', left: '0' },
+          });
+          pdfParts.push(Buffer.from(pdfBuffer));
+          await page.close();
+        } else {
+          console.log('[PDF 생성] 증빙자료 이미지 없음 - 페이지 건너뜀');
+        }
       }
       
       pdfDocumentsToAppend.push(...pdfDocs);
