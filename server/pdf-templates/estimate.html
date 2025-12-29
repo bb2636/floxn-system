@@ -10,7 +10,7 @@
   <style>
     @page {
       size: A4;
-      margin: 12mm 10mm;
+      margin: 10mm 8mm;
     }
     
     * {
@@ -21,8 +21,8 @@
     
     body {
       font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-      font-size: 9pt;
-      line-height: 1.4;
+      font-size: 8pt;
+      line-height: 1.3;
       color: #000;
       background: #fff;
     }
@@ -35,23 +35,24 @@
     
     .title {
       text-align: center;
-      font-size: 20pt;
+      font-size: 18pt;
       font-weight: bold;
-      margin-bottom: 6mm;
-      padding-bottom: 4mm;
+      margin-bottom: 4mm;
+      padding-bottom: 3mm;
       border-bottom: 2px solid #000;
     }
     
     .case-info {
-      margin-bottom: 6mm;
-      padding: 3mm;
+      margin-bottom: 4mm;
+      padding: 2mm;
       background-color: #f9f9f9;
       border: 1px solid #ddd;
+      font-size: 8pt;
     }
     
     .case-info-row {
       display: flex;
-      gap: 10mm;
+      gap: 8mm;
       margin-bottom: 1mm;
     }
     
@@ -70,16 +71,16 @@
     }
     
     .section {
-      margin-bottom: 6mm;
+      margin-bottom: 4mm;
       page-break-inside: avoid;
     }
     
     .section-header {
       background-color: #404040;
       color: #fff;
-      padding: 2mm 4mm;
+      padding: 1.5mm 3mm;
       font-weight: bold;
-      font-size: 10pt;
+      font-size: 9pt;
     }
     
     .data-table {
@@ -90,71 +91,58 @@
     .data-table th,
     .data-table td {
       border: 1px solid #333;
-      padding: 1.5mm 2mm;
+      padding: 1mm 1.5mm;
       vertical-align: middle;
+      font-size: 7pt;
     }
     
     .data-table th {
       background-color: #e8e8e8;
       font-weight: bold;
       text-align: center;
-      font-size: 8pt;
-    }
-    
-    .data-table td {
-      font-size: 8pt;
     }
     
     .data-table .text-center { text-align: center; }
     .data-table .text-right { text-align: right; }
     .data-table .text-left { text-align: left; }
     
-    .data-table .col-no { width: 5%; }
-    .data-table .col-category { width: 10%; }
-    .data-table .col-location { width: 8%; }
-    .data-table .col-work-type { width: 10%; }
-    .data-table .col-work-name { width: 12%; }
-    .data-table .col-damage { width: 18%; }
-    .data-table .col-repair { width: 18%; }
-    .data-table .col-note { width: 19%; }
-    
-    .cost-table {
+    .labor-table {
       width: 100%;
       border-collapse: collapse;
     }
     
-    .cost-table th,
-    .cost-table td {
+    .labor-table th,
+    .labor-table td {
       border: 1px solid #333;
-      padding: 1.5mm 2.5mm;
-      font-size: 8pt;
+      padding: 1mm 1.5mm;
+      font-size: 7pt;
+      vertical-align: middle;
     }
     
-    .cost-table th {
+    .labor-table th {
       background-color: #e8e8e8;
       font-weight: bold;
       text-align: center;
     }
     
-    .cost-table td {
-      text-align: right;
+    .material-table {
+      width: 100%;
+      border-collapse: collapse;
     }
     
-    .cost-table td.text-left {
-      text-align: left;
+    .material-table th,
+    .material-table td {
+      border: 1px solid #333;
+      padding: 1mm 1.5mm;
+      font-size: 7pt;
+      vertical-align: middle;
     }
     
-    .cost-table td.text-center {
+    .material-table th {
+      background-color: #e8e8e8;
+      font-weight: bold;
       text-align: center;
     }
-    
-    .cost-table .col-item { width: 30%; }
-    .cost-table .col-spec { width: 15%; }
-    .cost-table .col-unit { width: 8%; }
-    .cost-table .col-qty { width: 10%; }
-    .cost-table .col-price { width: 12%; }
-    .cost-table .col-amount { width: 15%; }
-    .cost-table .col-note { width: 10%; }
     
     .subtotal-row {
       background-color: #f5f5f5;
@@ -162,12 +150,12 @@
     }
     
     .total-section {
-      margin-top: 8mm;
+      margin-top: 5mm;
       page-break-inside: avoid;
     }
     
     .total-table {
-      width: 50%;
+      width: 45%;
       margin-left: auto;
       border-collapse: collapse;
     }
@@ -175,8 +163,8 @@
     .total-table th,
     .total-table td {
       border: 1px solid #333;
-      padding: 2.5mm 4mm;
-      font-size: 10pt;
+      padding: 2mm 3mm;
+      font-size: 9pt;
     }
     
     .total-table th {
@@ -198,17 +186,17 @@
     }
     
     .grand-total-row td {
-      font-size: 12pt;
+      font-size: 11pt;
       background-color: #fff3cd;
     }
     
     .footer {
-      margin-top: 10mm;
+      margin-top: 6mm;
       display: flex;
       justify-content: space-between;
-      font-size: 8pt;
+      font-size: 7pt;
       color: #666;
-      padding-top: 3mm;
+      padding-top: 2mm;
       border-top: 1px solid #ddd;
     }
     
@@ -253,14 +241,14 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th class="col-no">No.</th>
-            <th class="col-category">장소</th>
-            <th class="col-location">위치</th>
-            <th class="col-work-type">공종</th>
-            <th class="col-work-name">공사명</th>
-            <th class="col-damage">피해면적 (가로×세로=면적)</th>
-            <th class="col-repair">복구면적 (가로×세로=면적)</th>
-            <th class="col-note">비고</th>
+            <th style="width:4%">No.</th>
+            <th style="width:10%">장소</th>
+            <th style="width:8%">위치</th>
+            <th style="width:10%">공종</th>
+            <th style="width:12%">공사명</th>
+            <th style="width:20%">피해면적 (가로×세로=면적)</th>
+            <th style="width:20%">복구면적 (가로×세로=면적)</th>
+            <th style="width:16%">비고</th>
           </tr>
         </thead>
         <tbody id="area-rows">
@@ -270,16 +258,18 @@
     
     <div class="section">
       <div class="section-header">노무비</div>
-      <table class="cost-table">
+      <table class="labor-table">
         <thead>
           <tr>
-            <th class="col-item">항목</th>
-            <th class="col-spec">규격</th>
-            <th class="col-unit">단위</th>
-            <th class="col-qty">수량</th>
-            <th class="col-price">단가</th>
-            <th class="col-amount">금액</th>
-            <th class="col-note">비고</th>
+            <th style="width:10%">공종</th>
+            <th style="width:12%">공사명</th>
+            <th style="width:12%">노임항목</th>
+            <th style="width:10%">복구면적</th>
+            <th style="width:12%">적용단가</th>
+            <th style="width:10%">수량(인)</th>
+            <th style="width:12%">합계</th>
+            <th style="width:8%">경비</th>
+            <th style="width:14%">비고</th>
           </tr>
         </thead>
         <tbody id="labor-rows">
@@ -289,16 +279,17 @@
     
     <div class="section">
       <div class="section-header">자재비</div>
-      <table class="cost-table">
+      <table class="material-table">
         <thead>
           <tr>
-            <th class="col-item">항목</th>
-            <th class="col-spec">규격</th>
-            <th class="col-unit">단위</th>
-            <th class="col-qty">수량</th>
-            <th class="col-price">단가</th>
-            <th class="col-amount">금액</th>
-            <th class="col-note">비고</th>
+            <th style="width:12%">공종</th>
+            <th style="width:12%">공사명</th>
+            <th style="width:18%">자재항목</th>
+            <th style="width:12%">단가</th>
+            <th style="width:10%">수량</th>
+            <th style="width:8%">단위</th>
+            <th style="width:12%">합계</th>
+            <th style="width:16%">비고</th>
           </tr>
         </thead>
         <tbody id="material-rows">

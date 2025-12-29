@@ -330,55 +330,75 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
   let laborRowsHtml = '';
   if (laborCostData.length > 0) {
     laborCostData.forEach((item) => {
-      const itemName = item.workName || item.name || item.workType || '-';
+      const category = item.category || item.workType || '-';
+      const workName = item.workName || '-';
+      const detailItem = item.detailItem || item.detailWork || '-';
+      const damageArea = item.damageArea ? `${formatNumber(item.damageArea)}㎡` : '-';
+      const pricePerSqm = item.pricePerSqm || item.unitPrice || item.standardPrice || 0;
+      const quantity = item.quantity || 0;
+      const amount = item.amount || 0;
+      const isExpense = item.includeInEstimate === true || item.includeInEstimate === 'true' ? 'O' : '-';
+      const note = item.request || item.note || '-';
+      
       laborRowsHtml += `
         <tr>
-          <td style="text-align:left">${itemName}</td>
-          <td style="text-align:center">${item.detailWork || item.spec || '-'}</td>
-          <td style="text-align:center">${item.unit || '-'}</td>
-          <td style="text-align:center">${formatNumber(item.quantity || item.qty)}</td>
-          <td style="text-align:right">${formatNumber(item.unitPrice || item.price)}</td>
-          <td style="text-align:right">${formatNumber(item.amount)}</td>
-          <td style="text-align:left">${item.note || '-'}</td>
+          <td style="text-align:center">${category}</td>
+          <td style="text-align:center">${workName}</td>
+          <td style="text-align:center">${detailItem}</td>
+          <td style="text-align:right">${damageArea}</td>
+          <td style="text-align:right">${formatNumber(pricePerSqm)}</td>
+          <td style="text-align:center">${formatNumber(quantity)}</td>
+          <td style="text-align:right">${formatNumber(amount)}</td>
+          <td style="text-align:center">${isExpense}</td>
+          <td style="text-align:left">${note}</td>
         </tr>
       `;
     });
     laborRowsHtml += `
       <tr style="background-color:#f5f5f5;font-weight:bold;">
-        <td colspan="5" style="text-align:center">노무비 소계</td>
+        <td colspan="6" style="text-align:center">노무비 소계</td>
         <td style="text-align:right">${formatNumber(laborTotal)}</td>
-        <td></td>
+        <td colspan="2"></td>
       </tr>
     `;
   } else {
-    laborRowsHtml = '<tr><td colspan="7" style="text-align:center;padding:5mm;">등록된 노무비가 없습니다.</td></tr>';
+    laborRowsHtml = '<tr><td colspan="9" style="text-align:center;padding:5mm;">등록된 노무비가 없습니다.</td></tr>';
   }
   
   let materialRowsHtml = '';
   if (materialCostData.length > 0) {
     materialCostData.forEach((item) => {
-      const itemName = item.materialName || item.name || item.workType || '-';
+      const category = item.공종 || item.workType || item.category || '-';
+      const workName = item.공사명 || item.workName || '-';
+      const materialItem = item.자재항목 || item.자재 || item.materialName || '-';
+      const unitPrice = item.단가 || item.기준단가 || item.unitPrice || 0;
+      const quantity = item.수량 || item.quantity || 0;
+      const unit = item.단위 || item.unit || '-';
+      const amount = item.합계 || item.금액 || item.amount || 0;
+      const note = item.비고 || item.note || '-';
+      
       materialRowsHtml += `
         <tr>
-          <td style="text-align:left">${itemName}</td>
-          <td style="text-align:center">${item.specification || item.spec || '-'}</td>
-          <td style="text-align:center">${item.unit || '-'}</td>
-          <td style="text-align:center">${formatNumber(item.quantity || item.qty)}</td>
-          <td style="text-align:right">${formatNumber(item.unitPrice || item.price)}</td>
-          <td style="text-align:right">${formatNumber(item.amount)}</td>
-          <td style="text-align:left">${item.note || '-'}</td>
+          <td style="text-align:center">${category}</td>
+          <td style="text-align:center">${workName}</td>
+          <td style="text-align:left">${materialItem}</td>
+          <td style="text-align:right">${formatNumber(unitPrice)}</td>
+          <td style="text-align:center">${formatNumber(quantity)}</td>
+          <td style="text-align:center">${unit}</td>
+          <td style="text-align:right">${formatNumber(amount)}</td>
+          <td style="text-align:left">${note}</td>
         </tr>
       `;
     });
     materialRowsHtml += `
       <tr style="background-color:#f5f5f5;font-weight:bold;">
-        <td colspan="5" style="text-align:center">자재비 소계</td>
+        <td colspan="6" style="text-align:center">자재비 소계</td>
         <td style="text-align:right">${formatNumber(materialTotal)}</td>
         <td></td>
       </tr>
     `;
   } else {
-    materialRowsHtml = '<tr><td colspan="7" style="text-align:center;padding:5mm;">등록된 자재비가 없습니다.</td></tr>';
+    materialRowsHtml = '<tr><td colspan="8" style="text-align:center;padding:5mm;">등록된 자재비가 없습니다.</td></tr>';
   }
   
   const subtotal = laborTotal + materialTotal;
