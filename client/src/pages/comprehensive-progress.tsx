@@ -1276,7 +1276,7 @@ export default function ComprehensiveProgress() {
                     {(caseItem.approvedAmount || caseItem.estimateAmount) ? `₩${parseInt(caseItem.approvedAmount || caseItem.estimateAmount || "0").toLocaleString()}` : "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    -
+                    {caseItem.approvedAmount ? `₩${parseInt(caseItem.approvedAmount).toLocaleString()}` : "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     {calculateDays(caseItem.createdAt)}
