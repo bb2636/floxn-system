@@ -467,11 +467,10 @@ export default function SettlementsInquiry() {
       filtered = filtered.filter((row) => row.insuranceCompany === insuranceCompany);
     }
     
-    // 심사사 필터 적용 (manager는 assessorId이므로 해당 사용자의 company와 비교)
+    // 심사사 필터 적용 (manager는 assessorId로 심사사 회사명을 저장)
     if (assessor !== "전체") {
       filtered = filtered.filter((row) => {
-        const assessorUser = usersByIdMap.get(row.manager);
-        return assessorUser?.company === assessor;
+        return row.manager === assessor;
       });
     }
     
