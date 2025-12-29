@@ -223,12 +223,18 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
       
       if (isImage) {
         const uploadDate = doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('ko-KR') : '';
+        
+        let imageDataUri = doc.fileData || '';
+        if (imageDataUri && !imageDataUri.startsWith('data:')) {
+          imageDataUri = `data:${doc.fileType || 'image/jpeg'};base64,${imageDataUri}`;
+        }
+        
         pagesHtml += `
           <div class="page">
             <div class="category-header">${tab}</div>
             <div class="subcategory">${doc.category}</div>
             <div class="image-container">
-              <img src="${doc.fileData}" alt="${doc.fileName}" onerror="this.style.display='none'"/>
+              <img src="${imageDataUri}" alt="${doc.fileName}" onerror="this.style.display='none'"/>
             </div>
             <div class="image-info">
               <span class="filename">${doc.fileName}</span>
