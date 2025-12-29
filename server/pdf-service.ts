@@ -297,6 +297,12 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
   
   console.log(`[PDF 증빙자료] 유효한 이미지 수: ${allImages.length}`);
   
+  // Log each image's data size
+  allImages.forEach((img, idx) => {
+    const dataLength = img.doc.fileData?.length || 0;
+    console.log(`[PDF 증빙자료] 이미지 ${idx + 1}: ${img.doc.fileName}, 데이터 크기: ${dataLength} bytes`);
+  });
+  
   // If no valid images, return empty string immediately
   if (allImages.length === 0) {
     console.log('[PDF 증빙자료] 유효한 이미지 없음 - 빈 페이지 생성하지 않음');
