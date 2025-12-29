@@ -1372,7 +1372,13 @@ export default function FieldManagement() {
                           color: "rgba(12, 12, 12, 0.6)",
                         }}
                       >
-                        {caseItem.insuredAddress || caseItem.victimAddress || "-"}
+                        {(() => {
+                          const address = caseItem.insuredAddress || caseItem.victimAddress || "";
+                          const detail = caseItem.insuredAddressDetail || "";
+                          if (address && detail) return `${address} ${detail}`;
+                          if (address) return address;
+                          return "-";
+                        })()}
                       </span>
                     </div>
                   </div>
