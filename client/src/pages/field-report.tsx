@@ -870,86 +870,74 @@ export default function FieldReport() {
             </>
           )}
           
-          {/* 심사 영역: 상태에 따라 버튼 또는 상태 라벨 표시 */}
+          {/* 심사 버튼: 항상 표시, 상태에 따라 텍스트/스타일 변경 */}
           {!isUserLoading && isAdmin && caseData.fieldSurveyStatus === "submitted" && (
-            <>
-              {/* 심사 버튼: 검토중, 제출, 반려 상태일 때 표시 */}
-              {(caseData.status === "검토중" || caseData.status === "제출" || caseData.status === "반려") && (
-                <Button
-                  data-testid="button-review"
-                  onClick={() => setShowReviewDialog(true)}
-                  disabled={reviewMutation.isPending}
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
-                  {reviewMutation.isPending ? "심사 중..." : (caseData.status === "반려" ? "재심사" : "심사")}
-                </Button>
-              )}
-              {/* 심사완료 라벨: 1차승인 또는 승인완료 상태일 때 */}
-              {(caseData.status === "1차승인" || caseData.status === "승인완료") && (
-                <span
-                  data-testid="label-review-completed"
-                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded-md font-medium"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                  }}
-                >
-                  심사완료
-                </span>
-              )}
-            </>
+            <Button
+              data-testid="button-review"
+              onClick={() => {
+                // 심사 가능 상태일 때만 다이얼로그 열기
+                if (caseData.status === "검토중" || caseData.status === "제출" || caseData.status === "반려") {
+                  setShowReviewDialog(true);
+                }
+              }}
+              disabled={reviewMutation.isPending || (caseData.status !== "검토중" && caseData.status !== "제출" && caseData.status !== "반려")}
+              className={
+                caseData.status === "1차승인" || caseData.status === "승인완료"
+                  ? "bg-blue-100 text-blue-700 hover:bg-blue-100 cursor-default"
+                  : caseData.status === "반려"
+                  ? "bg-red-100 text-red-700 hover:bg-red-200"
+                  : ""
+              }
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              {reviewMutation.isPending 
+                ? "심사 중..." 
+                : caseData.status === "1차승인" || caseData.status === "승인완료"
+                ? "심사완료"
+                : caseData.status === "반려"
+                ? "심사반려"
+                : "심사"}
+            </Button>
           )}
           
-          {/* 승인 영역: 상태에 따라 버튼 또는 상태 라벨 표시 */}
-          {!isUserLoading && canApproveReport && (
-            <>
-              {/* 승인 버튼: 1차승인 상태일 때만 표시 */}
-              {caseData.status === "1차승인" && (
-                <Button
-                  data-testid="button-approve-report"
-                  onClick={() => setShowApprovalDialog(true)}
-                  disabled={approvalMutation.isPending}
-                  className="bg-green-500 hover:bg-green-600"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
-                  {approvalMutation.isPending ? "승인 중..." : "승인"}
-                </Button>
-              )}
-              {/* 승인완료 라벨 */}
-              {caseData.status === "승인완료" && caseData.reportApprovalDecision === "승인" && (
-                <span
-                  data-testid="label-approval-completed"
-                  className="px-4 py-2 bg-green-100 text-green-700 rounded-md font-medium"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                  }}
-                >
-                  승인완료
-                </span>
-              )}
-              {/* 승인반려 라벨 */}
-              {caseData.reportApprovalDecision === "비승인" && (
-                <span
-                  data-testid="label-approval-rejected"
-                  className="px-4 py-2 bg-red-100 text-red-700 rounded-md font-medium"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                  }}
-                >
-                  승인반려
-                </span>
-              )}
-            </>
+          {/* 승인 버튼: 항상 표시, 상태에 따라 텍스트/스타일 변경 */}
+          {!isUserLoading && canApproveReport && caseData.fieldSurveyStatus === "submitted" && (
+            <Button
+              data-testid="button-approve-report"
+              onClick={() => {
+                // 승인 가능 상태일 때만 다이얼로그 열기
+                if (caseData.status === "1차승인") {
+                  setShowApprovalDialog(true);
+                }
+              }}
+              disabled={approvalMutation.isPending || caseData.status !== "1차승인"}
+              className={
+                caseData.status === "승인완료" && caseData.reportApprovalDecision === "승인"
+                  ? "bg-green-100 text-green-700 hover:bg-green-100 cursor-default"
+                  : caseData.reportApprovalDecision === "비승인"
+                  ? "bg-red-100 text-red-700 hover:bg-red-100 cursor-default"
+                  : caseData.status === "1차승인"
+                  ? "bg-green-500 hover:bg-green-600"
+                  : ""
+              }
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: "500",
+              }}
+            >
+              {approvalMutation.isPending 
+                ? "승인 중..." 
+                : caseData.status === "승인완료" && caseData.reportApprovalDecision === "승인"
+                ? "승인완료"
+                : caseData.reportApprovalDecision === "비승인"
+                ? "승인반려"
+                : "승인"}
+            </Button>
           )}
         </div>
       </div>
