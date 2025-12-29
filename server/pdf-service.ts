@@ -159,15 +159,25 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
   let drawingContent = '<div class="no-image">도면 이미지가 없습니다.</div>';
   
   console.log('[PDF Drawing] drawingData exists:', !!drawingData);
+  console.log('[PDF Drawing] renderedImage:', drawingData?.renderedImage ? 'exists' : 'none');
   console.log('[PDF Drawing] uploadedImages:', drawingData?.uploadedImages?.length || 0);
   console.log('[PDF Drawing] rectangles:', drawingData?.rectangles?.length || 0);
   console.log('[PDF Drawing] accidentAreas:', drawingData?.accidentAreas?.length || 0);
   console.log('[PDF Drawing] leakMarkers:', drawingData?.leakMarkers?.length || 0);
   
-  if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
+  // Priority: Use renderedImage (complete canvas capture) if available
+  if (drawingData && drawingData.renderedImage) {
+    let imageUrl = drawingData.renderedImage;
+    console.log('[PDF Drawing] Using renderedImage, length:', imageUrl.length);
+    if (!imageUrl.startsWith('data:')) {
+      imageUrl = `data:image/png;base64,${imageUrl}`;
+    }
+    drawingContent = `<img src="${imageUrl}" alt="현장 피해상황 도면" class="drawing-image" onerror="this.style.display='none'" />`;
+  }
+  // Fallback: Use first uploaded image if no renderedImage
+  else if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
     let imageUrl = drawingData.uploadedImages[0].src || '';
-    console.log('[PDF Drawing] First image src length:', imageUrl?.length || 0);
-    console.log('[PDF Drawing] First image src starts with data:', imageUrl?.startsWith('data:'));
+    console.log('[PDF Drawing] Using uploadedImages fallback, src length:', imageUrl?.length || 0);
     if (imageUrl && !imageUrl.startsWith('data:')) {
       imageUrl = `data:image/png;base64,${imageUrl}`;
     }
