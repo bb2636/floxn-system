@@ -326,7 +326,7 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
           maxHeight: '90vh',
         }}
       >
-        <div className="flex h-full min-h-[600px]">
+        <div className="flex" style={{ height: 'calc(90vh - 2rem)', minHeight: '600px' }}>
           <div 
             className="w-48 flex-shrink-0 p-6"
             style={{ 
@@ -353,7 +353,7 @@ export function MyPageDialog({ open, onOpenChange, user }: MyPageDialogProps) {
             </nav>
           </div>
 
-          <div className="flex-1 p-8 overflow-y-auto relative">
+          <div className="flex-1 p-8 overflow-y-auto relative" style={{ maxHeight: 'calc(90vh - 2rem)' }}>
             <button
               onClick={() => onOpenChange(false)}
               className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg"
