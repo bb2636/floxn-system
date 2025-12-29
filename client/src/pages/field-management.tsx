@@ -15,7 +15,6 @@ import { ko } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { formatCaseNumber } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { SmsNotificationDialog } from "@/components/sms-notification-dialog";
 
 // Helper function to normalize boolean values from string/boolean storage
 const normalizeBoolean = (value: any): boolean => {
@@ -139,9 +138,6 @@ export default function FieldManagement() {
   const [processingTypes, setProcessingTypes] = useState<Set<string>>(new Set());
   const [processingTypeOther, setProcessingTypeOther] = useState("");
   const [recoveryMethodType, setRecoveryMethodType] = useState("부분수리");
-
-  // SMS 알림 다이얼로그 상태
-  const [smsDialogOpen, setSmsDialogOpen] = useState(false);
 
   // 입력 중 상태 추적 (데이터 자동 리로드 방지)
   // ref 사용: state 변경 시 re-render 방지 (포커스 유지)
@@ -1992,133 +1988,12 @@ export default function FieldManagement() {
                 >
                   임시저장
                 </Button>
-
-                {/* 제출 버튼 - 모든 필수 필드 입력 시 활성화 */}
-                <Button
-                  type="button"
-                  onClick={async () => {
-                    // 제출 조건 상태 콘솔 로그
-                    console.log("=== 제출 조건 체크 (제출) ===");
-                    console.log("현장입력 완료:", isFieldInputComplete);
-                    console.log("제출 가능:", canSubmit);
-                    console.log("============================");
-                    
-                    if (!selectedCaseData?.id) {
-                      toast({
-                        title: "제출 실패",
-                        description: "선택된 접수건이 없습니다.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-
-                    // 필수 필드 검증 - 현장입력 필수 필드만 체크 (카테고리는 반드시 선택 필요)
-                    const missingFields: string[] = [];
-                    
-                    // 현장입력 필수 필드
-                    if (!visitDate) missingFields.push("방문일자");
-                    if (!visitTime) missingFields.push("방문시간");
-                    if (!accidentCategory) missingFields.push("카테고리");
-                    if (!victimName && !selectedCaseData?.victimName) missingFields.push("피해자 성명");
-                    
-                    if (missingFields.length > 0) {
-                      toast({
-                        title: "제출 불가",
-                        description: `다음 항목이 누락되었습니다: ${missingFields.join(", ")}`,
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-
-                    try {
-                      const payload = {
-                        visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
-                        visitTime,
-                        dispatchLocation,
-                        accompaniedPerson,
-                        accidentDate: accidentDate ? `${format(accidentDate, "yyyy-MM-dd")} ${accidentTime || "00:00"}` : null,
-                        accidentTime,
-                        accidentCategory: accidentCategory || null,
-                        accidentCause,
-                        specialNotes,
-                        victimName: victimName || selectedCaseData?.victimName || null,
-                        victimContact: victimContact || selectedCaseData?.victimContact || null,
-                        victimAddress: victimAddress || selectedCaseData?.victimAddress || null,
-                        additionalVictims: JSON.stringify(additionalVictims),
-                        specialRequests: voc,
-                        processingTypes: JSON.stringify(Array.from(processingTypes)),
-                        processingTypeOther,
-                        recoveryMethodType,
-                        fieldSurveyStatus: "submitted", // 제출 시 submitted로 변경 (협력사 수정 불가)
-                        status: "제출", // 제출 시 상태 변경
-                      };
-
-                      const data = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
-
-                      const syncedCases = (data as any)?.syncedCases || 0;
-                      const syncMessage = syncedCases > 0 
-                        ? ` (${syncedCases}건의 연관 케이스에도 동기화됨)`
-                        : "";
-
-                      toast({
-                        title: "제출 완료",
-                        description: `현장조사 보고서가 제출되었습니다.${syncMessage}`,
-                      });
-
-                      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-                      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseData.id, "report"] });
-
-                      // 현장정보입력 SMS 알림 다이얼로그 표시
-                      setSmsDialogOpen(true);
-                    } catch (error: any) {
-                      console.error("제출 에러:", error);
-                      
-                      // 서버에서 반환된 오류 메시지 파싱
-                      let errorMessage = "현장조사 보고서 제출 중 오류가 발생했습니다.";
-                      if (error?.message) {
-                        errorMessage = error.message;
-                      }
-                      
-                      toast({
-                        title: "제출 실패",
-                        description: errorMessage,
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  disabled={!canSubmit || isReadOnly}
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    height: "52px",
-                    padding: "12px 32px",
-                    background: (canSubmit && !isReadOnly) ? "#008FED" : "rgba(12, 12, 12, 0.1)",
-                    color: (canSubmit && !isReadOnly) ? "#FFFFFF" : "rgba(12, 12, 12, 0.3)",
-                    border: "none",
-                    borderRadius: "8px",
-                    cursor: (canSubmit && !isReadOnly) ? "pointer" : "not-allowed",
-                  }}
-                  data-testid="button-submit"
-                >
-                  제출
-                </Button>
               </>
             )}
           </div>
         </div>
       )}
       </div>
-
-      {/* 현장정보입력 SMS 알림 다이얼로그 */}
-      {selectedCaseData && (
-        <SmsNotificationDialog
-          open={smsDialogOpen}
-          onOpenChange={setSmsDialogOpen}
-          stage="현장정보입력"
-          caseData={selectedCaseData}
-        />
-      )}
     </>
   );
 }
