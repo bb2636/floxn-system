@@ -538,7 +538,6 @@ export const drawings = pgTable("drawings", {
     x: number;
     y: number;
   }[]>().notNull().default(sql`'[]'`),
-  renderedImage: text("rendered_image"), // Base64 encoded PNG of the complete drawing canvas
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

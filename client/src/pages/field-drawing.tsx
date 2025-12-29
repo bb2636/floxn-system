@@ -237,55 +237,11 @@ export default function FieldDrawing() {
   // 협력사만 1차승인 후 수정 불가 (현장입력 제출과 무관하게 수정 가능)
   const isReadOnly = isPartner && isFirstApproved && !isRejected;
 
-  // 캔버스 이미지 캡처 함수
-  const captureCanvasImage = async (): Promise<string | null> => {
-    if (!canvasRef.current) return null;
-    
-    // UI 요소들을 일시적으로 숨김
-    const toolbar = document.querySelector('[data-ui="toolbar"]') as HTMLElement;
-    const saveButtons = document.querySelector('[data-ui="save-buttons"]') as HTMLElement;
-    const controls = document.querySelectorAll('[data-ui="control-panel"]');
-    
-    const elementsToHide = [toolbar, saveButtons, ...Array.from(controls)].filter(Boolean);
-    
-    try {
-      elementsToHide.forEach(el => {
-        if (el instanceof HTMLElement) el.style.display = 'none';
-      });
-      
-      // 캔버스 캡처
-      const canvas = await html2canvas(canvasRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2, // 고해상도
-        logging: false,
-      });
-      
-      // Base64 PNG로 변환
-      return canvas.toDataURL('image/png');
-    } catch (error) {
-      console.error('Canvas capture error:', error);
-      return null;
-    } finally {
-      // UI 요소들 다시 표시
-      elementsToHide.forEach(el => {
-        if (el instanceof HTMLElement) el.style.display = '';
-      });
-    }
-  };
-
   // 도면 저장 mutation
   const saveDrawingMutation = useMutation({
     mutationFn: async () => {
       if (!selectedCase) {
         throw new Error("선택된 케이스가 없습니다");
-      }
-      
-      // 캔버스 이미지 캡처 (도면 요소가 있을 때만)
-      let renderedImage: string | null = null;
-      const hasDrawingElements = uploadedImages.length > 0 || rectangles.length > 0 || accidentAreas.length > 0 || leakMarkers.length > 0;
-      
-      if (hasDrawingElements) {
-        renderedImage = await captureCanvasImage();
       }
       
       const response = await apiRequest("POST", "/api/drawings", {
@@ -295,7 +251,6 @@ export default function FieldDrawing() {
         rectangles,
         accidentAreas,
         leakMarkers,
-        renderedImage,
       });
       
       if (!response.ok) {

@@ -4986,7 +4986,6 @@ export class DbStorage implements IStorage {
         rectangles: data.rectangles,
         accidentAreas: data.accidentAreas,
         leakMarkers: data.leakMarkers,
-        renderedImage: data.renderedImage,
         createdBy: data.createdBy,
       })
       .returning();

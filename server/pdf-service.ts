@@ -158,26 +158,8 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
   
   let drawingContent = '<div class="no-image">도면 이미지가 없습니다.</div>';
   
-  console.log('[PDF Drawing] drawingData exists:', !!drawingData);
-  console.log('[PDF Drawing] renderedImage:', drawingData?.renderedImage ? 'exists' : 'none');
-  console.log('[PDF Drawing] uploadedImages:', drawingData?.uploadedImages?.length || 0);
-  console.log('[PDF Drawing] rectangles:', drawingData?.rectangles?.length || 0);
-  console.log('[PDF Drawing] accidentAreas:', drawingData?.accidentAreas?.length || 0);
-  console.log('[PDF Drawing] leakMarkers:', drawingData?.leakMarkers?.length || 0);
-  
-  // Priority: Use renderedImage (complete canvas capture) if available
-  if (drawingData && drawingData.renderedImage) {
-    let imageUrl = drawingData.renderedImage;
-    console.log('[PDF Drawing] Using renderedImage, length:', imageUrl.length);
-    if (!imageUrl.startsWith('data:')) {
-      imageUrl = `data:image/png;base64,${imageUrl}`;
-    }
-    drawingContent = `<img src="${imageUrl}" alt="현장 피해상황 도면" class="drawing-image" onerror="this.style.display='none'" />`;
-  }
-  // Fallback: Use first uploaded image if no renderedImage
-  else if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
+  if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
     let imageUrl = drawingData.uploadedImages[0].src || '';
-    console.log('[PDF Drawing] Using uploadedImages fallback, src length:', imageUrl?.length || 0);
     if (imageUrl && !imageUrl.startsWith('data:')) {
       imageUrl = `data:image/png;base64,${imageUrl}`;
     }
@@ -481,26 +463,15 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     }
     if (estimateData.materialCostData) {
       try {
-        let rawMaterialData = typeof estimateData.materialCostData === 'string'
+        materialCostData = typeof estimateData.materialCostData === 'string'
           ? JSON.parse(estimateData.materialCostData)
           : estimateData.materialCostData;
-        
-        // materialCostData is stored as { rows: [...], vatIncluded: boolean }
-        // Extract the rows array from the wrapper object
-        if (rawMaterialData && typeof rawMaterialData === 'object' && !Array.isArray(rawMaterialData)) {
-          materialCostData = rawMaterialData.rows || [];
-          console.log('[PDF] materialCostData 구조 감지: { rows, vatIncluded }, rows 개수:', materialCostData.length);
-        } else if (Array.isArray(rawMaterialData)) {
-          materialCostData = rawMaterialData;
-        }
-        
         if (Array.isArray(materialCostData)) {
           // MaterialRow uses Korean field names: 합계 or 금액 for amount
           materialTotal = materialCostData.reduce((sum, item) => {
             const amount = Number(item.합계) || Number(item.금액) || Number(item.amount) || 0;
             return sum + amount;
           }, 0);
-          console.log('[PDF] 자재비 합계:', materialTotal);
         }
       } catch { materialCostData = []; }
     }
@@ -590,11 +561,8 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
   }
   
   const subtotal = laborTotal + materialTotal;
-  const managementFee = Math.round(subtotal * 0.06); // 일반관리비 6%
-  const profit = Math.round(subtotal * 0.15); // 이윤 15%
-  const vatBase = subtotal + managementFee + profit;
-  const vat = Math.round(vatBase * 0.1); // 부가세 10%
-  const grandTotal = vatBase + vat;
+  const vat = Math.round(subtotal * 0.1);
+  const grandTotal = subtotal + vat;
   
   const data = {
     caseNumber: caseData.caseNumber || '',
@@ -609,12 +577,9 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     laborTotal: formatNumber(laborTotal),
     materialTotal: formatNumber(materialTotal),
     subtotal: formatNumber(subtotal),
-    managementFee: formatNumber(managementFee),
-    profit: formatNumber(profit),
     vat: formatNumber(vat),
     grandTotal: formatNumber(grandTotal),
     estimateAmount: formatNumber(Number(caseData.estimateAmount) || grandTotal),
-    partnerCompany: caseData.assignedPartner || '',
   };
   
   const areaTableRegex = /(<tbody id="area-rows">)([\s\S]*?)(<\/tbody>)/i;
@@ -718,18 +683,7 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
         );
       
       const imageDocs = selectedDocs.filter(doc => doc.fileType?.startsWith('image/'));
-      // Filter out previously generated reports (현장출동보고서, 견적서 등) to avoid duplicate content
-      const pdfDocs = selectedDocs.filter(doc => {
-        const isPdf = doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf');
-        if (!isPdf) return false;
-        // Exclude previously generated reports that would cause duplicate content
-        const fileName = doc.fileName?.toLowerCase() || '';
-        const isGeneratedReport = fileName.includes('현장출동보고서') || 
-                                  fileName.includes('견적서') || 
-                                  fileName.includes('보고서_') ||
-                                  fileName.includes('report_');
-        return !isGeneratedReport;
-      });
+      const pdfDocs = selectedDocs.filter(doc => doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf'));
       
       console.log(`[PDF 생성] 선택된 문서 수: ${selectedDocs.length}, 이미지: ${imageDocs.length}, PDF: ${pdfDocs.length}`);
       console.log('[PDF 생성] PDF 문서 목록:', pdfDocs.map(d => ({ id: d.id, name: d.fileName, type: d.fileType })));
