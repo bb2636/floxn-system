@@ -1400,11 +1400,11 @@ export default function FieldEstimate() {
   };
   
   // 손해방지 vs 피해복구 케이스 판별
-  // 접수번호에 -1, -2 등이 붙어있으면 피해복구, 없으면 손해방지
+  // 접수번호에 -0이 붙으면 손해방지(원인세대), -1/-2 등이 붙으면 피해복구(피해세대)
   const isLossPreventionCase = useMemo(() => {
     const caseNumber = selectedCase?.caseNumber || '';
-    // -숫자 패턴이 없으면 손해방지
-    return !/-\d+$/.test(caseNumber);
+    // -0이 붙으면 손해방지
+    return /-0$/.test(caseNumber);
   }, [selectedCase?.caseNumber]);
 
   // 복구면적 변경 시 자재비 자동 동기화를 위한 signature
