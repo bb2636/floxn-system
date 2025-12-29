@@ -441,6 +441,13 @@ export default function SettlementsInquiry() {
       });
     });
 
+    // 최신 접수순으로 정렬 (접수번호 기준 내림차순)
+    combinedRows.sort((a, b) => {
+      const prefixA = a.caseNumberPrefix || "";
+      const prefixB = b.caseNumberPrefix || "";
+      return prefixB.localeCompare(prefixA);
+    });
+
     return combinedRows;
   }, [claimCases, estimatesMap, user, usersByIdMap, usersByUsernameMap, usersByCompanyMap, settlementsByCaseIdMap]);
 
