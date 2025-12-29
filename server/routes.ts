@@ -2016,8 +2016,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Sync field survey data to related cases (same accident number, different receipt)
-      // Create a new object excluding status fields - each case manages its own status
-      const { status, fieldSurveyStatus, ...syncData } = fieldData;
+      // Create a new object excluding status fields and victim info - each case has its own victim
+      const { 
+        status, 
+        fieldSurveyStatus, 
+        victimName, 
+        victimContact, 
+        victimAddress, 
+        additionalVictims,
+        ...syncData 
+      } = fieldData;
       
       let syncedCount = 0;
       try {
