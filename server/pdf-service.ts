@@ -901,8 +901,10 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
       }
     }
     
+    console.log(`[PDF 병합] 첨부 PDF 수: ${pdfDocumentsToAppend.length}`);
     for (const pdfDoc of pdfDocumentsToAppend) {
       try {
+        console.log(`[PDF 병합] 처리 중: ${pdfDoc.fileName}, 데이터 길이: ${pdfDoc.fileData?.length || 0}`);
         let pdfData: Uint8Array;
         if (pdfDoc.fileData.startsWith('data:')) {
           const base64Data = pdfDoc.fileData.split(',')[1];
@@ -911,11 +913,15 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
           pdfData = Buffer.from(pdfDoc.fileData, 'base64');
         }
         
+        console.log(`[PDF 병합] 디코딩된 PDF 크기: ${pdfData.length} bytes`);
         const attachedPdf = await PDFDocument.load(pdfData, { ignoreEncryption: true });
+        const pageCount = attachedPdf.getPageCount();
+        console.log(`[PDF 병합] 첨부 PDF 페이지 수: ${pageCount}`);
         const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
         pages.forEach(page => mergedPdf.addPage(page));
+        console.log(`[PDF 병합] 성공: ${pdfDoc.fileName} (${pageCount}페이지 추가)`);
       } catch (err) {
-        console.error(`첨부 PDF 병합 실패 (${pdfDoc.fileName}):`, err);
+        console.error(`[PDF 병합] 실패 (${pdfDoc.fileName}):`, err);
       }
     }
     
