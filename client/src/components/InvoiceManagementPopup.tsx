@@ -59,6 +59,7 @@ interface InvoiceManagementPopupProps {
   relatedCases?: RelatedCase[];
   managerName?: string;
   managerContact?: string;
+  settlementCommission?: number; // 정산조회에서 가져온 수수료 값
 }
 
 const FIXED_FIELD_DISPATCH_COST = 100000;
@@ -95,6 +96,7 @@ export function InvoiceManagementPopup({
   relatedCases = [],
   managerName = "-",
   managerContact = "-",
+  settlementCommission,
 }: InvoiceManagementPopupProps) {
   const { toast } = useToast();
   const { hasItem, isAdmin } = usePermissions();
@@ -148,10 +150,15 @@ export function InvoiceManagementPopup({
     (parseInt(preventionApprovedAmount || "0") || 0) + 
     (parseInt(propertyApprovedAmount || "0") || 0);
 
-  // 수수료 계산 (7.7%) - 위쪽 승인금액 (손해방지비용 + 대물복구비용 승인금액) 기준
+  // 수수료 - 정산조회에서 전달받은 값 사용, 없으면 7.7% 계산
   const feeAmount = useMemo(() => {
+    // 정산조회에서 전달받은 수수료 값이 있으면 그것을 사용
+    if (settlementCommission !== undefined && settlementCommission > 0) {
+      return settlementCommission;
+    }
+    // 없으면 7.7% 계산
     return Math.round(totalApprovedAmount * 0.077);
-  }, [totalApprovedAmount]);
+  }, [totalApprovedAmount, settlementCommission]);
 
   // 협력업체 지급액 계산 - 위쪽 승인금액 기준
   const partnerPaymentAmount = useMemo(() => {
