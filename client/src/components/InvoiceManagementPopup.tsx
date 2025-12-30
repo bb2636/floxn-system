@@ -276,21 +276,39 @@ export function InvoiceManagementPopup({
         await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, settlementUpdateData);
       }
       
-      // "정산"이 선택된 경우 케이스 상태를 "정산완료"로 변경
-      if (settlementStatus === "정산") {
+      // "정산" 또는 "부분입금"이 선택된 경우 같은 사고번호의 모든 케이스 상태 변경
+      if (settlementStatus === "정산" || settlementStatus === "부분입금") {
+        const newStatus = settlementStatus === "정산" ? "정산완료" : "부분입금";
+        
+        // 현재 케이스 상태 변경
         await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
-          status: "정산완료",
+          status: newStatus,
         });
+        
+        // 관련 케이스들도 모두 상태 변경 (같은 사고번호)
+        if (relatedCases && relatedCases.length > 0) {
+          const updatePromises = relatedCases
+            .filter(rc => rc.id !== caseData.id) // 현재 케이스 제외
+            .map(rc => 
+              apiRequest("PATCH", `/api/cases/${rc.id}`, {
+                status: newStatus,
+              })
+            );
+          await Promise.all(updatePromises);
+        }
       }
       
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/settlements"] });
       
+      const updatedCount = relatedCases ? relatedCases.length : 1;
       toast({
         title: "저장 완료",
         description: settlementStatus === "정산" 
-          ? "정산이 완료되었습니다." 
+          ? `정산이 완료되었습니다. (${updatedCount}건 상태 변경)` 
+          : settlementStatus === "부분입금"
+          ? `부분입금 처리되었습니다. (${updatedCount}건 상태 변경)`
           : "정산 정보가 저장되었습니다.",
       });
       
