@@ -5,15 +5,19 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-// 환경 확인
+// 환경에 따라 적절한 DB URL 선택
 const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
 
-// DATABASE_URL 사용 (개발/프로덕션 모두 동일)
-const databaseUrl = process.env.DATABASE_URL;
+// 개발: DEV_DATABASE_URL, 프로덕션: PROD_DATABASE_URL
+const databaseUrl = isProduction 
+  ? process.env.PROD_DATABASE_URL
+  : process.env.DEV_DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
-    "DATABASE_URL must be set. Please configure DATABASE_URL in secrets.",
+    isProduction 
+      ? "PROD_DATABASE_URL must be set for production deployment."
+      : "DEV_DATABASE_URL must be set for development.",
   );
 }
 
