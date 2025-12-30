@@ -6820,6 +6820,42 @@ https://peulrogseun-aqaqaq4561.replit.app
     }
   });
 
+  // 임시 관리자 엔드포인트: 초기 견적금액 백필 (GET으로 변경하여 브라우저에서 호출 가능)
+  app.get("/api/admin/backfill-initial-estimates", async (req, res) => {
+    try {
+      // 관리자 권한 확인
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "인증이 필요합니다. 로그인 후 이 URL을 방문하세요." });
+      }
+      
+      const user = await storage.getUserById(req.session.userId);
+      if (!user || user.role !== "관리자") {
+        return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+      }
+
+      // fieldSurveyStatus가 'submitted', 'approved', 'rejected'이고 initialEstimateAmount가 null인 케이스 조회
+      const result = await db.execute(sql`
+        UPDATE cases 
+        SET initial_estimate_amount = estimate_amount 
+        WHERE estimate_amount IS NOT NULL 
+          AND initial_estimate_amount IS NULL 
+          AND field_survey_status IN ('submitted', 'approved', 'rejected')
+        RETURNING id, case_number, estimate_amount, initial_estimate_amount
+      `);
+
+      console.log("[Backfill] Updated cases:", result.rows);
+      
+      res.json({ 
+        success: true, 
+        message: `${result.rows.length}개 케이스의 초기 견적금액이 백필되었습니다`,
+        updatedCases: result.rows
+      });
+    } catch (error) {
+      console.error("Backfill error:", error);
+      res.status(500).json({ error: "백필 중 오류가 발생했습니다" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
