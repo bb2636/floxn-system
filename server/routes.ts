@@ -1723,16 +1723,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // 2차승인 시 현재 견적금액을 승인금액으로 설정 (관리자만)
-      if (status === "복구요청(2차승인)" && userRole === "관리자") {
-        const currentCase = await storage.getCaseById(caseId);
-        if (currentCase?.estimateAmount) {
-          await storage.updateCase(caseId, { 
-            approvedAmount: currentCase.estimateAmount 
-          });
-        }
-      }
-
       // SMS 알림은 이제 클라이언트의 다이얼로그를 통해 확인 후 발송됩니다
       // 자동 발송 코드는 제거되었습니다
 

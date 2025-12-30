@@ -1638,8 +1638,8 @@ export class MemStorage implements IStorage {
         if (!caseItem.secondApprovalDate) {
           dateUpdates.secondApprovalDate = currentDate;
         }
-        // 2차 승인 시점의 견적금액을 승인금액으로 자동 저장
-        if (caseItem.estimateAmount && !caseItem.approvedAmount) {
+        // 2차 승인 시점의 견적금액을 승인금액으로 자동 저장 (항상 덮어씀)
+        if (caseItem.estimateAmount) {
           dateUpdates.approvedAmount = caseItem.estimateAmount;
         }
         break;
@@ -4370,8 +4370,8 @@ export class DbStorage implements IStorage {
         if (!existingCase.secondApprovalDate) {
           dateUpdates.secondApprovalDate = currentDate;
         }
-        // 2차 승인 시점의 견적금액을 승인금액으로 자동 저장
-        if (existingCase.estimateAmount && !existingCase.approvedAmount) {
+        // 2차 승인 시점의 견적금액을 승인금액으로 자동 저장 (항상 덮어씀)
+        if (existingCase.estimateAmount) {
           dateUpdates.approvedAmount = existingCase.estimateAmount;
         }
         break;
