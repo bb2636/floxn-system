@@ -6424,7 +6424,7 @@ export class DbStorage implements IStorage {
         "(선견적요청인 경우) 출동비 청구",
         "청구",
         "입금완료",
-        "일부입금",
+        "부분입금",
         "정산완료",
       ];
 

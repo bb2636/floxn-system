@@ -69,7 +69,7 @@ const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   "결정금액/수수료": { partner: true, manager: false, assessorInvestigator: false },
   "접수취소": { partner: false, manager: false, assessorInvestigator: true },
   "입금완료": { partner: true, manager: true, assessorInvestigator: false },
-  "일부입금": { partner: true, manager: true, assessorInvestigator: false },
+  "부분입금": { partner: true, manager: true, assessorInvestigator: false },
   "정산완료": { partner: true, manager: true, assessorInvestigator: false },
   "선견적요청": { partner: true, manager: true, assessorInvestigator: false },
 };
@@ -91,7 +91,7 @@ const CASE_STATUSES = [
   "(선견적요청인 경우) 출동비 청구",
   "청구",
   "입금완료",
-  "일부입금",
+  "부분입금",
   "정산완료",
   "접수취소",
 ] as const;
@@ -222,7 +222,7 @@ export default function ComprehensiveProgress() {
       "(직접복구인 경우) 청구자료제출",
       "(선견적요청인 경우) 출동비 청구",
       "입금완료",
-      "일부입금",
+      "부분입금",
       "정산완료",
     ];
     
@@ -423,7 +423,7 @@ export default function ComprehensiveProgress() {
           "청구": "청구",
           "결정금액/수수료": "결정금액/수수료",
           "입금완료": "입금완료",
-          "일부입금": "일부입금",
+          "부분입금": "부분입금",
           "정산완료": "정산완료",
           "접수취소": "접수취소",
         };

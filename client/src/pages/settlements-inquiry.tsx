@@ -227,7 +227,7 @@ export default function SettlementsInquiry() {
   }, [allUsers]);
 
   // Filter cases with status '청구' and after (claim, payment, settlement)
-  const settlementStatuses = ["청구", "입금완료", "일부입금", "부분입금", "정산완료"];
+  const settlementStatuses = ["청구", "입금완료", "부분입금", "정산완료"];
   const claimCases = cases.filter(c => settlementStatuses.includes(c.status));
   const caseIds = claimCases.map(c => c.id);
 
@@ -705,7 +705,7 @@ export default function SettlementsInquiry() {
               <SelectContent>
                 <SelectItem value="전체">전체</SelectItem>
                 <SelectItem value="청구">청구</SelectItem>
-                <SelectItem value="일부입금">일부입금</SelectItem>
+                <SelectItem value="부분입금">부분입금</SelectItem>
                 <SelectItem value="입금완료">입금완료</SelectItem>
                 <SelectItem value="정산완료">정산완료</SelectItem>
               </SelectContent>

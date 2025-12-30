@@ -1696,7 +1696,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ALLOWED_STATUSES = [
         "배당대기", "접수완료", "현장방문", "현장정보입력", "검토중", "반려",
         "1차승인", "현장정보제출", "복구요청(2차승인)", "직접복구", "선견적요청", "(직접복구인 경우) 청구자료제출",
-        "(선견적요청인 경우) 출동비 청구", "청구", "입금완료", "일부입금", "정산완료", "접수취소"
+        "(선견적요청인 경우) 출동비 청구", "청구", "입금완료", "부분입금", "정산완료", "접수취소"
       ];
 
       if (!ALLOWED_STATUSES.includes(status)) {
@@ -3024,7 +3024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 청구자료 카테고리 목록
       const claimDocumentCategories = ["위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"];
       // 정산 관련 상태 목록 (이미 정산 프로세스에 있는 상태들)
-      const settlementStatuses = ["청구", "입금완료", "일부입금", "정산완료"];
+      const settlementStatuses = ["청구", "입금완료", "부분입금", "정산완료"];
       
       // parentCategory 체크 - 프론트엔드에서 전송한 탭 정보 (스키마에서 검증됨)
       const parentCategory = validatedData.parentCategory;
@@ -3041,7 +3041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }).split(",")[0];
           
           // 상태가 아직 정산 관련 상태가 아닌 경우에만 '청구'로 변경
-          // (이미 입금완료, 일부입금, 정산완료인 경우 상태를 되돌리지 않음)
+          // (이미 입금완료, 부분입금, 정산완료인 경우 상태를 되돌리지 않음)
           if (!settlementStatuses.includes(existingCase.status)) {
             updateData.status = "청구";
             updateData.claimDate = currentDate;
@@ -4359,14 +4359,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return accidentDate.getFullYear() === lastYear && accidentDate.getMonth() + 1 === lastMonth;
       });
       
-      // 미결건: 청구단계 이전 (청구, 입금완료, 일부입금, 정산완료 제외)
-      const claimStatuses = ["청구", "입금완료", "일부입금", "정산완료", "접수취소"];
+      // 미결건: 청구단계 이전 (청구, 입금완료, 부분입금, 정산완료 제외)
+      const claimStatuses = ["청구", "입금완료", "부분입금", "정산완료", "접수취소"];
       
       // 접수건: 전체 케이스 (취소 제외)
       const receivedCases = filteredCases.filter(c => c.status !== "접수취소").length;
       const lastMonthReceivedCases = lastMonthCases.filter(c => c.status !== "접수취소").length;
       
-      // 미결건: 청구단계 이전 (청구, 입금완료, 일부입금, 정산완료, 접수취소 제외)
+      // 미결건: 청구단계 이전 (청구, 입금완료, 부분입금, 정산완료, 접수취소 제외)
       const pendingCases = filteredCases.filter(c => !claimStatuses.includes(c.status)).length;
       const lastMonthPendingCases = lastMonthCases.filter(c => !claimStatuses.includes(c.status)).length;
       
@@ -4461,7 +4461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // 협력사 미정산: 정산완료 이전 상태의 건들 (입금 됐지만 아직 정산 안된 건)
       const partnerUnsettledCases = filteredCases.filter(c => 
-        c.status === "입금완료" || c.status === "일부입금"
+        c.status === "입금완료" || c.status === "부분입금"
       );
       const partnerUnsettledAmount = partnerUnsettledCases.reduce((sum, c) => {
         const estimate = latestEstimatesByCaseId.get(c.id);
@@ -4526,7 +4526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const completedCases = await db
         .select()
         .from(cases)
-        .where(sql`(${cases.status} IN ('정산완료', '입금완료', '일부입금')) AND (${cases.recoveryType} = '직접복구' OR ${cases.status} = '직접복구')`);
+        .where(sql`(${cases.status} IN ('정산완료', '입금완료', '부분입금')) AND (${cases.recoveryType} = '직접복구' OR ${cases.status} = '직접복구')`);
 
       if (!completedCases.length) {
         return res.json({
@@ -6256,7 +6256,7 @@ https://peulrogseun-aqaqaq4561.replit.app
       "결정금액/수수료",
       "접수취소",
       "입금완료",
-      "일부입금",
+      "부분입금",
       "정산완료",
       "선견적요청"
     ]),
@@ -6745,7 +6745,7 @@ https://peulrogseun-aqaqaq4561.replit.app
         "(선견적요청인 경우) 출동비 청구",
         "청구",
         "입금완료",
-        "일부입금",
+        "부분입금",
         "정산완료"
       ];
       

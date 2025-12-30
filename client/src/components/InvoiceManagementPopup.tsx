@@ -554,7 +554,7 @@ export function InvoiceManagementPopup({
         invoicePropertyRepairAmount: propertyApprovedAmount,
         invoiceConfirmDate: invoiceConfirmDateValue,
         status: settlementStatus === "정산" ? "정산완료" : 
-                settlementStatus === "부분입금" ? "일부입금" : 
+                settlementStatus === "부분입금" ? "부분입금" : 
                 caseData.status,
       });
       

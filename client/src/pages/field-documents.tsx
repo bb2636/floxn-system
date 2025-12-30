@@ -127,7 +127,7 @@ export default function FieldDocuments() {
     "청구",
     "결정금액/수수료",
     "입금완료",
-    "일부입금",
+    "부분입금",
     "정산완료"
   ];
   const isClaimDocumentEnabled = claimDocumentStatuses.includes(selectedCase?.status || "");

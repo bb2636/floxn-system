@@ -39,7 +39,7 @@ const cellStyle = {
 const CLOSED_STATUSES = [
   "정산완료",
   "입금완료",
-  "일부입금",
+  "부분입금",
   "접수취소",
 ];
 
@@ -184,7 +184,7 @@ export default function StatisticsOverview() {
       isDirectRecovery(c) && c.status === "정산완료"
     ).length;
     const 종결_직접복구_선견적요청 = closedInPeriod.filter(c => 
-      isDirectRecovery(c) && (c.status === "입금완료" || c.status === "일부입금")
+      isDirectRecovery(c) && (c.status === "입금완료" || c.status === "부분입금")
     ).length;
     const 종결_직접복구_접수취소 = closedInPeriod.filter(c => 
       isDirectRecovery(c) && c.status === "접수취소"
@@ -194,7 +194,7 @@ export default function StatisticsOverview() {
       isPreEstimate(c) && c.status === "정산완료"
     ).length;
     const 종결_선견적요청_선견적요청 = closedInPeriod.filter(c => 
-      isPreEstimate(c) && (c.status === "입금완료" || c.status === "일부입금")
+      isPreEstimate(c) && (c.status === "입금완료" || c.status === "부분입금")
     ).length;
     const 종결_선견적요청_접수취소 = closedInPeriod.filter(c => 
       isPreEstimate(c) && c.status === "접수취소"
@@ -592,14 +592,14 @@ export default function StatisticsOverview() {
     const 직접_현장방문 = directRecoveryCases.filter(c => c.visitDate || c.status === "현장방문").length;
     const 직접_현장정보입력 = directRecoveryCases.filter(c => c.fieldInfoInputDate || c.status === "현장정보입력").length;
     const 직접_청구 = directRecoveryCases.filter(c => c.status === "청구" || c.status === "(직접복구인 경우) 청구자료제출").length;
-    const 직접_입금완료 = directRecoveryCases.filter(c => c.status === "입금완료" || c.status === "정산완료" || c.status === "일부입금").length;
+    const 직접_입금완료 = directRecoveryCases.filter(c => c.status === "입금완료" || c.status === "정산완료" || c.status === "부분입금").length;
 
     // 선견적 의뢰건 케이스
     const preEstimateCases = filteredCases.filter(isPreEstimate);
     const 선견적_현장방문 = preEstimateCases.filter(c => c.visitDate || c.status === "현장방문").length;
     const 선견적_현장정보입력 = preEstimateCases.filter(c => c.fieldInfoInputDate || c.status === "현장정보입력").length;
     const 선견적_청구 = preEstimateCases.filter(c => c.status === "청구" || c.status === "(선견적요청인 경우) 출동비 청구").length;
-    const 선견적_입금완료 = preEstimateCases.filter(c => c.status === "입금완료" || c.status === "정산완료" || c.status === "일부입금").length;
+    const 선견적_입금완료 = preEstimateCases.filter(c => c.status === "입금완료" || c.status === "정산완료" || c.status === "부분입금").length;
 
     return {
       직접복구진행항목: {

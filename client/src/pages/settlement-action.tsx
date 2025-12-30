@@ -291,7 +291,7 @@ export default function SettlementAction() {
       await apiRequest("POST", "/api/settlements", settlementData);
       
       // 2. 케이스 상태를 전액/50%에 따라 업데이트
-      const newStatus = settlementType === "full" ? "입금완료" : settlementType === "half" ? "일부입금" : "정산완료";
+      const newStatus = settlementType === "full" ? "입금완료" : settlementType === "half" ? "부분입금" : "정산완료";
       await updateCaseStatusMutation.mutateAsync({
         caseId: selectedCase.id,
         status: newStatus,
@@ -1008,8 +1008,8 @@ export default function SettlementAction() {
                       ? "미정산" 
                       : selectedCase.caseData.status === "입금완료"
                       ? "입금완료"
-                      : selectedCase.caseData.status === "일부입금"
-                      ? "일부입금"
+                      : selectedCase.caseData.status === "부분입금"
+                      ? "부분입금"
                       : selectedCase.caseData.status === "정산완료"
                       ? "정산완료"
                       : selectedCase.caseData.status
