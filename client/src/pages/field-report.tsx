@@ -3162,7 +3162,7 @@ export default function FieldReport() {
                       />
                     ))}
 
-                    {/* 사각형 */}
+                    {/* 사각형 - 항상 맨 아래 (z-index: 5) */}
                     {drawing.rectangles?.map((rect) => (
                       <div
                         key={rect.id}
@@ -3174,7 +3174,7 @@ export default function FieldReport() {
                           height: `${rect.height * DISPLAY_SCALE}px`,
                           border: "1px solid #0C0C0C",
                           background: (rect as any).backgroundColor || "#FFFFFF",
-                          zIndex: 2,
+                          zIndex: 5,
                         }}
                       >
                         {/* 텍스트 */}
@@ -3230,7 +3230,7 @@ export default function FieldReport() {
                       </div>
                     ))}
 
-                    {/* 사고 영역 */}
+                    {/* 사고 영역 - 사각형보다 위 (z-index: 50) */}
                     {drawing.accidentAreas?.map((area) => (
                       <div
                         key={area.id}
@@ -3242,12 +3242,12 @@ export default function FieldReport() {
                           height: `${area.height * DISPLAY_SCALE}px`,
                           border: "2px dashed #9E9E9E",
                           background: "rgba(189, 189, 189, 0.3)",
-                          zIndex: 1,
+                          zIndex: 50,
                         }}
                       />
                     ))}
 
-                    {/* 누수 마커 */}
+                    {/* 누수 마커 - 항상 맨 위 (z-index: 100) */}
                     {drawing.leakMarkers?.map((marker) => (
                       <div
                         key={marker.id}
@@ -3257,7 +3257,7 @@ export default function FieldReport() {
                           top: `${marker.y * DISPLAY_SCALE - 12}px`,
                           width: "24px",
                           height: "24px",
-                          zIndex: 4,
+                          zIndex: 100,
                         }}
                       >
                         <svg
