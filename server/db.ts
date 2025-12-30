@@ -5,17 +5,15 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-// 환경에 따라 적절한 DB URL 선택
+// 환경 확인
 const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
 
-// 환경별 DB URL 선택 (DEV_DATABASE_URL / PROD_DATABASE_URL 우선)
-const databaseUrl = isProduction 
-  ? (process.env.PROD_DATABASE_URL || process.env.DATABASE_URL)
-  : (process.env.DEV_DATABASE_URL || process.env.DATABASE_URL);
+// DATABASE_URL 사용 (개발/프로덕션 모두 동일)
+const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
   throw new Error(
-    "DATABASE_URL must be set. Please configure DEV_DATABASE_URL for development or PROD_DATABASE_URL for production.",
+    "DATABASE_URL must be set. Please configure DATABASE_URL in secrets.",
   );
 }
 
@@ -27,7 +25,6 @@ console.log(`[DB] Connected to ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} da
 
 export const pool = new Pool({ 
   connectionString: databaseUrl,
-  // prepared statement 캐싱 비활성화하여 스키마 변경 시 즉시 반영
   max: 10,
 });
 export const db = drizzle({ client: pool, schema });
