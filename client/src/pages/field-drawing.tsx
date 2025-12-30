@@ -1752,7 +1752,7 @@ export default function FieldDrawing() {
                       boxShadow: selectedRectangleId === rect.id ? "0 0 0 2px #008FED" : "none",
                       background: rect.backgroundColor || "#FFFFFF",
                       cursor: selectedTool === "pointer" && !rect.locked ? "move" : "pointer",
-                      zIndex: selectedRectangleId === rect.id ? 10 : 2,
+                      zIndex: selectedRectangleId === rect.id ? 15 : 5,
                     }}
                     data-testid={`rectangle-${rect.id}`}
                   >
@@ -1801,7 +1801,7 @@ export default function FieldDrawing() {
                         color: "#0C0C0C",
                         whiteSpace: "nowrap",
                         border: "1px solid rgba(12, 12, 12, 0.2)",
-                        zIndex: 20,
+                        zIndex: 10,
                       }}
                     >
                       {rect.width.toLocaleString()} mm
@@ -1824,7 +1824,7 @@ export default function FieldDrawing() {
                         color: "#0C0C0C",
                         whiteSpace: "nowrap",
                         border: "1px solid rgba(12, 12, 12, 0.2)",
-                        zIndex: 20,
+                        zIndex: 10,
                       }}
                     >
                       {rect.height.toLocaleString()} mm
@@ -1870,7 +1870,7 @@ export default function FieldDrawing() {
                       border: selectedAccidentAreaId === area.id ? "2px dashed #008FED" : "2px dashed #9E9E9E",
                       background: "rgba(189, 189, 189, 0.3)",
                       cursor: selectedTool === "pointer" && !area.locked ? "move" : "pointer",
-                      zIndex: selectedAccidentAreaId === area.id ? 30 : 20,
+                      zIndex: selectedAccidentAreaId === area.id ? 60 : 50,
                     }}
                     data-testid={`accident-area-${area.id}`}
                   >
@@ -1928,7 +1928,7 @@ export default function FieldDrawing() {
                       width: "30px",
                       height: "30px",
                       cursor: selectedTool === "pointer" ? "move" : "pointer",
-                      zIndex: selectedLeakId === marker.id ? 35 : 25,
+                      zIndex: selectedLeakId === marker.id ? 110 : 100,
                     }}
                     data-testid={`leak-marker-${marker.id}`}
                   >
