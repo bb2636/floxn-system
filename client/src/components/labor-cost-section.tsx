@@ -641,90 +641,121 @@ export function LaborCostSection({
 
         // workName 변경 시 하위 필드 리셋
         if (field === 'workName') {
-          // 목공사-반자틀 선택 시 자동으로 일위대가-반자틀설치 설정
-          if (updated.category === '목공사' && value === '반자틀') {
-            updated.detailWork = '일위대가';
-            updated.detailItem = '반자틀설치';
-            
-            // 카탈로그에서 데이터 가져오기
-            const catalogItem = catalog.find(item =>
-              item.공종 === '목공사' &&
-              item.공사명 === '반자틀' &&
-              item.세부공사 === '일위대가' &&
-              item.세부항목 === '반자틀설치'
-            );
-            
-            if (catalogItem) {
-              updated.unit = catalogItem.단위 || '';
-              updated.standardPrice = catalogItem.단가_인 || 0;
+          // 수동 추가 행 (isLinkedFromRecovery = false): 노무비 DB 사용
+          // 연동 행 (isLinkedFromRecovery = true): 일위대가 DB 사용 (특수 케이스 포함)
+          
+          if (updated.isLinkedFromRecovery) {
+            // === 연동 행: 일위대가 DB 기반 처리 ===
+            // 목공사-반자틀 선택 시 자동으로 일위대가-반자틀설치 설정
+            if (updated.category === '목공사' && value === '반자틀') {
+              updated.detailWork = '일위대가';
+              updated.detailItem = '반자틀설치';
               
-              // applicationRates 기본값 설정
-              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
-              if (catalogItem.단가_천장 !== null) {
-                updated.applicationRates.ceiling = true;
-                updated.pricePerSqm = catalogItem.단가_천장;
-              } else if (catalogItem.단가_벽체 !== null) {
-                updated.applicationRates.wall = true;
-                updated.pricePerSqm = catalogItem.단가_벽체;
-              } else if (catalogItem.단가_바닥 !== null) {
-                updated.applicationRates.floor = true;
-                updated.pricePerSqm = catalogItem.단가_바닥;
-              } else if (catalogItem.단가_길이 !== null) {
-                updated.applicationRates.molding = true;
-                updated.pricePerSqm = catalogItem.단가_길이;
+              // 카탈로그에서 데이터 가져오기
+              const catalogItem = catalog.find(item =>
+                item.공종 === '목공사' &&
+                item.공사명 === '반자틀' &&
+                item.세부공사 === '일위대가' &&
+                item.세부항목 === '반자틀설치'
+              );
+              
+              if (catalogItem) {
+                updated.unit = catalogItem.단위 || '';
+                updated.standardPrice = catalogItem.단가_인 || 0;
+                
+                // applicationRates 기본값 설정
+                updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+                if (catalogItem.단가_천장 !== null) {
+                  updated.applicationRates.ceiling = true;
+                  updated.pricePerSqm = catalogItem.단가_천장;
+                } else if (catalogItem.단가_벽체 !== null) {
+                  updated.applicationRates.wall = true;
+                  updated.pricePerSqm = catalogItem.단가_벽체;
+                } else if (catalogItem.단가_바닥 !== null) {
+                  updated.applicationRates.floor = true;
+                  updated.pricePerSqm = catalogItem.단가_바닥;
+                } else if (catalogItem.단가_길이 !== null) {
+                  updated.applicationRates.molding = true;
+                  updated.pricePerSqm = catalogItem.단가_길이;
+                }
+              } else {
+                updated.unit = '';
+                updated.standardPrice = 0;
+                updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+                updated.pricePerSqm = 0;
               }
-            } else {
-              updated.unit = '';
-              updated.standardPrice = 0;
-              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
-              updated.pricePerSqm = 0;
-            }
-            
-            // 반자틀설치에 대한 피해철거공사(반자틀해체) 행 자동 추가 (연동 행만, 수동 추가 행은 제외)
-            if (updated.isLinkedFromRecovery) {
+              
+              // 반자틀설치에 대한 피해철거공사(반자틀해체) 행 자동 추가
               const demolitionSourceId = `demolition-${rowId}`;
               const existingDemolition = rows.find(r => r.sourceAreaRowId === demolitionSourceId);
               if (!existingDemolition) {
                 demolitionRowToAdd = createDemolitionRow({ ...updated }, '반자틀해체');
               }
             }
-          }
-          // 목공사-걸레받이 선택 시 자동으로 일위대가-내장공 설정 (일위대가DB 기준)
-          else if (updated.category === '목공사' && value === '걸레받이') {
-            updated.detailWork = '일위대가';
-            updated.detailItem = '내장공';
-            
-            // 일위대가 카탈로그에서 데이터 가져오기 (목공사-걸레받이-내장공)
-            const ilwidaegaItem = ilwidaegaCatalog.find(item =>
-              item.공종 === '목공사' &&
-              item.공사명 === '걸레받이' &&
-              item.노임항목 === '내장공'
-            );
-            
-            if (ilwidaegaItem) {
-              updated.unit = 'm'; // 걸레받이는 길이 단위
-              updated.standardPrice = ilwidaegaItem.노임단가 || 0;
-              updated.standardWorkQuantity = ilwidaegaItem.기준작업량 || 0;
+            // 목공사-걸레받이 선택 시 자동으로 일위대가-내장공 설정 (일위대가DB 기준)
+            else if (updated.category === '목공사' && value === '걸레받이') {
+              updated.detailWork = '일위대가';
+              updated.detailItem = '내장공';
               
-              // applicationRates 기본값 설정 (걸레받이는 길이 기준)
-              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: true };
-            } else {
-              updated.unit = 'm';
-              updated.standardPrice = 75; // 일위대가DB 기본값
-              updated.pricePerSqm = 75;
-              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: true };
+              // 일위대가 카탈로그에서 데이터 가져오기 (목공사-걸레받이-내장공)
+              const ilwidaegaItem = ilwidaegaCatalog.find(item =>
+                item.공종 === '목공사' &&
+                item.공사명 === '걸레받이' &&
+                item.노임항목 === '내장공'
+              );
+              
+              if (ilwidaegaItem) {
+                updated.unit = 'm'; // 걸레받이는 길이 단위
+                updated.standardPrice = ilwidaegaItem.노임단가 || 0;
+                updated.standardWorkQuantity = ilwidaegaItem.기준작업량 || 0;
+                
+                // applicationRates 기본값 설정 (걸레받이는 길이 기준)
+                updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: true };
+              } else {
+                updated.unit = 'm';
+                updated.standardPrice = 75; // 일위대가DB 기본값
+                updated.pricePerSqm = 75;
+                updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: true };
+              }
             }
-            // 걸레받이는 피해철거공사 자동 추가 없음
-          }
-          // 그 외 모든 공사명 선택 시 기본으로 노무비 설정 (새 DB 형식)
-          else {
+            // 그 외 연동 행: 일위대가 DB에서 조회
+            else {
+              updated.detailWork = '일위대가';
+              updated.unit = '㎡';
+              updated.standardPrice = 0;
+              updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
+              updated.pricePerSqm = 0;
+              
+              // 일위대가 DB에서 노임항목 조회
+              const lookupWorkName = mapWorkNameForLookup(value);
+              const matchingIlwidaegaItems = ilwidaegaCatalog.filter(item => 
+                item.공종 === updated.category && 
+                item.공사명 === lookupWorkName
+              );
+              const uniqueDetailItems = Array.from(new Set(matchingIlwidaegaItems.map(item => item.노임항목).filter(Boolean)));
+              
+              if (uniqueDetailItems.length === 1) {
+                updated.detailItem = uniqueDetailItems[0];
+                const ilwidaegaItem = matchingIlwidaegaItems[0];
+                if (ilwidaegaItem) {
+                  updated.standardPrice = ilwidaegaItem.노임단가 || 0;
+                  updated.standardWorkQuantity = ilwidaegaItem.기준작업량 || 0;
+                }
+                console.log('[연동행 일위대가 자동선택]', updated.category, '->', value, '->', updated.detailItem);
+              } else {
+                updated.detailItem = '';
+                console.log('[연동행 일위대가 다중옵션]', updated.category, '->', value, '옵션:', uniqueDetailItems);
+              }
+            }
+          } else {
+            // === 수동 추가 행: 노무비 DB 기반 처리 ===
             updated.detailWork = '노무비';
-            updated.unit = '';
+            updated.unit = '인';
             updated.standardPrice = 0;
             updated.applicationRates = { ceiling: false, wall: false, floor: false, molding: false };
             updated.pricePerSqm = 0;
             
-            // 해당 공종+공사명의 노임항목 옵션 확인
+            // 노무비 DB에서 공종+공사명으로 노임항목 조회
             const lookupWorkName = mapWorkNameForLookup(value);
             const matchingItems = catalog.filter(item => 
               item.공종 === updated.category && 
@@ -737,21 +768,21 @@ export function LaborCostSection({
             if (uniqueDetailItems.length === 1) {
               updated.detailItem = uniqueDetailItems[0];
               
-              // 카탈로그에서 해당 항목의 단가 가져오기
+              // 노무비 카탈로그에서 해당 항목의 단가 가져오기
               const catalogItem = matchingItems.find(item => item.세부항목 === uniqueDetailItems[0]);
               if (catalogItem) {
                 updated.unit = catalogItem.단위 || '인';
                 updated.standardPrice = catalogItem.단가_인 || 0;
                 updated.pricePerSqm = catalogItem.단가_인 || 0; // 적용단가도 설정
               }
-              console.log('[노무비 자동선택]', updated.category, '->', value, '->', updated.detailItem, '단가:', updated.pricePerSqm);
+              console.log('[수동행 노무비 자동선택]', updated.category, '->', value, '->', updated.detailItem, '단가:', updated.pricePerSqm);
             } else if (uniqueDetailItems.length > 1) {
               // 노임항목이 여러 개면 선택 대기
               updated.detailItem = '';
-              console.log('[노무비 다중옵션]', updated.category, '->', value, '옵션:', uniqueDetailItems);
+              console.log('[수동행 노무비 다중옵션]', updated.category, '->', value, '옵션:', uniqueDetailItems);
             } else {
               updated.detailItem = '';
-              console.log('[노무비 옵션없음]', updated.category, '->', value, '매칭항목:', matchingItems.length);
+              console.log('[수동행 노무비 옵션없음]', updated.category, '->', value, '매칭항목:', matchingItems.length);
             }
           }
         }
