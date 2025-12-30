@@ -248,13 +248,42 @@ export default function FieldDocuments() {
     },
   });
 
+  // 삭제 중인 문서 ID 추적
+  const [deletingDocIds, setDeletingDocIds] = useState<Set<string>>(new Set());
+  
   // 문서 삭제 mutation
   const deleteMutation = useMutation({
     mutationFn: async (documentId: string) => {
       return await apiRequest("DELETE", `/api/documents/${documentId}`);
     },
-    onSuccess: () => {
+    onMutate: (documentId: string) => {
+      // 즉시 UI에서 제거 (낙관적 업데이트)
+      setDeletingDocIds(prev => new Set(prev).add(documentId));
+    },
+    onSuccess: (_, documentId: string) => {
       queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
+      setDeletingDocIds(prev => {
+        const next = new Set(prev);
+        next.delete(documentId);
+        return next;
+      });
+      toast({
+        title: "파일이 삭제되었습니다",
+        description: "",
+        className: "bg-[#008FED] text-white border-0",
+      });
+    },
+    onError: (error, documentId: string) => {
+      setDeletingDocIds(prev => {
+        const next = new Set(prev);
+        next.delete(documentId);
+        return next;
+      });
+      toast({
+        title: "삭제 실패",
+        description: "파일 삭제 중 오류가 발생했습니다",
+        variant: "destructive",
+      });
     },
   });
 
@@ -493,8 +522,12 @@ export default function FieldDocuments() {
     }
   };
 
-  // 파일 삭제
+  // 파일 삭제 (중복 호출 방지)
   const handleFileRemove = (documentId: string) => {
+    // 이미 삭제 중인 문서는 무시
+    if (deletingDocIds.has(documentId)) {
+      return;
+    }
     deleteMutation.mutate(documentId);
   };
 
@@ -557,14 +590,17 @@ export default function FieldDocuments() {
     }
   };
 
-  // 필터링된 파일 목록 (탭별 서브카테고리로 필터링)
+  // 필터링된 파일 목록 (탭별 서브카테고리로 필터링 + 삭제 중인 파일 제외)
   const filteredDocuments = (() => {
+    // 삭제 중인 문서 제외
+    const activeDocuments = documents.filter(d => !deletingDocIds.has(d.id));
+    
     if (selectedCategory === "전체") {
-      return documents;
+      return activeDocuments;
     }
     
     // 먼저 탭별 필터링
-    const tabFilteredDocs = documents.filter(d => getParentTab(d.category) === selectedCategory);
+    const tabFilteredDocs = activeDocuments.filter(d => getParentTab(d.category) === selectedCategory);
     
     // 서브 필터 적용 (원본 값 사용)
     const currentSubFilter = getCurrentSubFilterRaw();
