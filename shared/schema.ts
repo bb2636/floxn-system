@@ -233,6 +233,7 @@ export const cases = pgTable("cases", {
   
   // 금액 관련 필드
   estimateAmount: text("estimate_amount"), // 견적금액 (최종 총액)
+  initialEstimateAmount: text("initial_estimate_amount"), // 최초 견적금액 (첫 현장출동보고서 제출 시점의 견적금액)
   approvedAmount: text("approved_amount"), // 승인금액 (2차승인 시점의 견적금액)
   
   // 인보이스 관련 필드

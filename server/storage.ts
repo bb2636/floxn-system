@@ -1761,10 +1761,17 @@ export class MemStorage implements IStorage {
       return null;
     }
 
+    // 최초 견적금액 기록 (MemStorage - 기존 estimateAmount 사용)
+    let initialEstimateAmount = caseItem.initialEstimateAmount;
+    if (!initialEstimateAmount && caseItem.estimateAmount) {
+      initialEstimateAmount = caseItem.estimateAmount;
+    }
+
     const updatedCase: Case = {
       ...caseItem,
       fieldSurveyStatus: "submitted",
       status: "검토중",
+      initialEstimateAmount: initialEstimateAmount,
       updatedAt: getKSTDate(),
     };
 
@@ -4505,6 +4512,14 @@ export class DbStorage implements IStorage {
 
     if (existingCase && !existingCase.siteInvestigationSubmitDate) {
       additionalUpdates.siteInvestigationSubmitDate = currentDate;
+    }
+
+    // 최초 견적금액 기록 (기존 값이 없을 때만 - 첫 제출 시점의 견적금액을 영구 저장)
+    if (existingCase && !existingCase.initialEstimateAmount) {
+      const latestEstimateResult = await this.getLatestEstimate(caseId);
+      if (latestEstimateResult?.estimate?.totalAmount) {
+        additionalUpdates.initialEstimateAmount = latestEstimateResult.estimate.totalAmount.toString();
+      }
     }
 
     const result = await db

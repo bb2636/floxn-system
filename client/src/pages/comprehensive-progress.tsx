@@ -1272,7 +1272,7 @@ export default function ComprehensiveProgress() {
                     {caseItem.assignedPartner || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    {(caseItem.approvedAmount || caseItem.estimateAmount) ? `₩${parseInt(caseItem.approvedAmount || caseItem.estimateAmount || "0").toLocaleString()}` : "-"}
+                    {caseItem.initialEstimateAmount ? `₩${parseInt(caseItem.initialEstimateAmount).toLocaleString()}` : "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     {caseItem.approvedAmount ? `₩${parseInt(caseItem.approvedAmount).toLocaleString()}` : "-"}
@@ -1739,7 +1739,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              {(selectedCase.approvedAmount || selectedCase.estimateAmount) ? `₩${parseInt(selectedCase.approvedAmount || selectedCase.estimateAmount || "0").toLocaleString()}` : "-"}
+                              {selectedCase.initialEstimateAmount ? `₩${parseInt(selectedCase.initialEstimateAmount).toLocaleString()}` : "-"}
                             </div>
                           </div>
 
