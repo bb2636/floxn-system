@@ -3778,19 +3778,22 @@ export default function FieldEstimate() {
       }
 
       // UI 데이터를 API 형식으로 변환 (rowOrder는 서버에서 자동 할당)
-      const apiRows = rows.map((row) => ({
-        category: row.category,
-        location: row.location === "선택" ? null : row.location,
-        workType: row.workType || null,
-        workName: row.workName === "선택" ? null : row.workName,
-        damageWidth: row.damageWidth,
-        damageHeight: row.damageHeight,
-        damageArea: row.damageArea,
-        repairWidth: row.repairWidth,
-        repairHeight: row.repairHeight,
-        repairArea: row.repairArea,
-        note: row.note,
-      }));
+      // category가 비어있는 행은 필터링 (손해방지 케이스에서 복구면적 산출표를 사용하지 않을 때)
+      const apiRows = rows
+        .filter((row) => row.category && row.category.trim() !== "")
+        .map((row) => ({
+          category: row.category,
+          location: row.location === "선택" ? null : row.location,
+          workType: row.workType || null,
+          workName: row.workName === "선택" ? null : row.workName,
+          damageWidth: row.damageWidth,
+          damageHeight: row.damageHeight,
+          damageArea: row.damageArea,
+          repairWidth: row.repairWidth,
+          repairHeight: row.repairHeight,
+          repairArea: row.repairArea,
+          note: row.note,
+        }));
 
       // 노무비 데이터 (id 제외, rowIndex 추가)
       const laborCostData = laborCostRows.map(({ id, ...rest }, index) => ({

@@ -6828,7 +6828,7 @@ https://peulrogseun-aqaqaq4561.replit.app
         return res.status(401).json({ error: "인증이 필요합니다. 로그인 후 이 URL을 방문하세요." });
       }
       
-      const user = await storage.getUserById(req.session.userId);
+      const user = await storage.getUser(req.session.userId);
       if (!user || user.role !== "관리자") {
         return res.status(403).json({ error: "관리자 권한이 필요합니다" });
       }
