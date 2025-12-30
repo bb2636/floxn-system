@@ -1018,11 +1018,15 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
       console.log("📱 SMS 자동 발송 - cases 배열:", cases, "길이:", cases.length);
       if (cases.length > 0) {
         const firstCase = cases[0];
-        const caseNumber = firstCase.caseNumber;
+        
+        // 모든 케이스의 접수번호를 수집 (손해방지 + 피해세대 둘 다 선택 시)
+        const validCaseNumbers = cases
+          .map((c: any) => c.caseNumber)
+          .filter((num: string) => num && num !== "-" && !num.startsWith("DRAFT-") && num.trim() !== "");
         
         // 접수번호가 없거나 유효하지 않으면 SMS 발송하지 않음
-        if (!caseNumber || caseNumber === "-" || caseNumber.startsWith("DRAFT-") || caseNumber.trim() === "") {
-          console.error("📱 SMS not sent - invalid case number:", caseNumber);
+        if (validCaseNumbers.length === 0) {
+          console.error("📱 SMS not sent - no valid case numbers");
           toast({ 
             description: "접수번호 생성 오류로 문자가 발송되지 않았습니다. 수동으로 전송해주세요.",
             variant: "destructive",
@@ -1030,6 +1034,14 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
           });
           return;
         }
+        
+        // 케이스 번호들을 정렬 후 쉼표로 연결 (-0이 먼저 오도록)
+        const sortedCaseNumbers = validCaseNumbers.sort((a: string, b: string) => {
+          const suffixA = parseInt(a.split('-')[1] || '0');
+          const suffixB = parseInt(b.split('-')[1] || '0');
+          return suffixA - suffixB;
+        });
+        const caseNumber = sortedCaseNumbers.map((n: string) => formatCaseNumber(n)).join(', ');
         
         const rawPartnerContact = submittedData.assignedPartnerContact?.trim() || "";
         const partnerContact = rawPartnerContact.replace(/[^0-9]/g, "");
@@ -1050,7 +1062,7 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
           
           const smsPayload = {
             to: partnerContact,
-            caseNumber: formatCaseNumber(caseNumber),
+            caseNumber: caseNumber,
             insuranceCompany: submittedData.insuranceCompany || "-",
             managerName: managerName,
             insurancePolicyNo: submittedData.insurancePolicyNo || "-",
