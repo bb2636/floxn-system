@@ -229,13 +229,12 @@ export default function FieldDrawing() {
   // Check if save is ready
   const isSaveReady = Boolean(user && !isLoadingSelectedCase && selectedCase && !isLoadingDrawing);
 
-  // 도면작성은 현장입력 제출 후에도 수정 가능
-  // 협력사는 1차승인 이후에만 수정 불가 (반려 시 제외)
+  // 현장출동보고서 제출 후 협력사는 수정 불가 (반려 시 수정 가능)
   const isPartner = user?.role === "협력사";
   const isRejected = selectedCase?.status === "반려";
-  const isFirstApproved = selectedCase?.status === "1차승인";
-  // 협력사만 1차승인 후 수정 불가 (현장입력 제출과 무관하게 수정 가능)
-  const isReadOnly = isPartner && isFirstApproved && !isRejected;
+  const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
+  // 협력사는 제출 후 수정 불가 (반려 시 수정 가능)
+  const isReadOnly = isPartner && isSubmitted && !isRejected;
 
   // 도면 저장 mutation
   const saveDrawingMutation = useMutation({

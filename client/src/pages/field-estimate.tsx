@@ -1342,13 +1342,12 @@ export default function FieldEstimate() {
     return !isLoadingDocuments && Array.isArray(documentsData) && documentsData.length > 0;
   }, [documentsData, isLoadingDocuments]);
 
-  // 견적서 작성은 현장입력 제출 후에도 수정 가능
-  // 협력사는 1차승인 이후에만 수정 불가 (반려 시 제외)
+  // 현장출동보고서 제출 후 협력사는 수정 불가 (반려 시 수정 가능)
   const isPartner = currentUser?.role === "협력사";
   const isRejected = selectedCase?.status === "반려";
-  const isFirstApproved = selectedCase?.status === "1차승인";
-  // 협력사만 1차승인 후 수정 불가 (현장입력 제출과 무관하게 수정 가능)
-  const isReadOnly = isPartner && isFirstApproved && !isRejected;
+  const isSubmitted = selectedCase?.fieldSurveyStatus === "submitted";
+  // 협력사는 제출 후 수정 불가 (반려 시 수정 가능)
+  const isReadOnly = isPartner && isSubmitted && !isRejected;
   
   // 손해방지 공종 목록 (노무비 탭에서 사용) - 원인세대 항목
   const DAMAGE_PREVENTION_WORK_TYPES = ['누수탐지', '원인철거', '원인공사'];

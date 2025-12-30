@@ -244,6 +244,9 @@ export default function FieldReport() {
   const isAdmin = currentUser?.role === "관리자";
   const isPartner = currentUser?.role === "협력사";
   
+  // 협력사가 제출 후에는 증빙자료 외 모든 섹션 수정 불가 (반려 시는 수정 가능)
+  const isPartnerReadOnly = isPartner && reportData?.case?.fieldSurveyStatus === "submitted" && reportData?.case?.status !== "반려";
+  
   // 권한 체크 - 보고서 승인 권한
   const { hasItem } = usePermissions();
   const canApproveReport = hasItem("관리자 설정", "보고서 승인");
@@ -825,7 +828,7 @@ export default function FieldReport() {
                 data-testid="button-save-notes"
                 variant="outline"
                 onClick={() => saveNotesMutation.mutate(additionalNotes)}
-                disabled={saveNotesMutation.isPending || (caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려")}
+                disabled={saveNotesMutation.isPending || isPartnerReadOnly}
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",
@@ -858,7 +861,7 @@ export default function FieldReport() {
                   
                   setShowSubmitDialog(true);
                 }}
-                disabled={submitReportMutation.isPending || !completionStatus.isComplete || (caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려")}
+                disabled={submitReportMutation.isPending || !completionStatus.isComplete || isPartnerReadOnly}
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",
@@ -4136,13 +4139,13 @@ export default function FieldReport() {
                     }
                   }}
                   rows={10}
-                  readOnly={isAdmin || (isPartner && caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려")}
-                  disabled={isPartner && caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려"}
+                  readOnly={isAdmin || isPartnerReadOnly}
+                  disabled={isPartnerReadOnly}
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     resize: "none",
-                    opacity: (isPartner && caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려") ? 0.6 : 1,
+                    opacity: isPartnerReadOnly ? 0.6 : 1,
                   }}
                 />
                 <div
@@ -4162,7 +4165,7 @@ export default function FieldReport() {
                 <Button
                   data-testid="button-save-notes"
                   onClick={() => saveNotesMutation.mutate(additionalNotes)}
-                  disabled={saveNotesMutation.isPending || (isPartner && caseData.fieldSurveyStatus === "submitted" && caseData.status !== "반려")}
+                  disabled={saveNotesMutation.isPending || isPartnerReadOnly}
                   style={{
                     fontFamily: "Pretendard",
                     fontSize: "14px",
