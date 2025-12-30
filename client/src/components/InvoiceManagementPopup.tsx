@@ -569,6 +569,7 @@ export function InvoiceManagementPopup({
     setIsSubmitting(true);
     try {
       const caseGroupPrefix = getCaseNumberPrefix(caseData.caseNumber);
+      const todayDate = format(new Date(), "yyyy-MM-dd");
       
       const invoiceData = {
         caseId: caseData.id,
@@ -603,21 +604,100 @@ export function InvoiceManagementPopup({
       const today = new Date();
       const invoiceConfirmDateValue = format(today, "yyyy.MM.dd");
       
-      await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
-        invoiceDamagePreventionAmount: preventionApprovedAmount,
-        invoicePropertyRepairAmount: propertyApprovedAmount,
-        invoiceConfirmDate: invoiceConfirmDateValue,
-        status: settlementStatus === "정산" ? "정산완료" : 
-                settlementStatus === "부분입금" ? "부분입금" : 
-                caseData.status,
-      });
+      // 정산 데이터도 업데이트 (정산조회에서 읽을 수 있도록)
+      const settlementResponse = await fetch(`/api/settlements/case/${caseData.id}/latest`);
+      const settlementData = await settlementResponse.json();
+      
+      // 입금 내역에서 입금액 계산
+      const totalDepositAmount = depositEntries.reduce((sum, entry) => sum + entry.depositAmount, 0);
+      // 입금일: 팝업의 입금일 날짜 선택기 값 사용
+      const depositDateValue = depositDate ? format(depositDate, "yyyy-MM-dd") : null;
+      
+      if (settlementData && settlementData.id) {
+        // 기존 정산 데이터 업데이트
+        const settlementUpdateData: Record<string, string> = {
+          deductible: deductibleAmount || "0",
+          discount: totalDepositAmount.toString(), // 입금액
+          commission: feeAmount.toString(), // 수수료
+          partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
+          partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
+        };
+        
+        if (depositDateValue) {
+          settlementUpdateData.settlementDate = depositDateValue; // 입금일
+        }
+        
+        // "정산"이 선택된 경우 종결일 설정
+        if (settlementStatus === "정산") {
+          settlementUpdateData.closingDate = todayDate; // 종결일
+        }
+        
+        await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, settlementUpdateData);
+      } else {
+        // 정산 데이터가 없으면 새로 생성
+        const settlementCreateData: Record<string, unknown> = {
+          caseId: caseData.id,
+          settlementAmount: "0", // 필수 필드
+          settlementDate: depositDateValue || todayDate, // 입금일
+          deductible: deductibleAmount || "0",
+          discount: totalDepositAmount.toString(), // 입금액
+          commission: feeAmount.toString(), // 수수료
+          partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
+          partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
+        };
+        
+        // "정산"이 선택된 경우 종결일 설정
+        if (settlementStatus === "정산") {
+          settlementCreateData.closingDate = todayDate; // 종결일
+        }
+        
+        await apiRequest("POST", "/api/settlements", settlementCreateData);
+      }
+      
+      // "정산" 또는 "부분입금"이 선택된 경우 같은 사고번호의 모든 케이스 상태 변경
+      if (settlementStatus === "정산" || settlementStatus === "부분입금") {
+        const newStatus = settlementStatus === "정산" ? "정산완료" : "부분입금";
+        
+        // 현재 케이스 상태 변경
+        await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
+          invoiceDamagePreventionAmount: preventionApprovedAmount,
+          invoicePropertyRepairAmount: propertyApprovedAmount,
+          invoiceConfirmDate: invoiceConfirmDateValue,
+          status: newStatus,
+        });
+        
+        // 관련 케이스들도 모두 상태 변경 (같은 사고번호)
+        if (relatedCases && relatedCases.length > 0) {
+          const updatePromises = relatedCases
+            .filter(rc => rc.id !== caseData.id) // 현재 케이스 제외
+            .map(rc => 
+              apiRequest("PATCH", `/api/cases/${rc.id}`, {
+                status: newStatus,
+              })
+            );
+          await Promise.all(updatePromises);
+        }
+      } else {
+        // 정산/부분입금이 아닌 경우 현재 케이스만 업데이트
+        await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
+          invoiceDamagePreventionAmount: preventionApprovedAmount,
+          invoicePropertyRepairAmount: propertyApprovedAmount,
+          invoiceConfirmDate: invoiceConfirmDateValue,
+        });
+      }
       
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settlements"] });
       
+      const updatedCount = relatedCases ? relatedCases.length : 1;
       toast({
         title: "인보이스 승인 완료",
-        description: `총 승인금액: ${totalApprovedAmount.toLocaleString()}원`,
+        description: settlementStatus === "정산" 
+          ? `정산이 완료되었습니다. (${updatedCount}건 상태 변경)` 
+          : settlementStatus === "부분입금"
+          ? `부분입금 처리되었습니다. (${updatedCount}건 상태 변경)`
+          : `총 승인금액: ${totalApprovedAmount.toLocaleString()}원`,
       });
       
       onOpenChange(false);
