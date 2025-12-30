@@ -77,6 +77,7 @@ export default function SettlementsInquiry() {
   const [invoiceCaseId, setInvoiceCaseId] = useState<string | null>(null);
   const [showInvoiceManagementPopup, setShowInvoiceManagementPopup] = useState(false);
   const [selectedCaseForInvoice, setSelectedCaseForInvoice] = useState<CaseWithLatestProgress | null>(null);
+  const [selectedRelatedCasesForInvoice, setSelectedRelatedCasesForInvoice] = useState<CaseWithLatestProgress[]>([]);
   const [selectedCommission, setSelectedCommission] = useState<number>(0);
   const [selectedEstimateData, setSelectedEstimateData] = useState<{
     preventionEstimate: number;
@@ -133,6 +134,11 @@ export default function SettlementsInquiry() {
     const targetCase = cases.find(c => c.id === row.id);
     if (targetCase) {
       setSelectedCaseForInvoice(targetCase);
+      // 같은 사고번호의 모든 케이스들 찾기 (row.caseIds 사용)
+      const relatedCases = row.caseIds
+        .map(caseId => cases.find(c => c.id === caseId))
+        .filter((c): c is CaseWithLatestProgress => c !== undefined);
+      setSelectedRelatedCasesForInvoice(relatedCases);
       setSelectedEstimateData({
         preventionEstimate: row.preventionEstimateAmount || 0,
         preventionApproved: row.preventionApprovedAmount || 0,
@@ -2059,6 +2065,12 @@ export default function SettlementsInquiry() {
         onOpenChange={setShowInvoiceManagementPopup}
         caseData={selectedCaseForInvoice}
         estimateData={selectedEstimateData}
+        relatedCases={selectedRelatedCasesForInvoice.map(c => ({
+          id: c.id,
+          caseNumber: c.caseNumber,
+          recoveryType: c.recoveryType,
+          estimateAmount: null,
+        }))}
         managerName={(() => {
           if (!selectedCaseForInvoice?.managerId) return "-";
           const manager = usersByIdMap.get(selectedCaseForInvoice.managerId);
