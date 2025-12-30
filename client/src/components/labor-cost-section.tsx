@@ -816,11 +816,38 @@ export function LaborCostSection({
           
           // 일위대가인 경우: ilwidaegaCatalog에서 D, E 가져오기
           if (updated.detailWork === '일위대가') {
-            const ilwidaegaItem = ilwidaegaCatalog.find(item =>
+            // 1차: 공종+공사명+노임항목 정확히 매치
+            let ilwidaegaItem = ilwidaegaCatalog.find(item =>
               item.공종 === updated.category &&
               item.공사명 === lookupWorkName &&
               item.노임항목 === value
             );
+            
+            // 2차: 공종+노임항목으로 폴백 조회 (공사명과 무관하게)
+            if (!ilwidaegaItem) {
+              ilwidaegaItem = ilwidaegaCatalog.find(item =>
+                item.공종 === updated.category &&
+                item.노임항목 === value &&
+                item.노임단가 !== null && item.노임단가 > 0
+              );
+              if (ilwidaegaItem) {
+                console.log('[일위대가 폴백1] 공종+노임항목으로 매치:', updated.category, value, 
+                  '노임단가:', ilwidaegaItem.노임단가, '(원본 공사명:', ilwidaegaItem.공사명, ')');
+              }
+            }
+            
+            // 3차: 노임항목만으로 폴백 조회 (공종과 무관하게)
+            if (!ilwidaegaItem) {
+              ilwidaegaItem = ilwidaegaCatalog.find(item =>
+                item.노임항목 === value &&
+                item.노임단가 !== null && item.노임단가 > 0
+              );
+              if (ilwidaegaItem) {
+                console.log('[일위대가 폴백2] 노임항목만으로 매치:', value, 
+                  '노임단가:', ilwidaegaItem.노임단가, '(원본 공종:', ilwidaegaItem.공종, ', 공사명:', ilwidaegaItem.공사명, ')');
+              }
+            }
+            
             if (ilwidaegaItem) {
               updated.unit = '㎡';
               updated.standardPrice = ilwidaegaItem.노임단가 || 0;  // E
@@ -831,10 +858,24 @@ export function LaborCostSection({
                 'D:', ilwidaegaItem.기준작업량, 'E:', ilwidaegaItem.노임단가);
             } else {
               // 일위대가DB에 없으면 노무비DB에서 조회 (수동 추가 행의 폴백)
-              const laborCatalogItem = catalog.find(item =>
+              let laborCatalogItem = catalog.find(item =>
                 item.공종 === updated.category &&
                 item.세부항목 === value
               );
+              
+              // 노무비DB에서도 공종 무관하게 노임항목만으로 폴백
+              if (!laborCatalogItem) {
+                laborCatalogItem = catalog.find(item =>
+                  item.세부공사 === '노무비' &&
+                  item.세부항목 === value &&
+                  item.단가_인 !== null && item.단가_인 > 0
+                );
+                if (laborCatalogItem) {
+                  console.log('[노무비DB 폴백3] 노임항목만으로 매치:', value, 
+                    '단가_인:', laborCatalogItem.단가_인, '(원본 공종:', laborCatalogItem.공종, ')');
+                }
+              }
+              
               if (laborCatalogItem) {
                 updated.unit = '인';
                 updated.standardPrice = laborCatalogItem.단가_인 || 0;
