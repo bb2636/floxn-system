@@ -801,7 +801,28 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
       await page.close();
     }
     
-    const pdfDocumentsToAppend: any[] = [];
+    const pdfDocumentsToAppend: { doc: any; tab: string }[] = [];
+    
+    // 카테고리 -> 탭 매핑
+    const categoryToTab: Record<string, string> = {
+      '현장출동사진': '현장사진',
+      '현장': '현장사진',
+      '수리중 사진': '현장사진',
+      '수리중': '현장사진',
+      '복구완료 사진': '현장사진',
+      '복구완료': '현장사진',
+      '보험금 청구서': '기본자료',
+      '개인정보 동의서(가족용)': '기본자료',
+      '주민등록등본': '증빙자료',
+      '등기부등본': '증빙자료',
+      '건축물대장': '증빙자료',
+      '기타증빙자료(민원일지 등)': '증빙자료',
+      '위임장': '청구자료',
+      '도급계약서': '청구자료',
+      '복구완료확인서': '청구자료',
+      '부가세 청구자료': '청구자료',
+      '청구': '청구자료',
+    };
     
     if (sections.evidence && evidence.selectedFileIds.length > 0) {
       const selectedDocs = await db.select().from(caseDocuments)
@@ -816,7 +837,7 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
       const pdfDocs = selectedDocs.filter(doc => doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf'));
       
       console.log(`[PDF 생성] 선택된 문서 수: ${selectedDocs.length}, 이미지: ${imageDocs.length}, PDF: ${pdfDocs.length}`);
-      console.log('[PDF 생성] PDF 문서 목록:', pdfDocs.map(d => ({ id: d.id, name: d.fileName, type: d.fileType })));
+      console.log('[PDF 생성] PDF 문서 목록:', pdfDocs.map(d => ({ id: d.id, name: d.fileName, type: d.fileType, category: d.category })));
       
       if (imageDocs.length > 0) {
         const evidenceHtml = await generateEvidencePages(caseData, imageDocs);
@@ -847,7 +868,141 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
         }
       }
       
-      pdfDocumentsToAppend.push(...pdfDocs);
+      // PDF 문서들을 카테고리/탭 정보와 함께 저장 (증빙자료 섹션에서 바로 추가하기 위함)
+      pdfDocs.forEach(doc => {
+        const tab = categoryToTab[doc.category] || '기타';
+        pdfDocumentsToAppend.push({ doc, tab });
+      });
+      
+      // PDF 첨부파일을 증빙자료 섹션에 카테고리별로 추가
+      if (pdfDocumentsToAppend.length > 0) {
+        // 탭 순서대로 정렬
+        const tabOrder = ['현장사진', '기본자료', '증빙자료', '청구자료', '기타'];
+        const sortedPdfDocs = [...pdfDocumentsToAppend].sort((a, b) => {
+          const aIndex = tabOrder.indexOf(a.tab);
+          const bIndex = tabOrder.indexOf(b.tab);
+          return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+        });
+        
+        // 카테고리별 헤더 페이지 생성 함수
+        const generatePdfAttachmentHeader = (tabName: string, category: string, fileName: string, caseNumber: string) => {
+          return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 0; }
+    body { 
+      font-family: 'Noto Sans KR', sans-serif; 
+      margin: 0; 
+      padding: 20mm;
+      box-sizing: border-box;
+    }
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, #3b82f6, #6366f1);
+      color: white;
+      padding: 10mm 15mm;
+      margin: -20mm -20mm 20mm -20mm;
+    }
+    .header-title { font-size: 18pt; font-weight: bold; }
+    .header-info { font-size: 10pt; }
+    .content {
+      padding: 20mm;
+      text-align: center;
+    }
+    .tab-badge {
+      display: inline-block;
+      background: #3b82f6;
+      color: white;
+      padding: 5mm 10mm;
+      border-radius: 5mm;
+      font-size: 14pt;
+      margin-bottom: 10mm;
+    }
+    .category-name {
+      font-size: 16pt;
+      color: #374151;
+      margin-bottom: 10mm;
+    }
+    .file-name {
+      font-size: 12pt;
+      color: #6b7280;
+      word-break: break-all;
+    }
+    .note {
+      margin-top: 20mm;
+      font-size: 10pt;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-bar">
+    <div class="header-title">증빙자료 - PDF 첨부</div>
+    <div class="header-info">접수번호: ${caseNumber}</div>
+  </div>
+  <div class="content">
+    <div class="tab-badge">${tabName}</div>
+    <div class="category-name">${category}</div>
+    <div class="file-name">${fileName}</div>
+    <div class="note">※ 다음 페이지부터 첨부 PDF 내용이 표시됩니다.</div>
+  </div>
+</body>
+</html>`;
+        };
+        
+        console.log(`[PDF 증빙자료] PDF 첨부파일 ${sortedPdfDocs.length}개를 증빙자료 섹션에 추가`);
+        
+        // 브라우저가 아직 열려있는지 확인하고, 필요시 다시 열기
+        if (!browser) {
+          browser = await puppeteer.launch({
+            headless: true,
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+          });
+        }
+        
+        for (const { doc: pdfDoc, tab } of sortedPdfDocs) {
+          try {
+            // 1. 헤더 페이지 생성
+            const headerHtml = generatePdfAttachmentHeader(tab, pdfDoc.category, pdfDoc.fileName, caseData.caseNumber || '');
+            const headerPage = await browser.newPage();
+            await headerPage.setContent(headerHtml, { waitUntil: 'networkidle0' });
+            const headerPdfBuffer = await headerPage.pdf({
+              format: 'A4',
+              printBackground: true,
+              margin: { top: '0', right: '0', bottom: '0', left: '0' },
+            });
+            pdfParts.push(Buffer.from(headerPdfBuffer));
+            await headerPage.close();
+            
+            // 2. 실제 PDF 파일 내용 추가
+            console.log(`[PDF 증빙자료] 헤더 추가: ${tab} - ${pdfDoc.category} - ${pdfDoc.fileName}`);
+            
+            // PDF 데이터 파싱 및 추가
+            let pdfData: Uint8Array;
+            if (pdfDoc.fileData.startsWith('data:')) {
+              const base64Data = pdfDoc.fileData.split(',')[1];
+              pdfData = Buffer.from(base64Data, 'base64');
+            } else {
+              pdfData = Buffer.from(pdfDoc.fileData, 'base64');
+            }
+            
+            // pdfParts에 PDF 버퍼 추가 (나중에 병합됨)
+            pdfParts.push(Buffer.from(pdfData));
+            console.log(`[PDF 증빙자료] PDF 내용 추가: ${pdfDoc.fileName} (${pdfData.length} bytes)`);
+            
+          } catch (err) {
+            console.error(`[PDF 증빙자료] PDF 처리 실패 (${pdfDoc.fileName}):`, err);
+          }
+        }
+        
+        // 이미 증빙자료 섹션에 추가했으므로 마지막에 다시 추가되지 않도록 배열 비우기
+        pdfDocumentsToAppend.length = 0;
+      }
     }
     
     if (sections.estimate) {
@@ -907,27 +1062,31 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
       }
     }
     
-    console.log(`[PDF 병합] 첨부 PDF 수: ${pdfDocumentsToAppend.length}`);
-    for (const pdfDoc of pdfDocumentsToAppend) {
-      try {
-        console.log(`[PDF 병합] 처리 중: ${pdfDoc.fileName}, 데이터 길이: ${pdfDoc.fileData?.length || 0}`);
-        let pdfData: Uint8Array;
-        if (pdfDoc.fileData.startsWith('data:')) {
-          const base64Data = pdfDoc.fileData.split(',')[1];
-          pdfData = Buffer.from(base64Data, 'base64');
-        } else {
-          pdfData = Buffer.from(pdfDoc.fileData, 'base64');
+    // 증빙자료 섹션에서 이미 처리되었으므로 여기서는 추가 처리 없음
+    // (pdfDocumentsToAppend는 증빙자료 섹션에서 처리 후 비워짐)
+    if (pdfDocumentsToAppend.length > 0) {
+      console.log(`[PDF 병합] 증빙자료 섹션에서 처리되지 않은 PDF ${pdfDocumentsToAppend.length}개 추가`);
+      for (const { doc: pdfDoc, tab } of pdfDocumentsToAppend) {
+        try {
+          console.log(`[PDF 병합] 처리 중: ${pdfDoc.fileName} (${tab}), 데이터 길이: ${pdfDoc.fileData?.length || 0}`);
+          let pdfData: Uint8Array;
+          if (pdfDoc.fileData.startsWith('data:')) {
+            const base64Data = pdfDoc.fileData.split(',')[1];
+            pdfData = Buffer.from(base64Data, 'base64');
+          } else {
+            pdfData = Buffer.from(pdfDoc.fileData, 'base64');
+          }
+          
+          console.log(`[PDF 병합] 디코딩된 PDF 크기: ${pdfData.length} bytes`);
+          const attachedPdf = await PDFDocument.load(pdfData, { ignoreEncryption: true });
+          const pageCount = attachedPdf.getPageCount();
+          console.log(`[PDF 병합] 첨부 PDF 페이지 수: ${pageCount}`);
+          const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
+          pages.forEach(page => mergedPdf.addPage(page));
+          console.log(`[PDF 병합] 성공: ${pdfDoc.fileName} (${pageCount}페이지 추가)`);
+        } catch (err) {
+          console.error(`[PDF 병합] 실패 (${pdfDoc.fileName}):`, err);
         }
-        
-        console.log(`[PDF 병합] 디코딩된 PDF 크기: ${pdfData.length} bytes`);
-        const attachedPdf = await PDFDocument.load(pdfData, { ignoreEncryption: true });
-        const pageCount = attachedPdf.getPageCount();
-        console.log(`[PDF 병합] 첨부 PDF 페이지 수: ${pageCount}`);
-        const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
-        pages.forEach(page => mergedPdf.addPage(page));
-        console.log(`[PDF 병합] 성공: ${pdfDoc.fileName} (${pageCount}페이지 추가)`);
-      } catch (err) {
-        console.error(`[PDF 병합] 실패 (${pdfDoc.fileName}):`, err);
       }
     }
     
