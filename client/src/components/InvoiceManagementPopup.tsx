@@ -249,11 +249,10 @@ export function InvoiceManagementPopup({
       const settlementResponse = await fetch(`/api/settlements/case/${caseData.id}/latest`);
       const settlementData = await settlementResponse.json();
       
-      // 입금 내역에서 입금액과 입금일 계산
+      // 입금 내역에서 입금액 계산
       const totalDepositAmount = depositEntries.reduce((sum, entry) => sum + entry.depositAmount, 0);
-      const latestDepositDate = depositEntries.length > 0 
-        ? depositEntries.sort((a, b) => b.depositDate.localeCompare(a.depositDate))[0].depositDate
-        : null;
+      // 입금일: 팝업의 입금일 날짜 선택기 값 사용
+      const depositDateValue = depositDate ? format(depositDate, "yyyy-MM-dd") : null;
       
       if (settlementData && settlementData.id) {
         // 기존 정산 데이터 업데이트
@@ -265,8 +264,8 @@ export function InvoiceManagementPopup({
           partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
         };
         
-        if (latestDepositDate) {
-          settlementUpdateData.settlementDate = latestDepositDate; // 입금일
+        if (depositDateValue) {
+          settlementUpdateData.settlementDate = depositDateValue; // 입금일
         }
         
         // "정산"이 선택된 경우 종결일 설정
@@ -280,7 +279,7 @@ export function InvoiceManagementPopup({
         const settlementCreateData: Record<string, unknown> = {
           caseId: caseData.id,
           settlementAmount: "0", // 필수 필드
-          settlementDate: latestDepositDate || todayDate, // 필수 필드
+          settlementDate: depositDateValue || todayDate, // 입금일
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액
           commission: feeAmount.toString(), // 수수료
@@ -501,19 +500,26 @@ export function InvoiceManagementPopup({
         };
         loadInvoiceData();
         
-        // 정산 데이터 로드 (입금내역, 협력업체 지급일 등)
+        // 정산 데이터 로드 (입금일, 입금내역, 협력업체 지급일 등)
         const loadSettlementData = async () => {
           try {
             const settlementResponse = await fetch(`/api/settlements/case/${caseData.id}/latest`);
             if (settlementResponse.ok) {
               const settlementData = await settlementResponse.json();
               if (settlementData && settlementData.id) {
+                // 입금일 (날짜 선택기)
+                if (settlementData.settlementDate) {
+                  setDepositDate(new Date(settlementData.settlementDate));
+                } else {
+                  setDepositDate(undefined);
+                }
+                
                 // 협력업체 지급일
                 if (settlementData.partnerPaymentDate) {
                   setPartnerPaymentDate(settlementData.partnerPaymentDate);
                 }
                 
-                // 입금내역 복원 (discount와 settlementDate로)
+                // 입금내역 복원 (discount로)
                 if (settlementData.discount && parseInt(settlementData.discount) > 0) {
                   const depositEntry: DepositEntry = {
                     id: `deposit-loaded-${Date.now()}`,
@@ -529,15 +535,18 @@ export function InvoiceManagementPopup({
                   setDepositEntries([]);
                 }
               } else {
+                setDepositDate(undefined);
                 setDepositEntries([]);
                 setPartnerPaymentDate("");
               }
             } else {
+              setDepositDate(undefined);
               setDepositEntries([]);
               setPartnerPaymentDate("");
             }
           } catch (error) {
             console.error("Failed to load settlement data:", error);
+            setDepositDate(undefined);
             setDepositEntries([]);
             setPartnerPaymentDate("");
           }
