@@ -48,7 +48,8 @@ interface SettlementRow {
   // 정산 데이터
   settlementAmount: number;
   settlementDate: string;
-  settlementCommission: number;
+  settlementCommission: number; // 수수료 (손해방지/대물비용 있을 때만)
+  usageFee: number; // 사용료 (미수리 시 10만원)
   settlementDeposit: number;
   settlementDeductible: number;
   settlementInvoiceDate: string;
@@ -315,9 +316,13 @@ export default function SettlementsInquiry() {
       // 정산 데이터 파싱
       const settlement = settlementsByCaseIdMap.get(caseItem.id);
       const settlementAmount = settlement ? parseAmountValue(settlement.settlementAmount) : 0;
-      const settlementCommission = caseItem.recoveryType === "선견적요청" 
-        ? 100000 
+      // 미수리(선견적요청)일 때: 수수료 = 0, 사용료 = 10만원
+      // 수리(직접복구)일 때: 수수료 = DB값, 사용료 = 0
+      const isNoRepair = caseItem.recoveryType === "선견적요청";
+      const settlementCommission = isNoRepair 
+        ? 0 
         : (settlement ? parseAmountValue(settlement.commission) : 0);
+      const usageFee = isNoRepair ? 100000 : 0;
       const settlementDeposit = settlement ? parseAmountValue(settlement.discount) : 0;
       const settlementDeductible = settlement ? parseAmountValue(settlement.deductible) : 0;
 
@@ -343,6 +348,7 @@ export default function SettlementsInquiry() {
         settlementAmount,
         settlementDate: settlement?.settlementDate || "-",
         settlementCommission,
+        usageFee,
         settlementDeposit,
         settlementDeductible,
         settlementInvoiceDate: settlement?.invoiceDate || "-",
@@ -379,30 +385,38 @@ export default function SettlementsInquiry() {
       // Use first case for common data (typically -0 case has main info)
       const primaryCase = casesInGroup[0];
 
+      // 미수리(선견적요청)인지 확인
+      const isNoRepairCase = primaryCase.recoveryType === "선견적요청";
+
       // Calculate prevention costs (from -0 cases)
+      // 미수리일 때는 손해방지비용 0
       const preventionCases = casesInGroup.filter(c => c.isPrevention);
-      const preventionEstimateAmount = preventionCases.reduce((sum, c) => sum + c.estimateTotal, 0);
-      const preventionApprovedAmount = preventionCases.reduce((sum, c) => sum + c.approvedValue, 0);
+      const preventionEstimateAmount = isNoRepairCase ? 0 : preventionCases.reduce((sum, c) => sum + c.estimateTotal, 0);
+      const preventionApprovedAmount = isNoRepairCase ? 0 : preventionCases.reduce((sum, c) => sum + c.approvedValue, 0);
       const preventionDifference = preventionApprovedAmount - preventionEstimateAmount;
       const preventionAdjustmentRate = preventionEstimateAmount > 0 
         ? ((preventionDifference / preventionEstimateAmount) * 100).toFixed(1) + "%"
         : "-";
 
       // Calculate property costs (from -1, -2, etc. cases - summed)
+      // 미수리일 때는 대물비용 0
       const propertyCases = casesInGroup.filter(c => c.isProperty);
-      const propertyEstimateAmount = propertyCases.reduce((sum, c) => sum + c.estimateTotal, 0);
-      const propertyApprovedAmount = propertyCases.reduce((sum, c) => sum + c.approvedValue, 0);
+      const propertyEstimateAmount = isNoRepairCase ? 0 : propertyCases.reduce((sum, c) => sum + c.estimateTotal, 0);
+      const propertyApprovedAmount = isNoRepairCase ? 0 : propertyCases.reduce((sum, c) => sum + c.approvedValue, 0);
       const propertyDifference = propertyApprovedAmount - propertyEstimateAmount;
       const propertyAdjustmentRate = propertyEstimateAmount > 0
         ? ((propertyDifference / propertyEstimateAmount) * 100).toFixed(1) + "%"
         : "-";
 
-      // Total claim amount
+      // Total claim amount (미수리 시 0)
       const claimAmount = preventionEstimateAmount + propertyEstimateAmount;
 
       // Sum settlement amounts for all cases in group
       const totalSettlementAmount = casesInGroup.reduce((sum, c) => sum + c.settlementAmount, 0);
-      const totalSettlementCommission = casesInGroup.reduce((sum, c) => sum + c.settlementCommission, 0);
+      // 수수료는 손해방지/대물비용이 있을 때만 (미수리 시 0)
+      const totalSettlementCommission = isNoRepairCase ? 0 : casesInGroup.reduce((sum, c) => sum + c.settlementCommission, 0);
+      // 사용료는 미수리 시 10만원
+      const totalUsageFee = casesInGroup.reduce((sum, c) => sum + c.usageFee, 0);
       const totalSettlementDeposit = casesInGroup.reduce((sum, c) => sum + c.settlementDeposit, 0);
       const totalSettlementDeductible = casesInGroup.reduce((sum, c) => sum + c.settlementDeductible, 0);
 
@@ -433,6 +447,7 @@ export default function SettlementsInquiry() {
         settlementAmount: totalSettlementAmount,
         settlementDate: primaryCase.settlementDate,
         settlementCommission: totalSettlementCommission,
+        usageFee: totalUsageFee,
         settlementDeposit: totalSettlementDeposit,
         settlementDeductible: totalSettlementDeductible,
         settlementInvoiceDate: primaryCase.settlementInvoiceDate,
@@ -1711,18 +1726,18 @@ export default function SettlementsInquiry() {
                   >
                     -
                   </td>
-                  {/* 서울본 */}
+                  {/* 사용료 */}
                   <td
                     style={{
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      color: row.usageFee > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                      textAlign: "center",
+                      textAlign: "right",
                     }}
                   >
-                    -
+                    {row.usageFee > 0 ? row.usageFee.toLocaleString() + "원" : "-"}
                   </td>
                   {/* 자기부담금 */}
                   <td
