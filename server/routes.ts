@@ -5612,6 +5612,235 @@ FLOXN 드림`;
   });
 
   // ==========================================
+  // POST /api/send-field-report-email-v2 - 서버 측 PDF 생성 후 이메일 전송
+  // ==========================================
+  const sendFieldReportEmailV2Schema = z.object({
+    emails: z.array(z.string().email("올바른 이메일 형식이 아닙니다")).min(1, "수신자 이메일이 필요합니다"),
+    caseId: z.string().min(1, "케이스 ID가 필요합니다"),
+    sections: z.object({
+      cover: z.boolean().default(true),
+      fieldReport: z.boolean().default(true),
+      drawing: z.boolean().default(true),
+      evidence: z.boolean().default(true),
+      estimate: z.boolean().default(true),
+      etc: z.boolean().default(false),
+    }),
+    evidence: z.object({
+      tab: z.string().default("전체"),
+      selectedFileIds: z.array(z.string()).default([]),
+    }).default({ tab: "전체", selectedFileIds: [] }),
+  });
+
+  app.post("/api/send-field-report-email-v2", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(403).json({ error: "사용자 정보를 찾을 수 없습니다" });
+    }
+
+    const allowedRoles = ["협력사", "관리자", "심사사"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "현장조사 리포트 이메일 전송 권한이 없습니다" });
+    }
+
+    try {
+      const validationResult = sendFieldReportEmailV2Schema.safeParse(req.body);
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors.map(e => e.message).join(", ");
+        return res.status(400).json({ error: errorMessage });
+      }
+
+      const { emails, caseId, sections, evidence } = validationResult.data;
+
+      // 케이스 정보 조회
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // 서버 측에서 PDF 생성 (다운로드와 동일한 방식)
+      console.log(`[send-field-report-email-v2] Generating PDF for case ${caseId}`);
+      const pdfBuffer = await generatePdf({
+        caseId,
+        sections,
+        evidence,
+      });
+
+      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timestamp = Date.now();
+      const fileName = `field-report_${caseData.caseNumber || timestamp}_${timestamp}.pdf`;
+
+      // Object Storage에 업로드
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+      if (!bucketId) {
+        console.error("[send-field-report-email-v2] Missing Object Storage bucket ID");
+        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+      }
+
+      const bucket = objectStorageClient.bucket(bucketId);
+      const objectName = `public/field-report-pdfs/${fileName}`;
+      const file = bucket.file(objectName);
+
+      await file.save(pdfBuffer, {
+        contentType: 'application/pdf',
+        metadata: {
+          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
+        },
+      });
+
+      // PDF 다운로드 URL 생성
+      const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60;
+      const pdfUrl = await signObjectURL({
+        bucketName: bucketId,
+        objectName: objectName,
+        method: 'GET',
+        ttlSec: SIGNED_URL_TTL_SEC,
+      });
+
+      console.log(`[send-field-report-email-v2] PDF uploaded with signed URL`);
+
+      // 증빙자료 다운로드 링크 생성
+      let documentLinksSection = '';
+      try {
+        const documents = await storage.getDocumentsByCaseId(caseId);
+        if (documents && documents.length > 0) {
+          const categoryOrder = [
+            "현장출동사진", "수리중 사진", "복구완료 사진",
+            "보험금 청구서", "개인정보 동의서(가족용)",
+            "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
+            "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
+          ];
+          
+          const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+          if (privateObjectDir) {
+            const privateDirParts = privateObjectDir.startsWith('/') 
+              ? privateObjectDir.slice(1).split('/') 
+              : privateObjectDir.split('/');
+            const privateBucketName = privateDirParts[0];
+            const privatePrefix = privateDirParts.slice(1).join('/');
+            const privateBucket = objectStorageClient.bucket(privateBucketName);
+            
+            const categoryGroups: Record<string, Array<{ fileName: string; url: string }>> = {};
+            
+            for (const doc of documents) {
+              if (!doc.fileData || !doc.category) continue;
+              
+              try {
+                const fileBuffer = Buffer.from(doc.fileData, 'base64');
+                const sanitizedFileName = doc.fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
+                const docObjectName = `${privatePrefix}/email-documents/${caseId}/${timestamp}_${sanitizedFileName}`;
+                const docFile = privateBucket.file(docObjectName);
+                
+                await docFile.save(fileBuffer, {
+                  contentType: doc.fileType,
+                  metadata: {
+                    'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'private' }),
+                  },
+                });
+                
+                const docUrl = await signObjectURL({
+                  bucketName: privateBucketName,
+                  objectName: docObjectName,
+                  method: 'GET',
+                  ttlSec: SIGNED_URL_TTL_SEC,
+                });
+                
+                if (!categoryGroups[doc.category]) {
+                  categoryGroups[doc.category] = [];
+                }
+                categoryGroups[doc.category].push({ fileName: doc.fileName, url: docUrl });
+              } catch (docError) {
+                console.error(`[send-field-report-email-v2] Failed for ${doc.fileName}:`, docError);
+              }
+            }
+            
+            // 카테고리 순서대로 링크 생성
+            const sortedCategories = Object.keys(categoryGroups).sort((a, b) => {
+              const indexA = categoryOrder.indexOf(a);
+              const indexB = categoryOrder.indexOf(b);
+              return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+            });
+            
+            if (sortedCategories.length > 0) {
+              documentLinksSection = '\n\n📎 증빙자료 다운로드 링크:\n' + sortedCategories.map(category => {
+                const docs = categoryGroups[category];
+                return `\n[${category}]\n` + docs.map(d => `  - ${d.fileName}: ${d.url}`).join('\n');
+              }).join('\n');
+            }
+          }
+        }
+      } catch (docError) {
+        console.error("[send-field-report-email-v2] Failed to generate document links:", docError);
+      }
+
+      // 이메일 내용 생성
+      const emailContent = `안녕하세요.
+
+FLOXN 현장조사 리포트를 전송드립니다.
+
+▶ 리포트 정보
+- 보험사: ${caseData.insuranceCompany || '미지정'}
+- 사고번호: ${caseData.insuranceAccidentNo || '미지정'}
+- 의뢰인: ${caseData.clientName || '미지정'}
+- 피보험자: ${caseData.insuredName || '미지정'}
+- 출동일: ${caseData.visitDate || '미지정'}
+- 사고유형: ${caseData.accidentCategory || '미지정'}
+- 사고원인: ${caseData.accidentCause || '미지정'}
+- 복구방식: ${caseData.recoveryMethodType || '미지정'}
+
+▶ PDF 다운로드 링크 (7일간 유효)
+${pdfUrl}
+${documentLinksSection}
+
+- 발송일시: ${dateStr}
+- 발송자: ${user.name || user.username}
+
+감사합니다.
+FLOXN 드림`;
+
+      // 이메일 전송
+      const sendResults: { email: string; success: boolean; error?: string }[] = [];
+      
+      for (const recipientEmail of emails) {
+        try {
+          await sendNotificationEmail(recipientEmail, `FLOXN 현장조사 리포트 - ${caseData.caseNumber || dateStr}`, emailContent);
+          sendResults.push({ email: recipientEmail, success: true });
+          console.log(`[Email] Field Report PDF sent to ${recipientEmail} by ${user.username}`);
+        } catch (sendError) {
+          console.error(`[Email] Failed to send to ${recipientEmail}:`, sendError);
+          sendResults.push({ 
+            email: recipientEmail, 
+            success: false, 
+            error: sendError instanceof Error ? sendError.message : '전송 실패'
+          });
+        }
+      }
+
+      const successCount = sendResults.filter(r => r.success).length;
+      const failedCount = sendResults.filter(r => !r.success).length;
+
+      if (successCount === 0) {
+        return res.status(500).json({ 
+          error: "모든 이메일 전송에 실패했습니다",
+          details: sendResults.filter(r => !r.success)
+        });
+      }
+
+      const message = failedCount > 0
+        ? `${successCount}명에게 전송 완료, ${failedCount}명 전송 실패`
+        : `${successCount}명에게 현장조사 리포트 이메일이 전송되었습니다`;
+
+      res.json({ success: true, message, pdfUrl, results: sendResults });
+    } catch (error) {
+      console.error("Send field report email v2 error:", error);
+      res.status(500).json({ error: "현장조사 리포트 이메일 전송 중 오류가 발생했습니다" });
+    }
+  });
+
+  // ==========================================
   // POST /send-pdf - PDF 이메일 첨부 전송 (SMTP/Nodemailer)
   // ==========================================
   app.post("/send-pdf", async (req, res) => {

@@ -630,9 +630,8 @@ export default function ComprehensiveProgress() {
   // 협력사가 변경 가능한 상태 목록
   const PARTNER_ALLOWED_STATUSES = ["직접복구", "선견적요청"];
 
-  // 상태 자동 전환 매핑
+  // 상태 자동 전환 매핑 (선견적요청만 자동전환, 직접복구는 자동전환 없음)
   const STATUS_AUTO_TRANSITION: Record<string, string> = {
-    "직접복구": "(직접복구인 경우) 청구자료제출",
     "선견적요청": "(선견적요청인 경우) 출동비 청구",
   };
 
