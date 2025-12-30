@@ -244,9 +244,6 @@ export default function FieldReport() {
   const isAdmin = currentUser?.role === "관리자";
   const isPartner = currentUser?.role === "협력사";
   
-  // 협력사가 제출 후에는 증빙자료 외 모든 섹션 수정 불가 (반려 시는 수정 가능)
-  const isPartnerReadOnly = isPartner && reportData?.case?.fieldSurveyStatus === "submitted" && reportData?.case?.status !== "반려";
-  
   // 권한 체크 - 보고서 승인 권한
   const { hasItem } = usePermissions();
   const canApproveReport = hasItem("관리자 설정", "보고서 승인");
@@ -256,6 +253,9 @@ export default function FieldReport() {
     queryKey: ["/api/field-surveys", selectedCaseId, "report"],
     enabled: !!selectedCaseId,
   });
+  
+  // 협력사가 제출 후에는 증빙자료 외 모든 섹션 수정 불가 (반려 시는 수정 가능)
+  const isPartnerReadOnly = isPartner && reportData?.case?.fieldSurveyStatus === "submitted" && reportData?.case?.status !== "반려";
 
   // 증빙자료 문서 목록 조회 (팝업용)
   const { data: allDocuments = [] } = useQuery<CaseDocument[]>({
