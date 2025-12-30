@@ -106,7 +106,7 @@ export function InvoiceManagementPopup({
   
   const [submissionDate, setSubmissionDate] = useState<Date | undefined>(undefined);
   const [acceptanceDate, setAcceptanceDate] = useState<string>("");
-  const [settlementStatus, setSettlementStatus] = useState<string>("정산");
+  const [settlementStatus, setSettlementStatus] = useState<string>("");
   
   const [preventionApprovedAmount, setPreventionApprovedAmount] = useState<string>("");
   const [propertyApprovedAmount, setPropertyApprovedAmount] = useState<string>("");
@@ -458,7 +458,7 @@ export function InvoiceManagementPopup({
           setSubmissionDate(undefined);
         }
         setAcceptanceDate(caseData.receptionDate || "");
-        setSettlementStatus("정산");
+        setSettlementStatus("");
         
         // 승인금액 설정 - 저장된 값이 있으면 사용, 없으면 displayEstimates의 승인금액 사용
         setPreventionApprovedAmount(
