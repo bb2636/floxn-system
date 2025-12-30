@@ -1459,7 +1459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...recoveryData,
             caseNumber: `${existingPrefix}-${nextSuffix}`,
             caseGroupId: caseGroupIdForNew,
-            status: existingCase.status, // 기존 상태 유지
+            status: updateData.status || existingCase.status, // 새 상태 사용 (접수완료 등)
             createdBy: req.session.userId,
           });
           
