@@ -363,7 +363,7 @@ export default function SettlementsInquiry() {
         usageFee,
         settlementDeposit,
         settlementDeductible,
-        settlementInvoiceDate: settlement?.invoiceDate || "-",
+        settlementInvoiceDate: caseItem.taxInvoiceConfirmDate || settlement?.invoiceDate || "-",
         settlementMemo: settlement?.memo || "",
         status: caseItem.status,
         partnerPaymentAmount: settlement ? parseAmountValue(settlement.partnerPaymentAmount) : 0,
