@@ -260,6 +260,7 @@ export function InvoiceManagementPopup({
         const settlementUpdateData: Record<string, string> = {
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액
+          commission: feeAmount.toString(), // 수수료
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
           partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
         };
@@ -282,6 +283,7 @@ export function InvoiceManagementPopup({
           settlementDate: latestDepositDate || todayDate, // 필수 필드
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액
+          commission: feeAmount.toString(), // 수수료
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
           partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
         };
