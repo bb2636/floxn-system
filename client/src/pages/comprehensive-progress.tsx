@@ -2441,18 +2441,21 @@ export default function ComprehensiveProgress() {
             setIsReceptionEditMode(false); // 닫을 때 수정 모드 리셋
           }
         }}
-        modal={false}
+        modal={true}
       >
         <DialogContent 
           style={{
             maxWidth: "95vw",
             width: "1700px",
-            maxHeight: "95vh",
-            overflow: "auto",
+            maxHeight: "90vh",
+            overflow: "hidden",
             padding: 0,
             background: "#F5F7FA",
             border: "none",
             borderRadius: "16px",
+            display: "flex",
+            flexDirection: "column",
+            zIndex: 100,
           }}
           onPointerDownOutside={(e) => e.preventDefault()}
           onInteractOutside={(e) => e.preventDefault()}
@@ -2497,20 +2500,26 @@ export default function ComprehensiveProgress() {
             )}
           </div>
           {selectedCaseId && (
-            <IntakePage 
-              isModal={true}
-              initialCaseId={selectedCaseId}
-              readOnly={!isReceptionEditMode}
-              onClose={() => {
-                setShowReceptionDetailDialog(false);
-                setIsReceptionEditMode(false);
-              }}
-              onSuccess={() => {
-                setShowReceptionDetailDialog(false);
-                setIsReceptionEditMode(false);
-                queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-              }}
-            />
+            <div style={{ 
+              flex: 1, 
+              overflow: "auto", 
+              maxHeight: "calc(90vh - 60px)",
+            }}>
+              <IntakePage 
+                isModal={true}
+                initialCaseId={selectedCaseId}
+                readOnly={!isReceptionEditMode}
+                onClose={() => {
+                  setShowReceptionDetailDialog(false);
+                  setIsReceptionEditMode(false);
+                }}
+                onSuccess={() => {
+                  setShowReceptionDetailDialog(false);
+                  setIsReceptionEditMode(false);
+                  queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                }}
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>
