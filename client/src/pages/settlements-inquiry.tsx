@@ -345,7 +345,7 @@ export default function SettlementsInquiry() {
         accidentNumber: caseItem.insuranceAccidentNo || "-",
         admin: assignedPartnerValue,
         depositBank,
-        withdrawalDate: caseItem.completionDate || caseItem.claimDate || "-",
+        withdrawalDate: settlement?.closingDate || caseItem.completionDate || "-",
         constructionStatus: caseItem.recoveryType === "직접복구" ? "수리" : (caseItem.recoveryType === "선견적요청" ? "미수리" : "-"),
         recoveryType: caseItem.recoveryType || null,
         settlementAmount,

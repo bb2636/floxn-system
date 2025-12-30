@@ -231,6 +231,7 @@ export function InvoiceManagementPopup({
     setIsSubmitting(true);
     try {
       const caseGroupPrefix = getCaseNumberPrefix(caseData.caseNumber);
+      const todayDate = format(new Date(), "yyyy-MM-dd");
       
       // 인보이스에 자기부담금 저장
       if (caseGroupPrefix) {
@@ -255,10 +256,28 @@ export function InvoiceManagementPopup({
           ? depositEntries.sort((a, b) => b.depositDate.localeCompare(a.depositDate))[0].depositDate
           : null;
         
-        await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, {
+        // "정산"이 선택된 경우 종결일도 함께 저장
+        const settlementUpdateData: Record<string, string> = {
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액
-          ...(latestDepositDate && { settlementDate: latestDepositDate }), // 입금일
+        };
+        
+        if (latestDepositDate) {
+          settlementUpdateData.settlementDate = latestDepositDate; // 입금일
+        }
+        
+        // "정산"이 선택된 경우 종결일 설정
+        if (settlementStatus === "정산") {
+          settlementUpdateData.closingDate = todayDate; // 종결일
+        }
+        
+        await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, settlementUpdateData);
+      }
+      
+      // "정산"이 선택된 경우 케이스 상태를 "정산완료"로 변경
+      if (settlementStatus === "정산") {
+        await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
+          status: "정산완료",
         });
       }
       
@@ -268,7 +287,9 @@ export function InvoiceManagementPopup({
       
       toast({
         title: "저장 완료",
-        description: "정산 정보가 저장되었습니다.",
+        description: settlementStatus === "정산" 
+          ? "정산이 완료되었습니다." 
+          : "정산 정보가 저장되었습니다.",
       });
       
       onOpenChange(false);
