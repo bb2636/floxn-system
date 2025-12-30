@@ -852,12 +852,27 @@ export function LaborCostSection({
             }
           } else {
             // 노무비인 경우: 기존 노무비 catalog에서 가져오기
-            const catalogItem = catalog.find(item =>
+            let catalogItem = catalog.find(item =>
               item.공종 === updated.category &&
               item.공사명 === lookupWorkName &&
               item.세부공사 === updated.detailWork &&
               item.세부항목 === value
             );
+            
+            // 정확한 매치가 없으면 세부항목(노임항목)만으로 폴백 조회
+            // 노임항목별 단가는 공종/공사명에 관계없이 동일함
+            if (!catalogItem) {
+              catalogItem = catalog.find(item =>
+                item.세부공사 === '노무비' &&
+                item.세부항목 === value &&
+                item.단가_인 !== null && item.단가_인 > 0
+              );
+              if (catalogItem) {
+                console.log('[노무비 폴백 조회] 세부항목만으로 매치:', value, '단가_인:', catalogItem.단가_인,
+                  '(원본 공종:', catalogItem.공종, ')');
+              }
+            }
+            
             if (catalogItem) {
               updated.unit = '인';
               updated.standardPrice = catalogItem.단가_인 || 0;
@@ -877,6 +892,9 @@ export function LaborCostSection({
                 updated.applicationRates.molding = true;
                 updated.pricePerSqm = catalogItem.단가_길이;
               }
+              console.log('[노무비 detailItem 선택]', updated.category, lookupWorkName, value, '단가_인:', catalogItem.단가_인);
+            } else {
+              console.log('[노무비 항목 못찾음]', updated.category, lookupWorkName, updated.detailWork, value);
             }
           }
           
