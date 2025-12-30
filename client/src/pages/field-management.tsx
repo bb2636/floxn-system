@@ -1373,8 +1373,12 @@ export default function FieldManagement() {
                         }}
                       >
                         {(() => {
-                          const address = caseItem.insuredAddress || caseItem.victimAddress || "";
-                          const detail = caseItem.insuredAddressDetail || "";
+                          // 피해자 주소 우선 표시 (피해자 주소가 없을 경우에만 피보험자 주소 표시)
+                          const hasVictimAddress = !!caseItem.victimAddress;
+                          const address = caseItem.victimAddress || caseItem.insuredAddress || "";
+                          const detail = hasVictimAddress 
+                            ? (caseItem.victimAddressDetail || "")
+                            : (caseItem.insuredAddressDetail || "");
                           if (address && detail) return `${address} ${detail}`;
                           if (address) return address;
                           return "-";
