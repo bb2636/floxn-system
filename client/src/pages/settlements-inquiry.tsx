@@ -227,7 +227,7 @@ export default function SettlementsInquiry() {
   }, [allUsers]);
 
   // Filter cases with status '청구' and after (claim, payment, settlement)
-  const settlementStatuses = ["청구", "입금완료", "일부입금", "정산완료"];
+  const settlementStatuses = ["청구", "입금완료", "일부입금", "부분입금", "정산완료"];
   const claimCases = cases.filter(c => settlementStatuses.includes(c.status));
   const caseIds = claimCases.map(c => c.id);
 
