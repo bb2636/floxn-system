@@ -1898,7 +1898,8 @@ export default function FieldManagement() {
                       return;
                     }
 
-                    // 누락된 필드 체크 및 표시 (카테고리는 반드시 선택 필요)
+                    // 임시저장은 모든 필드가 비어있어도 저장 가능 (검증 없음)
+                    // 누락된 필드가 있더라도 콘솔에 경고만 출력
                     const missingFields: string[] = [];
                     if (!visitDate) missingFields.push("방문일자");
                     if (!visitTime) missingFields.push("방문시간");
@@ -1906,15 +1907,9 @@ export default function FieldManagement() {
                     if (!victimName && !selectedCaseData?.victimName) missingFields.push("피해자 성명");
                     if (!victimContact && !selectedCaseData?.victimContact) missingFields.push("피해자 연락처");
                     
-                    // 콘솔에도 출력
+                    // 콘솔에만 경고 출력 (저장은 계속 진행)
                     if (missingFields.length > 0) {
-                      console.warn("⚠️ 임시저장 - 누락된 필드:", missingFields.join(", "));
-                      toast({
-                        title: "일부 정보 누락",
-                        description: `다음 항목이 비어있습니다: ${missingFields.join(", ")}`,
-                        variant: "destructive",
-                      });
-                      return;
+                      console.warn("⚠️ 임시저장 - 누락된 필드 (저장은 진행됨):", missingFields.join(", "));
                     }
 
                     try {
