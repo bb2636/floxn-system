@@ -233,7 +233,7 @@ export function InvoiceManagementPopup({
       const caseGroupPrefix = getCaseNumberPrefix(caseData.caseNumber);
       const todayDate = format(new Date(), "yyyy-MM-dd");
       
-      // 인보이스에 자기부담금 저장
+      // 인보이스에 자기부담금 및 입금구분 저장
       if (caseGroupPrefix) {
         const existingInvoice = await fetch(`/api/invoices/group/${encodeURIComponent(caseGroupPrefix)}`);
         const existingInvoiceData = await existingInvoice.json();
@@ -241,6 +241,7 @@ export function InvoiceManagementPopup({
         if (existingInvoiceData && existingInvoiceData.id) {
           await apiRequest("PATCH", `/api/invoices/${existingInvoiceData.id}`, {
             deductible: deductibleAmount || "0",
+            settlementStatus: settlementStatus || "", // 입금구분 저장
           });
         }
       }
