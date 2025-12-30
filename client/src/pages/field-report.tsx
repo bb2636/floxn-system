@@ -3310,7 +3310,7 @@ export default function FieldReport() {
         {/* 견적서 탭 */}
         <TabsContent value="견적서" className="px-6" id="pdf-section-견적서">
           <div className="min-w-0">
-            {estimate.estimate && estimate.rows && estimate.rows.length > 0 ? (
+            {estimate.estimate && (estimate.rows.length > 0 || parsedLaborCosts.length > 0 || parsedMaterialCosts.length > 0) ? (
               <>
                 {/* 헤더 */}
                 <div className="flex items-center justify-between mb-6">
