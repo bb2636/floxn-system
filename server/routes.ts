@@ -6253,8 +6253,12 @@ https://peulrogseun-aqaqaq4561.replit.app
       "미복구",
       "청구자료제출",
       "청구",
-      "결정금액수수료",
-      "접수취소"
+      "결정금액/수수료",
+      "접수취소",
+      "입금완료",
+      "일부입금",
+      "정산완료",
+      "선견적요청"
     ]),
     recipients: z.object({
       partner: z.boolean().default(false),
@@ -6402,7 +6406,7 @@ https://peulrogseun-aqaqaq4561.replit.app
 
 위 접수건은 접수 취소 되었음을 알려드립니다.
 취소 사유 : ${cancelReason || "-"}`;
-      } else if (stage === "결정금액수수료") {
+      } else if (stage === "결정금액/수수료") {
         subject = "결정금액 및 수수료 안내";
         messageText = `<결정금액 및 수수료안내 알림>
 
