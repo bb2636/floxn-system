@@ -795,6 +795,8 @@ export const settlements = pgTable("settlements", {
   memo: text("memo"), // 정산 메모
   bank: text("bank"), // 입금은행
   closingDate: text("closing_date"), // 종결일 (정산완료 시 설정)
+  partnerPaymentAmount: text("partner_payment_amount"), // 협력업체 지급금액
+  partnerPaymentDate: text("partner_payment_date"), // 협력업체 지급일
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),
 });

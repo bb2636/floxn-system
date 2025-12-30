@@ -55,6 +55,9 @@ interface SettlementRow {
   settlementInvoiceDate: string;
   settlementMemo: string;
   status: string;
+  // 협력업체 지급 정보
+  partnerPaymentAmount: number; // 협력업체 지급금액
+  partnerPaymentDate: string; // 협력업체 지급일
 }
 
 export default function SettlementsInquiry() {
@@ -357,6 +360,8 @@ export default function SettlementsInquiry() {
         settlementInvoiceDate: settlement?.invoiceDate || "-",
         settlementMemo: settlement?.memo || "",
         status: caseItem.status,
+        partnerPaymentAmount: settlement ? parseAmountValue(settlement.partnerPaymentAmount) : 0,
+        partnerPaymentDate: settlement?.partnerPaymentDate || "-",
       };
     });
 
@@ -431,6 +436,9 @@ export default function SettlementsInquiry() {
       const totalSettlementDeposit = casesInGroup.reduce((sum, c) => sum + c.settlementDeposit, 0);
       const totalSettlementDeductible = casesInGroup.reduce((sum, c) => sum + c.settlementDeductible, 0);
 
+      // 협력업체 지급 정보 합산
+      const totalPartnerPaymentAmount = casesInGroup.reduce((sum, c) => sum + c.partnerPaymentAmount, 0);
+      
       combinedRows.push({
         id: primaryCase.id,
         caseIds: allCaseIds,
@@ -464,6 +472,8 @@ export default function SettlementsInquiry() {
         settlementInvoiceDate: primaryCase.settlementInvoiceDate,
         settlementMemo: primaryCase.settlementMemo,
         status: primaryCase.status,
+        partnerPaymentAmount: totalPartnerPaymentAmount,
+        partnerPaymentDate: primaryCase.partnerPaymentDate,
       });
     });
 
@@ -1718,24 +1728,24 @@ export default function SettlementsInquiry() {
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      color: row.partnerPaymentAmount > 0 ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                      textAlign: "center",
+                      textAlign: "right",
                     }}
                   >
-                    -
+                    {row.partnerPaymentAmount > 0 ? row.partnerPaymentAmount.toLocaleString() + "원" : "-"}
                   </td>
                   <td
                     style={{
                       padding: "14px 16px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.5)",
+                      color: row.partnerPaymentDate !== "-" ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
                     }}
                   >
-                    -
+                    {row.partnerPaymentDate}
                   </td>
                   {/* 사용료 */}
                   <td

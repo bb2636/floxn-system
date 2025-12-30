@@ -260,6 +260,8 @@ export function InvoiceManagementPopup({
         const settlementUpdateData: Record<string, string> = {
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액
+          partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
+          partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
         };
         
         if (latestDepositDate) {
