@@ -459,7 +459,6 @@ export function InvoiceManagementPopup({
           setSubmissionDate(undefined);
         }
         setAcceptanceDate(caseData.receptionDate || "");
-        setSettlementStatus("");
         
         // 승인금액 설정 - 저장된 값이 있으면 사용, 없으면 displayEstimates의 승인금액 사용
         setPreventionApprovedAmount(
@@ -474,7 +473,7 @@ export function InvoiceManagementPopup({
           "0"
         );
 
-        // 자기부담금: 저장된 인보이스에서 로드
+        // 자기부담금 및 입금구분: 저장된 인보이스에서 로드
         const loadInvoiceData = async () => {
           try {
             const caseGroupPrefix = caseData.caseNumber?.split("-")[0] || "";
@@ -482,20 +481,35 @@ export function InvoiceManagementPopup({
               const response = await fetch(`/api/invoices/group/${encodeURIComponent(caseGroupPrefix)}`);
               if (response.ok) {
                 const invoiceData = await response.json();
-                if (invoiceData && invoiceData.deductible) {
-                  setDeductibleAmount(invoiceData.deductible);
+                if (invoiceData) {
+                  // 자기부담금
+                  if (invoiceData.deductible) {
+                    setDeductibleAmount(invoiceData.deductible);
+                  } else {
+                    setDeductibleAmount("0");
+                  }
+                  // 입금구분 (정산/부분입금/청구변경)
+                  if (invoiceData.settlementStatus) {
+                    setSettlementStatus(invoiceData.settlementStatus);
+                  } else {
+                    setSettlementStatus("");
+                  }
                 } else {
                   setDeductibleAmount("0");
+                  setSettlementStatus("");
                 }
               } else {
                 setDeductibleAmount("0");
+                setSettlementStatus("");
               }
             } else {
               setDeductibleAmount("0");
+              setSettlementStatus("");
             }
           } catch (error) {
             console.error("Failed to load invoice data:", error);
             setDeductibleAmount("0");
+            setSettlementStatus("");
           }
         };
         loadInvoiceData();
