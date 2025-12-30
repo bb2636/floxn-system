@@ -278,15 +278,13 @@ export function InvoiceManagementPopup({
         // 정산 데이터가 없으면 새로 생성
         const settlementCreateData: Record<string, unknown> = {
           caseId: caseData.id,
+          settlementAmount: "0", // 필수 필드
+          settlementDate: latestDepositDate || todayDate, // 필수 필드
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
           partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
         };
-        
-        if (latestDepositDate) {
-          settlementCreateData.settlementDate = latestDepositDate; // 입금일
-        }
         
         // "정산"이 선택된 경우 종결일 설정
         if (settlementStatus === "정산") {
