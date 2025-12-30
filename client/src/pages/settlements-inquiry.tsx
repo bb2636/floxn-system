@@ -385,38 +385,46 @@ export default function SettlementsInquiry() {
       // Use first case for common data (typically -0 case has main info)
       const primaryCase = casesInGroup[0];
 
-      // 미수리(선견적요청)인지 확인
-      const isNoRepairCase = primaryCase.recoveryType === "선견적요청";
+      // 그룹 내 직접복구 건이 있는지 확인
+      // 직접복구 건이 하나라도 있으면 해당 건들의 금액만 표시, 사용료 없음
+      // 모든 건이 선견적요청일 때만 사용료 10만원
+      const hasDirectRepair = casesInGroup.some(c => c.recoveryType === "직접복구");
+      const allNoRepair = casesInGroup.every(c => c.recoveryType === "선견적요청");
 
       // Calculate prevention costs (from -0 cases)
-      // 미수리일 때는 손해방지비용 0
+      // 직접복구 건만 계산 (선견적요청 건은 제외)
       const preventionCases = casesInGroup.filter(c => c.isPrevention);
-      const preventionEstimateAmount = isNoRepairCase ? 0 : preventionCases.reduce((sum, c) => sum + c.estimateTotal, 0);
-      const preventionApprovedAmount = isNoRepairCase ? 0 : preventionCases.reduce((sum, c) => sum + c.approvedValue, 0);
+      const directRepairPreventionCases = preventionCases.filter(c => c.recoveryType === "직접복구");
+      const preventionEstimateAmount = directRepairPreventionCases.reduce((sum, c) => sum + c.estimateTotal, 0);
+      const preventionApprovedAmount = directRepairPreventionCases.reduce((sum, c) => sum + c.approvedValue, 0);
       const preventionDifference = preventionApprovedAmount - preventionEstimateAmount;
       const preventionAdjustmentRate = preventionEstimateAmount > 0 
         ? ((preventionDifference / preventionEstimateAmount) * 100).toFixed(1) + "%"
         : "-";
 
       // Calculate property costs (from -1, -2, etc. cases - summed)
-      // 미수리일 때는 대물비용 0
+      // 직접복구 건만 계산 (선견적요청 건은 제외)
       const propertyCases = casesInGroup.filter(c => c.isProperty);
-      const propertyEstimateAmount = isNoRepairCase ? 0 : propertyCases.reduce((sum, c) => sum + c.estimateTotal, 0);
-      const propertyApprovedAmount = isNoRepairCase ? 0 : propertyCases.reduce((sum, c) => sum + c.approvedValue, 0);
+      const directRepairPropertyCases = propertyCases.filter(c => c.recoveryType === "직접복구");
+      const propertyEstimateAmount = directRepairPropertyCases.reduce((sum, c) => sum + c.estimateTotal, 0);
+      const propertyApprovedAmount = directRepairPropertyCases.reduce((sum, c) => sum + c.approvedValue, 0);
       const propertyDifference = propertyApprovedAmount - propertyEstimateAmount;
       const propertyAdjustmentRate = propertyEstimateAmount > 0
         ? ((propertyDifference / propertyEstimateAmount) * 100).toFixed(1) + "%"
         : "-";
 
-      // Total claim amount (미수리 시 0)
+      // Total claim amount (직접복구 건 기준)
       const claimAmount = preventionEstimateAmount + propertyEstimateAmount;
 
       // Sum settlement amounts for all cases in group
       const totalSettlementAmount = casesInGroup.reduce((sum, c) => sum + c.settlementAmount, 0);
-      // 수수료는 손해방지/대물비용이 있을 때만 (미수리 시 0)
-      const totalSettlementCommission = isNoRepairCase ? 0 : casesInGroup.reduce((sum, c) => sum + c.settlementCommission, 0);
-      // 사용료는 미수리 시 10만원
-      const totalUsageFee = casesInGroup.reduce((sum, c) => sum + c.usageFee, 0);
+      // 수수료: 직접복구 건이 있을 때만 해당 건들의 수수료 합산
+      const directRepairCases = casesInGroup.filter(c => c.recoveryType === "직접복구");
+      const totalSettlementCommission = hasDirectRepair 
+        ? directRepairCases.reduce((sum, c) => sum + c.settlementCommission, 0)
+        : 0;
+      // 사용료: 모든 건이 선견적요청일 때만 10만원, 직접복구 건이 하나라도 있으면 0
+      const totalUsageFee = allNoRepair ? 100000 : 0;
       const totalSettlementDeposit = casesInGroup.reduce((sum, c) => sum + c.settlementDeposit, 0);
       const totalSettlementDeductible = casesInGroup.reduce((sum, c) => sum + c.settlementDeductible, 0);
 
