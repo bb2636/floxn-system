@@ -499,6 +499,49 @@ export function InvoiceManagementPopup({
         };
         loadInvoiceData();
         
+        // 정산 데이터 로드 (입금내역, 협력업체 지급일 등)
+        const loadSettlementData = async () => {
+          try {
+            const settlementResponse = await fetch(`/api/settlements/case/${caseData.id}/latest`);
+            if (settlementResponse.ok) {
+              const settlementData = await settlementResponse.json();
+              if (settlementData && settlementData.id) {
+                // 협력업체 지급일
+                if (settlementData.partnerPaymentDate) {
+                  setPartnerPaymentDate(settlementData.partnerPaymentDate);
+                }
+                
+                // 입금내역 복원 (discount와 settlementDate로)
+                if (settlementData.discount && parseInt(settlementData.discount) > 0) {
+                  const depositEntry: DepositEntry = {
+                    id: `deposit-loaded-${Date.now()}`,
+                    depositDate: settlementData.settlementDate || format(new Date(), "yyyy-MM-dd"),
+                    insuranceCompany: caseData.insuranceCompany || "전체",
+                    claimAmount: 0,
+                    depositStatus: "입금",
+                    depositAmount: parseInt(settlementData.discount) || 0,
+                    memo: "",
+                  };
+                  setDepositEntries([depositEntry]);
+                } else {
+                  setDepositEntries([]);
+                }
+              } else {
+                setDepositEntries([]);
+                setPartnerPaymentDate("");
+              }
+            } else {
+              setDepositEntries([]);
+              setPartnerPaymentDate("");
+            }
+          } catch (error) {
+            console.error("Failed to load settlement data:", error);
+            setDepositEntries([]);
+            setPartnerPaymentDate("");
+          }
+        };
+        loadSettlementData();
+        
         // 세금계산서 확인일 초기화
         if (caseData.taxInvoiceConfirmDate) {
           setTaxInvoiceDate(new Date(caseData.taxInvoiceConfirmDate));
