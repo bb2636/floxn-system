@@ -167,8 +167,80 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
   console.log(`[PDF 도면] 이미지: ${hasUploadedImages ? drawingData.uploadedImages.length : 0}, 사각형: ${hasRectangles ? drawingData.rectangles.length : 0}, 누수마커: ${hasLeakMarkers ? drawingData.leakMarkers.length : 0}`);
   
   if (hasUploadedImages || hasRectangles || hasLeakMarkers || hasAccidentAreas) {
-    // Build composite drawing with all elements
-    const SCALE = 2; // Scale factor for display
+    // Use the same DISPLAY_SCALE as the web app (0.05)
+    // This converts large internal coordinates to displayable pixels
+    const DISPLAY_SCALE = 0.05;
+    
+    // Calculate bounding box of all elements to determine canvas size
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    if (hasUploadedImages) {
+      for (const img of drawingData.uploadedImages) {
+        const x = img.x || 0;
+        const y = img.y || 0;
+        const w = img.width || 200;
+        const h = img.height || 200;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x + w);
+        maxY = Math.max(maxY, y + h);
+      }
+    }
+    if (hasRectangles) {
+      for (const rect of drawingData.rectangles) {
+        const x = rect.x || 0;
+        const y = rect.y || 0;
+        const w = rect.width || 50;
+        const h = rect.height || 50;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x + w);
+        maxY = Math.max(maxY, y + h);
+      }
+    }
+    if (hasLeakMarkers) {
+      for (const marker of drawingData.leakMarkers) {
+        const x = marker.x || 0;
+        const y = marker.y || 0;
+        minX = Math.min(minX, x - 200);
+        minY = Math.min(minY, y - 200);
+        maxX = Math.max(maxX, x + 200);
+        maxY = Math.max(maxY, y + 200);
+      }
+    }
+    if (hasAccidentAreas) {
+      for (const area of drawingData.accidentAreas) {
+        const x = area.x || 0;
+        const y = area.y || 0;
+        const w = area.width || 50;
+        const h = area.height || 50;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x + w);
+        maxY = Math.max(maxY, y + h);
+      }
+    }
+    
+    // Calculate display dimensions
+    const contentWidth = (maxX - minX) * DISPLAY_SCALE;
+    const contentHeight = (maxY - minY) * DISPLAY_SCALE;
+    
+    // PDF container dimensions
+    const containerWidth = 540; // A4 with margins
+    const containerHeight = 700; // Reasonable height for PDF
+    
+    // Calculate scale to fit content in container
+    const scaleX = containerWidth / contentWidth;
+    const scaleY = containerHeight / contentHeight;
+    const fitScale = Math.min(scaleX, scaleY, 1); // Don't scale up, only down
+    
+    const finalScale = DISPLAY_SCALE * fitScale;
+    const offsetX = -minX * finalScale + (containerWidth - contentWidth * fitScale) / 2;
+    const offsetY = -minY * finalScale + 20; // Add some top padding
+    
+    console.log(`[PDF 도면] 경계: minX=${minX}, minY=${minY}, maxX=${maxX}, maxY=${maxY}`);
+    console.log(`[PDF 도면] 콘텐츠 크기: ${contentWidth}x${contentHeight}px, fitScale=${fitScale.toFixed(3)}`);
+    
     let elements = '';
     
     // Add uploaded images
@@ -179,10 +251,10 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
           imageUrl = `data:image/png;base64,${imageUrl}`;
         }
         if (imageUrl) {
-          const x = (img.x || 0) * SCALE;
-          const y = (img.y || 0) * SCALE;
-          const width = (img.width || 200) * SCALE;
-          const height = (img.height || 200) * SCALE;
+          const x = (img.x || 0) * finalScale + offsetX;
+          const y = (img.y || 0) * finalScale + offsetY;
+          const width = (img.width || 200) * finalScale;
+          const height = (img.height || 200) * finalScale;
           elements += `<img src="${imageUrl}" style="position:absolute;left:${x}px;top:${y}px;width:${width}px;height:${height}px;object-fit:contain;" />`;
         }
       }
@@ -191,16 +263,17 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
     // Add rectangles
     if (hasRectangles) {
       for (const rect of drawingData.rectangles) {
-        const x = (rect.x || 0) * SCALE;
-        const y = (rect.y || 0) * SCALE;
-        const width = (rect.width || 50) * SCALE;
-        const height = (rect.height || 50) * SCALE;
-        const color = rect.color || '#FF0000';
-        elements += `<div style="position:absolute;left:${x}px;top:${y}px;width:${width}px;height:${height}px;border:2px solid ${color};background:${color}20;"></div>`;
+        const x = (rect.x || 0) * finalScale + offsetX;
+        const y = (rect.y || 0) * finalScale + offsetY;
+        const width = (rect.width || 50) * finalScale;
+        const height = (rect.height || 50) * finalScale;
+        const bgColor = rect.backgroundColor || '#FFFFFF';
+        const borderColor = '#666666';
+        elements += `<div style="position:absolute;left:${x}px;top:${y}px;width:${width}px;height:${height}px;border:1px solid ${borderColor};background:${bgColor};box-sizing:border-box;"></div>`;
         
-        // Add label if exists
-        if (rect.label) {
-          elements += `<div style="position:absolute;left:${x}px;top:${y - 16}px;font-size:10px;color:${color};font-weight:bold;">${rect.label}</div>`;
+        // Add label/text if exists
+        if (rect.text) {
+          elements += `<div style="position:absolute;left:${x}px;top:${y + height / 2 - 8}px;width:${width}px;text-align:center;font-size:10px;color:#333;font-weight:bold;">${rect.text}</div>`;
         }
       }
     }
@@ -208,24 +281,25 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
     // Add leak markers
     if (hasLeakMarkers) {
       for (const marker of drawingData.leakMarkers) {
-        const x = (marker.x || 0) * SCALE;
-        const y = (marker.y || 0) * SCALE;
-        elements += `<div style="position:absolute;left:${x - 8}px;top:${y - 8}px;width:16px;height:16px;background:#3B82F6;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:8px;font-weight:bold;">💧</div>`;
+        const x = (marker.x || 0) * finalScale + offsetX;
+        const y = (marker.y || 0) * finalScale + offsetY;
+        elements += `<div style="position:absolute;left:${x - 12}px;top:${y - 12}px;width:24px;height:24px;background:#EF4444;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:bold;border:2px solid #DC2626;">✕</div>`;
       }
     }
     
     // Add accident areas
     if (hasAccidentAreas) {
       for (const area of drawingData.accidentAreas) {
-        const x = (area.x || 0) * SCALE;
-        const y = (area.y || 0) * SCALE;
-        const width = (area.width || 50) * SCALE;
-        const height = (area.height || 50) * SCALE;
-        elements += `<div style="position:absolute;left:${x}px;top:${y}px;width:${width}px;height:${height}px;border:2px dashed #EF4444;background:rgba(239,68,68,0.1);"></div>`;
+        const x = (area.x || 0) * finalScale + offsetX;
+        const y = (area.y || 0) * finalScale + offsetY;
+        const width = (area.width || 50) * finalScale;
+        const height = (area.height || 50) * finalScale;
+        elements += `<div style="position:absolute;left:${x}px;top:${y}px;width:${width}px;height:${height}px;border:2px dashed #EF4444;background:rgba(239,68,68,0.1);box-sizing:border-box;"></div>`;
       }
     }
     
-    drawingContent = `<div class="drawing-canvas" style="position:relative;width:100%;height:500px;border:1px solid #ddd;background:#f9f9f9;overflow:hidden;">${elements}</div>`;
+    const canvasHeight = Math.min(contentHeight * fitScale + 40, containerHeight);
+    drawingContent = `<div class="drawing-canvas" style="position:relative;width:${containerWidth}px;height:${canvasHeight}px;border:1px solid #ddd;background:#f9f9f9;overflow:hidden;margin:0 auto;">${elements}</div>`;
   }
   
   const data = {
