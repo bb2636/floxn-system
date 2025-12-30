@@ -6567,6 +6567,25 @@ https://peulrogseun-aqaqaq4561.replit.app
     }
   });
 
+  // Update settlement
+  app.patch("/api/settlements/:id", async (req, res) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ error: "로그인이 필요합니다" });
+      }
+
+      const { id } = req.params;
+      const updated = await storage.updateSettlement(id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "정산 정보를 찾을 수 없습니다" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Update settlement error:", error);
+      res.status(500).json({ error: "정산 수정 중 오류가 발생했습니다" });
+    }
+  });
+
   // =====================
   // Labor Rate Tiers endpoints (C/D 비율 적용률)
   // =====================

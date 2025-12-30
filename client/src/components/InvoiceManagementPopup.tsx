@@ -244,12 +244,31 @@ export function InvoiceManagementPopup({
         }
       }
       
+      // 정산 데이터도 업데이트 (정산조회에서 읽을 수 있도록)
+      const settlementResponse = await fetch(`/api/settlements/case/${caseData.id}/latest`);
+      const settlementData = await settlementResponse.json();
+      
+      if (settlementData && settlementData.id) {
+        // 입금 내역에서 입금액과 입금일 계산
+        const totalDepositAmount = depositEntries.reduce((sum, entry) => sum + entry.depositAmount, 0);
+        const latestDepositDate = depositEntries.length > 0 
+          ? depositEntries.sort((a, b) => b.depositDate.localeCompare(a.depositDate))[0].depositDate
+          : null;
+        
+        await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, {
+          deductible: deductibleAmount || "0",
+          discount: totalDepositAmount.toString(), // 입금액
+          ...(latestDepositDate && { settlementDate: latestDepositDate }), // 입금일
+        });
+      }
+      
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settlements"] });
       
       toast({
         title: "저장 완료",
-        description: "자기부담금이 저장되었습니다.",
+        description: "정산 정보가 저장되었습니다.",
       });
       
       onOpenChange(false);

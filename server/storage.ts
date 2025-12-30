@@ -376,6 +376,7 @@ export interface IStorage {
   }): Promise<(CaseChangeLog & { caseNumber: string })[]>;
   // Settlement methods
   createSettlement(data: InsertSettlement, createdBy: string): Promise<Settlement>;
+  updateSettlement(id: string, data: Partial<InsertSettlement>): Promise<Settlement | null>;
   getSettlementsByCaseId(caseId: string): Promise<Settlement[]>;
   getLatestSettlementByCaseId(caseId: string): Promise<Settlement | null>;
   getAllSettlements(): Promise<Settlement[]>;
@@ -2534,6 +2535,10 @@ export class MemStorage implements IStorage {
   // Settlement methods (stub)
   async createSettlement(data: InsertSettlement, createdBy: string): Promise<Settlement> {
     throw new Error("createSettlement not implemented in MemStorage");
+  }
+
+  async updateSettlement(id: string, data: Partial<InsertSettlement>): Promise<Settlement | null> {
+    throw new Error("updateSettlement not implemented in MemStorage");
   }
 
   async getSettlementsByCaseId(caseId: string): Promise<Settlement[]> {
@@ -6574,6 +6579,15 @@ export class DbStorage implements IStorage {
       })
       .returning();
     return settlement;
+  }
+
+  async updateSettlement(id: string, data: Partial<InsertSettlement>): Promise<Settlement | null> {
+    const [updated] = await db
+      .update(settlements)
+      .set(data)
+      .where(eq(settlements.id, id))
+      .returning();
+    return updated || null;
   }
 
   async getSettlementsByCaseId(caseId: string): Promise<Settlement[]> {
