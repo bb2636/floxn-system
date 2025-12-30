@@ -4520,11 +4520,9 @@ export class DbStorage implements IStorage {
     }
 
     // 최초 견적금액 기록 (기존 값이 없을 때만 - 첫 제출 시점의 견적금액을 영구 저장)
-    if (existingCase && !existingCase.initialEstimateAmount) {
-      const latestEstimateResult = await this.getLatestEstimate(caseId);
-      if (latestEstimateResult?.estimate?.totalAmount) {
-        additionalUpdates.initialEstimateAmount = latestEstimateResult.estimate.totalAmount.toString();
-      }
+    // estimateAmount는 견적 저장 시 updateCaseEstimateAmount()에 의해 이미 저장되어 있음
+    if (existingCase && !existingCase.initialEstimateAmount && existingCase.estimateAmount) {
+      additionalUpdates.initialEstimateAmount = existingCase.estimateAmount;
     }
 
     const result = await db
@@ -4565,9 +4563,9 @@ export class DbStorage implements IStorage {
     ) {
       additionalUpdates.firstApprovalDate = currentDate;
       // 1차승인 시 승인금액 확정 (현재 견적 총액을 승인금액으로 저장)
-      const latestEstimateResult = await this.getLatestEstimate(caseId);
-      if (latestEstimateResult?.estimate?.totalAmount) {
-        additionalUpdates.approvedAmount = latestEstimateResult.estimate.totalAmount.toString();
+      // estimateAmount는 견적 저장 시 updateCaseEstimateAmount()에 의해 이미 저장되어 있음
+      if (existingCase.estimateAmount) {
+        additionalUpdates.approvedAmount = existingCase.estimateAmount;
       }
     }
 
