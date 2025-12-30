@@ -851,9 +851,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               if (draftCases.length >= 2) {
                 // 이미 두 케이스가 존재함 (저장 시 생성됨) → 모두 접수완료로 업데이트
+                // validatedData에서 id 제거하여 중복 키 오류 방지
+                const updateDataWithoutId = { ...validatedData };
+                delete (updateDataWithoutId as any).id;
+                
                 for (const draftCase of draftCases) {
                   const updatedCase = await storage.updateCase(draftCase.id, {
-                    ...validatedData,
+                    ...updateDataWithoutId,
                     caseNumber: draftCase.caseNumber || undefined,
                     caseGroupId,
                     status: "접수완료",
