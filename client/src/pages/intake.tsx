@@ -3822,8 +3822,21 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                               {partner.pendingCount}
                             </span>
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', gap: '10px', width: '248px', height: '61px', flexGrow: 1 }}>
-                            <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', lineHeight: '128%', letterSpacing: '-0.01em', color: '#686A6E' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', padding: '8px 12px', gap: '4px', width: '248px', height: '61px', flexGrow: 1, overflow: 'hidden' }}>
+                            <span style={{ 
+                              fontFamily: 'Pretendard', 
+                              fontWeight: 500, 
+                              fontSize: '13px', 
+                              lineHeight: '140%', 
+                              letterSpacing: '-0.01em', 
+                              color: '#686A6E',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              wordBreak: 'keep-all',
+                            }} title={partner.region}>
                               {partner.region}
                             </span>
                           </div>
