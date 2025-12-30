@@ -1440,58 +1440,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
             newCaseNumber = `${existingPrefix}-${nextSuffix}`;
           }
         } else {
-          // 둘 다 선택 → 기존 케이스는 -0으로 업데이트, 피해세대 케이스(-1) 새로 생성
-          newCaseNumber = `${existingPrefix}-0`;
+          // 둘 다 선택 → 기존 케이스와 형제 케이스 모두 업데이트
           
-          // 기존 케이스 업데이트 (손해방지 케이스로)
-          const updateDataWithCaseNumber = { ...updateData, caseNumber: newCaseNumber };
-          const updatedCase = await storage.updateCase(id, updateDataWithCaseNumber);
+          // 같은 prefix를 가진 기존 케이스들 확인
+          const relatedCases = await storage.getCasesByPrefix(existingPrefix);
+          const existingPreventionCase = relatedCases.find(c => c.caseNumber === `${existingPrefix}-0`);
+          const existingVictimCases = relatedCases.filter(c => 
+            c.caseNumber?.includes('-') && 
+            parseInt(c.caseNumber.split('-')[1]) >= 1
+          );
           
-          if (!updatedCase) {
-            return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
-          }
+          // 현재 케이스가 -0인지 확인
+          const currentIsPrevention = existingCaseNumber === `${existingPrefix}-0`;
           
-          // 피해세대 케이스 새로 생성
-          const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
-          const caseGroupIdForNew = existingCase.caseGroupId || `group-${Date.now()}`;
-          
-          // 피해세대 케이스용 데이터 복사
-          const recoveryData = JSON.parse(JSON.stringify(updateData));
-          delete recoveryData.id; // 새 케이스이므로 id 제거
-          
-          const recoveryCase = await storage.createCase({
-            ...recoveryData,
-            caseNumber: `${existingPrefix}-${nextSuffix}`,
-            caseGroupId: caseGroupIdForNew,
-            status: updateData.status || existingCase.status, // 새 상태 사용 (접수완료 등)
-            createdBy: req.session.userId,
-          });
-          
-          // 변경 로그 저장
-          if (changes.length > 0) {
-            try {
-              const user = await storage.getUser(req.session.userId);
-              await storage.createCaseChangeLog({
-                caseId: id,
-                changedBy: req.session.userId,
-                changedByName: user?.name || "알 수 없음",
-                changeType: "update",
-                changes,
-                note: null,
-              });
-            } catch (logError) {
-              console.error("Failed to create change log:", logError);
+          if (currentIsPrevention) {
+            // 현재 케이스가 손해방지(-0)인 경우 → 번호 유지, 기존 피해세대 케이스 업데이트 또는 생성
+            newCaseNumber = existingCaseNumber;
+            
+            const updatedCase = await storage.updateCase(id, { ...updateData, caseNumber: newCaseNumber });
+            if (!updatedCase) {
+              return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
             }
+            
+            const completedCases = [updatedCase];
+            
+            if (existingVictimCases.length > 0) {
+              // 기존 피해세대 케이스가 있으면 업데이트
+              const updateDataWithoutId = { ...updateData };
+              delete (updateDataWithoutId as any).id;
+              
+              for (const victimCase of existingVictimCases) {
+                const updatedVictim = await storage.updateCase(victimCase.id, {
+                  ...updateDataWithoutId,
+                  caseNumber: victimCase.caseNumber,
+                  status: updateData.status || victimCase.status,
+                });
+                if (updatedVictim) completedCases.push(updatedVictim);
+              }
+              console.log(`[Case Update] Updated prevention case and ${existingVictimCases.length} existing victim case(s)`);
+            } else {
+              // 피해세대 케이스가 없으면 새로 생성
+              const nextSuffix = await storage.getNextVictimSuffix(existingPrefix);
+              const caseGroupIdForNew = existingCase.caseGroupId || `group-${Date.now()}`;
+              const recoveryData = JSON.parse(JSON.stringify(updateData));
+              delete recoveryData.id;
+              
+              const recoveryCase = await storage.createCase({
+                ...recoveryData,
+                caseNumber: `${existingPrefix}-${nextSuffix}`,
+                caseGroupId: caseGroupIdForNew,
+                status: updateData.status || existingCase.status,
+                createdBy: req.session.userId,
+              });
+              completedCases.push(recoveryCase);
+              console.log(`[Case Update] Updated prevention case and created new victim case`);
+            }
+            
+            // 변경 로그 저장
+            if (changes.length > 0) {
+              try {
+                const user = await storage.getUser(req.session.userId);
+                await storage.createCaseChangeLog({
+                  caseId: id,
+                  changedBy: req.session.userId,
+                  changedByName: user?.name || "알 수 없음",
+                  changeType: "update",
+                  changes,
+                  note: null,
+                });
+              } catch (logError) {
+                console.error("Failed to create change log:", logError);
+              }
+            }
+            
+            try {
+              await storage.syncIntakeDataToRelatedCases(id);
+            } catch (syncError) {
+              console.error("Failed to sync intake data:", syncError);
+            }
+            
+            return res.json({ success: true, cases: completedCases });
+          } else {
+            // 현재 케이스가 피해세대(-1 이상)인 경우
+            // 현재 케이스 번호 유지, 손해방지 케이스 업데이트 또는 생성
+            newCaseNumber = existingCaseNumber;
+            
+            const updatedCase = await storage.updateCase(id, { ...updateData, caseNumber: newCaseNumber });
+            if (!updatedCase) {
+              return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+            }
+            
+            const completedCases = [updatedCase];
+            
+            if (existingPreventionCase) {
+              // 기존 손해방지 케이스가 있으면 업데이트
+              const updateDataWithoutId = { ...updateData };
+              delete (updateDataWithoutId as any).id;
+              
+              const updatedPrevention = await storage.updateCase(existingPreventionCase.id, {
+                ...updateDataWithoutId,
+                caseNumber: existingPreventionCase.caseNumber,
+                status: updateData.status || existingPreventionCase.status,
+              });
+              if (updatedPrevention) completedCases.push(updatedPrevention);
+              console.log(`[Case Update] Updated victim case and existing prevention case`);
+            } else {
+              // 손해방지 케이스가 없으면 새로 생성
+              const caseGroupIdForNew = existingCase.caseGroupId || `group-${Date.now()}`;
+              const preventionData = JSON.parse(JSON.stringify(updateData));
+              delete preventionData.id;
+              
+              const preventionCase = await storage.createCase({
+                ...preventionData,
+                caseNumber: `${existingPrefix}-0`,
+                caseGroupId: caseGroupIdForNew,
+                status: updateData.status || existingCase.status,
+                createdBy: req.session.userId,
+              });
+              completedCases.push(preventionCase);
+              console.log(`[Case Update] Updated victim case and created new prevention case`);
+            }
+            
+            // 변경 로그 저장
+            if (changes.length > 0) {
+              try {
+                const user = await storage.getUser(req.session.userId);
+                await storage.createCaseChangeLog({
+                  caseId: id,
+                  changedBy: req.session.userId,
+                  changedByName: user?.name || "알 수 없음",
+                  changeType: "update",
+                  changes,
+                  note: null,
+                });
+              } catch (logError) {
+                console.error("Failed to create change log:", logError);
+              }
+            }
+            
+            try {
+              await storage.syncIntakeDataToRelatedCases(id);
+            } catch (syncError) {
+              console.error("Failed to sync intake data:", syncError);
+            }
+            
+            return res.json({ success: true, cases: completedCases });
           }
-          
-          // 동기화
-          try {
-            await storage.syncIntakeDataToRelatedCases(id);
-          } catch (syncError) {
-            console.error("Failed to sync intake data:", syncError);
-          }
-          
-          return res.json({ success: true, cases: [updatedCase, recoveryCase] });
         }
       }
       
