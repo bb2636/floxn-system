@@ -249,14 +249,14 @@ export function InvoiceManagementPopup({
       const settlementResponse = await fetch(`/api/settlements/case/${caseData.id}/latest`);
       const settlementData = await settlementResponse.json();
       
+      // 입금 내역에서 입금액과 입금일 계산
+      const totalDepositAmount = depositEntries.reduce((sum, entry) => sum + entry.depositAmount, 0);
+      const latestDepositDate = depositEntries.length > 0 
+        ? depositEntries.sort((a, b) => b.depositDate.localeCompare(a.depositDate))[0].depositDate
+        : null;
+      
       if (settlementData && settlementData.id) {
-        // 입금 내역에서 입금액과 입금일 계산
-        const totalDepositAmount = depositEntries.reduce((sum, entry) => sum + entry.depositAmount, 0);
-        const latestDepositDate = depositEntries.length > 0 
-          ? depositEntries.sort((a, b) => b.depositDate.localeCompare(a.depositDate))[0].depositDate
-          : null;
-        
-        // "정산"이 선택된 경우 종결일도 함께 저장
+        // 기존 정산 데이터 업데이트
         const settlementUpdateData: Record<string, string> = {
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액
@@ -274,6 +274,26 @@ export function InvoiceManagementPopup({
         }
         
         await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, settlementUpdateData);
+      } else {
+        // 정산 데이터가 없으면 새로 생성
+        const settlementCreateData: Record<string, unknown> = {
+          caseId: caseData.id,
+          deductible: deductibleAmount || "0",
+          discount: totalDepositAmount.toString(), // 입금액
+          partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
+          partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
+        };
+        
+        if (latestDepositDate) {
+          settlementCreateData.settlementDate = latestDepositDate; // 입금일
+        }
+        
+        // "정산"이 선택된 경우 종결일 설정
+        if (settlementStatus === "정산") {
+          settlementCreateData.closingDate = todayDate; // 종결일
+        }
+        
+        await apiRequest("POST", "/api/settlements", settlementCreateData);
       }
       
       // "정산" 또는 "부분입금"이 선택된 경우 같은 사고번호의 모든 케이스 상태 변경
