@@ -49,7 +49,11 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
     }
   }, [open, caseData]);
 
-  const totalAmount = parseInt(FIXED_FIELD_DISPATCH_AMOUNT) || 0;
+  const totalBeforeTruncation = parseInt(FIXED_FIELD_DISPATCH_AMOUNT) || 0;
+  
+  // 천원단위절사
+  const truncation = totalBeforeTruncation % 1000;
+  const totalAmount = totalBeforeTruncation - truncation;
 
   const handleSendInvoicePdf = async () => {
     if (!invoicePdfRef.current) {
@@ -500,6 +504,38 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
                     {Number(FIXED_FIELD_DISPATCH_AMOUNT).toLocaleString()}원
                   </span>
                 </div>
+              </div>
+
+              {/* 천원단위절사 */}
+              <div style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px 0",
+                borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+              }}>
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 500,
+                  fontSize: "14px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.01em",
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}>
+                  천원단위 절사
+                </span>
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 500,
+                  fontSize: "14px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.01em",
+                  color: "rgba(12, 12, 12, 0.9)",
+                }}
+                data-testid="text-truncation">
+                  -{truncation.toLocaleString()}원
+                </span>
               </div>
 
               <div style={{

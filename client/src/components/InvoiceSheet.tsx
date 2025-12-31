@@ -171,11 +171,15 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     fetchApprovedAmounts();
   }, [open, caseData, categorizedAmounts, relatedCases]);
 
-  const totalAmount = 
+  const totalBeforeTruncation = 
     (parseInt(invoiceDamagePreventionAmount || "0") || 0) + 
     (parseInt(invoicePropertyRepairAmount || "0") || 0) +
     (parseInt(fieldDispatchPreventionAmount || "0") || 0) +
     (parseInt(fieldDispatchPropertyAmount || "0") || 0);
+  
+  // 천원단위절사
+  const truncation = totalBeforeTruncation % 1000;
+  const totalAmount = totalBeforeTruncation - truncation;
 
   const handleSendInvoicePdf = async () => {
     if (!invoicePdfRef.current) {
@@ -812,6 +816,38 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                   </div>
                 </div>
               )}
+
+              {/* 천원단위절사 */}
+              <div style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px 0",
+                borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+              }}>
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 500,
+                  fontSize: "14px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.01em",
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}>
+                  천원단위 절사
+                </span>
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 500,
+                  fontSize: "14px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.01em",
+                  color: "rgba(12, 12, 12, 0.9)",
+                }}
+                data-testid="text-truncation">
+                  -{truncation.toLocaleString()}원
+                </span>
+              </div>
 
               <div style={{
                 display: "flex",
