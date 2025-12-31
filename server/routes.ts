@@ -3177,10 +3177,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
+      
+      // Validate caseId format
+      if (!caseId || caseId === "null" || caseId === "undefined") {
+        console.error("Invalid caseId for documents:", caseId);
+        return res.status(400).json({ error: "유효하지 않은 케이스 ID입니다" });
+      }
+      
       const documents = await storage.getDocumentsByCaseId(caseId);
       res.json(documents);
     } catch (error) {
       console.error("Get documents error:", error);
+      console.error("Get documents error details:", error instanceof Error ? error.message : String(error));
       res.status(500).json({ error: "문서를 조회하는 중 오류가 발생했습니다" });
     }
   });
@@ -4360,6 +4368,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { caseId } = req.params;
+      
+      // Validate caseId format
+      if (!caseId || caseId === "null" || caseId === "undefined") {
+        console.error("Invalid caseId for field survey report:", caseId);
+        return res.status(400).json({ error: "유효하지 않은 케이스 ID입니다" });
+      }
       
       // 케이스 정보 조회
       const caseData = await storage.getCaseById(caseId);
