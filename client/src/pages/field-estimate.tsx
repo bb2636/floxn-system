@@ -5698,13 +5698,44 @@ export default function FieldEstimate() {
                 </span>
               </div>
 
-              {/* VAT */}
+              {/* 천원단위절사 */}
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
                   marginBottom: "16px",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  천원단위절사
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                  data-testid="text-truncation"
+                >
+                  -{estimateSummary.truncation.toLocaleString()}원
+                </span>
+              </div>
+
+              {/* VAT */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -5785,37 +5816,6 @@ export default function FieldEstimate() {
                   data-testid="text-vat"
                 >
                   {estimateSummary.vat.toLocaleString()}원
-                </span>
-              </div>
-
-              {/* 천원단위절사 */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    fontWeight: 500,
-                    color: "#0C0C0C",
-                  }}
-                >
-                  천원단위절사
-                </span>
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    color: "#0C0C0C",
-                  }}
-                  data-testid="text-truncation"
-                >
-                  -{estimateSummary.truncation.toLocaleString()}원
                 </span>
               </div>
 
