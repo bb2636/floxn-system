@@ -2379,7 +2379,7 @@ export default function FieldReport() {
                       color: "#0C0C0C",
                     }}
                   >
-                    {caseData.dispatchLocation || "-"}
+                    {caseData.assignedPartner || "-"}
                   </span>
                 </div>
                 <div className="flex items-center">
