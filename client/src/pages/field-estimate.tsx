@@ -2834,14 +2834,21 @@ export default function FieldEstimate() {
     // VAT (10%)
     const vat = Math.round(vatBase * 0.1);
 
-    // 총 합계
-    const total = vatIncluded ? vatBase + vat : vatBase;
+    // VAT 적용 후 합계
+    const beforeTruncation = vatIncluded ? vatBase + vat : vatBase;
+    
+    // 천원단위절사 (1000원 미만 버림)
+    const truncation = beforeTruncation % 1000;
+    
+    // 총 합계 (천원단위절사 적용)
+    const total = beforeTruncation - truncation;
 
     return {
       subtotal,
       managementFee,
       profit,
       vat,
+      truncation,
       total,
     };
   }, [laborCostRows, materialRows, vatIncluded]);
@@ -5780,6 +5787,37 @@ export default function FieldEstimate() {
                   data-testid="text-vat"
                 >
                   {estimateSummary.vat.toLocaleString()}원
+                </span>
+              </div>
+
+              {/* 천원단위절사 */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 500,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  천원단위절사
+                </span>
+                <span
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                  data-testid="text-truncation"
+                >
+                  -{estimateSummary.truncation.toLocaleString()}원
                 </span>
               </div>
 
