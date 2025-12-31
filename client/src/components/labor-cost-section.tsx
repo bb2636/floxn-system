@@ -941,20 +941,13 @@ export function LaborCostSection({
         const damageArea = Number(updated.damageArea) || 0;
         const standardWorkQty = Number(updated.standardWorkQuantity) || 0;
         
-        // 수동 추가 노무비 행에서 detailItem만 변경 시 합계 재계산 스킵
-        // (적용단가만 업데이트하고, 합계는 사용자가 수량 변경 시에만 재계산)
-        const isManualLaborRow = !updated.isLinkedFromRecovery && updated.detailWork === '노무비';
-        const skipAmountRecalc = isManualLaborRow && field === 'detailItem';
-        
         // 누수탐지비용은 standardPrice * quantity로 계산
         if (updated.category === '누수탐지비용') {
           updated.amount = Math.round(standardPrice * quantity);
         } else if (updated.detailWork === '노무비') {
           // 노무비: 기준가(단위) * 수량 (피해면적은 표시만, 곱하지 않음)
-          // 단, 수동 행에서 detailItem만 변경 시에는 합계 재계산 스킵
-          if (!skipAmountRecalc) {
-            updated.amount = Math.round(standardPrice * quantity);
-          }
+          // 노임항목 변경 시에도 합계가 즉시 업데이트되도록 항상 재계산
+          updated.amount = Math.round(standardPrice * quantity);
         } else if (updated.detailWork === '일위대가') {
           // 일위대가: 새 공식 적용 (C, D, E → I)
           // C = 복구면적 (damageArea)
