@@ -488,17 +488,6 @@ export default function FieldEstimate() {
     return workType;
   };
   
-  // 공사명 역변환 함수 (UI 표시명 → 일위대가DB 공사명)
-  // 목공사-걸레받이는 일위대가DB에서 목공사-목공사로 저장됨
-  const getCatalogWorkName = (workType: string, displayWorkName: string): string => {
-    // 목공사 + 걸레받이 → 일위대가DB에서는 공사명="목공사"
-    if (normalizeForMatch(workType) === normalizeForMatch('목공사') && 
-        normalizeForMatch(displayWorkName) === normalizeForMatch('걸레받이')) {
-      return '목공사';
-    }
-    return displayWorkName;
-  };
-  
   // 철거공사 추가 필요 여부 확인 (일위대가DB의 철거공사 공사명과 매칭)
   const needsDemolitionRow = (workType: string, workName: string): boolean => {
     // 목공사: 반자틀, 합판, 석고보드 → 일위대가DB 철거공사에 있음
@@ -808,12 +797,11 @@ export default function FieldEstimate() {
         const workNameData = workNameMap.get(workName)!;
         const sourceAreaRowId = workNameData.areaRows[0]?.id || '';
         const totalArea = Math.round(workNameData.totalArea * 10) / 10;
-        const catalogWorkName = getCatalogWorkName(workType, workName); // 일위대가DB 공사명으로 변환
         
         // 일위대가DB에서 공종+공사명으로 ALL matching 노임항목 조회 (오버라이드 적용된 값 사용)
         const matchingCatalogItems = mergedIlwidaegaCatalog.filter(
           item => normalizeForMatch(item.공종 || '') === normalizeForMatch(workType) && 
-                 normalizeForMatch(item.공사명 || '') === normalizeForMatch(catalogWorkName)
+                 normalizeForMatch(item.공사명 || '') === normalizeForMatch(workName)
         );
         
         // 복구면적 행에서 장소/위치 조합 추출 (모든 행의 데이터 반영)
@@ -1653,12 +1641,11 @@ export default function FieldEstimate() {
         const workName = areaRow.workName;
         const damageAreaValue = Number(areaRow.repairArea) || 0;
         const laborCategory = getLaborCategory(workType, workName);
-        const catalogWorkName = getCatalogWorkName(workType, workName); // 일위대가DB 공사명으로 변환
         
         // 일위대가DB에서 공종+공사명으로 ALL matching 노임항목 조회 (오버라이드 적용된 값 사용)
         const matchingCatalogItems = mergedIlwidaegaCatalog.filter(
           item => normalizeForMatch(item.공종 || '') === normalizeForMatch(laborCategory) && 
-                 normalizeForMatch(item.공사명 || '') === normalizeForMatch(catalogWorkName)
+                 normalizeForMatch(item.공사명 || '') === normalizeForMatch(workName)
         );
         
         console.log('[연동] 일위대가 조회:', { workType, workName, laborCategory, matchCount: matchingCatalogItems.length });
@@ -1911,10 +1898,9 @@ export default function FieldEstimate() {
             
             // D가 0이면 일위대가 카탈로그에서 조회 (새로 계산된 laborCategory와 linkedAreaRow.workName 사용, 오버라이드 적용된 값 사용)
             if (D === 0 && laborCategory && linkedAreaRow.workName) {
-              const catalogWorkNameForLookup = getCatalogWorkName(linkedAreaRow.workType, linkedAreaRow.workName);
               const catalogItem = mergedIlwidaegaCatalog.find(item => 
                 normalizeForMatch(item.공종) === normalizeForMatch(laborCategory) &&
-                normalizeForMatch(item.공사명) === normalizeForMatch(catalogWorkNameForLookup) &&
+                normalizeForMatch(item.공사명) === normalizeForMatch(linkedAreaRow.workName) &&
                 (!laborRow.detailItem || normalizeForMatch(item.노임항목) === normalizeForMatch(laborRow.detailItem))
               );
               if (catalogItem) {
