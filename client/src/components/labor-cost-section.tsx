@@ -326,7 +326,7 @@ export function LaborCostSection({
     if (hasChanges) {
       onRowsChange(updatedRows);
     }
-  }, [calculateRecoveryAreaByWorkName, enableAreaImport, rows, onRowsChange, isHydrated, ilwidaegaCatalog]);
+  }, [calculateRecoveryAreaByWorkName, enableAreaImport, rows, onRowsChange, isHydrated, ilwidaegaCatalog, laborRateTiers]);
 
   // 캐스케이딩 옵션 생성 - filteredWorkTypes가 제공되면 우선 사용
   const categoryOptions = useMemo(() => {

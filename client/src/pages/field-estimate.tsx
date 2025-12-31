@@ -1819,12 +1819,15 @@ export default function FieldEstimate() {
         if (isDemolitionRow) {
           // 피해철거공사 행 업데이트 (장소, 위치, 피해면적 + 적용단가/수량/합계 재계산)
           // standardWorkQuantity가 0이면 카탈로그 동기화 강제 (D/E 조회 필요)
+          // pricePerSqm이 0이고 standardPrice가 있으면 재계산 필요 (새로 추가된 행)
+          const needsPriceRecalc = laborRow.pricePerSqm === 0 && laborRow.standardPrice && Number(laborRow.standardPrice) > 0 && damageAreaValue > 0;
           const needsUpdate = 
             laborRow.place !== linkedAreaRow.category ||
             laborRow.position !== linkedAreaRow.location ||
             laborRow.damageArea !== damageAreaValue ||
             !laborRow.standardWorkQuantity ||
-            !laborRow.standardPrice;
+            !laborRow.standardPrice ||
+            needsPriceRecalc;
           
           if (needsUpdate) {
             // 적용단가, 수량, 합계 재계산 (C=복구면적, D=기준작업량, E=노임단가)
@@ -1874,13 +1877,16 @@ export default function FieldEstimate() {
           const laborCategory = getLaborCategory(linkedAreaRow.workType, linkedAreaRow.workName);
           
           // standardWorkQuantity가 0이면 카탈로그 동기화 강제 (D/E 조회 필요)
+          // pricePerSqm이 0이고 standardPrice가 있으면 재계산 필요 (새로 추가된 행)
+          const needsPriceRecalc = laborRow.pricePerSqm === 0 && laborRow.standardPrice && Number(laborRow.standardPrice) > 0 && damageAreaValue > 0;
           const needsUpdate = 
             laborRow.place !== linkedAreaRow.category ||
             laborRow.position !== linkedAreaRow.location ||
             laborRow.category !== laborCategory ||
             laborRow.damageArea !== damageAreaValue ||
             !laborRow.standardWorkQuantity ||
-            !laborRow.standardPrice;
+            !laborRow.standardPrice ||
+            needsPriceRecalc;
           
           if (needsUpdate) {
             // 적용단가, 수량, 합계 재계산 (C=복구면적, D=기준작업량, E=노임단가)
@@ -1931,7 +1937,7 @@ export default function FieldEstimate() {
         return laborRow;
       });
     });
-  }, [rows, mergedIlwidaegaCatalog]); // rows(복구면적 산출표), 일위대가 카탈로그 변경 시 실행 (오버라이드 적용된 값 사용)
+  }, [rows, mergedIlwidaegaCatalog, laborRateTiers]); // rows(복구면적 산출표), 일위대가 카탈로그, 노임단가 비율 변경 시 실행
 
   // ========== 철거공사 Reconcile useEffect ==========
   // 복구면적 산출표(rows)의 공사명을 기반으로 철거공사 노무비를 자동 생성/삭제
@@ -2239,7 +2245,7 @@ export default function FieldEstimate() {
         return [...updatedRows, ...newDemolitionRows];
       });
     });
-  }, [rows, laborCostRows, mergedIlwidaegaCatalog, deletedDemolitionKeys]); // laborCostRows 포함 (수동 편집 감지) - 오버라이드 적용된 값 사용
+  }, [rows, laborCostRows, mergedIlwidaegaCatalog, deletedDemolitionKeys, laborRateTiers]); // laborCostRows, 노임단가 비율 포함
 
   // 최신 견적 가져오기
   const { data: latestEstimate, isLoading: isLoadingEstimate } = useQuery<{ estimate: any; rows: any[] }>({
