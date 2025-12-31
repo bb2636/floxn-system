@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Case, CaseDocument } from "@shared/schema";
-import { Upload, X, Check, Search, Info } from "lucide-react";
+import { Upload, X, Check, Search, Info, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -59,6 +59,63 @@ const downloadFile = (fileName: string, fileType: string, base64Data: string) =>
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url);
 };
+
+// Lazy loading image thumbnail component
+function LazyImageThumbnail({ 
+  docId, 
+  fileType, 
+  fileName,
+  fileDataCache,
+  loadFileData 
+}: { 
+  docId: string; 
+  fileType: string;
+  fileName: string;
+  fileDataCache: Record<string, string>;
+  loadFileData: (docId: string) => Promise<string | null>;
+}) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [loaded, setLoaded] = useState(!!fileDataCache[docId]);
+  const isImage = fileType.startsWith('image/');
+
+  useEffect(() => {
+    if (isImage && !fileDataCache[docId] && !isLoading) {
+      setIsLoading(true);
+      loadFileData(docId).then((data) => {
+        setIsLoading(false);
+        if (data) {
+          setLoaded(true);
+        }
+      });
+    }
+  }, [docId, isImage, fileDataCache, loadFileData, isLoading]);
+
+  const cachedData = fileDataCache[docId];
+
+  if (!isImage) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Upload className="w-8 h-8" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
+      </div>
+    );
+  }
+
+  if (isLoading || !cachedData) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={`data:${fileType};base64,${cachedData}`}
+      alt={fileName}
+      className="w-full h-full object-cover"
+    />
+  );
+}
 
 export default function FieldDocuments() {
   const { toast } = useToast();
@@ -145,11 +202,63 @@ export default function FieldDocuments() {
     });
   };
 
-  // 문서 목록 조회
-  const { data: documents = [], isLoading } = useQuery<CaseDocument[]>({
+  // 문서 목록 조회 (fileData 제외된 메타데이터만 반환)
+  const { data: documents = [], isLoading } = useQuery<Omit<CaseDocument, 'fileData'>[]>({
     queryKey: ["/api/documents/case", selectedCaseId],
     enabled: !!selectedCaseId,
   });
+
+  // 파일 데이터 캐시 (개별 문서의 fileData를 저장)
+  const [fileDataCache, setFileDataCache] = useState<Record<string, string>>({});
+  const [loadingFileIds, setLoadingFileIds] = useState<Set<string>>(new Set());
+
+  // 개별 문서의 파일 데이터 로드
+  const loadFileData = useCallback(async (docId: string): Promise<string | null> => {
+    if (fileDataCache[docId]) {
+      return fileDataCache[docId];
+    }
+    if (loadingFileIds.has(docId)) {
+      return null;
+    }
+    
+    setLoadingFileIds(prev => new Set(prev).add(docId));
+    try {
+      const response = await fetch(`/api/documents/${docId}/data`, {
+        credentials: 'include',
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFileDataCache(prev => ({ ...prev, [docId]: data.fileData }));
+        return data.fileData;
+      }
+    } catch (error) {
+      console.error("Failed to load file data:", error);
+    } finally {
+      setLoadingFileIds(prev => {
+        const next = new Set(prev);
+        next.delete(docId);
+        return next;
+      });
+    }
+    return null;
+  }, [fileDataCache, loadingFileIds]);
+
+  // 파일 다운로드 (파일 데이터 로드 후 다운로드)
+  const handleDownload = useCallback(async (doc: Omit<CaseDocument, 'fileData'>) => {
+    let fileData = fileDataCache[doc.id];
+    if (!fileData) {
+      fileData = await loadFileData(doc.id) as string;
+    }
+    if (fileData) {
+      downloadFile(doc.fileName, doc.fileType, fileData);
+    }
+  }, [fileDataCache, loadFileData]);
+
+  // 케이스 변경 시 캐시 초기화
+  useEffect(() => {
+    setFileDataCache({});
+    setLoadingFileIds(new Set());
+  }, [selectedCaseId]);
 
   // 도면 데이터 조회 (제출 조건 체크용)
   const { data: drawingData, isLoading: isLoadingDrawing } = useQuery({
@@ -1548,20 +1657,16 @@ export default function FieldDocuments() {
                     background: "rgba(12, 12, 12, 0.04)",
                     border: "1px solid rgba(12, 12, 12, 0.08)",
                   }}
-                  onClick={() => downloadFile(doc.fileName, doc.fileType, doc.fileData)}
+                  onClick={() => handleDownload(doc)}
                   data-testid={`photo-thumbnail-${doc.id}`}
                 >
-                  {isImage ? (
-                    <img
-                      src={`data:${doc.fileType};base64,${doc.fileData}`}
-                      alt={doc.fileName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Upload className="w-8 h-8" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
-                    </div>
-                  )}
+                  <LazyImageThumbnail
+                    docId={doc.id}
+                    fileType={doc.fileType}
+                    fileName={doc.fileName}
+                    fileDataCache={fileDataCache}
+                    loadFileData={loadFileData}
+                  />
                   
                   <div 
                     className="absolute bottom-0 left-0 right-0 px-2 py-1"

@@ -3193,6 +3193,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get document file data (lazy loading for large files)
+  app.get("/api/documents/:id/data", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { id } = req.params;
+      
+      if (!id || id === "null" || id === "undefined") {
+        return res.status(400).json({ error: "유효하지 않은 문서 ID입니다" });
+      }
+      
+      // Verify document exists and check authorization
+      const document = await storage.getDocument(id);
+      if (!document) {
+        return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
+      }
+      
+      // Allow admins and assessors to access all documents, others only their own
+      const userRole = req.session.userRole;
+      const isPrivilegedRole = userRole === "관리자" || userRole === "심사사";
+      
+      if (!isPrivilegedRole && document.createdBy !== req.session.userId) {
+        return res.status(403).json({ error: "권한이 없습니다" });
+      }
+      
+      const fileData = await storage.getDocumentFileData(id);
+      if (!fileData) {
+        return res.status(404).json({ error: "문서 데이터를 찾을 수 없습니다" });
+      }
+      
+      res.json({ fileData });
+    } catch (error) {
+      console.error("Get document data error:", error);
+      res.status(500).json({ error: "문서 데이터를 조회하는 중 오류가 발생했습니다" });
+    }
+  });
+
   // Delete a document
   app.delete("/api/documents/:id", async (req, res) => {
     if (!req.session?.userId) {

@@ -261,7 +261,8 @@ export interface IStorage {
   // Document methods
   saveDocument(data: InsertCaseDocument): Promise<CaseDocument>;
   getDocument(id: string): Promise<CaseDocument | null>;
-  getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]>;
+  getDocumentFileData(id: string): Promise<string | null>;
+  getDocumentsByCaseId(caseId: string): Promise<Omit<CaseDocument, 'fileData'>[]>;
   deleteDocument(id: string): Promise<void>;
   updateDocumentCategory(
     id: string,
@@ -2226,11 +2227,17 @@ export class MemStorage implements IStorage {
     return this.documents.get(id) || null;
   }
 
-  async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
-    const result: CaseDocument[] = [];
+  async getDocumentFileData(id: string): Promise<string | null> {
+    const doc = this.documents.get(id);
+    return doc?.fileData || null;
+  }
+
+  async getDocumentsByCaseId(caseId: string): Promise<Omit<CaseDocument, 'fileData'>[]> {
+    const result: Omit<CaseDocument, 'fileData'>[] = [];
     for (const doc of this.documents.values()) {
       if (doc.caseId === caseId) {
-        result.push(doc);
+        const { fileData, ...docWithoutData } = doc;
+        result.push(docWithoutData);
       }
     }
     return result;
@@ -5150,9 +5157,29 @@ export class DbStorage implements IStorage {
     return result[0] || null;
   }
 
-  async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
+  async getDocumentFileData(id: string): Promise<string | null> {
     const result = await db
-      .select()
+      .select({ fileData: caseDocuments.fileData })
+      .from(caseDocuments)
+      .where(eq(caseDocuments.id, id))
+      .limit(1);
+    return result[0]?.fileData || null;
+  }
+
+  async getDocumentsByCaseId(caseId: string): Promise<Omit<CaseDocument, 'fileData'>[]> {
+    // Exclude fileData to prevent memory issues with large files (some files are 13MB+)
+    // fileData is loaded separately via getDocumentFileData() when needed
+    const result = await db
+      .select({
+        id: caseDocuments.id,
+        caseId: caseDocuments.caseId,
+        category: caseDocuments.category,
+        fileName: caseDocuments.fileName,
+        fileType: caseDocuments.fileType,
+        fileSize: caseDocuments.fileSize,
+        createdBy: caseDocuments.createdBy,
+        createdAt: caseDocuments.createdAt,
+      })
       .from(caseDocuments)
       .where(eq(caseDocuments.caseId, caseId))
       .orderBy(desc(caseDocuments.createdAt));

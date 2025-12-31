@@ -73,3 +73,10 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Frontend Libraries**: React, TypeScript, Wouter, TanStack Query, React Hook Form, Zod, Shadcn UI, Tailwind CSS, Lucide React.
 - **Backend Libraries**: Express.js, bcrypt, express-session, memorystore, Zod.
 - **Database**: PostgreSQL (Neon-backed) with Drizzle ORM.
+
+## Recent Changes (2025-12-31)
+- **Document Lazy Loading**: Fixed production 500 error caused by loading 260MB+ of document files at once.
+  - Added `/api/documents/:id/data` endpoint for on-demand file data fetching
+  - Modified `/api/documents/case/:caseId` to return metadata only (no fileData)
+  - Added `LazyImageThumbnail` component for progressive image loading
+  - Client-side caching prevents repeated requests for same document
