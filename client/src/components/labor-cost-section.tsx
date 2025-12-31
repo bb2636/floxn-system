@@ -285,8 +285,10 @@ export function LaborCostSection({
             : parseFloat(rawQuantity.toPrecision(1)))
         : row.quantity;
       
-      // 기존 값과 동일하면 업데이트하지 않음
-      if (row.damageArea === newDamageArea && row.quantity === newQuantity) return row;
+      // 기존 값과 동일하고, 가격이 이미 계산되어 있으면 업데이트하지 않음
+      // pricePerSqm이 0이면 재계산 필요 (새로 추가된 행)
+      const needsPriceRecalc = row.pricePerSqm === 0 && row.detailWork === '일위대가' && row.standardPrice && Number(row.standardPrice) > 0;
+      if (row.damageArea === newDamageArea && row.quantity === newQuantity && !needsPriceRecalc) return row;
       
       hasChanges = true;
       
