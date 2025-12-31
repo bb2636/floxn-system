@@ -193,12 +193,14 @@ export function LaborCostSection({
 
   // 공사명별 복구면적 자동 계산 함수
   // - 천장: ×1.3 적용
-  // - 걸레받이/몰딩: ÷1000 적용 (mm → m 변환)
+  // - 걸레받이/몰딩: 복구면적 산출표에서 이미 m² 단위로 계산됨 (변환 불필요)
+  //   - 복구면적 산출표: 가로(mm) × 1000(mm) / 1000000 = 가로/1000 (m²)
+  //   - 즉, repairArea 값이 4.00이면 4m 길이를 의미 (높이 1m 고정이므로)
   const calculateRecoveryAreaByWorkName = useMemo(() => {
     // 공사명별로 복구면적 산출표 데이터를 그룹화하여 합계 계산
     const workNameAreas: Record<string, number> = {};
     
-    // 길이 기반 공사 (mm → m 변환 필요)
+    // 길이 기반 공사 (복구면적 산출표에서 이미 올바르게 계산됨)
     const lengthBasedWorkNames = ['걸레받이', '몰딩'];
     
     areaCalculationRows.forEach(row => {
@@ -208,17 +210,15 @@ export function LaborCostSection({
       const area = parseFloat(row.repairArea) || 0;
       const location = row.location || '';
       
-      // 걸레받이/몰딩: mm를 m로 변환 (÷1000)
       const isLengthBased = lengthBasedWorkNames.includes(workName);
       
       // 천장인 경우 × 1.3 적용 (걸레받이/몰딩은 제외)
       const isCeiling = !isLengthBased && (location.includes('천장') || location === '천장');
       
       let adjustedArea = area;
-      if (isLengthBased) {
-        // 걸레받이/몰딩: ÷1000 (mm → m)
-        adjustedArea = area / 1000;
-      } else if (isCeiling) {
+      // 걸레받이/몰딩: 복구면적 산출표에서 이미 올바른 값 (m 단위)으로 계산됨
+      // 변환 불필요 - repairArea가 그대로 복구면적(m)으로 사용됨
+      if (isCeiling) {
         // 천장: ×1.3
         adjustedArea = area * 1.3;
       }
