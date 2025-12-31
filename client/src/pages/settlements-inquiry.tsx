@@ -298,22 +298,17 @@ export default function SettlementsInquiry() {
       const isPrevention = caseSuffix === 0; // -0 is prevention cost
       const isProperty = caseSuffix > 0; // -1, -2, etc. are property costs
       
-      // 첫 현장출동보고서 제출 시점에 저장된 초기 견적금액 우선 사용
-      // 없으면 현재 견적 데이터에서 계산
+      // 견적금액 결정 로직:
+      // 1. initialEstimateAmount (종합진행관리와 동일하게 사용)
+      // 2. 그 외 fallback들
       let estimateTotal = 0;
       
-      // 손해방지비용(-0) 또는 대물비용(-1,-2...) 초기금액 확인
-      const initialEstimateField = isPrevention 
-        ? (caseItem as any).initialPreventionEstimateAmount
-        : (caseItem as any).initialPropertyEstimateAmount;
+      // 종합진행관리와 동일하게 initialEstimateAmount 우선 사용
+      const initialEstimateAmount = (caseItem as any).initialEstimateAmount;
       
-      // 초기 견적금액 필드가 존재하면 (null이 아니면) 그 값을 사용
-      // 0원도 유효한 값이므로 null 체크로 확인
-      const hasInitialEstimate = initialEstimateField !== null && initialEstimateField !== undefined && initialEstimateField !== "";
-      
-      if (hasInitialEstimate) {
-        // 초기 견적금액이 있으면 그 값 사용 (첫 제출 시점 고정값, 0원도 유효)
-        estimateTotal = parseAmountValue(initialEstimateField);
+      if (initialEstimateAmount !== null && initialEstimateAmount !== undefined && initialEstimateAmount !== "") {
+        // initialEstimateAmount가 있으면 그 값 사용 (종합진행관리와 동일)
+        estimateTotal = parseAmountValue(initialEstimateAmount);
       } else if (estimateData?.estimate?.laborCostData) {
         // 초기 견적금액이 없으면 현재 견적 데이터에서 계산 (아직 제출 전인 경우)
         const laborData = estimateData.estimate.laborCostData as any[];
