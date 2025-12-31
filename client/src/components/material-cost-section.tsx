@@ -719,10 +719,9 @@ export function MaterialCostSection({
                               value={displayQty || ''}
                               onChange={(e) => {
                                 const val = Number(e.target.value) || 0;
-                                const currentWorkName = row.공사명;
-                                // 같은 공사명의 모든 행 수량 동기화
+                                // 해당 행만 수량 업데이트 (개별 관리)
                                 onRowsChange(rows.map(r => {
-                                  if (r.공사명 === currentWorkName && currentWorkName) {
+                                  if (r.id === row.id) {
                                     const newTotal = Math.round((r.단가 || r.기준단가 || 0) * val);
                                     if (isEABased) {
                                       return { ...r, 수량EA: val, 수량m2: 0, 수량: val, 합계: newTotal, 금액: newTotal };
@@ -758,10 +757,9 @@ export function MaterialCostSection({
                         value={quantity || ''}
                         onChange={(e) => {
                           const val = Number(e.target.value) || 0;
-                          const currentWorkName = row.공사명;
-                          // 같은 공사명의 모든 행 수량 동기화
+                          // 해당 행만 수량 업데이트 (개별 관리)
                           onRowsChange(rows.map(r => {
-                            if (r.공사명 === currentWorkName && currentWorkName) {
+                            if (r.id === row.id) {
                               const newTotal = Math.round((r.단가 || r.기준단가 || 0) * val);
                               return { ...r, 수량m2: val, 수량EA: 0, 수량: val, 합계: newTotal, 금액: newTotal };
                             }
