@@ -1442,7 +1442,6 @@ export default function FieldManagement() {
                             ...intakeFieldStyle,
                             flex: 1,
                           }}
-                          disabled={sameAsInsured}
                           data-testid="input-new-victim-address-detail"
                         />
                         <div className="flex items-center gap-2">
@@ -1453,10 +1452,8 @@ export default function FieldManagement() {
                               setSameAsInsured(checked === true);
                               if (checked === true) {
                                 setNewVictimAddress(selectedCaseData?.insuredAddress || "");
-                                setNewVictimAddressDetail(selectedCaseData?.insuredAddressDetail || "");
                               } else {
                                 setNewVictimAddress("");
-                                setNewVictimAddressDetail("");
                               }
                             }}
                             data-testid="checkbox-same-as-insured"
