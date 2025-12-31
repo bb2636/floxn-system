@@ -1972,6 +1972,9 @@ export default function ComprehensiveProgress() {
                     { label: "2차 승인일(복구 요청일)", value: selectedCase?.secondApprovalDate },
                     { label: "복구완료일", value: selectedCase?.constructionCompletionDate },
                     { label: "청구일", value: selectedCase?.claimDate },
+                    { label: "입금완료일", value: selectedCase?.paymentCompletedDate },
+                    { label: "일부입금일", value: selectedCase?.partialPaymentDate },
+                    { label: "정산완료일", value: selectedCase?.settlementCompletedDate },
                   ].map((item) => (
                     <div key={item.label} style={{
                       display: "flex",

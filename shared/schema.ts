@@ -237,6 +237,9 @@ export const cases = pgTable("cases", {
   contractorRepairDate: text("contractor_repair_date"), // 공사업체보수 배당
   completionDate: text("completion_date"), // 완공일
   claimDate: text("claim_date"), // 청구일 (청구 상태로 변경된 날짜)
+  paymentCompletedDate: text("payment_completed_date"), // 입금완료일 (입금완료 상태로 변경된 날짜)
+  partialPaymentDate: text("partial_payment_date"), // 일부입금일 (부분입금 상태로 변경된 날짜)
+  settlementCompletedDate: text("settlement_completed_date"), // 정산완료일 (정산완료 상태로 변경된 날짜)
   
   // 심사 관련 필드 (1차 승인)
   reviewDecision: text("review_decision"), // 심사결과: "승인" | "비승인" | null
