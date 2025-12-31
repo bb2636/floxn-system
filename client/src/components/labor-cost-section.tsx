@@ -1190,7 +1190,7 @@ export function LaborCostSection({
       pricePerSqm: 0,
       damageArea: 0,
       deduction: 0,
-      includeInEstimate: false,
+      includeInEstimate: true,
       request: '',
       amount: 0,
     };
