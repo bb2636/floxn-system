@@ -2372,9 +2372,17 @@ export default function FieldEstimate() {
           const { rowIndex, ...rest } = row; // rowIndex 제거
           // 결정적 ID 사용: rowIndex 기반으로 일관된 ID 생성 (모든 뷰에서 동일)
           const stableIndex = typeof rowIndex === 'number' ? rowIndex : index;
+          
+          // 걸레받이는 일위대가 DB에서 조회해야 하므로 detailWork 수정 (마이그레이션)
+          let fixedDetailWork = rest.detailWork;
+          if (rest.workName === '걸레받이' && rest.detailWork === '노무비') {
+            fixedDetailWork = '일위대가';
+          }
+          
           return {
             id: `labor-saved-${stableIndex}`,
             ...rest,
+            detailWork: fixedDetailWork,
           };
         });
         setLaborCostRows(sortLaborRowsByCategory(loadedLaborRows));
@@ -3055,11 +3063,15 @@ export default function FieldEstimate() {
         
         console.log('[연동] 노무비 행 업데이트:', existingRow.category, existingRow.workName, '→', workType, workName);
         
+        // 걸레받이는 일위대가 DB에서 조회해야 함
+        const updatedDetailWork = workName === '걸레받이' ? '일위대가' : existingRow.detailWork;
+        
         const updatedRows = [...prev];
         updatedRows[existingRowIndex] = {
           ...existingRow,
           category: workType,
           workName: workName,
+          detailWork: updatedDetailWork,
           // DB 매칭이 있으면 세부항목/단가도 업데이트
           detailItem: matchingLaborItems.length > 0 ? detailItem : existingRow.detailItem,
           standardPrice: matchingLaborItems.length > 0 ? unitPrice : existingRow.standardPrice,
@@ -3071,6 +3083,8 @@ export default function FieldEstimate() {
       }
       
       // 새 행 생성 (DB 매칭이 없어도 빈 행으로 생성)
+      // 걸레받이는 일위대가 DB에서 조회해야 하므로 detailWork='일위대가'로 설정
+      const detailWorkValue = workName === '걸레받이' ? '일위대가' : '노무비';
       const newLaborRow: LaborCostRow = {
         id: `labor-${Date.now()}-${Math.random()}`,
         sourceAreaRowId: sourceRowId,
@@ -3078,7 +3092,7 @@ export default function FieldEstimate() {
         position: '',
         category: workType,
         workName: workName,
-        detailWork: '노무비',
+        detailWork: detailWorkValue,
         detailItem: detailItem,
         priceStandard: '',
         unit: isSingleMatch && laborItem ? (laborItem.단위 || '인') : '',
