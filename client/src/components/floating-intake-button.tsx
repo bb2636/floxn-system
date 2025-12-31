@@ -36,7 +36,7 @@ export function FloatingIntakeButton() {
         style={{
           position: 'fixed',
           bottom: '32px',
-          right: '32px',
+          left: '32px',
           display: 'flex',
           flexDirection: 'row',
           alignItems: 'center',
