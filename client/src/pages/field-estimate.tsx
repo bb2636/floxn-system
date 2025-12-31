@@ -482,9 +482,17 @@ export default function FieldEstimate() {
   const AUTO_SYNC_WORK_TYPES = ['도장공사', '목공사', '수장공사', '도배', '마루'];
 
   // 노무비 공종 변환 함수 (특수 케이스 처리)
-  // 목공사 + 반자틀/석고보드는 그대로 유지 (별도 피해철거공사 행 추가로 처리)
+  // 일위대가DB의 실제 공종과 UI 선택 공종이 다른 경우 매핑
   const getLaborCategory = (workType: string, workName: string): string => {
-    // 현재는 그대로 반환 (목공사 + 반자틀/석고보드 → 피해철거공사 자동 추가는 별도 로직에서 처리)
+    // 목공사 + 걸레받이 → 일위대가DB에서는 수장공사로 저장되어 있음
+    if (workType === '목공사' && workName === '걸레받이') {
+      return '수장공사';
+    }
+    // 목공사 + 몰딩 → 일위대가DB에서는 수장공사로 저장되어 있음
+    if (workType === '목공사' && workName === '몰딩') {
+      return '수장공사';
+    }
+    // 그 외에는 그대로 반환
     return workType;
   };
   
