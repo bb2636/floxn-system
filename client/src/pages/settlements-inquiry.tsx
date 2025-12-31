@@ -292,10 +292,30 @@ export default function SettlementsInquiry() {
     const individualCaseData = claimCases.map((caseItem) => {
       const estimateData = estimatesMap.get(caseItem.id);
       
-      // Calculate estimate total from labor cost data (노무비)
+      // Determine if this is prevention (-0) or property (-1, -2, etc.) based on case number suffix
+      const casePrefix = getCaseNumberPrefix(caseItem.caseNumber);
+      const caseSuffix = getCaseSuffix(caseItem.caseNumber);
+      const isPrevention = caseSuffix === 0; // -0 is prevention cost
+      const isProperty = caseSuffix > 0; // -1, -2, etc. are property costs
+      
+      // 첫 현장출동보고서 제출 시점에 저장된 초기 견적금액 우선 사용
+      // 없으면 현재 견적 데이터에서 계산
       let estimateTotal = 0;
       
-      if (estimateData?.estimate?.laborCostData) {
+      // 손해방지비용(-0) 또는 대물비용(-1,-2...) 초기금액 확인
+      const initialEstimateField = isPrevention 
+        ? (caseItem as any).initialPreventionEstimateAmount
+        : (caseItem as any).initialPropertyEstimateAmount;
+      
+      // 초기 견적금액 필드가 존재하면 (null이 아니면) 그 값을 사용
+      // 0원도 유효한 값이므로 null 체크로 확인
+      const hasInitialEstimate = initialEstimateField !== null && initialEstimateField !== undefined && initialEstimateField !== "";
+      
+      if (hasInitialEstimate) {
+        // 초기 견적금액이 있으면 그 값 사용 (첫 제출 시점 고정값, 0원도 유효)
+        estimateTotal = parseAmountValue(initialEstimateField);
+      } else if (estimateData?.estimate?.laborCostData) {
+        // 초기 견적금액이 없으면 현재 견적 데이터에서 계산 (아직 제출 전인 경우)
         const laborData = estimateData.estimate.laborCostData as any[];
         const laborTotal = laborData.reduce((sum, row) => sum + (row.amount || 0), 0);
         const managementFee = Math.round(laborTotal * 0.06);
@@ -306,12 +326,6 @@ export default function SettlementsInquiry() {
       } else {
         estimateTotal = parseAmountValue(caseItem.estimateAmount);
       }
-
-      // Determine if this is prevention (-0) or property (-1, -2, etc.) based on case number suffix
-      const casePrefix = getCaseNumberPrefix(caseItem.caseNumber);
-      const caseSuffix = getCaseSuffix(caseItem.caseNumber);
-      const isPrevention = caseSuffix === 0; // -0 is prevention cost
-      const isProperty = caseSuffix > 0; // -1, -2, etc. are property costs
 
       // Use approvedAmount field if available
       const caseApprovedAmount = parseAmountValue(caseItem.approvedAmount);

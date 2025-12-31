@@ -169,7 +169,7 @@ export interface IStorage {
     caseId: string,
     estimateAmount: string,
   ): Promise<Case | null>;
-  submitFieldSurvey(caseId: string): Promise<Case | null>;
+  submitFieldSurvey(caseId: string, estimateInfo?: { estimateTotal: string; isPrevention: boolean }): Promise<Case | null>;
   reviewCase(
     caseId: string,
     decision: "승인" | "비승인",
@@ -1756,7 +1756,7 @@ export class MemStorage implements IStorage {
     return updatedCase;
   }
 
-  async submitFieldSurvey(caseId: string): Promise<Case | null> {
+  async submitFieldSurvey(caseId: string, estimateInfo?: { estimateTotal: string; isPrevention: boolean }): Promise<Case | null> {
     const caseItem = this.cases.get(caseId);
     if (!caseItem) {
       return null;
@@ -1767,12 +1767,26 @@ export class MemStorage implements IStorage {
     if (!initialEstimateAmount && caseItem.estimateAmount) {
       initialEstimateAmount = caseItem.estimateAmount;
     }
+    
+    // 초기 손해방지/대물비용 기록 (첫 제출 시점만)
+    let initialPreventionEstimateAmount = caseItem.initialPreventionEstimateAmount;
+    let initialPropertyEstimateAmount = caseItem.initialPropertyEstimateAmount;
+    
+    if (estimateInfo) {
+      if (estimateInfo.isPrevention && !initialPreventionEstimateAmount) {
+        initialPreventionEstimateAmount = estimateInfo.estimateTotal;
+      } else if (!estimateInfo.isPrevention && !initialPropertyEstimateAmount) {
+        initialPropertyEstimateAmount = estimateInfo.estimateTotal;
+      }
+    }
 
     const updatedCase: Case = {
       ...caseItem,
       fieldSurveyStatus: "submitted",
       status: "검토중",
       initialEstimateAmount: initialEstimateAmount,
+      initialPreventionEstimateAmount: initialPreventionEstimateAmount,
+      initialPropertyEstimateAmount: initialPropertyEstimateAmount,
       updatedAt: getKSTDate(),
     };
 
@@ -4508,7 +4522,7 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async submitFieldSurvey(caseId: string): Promise<Case | null> {
+  async submitFieldSurvey(caseId: string, estimateInfo?: { estimateTotal: string; isPrevention: boolean }): Promise<Case | null> {
     const currentDate = getKSTDate();
 
     // 현장자료 제출일 자동 기록 (기존 값이 없을 때만)
@@ -4523,6 +4537,15 @@ export class DbStorage implements IStorage {
     // estimateAmount는 견적 저장 시 updateCaseEstimateAmount()에 의해 이미 저장되어 있음
     if (existingCase && !existingCase.initialEstimateAmount && existingCase.estimateAmount) {
       additionalUpdates.initialEstimateAmount = existingCase.estimateAmount;
+    }
+    
+    // 초기 손해방지비용/대물비용 기록 (첫 제출 시점만)
+    if (existingCase && estimateInfo) {
+      if (estimateInfo.isPrevention && !existingCase.initialPreventionEstimateAmount) {
+        additionalUpdates.initialPreventionEstimateAmount = estimateInfo.estimateTotal;
+      } else if (!estimateInfo.isPrevention && !existingCase.initialPropertyEstimateAmount) {
+        additionalUpdates.initialPropertyEstimateAmount = estimateInfo.estimateTotal;
+      }
     }
 
     const result = await db

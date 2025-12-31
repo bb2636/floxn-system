@@ -1923,8 +1923,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // 제출 처리
-      const updatedCase = await storage.submitFieldSurvey(caseId);
+      // 견적 총액 계산 (노임비 + 재료비 + 관리비 + 이윤 + VAT)
+      let estimateTotal: number | null = null;
+      if (estimateData && estimateData.rows) {
+        const rows = estimateData.rows as any[];
+        const vatIncluded = (estimateData as any).vatIncluded ?? true;
+        
+        // 노임비 합계 (경비 제외)
+        const laborCosts = rows.reduce((sum: number, row: any) => {
+          const laborAmount = parseFloat(row.laborCost?.toString() || "0") || 0;
+          const includeInEstimate = row.includeInEstimate !== false;
+          return sum + (includeInEstimate ? laborAmount : 0);
+        }, 0);
+        
+        // 경비 합계 (includeInEstimate가 false인 노임비)
+        const expenseCosts = rows.reduce((sum: number, row: any) => {
+          const laborAmount = parseFloat(row.laborCost?.toString() || "0") || 0;
+          const includeInEstimate = row.includeInEstimate !== false;
+          return sum + (includeInEstimate ? 0 : laborAmount);
+        }, 0);
+        
+        // 재료비 합계
+        const materialCosts = rows.reduce((sum: number, row: any) => {
+          return sum + (parseFloat(row.materialCost?.toString() || "0") || 0);
+        }, 0);
+        
+        // 기초금액 (노임비 + 재료비, 경비 제외)
+        const baseAmount = laborCosts + materialCosts;
+        
+        // 관리비 6%, 이윤 15%
+        const managementFee = Math.round(baseAmount * 0.06);
+        const profit = Math.round(baseAmount * 0.15);
+        
+        // 소계 (노임비 + 경비 + 재료비 + 관리비 + 이윤)
+        const subtotal = laborCosts + expenseCosts + materialCosts + managementFee + profit;
+        
+        // VAT 10%
+        const vat = vatIncluded ? Math.round(subtotal * 0.1) : 0;
+        
+        // 최종 합계
+        estimateTotal = subtotal + vat;
+      }
+      
+      // 견적 rows가 없으면 기존 estimateAmount 사용 (fallback)
+      if (estimateTotal === null && caseData.estimateAmount) {
+        const parsedAmount = parseFloat(caseData.estimateAmount.replace(/,/g, ''));
+        estimateTotal = isNaN(parsedAmount) ? 0 : parsedAmount;
+      }
+      
+      // 여전히 null이면 0으로 설정 (견적이 없는 경우)
+      if (estimateTotal === null) {
+        estimateTotal = 0;
+      }
+      
+      // 케이스 번호로 손해방지비용(-0) 또는 대물비용(-1,-2...) 판별
+      const caseNumber = caseData.caseNumber || "";
+      const caseNumberParts = caseNumber.split("-");
+      const suffix = caseNumberParts.length > 1 ? parseInt(caseNumberParts[caseNumberParts.length - 1], 10) : 0;
+      const isPrevention = suffix === 0;
+
+      // 제출 처리 (초기 견적금액 포함)
+      const updatedCase = await storage.submitFieldSurvey(caseId, {
+        estimateTotal: estimateTotal.toString(),
+        isPrevention,
+      });
       
       if (!updatedCase) {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
