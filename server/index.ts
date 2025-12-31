@@ -44,12 +44,12 @@ app.use(session({
 }));
 
 app.use(express.json({
-  limit: '50mb', // 파일 업로드를 위해 크기 제한 증가
+  limit: '500mb', // 대용량 파일 처리를 위해 크기 제한 대폭 증가
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
 }));
-app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+app.use(express.urlencoded({ extended: false, limit: '500mb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -116,11 +116,17 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  
+  // 대용량 파일 처리를 위해 타임아웃 대폭 증가 (5분)
+  server.timeout = 300000; // 300초 = 5분
+  server.keepAliveTimeout = 120000; // 120초 = 2분
+  server.headersTimeout = 310000; // timeout보다 약간 길게
+  
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on port ${port} (timeout: ${server.timeout}ms)`);
   });
 })();

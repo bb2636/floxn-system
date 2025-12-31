@@ -262,7 +262,7 @@ export interface IStorage {
   saveDocument(data: InsertCaseDocument): Promise<CaseDocument>;
   getDocument(id: string): Promise<CaseDocument | null>;
   getDocumentFileData(id: string): Promise<string | null>;
-  getDocumentsByCaseId(caseId: string): Promise<Omit<CaseDocument, 'fileData'>[]>;
+  getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]>;
   deleteDocument(id: string): Promise<void>;
   updateDocumentCategory(
     id: string,
@@ -2232,12 +2232,11 @@ export class MemStorage implements IStorage {
     return doc?.fileData || null;
   }
 
-  async getDocumentsByCaseId(caseId: string): Promise<Omit<CaseDocument, 'fileData'>[]> {
-    const result: Omit<CaseDocument, 'fileData'>[] = [];
+  async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
+    const result: CaseDocument[] = [];
     for (const doc of this.documents.values()) {
       if (doc.caseId === caseId) {
-        const { fileData, ...docWithoutData } = doc;
-        result.push(docWithoutData);
+        result.push(doc);
       }
     }
     return result;
@@ -5166,20 +5165,9 @@ export class DbStorage implements IStorage {
     return result[0]?.fileData || null;
   }
 
-  async getDocumentsByCaseId(caseId: string): Promise<Omit<CaseDocument, 'fileData'>[]> {
-    // Exclude fileData to prevent memory issues with large files (some files are 13MB+)
-    // fileData is loaded separately via getDocumentFileData() when needed
+  async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
     const result = await db
-      .select({
-        id: caseDocuments.id,
-        caseId: caseDocuments.caseId,
-        category: caseDocuments.category,
-        fileName: caseDocuments.fileName,
-        fileType: caseDocuments.fileType,
-        fileSize: caseDocuments.fileSize,
-        createdBy: caseDocuments.createdBy,
-        createdAt: caseDocuments.createdAt,
-      })
+      .select()
       .from(caseDocuments)
       .where(eq(caseDocuments.caseId, caseId))
       .orderBy(desc(caseDocuments.createdAt));

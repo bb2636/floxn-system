@@ -3070,6 +3070,7 @@ export default function FieldReport() {
               onClick={() => {
                 if (documents && documents.length > 0) {
                   documents.forEach((doc) => {
+                    if (!doc.fileData) return;
                     const link = document.createElement('a');
                     const mimeType = doc.fileType || 'image/jpeg';
                     const dataUrl = doc.fileData.startsWith('data:') 
@@ -3154,6 +3155,7 @@ export default function FieldReport() {
                       {/* 파일 리스트 */}
                       <div className="flex flex-col" style={{ gap: "12px" }}>
                         {categoryDocs.map((doc) => {
+                          if (!doc.fileData) return null;
                           const dataUrl = doc.fileData.startsWith('data:') 
                             ? doc.fileData 
                             : `data:${doc.fileType || 'image/jpeg'};base64,${doc.fileData}`;
