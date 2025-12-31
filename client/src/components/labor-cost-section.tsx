@@ -345,9 +345,8 @@ export function LaborCostSection({
     return categories;
   }, [catalog, filteredWorkTypes]);
 
-  // 걸레받이 -> 목공사 역변환 (노무비 카탈로그 조회용)
+  // 공사명 조회용 (변환 없이 그대로 사용)
   const mapWorkNameForLookup = (workName: string) => {
-    if (workName === '걸레받이') return '목공사';
     return workName;
   };
 
@@ -359,13 +358,7 @@ export function LaborCostSection({
     }
     if (!catalog.length) return currentValue ? [currentValue] : [];
     const filtered = catalog.filter(item => item.공종 === category);
-    const unique = new Set(filtered.map(item => {
-      // 목공사 공종의 공사명 "목공사"를 "걸레받이"로 변경
-      if (category === '목공사' && item.공사명 === '목공사') {
-        return '걸레받이';
-      }
-      return item.공사명;
-    }));
+    const unique = new Set(filtered.map(item => item.공사명));
     const options = Array.from(unique);
     // 현재 값이 옵션에 없으면 추가
     if (currentValue && !options.includes(currentValue)) {
