@@ -380,6 +380,8 @@ export default function AdminSettings() {
     User,
     "password"
   > | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editedUserData, setEditedUserData] = useState<Partial<Omit<User, 'id' | 'username' | 'password' | 'company' | 'createdAt' | 'status'>>>({});
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetPasswordValue, setResetPasswordValue] = useState("0000");
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
@@ -967,6 +969,45 @@ export default function AdminSettings() {
       toast({
         title: "등록 실패",
         description: error.message || "공지사항을 등록하는 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ userId, data }: { userId: string; data: Partial<Omit<User, 'id' | 'username' | 'password' | 'company' | 'createdAt' | 'status'>> }) => {
+      return await apiRequest("PATCH", `/api/users/${userId}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsEditMode(false);
+      setEditedUserData({});
+      toast({
+        description: (
+          <div className="flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5" />
+            <span>계정 정보가 수정되었습니다</span>
+          </div>
+        ),
+        className: "border-none shadow-lg",
+        style: {
+          background: "#008FED",
+          color: "#FDFDFD",
+          fontFamily: "Pretendard",
+          fontSize: "14px",
+          fontWeight: 500,
+        } as React.CSSProperties,
+      });
+      // Update the selected user with new data
+      if (selectedUser) {
+        setSelectedUser(prev => prev ? { ...prev, ...editedUserData } : null);
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "수정 실패",
+        description: error.message || "계정 정보 수정 중 오류가 발생했습니다.",
         variant: "destructive",
       });
     },
@@ -4366,7 +4407,11 @@ export default function AdminSettings() {
               background: "rgba(0, 0, 0, 0.7)",
               opacity: 0.4,
             }}
-            onClick={() => setSelectedUser(null)}
+            onClick={() => {
+              setSelectedUser(null);
+              setIsEditMode(false);
+              setEditedUserData({});
+            }}
             data-testid="modal-overlay"
           />
 
@@ -4396,19 +4441,56 @@ export default function AdminSettings() {
                   color: "#0C0C0C",
                 }}
               >
-                계정 상세보기
+                {isEditMode ? "계정 정보 수정" : "계정 상세보기"}
               </h2>
-              <button
-                onClick={() => setSelectedUser(null)}
-                className="absolute right-5"
-                style={{
-                  width: "24px",
-                  height: "24px",
-                }}
-                data-testid="button-close-modal"
-              >
-                <X className="w-6 h-6" color="#1C1B1F" />
-              </button>
+              <div className="absolute right-5 flex items-center gap-3">
+                {!isEditMode && (
+                  <button
+                    onClick={() => {
+                      setIsEditMode(true);
+                      setEditedUserData({
+                        name: selectedUser.name,
+                        role: selectedUser.role as "심사사" | "조사사" | "보험사" | "협력사" | "관리자",
+                        department: selectedUser.department,
+                        position: selectedUser.position,
+                        email: selectedUser.email,
+                        phone: selectedUser.phone,
+                        office: selectedUser.office,
+                        address: selectedUser.address,
+                        bankName: selectedUser.bankName,
+                        accountNumber: selectedUser.accountNumber,
+                        accountHolder: selectedUser.accountHolder,
+                        serviceRegions: selectedUser.serviceRegions,
+                      });
+                    }}
+                    className="px-4 py-2 rounded-lg"
+                    style={{
+                      background: "#008FED",
+                      color: "#FDFDFD",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                    }}
+                    data-testid="button-edit-account"
+                  >
+                    수정
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setIsEditMode(false);
+                    setEditedUserData({});
+                  }}
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                  }}
+                  data-testid="button-close-modal"
+                >
+                  <X className="w-6 h-6" color="#1C1B1F" />
+                </button>
+              </div>
             </div>
 
             {/* Profile Card */}
@@ -4530,17 +4612,34 @@ export default function AdminSettings() {
                       >
                         성함
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 400,
-                          letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
-                        }}
-                      >
-                        {selectedUser.name}
-                      </span>
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={editedUserData.name || ""}
+                          onChange={(e) => setEditedUserData({ ...editedUserData, name: e.target.value })}
+                          className="px-3 py-2 rounded-lg border"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            color: "rgba(12, 12, 12, 0.9)",
+                            borderColor: "rgba(12, 12, 12, 0.1)",
+                          }}
+                          data-testid="input-edit-name"
+                        />
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.name}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
                       <span
@@ -4560,7 +4659,7 @@ export default function AdminSettings() {
                           fontSize: "16px",
                           fontWeight: 400,
                           letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
+                          color: isEditMode ? "rgba(12, 12, 12, 0.4)" : "rgba(12, 12, 12, 0.9)",
                         }}
                       >
                         {selectedUser.username}
@@ -4581,17 +4680,34 @@ export default function AdminSettings() {
                       >
                         연락처
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 400,
-                          letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
-                        }}
-                      >
-                        {selectedUser.phone}
-                      </span>
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={editedUserData.phone || ""}
+                          onChange={(e) => setEditedUserData({ ...editedUserData, phone: e.target.value })}
+                          className="px-3 py-2 rounded-lg border"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            color: "rgba(12, 12, 12, 0.9)",
+                            borderColor: "rgba(12, 12, 12, 0.1)",
+                          }}
+                          data-testid="input-edit-phone"
+                        />
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.phone}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
                       <span
@@ -4605,17 +4721,34 @@ export default function AdminSettings() {
                       >
                         이메일 주소
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 400,
-                          letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
-                        }}
-                      >
-                        {selectedUser.email}
-                      </span>
+                      {isEditMode ? (
+                        <input
+                          type="email"
+                          value={editedUserData.email || ""}
+                          onChange={(e) => setEditedUserData({ ...editedUserData, email: e.target.value })}
+                          className="px-3 py-2 rounded-lg border"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            color: "rgba(12, 12, 12, 0.9)",
+                            borderColor: "rgba(12, 12, 12, 0.1)",
+                          }}
+                          data-testid="input-edit-email"
+                        />
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.email}
+                        </span>
+                      )}
                     </div>
                   </div>
                   {/* Row 3 */}
@@ -4638,7 +4771,7 @@ export default function AdminSettings() {
                           fontSize: "16px",
                           fontWeight: 400,
                           letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
+                          color: isEditMode ? "rgba(12, 12, 12, 0.4)" : "rgba(12, 12, 12, 0.9)",
                         }}
                       >
                         {selectedUser.createdAt}
@@ -4656,17 +4789,33 @@ export default function AdminSettings() {
                       >
                         역할
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 400,
-                          letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
-                        }}
-                      >
-                        {selectedUser.role}
-                      </span>
+                      {isEditMode ? (
+                        <Select
+                          value={editedUserData.role || selectedUser.role}
+                          onValueChange={(value) => setEditedUserData({ ...editedUserData, role: value as "심사사" | "조사사" | "보험사" | "협력사" | "관리자" })}
+                        >
+                          <SelectTrigger className="w-full" data-testid="select-edit-role">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {VALID_ROLES.map((role) => (
+                              <SelectItem key={role} value={role}>{role}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.role}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -4718,7 +4867,7 @@ export default function AdminSettings() {
                           fontSize: "16px",
                           fontWeight: 400,
                           letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
+                          color: isEditMode ? "rgba(12, 12, 12, 0.4)" : "rgba(12, 12, 12, 0.9)",
                         }}
                       >
                         {selectedUser.company}
@@ -4736,17 +4885,34 @@ export default function AdminSettings() {
                       >
                         소속부서
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 400,
-                          letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
-                        }}
-                      >
-                        {selectedUser.department}
-                      </span>
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={editedUserData.department || ""}
+                          onChange={(e) => setEditedUserData({ ...editedUserData, department: e.target.value })}
+                          className="px-3 py-2 rounded-lg border"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            color: "rgba(12, 12, 12, 0.9)",
+                            borderColor: "rgba(12, 12, 12, 0.1)",
+                          }}
+                          data-testid="input-edit-department"
+                        />
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.department}
+                        </span>
+                      )}
                     </div>
                   </div>
                   {/* Row 2 */}
@@ -4763,17 +4929,34 @@ export default function AdminSettings() {
                       >
                         직급
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 400,
-                          letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
-                        }}
-                      >
-                        {selectedUser.position}
-                      </span>
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={editedUserData.position || ""}
+                          onChange={(e) => setEditedUserData({ ...editedUserData, position: e.target.value })}
+                          className="px-3 py-2 rounded-lg border"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            color: "rgba(12, 12, 12, 0.9)",
+                            borderColor: "rgba(12, 12, 12, 0.1)",
+                          }}
+                          data-testid="input-edit-position"
+                        />
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.position}
+                        </span>
+                      )}
                     </div>
                     <div className="flex-1 flex flex-col gap-2">
                       <span
@@ -4787,17 +4970,34 @@ export default function AdminSettings() {
                       >
                         사무실 전화
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 400,
-                          letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
-                        }}
-                      >
-                        {selectedUser.office}
-                      </span>
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={editedUserData.office || ""}
+                          onChange={(e) => setEditedUserData({ ...editedUserData, office: e.target.value })}
+                          className="px-3 py-2 rounded-lg border"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            color: "rgba(12, 12, 12, 0.9)",
+                            borderColor: "rgba(12, 12, 12, 0.1)",
+                          }}
+                          data-testid="input-edit-office"
+                        />
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.office}
+                        </span>
+                      )}
                     </div>
                   </div>
                   {/* Row 3 */}
@@ -4814,17 +5014,34 @@ export default function AdminSettings() {
                       >
                         주소
                       </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 400,
-                          letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
-                        }}
-                      >
-                        {selectedUser.address}
-                      </span>
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={editedUserData.address || ""}
+                          onChange={(e) => setEditedUserData({ ...editedUserData, address: e.target.value })}
+                          className="px-3 py-2 rounded-lg border"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            color: "rgba(12, 12, 12, 0.9)",
+                            borderColor: "rgba(12, 12, 12, 0.1)",
+                          }}
+                          data-testid="input-edit-address"
+                        />
+                      ) : (
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                        >
+                          {selectedUser.address}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -4845,17 +5062,34 @@ export default function AdminSettings() {
                           >
                             은행명
                           </span>
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "16px",
-                              fontWeight: 400,
-                              letterSpacing: "-0.02em",
-                              color: "rgba(12, 12, 12, 0.9)",
-                            }}
-                          >
-                            {selectedUser.bankName || "-"}
-                          </span>
+                          {isEditMode ? (
+                            <input
+                              type="text"
+                              value={editedUserData.bankName || ""}
+                              onChange={(e) => setEditedUserData({ ...editedUserData, bankName: e.target.value })}
+                              className="px-3 py-2 rounded-lg border"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                color: "rgba(12, 12, 12, 0.9)",
+                                borderColor: "rgba(12, 12, 12, 0.1)",
+                              }}
+                              data-testid="input-edit-bankName"
+                            />
+                          ) : (
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.02em",
+                                color: "rgba(12, 12, 12, 0.9)",
+                              }}
+                            >
+                              {selectedUser.bankName || "-"}
+                            </span>
+                          )}
                         </div>
                         <div className="flex-1 flex flex-col gap-2">
                           <span
@@ -4869,17 +5103,34 @@ export default function AdminSettings() {
                           >
                             계좌번호
                           </span>
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "16px",
-                              fontWeight: 400,
-                              letterSpacing: "-0.02em",
-                              color: "rgba(12, 12, 12, 0.9)",
-                            }}
-                          >
-                            {selectedUser.accountNumber || "-"}
-                          </span>
+                          {isEditMode ? (
+                            <input
+                              type="text"
+                              value={editedUserData.accountNumber || ""}
+                              onChange={(e) => setEditedUserData({ ...editedUserData, accountNumber: e.target.value })}
+                              className="px-3 py-2 rounded-lg border"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                color: "rgba(12, 12, 12, 0.9)",
+                                borderColor: "rgba(12, 12, 12, 0.1)",
+                              }}
+                              data-testid="input-edit-accountNumber"
+                            />
+                          ) : (
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.02em",
+                                color: "rgba(12, 12, 12, 0.9)",
+                              }}
+                            >
+                              {selectedUser.accountNumber || "-"}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -4897,17 +5148,34 @@ export default function AdminSettings() {
                           >
                             예금주
                           </span>
-                          <span
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "16px",
-                              fontWeight: 400,
-                              letterSpacing: "-0.02em",
-                              color: "rgba(12, 12, 12, 0.9)",
-                            }}
-                          >
-                            {selectedUser.accountHolder || "-"}
-                          </span>
+                          {isEditMode ? (
+                            <input
+                              type="text"
+                              value={editedUserData.accountHolder || ""}
+                              onChange={(e) => setEditedUserData({ ...editedUserData, accountHolder: e.target.value })}
+                              className="px-3 py-2 rounded-lg border"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                color: "rgba(12, 12, 12, 0.9)",
+                                borderColor: "rgba(12, 12, 12, 0.1)",
+                              }}
+                              data-testid="input-edit-accountHolder"
+                            />
+                          ) : (
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.02em",
+                                color: "rgba(12, 12, 12, 0.9)",
+                              }}
+                            >
+                              {selectedUser.accountHolder || "-"}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -5008,54 +5276,115 @@ export default function AdminSettings() {
                 flexShrink: 0,
               }}
             >
-              <button
-                className="flex-1 flex items-center justify-center rounded-xl"
-                style={{
-                  height: "64px",
-                  background: "#D02B20",
-                  boxShadow: "2px 4px 30px #BDD1F0",
-                }}
-                onClick={() => {
-                  setShowDeleteAccountModal(true);
-                }}
-                data-testid="button-delete-account"
-              >
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "20px",
-                    fontWeight: 600,
-                    letterSpacing: "-0.02em",
-                    color: "#FDFDFD",
-                  }}
-                >
-                  계정 삭제
-                </span>
-              </button>
-              <button
-                className="flex-1 flex items-center justify-center rounded-xl"
-                style={{
-                  height: "64px",
-                  background: "transparent",
-                  boxShadow: "2px 4px 30px #BDD1F0",
-                }}
-                onClick={() => {
-                  setShowResetPasswordModal(true);
-                }}
-                data-testid="button-reset-password"
-              >
-                <span
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "20px",
-                    fontWeight: 600,
-                    letterSpacing: "-0.02em",
-                    color: "#D02B20",
-                  }}
-                >
-                  비밀번호 초기화
-                </span>
-              </button>
+              {isEditMode ? (
+                <>
+                  <button
+                    className="flex-1 flex items-center justify-center rounded-xl"
+                    style={{
+                      height: "64px",
+                      background: "rgba(12, 12, 12, 0.1)",
+                    }}
+                    onClick={() => {
+                      setIsEditMode(false);
+                      setEditedUserData({});
+                    }}
+                    data-testid="button-cancel-edit"
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "20px",
+                        fontWeight: 600,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}
+                    >
+                      취소
+                    </span>
+                  </button>
+                  <button
+                    className="flex-1 flex items-center justify-center rounded-xl"
+                    style={{
+                      height: "64px",
+                      background: "#008FED",
+                      boxShadow: "2px 4px 30px #BDD1F0",
+                    }}
+                    onClick={() => {
+                      if (selectedUser) {
+                        updateUserMutation.mutate({
+                          userId: selectedUser.id.toString(),
+                          data: editedUserData,
+                        });
+                      }
+                    }}
+                    disabled={updateUserMutation.isPending}
+                    data-testid="button-save-edit"
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "20px",
+                        fontWeight: 600,
+                        letterSpacing: "-0.02em",
+                        color: "#FDFDFD",
+                      }}
+                    >
+                      {updateUserMutation.isPending ? "저장 중..." : "저장"}
+                    </span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="flex-1 flex items-center justify-center rounded-xl"
+                    style={{
+                      height: "64px",
+                      background: "#D02B20",
+                      boxShadow: "2px 4px 30px #BDD1F0",
+                    }}
+                    onClick={() => {
+                      setShowDeleteAccountModal(true);
+                    }}
+                    data-testid="button-delete-account"
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "20px",
+                        fontWeight: 600,
+                        letterSpacing: "-0.02em",
+                        color: "#FDFDFD",
+                      }}
+                    >
+                      계정 삭제
+                    </span>
+                  </button>
+                  <button
+                    className="flex-1 flex items-center justify-center rounded-xl"
+                    style={{
+                      height: "64px",
+                      background: "transparent",
+                      boxShadow: "2px 4px 30px #BDD1F0",
+                    }}
+                    onClick={() => {
+                      setShowResetPasswordModal(true);
+                    }}
+                    data-testid="button-reset-password"
+                  >
+                    <span
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "20px",
+                        fontWeight: 600,
+                        letterSpacing: "-0.02em",
+                        color: "#D02B20",
+                      }}
+                    >
+                      비밀번호 초기화
+                    </span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </>

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, changeMyPasswordSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema, approveReportSchema, insertSettlementSchema } from "@shared/schema";
+import { loginSchema, updatePasswordSchema, deleteAccountSchema, createAccountSchema, changeMyPasswordSchema, updateUserSchema, insertCaseSchema, insertCaseRequestSchema, insertProgressUpdateSchema, insertRolePermissionSchema, insertExcelDataSchema, insertInquirySchema, updateInquirySchema, respondInquirySchema, insertDrawingSchema, insertCaseDocumentSchema, insertMasterDataSchema, insertLaborCostSchema, insertMaterialSchema, reviewCaseSchema, approveReportSchema, insertSettlementSchema } from "@shared/schema";
 import { z } from "zod";
 import { db } from "./db";
 import { estimates, cases } from "@shared/schema";
@@ -420,6 +420,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Delete account error:", error);
       res.status(500).json({ error: "계정 삭제 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Update user account endpoint (admin only)
+  app.patch("/api/users/:id", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check admin authorization
+    if (req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const userId = req.params.id;
+      
+      // Validate request body with Zod
+      const validatedData = updateUserSchema.parse(req.body);
+
+      const updatedUser = await storage.updateUser(userId, validatedData);
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
+      }
+
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json({ success: true, user: userWithoutPassword });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Update user error:", error);
+      res.status(500).json({ error: "계정 정보 수정 중 오류가 발생했습니다" });
     }
   });
 

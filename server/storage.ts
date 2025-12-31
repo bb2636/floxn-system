@@ -133,6 +133,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   verifyPassword(username: string, password: string): Promise<User | null>;
   updatePassword(username: string, newPassword: string): Promise<User | null>;
+  updateUser(userId: string, userData: Partial<Omit<User, 'id' | 'username' | 'password' | 'company' | 'createdAt' | 'status'>>): Promise<User | null>;
   deleteAccount(username: string): Promise<User | null>;
   getNextCaseSequence(
     date: string,
@@ -1244,6 +1245,20 @@ export class MemStorage implements IStorage {
       password: hashedPassword,
     };
     this.users.set(user.id, updatedUser);
+    return updatedUser;
+  }
+
+  async updateUser(userId: string, userData: Partial<Omit<User, 'id' | 'username' | 'password' | 'company' | 'createdAt' | 'status'>>): Promise<User | null> {
+    const user = this.users.get(userId);
+    if (!user) {
+      return null;
+    }
+
+    const updatedUser: User = {
+      ...user,
+      ...userData,
+    };
+    this.users.set(userId, updatedUser);
     return updatedUser;
   }
 
@@ -3971,6 +3986,21 @@ export class DbStorage implements IStorage {
       .update(users)
       .set({ password: hashedPassword })
       .where(eq(users.username, username))
+      .returning();
+
+    return result[0] || null;
+  }
+
+  async updateUser(userId: string, userData: Partial<Omit<User, 'id' | 'username' | 'password' | 'company' | 'createdAt' | 'status'>>): Promise<User | null> {
+    const existingUser = await this.getUser(userId);
+    if (!existingUser) {
+      return null;
+    }
+
+    const result = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, userId))
       .returning();
 
     return result[0] || null;

@@ -85,6 +85,25 @@ export const createAccountSchema = z.object({
   attachments: z.array(z.string()).optional(),
 });
 
+export const updateUserSchema = z.object({
+  name: z.string().min(1, "이름을 입력해주세요").optional(),
+  role: z.enum(VALID_ROLES).optional(),
+  department: z.string().optional().nullable(),
+  position: z.string().optional().nullable(),
+  email: z.string().email("올바른 이메일 주소를 입력해주세요").optional().or(z.literal("")).nullable(),
+  phone: z.string().optional().nullable(),
+  office: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  // Partner-specific fields
+  bankName: z.string().optional().nullable(),
+  accountNumber: z.string().optional().nullable(),
+  accountHolder: z.string().optional().nullable(),
+  serviceRegions: z.array(z.string()).optional().nullable(),
+  attachments: z.array(z.string()).optional().nullable(),
+});
+
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type LoginInput = z.infer<typeof loginSchema>;
