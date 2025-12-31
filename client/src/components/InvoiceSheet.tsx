@@ -74,15 +74,18 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       }
     }
     
+    // 관련 케이스 중 하나라도 직접복구가 있으면 출동비 청구하지 않음
+    const hasAnyDirectRecovery = allCases.some(c => c.recoveryType && c.recoveryType !== "선견적요청");
+    
     return {
       damagePreventionAmount,
       damagePreventionFieldDispatch,
       propertyRepairAmount,
       propertyFieldDispatch,
       hasDirectRecoveryPrevention: damagePreventionAmount > 0 || allCases.some(c => getCaseSuffix(c.caseNumber) === 0 && c.recoveryType !== "선견적요청"),
-      hasFieldDispatchPrevention: damagePreventionFieldDispatch > 0,
+      hasFieldDispatchPrevention: damagePreventionFieldDispatch > 0 && !hasAnyDirectRecovery,
       hasDirectRecoveryProperty: propertyRepairAmount > 0 || allCases.some(c => getCaseSuffix(c.caseNumber) > 0 && c.recoveryType !== "선견적요청"),
-      hasFieldDispatchProperty: propertyFieldDispatch > 0,
+      hasFieldDispatchProperty: propertyFieldDispatch > 0 && !hasAnyDirectRecovery,
     };
   }, [relatedCases, caseData]);
 
@@ -153,8 +156,17 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         }
         
         // 현장출동비용 설정 (선견적요청 케이스당 10만원)
-        setFieldDispatchPreventionAmount((categorizedAmounts.damagePreventionFieldDispatch * 100000).toString());
-        setFieldDispatchPropertyAmount((categorizedAmounts.propertyFieldDispatch * 100000).toString());
+        // 관련 케이스 중 하나라도 직접복구가 있으면 출동비 0원으로 설정
+        if (categorizedAmounts.hasFieldDispatchPrevention) {
+          setFieldDispatchPreventionAmount((categorizedAmounts.damagePreventionFieldDispatch * 100000).toString());
+        } else {
+          setFieldDispatchPreventionAmount("0");
+        }
+        if (categorizedAmounts.hasFieldDispatchProperty) {
+          setFieldDispatchPropertyAmount((categorizedAmounts.propertyFieldDispatch * 100000).toString());
+        } else {
+          setFieldDispatchPropertyAmount("0");
+        }
         
         setInvoiceRemarks(caseData.invoiceRemarks || "");
         setInvoiceRecipientEmail("");
