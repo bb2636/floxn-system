@@ -152,15 +152,17 @@ export default function FieldEstimate() {
   const [workTypeInputMode, setWorkTypeInputMode] = useState<{[rowId: string]: boolean}>({}); // 행별 직접입력 모드
   const [customWorkNames, setCustomWorkNames] = useState<string[]>([]); // 사용자가 추가한 공사내용 목록
   const [workNameInputMode, setWorkNameInputMode] = useState<{[rowId: string]: boolean}>({}); // 행별 직접입력 모드
-  const [selectedCaseId, setSelectedCaseId] = useState(() => 
-    localStorage.getItem('selectedFieldSurveyCaseId') || ''
-  );
+  const [selectedCaseId, setSelectedCaseId] = useState(() => {
+    const rawCaseId = localStorage.getItem('selectedFieldSurveyCaseId');
+    return (rawCaseId && rawCaseId !== 'null' && rawCaseId !== 'undefined') ? rawCaseId : '';
+  });
   
 
   // localStorage 변경 감지 (현장입력에서 케이스 선택 시)
   useEffect(() => {
     const handleStorageChange = () => {
-      const newCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
+      const rawCaseId = localStorage.getItem('selectedFieldSurveyCaseId');
+      const newCaseId = (rawCaseId && rawCaseId !== 'null' && rawCaseId !== 'undefined') ? rawCaseId : '';
       setSelectedCaseId(prevId => {
         if (newCaseId !== prevId) {
           return newCaseId;

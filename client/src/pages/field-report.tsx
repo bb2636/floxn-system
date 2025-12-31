@@ -230,8 +230,9 @@ export default function FieldReport() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
-  // 현장입력에서 선택한 케이스 ID 가져오기
-  const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
+  // 현장입력에서 선택한 케이스 ID 가져오기 (문자열 "null" 방지)
+  const rawCaseId = localStorage.getItem('selectedFieldSurveyCaseId');
+  const selectedCaseId = (rawCaseId && rawCaseId !== 'null' && rawCaseId !== 'undefined') ? rawCaseId : '';
   
   // 종합진행관리에서 왔는지 확인
   const returnToComprehensiveProgress = localStorage.getItem('returnToComprehensiveProgress') === 'true';

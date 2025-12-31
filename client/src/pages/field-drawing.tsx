@@ -112,8 +112,9 @@ export default function FieldDrawing() {
     queryKey: ["/api/user"],
   });
 
-  // 현장입력에서 선택한 케이스 ID 가져오기
-  const selectedCaseId = localStorage.getItem('selectedFieldSurveyCaseId') || '';
+  // 현장입력에서 선택한 케이스 ID 가져오기 (문자열 "null" 방지)
+  const rawCaseId = localStorage.getItem('selectedFieldSurveyCaseId');
+  const selectedCaseId = (rawCaseId && rawCaseId !== 'null' && rawCaseId !== 'undefined') ? rawCaseId : '';
 
   // 선택된 케이스 데이터 가져오기
   const { data: selectedCase, isLoading: isLoadingSelectedCase } = useQuery<Case>({

@@ -95,8 +95,9 @@ const SectionCard = ({
 export default function FieldManagement() {
   const { toast } = useToast();
   const [selectedCase, setSelectedCase] = useState<string>(() => {
-    // Load from localStorage on mount
-    return localStorage.getItem('selectedFieldSurveyCaseId') || "";
+    // Load from localStorage on mount (문자열 "null" 방지)
+    const rawCaseId = localStorage.getItem('selectedFieldSurveyCaseId');
+    return (rawCaseId && rawCaseId !== 'null' && rawCaseId !== 'undefined') ? rawCaseId : "";
   });
   
   // Collapsible states - intake.tsx 스타일

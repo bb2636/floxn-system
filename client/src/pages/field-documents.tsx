@@ -77,10 +77,11 @@ export default function FieldDocuments() {
     queryKey: ["/api/user"],
   });
 
-  // 선택된 케이스 ID (초기값: localStorage)
-  const [selectedCaseId, setSelectedCaseId] = useState(() => 
-    localStorage.getItem('selectedFieldSurveyCaseId') || ''
-  );
+  // 선택된 케이스 ID (초기값: localStorage, 문자열 "null" 방지)
+  const [selectedCaseId, setSelectedCaseId] = useState(() => {
+    const rawCaseId = localStorage.getItem('selectedFieldSurveyCaseId');
+    return (rawCaseId && rawCaseId !== 'null' && rawCaseId !== 'undefined') ? rawCaseId : '';
+  });
 
   // 모든 케이스 목록 조회 (검색용)
   const { data: allCases = [] } = useQuery<Case[]>({
