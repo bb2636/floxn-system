@@ -6983,22 +6983,52 @@ https://peulrogseun-aqaqaq4561.replit.app
         return res.status(403).json({ error: "관리자 권한이 필요합니다" });
       }
 
-      // fieldSurveyStatus가 'submitted', 'approved', 'rejected'이고 initialEstimateAmount가 null인 케이스 조회
-      const result = await db.execute(sql`
+      // 1. 기존 initial_estimate_amount 백필
+      const result1 = await db.execute(sql`
         UPDATE cases 
         SET initial_estimate_amount = estimate_amount 
         WHERE estimate_amount IS NOT NULL 
           AND initial_estimate_amount IS NULL 
           AND field_survey_status IN ('submitted', 'approved', 'rejected')
-        RETURNING id, case_number, estimate_amount, initial_estimate_amount
+        RETURNING id, case_number
       `);
 
-      console.log("[Backfill] Updated cases:", result.rows);
+      // 2. 손해방지비용(-0)에 대한 initial_prevention_estimate_amount 백필
+      // 케이스 번호가 -0으로 끝나는 경우
+      const result2 = await db.execute(sql`
+        UPDATE cases 
+        SET initial_prevention_estimate_amount = estimate_amount 
+        WHERE estimate_amount IS NOT NULL 
+          AND (initial_prevention_estimate_amount IS NULL OR initial_prevention_estimate_amount = '')
+          AND field_survey_status IN ('submitted', 'approved', 'rejected')
+          AND case_number LIKE '%-0'
+        RETURNING id, case_number, estimate_amount
+      `);
+
+      // 3. 대물비용(-1, -2, etc)에 대한 initial_property_estimate_amount 백필
+      // 케이스 번호가 -0이 아닌 경우 (숫자로 끝나지만 -0은 아닌 경우)
+      const result3 = await db.execute(sql`
+        UPDATE cases 
+        SET initial_property_estimate_amount = estimate_amount 
+        WHERE estimate_amount IS NOT NULL 
+          AND (initial_property_estimate_amount IS NULL OR initial_property_estimate_amount = '')
+          AND field_survey_status IN ('submitted', 'approved', 'rejected')
+          AND case_number ~ '-[1-9][0-9]*$'
+        RETURNING id, case_number, estimate_amount
+      `);
+
+      console.log("[Backfill] Updated initial_estimate_amount:", result1.rows.length);
+      console.log("[Backfill] Updated initial_prevention_estimate_amount:", result2.rows.length);
+      console.log("[Backfill] Updated initial_property_estimate_amount:", result3.rows.length);
       
       res.json({ 
         success: true, 
-        message: `${result.rows.length}개 케이스의 초기 견적금액이 백필되었습니다`,
-        updatedCases: result.rows
+        message: `백필 완료: initial_estimate_amount=${result1.rows.length}건, 손해방지비용=${result2.rows.length}건, 대물비용=${result3.rows.length}건`,
+        details: {
+          initialEstimate: result1.rows.length,
+          prevention: result2.rows,
+          property: result3.rows
+        }
       });
     } catch (error) {
       console.error("Backfill error:", error);
