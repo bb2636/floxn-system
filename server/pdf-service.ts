@@ -762,8 +762,14 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
   // VAT (10%)
   const vat = Math.round(vatBase * 0.1);
   
-  // 총 합계
-  const grandTotal = vatIncluded ? vatBase + vat : vatBase;
+  // VAT 적용 후 금액
+  const beforeTruncation = vatIncluded ? vatBase + vat : vatBase;
+  
+  // 천원단위절사
+  const truncation = beforeTruncation % 1000;
+  
+  // 총 합계 (천원단위절사 적용)
+  const grandTotal = beforeTruncation - truncation;
   
   const data = {
     caseNumber: caseData.caseNumber || '',
@@ -782,6 +788,7 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     profit: formatNumber(profit),
     vat: formatNumber(vat),
     vatStatus: vatIncluded ? '포함' : '별도',
+    truncation: formatNumber(truncation),
     grandTotal: formatNumber(grandTotal),
     estimateAmount: formatNumber(Number(caseData.estimateAmount) || grandTotal),
   };
