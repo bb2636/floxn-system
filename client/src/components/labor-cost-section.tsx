@@ -400,23 +400,21 @@ export function LaborCostSection({
 
   const getDetailItemOptions = (category: string, workName: string, detailWork: string) => {
     if (!category) return [];
-    // 목공사-걸레받이 특수 케이스: 내장공만 표시 (일위대가DB 기준)
-    if (category === '목공사' && workName === '걸레받이' && detailWork === '일위대가') {
-      return ['내장공'];
-    }
     
-    // 걸레받이 -> 목공사 변환하여 조회
-    const lookupWorkName = mapWorkNameForLookup(workName);
+    // 노무비 DB용: 걸레받이 -> 목공사 변환
+    const lookupWorkNameForLabor = mapWorkNameForLookup(workName);
+    // 일위대가 DB용: 원본 공사명 그대로 사용
+    const lookupWorkNameForIlwidaega = workName;
     
     // 일위대가인 경우: ilwidaegaCatalog에서 먼저 조회하고, 없으면 노무비 DB에서 조회
     if (detailWork === '일위대가') {
       const unique = new Set<string>();
       
-      // 1. 일위대가 DB에서 노임항목 조회
+      // 1. 일위대가 DB에서 노임항목 조회 (원본 공사명 사용)
       if (ilwidaegaCatalog.length > 0) {
         const ilwidaegaFiltered = ilwidaegaCatalog.filter(item => 
           item.공종 === category && 
-          item.공사명 === lookupWorkName
+          item.공사명 === lookupWorkNameForIlwidaega
         );
         ilwidaegaFiltered.forEach(item => {
           if (item.노임항목) unique.add(item.노임항목);
@@ -813,14 +811,16 @@ export function LaborCostSection({
 
         // detailItem 변경 시 카탈로그에서 데이터 채우기
         if (field === 'detailItem') {
-          // 걸레받이 -> 목공사 변환하여 조회
-          const lookupWorkName = mapWorkNameForLookup(updated.workName);
+          // 노무비 DB용: 걸레받이 -> 목공사 변환
+          const lookupWorkNameForLabor = mapWorkNameForLookup(updated.workName);
+          // 일위대가 DB용: 원본 공사명 그대로 사용 (걸레받이는 '걸레받이'로 저장됨)
+          const lookupWorkNameForIlwidaega = updated.workName;
           
           // 일위대가인 경우: ilwidaegaCatalog에서 D, E 가져오기
           if (updated.detailWork === '일위대가') {
             const ilwidaegaItem = ilwidaegaCatalog.find(item =>
               item.공종 === updated.category &&
-              item.공사명 === lookupWorkName &&
+              item.공사명 === lookupWorkNameForIlwidaega &&
               item.노임항목 === value
             );
             if (ilwidaegaItem) {
@@ -829,7 +829,7 @@ export function LaborCostSection({
               updated.standardWorkQuantity = ilwidaegaItem.기준작업량 || 0;  // D
               // 적용면 기본 설정 (바닥 우선)
               updated.applicationRates = { ceiling: false, wall: false, floor: true, molding: false };
-              console.log('[일위대가 detailItem 선택]', updated.category, lookupWorkName, value, 
+              console.log('[일위대가 detailItem 선택]', updated.category, lookupWorkNameForIlwidaega, value, 
                 'D:', ilwidaegaItem.기준작업량, 'E:', ilwidaegaItem.노임단가);
             } else {
               // 일위대가DB에 없으면 노무비DB에서 조회 (수동 추가 행의 폴백)
@@ -849,14 +849,14 @@ export function LaborCostSection({
               } else {
                 updated.standardPrice = 0;
                 updated.standardWorkQuantity = 0;
-                console.log('[일위대가+노무비 항목 못찾음]', updated.category, lookupWorkName, value);
+                console.log('[일위대가+노무비 항목 못찾음]', updated.category, lookupWorkNameForIlwidaega, value);
               }
             }
           } else {
             // 노무비인 경우: 기존 노무비 catalog에서 가져오기
             let catalogItem = catalog.find(item =>
               item.공종 === updated.category &&
-              item.공사명 === lookupWorkName &&
+              item.공사명 === lookupWorkNameForLabor &&
               item.세부공사 === updated.detailWork &&
               item.세부항목 === value
             );
@@ -896,9 +896,9 @@ export function LaborCostSection({
                 updated.applicationRates.molding = true;
                 updated.pricePerSqm = catalogItem.단가_길이;
               }
-              console.log('[노무비 detailItem 선택]', updated.category, lookupWorkName, value, '단가_인:', catalogItem.단가_인, '적용단가:', updated.pricePerSqm);
+              console.log('[노무비 detailItem 선택]', updated.category, lookupWorkNameForLabor, value, '단가_인:', catalogItem.단가_인, '적용단가:', updated.pricePerSqm);
             } else {
-              console.log('[노무비 항목 못찾음]', updated.category, lookupWorkName, updated.detailWork, value);
+              console.log('[노무비 항목 못찾음]', updated.category, lookupWorkNameForLabor, updated.detailWork, value);
             }
           }
           
