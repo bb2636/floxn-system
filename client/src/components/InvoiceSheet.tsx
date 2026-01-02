@@ -911,7 +911,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 {/* 계좌번호 */}
                 <div style={infoRowStyle}>
                   <span style={labelStyle}>계좌번호</span>
-                  <span style={valueStyle}>00000000000</span>
+                  <span style={valueStyle}>140-015-744120</span>
                 </div>
                 <div style={dividerStyle} />
                 {/* 예금주 */}
