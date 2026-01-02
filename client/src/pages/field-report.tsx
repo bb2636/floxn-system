@@ -3657,6 +3657,7 @@ export default function FieldReport() {
                     </div>
                   </CardContent>
                 </Card>
+                )}
 
                 {/* 노무비 */}
                 <Card className="mb-6 min-w-0">
