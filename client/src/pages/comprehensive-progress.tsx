@@ -629,6 +629,8 @@ export default function ComprehensiveProgress() {
 
   // 협력사가 변경 가능한 상태 목록
   const PARTNER_ALLOWED_STATUSES = ["직접복구", "선견적요청"];
+  // 협력사가 상태 변경 가능한 현재 상태들
+  const PARTNER_CHANGEABLE_FROM_STATUSES = ["현장정보제출", "복구요청(2차승인)"];
 
   // 상태 자동 전환 매핑 (선견적요청만 자동전환, 직접복구는 자동전환 없음)
   const STATUS_AUTO_TRANSITION: Record<string, string> = {
@@ -1281,7 +1283,8 @@ export default function ComprehensiveProgress() {
                     {calculateDays(caseItem.createdAt)}
                   </div>
                   <div onClick={(e) => e.stopPropagation()}>
-                    {(user?.role === "관리자" || user?.role === "협력사") ? (
+                    {/* 관리자: 모든 상태에서 변경 가능, 협력사: 현장정보제출/복구요청(2차승인) 상태에서만 변경 가능 */}
+                    {(user?.role === "관리자" || (user?.role === "협력사" && PARTNER_CHANGEABLE_FROM_STATUSES.includes(caseItem.status || ""))) ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild disabled={updateStatusMutation.isPending}>
                           <div
