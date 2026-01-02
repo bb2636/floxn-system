@@ -4476,12 +4476,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 최신 견적 조회
       const estimateData = await storage.getLatestEstimate(caseId);
       
+      // 손해방지 케이스 여부 (접수번호가 -0으로 끝나면 손해방지)
+      const isLossPreventionCase = /-0$/.test(caseData.caseNumber || '');
+      
+      // 견적 완료 여부 체크
+      // - 손해방지 케이스: 복구면적 산출표 없어도 노무비/자재비만 있으면 완료
+      // - 피해복구 케이스: 복구면적 산출표 필수
+      const hasRecoveryRows = !!(estimateData?.rows && estimateData.rows.length > 0);
+      const hasLaborCosts = !!(estimateData?.estimate?.laborCostData && 
+        JSON.parse(String(estimateData.estimate.laborCostData) || '[]').length > 0);
+      const hasMaterialCosts = !!(estimateData?.estimate?.materialCostData && 
+        JSON.parse(String(estimateData.estimate.materialCostData) || '[]').length > 0);
+      
       // 각 섹션 완료 여부 체크
       const completionStatus = {
         fieldSurvey: !!(caseData.visitDate && caseData.visitTime && caseData.accidentCategory),
         drawing: !!drawing,
         documents: documents.length > 0,
-        estimate: !!(estimateData?.rows && estimateData.rows.length > 0),
+        // 손해방지 케이스: 노무비 또는 자재비만 있으면 완료
+        // 피해복구 케이스: 복구면적 산출표 필수
+        estimate: isLossPreventionCase 
+          ? (hasLaborCosts || hasMaterialCosts)
+          : hasRecoveryRows,
         isComplete: false,
       };
       
