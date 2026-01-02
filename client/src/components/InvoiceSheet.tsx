@@ -320,7 +320,19 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     fontSize: "16px",
     lineHeight: "128%",
     letterSpacing: "-0.02em",
-    color: "rgba(12, 12, 12, 0.7)",
+    color: "#5B9BD5",
+  };
+
+  const sectionTitleContainerStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: "10px 4px",
+    gap: "10px",
+    width: "698px",
+    height: "48px",
+    borderBottom: "2px solid #5B9BD5",
+    marginBottom: "8px",
   };
 
   const valueStyle: React.CSSProperties = {
@@ -478,15 +490,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
               border: "1px solid rgba(12, 12, 12, 0.12)",
               borderRadius: "12px",
             }}>
-              <div style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                padding: "10px 4px",
-                gap: "10px",
-                width: "698px",
-                height: "48px",
-              }}>
+              <div style={sectionTitleContainerStyle}>
                 <span style={sectionTitleStyle}>기본정보</span>
               </div>
 
@@ -593,25 +597,19 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
 
             {/* 협력/현장 정보 Section */}
             <div style={{
+              boxSizing: "border-box",
               display: "flex",
               flexDirection: "column",
               alignItems: "flex-start",
               padding: "28px 32px 32px",
               gap: "12px",
               width: "762px",
-              background: "rgba(12, 12, 12, 0.03)",
+              background: "#FFFFFF",
+              border: "1px solid rgba(12, 12, 12, 0.12)",
               borderRadius: "12px",
             }}>
-              <div style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                padding: "10px 4px",
-                gap: "10px",
-                width: "698px",
-                height: "43px",
-              }}>
-                <span style={subSectionTitleStyle}>협력/현장 정보</span>
+              <div style={sectionTitleContainerStyle}>
+                <span style={sectionTitleStyle}>협력/현장 정보</span>
               </div>
 
               <div style={{
