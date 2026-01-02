@@ -126,35 +126,30 @@
     
     .sender-section {
       margin-top: 10mm;
-    }
-    
-    .sender-line {
       display: flex;
-      justify-content: flex-end;
-      align-items: baseline;
-      margin-bottom: 3mm;
+      justify-content: center;
     }
     
-    .sender-label {
+    .sender-table {
+      border-collapse: collapse;
+    }
+    
+    .sender-table td {
+      padding: 2mm 3mm;
       font-size: 12pt;
-      font-weight: bold;
-      min-width: 30mm;
-      text-align: right;
-    }
-    
-    .sender-value {
-      font-size: 12pt;
-      min-width: 50mm;
-      text-align: center;
-      margin-left: 5mm;
-    }
-    
-    .seal-placeholder {
-      display: inline-block;
-      width: 15mm;
-      height: 15mm;
-      margin-left: 3mm;
       vertical-align: middle;
+    }
+    
+    .sender-table .sender-label {
+      font-weight: bold;
+      text-align: right;
+      white-space: nowrap;
+      padding-right: 5mm;
+    }
+    
+    .sender-table .sender-value {
+      text-align: left;
+      min-width: 50mm;
     }
     
     .footer {
@@ -218,19 +213,20 @@
     </div>
     
     <div class="sender-section">
-      <div class="sender-line">
-        <span class="sender-label">회 사 명 :</span>
-        <span class="sender-value">{{senderCompany}}</span>
-      </div>
-      <div class="sender-line">
-        <span class="sender-label">담 당 자 :</span>
-        <span class="sender-value">{{senderName}}</span>
-        <span class="seal-placeholder"></span>
-      </div>
-      <div class="sender-line">
-        <span class="sender-label">연 락 처 :</span>
-        <span class="sender-value">{{senderContact}}</span>
-      </div>
+      <table class="sender-table">
+        <tr>
+          <td class="sender-label">회 사 명 :</td>
+          <td class="sender-value">{{senderCompany}}</td>
+        </tr>
+        <tr>
+          <td class="sender-label">담 당 자 :</td>
+          <td class="sender-value">{{senderName}}</td>
+        </tr>
+        <tr>
+          <td class="sender-label">연 락 처 :</td>
+          <td class="sender-value">{{senderContact}}</td>
+        </tr>
+      </table>
     </div>
     
     <div class="footer">
