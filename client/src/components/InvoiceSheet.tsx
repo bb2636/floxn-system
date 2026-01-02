@@ -189,10 +189,10 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const totalAmount = totalBeforeTruncation - truncation;
 
   const handleSendInvoicePdf = async () => {
-    if (!invoicePdfRef.current) {
+    if (!caseData?.id) {
       toast({
         title: "PDF 생성 실패",
-        description: "변환할 인보이스 정보를 찾을 수 없습니다.",
+        description: "케이스 정보를 찾을 수 없습니다.",
         variant: "destructive",
       });
       return;
@@ -210,54 +210,25 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     setIsSendingPdf(true);
 
     try {
-      const jsPDF = (await import("jspdf")).default;
-      const html2canvas = (await import("html2canvas")).default;
-
-      const pdfContainer = invoicePdfRef.current;
-      const inputFields = pdfContainer.querySelectorAll('.invoice-input-field');
-      const spanFields = pdfContainer.querySelectorAll('.invoice-span-field');
+      const damagePreventionAmt = parseInt(invoiceDamagePreventionAmount || "0") || 0;
+      const propertyRepairAmt = parseInt(invoicePropertyRepairAmount || "0") || 0;
+      const fieldDispatchPreventionAmt = parseInt(fieldDispatchPreventionAmount || "0") || 0;
+      const fieldDispatchPropertyAmt = parseInt(fieldDispatchPropertyAmount || "0") || 0;
       
-      inputFields.forEach(el => (el as HTMLElement).style.display = 'none');
-      spanFields.forEach(el => (el as HTMLElement).style.display = 'inline');
-
-      const canvas = await html2canvas(invoicePdfRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: "#FFFFFF",
-      });
-
-      inputFields.forEach(el => (el as HTMLElement).style.display = '');
-      spanFields.forEach(el => (el as HTMLElement).style.display = 'none');
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const margin = 10;
-      
-      const imgWidth = pageWidth - (margin * 2);
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, imgHeight);
-
-      const pdfBase64 = pdf.output('datauristring').split(',')[1];
-
-      const response = await fetch('/api/send-invoice-email', {
+      const response = await fetch('/api/send-invoice-email-v2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: invoiceRecipientEmail,
-          pdfBase64,
-          caseNumber: caseData?.caseNumber || '',
-          insuranceCompany: caseData?.insuranceCompany || '',
-          accidentNo: caseData?.insuranceAccidentNo || '',
-          damagePreventionAmount: parseInt(invoiceDamagePreventionAmount || "0") || 0,
-          propertyRepairAmount: parseInt(invoicePropertyRepairAmount || "0") || 0,
-          fieldDispatchPreventionAmount: parseInt(fieldDispatchPreventionAmount || "0") || 0,
-          fieldDispatchPropertyAmount: parseInt(fieldDispatchPropertyAmount || "0") || 0,
-          totalAmount,
+          caseId: caseData.id,
+          recipientName: caseData.insuranceCompany || '',
+          damagePreventionAmount: damagePreventionAmt,
+          propertyRepairAmount: propertyRepairAmt,
+          fieldDispatchPreventionAmount: fieldDispatchPreventionAmt,
+          fieldDispatchPropertyAmount: fieldDispatchPropertyAmt,
+          totalAmount: totalAmount,
           remarks: invoiceRemarks,
         }),
       });
@@ -267,7 +238,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       if (response.ok) {
         toast({
           title: "이메일 전송 완료",
-          description: `${invoiceRecipientEmail}으로 INVOICE PDF가 전송되었습니다.`,
+          description: `${invoiceRecipientEmail}으로 INVOICE PDF가 첨부파일로 전송되었습니다.`,
         });
         onOpenChange(false);
       } else {

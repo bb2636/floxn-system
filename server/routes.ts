@@ -5406,7 +5406,9 @@ FLOXN 드림`;
     recipientName: z.string().optional(),
     damagePreventionAmount: z.number().optional().default(0),
     propertyRepairAmount: z.number().optional().default(0),
-    fieldDispatchAmount: z.number().optional().default(0),
+    fieldDispatchPreventionAmount: z.number().optional().default(0),
+    fieldDispatchPropertyAmount: z.number().optional().default(0),
+    totalAmount: z.number().optional(),
     remarks: z.string().optional(),
   });
 
@@ -5438,7 +5440,9 @@ FLOXN 드림`;
         recipientName,
         damagePreventionAmount,
         propertyRepairAmount,
-        fieldDispatchAmount,
+        fieldDispatchPreventionAmount,
+        fieldDispatchPropertyAmount,
+        totalAmount: clientTotalAmount,
         remarks
       } = validationResult.data;
 
@@ -5448,7 +5452,7 @@ FLOXN 드림`;
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // Build particulars based on amounts
+      // Build particulars based on amounts (each category gets its own line)
       const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
 
@@ -5466,10 +5470,17 @@ FLOXN 드림`;
         });
       }
 
-      if (fieldDispatchAmount && fieldDispatchAmount > 0) {
+      if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
         particulars.push({
-          title: `[${accidentNo}] - 현장출동비용`,
-          amount: fieldDispatchAmount,
+          title: `[${accidentNo}] - 현장출동비용 (손해방지)`,
+          amount: fieldDispatchPreventionAmount,
+        });
+      }
+
+      if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
+        particulars.push({
+          title: `[${accidentNo}] - 현장출동비용 (대물)`,
+          amount: fieldDispatchPropertyAmount,
         });
       }
 
@@ -5482,7 +5493,19 @@ FLOXN 드림`;
         });
       }
 
-      const totalAmount = (damagePreventionAmount || 0) + (propertyRepairAmount || 0) + (fieldDispatchAmount || 0);
+      // Use client-provided totalAmount (which includes truncation to thousands) if available
+      // Otherwise compute server-side with same truncation rule
+      let totalAmount: number;
+      if (clientTotalAmount !== undefined) {
+        totalAmount = clientTotalAmount;
+      } else {
+        const sumBeforeTruncation = (damagePreventionAmount || 0) + 
+          (propertyRepairAmount || 0) + 
+          (fieldDispatchPreventionAmount || 0) + 
+          (fieldDispatchPropertyAmount || 0);
+        const truncation = sumBeforeTruncation % 1000;
+        totalAmount = sumBeforeTruncation - truncation;
+      }
 
       // Build invoice data
       const invoiceData = {
