@@ -566,6 +566,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ Validated assignedPartnerContact:", validatedData.assignedPartnerContact);
       console.log("✅ Validated assignedPartner:", validatedData.assignedPartner);
       
+      // 협력사 배정 시 담당자 정보 자동 채우기
+      // assignedPartner가 설정되고, assignedPartnerManager/Contact가 제공되지 않은 경우
+      if (validatedData.assignedPartner && !validatedData.assignedPartnerManager) {
+        const partnerCompanyName = validatedData.assignedPartner;
+        // 해당 회사명을 가진 협력사 사용자 찾기
+        const allUsers = await storage.getAllUsers();
+        const partnerUser = allUsers.find(u => u.company === partnerCompanyName && u.role === "협력사");
+        if (partnerUser) {
+          // 담당자명과 연락처 자동 채우기
+          if (partnerUser.name) {
+            (validatedData as any).assignedPartnerManager = partnerUser.name;
+            console.log(`[Auto-populate] Partner manager set to: ${partnerUser.name} for company: ${partnerCompanyName}`);
+          }
+          if (partnerUser.phone && !validatedData.assignedPartnerContact) {
+            (validatedData as any).assignedPartnerContact = partnerUser.phone;
+            console.log(`[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`);
+          }
+        }
+      }
+      
       // Determine case types based on damagePreventionCost and victimIncidentAssistance fields
       // 프론트엔드에서 boolean 또는 "true"/"false" 문자열로 전송될 수 있음
       const hasDamagePrevention = validatedData.damagePreventionCost === "true" || (validatedData.damagePreventionCost as unknown) === true;
@@ -1323,6 +1343,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all users for resolving managerId to names
       const allUsers = await storage.getAllUsers();
       const userMap = new Map(allUsers.map(u => [u.id, u.name]));
+
+      // 협력사 배정 시 담당자 정보 자동 채우기
+      // assignedPartner가 설정되고, assignedPartnerManager/Contact가 제공되지 않은 경우
+      if (updateData.assignedPartner && !updateData.assignedPartnerManager) {
+        const partnerCompanyName = updateData.assignedPartner;
+        // 해당 회사명을 가진 협력사 사용자 찾기
+        const partnerUser = allUsers.find(u => u.company === partnerCompanyName && u.role === "협력사");
+        if (partnerUser) {
+          // 담당자명과 연락처 자동 채우기
+          if (partnerUser.name) {
+            updateData.assignedPartnerManager = partnerUser.name;
+            console.log(`[Auto-populate] Partner manager set to: ${partnerUser.name} for company: ${partnerCompanyName}`);
+          }
+          if (partnerUser.phone && !updateData.assignedPartnerContact) {
+            updateData.assignedPartnerContact = partnerUser.phone;
+            console.log(`[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`);
+          }
+        }
+      }
 
       for (const field of trackedFields) {
         const oldValue = (existingCase as any)[field];
