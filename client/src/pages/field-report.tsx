@@ -3479,7 +3479,7 @@ export default function FieldReport() {
                                 <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">소계</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.subtotal.toLocaleString()} 원</td></tr>
                                 <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">일반관리비 (6%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.managementFee.toLocaleString()} 원</td></tr>
                                 <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">이윤 (15%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.profit.toLocaleString()} 원</td></tr>
-                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">천원단위 절사</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">-${calculateTotals.truncation.toLocaleString()} 원</td></tr>
+                                <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">만원단위 절사</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">-${calculateTotals.truncation.toLocaleString()} 원</td></tr>
                                 <tr><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 500;">VAT (10%)</td><td style="padding: 10px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${calculateTotals.vat.toLocaleString()} 원</td></tr>
                                 <tr style="background: rgba(0,143,237,0.05);"><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); font-weight: 700; font-size: 16px;">총계 (VAT 포함)</td><td style="padding: 12px 15px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 700; font-size: 16px; color: #008FED;">${calculateTotals.total.toLocaleString()} 원</td></tr>
                               </tbody>
@@ -3841,7 +3841,7 @@ export default function FieldReport() {
                           <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.profit.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center py-2">
-                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>천원단위 절사</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>만원단위 절사</span>
                           <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>-{calculateTotals.truncation.toLocaleString()}원</span>
                         </div>
                         <div className="flex justify-between items-center py-2">
