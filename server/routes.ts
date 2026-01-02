@@ -4546,22 +4546,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 각 섹션 완료 여부 체크
       // 손해방지 케이스(-0): 주민등록등본 필수
       // 피해세대 복구건(-1,-2 등): 주민등록등본 선택 (아무 문서 1개 이상이면 됨)
-      
-      // Debug log for field survey completion check
-      console.log('[Field Survey Report] completionStatus check:', {
-        caseNumber: caseData.caseNumber,
-        visitDate: caseData.visitDate,
-        visitTime: caseData.visitTime,
-        accidentCategory: caseData.accidentCategory,
-        hasDrawing: !!drawing,
-        documentsCount: documents.length,
-        hasResidentRegistration,
-        isLossPreventionCase,
-        hasLaborCosts,
-        hasMaterialCosts,
-        hasRecoveryRows
-      });
-      
       const completionStatus = {
         fieldSurvey: !!(caseData.visitDate && caseData.visitTime && caseData.accidentCategory),
         drawing: !!drawing,
