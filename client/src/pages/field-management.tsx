@@ -581,685 +581,1120 @@ export default function FieldManagement() {
 
   return (
     <>
-    <div className="relative p-8">
-      {/* 현장입력 섹션 */}
-      <SectionCard
-        title="현장입력"
-        isOpen={scheduleOpen}
-        onToggle={() => setScheduleOpen(!scheduleOpen)}
-      >
-        <div>
-            {/* 선택된 접수건 정보 표시 */}
-            {casesLoading ? (
-              <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
-                접수건을 불러오는 중...
-              </div>
-            ) : !selectedCaseData ? (
-              <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
-                {isPartner ? "배당된 접수건이 없습니다." : "선택된 접수건이 없습니다."}
-              </div>
-            ) : (
-              <div
-                style={{
-                  width: "788px",
-                  padding: "20px 24px",
-                  background: "rgba(12, 12, 12, 0.03)",
-                  borderRadius: "12px",
-                }}
-                data-testid="selected-case-info"
-              >
-                <div className="flex flex-col gap-2">
-                  {/* 첫 번째 줄: 파란 점 + 보험사명 + 케이스 번호 */}
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className="rounded-full"
-                      style={{
-                        width: "8px",
-                        height: "8px",
-                        background: "#008FED",
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span
+      <div className="relative p-8">
+        {/* 현장입력 섹션 */}
+        <SectionCard
+          title="현장입력"
+          isOpen={scheduleOpen}
+          onToggle={() => setScheduleOpen(!scheduleOpen)}
+        >
+          <div>
+              {/* 선택된 접수건 정보 표시 */}
+              {casesLoading ? (
+                <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
+                  접수건을 불러오는 중...
+                </div>
+              ) : !selectedCaseData ? (
+                <div className="text-center py-8" style={{ fontFamily: "Pretendard", color: "rgba(12, 12, 12, 0.5)" }}>
+                  {isPartner ? "배당된 접수건이 없습니다." : "선택된 접수건이 없습니다."}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    width: "788px",
+                    padding: "20px 24px",
+                    background: "rgba(12, 12, 12, 0.03)",
+                    borderRadius: "12px",
+                  }}
+                  data-testid="selected-case-info"
+                >
+                  <div className="flex flex-col gap-2">
+                    {/* 첫 번째 줄: 파란 점 + 보험사명 + 케이스 번호 */}
+                    <div className="flex items-center gap-2">
+                      <span 
+                        className="rounded-full"
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          background: "#008FED",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <span
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "18px",
+                          fontWeight: 600,
+                          letterSpacing: "-0.02em",
+                          color: "#0C0C0C",
+                        }}
+                      >
+                        {selectedCaseData.insuranceCompany || "보험사 미지정"} {formatCaseNumber(selectedCaseData.caseNumber) || ""}
+                      </span>
+                    </div>
+                    {/* 두 번째 줄: 접수번호, 피보험자, 담당자 */}
+                    <div 
+                      className="flex items-center gap-4"
                       style={{
                         fontFamily: "Pretendard",
-                        fontSize: "18px",
-                        fontWeight: 600,
-                        letterSpacing: "-0.02em",
-                        color: "#0C0C0C",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.6)",
                       }}
                     >
-                      {selectedCaseData.insuranceCompany || "보험사 미지정"} {formatCaseNumber(selectedCaseData.caseNumber) || ""}
-                    </span>
+                      <span>접수번호 {formatCaseNumber(selectedCaseData.caseNumber) || "-"}</span>
+                      <span>피보험자 {selectedCaseData.policyHolderName || "-"}</span>
+                      <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
+                    </div>
                   </div>
-                  {/* 두 번째 줄: 접수번호, 피보험자, 담당자 */}
-                  <div 
-                    className="flex items-center gap-4"
+                </div>
+              )}
+            </div>
+          </SectionCard>
+
+          {/* 기본정보 섹션 */}
+          <SectionCard
+            title="기본정보"
+            isOpen={basicInfoOpen}
+            onToggle={() => setBasicInfoOpen(!basicInfoOpen)}
+            disabled={!selectedCaseData}
+          >
+            <div className="space-y-5">
+              {/* 접수사, 담당자명, 담당자 연락처 - 3열 */}
+              <div className="grid grid-cols-3 gap-5">
+                <div>
+                  <Label 
+                    className="mb-2"
                     style={{
                       fontFamily: "Pretendard",
                       fontSize: "14px",
                       fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.6)",
+                      color: "#686A6E",
+                    }}
+                  >협력사</Label>
+                  <Input
+                    value={selectedCaseData?.assignedPartner || ""}
+                    readOnly
+                    placeholder="담당사명"
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.04)",
+                      color: "rgba(12, 12, 12, 0.4)",
+                    }}
+                    data-testid="input-intake-company"
+                  />
+                </div>
+                <div>
+                  <Label 
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
                     }}
                   >
-                    <span>접수번호 {formatCaseNumber(selectedCaseData.caseNumber) || "-"}</span>
-                    <span>피보험자 {selectedCaseData.policyHolderName || "-"}</span>
-                    <span>담당자 {selectedCaseData.assignedPartnerManager || "-"}</span>
-                  </div>
+                    담당자명
+                  </Label>
+                  <Input
+                    value={selectedCaseData?.assignedPartnerManager || ""}
+                    readOnly
+                    placeholder="담당자명"
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.04)",
+                      color: "rgba(12, 12, 12, 0.4)",
+                    }}
+                    data-testid="input-manager-name"
+                  />
+                </div>
+                <div>
+                  <Label 
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    담당자 연락처
+                  </Label>
+                  <Input
+                    value={selectedCaseData?.assignedPartnerContact || ""}
+                    readOnly
+                    placeholder="담당자 연락처"
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.04)",
+                      color: "rgba(12, 12, 12, 0.4)",
+                    }}
+                    data-testid="input-manager-contact"
+                  />
                 </div>
               </div>
-            )}
-          </div>
-        </SectionCard>
 
-        {/* 기본정보 섹션 */}
-        <SectionCard
-          title="기본정보"
-          isOpen={basicInfoOpen}
-          onToggle={() => setBasicInfoOpen(!basicInfoOpen)}
-          disabled={!selectedCaseData}
-        >
-          <div className="space-y-5">
-            {/* 접수사, 담당자명, 담당자 연락처 - 3열 */}
-            <div className="grid grid-cols-3 gap-5">
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  접수사
-                </Label>
-                <Input
-                  value={selectedCaseData?.assignedPartner || ""}
-                  readOnly
-                  placeholder="담당사명"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    color: "rgba(12, 12, 12, 0.4)",
-                  }}
-                  data-testid="input-intake-company"
-                />
-              </div>
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  담당자명
-                </Label>
-                <Input
-                  value={selectedCaseData?.assignedPartnerManager || ""}
-                  readOnly
-                  placeholder="담당자명"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    color: "rgba(12, 12, 12, 0.4)",
-                  }}
-                  data-testid="input-manager-name"
-                />
-              </div>
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  담당자 연락처
-                </Label>
-                <Input
-                  value={selectedCaseData?.assignedPartnerContact || ""}
-                  readOnly
-                  placeholder="담당자 연락처"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    color: "rgba(12, 12, 12, 0.4)",
-                  }}
-                  data-testid="input-manager-contact"
-                />
-              </div>
-            </div>
-
-            {/* 접수정보 소제목 */}
-            <div
-              style={{
-                fontFamily: "Pretendard",
-                fontSize: "18px",
-                fontWeight: 600,
-                color: "#0C0C0C",
-                marginTop: "24px",
-                marginBottom: "16px",
-              }}
-            >
-              접수정보
-            </div>
-
-            {/* 접수번호, 보험사 - 2열 */}
-            <div className="grid grid-cols-2 gap-5">
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  접수번호
-                </Label>
-                <Input
-                  value={formatCaseNumber(selectedCaseData?.caseNumber) || ""}
-                  readOnly
-                  placeholder="접수번호"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    color: "rgba(12, 12, 12, 0.4)",
-                  }}
-                  data-testid="input-case-number"
-                />
-              </div>
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  보험사
-                </Label>
-                <Input
-                  value={selectedCaseData?.insuranceCompany || ""}
-                  readOnly
-                  placeholder="보험사 선택"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    color: "rgba(12, 12, 12, 0.4)",
-                  }}
-                  data-testid="input-insurance-company"
-                />
-              </div>
-            </div>
-
-            {/* 보험계약자 및 피보험자 정보 소제목 + 체크박스 */}
-            <div 
-              className="flex items-center justify-between"
-              style={{
-                marginTop: "24px",
-                marginBottom: "16px",
-              }}
-            >
+              {/* 접수정보 소제목 */}
               <div
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "18px",
                   fontWeight: 600,
                   color: "#0C0C0C",
+                  marginTop: "24px",
+                  marginBottom: "16px",
                 }}
               >
-                보험계약자 및 피보험자 정보
+                접수정보
               </div>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="same-as-policyholder"
-                  checked={normalizeBoolean(selectedCaseData?.sameAsPolicyHolder)}
-                  disabled
-                  data-testid="checkbox-same-as-policyholder"
-                />
-                <label
-                  htmlFor="same-as-policyholder"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                    cursor: "not-allowed",
-                  }}
-                >
-                  보험계약자 = 피보험자
-                </label>
-              </div>
-            </div>
 
-            {/* 보험계약자, 피보험자, 피보험자 연락처 - 3열 */}
-            <div className="grid grid-cols-3 gap-5">
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  보험계약자
-                </Label>
-                <Input
-                  value={selectedCaseData?.policyHolderName || ""}
-                  readOnly
-                  placeholder="보험계약자 성명"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    color: "rgba(12, 12, 12, 0.4)",
-                  }}
-                  data-testid="input-policyholder-name"
-                />
-              </div>
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  피보험자
-                </Label>
-                <Input
-                  value={selectedCaseData?.insuredName || ""}
-                  readOnly
-                  placeholder="피보험자 성명"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    color: "rgba(12, 12, 12, 0.4)",
-                  }}
-                  data-testid="input-insured-name"
-                />
-              </div>
-              <div>
-                <Label 
-                  className="mb-2"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: "#686A6E",
-                  }}
-                >
-                  피보험자 연락처
-                </Label>
-                <Input
-                  value={selectedCaseData?.insuredContact || ""}
-                  readOnly
-                  placeholder="피보험자 연락처"
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    background: "rgba(12, 12, 12, 0.04)",
-                    color: "rgba(12, 12, 12, 0.4)",
-                  }}
-                  data-testid="input-insured-contact"
-                />
-              </div>
-            </div>
-
-            {/* 피보험자 주소 - 전체 너비 */}
-            <div>
-              <Label 
-                className="mb-2"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "#686A6E",
-                }}
-              >
-                피보험자 주소
-              </Label>
-              <Input
-                value={[
-                  selectedCaseData?.insuredAddress,
-                  (selectedCaseData as any)?.insuredAddressDetail
-                ].filter(Boolean).join(" ") || ""}
-                readOnly
-                placeholder="도로명 주소, 동/호수 포함"
-                className={intakeFieldClass}
-                style={{
-                  ...intakeFieldStyle,
-                  background: "rgba(12, 12, 12, 0.04)",
-                  color: "rgba(12, 12, 12, 0.4)",
-                }}
-                data-testid="input-insured-address"
-              />
-            </div>
-
-            {/* 사고 발생 일시 */}
-            <div>
-              <Label 
-                className="mb-2"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "#686A6E",
-                }}
-              >
-                사고 발생일시
-              </Label>
-              <div className="flex gap-2">
-                <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      ref={accidentDateTriggerRef}
-                      type="button"
-                      variant="outline"
-                      className={intakeButtonClass}
-                      style={{
-                        ...intakeButtonStyle,
-                        justifyContent: "flex-start",
-                        background: "#FDFDFD",
-                        border: isReadOnly ? "none" : "2px solid rgba(12,12,12,0.08)",
-                        flex: 1,
-                      }}
-                      disabled={isReadOnly}
-                      data-testid="button-accident-date"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {accidentDate ? format(accidentDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  {/* FIX: focus() 호출 제거 - trigger 버튼 포커스 재지정 시 스크롤 위로 이동 문제 해결 */}
-                  <PopoverContent 
-                    className="w-auto p-0"
-                    onOpenAutoFocus={(e) => {
-                      e.preventDefault();
-                    }}
-                    onCloseAutoFocus={(e) => {
-                      e.preventDefault();
-                    }}
-                  >
-                    <Calendar
-                      mode="single"
-                      selected={accidentDate}
-                      onSelect={(date) => {
-                        setAccidentDate(date);
-                        setDatePickerOpen(false);
-                      }}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <Input
-                  type="time"
-                  value={accidentTime}
-                  onChange={(e) => { handleUserInput(); setAccidentTime(e.target.value); }}
-                  className={intakeFieldClass}
-                  style={{
-                    ...intakeFieldStyle,
-                    flex: 1,
-                    border: isReadOnly ? "none" : undefined,
-                  }}
-                  disabled={isReadOnly}
-                  data-testid="input-accident-time"
-                />
-              </div>
-            </div>
-          </div>
-        </SectionCard>
-
-        {/* 현장조사 정보 섹션 */}
-        <SectionCard
-          title="현장조사 정보"
-          isOpen={true}
-          onToggle={() => {}}
-          disabled={!selectedCaseData}
-        >
-          <div className="space-y-6">
-            {/* 현장정보 서브섹션 */}
-            <div>
-              <h3
-                className="mb-4"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  color: "rgba(12, 12, 12, 0.8)",
-                }}
-              >
-                현장정보
-              </h3>
-              <div className="grid grid-cols-2 gap-4">
-                {/* 방문 일시 */}
+              {/* 접수번호, 보험사 - 2열 */}
+              <div className="grid grid-cols-2 gap-5">
                 <div>
                   <Label 
-                    htmlFor="visit-date"
-                    className="mb-3"
+                    className="mb-2"
                     style={{
                       fontFamily: "Pretendard",
                       fontSize: "14px",
                       fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
+                      color: "#686A6E",
                     }}
                   >
-                    방문 일시
-                  </Label>
-                  <div className="flex gap-2">
-                    <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen} modal={false}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          ref={visitDateTriggerRef}
-                          type="button"
-                          variant="outline"
-                          className={intakeButtonClass}
-                          style={{
-                            ...intakeButtonStyle,
-                            justifyContent: "flex-start",
-                            background: "#FDFDFD",
-                            border: "2px solid rgba(12,12,12,0.08)",
-                            flex: 1,
-                          }}
-                          disabled={isReadOnly}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          data-testid="button-visit-date"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      {/* FIX: focus() 호출 제거 - 현장조사 정보에서 날짜 선택 시 스크롤 위치 유지 */}
-                      <PopoverContent 
-                        className="w-auto p-0"
-                        onOpenAutoFocus={(e) => {
-                          e.preventDefault();
-                        }}
-                        onCloseAutoFocus={(e) => {
-                          e.preventDefault();
-                        }}
-                      >
-                        <Calendar
-                          mode="single"
-                          selected={visitDate}
-                          onSelect={(date) => {
-                            setVisitDate(date);
-                            setVisitDatePickerOpen(false);
-                          }}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <Input
-                      type="time"
-                      value={visitTime}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleUserInput();
-                        setVisitTime(e.target.value);
-                      }}
-                      onFocus={(e) => {
-                        e.stopPropagation();
-                      }}
-                      className={intakeFieldClass}
-                      style={{
-                        ...intakeFieldStyle,
-                        flex: 1,
-                      }}
-                      disabled={isReadOnly}
-                      data-testid="input-visit-time"
-                    />
-                  </div>
-                </div>
-
-                {/* 출동 담당자 */}
-                <div>
-                  <Label 
-                    htmlFor="dispatch-manager"
-                    className="mb-3"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "rgba(12, 12, 12, 0.7)",
-                    }}
-                  >
-                    출동 담당자
+                    접수번호
                   </Label>
                   <Input
-                    id="dispatch-manager"
-                    value={selectedCaseData?.assignedPartnerManager || ""}
+                    value={formatCaseNumber(selectedCaseData?.caseNumber) || ""}
                     readOnly
+                    placeholder="접수번호"
                     className={intakeFieldClass}
                     style={{
                       ...intakeFieldStyle,
                       background: "rgba(12, 12, 12, 0.04)",
-                      color: "rgba(12, 12, 12, 0.6)",
+                      color: "rgba(12, 12, 12, 0.4)",
                     }}
-                    placeholder="협력사 담당자명"
-                    data-testid="input-dispatch-manager"
+                    data-testid="input-case-number"
+                  />
+                </div>
+                <div>
+                  <Label 
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    보험사
+                  </Label>
+                  <Input
+                    value={selectedCaseData?.insuranceCompany || ""}
+                    readOnly
+                    placeholder="보험사 선택"
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.04)",
+                      color: "rgba(12, 12, 12, 0.4)",
+                    }}
+                    data-testid="input-insurance-company"
+                  />
+                </div>
+              </div>
+
+              {/* 보험계약자 및 피보험자 정보 소제목 + 체크박스 */}
+              <div 
+                className="flex items-center justify-between"
+                style={{
+                  marginTop: "24px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    color: "#0C0C0C",
+                  }}
+                >
+                  보험계약자 및 피보험자 정보
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="same-as-policyholder"
+                    checked={normalizeBoolean(selectedCaseData?.sameAsPolicyHolder)}
+                    disabled
+                    data-testid="checkbox-same-as-policyholder"
+                  />
+                  <label
+                    htmlFor="same-as-policyholder"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                      cursor: "not-allowed",
+                    }}
+                  >
+                    보험계약자 = 피보험자
+                  </label>
+                </div>
+              </div>
+
+              {/* 보험계약자, 피보험자, 피보험자 연락처 - 3열 */}
+              <div className="grid grid-cols-3 gap-5">
+                <div>
+                  <Label 
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    보험계약자
+                  </Label>
+                  <Input
+                    value={selectedCaseData?.policyHolderName || ""}
+                    readOnly
+                    placeholder="보험계약자 성명"
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.04)",
+                      color: "rgba(12, 12, 12, 0.4)",
+                    }}
+                    data-testid="input-policyholder-name"
+                  />
+                </div>
+                <div>
+                  <Label 
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    피보험자
+                  </Label>
+                  <Input
+                    value={selectedCaseData?.insuredName || ""}
+                    readOnly
+                    placeholder="피보험자 성명"
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.04)",
+                      color: "rgba(12, 12, 12, 0.4)",
+                    }}
+                    data-testid="input-insured-name"
+                  />
+                </div>
+                <div>
+                  <Label 
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    피보험자 연락처
+                  </Label>
+                  <Input
+                    value={selectedCaseData?.insuredContact || ""}
+                    readOnly
+                    placeholder="피보험자 연락처"
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      background: "rgba(12, 12, 12, 0.04)",
+                      color: "rgba(12, 12, 12, 0.4)",
+                    }}
+                    data-testid="input-insured-contact"
+                  />
+                </div>
+              </div>
+
+              {/* 피보험자 주소 - 전체 너비 */}
+              <div>
+                <Label 
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#686A6E",
+                  }}
+                >
+                  피보험자 주소
+                </Label>
+                <Input
+                  value={[
+                    selectedCaseData?.insuredAddress,
+                    (selectedCaseData as any)?.insuredAddressDetail
+                  ].filter(Boolean).join(" ") || ""}
+                  readOnly
+                  placeholder="도로명 주소, 동/호수 포함"
+                  className={intakeFieldClass}
+                  style={{
+                    ...intakeFieldStyle,
+                    background: "rgba(12, 12, 12, 0.04)",
+                    color: "rgba(12, 12, 12, 0.4)",
+                  }}
+                  data-testid="input-insured-address"
+                />
+              </div>
+
+              {/* 사고 발생 일시 */}
+              <div>
+                <Label 
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#686A6E",
+                  }}
+                >
+                  사고 발생일시
+                </Label>
+                <div className="flex gap-2">
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen} modal={false}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        ref={accidentDateTriggerRef}
+                        type="button"
+                        variant="outline"
+                        className={intakeButtonClass}
+                        style={{
+                          ...intakeButtonStyle,
+                          justifyContent: "flex-start",
+                          background: "#FDFDFD",
+                          border: isReadOnly ? "none" : "2px solid rgba(12,12,12,0.08)",
+                          flex: 1,
+                        }}
+                        disabled={isReadOnly}
+                        data-testid="button-accident-date"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {accidentDate ? format(accidentDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    {/* FIX: focus() 호출 제거 - trigger 버튼 포커스 재지정 시 스크롤 위로 이동 문제 해결 */}
+                    <PopoverContent 
+                      className="w-auto p-0"
+                      onOpenAutoFocus={(e) => {
+                        e.preventDefault();
+                      }}
+                      onCloseAutoFocus={(e) => {
+                        e.preventDefault();
+                      }}
+                    >
+                      <Calendar
+                        mode="single"
+                        selected={accidentDate}
+                        onSelect={(date) => {
+                          setAccidentDate(date);
+                          setDatePickerOpen(false);
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Input
+                    type="time"
+                    value={accidentTime}
+                    onChange={(e) => { handleUserInput(); setAccidentTime(e.target.value); }}
+                    className={intakeFieldClass}
+                    style={{
+                      ...intakeFieldStyle,
+                      flex: 1,
+                      border: isReadOnly ? "none" : undefined,
+                    }}
+                    disabled={isReadOnly}
+                    data-testid="input-accident-time"
                   />
                 </div>
               </div>
             </div>
+          </SectionCard>
 
-            {/* 사고 원인(누수소견서) 서브섹션 */}
-            <div>
-              <h3
-                className="mb-4"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "20px",
-                  fontWeight: 600,
-                  color: "rgba(12, 12, 12, 0.8)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                사고 원인(누수소견서)
-              </h3>
-              <div className="space-y-4">
-                {/* 카테고리 */}
-                <div>
-                  <Label 
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >
-                    카테고리 <span style={{ color: "#FF4D4F" }}>*</span>
-                  </Label>
-                  <div className="flex gap-2">
-                    {["배관", "코킹", "방수", "기타"].map((category) => (
-                      <button
-                        key={category}
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
+          {/* 현장조사 정보 섹션 */}
+          <SectionCard
+            title="현장조사 정보"
+            isOpen={true}
+            onToggle={() => {}}
+            disabled={!selectedCaseData}
+          >
+            <div className="space-y-6">
+              {/* 현장정보 서브섹션 */}
+              <div>
+                <h3
+                  className="mb-4"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "18px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}
+                >
+                  현장정보
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* 방문 일시 */}
+                  <div>
+                    <Label 
+                      htmlFor="visit-date"
+                      className="mb-3"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}
+                    >
+                      방문 일시
+                    </Label>
+                    <div className="flex gap-2">
+                      <Popover open={visitDatePickerOpen} onOpenChange={setVisitDatePickerOpen} modal={false}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            ref={visitDateTriggerRef}
+                            type="button"
+                            variant="outline"
+                            className={intakeButtonClass}
+                            style={{
+                              ...intakeButtonStyle,
+                              justifyContent: "flex-start",
+                              background: "#FDFDFD",
+                              border: "2px solid rgba(12,12,12,0.08)",
+                              flex: 1,
+                            }}
+                            disabled={isReadOnly}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                            data-testid="button-visit-date"
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {visitDate ? format(visitDate, "yyyy.MM.dd", { locale: ko }) : <span>날짜 선택</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        {/* FIX: focus() 호출 제거 - 현장조사 정보에서 날짜 선택 시 스크롤 위치 유지 */}
+                        <PopoverContent 
+                          className="w-auto p-0"
+                          onOpenAutoFocus={(e) => {
+                            e.preventDefault();
+                          }}
+                          onCloseAutoFocus={(e) => {
+                            e.preventDefault();
+                          }}
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={visitDate}
+                            onSelect={(date) => {
+                              setVisitDate(date);
+                              setVisitDatePickerOpen(false);
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <Input
+                        type="time"
+                        value={visitTime}
+                        onChange={(e) => {
                           e.stopPropagation();
                           handleUserInput();
-                          setAccidentCategory(category);
+                          setVisitTime(e.target.value);
+                        }}
+                        onFocus={(e) => {
+                          e.stopPropagation();
+                        }}
+                        className={intakeFieldClass}
+                        style={{
+                          ...intakeFieldStyle,
+                          flex: 1,
                         }}
                         disabled={isReadOnly}
+                        data-testid="input-visit-time"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 출동 담당자 */}
+                  <div>
+                    <Label 
+                      htmlFor="dispatch-manager"
+                      className="mb-3"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "rgba(12, 12, 12, 0.7)",
+                      }}
+                    >
+                      출동 담당자
+                    </Label>
+                    <Input
+                      id="dispatch-manager"
+                      value={selectedCaseData?.assignedPartnerManager || ""}
+                      readOnly
+                      className={intakeFieldClass}
+                      style={{
+                        ...intakeFieldStyle,
+                        background: "rgba(12, 12, 12, 0.04)",
+                        color: "rgba(12, 12, 12, 0.6)",
+                      }}
+                      placeholder="협력사 담당자명"
+                      data-testid="input-dispatch-manager"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 사고 원인(누수소견서) 서브섹션 */}
+              <div>
+                <h3
+                  className="mb-4"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "20px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  사고 원인(누수소견서)
+                </h3>
+                <div className="space-y-4">
+                  {/* 카테고리 */}
+                  <div>
+                    <Label 
+                      className="mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#686A6E",
+                      }}
+                    >
+                      카테고리 <span style={{ color: "#FF4D4F" }}>*</span>
+                    </Label>
+                    <div className="flex gap-2">
+                      {["배관", "코킹", "방수", "기타"].map((category) => (
+                        <button
+                          key={category}
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleUserInput();
+                            setAccidentCategory(category);
+                          }}
+                          disabled={isReadOnly}
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 600,
+                            height: "52px",
+                            padding: "12px 16px",
+                            borderRadius: "6px",
+                            border: accidentCategory === category 
+                              ? "2px solid rgba(255, 255, 255, 0.04)" 
+                              : "1px solid rgba(12, 12, 12, 0.3)",
+                            background: accidentCategory === category 
+                              ? "rgba(0, 143, 237, 0.1)" 
+                              : "#FDFDFD",
+                            color: accidentCategory === category 
+                              ? "#008FED" 
+                              : "rgba(12, 12, 12, 0.9)",
+                            boxShadow: accidentCategory === category 
+                              ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
+                              : "none",
+                            backdropFilter: accidentCategory === category ? "blur(7px)" : "none",
+                            cursor: isReadOnly ? "not-allowed" : "pointer",
+                            opacity: isReadOnly ? 0.5 : 1,
+                          }}
+                          data-testid={`button-category-${category}`}
+                        >
+                          {category}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 사고원인 */}
+                  <div>
+                    <Label 
+                      htmlFor="accident-cause-detail"
+                      className="mb-2"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "14px",
+                        fontWeight: 500,
+                        color: "#686A6E",
+                      }}
+                    >
+                      사고원인
+                    </Label>
+                    <textarea
+                      id="accident-cause-detail"
+                      value={accidentCause}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleUserInput();
+                        setAccidentCause(e.target.value);
+                      }}
+                      onFocus={(e) => {
+                        e.stopPropagation();
+                      }}
+                      placeholder="누수원인, 누수지점 등 기타 특이사항을 자유롭게 입력해주세요"
+                      maxLength={800}
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        padding: "16px 20px",
+                        background: "#FDFDFD",
+                        border: "2px solid rgba(12,12,12,0.08)",
+                        borderRadius: "8px",
+                        resize: "none",
+                        minHeight: "120px",
+                        width: "100%",
+                      }}
+                      disabled={isReadOnly}
+                      data-testid="textarea-accident-cause"
+                    />
+                    <div 
+                      className="text-right mt-1"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        color: "rgba(12, 12, 12, 0.5)",
+                      }}
+                    >
+                      {accidentCause.length}/800
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 같은 사고의 케이스들 */}
+              <div>
+                <h3
+                  className="mb-4"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "20px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  같은 사고의 케이스들 (총 {relatedCases.length}건)
+                </h3>
+                
+                <div className="space-y-3">
+                  {relatedCases.map((caseItem) => (
+                    <div
+                      key={caseItem.id}
+                      style={{
+                        background: caseItem.id === selectedCase 
+                          ? "rgba(0, 143, 237, 0.08)" 
+                          : "rgba(12, 12, 12, 0.04)",
+                        borderRadius: "8px",
+                        padding: "16px 20px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        border: caseItem.id === selectedCase 
+                          ? "2px solid rgba(0, 143, 237, 0.3)" 
+                          : "none",
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          style={{
+                            width: "6px",
+                            height: "6px",
+                            borderRadius: "50%",
+                            background: caseItem.id === selectedCase ? "#008FED" : "#686A6E",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#008FED",
+                            minWidth: "120px",
+                          }}
+                        >
+                          {formatCaseNumber(caseItem.caseNumber)}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 600,
+                            color: "rgba(12, 12, 12, 0.8)",
+                          }}
+                        >
+                          {caseItem.victimName || "-"}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 500,
+                            color: "rgba(12, 12, 12, 0.6)",
+                          }}
+                        >
+                          {caseItem.victimContact || "-"}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "16px",
+                            fontWeight: 500,
+                            color: "rgba(12, 12, 12, 0.6)",
+                          }}
+                        >
+                          {(() => {
+                            // 피해자 주소 우선 표시 (피해자 주소가 없을 경우에만 피보험자 주소 표시)
+                            const hasVictimAddress = !!caseItem.victimAddress;
+                            const address = caseItem.victimAddress || caseItem.insuredAddress || "";
+                            const detail = hasVictimAddress 
+                              ? (caseItem.victimAddressDetail || "")
+                              : (caseItem.insuredAddressDetail || "");
+                            if (address && detail) return `${address} ${detail}`;
+                            if (address) return address;
+                            return "-";
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 새 피해자 추가 폼 */}
+                {!isReadOnly && (
+                  <div className="mt-6 space-y-4">
+                    <div
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        color: "rgba(12, 12, 12, 0.8)",
+                      }}
+                    >
+                      피해자 추가
+                    </div>
+                    
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1 space-y-2">
+                        <Input
+                          value={newVictimName}
+                          onChange={(e) => { handleUserInput(); setNewVictimName(e.target.value); }}
+                          placeholder="성함을 입력해주세요"
+                          className={intakeFieldClass}
+                          style={intakeFieldStyle}
+                          data-testid="input-new-victim-name"
+                        />
+                        <Input
+                          value={newVictimContact}
+                          onChange={(e) => { handleUserInput(); setNewVictimContact(e.target.value); }}
+                          placeholder="연락처를 입력해주세요"
+                          className={intakeFieldClass}
+                          style={intakeFieldStyle}
+                          data-testid="input-new-victim-contact"
+                        />
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={newVictimAddress}
+                            onChange={(e) => { handleUserInput(); setNewVictimAddress(e.target.value); }}
+                            placeholder="주소"
+                            className={intakeFieldClass}
+                            style={{
+                              ...intakeFieldStyle,
+                              flex: 1,
+                            }}
+                            disabled={sameAsInsured}
+                            data-testid="input-new-victim-address"
+                          />
+                          <Input
+                            value={newVictimAddressDetail}
+                            onChange={(e) => { handleUserInput(); setNewVictimAddressDetail(e.target.value); }}
+                            placeholder="상세주소"
+                            className={intakeFieldClass}
+                            style={{
+                              ...intakeFieldStyle,
+                              flex: 1,
+                            }}
+                            data-testid="input-new-victim-address-detail"
+                          />
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="same-as-insured-address"
+                              checked={sameAsInsured}
+                              onCheckedChange={(checked) => {
+                                setSameAsInsured(checked === true);
+                                if (checked === true) {
+                                  setNewVictimAddress(selectedCaseData?.insuredAddress || "");
+                                } else {
+                                  setNewVictimAddress("");
+                                }
+                              }}
+                              data-testid="checkbox-same-as-insured"
+                            />
+                            <label
+                              htmlFor="same-as-insured-address"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "14px",
+                                fontWeight: 500,
+                                color: "#686A6E",
+                                whiteSpace: "nowrap",
+                                cursor: "pointer",
+                              }}
+                            >
+                              주소지 동일
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          if (newVictimName && newVictimContact && newVictimAddress && selectedCaseData) {
+                            try {
+                              // 원본 케이스 접수번호에서 prefix 추출 (예: "251203001-1" -> "251203001")
+                              const parentCaseNumber = selectedCaseData.caseNumber || "";
+                              const casePrefix = parentCaseNumber.split('-')[0];
+                              
+                              // 새 피해세대 케이스 생성 (spread 사용 안 함 - 필요한 필드만 명시적으로 복사)
+                              const newCasePayload = {
+                                // 원본 케이스 번호 prefix 전달 (서버에서 다음 suffix 계산)
+                                parentCasePrefix: casePrefix,
+                                
+                                // 기본 정보 (복사)
+                                receptionDate: selectedCaseData.receptionDate,
+                                accidentDate: selectedCaseData.accidentDate,
+                                
+                                // 보험 정보 (복사)
+                                insuranceCompany: selectedCaseData.insuranceCompany,
+                                insurancePolicyNo: selectedCaseData.insurancePolicyNo,
+                                insuranceAccidentNo: selectedCaseData.insuranceAccidentNo,
+                                
+                                // 의뢰사 정보 (복사)
+                                clientResidence: selectedCaseData.clientResidence,
+                                clientDepartment: selectedCaseData.clientDepartment,
+                                clientName: selectedCaseData.clientName,
+                                clientContact: selectedCaseData.clientContact,
+                                
+                                // 심사사 정보 (복사)
+                                assessorId: selectedCaseData.assessorId,
+                                assessorDepartment: selectedCaseData.assessorDepartment,
+                                assessorTeam: selectedCaseData.assessorTeam,
+                                assessorContact: selectedCaseData.assessorContact,
+                                
+                                // 조사사 정보 (복사)
+                                investigatorTeam: selectedCaseData.investigatorTeam,
+                                investigatorDepartment: selectedCaseData.investigatorDepartment,
+                                investigatorTeamName: selectedCaseData.investigatorTeamName,
+                                investigatorContact: selectedCaseData.investigatorContact,
+                                
+                                // 보험계약자 정보 (복사)
+                                policyHolderName: selectedCaseData.policyHolderName,
+                                policyHolderIdNumber: selectedCaseData.policyHolderIdNumber,
+                                policyHolderAddress: selectedCaseData.policyHolderAddress,
+                                
+                                // 피보험자 정보 (복사)
+                                insuredName: selectedCaseData.insuredName,
+                                insuredIdNumber: selectedCaseData.insuredIdNumber,
+                                insuredContact: selectedCaseData.insuredContact,
+                                insuredAddress: selectedCaseData.insuredAddress,
+                                insuredAddressDetail: selectedCaseData.insuredAddressDetail,
+                                sameAsPolicyHolder: selectedCaseData.sameAsPolicyHolder,
+                                
+                                // 새 피해자 정보 (신규 입력)
+                                victimName: newVictimName,
+                                victimContact: newVictimContact,
+                                victimAddress: newVictimAddress,
+                                victimAddressDetail: newVictimAddressDetail,
+                                
+                                // 피해사항 정보 (빈 배열로 초기화 - 새 피해자는 자신의 피해사항 입력)
+                                damageItems: "[]",
+                                
+                                // 처리 유형: 피해세대복구지원만 (JSON string으로 전송 - schema가 text 타입)
+                                processingTypes: JSON.stringify(["피해세대복구"]),
+                                victimIncidentAssistance: "true",  // schema는 text 타입 ("true" | "false" | null)
+                                damagePreventionCost: "false",     // schema는 text 타입 ("true" | "false" | null)
+                                
+                                // 당사 담당자 정보 (복사)
+                                managerId: selectedCaseData.managerId,
+                                
+                                // 배당 정보 (복사 - 같은 업체에 배당)
+                                assignedPartner: selectedCaseData.assignedPartner,
+                                assignmentDate: selectedCaseData.assignmentDate,
+                                
+                                // 복구 타입 (복사)
+                                recoveryType: selectedCaseData.recoveryType,
+                                
+                                // 상태: 접수완료 (워크플로우 시작점)
+                                status: "접수완료",
+                                
+                                // 워크플로우 필드: 모두 null/초기값 (새 케이스는 처음부터 시작)
+                                progressStatus: null,
+                                reviewDecision: null,
+                                reviewComment: null,
+                                reviewedAt: null,
+                                reviewedBy: null,
+                                visitDate: null,
+                                visitTime: null,
+                                fieldSurveyStatus: "draft",               // 현장조사 상태 (초기값: draft)
+                                
+                                // 현장조사 관련 필드: 모두 null (새 케이스는 입력 전 상태)
+                                accompaniedPerson: null,
+                                travelDistance: null,
+                                dispatchLocation: null,
+                                accidentTime: null,
+                                accidentCategory: null,
+                                processingTypeOther: null,
+                                recoveryMethodType: null,
+                                
+                                // 기타 필드: 모두 null
+                                clientPhone: null,
+                                clientAddress: null,
+                                accidentLocation: null,
+                                accidentDescription: null,
+                                accidentType: null,
+                                accidentCause: null,
+                                restorationMethod: null,
+                                otherVendorEstimate: null,
+                                
+                                // 추가 피해자: 빈 배열 (JSON string)
+                                additionalVictims: "[]",
+                                
+                                // 배당사항 추가 필드: null
+                                assignedPartnerManager: null,
+                                assignedPartnerContact: null,
+                                urgency: null,
+                                specialRequests: null,
+                                
+                                // 진행상황 메모: null
+                                specialNotes: null,
+                                specialNotesConfirmedBy: null,
+                                additionalNotes: null,
+                                
+                                // 금액: null
+                                estimateAmount: null,
+                                
+                                // 기타 연관 필드: null
+                                assignedTo: null,
+                                
+                                // 날짜 필드: 모두 null (접수일/배당일 제외)
+                                inspectionDate: null,
+                                siteVisitDate: null,
+                                fieldSurveyDate: null,
+                                siteInvestigationSubmitDate: null,
+                                firstInspectionDate: null,
+                                firstApprovalDate: null,
+                                secondApprovalDate: null,
+                                firstInvoiceDate: null,
+                                approvalRequestDate: null,
+                                approvalDate: null,
+                                approvalCompletionDate: null,
+                                constructionStartDate: null,
+                                constructionCompletionDate: null,
+                                constructionReportSubmitDate: null,
+                                totalWorkDate: null,
+                                contractorReportDate: null,
+                                contractorRepairDate: null,
+                                completionDate: null,
+                                claimDate: null,
+                              };
+                              
+                              await apiRequest("POST", "/api/cases", newCasePayload);
+                              
+                              toast({
+                                title: "추가 피해자 등록 완료",
+                                description: `${newVictimName} 님의 케이스가 생성되었습니다.`,
+                              });
+                              
+                              // 입력 필드 초기화
+                              setNewVictimName("");
+                              setNewVictimContact("");
+                              setNewVictimAddress("");
+                              setNewVictimAddressDetail("");
+                              setSameAsInsured(false);
+                              
+                              // 케이스 목록 새로고침
+                              queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                            } catch (error) {
+                              toast({
+                                title: "케이스 생성 실패",
+                                description: error instanceof Error ? error.message : "케이스 생성 중 오류가 발생했습니다.",
+                                variant: "destructive",
+                              });
+                            }
+                          }
+                        }}
+                        disabled={!newVictimName || !newVictimContact || !newVictimAddress || !selectedCaseData}
                         style={{
                           fontFamily: "Pretendard",
                           fontSize: "16px",
                           fontWeight: 600,
-                          height: "52px",
-                          padding: "12px 16px",
-                          borderRadius: "6px",
-                          border: accidentCategory === category 
-                            ? "2px solid rgba(255, 255, 255, 0.04)" 
-                            : "1px solid rgba(12, 12, 12, 0.3)",
-                          background: accidentCategory === category 
-                            ? "rgba(0, 143, 237, 0.1)" 
-                            : "#FDFDFD",
-                          color: accidentCategory === category 
-                            ? "#008FED" 
-                            : "rgba(12, 12, 12, 0.9)",
-                          boxShadow: accidentCategory === category 
-                            ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
-                            : "none",
-                          backdropFilter: accidentCategory === category ? "blur(7px)" : "none",
-                          cursor: isReadOnly ? "not-allowed" : "pointer",
-                          opacity: isReadOnly ? 0.5 : 1,
+                          height: "68px",
+                          width: "120px",
+                          background: newVictimName && newVictimContact && newVictimAddress 
+                            ? "#ECECEC" 
+                            : "rgba(12, 12, 12, 0.04)",
+                          color: newVictimName && newVictimContact && newVictimAddress 
+                            ? "rgba(12, 12, 12, 0.8)" 
+                            : "rgba(12, 12, 12, 0.3)",
+                          border: "none",
+                          borderRadius: "8px",
                         }}
-                        data-testid={`button-category-${category}`}
+                        data-testid="button-add-new-victim"
                       >
-                        {category}
-                      </button>
-                    ))}
+                        등록
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                )}
+              </div>
 
-                {/* 사고원인 */}
+              {/* VOC(고객의 소리) 서브섹션 */}
+              <div>
+                <h3
+                  className="mb-4"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "20px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  VOC(고객의 소리)
+                </h3>
                 <div>
-                  <Label 
-                    htmlFor="accident-cause-detail"
-                    className="mb-2"
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: 500,
-                      color: "#686A6E",
-                    }}
-                  >
-                    사고원인
-                  </Label>
                   <textarea
-                    id="accident-cause-detail"
-                    value={accidentCause}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      handleUserInput();
-                      setAccidentCause(e.target.value);
-                    }}
-                    onFocus={(e) => {
-                      e.stopPropagation();
-                    }}
-                    placeholder="누수원인, 누수지점 등 기타 특이사항을 자유롭게 입력해주세요"
+                    id="voc"
+                    value={voc}
+                    onChange={(e) => { handleUserInput(); setVoc(e.target.value); }}
+                    placeholder="내용을 적어주세요"
                     maxLength={800}
                     style={{
                       fontFamily: "Pretendard",
@@ -1273,7 +1708,7 @@ export default function FieldManagement() {
                       width: "100%",
                     }}
                     disabled={isReadOnly}
-                    data-testid="textarea-accident-cause"
+                    data-testid="textarea-voc"
                   />
                   <div 
                     className="text-right mt-1"
@@ -1283,718 +1718,281 @@ export default function FieldManagement() {
                       color: "rgba(12, 12, 12, 0.5)",
                     }}
                   >
-                    {accidentCause.length}/800
+                    {voc.length}/800
                   </div>
                 </div>
               </div>
             </div>
+          </SectionCard>
 
-            {/* 같은 사고의 케이스들 */}
-            <div>
-              <h3
-                className="mb-4"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "20px",
-                  fontWeight: 600,
-                  color: "rgba(12, 12, 12, 0.8)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                같은 사고의 케이스들 (총 {relatedCases.length}건)
-              </h3>
-              
-              <div className="space-y-3">
-                {relatedCases.map((caseItem) => (
-                  <div
-                    key={caseItem.id}
-                    style={{
-                      background: caseItem.id === selectedCase 
-                        ? "rgba(0, 143, 237, 0.08)" 
-                        : "rgba(12, 12, 12, 0.04)",
-                      borderRadius: "8px",
-                      padding: "16px 20px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      border: caseItem.id === selectedCase 
-                        ? "2px solid rgba(0, 143, 237, 0.3)" 
-                        : "none",
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        style={{
-                          width: "6px",
-                          height: "6px",
-                          borderRadius: "50%",
-                          background: caseItem.id === selectedCase ? "#008FED" : "#686A6E",
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "#008FED",
-                          minWidth: "120px",
-                        }}
-                      >
-                        {formatCaseNumber(caseItem.caseNumber)}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 600,
-                          color: "rgba(12, 12, 12, 0.8)",
-                        }}
-                      >
-                        {caseItem.victimName || "-"}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 500,
-                          color: "rgba(12, 12, 12, 0.6)",
-                        }}
-                      >
-                        {caseItem.victimContact || "-"}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "16px",
-                          fontWeight: 500,
-                          color: "rgba(12, 12, 12, 0.6)",
-                        }}
-                      >
-                        {(() => {
-                          // 피해자 주소 우선 표시 (피해자 주소가 없을 경우에만 피보험자 주소 표시)
-                          const hasVictimAddress = !!caseItem.victimAddress;
-                          const address = caseItem.victimAddress || caseItem.insuredAddress || "";
-                          const detail = hasVictimAddress 
-                            ? (caseItem.victimAddressDetail || "")
-                            : (caseItem.insuredAddressDetail || "");
-                          if (address && detail) return `${address} ${detail}`;
-                          if (address) return address;
-                          return "-";
-                        })()}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* 새 피해자 추가 폼 */}
-              {!isReadOnly && (
-                <div className="mt-6 space-y-4">
-                  <div
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      color: "rgba(12, 12, 12, 0.8)",
-                    }}
-                  >
-                    피해자 추가
-                  </div>
-                  
-                  <div className="flex items-end gap-2">
-                    <div className="flex-1 space-y-2">
-                      <Input
-                        value={newVictimName}
-                        onChange={(e) => { handleUserInput(); setNewVictimName(e.target.value); }}
-                        placeholder="성함을 입력해주세요"
-                        className={intakeFieldClass}
-                        style={intakeFieldStyle}
-                        data-testid="input-new-victim-name"
-                      />
-                      <Input
-                        value={newVictimContact}
-                        onChange={(e) => { handleUserInput(); setNewVictimContact(e.target.value); }}
-                        placeholder="연락처를 입력해주세요"
-                        className={intakeFieldClass}
-                        style={intakeFieldStyle}
-                        data-testid="input-new-victim-contact"
-                      />
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={newVictimAddress}
-                          onChange={(e) => { handleUserInput(); setNewVictimAddress(e.target.value); }}
-                          placeholder="주소"
-                          className={intakeFieldClass}
-                          style={{
-                            ...intakeFieldStyle,
-                            flex: 1,
-                          }}
-                          disabled={sameAsInsured}
-                          data-testid="input-new-victim-address"
-                        />
-                        <Input
-                          value={newVictimAddressDetail}
-                          onChange={(e) => { handleUserInput(); setNewVictimAddressDetail(e.target.value); }}
-                          placeholder="상세주소"
-                          className={intakeFieldClass}
-                          style={{
-                            ...intakeFieldStyle,
-                            flex: 1,
-                          }}
-                          data-testid="input-new-victim-address-detail"
-                        />
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="same-as-insured-address"
-                            checked={sameAsInsured}
-                            onCheckedChange={(checked) => {
-                              setSameAsInsured(checked === true);
-                              if (checked === true) {
-                                setNewVictimAddress(selectedCaseData?.insuredAddress || "");
-                              } else {
-                                setNewVictimAddress("");
-                              }
-                            }}
-                            data-testid="checkbox-same-as-insured"
-                          />
-                          <label
-                            htmlFor="same-as-insured-address"
-                            style={{
-                              fontFamily: "Pretendard",
-                              fontSize: "14px",
-                              fontWeight: 500,
-                              color: "#686A6E",
-                              whiteSpace: "nowrap",
-                              cursor: "pointer",
-                            }}
-                          >
-                            주소지 동일
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                    
+          {/* 피해 복구 방식 및 처리 유형 섹션 */}
+          <SectionCard
+            title="피해 복구 방식 및 처리 유형"
+            isOpen={true}
+            onToggle={() => {}}
+            disabled={!selectedCaseData}
+          >
+            <div className="space-y-6">
+              {/* 처리 유형(복수선택) */}
+              <div>
+                <Label 
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#686A6E",
+                  }}
+                >
+                  처리 유형(복수선택)
+                </Label>
+                <div className="flex gap-2">
+                  {["수리", "비교견적", "기타"].map((type) => (
                     <Button
+                      key={type}
                       type="button"
-                      onClick={async () => {
-                        if (newVictimName && newVictimContact && newVictimAddress && selectedCaseData) {
-                          try {
-                            // 원본 케이스 접수번호에서 prefix 추출 (예: "251203001-1" -> "251203001")
-                            const parentCaseNumber = selectedCaseData.caseNumber || "";
-                            const casePrefix = parentCaseNumber.split('-')[0];
-                            
-                            // 새 피해세대 케이스 생성 (spread 사용 안 함 - 필요한 필드만 명시적으로 복사)
-                            const newCasePayload = {
-                              // 원본 케이스 번호 prefix 전달 (서버에서 다음 suffix 계산)
-                              parentCasePrefix: casePrefix,
-                              
-                              // 기본 정보 (복사)
-                              receptionDate: selectedCaseData.receptionDate,
-                              accidentDate: selectedCaseData.accidentDate,
-                              
-                              // 보험 정보 (복사)
-                              insuranceCompany: selectedCaseData.insuranceCompany,
-                              insurancePolicyNo: selectedCaseData.insurancePolicyNo,
-                              insuranceAccidentNo: selectedCaseData.insuranceAccidentNo,
-                              
-                              // 의뢰사 정보 (복사)
-                              clientResidence: selectedCaseData.clientResidence,
-                              clientDepartment: selectedCaseData.clientDepartment,
-                              clientName: selectedCaseData.clientName,
-                              clientContact: selectedCaseData.clientContact,
-                              
-                              // 심사사 정보 (복사)
-                              assessorId: selectedCaseData.assessorId,
-                              assessorDepartment: selectedCaseData.assessorDepartment,
-                              assessorTeam: selectedCaseData.assessorTeam,
-                              assessorContact: selectedCaseData.assessorContact,
-                              
-                              // 조사사 정보 (복사)
-                              investigatorTeam: selectedCaseData.investigatorTeam,
-                              investigatorDepartment: selectedCaseData.investigatorDepartment,
-                              investigatorTeamName: selectedCaseData.investigatorTeamName,
-                              investigatorContact: selectedCaseData.investigatorContact,
-                              
-                              // 보험계약자 정보 (복사)
-                              policyHolderName: selectedCaseData.policyHolderName,
-                              policyHolderIdNumber: selectedCaseData.policyHolderIdNumber,
-                              policyHolderAddress: selectedCaseData.policyHolderAddress,
-                              
-                              // 피보험자 정보 (복사)
-                              insuredName: selectedCaseData.insuredName,
-                              insuredIdNumber: selectedCaseData.insuredIdNumber,
-                              insuredContact: selectedCaseData.insuredContact,
-                              insuredAddress: selectedCaseData.insuredAddress,
-                              insuredAddressDetail: selectedCaseData.insuredAddressDetail,
-                              sameAsPolicyHolder: selectedCaseData.sameAsPolicyHolder,
-                              
-                              // 새 피해자 정보 (신규 입력)
-                              victimName: newVictimName,
-                              victimContact: newVictimContact,
-                              victimAddress: newVictimAddress,
-                              victimAddressDetail: newVictimAddressDetail,
-                              
-                              // 피해사항 정보 (빈 배열로 초기화 - 새 피해자는 자신의 피해사항 입력)
-                              damageItems: "[]",
-                              
-                              // 처리 유형: 피해세대복구지원만 (JSON string으로 전송 - schema가 text 타입)
-                              processingTypes: JSON.stringify(["피해세대복구"]),
-                              victimIncidentAssistance: "true",  // schema는 text 타입 ("true" | "false" | null)
-                              damagePreventionCost: "false",     // schema는 text 타입 ("true" | "false" | null)
-                              
-                              // 당사 담당자 정보 (복사)
-                              managerId: selectedCaseData.managerId,
-                              
-                              // 배당 정보 (복사 - 같은 업체에 배당)
-                              assignedPartner: selectedCaseData.assignedPartner,
-                              assignmentDate: selectedCaseData.assignmentDate,
-                              
-                              // 복구 타입 (복사)
-                              recoveryType: selectedCaseData.recoveryType,
-                              
-                              // 상태: 접수완료 (워크플로우 시작점)
-                              status: "접수완료",
-                              
-                              // 워크플로우 필드: 모두 null/초기값 (새 케이스는 처음부터 시작)
-                              progressStatus: null,
-                              reviewDecision: null,
-                              reviewComment: null,
-                              reviewedAt: null,
-                              reviewedBy: null,
-                              visitDate: null,
-                              visitTime: null,
-                              fieldSurveyStatus: "draft",               // 현장조사 상태 (초기값: draft)
-                              
-                              // 현장조사 관련 필드: 모두 null (새 케이스는 입력 전 상태)
-                              accompaniedPerson: null,
-                              travelDistance: null,
-                              dispatchLocation: null,
-                              accidentTime: null,
-                              accidentCategory: null,
-                              processingTypeOther: null,
-                              recoveryMethodType: null,
-                              
-                              // 기타 필드: 모두 null
-                              clientPhone: null,
-                              clientAddress: null,
-                              accidentLocation: null,
-                              accidentDescription: null,
-                              accidentType: null,
-                              accidentCause: null,
-                              restorationMethod: null,
-                              otherVendorEstimate: null,
-                              
-                              // 추가 피해자: 빈 배열 (JSON string)
-                              additionalVictims: "[]",
-                              
-                              // 배당사항 추가 필드: null
-                              assignedPartnerManager: null,
-                              assignedPartnerContact: null,
-                              urgency: null,
-                              specialRequests: null,
-                              
-                              // 진행상황 메모: null
-                              specialNotes: null,
-                              specialNotesConfirmedBy: null,
-                              additionalNotes: null,
-                              
-                              // 금액: null
-                              estimateAmount: null,
-                              
-                              // 기타 연관 필드: null
-                              assignedTo: null,
-                              
-                              // 날짜 필드: 모두 null (접수일/배당일 제외)
-                              inspectionDate: null,
-                              siteVisitDate: null,
-                              fieldSurveyDate: null,
-                              siteInvestigationSubmitDate: null,
-                              firstInspectionDate: null,
-                              firstApprovalDate: null,
-                              secondApprovalDate: null,
-                              firstInvoiceDate: null,
-                              approvalRequestDate: null,
-                              approvalDate: null,
-                              approvalCompletionDate: null,
-                              constructionStartDate: null,
-                              constructionCompletionDate: null,
-                              constructionReportSubmitDate: null,
-                              totalWorkDate: null,
-                              contractorReportDate: null,
-                              contractorRepairDate: null,
-                              completionDate: null,
-                              claimDate: null,
-                            };
-                            
-                            await apiRequest("POST", "/api/cases", newCasePayload);
-                            
-                            toast({
-                              title: "추가 피해자 등록 완료",
-                              description: `${newVictimName} 님의 케이스가 생성되었습니다.`,
-                            });
-                            
-                            // 입력 필드 초기화
-                            setNewVictimName("");
-                            setNewVictimContact("");
-                            setNewVictimAddress("");
-                            setNewVictimAddressDetail("");
-                            setSameAsInsured(false);
-                            
-                            // 케이스 목록 새로고침
-                            queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-                          } catch (error) {
-                            toast({
-                              title: "케이스 생성 실패",
-                              description: error instanceof Error ? error.message : "케이스 생성 중 오류가 발생했습니다.",
-                              variant: "destructive",
-                            });
-                          }
+                      onClick={() => {
+                        const newTypes = new Set(processingTypes);
+                        if (newTypes.has(type)) {
+                          newTypes.delete(type);
+                        } else {
+                          newTypes.add(type);
                         }
+                        setProcessingTypes(newTypes);
                       }}
-                      disabled={!newVictimName || !newVictimContact || !newVictimAddress || !selectedCaseData}
+                      disabled={isReadOnly}
                       style={{
                         fontFamily: "Pretendard",
                         fontSize: "16px",
                         fontWeight: 600,
-                        height: "68px",
-                        width: "120px",
-                        background: newVictimName && newVictimContact && newVictimAddress 
-                          ? "#ECECEC" 
-                          : "rgba(12, 12, 12, 0.04)",
-                        color: newVictimName && newVictimContact && newVictimAddress 
-                          ? "rgba(12, 12, 12, 0.8)" 
-                          : "rgba(12, 12, 12, 0.3)",
-                        border: "none",
-                        borderRadius: "8px",
+                        height: "52px",
+                        padding: "12px 16px",
+                        borderRadius: "6px",
+                        border: processingTypes.has(type)
+                          ? "2px solid rgba(255, 255, 255, 0.04)" 
+                          : "1px solid rgba(12, 12, 12, 0.3)",
+                        background: processingTypes.has(type)
+                          ? "rgba(0, 143, 237, 0.1)" 
+                          : "#FDFDFD",
+                        color: processingTypes.has(type)
+                          ? "#008FED" 
+                          : "rgba(12, 12, 12, 0.9)",
+                        boxShadow: processingTypes.has(type)
+                          ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
+                          : "none",
+                        backdropFilter: processingTypes.has(type) ? "blur(7px)" : "none",
                       }}
-                      data-testid="button-add-new-victim"
+                      data-testid={`button-processing-type-${type}`}
                     >
-                      등록
+                      {type}
                     </Button>
-                  </div>
+                  ))}
+                  <Input
+                    value={processingTypeOther}
+                    onChange={(e) => { handleUserInput(); setProcessingTypeOther(e.target.value); }}
+                    placeholder="기타사항을 입력해주세요"
+                    className="h-[52px] flex-1"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      padding: "12px 16px",
+                      background: "#FDFDFD",
+                      border: "1px solid rgba(12, 12, 12, 0.3)",
+                      borderRadius: "6px",
+                      color: "rgba(12, 12, 12, 0.9)",
+                    }}
+                    disabled={isReadOnly}
+                    data-testid="input-processing-type-other"
+                  />
                 </div>
+              </div>
+
+              {/* 복구 방식 */}
+              <div>
+                <Label 
+                  className="mb-2"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    color: "#686A6E",
+                  }}
+                >
+                  복구 방식
+                </Label>
+                <div className="flex gap-2">
+                  {["부분수리", "전체수리"].map((method) => (
+                    <Button
+                      key={method}
+                      type="button"
+                      onClick={() => setRecoveryMethodType(method)}
+                      disabled={isReadOnly}
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "16px",
+                        fontWeight: 600,
+                        height: "52px",
+                        padding: "12px 16px",
+                        borderRadius: "6px",
+                        border: recoveryMethodType === method
+                          ? "2px solid rgba(255, 255, 255, 0.04)" 
+                          : "1px solid rgba(12, 12, 12, 0.3)",
+                        background: recoveryMethodType === method
+                          ? "rgba(0, 143, 237, 0.1)" 
+                          : "#FDFDFD",
+                        color: recoveryMethodType === method
+                          ? "#008FED" 
+                          : "rgba(12, 12, 12, 0.9)",
+                        boxShadow: recoveryMethodType === method
+                          ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
+                          : "none",
+                        backdropFilter: recoveryMethodType === method ? "blur(7px)" : "none",
+                      }}
+                      data-testid={`button-recovery-method-${method}`}
+                    >
+                      {method}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </SectionCard>
+
+        {/* 하단 액션 버튼 영역 */}
+        {selectedCaseData && (
+          <div
+            style={{
+              maxWidth: "1400px",
+              margin: "40px auto 60px",
+              padding: "0 40px",
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+            }}
+          >
+            {/* 역할별 버튼 - 협력사 또는 관리자일 때 저장 버튼 표시 */}
+            <div className="flex gap-3">
+              {canEdit && (
+                <>
+                  {/* 임시저장 버튼 */}
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      // 제출 조건 상태 콘솔 로그
+                      console.log("=== 제출 조건 체크 (임시저장) ===");
+                      console.log("현장입력 완료:", isFieldInputComplete);
+                      console.log("제출 가능:", canSubmit);
+                      console.log("================================");
+                      
+                      if (!selectedCaseData?.id) {
+                        toast({
+                          title: "저장 실패",
+                          description: "선택된 접수건이 없습니다.",
+                          variant: "destructive",
+                        });
+                        return;
+                      }
+
+                      // 임시저장은 모든 필드가 비어있어도 저장 가능 (검증 없음)
+                      // 누락된 필드가 있더라도 콘솔에 경고만 출력
+                      const missingFields: string[] = [];
+                      if (!visitDate) missingFields.push("방문일자");
+                      if (!visitTime) missingFields.push("방문시간");
+                      if (!accidentCategory) missingFields.push("카테고리");
+                      if (!victimName && !selectedCaseData?.victimName) missingFields.push("피해자 성명");
+                      if (!victimContact && !selectedCaseData?.victimContact) missingFields.push("피해자 연락처");
+                      
+                      // 콘솔에만 경고 출력 (저장은 계속 진행)
+                      if (missingFields.length > 0) {
+                        console.warn("⚠️ 임시저장 - 누락된 필드 (저장은 진행됨):", missingFields.join(", "));
+                      }
+
+                      try {
+                        // 상태 자동 변경 로직
+                        let status = "현장방문"; // 기본값: 방문일시만 입력된 경우
+                        
+                        // 모든 필수 필드가 입력된 경우 → "현장정보 입력" (카테고리는 로컬 상태 필수)
+                        const hasVictimName = victimName || selectedCaseData?.victimName;
+                        if (visitDate && visitTime && accidentCategory && hasVictimName) {
+                          status = "현장정보 입력";
+                        }
+
+                        const payload = {
+                          visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
+                          visitTime,
+                          dispatchLocation,
+                          accompaniedPerson,
+                          accidentDate: accidentDate ? `${format(accidentDate, "yyyy-MM-dd")} ${accidentTime || "00:00"}` : null,
+                          accidentTime,
+                          accidentCategory: accidentCategory || null,
+                          accidentCause,
+                          specialNotes,
+                          victimName: victimName || selectedCaseData?.victimName || null,
+                          victimContact: victimContact || selectedCaseData?.victimContact || null,
+                          victimAddress: victimAddress || selectedCaseData?.victimAddress || null,
+                          additionalVictims: JSON.stringify(additionalVictims),
+                          specialRequests: voc,
+                          processingTypes: JSON.stringify(Array.from(processingTypes)),
+                          processingTypeOther,
+                          recoveryMethodType,
+                          fieldSurveyStatus: "draft",
+                          status, // 자동 변경된 상태 추가
+                        };
+
+                        const data = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
+
+                        const syncedCases = (data as any)?.syncedCases || 0;
+                        const syncMessage = syncedCases > 0 
+                          ? ` (${syncedCases}건의 연관 케이스에도 동기화됨)`
+                          : "";
+
+                        toast({
+                          title: "임시저장 완료",
+                          description: `현장조사 정보가 임시저장되었습니다. (상태: ${status})${syncMessage}`,
+                        });
+
+                        queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                        queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseData.id, "report"] });
+                      } catch (error: any) {
+                        console.error("임시저장 에러:", error);
+                        
+                        // 서버에서 반환된 오류 메시지 파싱
+                        let errorMessage = "현장조사 정보 임시저장 중 오류가 발생했습니다.";
+                        if (error?.message) {
+                          errorMessage = error.message;
+                        }
+                        
+                        toast({
+                          title: "임시저장 실패",
+                          description: errorMessage,
+                          variant: "destructive",
+                        });
+                      }
+                    }}
+                    disabled={isReadOnly}
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: 600,
+                      height: "52px",
+                      padding: "12px 32px",
+                      background: isReadOnly ? "rgba(12, 12, 12, 0.1)" : "#FFFFFF",
+                      color: isReadOnly ? "rgba(12, 12, 12, 0.3)" : "rgba(12, 12, 12, 0.7)",
+                      border: "1px solid rgba(12, 12, 12, 0.2)",
+                      borderRadius: "8px",
+                      cursor: isReadOnly ? "not-allowed" : "pointer",
+                    }}
+                    data-testid="button-temp-save"
+                  >
+                    임시저장
+                  </Button>
+                </>
               )}
             </div>
-
-            {/* VOC(고객의 소리) 서브섹션 */}
-            <div>
-              <h3
-                className="mb-4"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "20px",
-                  fontWeight: 600,
-                  color: "rgba(12, 12, 12, 0.8)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
-                VOC(고객의 소리)
-              </h3>
-              <div>
-                <textarea
-                  id="voc"
-                  value={voc}
-                  onChange={(e) => { handleUserInput(); setVoc(e.target.value); }}
-                  placeholder="내용을 적어주세요"
-                  maxLength={800}
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    padding: "16px 20px",
-                    background: "#FDFDFD",
-                    border: "2px solid rgba(12,12,12,0.08)",
-                    borderRadius: "8px",
-                    resize: "none",
-                    minHeight: "120px",
-                    width: "100%",
-                  }}
-                  disabled={isReadOnly}
-                  data-testid="textarea-voc"
-                />
-                <div 
-                  className="text-right mt-1"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "12px",
-                    color: "rgba(12, 12, 12, 0.5)",
-                  }}
-                >
-                  {voc.length}/800
-                </div>
-              </div>
-            </div>
           </div>
-        </SectionCard>
-
-        {/* 피해 복구 방식 및 처리 유형 섹션 */}
-        <SectionCard
-          title="피해 복구 방식 및 처리 유형"
-          isOpen={true}
-          onToggle={() => {}}
-          disabled={!selectedCaseData}
-        >
-          <div className="space-y-6">
-            {/* 처리 유형(복수선택) */}
-            <div>
-              <Label 
-                className="mb-2"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "#686A6E",
-                }}
-              >
-                처리 유형(복수선택)
-              </Label>
-              <div className="flex gap-2">
-                {["수리", "비교견적", "기타"].map((type) => (
-                  <Button
-                    key={type}
-                    type="button"
-                    onClick={() => {
-                      const newTypes = new Set(processingTypes);
-                      if (newTypes.has(type)) {
-                        newTypes.delete(type);
-                      } else {
-                        newTypes.add(type);
-                      }
-                      setProcessingTypes(newTypes);
-                    }}
-                    disabled={isReadOnly}
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      height: "52px",
-                      padding: "12px 16px",
-                      borderRadius: "6px",
-                      border: processingTypes.has(type)
-                        ? "2px solid rgba(255, 255, 255, 0.04)" 
-                        : "1px solid rgba(12, 12, 12, 0.3)",
-                      background: processingTypes.has(type)
-                        ? "rgba(0, 143, 237, 0.1)" 
-                        : "#FDFDFD",
-                      color: processingTypes.has(type)
-                        ? "#008FED" 
-                        : "rgba(12, 12, 12, 0.9)",
-                      boxShadow: processingTypes.has(type)
-                        ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
-                        : "none",
-                      backdropFilter: processingTypes.has(type) ? "blur(7px)" : "none",
-                    }}
-                    data-testid={`button-processing-type-${type}`}
-                  >
-                    {type}
-                  </Button>
-                ))}
-                <Input
-                  value={processingTypeOther}
-                  onChange={(e) => { handleUserInput(); setProcessingTypeOther(e.target.value); }}
-                  placeholder="기타사항을 입력해주세요"
-                  className="h-[52px] flex-1"
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    padding: "12px 16px",
-                    background: "#FDFDFD",
-                    border: "1px solid rgba(12, 12, 12, 0.3)",
-                    borderRadius: "6px",
-                    color: "rgba(12, 12, 12, 0.9)",
-                  }}
-                  disabled={isReadOnly}
-                  data-testid="input-processing-type-other"
-                />
-              </div>
-            </div>
-
-            {/* 복구 방식 */}
-            <div>
-              <Label 
-                className="mb-2"
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: 500,
-                  color: "#686A6E",
-                }}
-              >
-                복구 방식
-              </Label>
-              <div className="flex gap-2">
-                {["부분수리", "전체수리"].map((method) => (
-                  <Button
-                    key={method}
-                    type="button"
-                    onClick={() => setRecoveryMethodType(method)}
-                    disabled={isReadOnly}
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "16px",
-                      fontWeight: 600,
-                      height: "52px",
-                      padding: "12px 16px",
-                      borderRadius: "6px",
-                      border: recoveryMethodType === method
-                        ? "2px solid rgba(255, 255, 255, 0.04)" 
-                        : "1px solid rgba(12, 12, 12, 0.3)",
-                      background: recoveryMethodType === method
-                        ? "rgba(0, 143, 237, 0.1)" 
-                        : "#FDFDFD",
-                      color: recoveryMethodType === method
-                        ? "#008FED" 
-                        : "rgba(12, 12, 12, 0.9)",
-                      boxShadow: recoveryMethodType === method
-                        ? "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)" 
-                        : "none",
-                      backdropFilter: recoveryMethodType === method ? "blur(7px)" : "none",
-                    }}
-                    data-testid={`button-recovery-method-${method}`}
-                  >
-                    {method}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </SectionCard>
-
-      {/* 하단 액션 버튼 영역 */}
-      {selectedCaseData && (
-        <div
-          style={{
-            maxWidth: "1400px",
-            margin: "40px auto 60px",
-            padding: "0 40px",
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-          }}
-        >
-          {/* 역할별 버튼 - 협력사 또는 관리자일 때 저장 버튼 표시 */}
-          <div className="flex gap-3">
-            {canEdit && (
-              <>
-                {/* 임시저장 버튼 */}
-                <Button
-                  type="button"
-                  onClick={async () => {
-                    // 제출 조건 상태 콘솔 로그
-                    console.log("=== 제출 조건 체크 (임시저장) ===");
-                    console.log("현장입력 완료:", isFieldInputComplete);
-                    console.log("제출 가능:", canSubmit);
-                    console.log("================================");
-                    
-                    if (!selectedCaseData?.id) {
-                      toast({
-                        title: "저장 실패",
-                        description: "선택된 접수건이 없습니다.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-
-                    // 임시저장은 모든 필드가 비어있어도 저장 가능 (검증 없음)
-                    // 누락된 필드가 있더라도 콘솔에 경고만 출력
-                    const missingFields: string[] = [];
-                    if (!visitDate) missingFields.push("방문일자");
-                    if (!visitTime) missingFields.push("방문시간");
-                    if (!accidentCategory) missingFields.push("카테고리");
-                    if (!victimName && !selectedCaseData?.victimName) missingFields.push("피해자 성명");
-                    if (!victimContact && !selectedCaseData?.victimContact) missingFields.push("피해자 연락처");
-                    
-                    // 콘솔에만 경고 출력 (저장은 계속 진행)
-                    if (missingFields.length > 0) {
-                      console.warn("⚠️ 임시저장 - 누락된 필드 (저장은 진행됨):", missingFields.join(", "));
-                    }
-
-                    try {
-                      // 상태 자동 변경 로직
-                      let status = "현장방문"; // 기본값: 방문일시만 입력된 경우
-                      
-                      // 모든 필수 필드가 입력된 경우 → "현장정보 입력" (카테고리는 로컬 상태 필수)
-                      const hasVictimName = victimName || selectedCaseData?.victimName;
-                      if (visitDate && visitTime && accidentCategory && hasVictimName) {
-                        status = "현장정보 입력";
-                      }
-
-                      const payload = {
-                        visitDate: visitDate ? format(visitDate, "yyyy-MM-dd") : null,
-                        visitTime,
-                        dispatchLocation,
-                        accompaniedPerson,
-                        accidentDate: accidentDate ? `${format(accidentDate, "yyyy-MM-dd")} ${accidentTime || "00:00"}` : null,
-                        accidentTime,
-                        accidentCategory: accidentCategory || null,
-                        accidentCause,
-                        specialNotes,
-                        victimName: victimName || selectedCaseData?.victimName || null,
-                        victimContact: victimContact || selectedCaseData?.victimContact || null,
-                        victimAddress: victimAddress || selectedCaseData?.victimAddress || null,
-                        additionalVictims: JSON.stringify(additionalVictims),
-                        specialRequests: voc,
-                        processingTypes: JSON.stringify(Array.from(processingTypes)),
-                        processingTypeOther,
-                        recoveryMethodType,
-                        fieldSurveyStatus: "draft",
-                        status, // 자동 변경된 상태 추가
-                      };
-
-                      const data = await apiRequest("PATCH", `/api/cases/${selectedCaseData.id}/field-survey`, payload);
-
-                      const syncedCases = (data as any)?.syncedCases || 0;
-                      const syncMessage = syncedCases > 0 
-                        ? ` (${syncedCases}건의 연관 케이스에도 동기화됨)`
-                        : "";
-
-                      toast({
-                        title: "임시저장 완료",
-                        description: `현장조사 정보가 임시저장되었습니다. (상태: ${status})${syncMessage}`,
-                      });
-
-                      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-                      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseData.id, "report"] });
-                    } catch (error: any) {
-                      console.error("임시저장 에러:", error);
-                      
-                      // 서버에서 반환된 오류 메시지 파싱
-                      let errorMessage = "현장조사 정보 임시저장 중 오류가 발생했습니다.";
-                      if (error?.message) {
-                        errorMessage = error.message;
-                      }
-                      
-                      toast({
-                        title: "임시저장 실패",
-                        description: errorMessage,
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  disabled={isReadOnly}
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    height: "52px",
-                    padding: "12px 32px",
-                    background: isReadOnly ? "rgba(12, 12, 12, 0.1)" : "#FFFFFF",
-                    color: isReadOnly ? "rgba(12, 12, 12, 0.3)" : "rgba(12, 12, 12, 0.7)",
-                    border: "1px solid rgba(12, 12, 12, 0.2)",
-                    borderRadius: "8px",
-                    cursor: isReadOnly ? "not-allowed" : "pointer",
-                  }}
-                  data-testid="button-temp-save"
-                >
-                  임시저장
-                </Button>
-              </>
-            )}
-          </div>
+        )}
         </div>
-      )}
-      </div>
     </>
   );
 }
