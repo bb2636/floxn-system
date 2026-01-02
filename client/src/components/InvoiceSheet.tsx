@@ -590,12 +590,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                       height: "54px",
                       flexGrow: 1,
                     }}>
-                      <input
-                        type="text"
-                        value={invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : ""}
-                        onChange={(e) => setInvoiceDamagePreventionAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                        placeholder="0"
-                        className="invoice-input-field"
+                      <span
                         style={{
                           fontFamily: "'Pretendard'",
                           fontStyle: "normal",
@@ -604,14 +599,12 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                           lineHeight: "128%",
                           letterSpacing: "-0.01em",
                           color: "#0C0C0C",
-                          background: "transparent",
-                          border: "none",
-                          outline: "none",
                           textAlign: "right",
-                          width: "100px",
                         }}
-                        data-testid="input-damage-prevention-amount"
-                      />
+                        data-testid="text-damage-prevention-amount"
+                      >
+                        {invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : "0"}
+                      </span>
                       <span style={{
                         fontFamily: "'Pretendard'",
                         fontStyle: "normal",
@@ -621,9 +614,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                         letterSpacing: "-0.01em",
                         color: "#0C0C0C",
                       }}>원</span>
-                      <span className="invoice-span-field" style={{ display: "none" }} data-testid="text-damage-prevention-amount">
-                        {invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : "0"}원
-                      </span>
                     </div>
                   </div>
                 )}
@@ -659,12 +649,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                       height: "54px",
                       flexGrow: 1,
                     }}>
-                      <input
-                        type="text"
-                        value={invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : ""}
-                        onChange={(e) => setInvoicePropertyRepairAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                        placeholder="금액을 입력해주세요"
-                        className="invoice-input-field"
+                      <span
                         style={{
                           fontFamily: "'Pretendard'",
                           fontStyle: "normal",
@@ -672,15 +657,13 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                           fontSize: "15px",
                           lineHeight: "128%",
                           letterSpacing: "-0.01em",
-                          color: invoicePropertyRepairAmount ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
-                          background: "transparent",
-                          border: "none",
-                          outline: "none",
+                          color: "#0C0C0C",
                           textAlign: "right",
-                          width: "120px",
                         }}
-                        data-testid="input-property-repair-amount"
-                      />
+                        data-testid="text-property-repair-amount"
+                      >
+                        {invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : "0"}
+                      </span>
                       <span style={{
                         fontFamily: "'Pretendard'",
                         fontStyle: "normal",
@@ -690,9 +673,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                         letterSpacing: "-0.01em",
                         color: "#0C0C0C",
                       }}>원</span>
-                      <span className="invoice-span-field" style={{ display: "none" }} data-testid="text-property-repair-amount">
-                        {invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : "0"}원
-                      </span>
                     </div>
                   </div>
                 )}
