@@ -1987,11 +1987,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 최신 견적 조회
       const estimateData = await storage.getLatestEstimate(caseId);
       
+      // 손해방지 케이스 여부 (접수번호가 -0으로 끝나면 손해방지)
+      const isLossPreventionCase = /-0$/.test(caseData.caseNumber || '');
+      
+      // 견적 완료 여부 체크
+      // - 손해방지 케이스: 복구면적 산출표 없어도 노무비/자재비만 있으면 완료
+      // - 피해복구 케이스: 복구면적 산출표 필수
+      const hasRecoveryRows = !!(estimateData?.rows && estimateData.rows.length > 0);
+      let hasLaborCosts = false;
+      let hasMaterialCosts = false;
+      
+      if (estimateData?.estimate?.laborCostData) {
+        try {
+          const data = typeof estimateData.estimate.laborCostData === 'string' 
+            ? JSON.parse(estimateData.estimate.laborCostData) 
+            : estimateData.estimate.laborCostData;
+          hasLaborCosts = Array.isArray(data) && data.length > 0;
+        } catch { hasLaborCosts = false; }
+      }
+      
+      if (estimateData?.estimate?.materialCostData) {
+        try {
+          const data = typeof estimateData.estimate.materialCostData === 'string' 
+            ? JSON.parse(estimateData.estimate.materialCostData) 
+            : estimateData.estimate.materialCostData;
+          hasMaterialCosts = Array.isArray(data) && data.length > 0;
+        } catch { hasMaterialCosts = false; }
+      }
+      
       // 완료 여부 체크
       const isFieldSurveyComplete = !!(caseData.visitDate && caseData.visitTime && caseData.accidentCategory);
       const isDrawingComplete = !!drawing;
       const isDocumentsComplete = documents.length > 0;
-      const isEstimateComplete = !!(estimateData?.rows && estimateData.rows.length > 0);
+      // 손해방지 케이스: 노무비 또는 자재비만 있으면 완료
+      // 피해복구 케이스: 복구면적 산출표 필수
+      const isEstimateComplete = isLossPreventionCase 
+        ? (hasLaborCosts || hasMaterialCosts)
+        : hasRecoveryRows;
       
       if (!isFieldSurveyComplete || !isDrawingComplete || !isDocumentsComplete || !isEstimateComplete) {
         const missingItems = [];
