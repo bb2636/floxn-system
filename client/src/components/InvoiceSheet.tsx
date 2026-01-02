@@ -904,7 +904,8 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 {/* 은행명 */}
                 <div style={infoRowStyle}>
                   <span style={labelStyle}>은행명</span>
-                  <span style={valueStyle}>KB국민은행</span>
+                  <span style={valueStyle}>신한은행
+</span>
                 </div>
                 <div style={dividerStyle} />
                 {/* 계좌번호 */}
