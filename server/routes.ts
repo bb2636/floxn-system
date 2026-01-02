@@ -12,6 +12,7 @@ import crypto from "crypto";
 import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from "./replit_integrations/object_storage";
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
 import { generatePdf } from "./pdf-service";
+import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
@@ -5393,6 +5394,124 @@ FLOXN 드림`;
     } catch (error) {
       console.error("Send invoice email error:", error);
       res.status(500).json({ error: "INVOICE 이메일 전송 중 오류가 발생했습니다" });
+    }
+  });
+
+  // ==========================================
+  // POST /api/send-invoice-email-v2 - INVOICE PDF 템플릿 기반 이메일 첨부 발송
+  // ==========================================
+  const sendInvoiceEmailV2Schema = z.object({
+    email: z.string().email("올바른 이메일 형식이 아닙니다"),
+    caseId: z.string().min(1, "케이스 ID가 필요합니다"),
+    recipientName: z.string().optional(),
+    damagePreventionAmount: z.number().optional().default(0),
+    propertyRepairAmount: z.number().optional().default(0),
+    fieldDispatchAmount: z.number().optional().default(0),
+    remarks: z.string().optional(),
+  });
+
+  app.post("/api/send-invoice-email-v2", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(403).json({ error: "사용자 정보를 찾을 수 없습니다" });
+    }
+
+    const allowedRoles = ["협력사", "관리자", "심사사"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "INVOICE 이메일 전송 권한이 없습니다" });
+    }
+
+    try {
+      const validationResult = sendInvoiceEmailV2Schema.safeParse(req.body);
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors.map(e => e.message).join(", ");
+        return res.status(400).json({ error: errorMessage });
+      }
+
+      const { 
+        email, 
+        caseId, 
+        recipientName,
+        damagePreventionAmount,
+        propertyRepairAmount,
+        fieldDispatchAmount,
+        remarks
+      } = validationResult.data;
+
+      // Get case data
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // Build particulars based on amounts
+      const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
+      const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
+
+      if (damagePreventionAmount && damagePreventionAmount > 0) {
+        particulars.push({
+          title: `[${accidentNo}] - 손해방지비용`,
+          amount: damagePreventionAmount,
+        });
+      }
+
+      if (propertyRepairAmount && propertyRepairAmount > 0) {
+        particulars.push({
+          title: `[${accidentNo}] - 대물복구비용`,
+          amount: propertyRepairAmount,
+        });
+      }
+
+      if (fieldDispatchAmount && fieldDispatchAmount > 0) {
+        particulars.push({
+          title: `[${accidentNo}] - 현장출동비용`,
+          amount: fieldDispatchAmount,
+        });
+      }
+
+      // If no particulars, add a default entry
+      if (particulars.length === 0) {
+        particulars.push({
+          title: `[${accidentNo}]`,
+          detail: '청구 내역 없음',
+          amount: 0,
+        });
+      }
+
+      const totalAmount = (damagePreventionAmount || 0) + (propertyRepairAmount || 0) + (fieldDispatchAmount || 0);
+
+      // Build invoice data
+      const invoiceData = {
+        recipientName: recipientName || caseData.insuranceCompany || '-',
+        caseNumber: caseData.caseNumber || '-',
+        acceptanceDate: caseData.accidentDate || new Date().toISOString(),
+        submissionDate: new Date().toISOString(),
+        insuranceAccidentNo: accidentNo,
+        particulars,
+        totalAmount,
+        remarks,
+      };
+
+      console.log(`[Invoice PDF] Generating PDF for case ${caseId}`);
+
+      // Generate PDF from template
+      const pdfBuffer = await generateInvoicePdf(invoiceData);
+
+      console.log(`[Invoice PDF] PDF generated, size: ${pdfBuffer.length} bytes`);
+
+      // Send email with PDF attachment
+      await sendInvoiceEmailWithAttachment(email, invoiceData, pdfBuffer);
+
+      console.log(`[Email] Invoice PDF attachment sent successfully to ${email} by ${user.username}`);
+      res.json({ success: true, message: "INVOICE 이메일이 전송되었습니다 (첨부파일)" });
+    } catch (error) {
+      console.error("Send invoice email v2 error:", error);
+      const errorMessage = error instanceof Error ? error.message : "INVOICE 이메일 전송 중 오류가 발생했습니다";
+      res.status(500).json({ error: errorMessage });
     }
   });
 
