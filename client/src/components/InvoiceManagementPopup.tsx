@@ -764,32 +764,33 @@ export function InvoiceManagementPopup({
         <div 
           className="overflow-y-auto"
           style={{ 
-            padding: "0 20px 0 8px", 
+            padding: "24px 24px 0 24px", 
             maxHeight: "calc(90vh - 187px)",
           }}
         >
-          <div className="flex flex-col gap-5 p-0" style={{ padding: "0 12px" }}>
+          <div className="flex flex-col gap-6 p-0">
             {/* 기본정보 섹션 */}
             <div
               style={{
                 background: "#FFFFFF",
-                border: "1px solid rgba(12, 12, 12, 0.12)",
-                borderRadius: "12px",
-                padding: "28px 32px 32px",
+                borderLeft: "4px solid #3B82F6",
+                borderRadius: "4px",
+                padding: "24px 28px",
+                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
               }}
             >
               <div 
-                className="flex items-center py-2.5 px-1 mb-3"
-                style={{ fontWeight: 700, fontSize: "22px", color: "#0C0C0C" }}
+                className="flex items-center mb-5"
+                style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
               >
                 기본정보
               </div>
 
-              <div className="flex flex-col gap-0.5">
+              <div className="flex flex-col gap-2">
                 {/* 제출일 */}
-                <div className="flex items-center justify-between py-0 h-10">
-                  <div className="flex items-center px-1" style={{ width: "80px" }}>
-                    <span style={{ fontWeight: 600, fontSize: "16px", color: "rgba(12, 12, 12, 0.7)" }}>
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center" style={{ width: "100px" }}>
+                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                       제출일
                     </span>
                   </div>
