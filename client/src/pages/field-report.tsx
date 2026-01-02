@@ -3708,6 +3708,17 @@ export default function FieldReport() {
                                 </tr>
                             ))}
                           </tbody>
+                          <tfoot>
+                            <tr style={{ background: "rgba(12, 12, 12, 0.04)", borderTop: "2px solid rgba(12, 12, 12, 0.2)" }}>
+                              <td colSpan={6} style={{ padding: "12px 8px", textAlign: "right", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>
+                                총합계
+                              </td>
+                              <td style={{ padding: "12px 8px", textAlign: "right", fontFamily: "Pretendard", fontSize: "16px", fontWeight: 700, color: "#008FED", background: "rgba(0, 143, 237, 0.05)" }}>
+                                {parsedLaborCosts.reduce((sum, row) => sum + (row.amount || 0), 0).toLocaleString()}
+                              </td>
+                              <td colSpan={2}></td>
+                            </tr>
+                          </tfoot>
                         </table>
                       </div>
                     ) : (
@@ -3778,6 +3789,17 @@ export default function FieldReport() {
                               </tr>
                             ))}
                           </tbody>
+                          <tfoot>
+                            <tr style={{ background: "rgba(12, 12, 12, 0.04)", borderTop: "2px solid rgba(12, 12, 12, 0.2)" }}>
+                              <td colSpan={6} style={{ padding: "12px 8px", textAlign: "right", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>
+                                총합계
+                              </td>
+                              <td style={{ padding: "12px 8px", textAlign: "right", fontFamily: "Pretendard", fontSize: "16px", fontWeight: 700, color: "#008FED", background: "rgba(0, 143, 237, 0.05)" }}>
+                                {parsedMaterialCosts.reduce((sum, row) => sum + (row.합계 || row.금액 || 0), 0).toLocaleString()}
+                              </td>
+                              <td></td>
+                            </tr>
+                          </tfoot>
                         </table>
                       </div>
                     ) : (
