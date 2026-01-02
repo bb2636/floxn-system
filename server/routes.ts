@@ -4538,9 +4538,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch { hasMaterialCosts = false; }
       }
       
-      // 주민등록등본 첨부 여부 확인
+      // 주민등록등본 첨부 여부 확인 (category 필드 사용)
       const hasResidentRegistration = documents.some(
-        (doc: any) => doc.subCategory === "주민등록등본"
+        (doc: any) => doc.category === "주민등록등본"
       );
       
       // 각 섹션 완료 여부 체크
