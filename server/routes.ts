@@ -5398,6 +5398,141 @@ FLOXN 드림`;
   });
 
   // ==========================================
+  // POST /api/generate-invoice-pdf - INVOICE PDF 생성 및 다운로드
+  // ==========================================
+  const generateInvoicePdfSchema = z.object({
+    caseId: z.string().min(1, "케이스 ID가 필요합니다"),
+    recipientName: z.string().optional(),
+    damagePreventionAmount: z.number().optional().default(0),
+    propertyRepairAmount: z.number().optional().default(0),
+    fieldDispatchPreventionAmount: z.number().optional().default(0),
+    fieldDispatchPropertyAmount: z.number().optional().default(0),
+    totalAmount: z.number().optional(),
+    remarks: z.string().optional(),
+  });
+
+  app.post("/api/generate-invoice-pdf", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(403).json({ error: "사용자 정보를 찾을 수 없습니다" });
+    }
+
+    const allowedRoles = ["협력사", "관리자", "심사사"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "INVOICE PDF 생성 권한이 없습니다" });
+    }
+
+    try {
+      const validationResult = generateInvoicePdfSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors.map(e => e.message).join(", ");
+        return res.status(400).json({ error: errorMessage });
+      }
+
+      const { 
+        caseId, 
+        recipientName,
+        damagePreventionAmount,
+        propertyRepairAmount,
+        fieldDispatchPreventionAmount,
+        fieldDispatchPropertyAmount,
+        totalAmount: clientTotalAmount,
+        remarks
+      } = validationResult.data;
+
+      // Get case data
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      // Build particulars based on amounts
+      const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
+      const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
+
+      if (damagePreventionAmount && damagePreventionAmount > 0) {
+        particulars.push({
+          title: `[${accidentNo}] - 손해방지비용`,
+          amount: damagePreventionAmount,
+        });
+      }
+
+      if (propertyRepairAmount && propertyRepairAmount > 0) {
+        particulars.push({
+          title: `[${accidentNo}] - 대물복구비용`,
+          amount: propertyRepairAmount,
+        });
+      }
+
+      if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
+        particulars.push({
+          title: `[${accidentNo}] - 현장출동비용 (손해방지)`,
+          amount: fieldDispatchPreventionAmount,
+        });
+      }
+
+      if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
+        particulars.push({
+          title: `[${accidentNo}] - 현장출동비용 (대물)`,
+          amount: fieldDispatchPropertyAmount,
+        });
+      }
+
+      if (particulars.length === 0) {
+        particulars.push({
+          title: `[${accidentNo}]`,
+          detail: '청구 내역 없음',
+          amount: 0,
+        });
+      }
+
+      let totalAmount: number;
+      if (clientTotalAmount !== undefined) {
+        totalAmount = clientTotalAmount;
+      } else {
+        const sumBeforeTruncation = (damagePreventionAmount || 0) + 
+          (propertyRepairAmount || 0) + 
+          (fieldDispatchPreventionAmount || 0) + 
+          (fieldDispatchPropertyAmount || 0);
+        const truncation = sumBeforeTruncation % 1000;
+        totalAmount = sumBeforeTruncation - truncation;
+      }
+
+      const invoiceData = {
+        recipientName: recipientName || caseData.insuranceCompany || '-',
+        caseNumber: caseData.caseNumber || '-',
+        acceptanceDate: caseData.accidentDate || new Date().toISOString(),
+        submissionDate: new Date().toISOString(),
+        insuranceAccidentNo: accidentNo,
+        particulars,
+        totalAmount,
+        remarks,
+      };
+
+      console.log(`[Invoice PDF] Generating PDF for download - case ${caseId}`);
+
+      const pdfBuffer = await generateInvoicePdf(invoiceData);
+
+      console.log(`[Invoice PDF] PDF generated for download, size: ${pdfBuffer.length} bytes`);
+
+      const fileName = `INVOICE_${caseData.caseNumber || caseId}_${Date.now()}.pdf`;
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Generate invoice PDF error:", error);
+      const errorMessage = error instanceof Error ? error.message : "PDF 생성 중 오류가 발생했습니다";
+      res.status(500).json({ error: errorMessage });
+    }
+  });
+
+  // ==========================================
   // POST /api/send-invoice-email-v2 - INVOICE PDF 템플릿 기반 이메일 첨부 발송
   // ==========================================
   const sendInvoiceEmailV2Schema = z.object({
