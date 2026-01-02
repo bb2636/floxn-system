@@ -964,27 +964,26 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 alignItems: "center",
                 padding: "10px 16px",
                 gap: "10px",
-                width: "92px",
+                minWidth: "100px",
                 height: "40px",
                 border: "1px solid rgba(12, 12, 12, 0.1)",
                 borderRadius: "8px",
                 background: "transparent",
                 cursor: isSendingPdf || !invoiceRecipientEmail ? "not-allowed" : "pointer",
                 opacity: isSendingPdf || !invoiceRecipientEmail ? 0.5 : 1,
+                whiteSpace: "nowrap",
               }}
-              data-testid="button-invoice-pdf"
-              className="pl-[16px] pr-[16px] bg-[#fafafa]">
-              <span
-                style={{
-                  fontFamily: "'Pretendard'",
-                  fontStyle: "normal",
-                  fontWeight: 600,
-                  fontSize: "16px",
-                  lineHeight: "128%",
-                  letterSpacing: "-0.02em",
-                  color: "#008FED",
-                }}
-                className="text-[15px]">
+              data-testid="button-invoice-pdf">
+              <span style={{
+                fontFamily: "'Pretendard'",
+                fontStyle: "normal",
+                fontWeight: 600,
+                fontSize: "16px",
+                lineHeight: "128%",
+                letterSpacing: "-0.02em",
+                color: "#008FED",
+                whiteSpace: "nowrap",
+              }}>
                 {isSendingPdf ? "발송 중..." : "PDF 발송"}
               </span>
             </button>
