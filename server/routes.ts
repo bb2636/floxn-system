@@ -5720,7 +5720,6 @@ INVOICE를 전송해드립니다.
 
 - 보험사: ${invoiceData.recipientName}
 - 사고번호: ${invoiceData.insuranceAccidentNo || '-'}
-- 사건번호: ${invoiceData.caseNumber || '-'}
 
 청구 금액:
 ${amountLines.join('\n')}
@@ -5735,7 +5734,7 @@ ${pdfUrl}
 감사합니다.
 FLOXN 드림`;
 
-      await sendNotificationEmail(email, `FLOXN INVOICE - ${invoiceData.caseNumber || dateStr}`, emailContent);
+      await sendNotificationEmail(email, `FLOXN INVOICE - ${invoiceData.insuranceAccidentNo || invoiceData.caseNumber || dateStr}`, emailContent);
 
       console.log(`[Email] Invoice PDF link sent successfully to ${email} by ${user.username}`);
       res.json({ success: true, message: "INVOICE 이메일이 전송되었습니다", pdfUrl });
