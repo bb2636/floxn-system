@@ -100,6 +100,8 @@ interface MaterialByWorknameCatalogItem {
 // (calculateF, calculateH, calculateI, calculateAppliedUnitPrice는 use-labor-rate-tiers.ts에서 import)
 
 const CATEGORIES = ["복구면적 산출표", "노무비", "자재비", "견적서"];
+// 손해방지 케이스용 카테고리 (복구면적 산출표 제외)
+const CATEGORIES_LOSS_PREVENTION = ["노무비", "자재비", "견적서"];
 
 // 노무비 행을 공종별로 정렬하는 헬퍼 함수 (같은 공종끼리 묶음)
 // 독립 추가 행(isLinkedFromRecovery=false, sourceAreaRowId 없음)은 맨 아래에 유지
@@ -1406,6 +1408,13 @@ export default function FieldEstimate() {
     // -0이 붙으면 손해방지
     return /-0$/.test(caseNumber);
   }, [selectedCase?.caseNumber]);
+
+  // 손해방지 케이스일 때 "복구면적 산출표" 탭이 선택되어 있으면 "노무비"로 자동 변경
+  useEffect(() => {
+    if (isLossPreventionCase && selectedCategory === "복구면적 산출표") {
+      setSelectedCategory("노무비");
+    }
+  }, [isLossPreventionCase, selectedCategory]);
 
   // 복구면적 변경 시 자재비 자동 동기화를 위한 signature
   // rows 배열 참조가 같아도 내부 필드(workName, repairArea) 변경을 감지
@@ -4014,14 +4023,14 @@ export default function FieldEstimate() {
           </div>
         </div>
 
-        {/* 카테고리 탭 */}
+        {/* 카테고리 탭 - 손해방지 케이스는 복구면적 산출표 숨김 */}
         <div 
           className="flex gap-8 mb-6"
           style={{
             borderBottom: "2px solid rgba(12, 12, 12, 0.08)",
           }}
         >
-          {CATEGORIES.map((category) => (
+          {(isLossPreventionCase ? CATEGORIES_LOSS_PREVENTION : CATEGORIES).map((category) => (
             <button
               key={category}
               type="button"
@@ -5172,7 +5181,8 @@ export default function FieldEstimate() {
               </div>
             </div>
 
-            {/* 복구면적 산출표 섹션 */}
+            {/* 복구면적 산출표 섹션 - 손해방지 케이스에서는 숨김 */}
+            {!isLossPreventionCase && (
             <div style={{ marginTop: "40px" }}>
               <div
                 style={{
@@ -5483,6 +5493,7 @@ export default function FieldEstimate() {
                 </div>
               )}
             </div>
+            )}
 
             {/* 노무비 섹션 - 노무비 탭과 동일 */}
             <div style={{ marginTop: "40px" }}>
@@ -5995,20 +6006,23 @@ export default function FieldEstimate() {
                   </span>
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
-                  <Button
-                    onClick={syncLaborFromRecoveryArea}
-                    variant="outline"
-                    size="sm"
-                    disabled={rows.length === 0 || isReadOnly}
-                    style={{
-                      borderColor: rows.length === 0 ? "#d1d5db" : "#10B981",
-                      color: rows.length === 0 ? "#9ca3af" : "#10B981",
-                    }}
-                    data-testid="button-sync-labor-from-recovery"
-                  >
-                    <Copy className="h-4 w-4 mr-1" />
-                    복구면적 가져오기
-                  </Button>
+                  {/* 손해방지 케이스는 복구면적 산출표가 없으므로 숨김 */}
+                  {!isLossPreventionCase && (
+                    <Button
+                      onClick={syncLaborFromRecoveryArea}
+                      variant="outline"
+                      size="sm"
+                      disabled={rows.length === 0 || isReadOnly}
+                      style={{
+                        borderColor: rows.length === 0 ? "#d1d5db" : "#10B981",
+                        color: rows.length === 0 ? "#9ca3af" : "#10B981",
+                      }}
+                      data-testid="button-sync-labor-from-recovery"
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      복구면적 가져오기
+                    </Button>
+                  )}
                   <Button
                     onClick={addLaborRow}
                     variant="outline"
@@ -6398,20 +6412,23 @@ export default function FieldEstimate() {
                 자재비
               </span>
               <div style={{ display: "flex", gap: "8px" }}>
-                <Button
-                  onClick={syncMaterialFromRecoveryArea}
-                  variant="outline"
-                  size="sm"
-                  disabled={rows.length === 0 || isReadOnly}
-                  style={{
-                    borderColor: rows.length === 0 ? "#d1d5db" : "#10B981",
-                    color: rows.length === 0 ? "#9ca3af" : "#10B981",
-                  }}
-                  data-testid="button-sync-material-from-recovery"
-                >
-                  <Copy className="w-4 h-4 mr-1" />
-                  복구면적 가져오기
-                </Button>
+                {/* 손해방지 케이스는 복구면적 산출표가 없으므로 숨김 */}
+                {!isLossPreventionCase && (
+                  <Button
+                    onClick={syncMaterialFromRecoveryArea}
+                    variant="outline"
+                    size="sm"
+                    disabled={rows.length === 0 || isReadOnly}
+                    style={{
+                      borderColor: rows.length === 0 ? "#d1d5db" : "#10B981",
+                      color: rows.length === 0 ? "#9ca3af" : "#10B981",
+                    }}
+                    data-testid="button-sync-material-from-recovery"
+                  >
+                    <Copy className="w-4 h-4 mr-1" />
+                    복구면적 가져오기
+                  </Button>
+                )}
                 <Button
                   onClick={addMaterialRow}
                   variant="outline"
