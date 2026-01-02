@@ -695,49 +695,48 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                     <div style={{
                       display: "flex",
                       flexDirection: "row",
-                      justifyContent: "space-between",
+                      justifyContent: "flex-end",
                       alignItems: "center",
                       padding: "0px 16px",
-                      gap: "10px",
+                      gap: "8px",
                       height: "54px",
                       flexGrow: 1,
                     }}>
-                      {!invoicePropertyRepairAmount && (
+                      <div style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}>
+                        <input
+                          type="text"
+                          value={invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : ""}
+                          onChange={(e) => setInvoicePropertyRepairAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                          placeholder="금액을 입력해주세요"
+                          className="invoice-input-field"
+                          style={{
+                            fontFamily: "'Pretendard'",
+                            fontStyle: "normal",
+                            fontWeight: 400,
+                            fontSize: "15px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.01em",
+                            color: invoicePropertyRepairAmount ? "#0C0C0C" : "rgba(12, 12, 12, 0.6)",
+                            background: "transparent",
+                            border: "none",
+                            outline: "none",
+                            textAlign: "right",
+                            width: "120px",
+                          }}
+                          data-testid="input-property-repair-amount"
+                        />
                         <span style={{
-                          fontFamily: "'Pretendard'",
-                          fontStyle: "normal",
-                          fontWeight: 500,
-                          fontSize: "15px",
-                          lineHeight: "128%",
-                          letterSpacing: "-0.01em",
-                          color: "rgba(12, 12, 12, 0.6)",
-                          margin: "0 auto",
-                        }}>
-                          금액을 입력해주세요
-                        </span>
-                      )}
-                      <input
-                        type="text"
-                        value={invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : ""}
-                        onChange={(e) => setInvoicePropertyRepairAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                        placeholder=""
-                        className="invoice-input-field"
-                        style={{
-                          fontFamily: "'Pretendard'",
-                          fontStyle: "normal",
-                          fontWeight: 400,
-                          fontSize: "15px",
-                          lineHeight: "128%",
-                          letterSpacing: "-0.01em",
-                          color: "#0C0C0C",
-                          background: "transparent",
-                          border: "none",
-                          outline: "none",
-                          textAlign: "right",
-                          width: invoicePropertyRepairAmount ? "100px" : "0px",
-                        }}
-                        data-testid="input-property-repair-amount"
-                      />
+                          width: "14px",
+                          height: "0px",
+                          border: "1px solid #008FED",
+                          transform: "rotate(90deg)",
+                        }} />
+                      </div>
                       <span style={{
                         fontFamily: "'Pretendard'",
                         fontStyle: "normal",
