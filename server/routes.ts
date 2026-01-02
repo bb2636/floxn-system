@@ -4538,11 +4538,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch { hasMaterialCosts = false; }
       }
       
+      // 주민등록등본 첨부 여부 확인
+      const hasResidentRegistration = documents.some(
+        (doc: any) => doc.subCategory === "주민등록등본"
+      );
+      
       // 각 섹션 완료 여부 체크
+      // 손해방지 케이스(-0): 주민등록등본 필수
+      // 피해세대 복구건(-1,-2 등): 주민등록등본 선택 (아무 문서 1개 이상이면 됨)
       const completionStatus = {
         fieldSurvey: !!(caseData.visitDate && caseData.visitTime && caseData.accidentCategory),
         drawing: !!drawing,
-        documents: documents.length > 0,
+        documents: isLossPreventionCase 
+          ? hasResidentRegistration 
+          : documents.length > 0,
         // 손해방지 케이스: 노무비 또는 자재비만 있으면 완료
         // 피해복구 케이스: 복구면적 산출표 필수
         estimate: isLossPreventionCase 
