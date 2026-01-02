@@ -193,6 +193,14 @@ export default function FieldManagement() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // 선택된 케이스 상세 데이터 직접 조회 (캐시된 목록 대신 최신 데이터 보장)
+  const { data: selectedCaseDetail } = useQuery<Case>({
+    queryKey: [`/api/cases/${selectedCase}`],
+    enabled: !!selectedCase,
+    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000, // 30초간 fresh 상태 유지 (더 짧게 설정)
+  });
+
   if (!user) {
     return null;
   }
@@ -209,11 +217,14 @@ export default function FieldManagement() {
       : allCases || [];
   }, [isPartner, allCases, user.company]);
 
-  // 선택한 케이스 데이터 가져오기
+  // 선택한 케이스 데이터 가져오기 - 상세 조회 결과 우선 사용 (최신 데이터 보장)
   const selectedCaseData = useMemo(() => {
+    // 상세 조회 결과가 있으면 우선 사용 (최신 담당자 정보 포함)
+    if (selectedCaseDetail) return selectedCaseDetail;
+    // 없으면 목록에서 찾기 (폴백)
     if (!selectedCase || !availableCases) return null;
     return availableCases.find(c => c.id === selectedCase) || null;
-  }, [selectedCase, availableCases]);
+  }, [selectedCase, availableCases, selectedCaseDetail]);
 
   // 같은 사고번호를 가진 케이스들 (추가 피해자 표시용)
   const relatedCases = useMemo(() => {
