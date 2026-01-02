@@ -902,6 +902,50 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           </div>
         </div>
 
+        {/* 수신자 이메일 Section */}
+        <div style={{
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          padding: "16px 38px",
+          gap: "16px",
+          width: "680px",
+        }}>
+          <span style={{
+            fontFamily: "'Pretendard'",
+            fontStyle: "normal",
+            fontWeight: 500,
+            fontSize: "14px",
+            lineHeight: "128%",
+            letterSpacing: "-0.01em",
+            color: "rgba(12, 12, 12, 0.7)",
+            whiteSpace: "nowrap",
+          }}>수신자 이메일</span>
+          <input
+            type="email"
+            value={invoiceRecipientEmail}
+            onChange={(e) => setInvoiceRecipientEmail(e.target.value)}
+            placeholder="보험사 이메일 주소를 입력해주세요"
+            style={{
+              flex: 1,
+              fontFamily: "'Pretendard'",
+              fontStyle: "normal",
+              fontWeight: 400,
+              fontSize: "14px",
+              lineHeight: "128%",
+              letterSpacing: "-0.01em",
+              color: "#0C0C0C",
+              background: "rgba(12, 12, 12, 0.04)",
+              border: "1px solid rgba(12, 12, 12, 0.1)",
+              borderRadius: "8px",
+              padding: "10px 12px",
+              outline: "none",
+            }}
+            data-testid="input-recipient-email"
+          />
+        </div>
+
         {/* Footer */}
         <div style={{
           boxSizing: "border-box",
@@ -911,7 +955,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           padding: "20px 38px",
           gap: "10px",
           width: "680px",
-          height: "82px",
           borderTop: "1px solid rgba(12, 12, 12, 0.1)",
         }}>
           <div style={{
