@@ -973,7 +973,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 opacity: isSendingPdf || !invoiceRecipientEmail ? 0.5 : 1,
               }}
               data-testid="button-invoice-pdf"
-            >
+              className="pl-[16px] pr-[16px] bg-[#fafafa]">
               <span style={{
                 fontFamily: "'Pretendard'",
                 fontStyle: "normal",
