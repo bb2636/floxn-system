@@ -722,6 +722,9 @@ export default function FieldReport() {
   }
 
   const { case: caseData, drawing, documents, estimate, completionStatus } = reportData;
+  
+  // 손해방지 케이스 여부 확인 (-0으로 끝나는 케이스)
+  const isLossPreventionCase = caseData?.caseNumber && /-0$/.test(caseData.caseNumber);
 
   return (
     <div 
@@ -3584,7 +3587,8 @@ export default function FieldReport() {
                   )}
                 </div>
 
-                {/* 복구면적 산출표 */}
+                {/* 복구면적 산출표 - 손해방지 케이스는 숨김 */}
+                {!isLossPreventionCase && (
                 <Card className="mb-6 min-w-0">
                   <CardHeader>
                     <CardTitle
