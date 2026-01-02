@@ -30,10 +30,17 @@ interface InvoiceSheetProps {
 }
 
 const getCaseSuffix = (caseNumber: string | null | undefined): number => {
-  if (!caseNumber) return 0; // 기본값 0 (손해방지 버킷으로 분류)
+  if (!caseNumber) return 0;
   const parts = caseNumber.split("-");
   return parts.length > 1 ? parseInt(parts[parts.length - 1]) || 0 : 0;
 };
+
+export function getCaseNumberPrefix(caseNumber: string | null | undefined): string | null {
+  if (!caseNumber) return null;
+  const parts = caseNumber.split("-");
+  if (parts.length < 2) return caseNumber;
+  return parts.slice(0, -1).join("-");
+}
 
 export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }: InvoiceSheetProps) {
   const { toast } = useToast();
@@ -75,7 +82,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       }
     }
     
-    // 관련 케이스 중 하나라도 직접복구가 있으면 출동비 청구하지 않음
     const hasAnyDirectRecovery = allCases.some(c => c.recoveryType && c.recoveryType !== "선견적요청");
     
     return {
@@ -93,21 +99,17 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   useEffect(() => {
     const fetchApprovedAmounts = async () => {
       if (open && caseData) {
-        // 선견적요청 케이스 판단: 현재 케이스가 선견적요청이거나, 직접복구 케이스가 없는 경우
         const allCases = relatedCases.length > 0 ? relatedCases : (caseData ? [caseData] : []);
         const hasOnlyFieldDispatchPrevention = !categorizedAmounts.hasDirectRecoveryPrevention && categorizedAmounts.hasFieldDispatchPrevention;
         const hasOnlyFieldDispatchProperty = !categorizedAmounts.hasDirectRecoveryProperty && categorizedAmounts.hasFieldDispatchProperty;
         
-        // 손해방지 금액 설정
         if (hasOnlyFieldDispatchPrevention) {
-          // 선견적요청만 있는 경우: 견적금액 무시하고 현장출동비용만 표시
           setInvoiceDamagePreventionAmount("0");
         } else if (caseData.invoiceDamagePreventionAmount) {
           setInvoiceDamagePreventionAmount(caseData.invoiceDamagePreventionAmount);
         } else if (categorizedAmounts.damagePreventionAmount > 0) {
           setInvoiceDamagePreventionAmount(categorizedAmounts.damagePreventionAmount.toString());
         } else {
-          // API에서 가져오기
           const prefix = getCaseNumberPrefix(caseData.caseNumber);
           if (prefix && categorizedAmounts.hasDirectRecoveryPrevention) {
             setIsLoadingAmounts(true);
@@ -127,16 +129,13 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           }
         }
         
-        // 대물복구 금액 설정
         if (hasOnlyFieldDispatchProperty) {
-          // 선견적요청만 있는 경우: 견적금액 무시하고 현장출동비용만 표시
           setInvoicePropertyRepairAmount("0");
         } else if (caseData.invoicePropertyRepairAmount) {
           setInvoicePropertyRepairAmount(caseData.invoicePropertyRepairAmount);
         } else if (categorizedAmounts.propertyRepairAmount > 0) {
           setInvoicePropertyRepairAmount(categorizedAmounts.propertyRepairAmount.toString());
         } else {
-          // API에서 가져오기
           const prefix = getCaseNumberPrefix(caseData.caseNumber);
           if (prefix && categorizedAmounts.hasDirectRecoveryProperty) {
             setIsLoadingAmounts(true);
@@ -156,8 +155,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           }
         }
         
-        // 현장출동비용 설정 (선견적요청 케이스당 10만원)
-        // 관련 케이스 중 하나라도 직접복구가 있으면 출동비 0원으로 설정
         if (categorizedAmounts.hasFieldDispatchPrevention) {
           setFieldDispatchPreventionAmount((categorizedAmounts.damagePreventionFieldDispatch * 100000).toString());
         } else {
@@ -190,7 +187,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     (parseInt(fieldDispatchPreventionAmount || "0") || 0) +
     (parseInt(fieldDispatchPropertyAmount || "0") || 0);
   
-  // 천원단위절사
   const truncation = totalBeforeTruncation % 1000;
   const totalAmount = totalBeforeTruncation - truncation;
 
@@ -326,7 +322,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       <SheetContent 
         side="right" 
         style={{
-          width: "680px",
+          width: "520px",
           maxWidth: "95vw",
           padding: 0,
           background: "#FFFFFF",
@@ -339,507 +335,411 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         <div style={{
           display: "flex",
           flexDirection: "column",
-          padding: "38px 0px 0px",
-          gap: "24px",
+          height: "100%",
         }}>
+          {/* Header */}
           <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-            width: "100%",
+            padding: "24px 28px 20px",
+            borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
           }}>
-            <div style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              padding: "0px 38px",
+            <h2 style={{
+              fontFamily: "Pretendard",
+              fontWeight: 700,
+              fontSize: "24px",
+              color: "#0C0C0C",
+              margin: 0,
+              letterSpacing: "1px",
             }}>
-              <h2 style={{
-                fontFamily: "Pretendard",
-                fontWeight: 600,
-                fontSize: "32px",
-                lineHeight: "128%",
-                color: "#0C0C0C",
-                margin: 0,
-              }}>
-                INVOICE
-              </h2>
-            </div>
-            <div style={{
-              width: "100%",
-              height: "0px",
-              border: "1px solid rgba(12, 12, 12, 0.1)",
-            }} />
+              INVOICE
+            </h2>
           </div>
 
+          {/* Content */}
           <div 
             ref={invoicePdfRef}
             style={{
+              flex: 1,
               display: "flex",
               flexDirection: "column",
-              alignItems: "center",
-              padding: "20px 38px",
+              padding: "20px 28px",
               gap: "20px",
               background: "#FFFFFF",
+              overflowY: "auto",
             }}
           >
-            {/* Invoice Title */}
-            <div style={{ textAlign: "center", marginBottom: "10px" }}>
-              <h1 style={{
-                fontFamily: "Pretendard",
-                fontWeight: 700,
-                fontSize: "28px",
-                color: "#000000",
-                margin: 0,
-                letterSpacing: "4px",
-              }}>
-                INVOICE
-              </h1>
-              <div style={{
-                width: "100px",
-                height: "2px",
-                background: "#000000",
-                margin: "8px auto 0",
-              }} />
-            </div>
-
-            {/* Header Info - 수신, 심사자, 수임일자, 사고번호, 제출일자 */}
-            <div style={{ width: "100%", fontFamily: "Pretendard", fontSize: "14px", color: "#000000" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                <span>
-                  <span style={{ fontWeight: 500 }}>수  신 : </span>
-                  <span>{caseData?.insuranceCompany || "-"} 및 {caseData?.assessorId || "-"}</span>
-                </span>
-                <span>
-                  <span style={{ fontWeight: 500 }}>수임일자 : </span>
-                  <span>{caseData?.receptionDate || "-"}</span>
-                </span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>
-                  <span style={{ fontWeight: 500 }}>사고번호 : </span>
-                  <span>{caseData?.caseNumber || "-"}</span>
-                </span>
-                <span>
-                  <span style={{ fontWeight: 500 }}>제출일자 : </span>
-                  <span>{format(new Date(), "yyyy.MM.dd")}</span>
-                </span>
-              </div>
-            </div>
-
-            {/* Particulars Table */}
-            <table style={{
-              width: "100%",
-              borderCollapse: "collapse",
+            {/* Header Info Grid */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "12px",
+              padding: "16px",
+              background: "rgba(12, 12, 12, 0.02)",
+              borderRadius: "8px",
               fontFamily: "Pretendard",
-              fontSize: "14px",
-              color: "#000000",
+              fontSize: "13px",
             }}>
-              <thead>
-                <tr>
-                  <th style={{
-                    border: "1px solid #000000",
-                    padding: "10px",
-                    textAlign: "center",
-                    fontWeight: 600,
-                    width: "70%",
-                    background: "#f5f5f5",
-                  }}>
-                    PARTICULARS
-                  </th>
-                  <th style={{
-                    border: "1px solid #000000",
-                    padding: "10px",
-                    textAlign: "center",
-                    fontWeight: 600,
-                    width: "30%",
-                    background: "#f5f5f5",
-                  }}>
-                    AMOUNT
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* 보험사 사고번호 Row */}
-                <tr>
-                  <td style={{
-                    border: "1px solid #000000",
-                    padding: "10px",
-                    verticalAlign: "top",
-                  }}>
-                    <div style={{ fontWeight: 600, marginBottom: "6px" }}>
-                      ■ {caseData?.insuranceAccidentNo || "-"}
-                    </div>
-                    {categorizedAmounts.hasDirectRecoveryPrevention && (
-                      <div style={{ paddingLeft: "12px", marginBottom: "4px" }}>- 손해방지비용</div>
-                    )}
-                    {categorizedAmounts.hasFieldDispatchPrevention && (
-                      <div style={{ paddingLeft: "12px", marginBottom: "4px" }}>- 현장출동비용 (손해방지)</div>
-                    )}
-                    {categorizedAmounts.hasDirectRecoveryProperty && (
-                      <div style={{ paddingLeft: "12px", marginBottom: "4px" }}>- 대물복구비용</div>
-                    )}
-                    {categorizedAmounts.hasFieldDispatchProperty && (
-                      <div style={{ paddingLeft: "12px", marginBottom: "4px" }}>- 현장출동비용 (피해세대)</div>
-                    )}
-                  </td>
-                  <td style={{
-                    border: "1px solid #000000",
-                    padding: "10px",
-                    verticalAlign: "top",
-                    textAlign: "right",
-                  }}>
-                    <div style={{ height: "24px" }}></div>
-                    {categorizedAmounts.hasDirectRecoveryPrevention && (
-                      <div style={{ marginBottom: "4px" }}>
-                        <input
-                          type="text"
-                          value={invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : ""}
-                          onChange={(e) => setInvoiceDamagePreventionAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                          placeholder="0"
-                          className="invoice-input-field"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            color: "#000000",
-                            background: "transparent",
-                            border: "none",
-                            outline: "none",
-                            textAlign: "right",
-                            width: "100px",
-                          }}
-                          data-testid="input-damage-prevention-amount"
-                        />
-                        <span className="invoice-input-field">원</span>
-                        <span 
-                          className="invoice-span-field"
-                          style={{ display: "none" }}
-                          data-testid="text-damage-prevention-amount"
-                        >
-                          {invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : "0"}원
-                        </span>
-                      </div>
-                    )}
-                    {categorizedAmounts.hasFieldDispatchPrevention && (
-                      <div style={{ marginBottom: "4px" }}>
-                        <span className="invoice-input-field" data-testid="text-field-dispatch-prevention-amount">
-                          {Number(fieldDispatchPreventionAmount).toLocaleString()}원
-                        </span>
-                        <span className="invoice-span-field" style={{ display: "none" }}>
-                          {Number(fieldDispatchPreventionAmount).toLocaleString()}원
-                        </span>
-                      </div>
-                    )}
-                    {categorizedAmounts.hasDirectRecoveryProperty && (
-                      <div style={{ marginBottom: "4px" }}>
-                        <input
-                          type="text"
-                          value={invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : ""}
-                          onChange={(e) => setInvoicePropertyRepairAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                          placeholder="0"
-                          className="invoice-input-field"
-                          style={{
-                            fontFamily: "Pretendard",
-                            fontSize: "14px",
-                            color: "#000000",
-                            background: "transparent",
-                            border: "none",
-                            outline: "none",
-                            textAlign: "right",
-                            width: "100px",
-                          }}
-                          data-testid="input-property-repair-amount"
-                        />
-                        <span className="invoice-input-field">원</span>
-                        <span 
-                          className="invoice-span-field"
-                          style={{ display: "none" }}
-                          data-testid="text-property-repair-amount"
-                        >
-                          {invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : "0"}원
-                        </span>
-                      </div>
-                    )}
-                    {categorizedAmounts.hasFieldDispatchProperty && (
-                      <div style={{ marginBottom: "4px" }}>
-                        <span className="invoice-input-field" data-testid="text-field-dispatch-property-amount">
-                          {Number(fieldDispatchPropertyAmount).toLocaleString()}원
-                        </span>
-                        <span className="invoice-span-field" style={{ display: "none" }}>
-                          {Number(fieldDispatchPropertyAmount).toLocaleString()}원
-                        </span>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-                {/* 천원단위 절사 Row */}
-                <tr>
-                  <td style={{
-                    border: "1px solid #000000",
-                    padding: "8px",
-                    textAlign: "center",
+              <div style={{ display: "flex", gap: "8px" }}>
+                <span style={{ color: "rgba(12, 12, 12, 0.5)", minWidth: "56px" }}>수신</span>
+                <span style={{ color: "#0C0C0C", fontWeight: 500 }}>{caseData?.insuranceCompany || "-"}</span>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <span style={{ color: "rgba(12, 12, 12, 0.5)", minWidth: "56px" }}>수임일자</span>
+                <span style={{ color: "#0C0C0C", fontWeight: 500 }}>{caseData?.receptionDate?.replace(/-/g, ".") || "0000.00.00"}</span>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <span style={{ color: "rgba(12, 12, 12, 0.5)", minWidth: "56px" }}>사고번호</span>
+                <span style={{ color: "#0C0C0C", fontWeight: 600 }}>{caseData?.insuranceAccidentNo || "-"}</span>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <span style={{ color: "rgba(12, 12, 12, 0.5)", minWidth: "56px" }}>제출일자</span>
+                <span style={{ color: "#0C0C0C", fontWeight: 500 }}>{format(new Date(), "yyyy.MM.dd")}</span>
+              </div>
+            </div>
+
+            {/* Particulars Section */}
+            <div>
+              <div style={{
+                fontFamily: "Pretendard",
+                fontSize: "12px",
+                color: "rgba(12, 12, 12, 0.5)",
+                marginBottom: "8px",
+              }}>
+                Particulars
+              </div>
+              <div style={{
+                fontFamily: "Pretendard",
+                fontWeight: 600,
+                fontSize: "14px",
+                color: "#0C0C0C",
+                marginBottom: "12px",
+              }}>
+                사고번호  {caseData?.insuranceAccidentNo || "-"}
+              </div>
+
+              {/* Particulars Table */}
+              <div style={{
+                border: "1px solid rgba(12, 12, 12, 0.1)",
+                borderRadius: "8px",
+                overflow: "hidden",
+              }}>
+                {/* Table Header */}
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 120px",
+                  background: "rgba(12, 12, 12, 0.03)",
+                  borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+                }}>
+                  <div style={{
+                    padding: "10px 16px",
+                    fontFamily: "Pretendard",
+                    fontSize: "12px",
                     fontWeight: 500,
-                    background: "#f5f5f5",
+                    color: "rgba(12, 12, 12, 0.5)",
+                    textTransform: "uppercase",
                   }}>
-                    천원단위 절사
-                  </td>
-                  <td style={{
-                    border: "1px solid #000000",
-                    padding: "8px",
+                    Particulars
+                  </div>
+                  <div style={{
+                    padding: "10px 16px",
+                    fontFamily: "Pretendard",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.5)",
                     textAlign: "right",
-                  }} data-testid="text-truncation">
-                    -{truncation.toLocaleString()}원
-                  </td>
-                </tr>
+                    textTransform: "uppercase",
+                  }}>
+                    Amount
+                  </div>
+                </div>
+
+                {/* 손해방지비용 Row */}
+                {categorizedAmounts.hasDirectRecoveryPrevention && (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 120px",
+                    borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                  }}>
+                    <div style={{
+                      padding: "12px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                    }}>
+                      손해방지비용
+                    </div>
+                    <div style={{
+                      padding: "12px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                    }}>
+                      <input
+                        type="text"
+                        value={invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : ""}
+                        onChange={(e) => setInvoiceDamagePreventionAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                        placeholder="0"
+                        className="invoice-input-field"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#008FED",
+                          background: "transparent",
+                          border: "none",
+                          outline: "none",
+                          textAlign: "right",
+                          width: "80px",
+                        }}
+                        data-testid="input-damage-prevention-amount"
+                      />
+                      <span className="invoice-input-field" style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#0C0C0C", marginLeft: "2px" }}>원</span>
+                      <span className="invoice-span-field" style={{ display: "none", fontFamily: "Pretendard", fontSize: "14px", color: "#0C0C0C" }} data-testid="text-damage-prevention-amount">
+                        {invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : "0"}원
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 현장출동비용 (손해방지) Row */}
+                {categorizedAmounts.hasFieldDispatchPrevention && (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 120px",
+                    borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                  }}>
+                    <div style={{
+                      padding: "12px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                    }}>
+                      현장출동비용 (손해방지)
+                    </div>
+                    <div style={{
+                      padding: "12px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                      textAlign: "right",
+                    }} data-testid="text-field-dispatch-prevention-amount">
+                      <span className="invoice-input-field">{Number(fieldDispatchPreventionAmount).toLocaleString()}원</span>
+                      <span className="invoice-span-field" style={{ display: "none" }}>{Number(fieldDispatchPreventionAmount).toLocaleString()}원</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 대물복구비용 Row */}
+                {categorizedAmounts.hasDirectRecoveryProperty && (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 120px",
+                    borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                  }}>
+                    <div style={{
+                      padding: "12px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                    }}>
+                      대물복구비용
+                    </div>
+                    <div style={{
+                      padding: "12px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "flex-end",
+                    }}>
+                      <span style={{ fontFamily: "Pretendard", fontSize: "14px", color: "rgba(12, 12, 12, 0.4)", marginRight: "4px" }}>금액을 입력해주세요</span>
+                      <input
+                        type="text"
+                        value={invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : ""}
+                        onChange={(e) => setInvoicePropertyRepairAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                        placeholder=""
+                        className="invoice-input-field"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "14px",
+                          color: "#008FED",
+                          background: "transparent",
+                          border: "none",
+                          outline: "none",
+                          textAlign: "right",
+                          width: "80px",
+                          display: invoicePropertyRepairAmount ? "block" : "none",
+                        }}
+                        data-testid="input-property-repair-amount"
+                      />
+                      <span className="invoice-input-field" style={{ fontFamily: "Pretendard", fontSize: "14px", color: "#0C0C0C", marginLeft: "2px", display: invoicePropertyRepairAmount ? "inline" : "none" }}>원</span>
+                      <span className="invoice-span-field" style={{ display: "none", fontFamily: "Pretendard", fontSize: "14px", color: "#0C0C0C" }} data-testid="text-property-repair-amount">
+                        {invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : "0"}원
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 현장출동비용 (피해세대) Row */}
+                {categorizedAmounts.hasFieldDispatchProperty && (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 120px",
+                    borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                  }}>
+                    <div style={{
+                      padding: "12px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                    }}>
+                      현장출동비용 (피해세대)
+                    </div>
+                    <div style={{
+                      padding: "12px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "#0C0C0C",
+                      textAlign: "right",
+                    }} data-testid="text-field-dispatch-property-amount">
+                      <span className="invoice-input-field">{Number(fieldDispatchPropertyAmount).toLocaleString()}원</span>
+                      <span className="invoice-span-field" style={{ display: "none" }}>{Number(fieldDispatchPropertyAmount).toLocaleString()}원</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Total Amount Row */}
-                <tr>
-                  <td style={{
-                    border: "1px solid #000000",
-                    padding: "10px",
-                    textAlign: "center",
-                    fontWeight: 600,
-                    background: "#f5f5f5",
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 120px",
+                  background: "rgba(12, 12, 12, 0.02)",
+                }}>
+                  <div style={{
+                    padding: "14px 16px",
+                    fontFamily: "Pretendard",
+                    fontSize: "13px",
+                    fontWeight: 500,
+                    color: "rgba(12, 12, 12, 0.6)",
+                    textTransform: "uppercase",
                   }}>
-                    TOTAL AMOUNT
-                  </td>
-                  <td style={{
-                    border: "1px solid #000000",
-                    padding: "10px",
-                    textAlign: "right",
-                    fontWeight: 700,
+                    Total Amount
+                  </div>
+                  <div style={{
+                    padding: "14px 16px",
+                    fontFamily: "Pretendard",
                     fontSize: "16px",
+                    fontWeight: 700,
+                    color: "#0C0C0C",
+                    textAlign: "right",
                   }} data-testid="text-total-amount">
                     {totalAmount.toLocaleString()}원
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            {/* Bank Info Section */}
-            <div style={{ width: "100%", marginTop: "10px" }}>
-              <div style={{
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                color: "#000000",
-                marginBottom: "10px",
-                textAlign: "center",
-              }}>
-                아래의 계좌로 입금 부탁드립니다.
+                  </div>
+                </div>
               </div>
-              <table style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                color: "#000000",
-              }}>
-                <tbody>
-                  <tr>
-                    <td style={{
-                      border: "1px solid #000000",
-                      padding: "8px",
-                      textAlign: "center",
-                      fontWeight: 500,
-                      width: "30%",
-                      background: "#f5f5f5",
-                    }}>
-                      은행명
-                    </td>
-                    <td style={{
-                      border: "1px solid #000000",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}>
-                      신한은행
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{
-                      border: "1px solid #000000",
-                      padding: "8px",
-                      textAlign: "center",
-                      fontWeight: 500,
-                      background: "#f5f5f5",
-                    }}>
-                      계좌번호
-                    </td>
-                    <td style={{
-                      border: "1px solid #000000",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}>
-                      140-015-744120
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{
-                      border: "1px solid #000000",
-                      padding: "8px",
-                      textAlign: "center",
-                      fontWeight: 500,
-                      background: "#f5f5f5",
-                    }}>
-                      예금주
-                    </td>
-                    <td style={{
-                      border: "1px solid #000000",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}>
-                      주식회사 플록슨
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{
-                      border: "1px solid #000000",
-                      padding: "8px",
-                      textAlign: "center",
-                      fontWeight: 500,
-                      background: "#f5f5f5",
-                    }}>
-                      사업자등록번호
-                    </td>
-                    <td style={{
-                      border: "1px solid #000000",
-                      padding: "8px",
-                      textAlign: "center",
-                    }}>
-                      517-87-03490
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
             </div>
 
-            {/* Company Footer */}
+            {/* Bottom Two-Column Section */}
             <div style={{
-              fontFamily: "Pretendard",
-              fontSize: "16px",
-              fontWeight: 600,
-              color: "#000000",
-              marginTop: "20px",
-              textAlign: "center",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "16px",
+              marginTop: "8px",
             }}>
-              FLOXN . , Inc
+              {/* Left Column - 비고 */}
+              <div>
+                <div style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  color: "#0C0C0C",
+                  marginBottom: "8px",
+                }}>
+                  비고
+                </div>
+                <div style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "13px",
+                  color: "#008FED",
+                  cursor: "pointer",
+                }}>
+                  {invoiceRemarks || "기재된 계좌로 |"}
+                </div>
+              </div>
+
+              {/* Right Column - 입금정보 */}
+              <div>
+                <div style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "13px",
+                  color: "#0C0C0C",
+                  marginBottom: "8px",
+                }}>
+                  입금 정보
+                </div>
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                  fontFamily: "Pretendard",
+                  fontSize: "13px",
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "rgba(12, 12, 12, 0.5)" }}>은행명</span>
+                    <span style={{ color: "#0C0C0C", fontWeight: 500 }}>KB국민은행</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "rgba(12, 12, 12, 0.5)" }}>계좌번호</span>
+                    <span style={{ color: "#0C0C0C", fontWeight: 500 }}>00000000000</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "rgba(12, 12, 12, 0.5)" }}>예금주</span>
+                    <span style={{ color: "#0C0C0C", fontWeight: 500 }}>주식회사 플록슨</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "rgba(12, 12, 12, 0.5)" }}>사업자등록번호</span>
+                    <span style={{ color: "#0C0C0C", fontWeight: 500 }}>517-89-03490</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Remarks Section - Outside PDF area */}
-          <div style={{ padding: "0px 38px", marginBottom: "20px" }}>
-            <div style={{
-              fontFamily: "Pretendard",
-              fontWeight: 600,
-              fontSize: "15px",
-              lineHeight: "128%",
-              letterSpacing: "-0.02em",
-              color: "rgba(12, 12, 12, 0.9)",
-              marginBottom: "12px",
-            }}>
-              비고
-            </div>
-            <textarea
-              value={invoiceRemarks}
-              onChange={(e) => setInvoiceRemarks(e.target.value)}
-              placeholder="내용을 입력해주세요"
-              style={{
-                width: "100%",
-                height: "80px",
-                fontFamily: "Pretendard",
-                fontWeight: 400,
-                fontSize: "14px",
-                lineHeight: "150%",
-                letterSpacing: "-0.01em",
-                color: "rgba(12, 12, 12, 0.9)",
-                background: "rgba(12, 12, 12, 0.04)",
-                border: "none",
-                borderRadius: "8px",
-                padding: "12px",
-                resize: "none",
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-              data-testid="textarea-invoice-remarks"
-            />
-          </div>
-
+          {/* Footer Actions */}
           <div style={{ 
-            padding: "20px 38px", 
+            padding: "16px 28px", 
             borderTop: "1px solid rgba(12, 12, 12, 0.08)",
             display: "flex",
-            flexDirection: "column",
-            gap: "16px",
+            justifyContent: "flex-end",
+            gap: "12px",
+            background: "#FFFFFF",
           }}>
-            <div style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: "12px",
-            }}>
-              <span style={{
+            <Button
+              variant="outline"
+              onClick={handleSendInvoicePdf}
+              disabled={isSendingPdf || !invoiceRecipientEmail}
+              style={{
                 fontFamily: "Pretendard",
-                fontWeight: 500,
                 fontSize: "14px",
-                color: "rgba(12, 12, 12, 0.7)",
-                whiteSpace: "nowrap",
-              }}>
-                수신자 이메일
-              </span>
-              <input
-                type="email"
-                value={invoiceRecipientEmail}
-                onChange={(e) => setInvoiceRecipientEmail(e.target.value)}
-                placeholder="보험사 이메일 주소를 입력해주세요"
-                style={{
-                  flex: 1,
-                  fontFamily: "Pretendard",
-                  fontWeight: 400,
-                  fontSize: "14px",
-                  lineHeight: "128%",
-                  letterSpacing: "-0.01em",
-                  color: "rgba(12, 12, 12, 0.9)",
-                  background: "rgba(12, 12, 12, 0.04)",
-                  border: "1px solid rgba(12, 12, 12, 0.1)",
-                  borderRadius: "8px",
-                  padding: "10px 14px",
-                  outline: "none",
-                }}
-                data-testid="input-invoice-email"
-              />
-            </div>
-
-            <div style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: "12px",
-            }}>
-              <Button
-                variant="outline"
-                onClick={handleSendInvoicePdf}
-                disabled={isSendingPdf || !invoiceRecipientEmail}
-                data-testid="button-invoice-pdf"
-              >
-                {isSendingPdf ? "발송 중..." : "PDF 발송"}
-              </Button>
-              <Button
-                onClick={handleSave}
-                style={{ background: "#008FED" }}
-                data-testid="button-invoice-save"
-              >
-                저장
-              </Button>
-            </div>
+                fontWeight: 500,
+                color: "#008FED",
+                borderColor: "#008FED",
+              }}
+              data-testid="button-invoice-pdf"
+            >
+              {isSendingPdf ? "발송 중..." : "PDF 발송"}
+            </Button>
+            <Button
+              onClick={handleSave}
+              style={{ 
+                background: "#008FED",
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
+              data-testid="button-invoice-save"
+            >
+              저장
+            </Button>
           </div>
         </div>
       </SheetContent>
     </Sheet>
   );
-}
-
-export function getCaseNumberPrefix(caseNumber: string | null | undefined): string | null {
-  if (!caseNumber) return null;
-  const dashIndex = caseNumber.lastIndexOf('-');
-  if (dashIndex > 0) {
-    return caseNumber.substring(0, dashIndex);
-  }
-  return caseNumber;
 }
