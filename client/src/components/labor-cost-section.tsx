@@ -1255,22 +1255,12 @@ export function LaborCostSection({
               return (
                 <tr 
                   key={row.id} 
-                  draggable={!isReadOnly && !isLinkedRow}
-                  onDragStart={(e) => handleDragStart(e, row.id)}
-                  onDragOver={(e) => handleDragOver(e, row.id)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, row.id)}
-                  onDragEnd={handleDragEnd}
                   style={{ 
                     height: "56px", 
                     borderBottom: isLastRowInGroup ? "2px solid rgba(12, 12, 12, 0.15)" : "1px solid rgba(12, 12, 12, 0.06)",
-                    opacity: draggedRowId === row.id ? 0.5 : 1,
-                    background: dragOverRowId === row.id 
-                      ? "rgba(59, 130, 246, 0.1)" 
-                      : isLinkedRow 
-                        ? "rgba(59, 130, 246, 0.03)" // 연동 행 배경색
-                        : undefined,
-                    transition: "background 0.2s",
+                    background: isLinkedRow 
+                      ? "rgba(59, 130, 246, 0.03)" // 연동 행 배경색
+                      : undefined,
                   }}
                   title={isLinkedRow ? "복구면적에서 자동 생성된 행 (공종/공사명 수정 불가)" : undefined}
                 >
