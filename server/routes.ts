@@ -5734,7 +5734,8 @@ ${pdfUrl}
 감사합니다.
 FLOXN 드림`;
 
-      await sendNotificationEmail(email, `FLOXN INVOICE - ${invoiceData.insuranceAccidentNo || invoiceData.caseNumber || dateStr}`, emailContent);
+      const emailSubjectId = invoiceData.insuranceAccidentNo || caseData.insurancePolicyNo || invoiceData.caseNumber || dateStr;
+      await sendNotificationEmail(email, `FLOXN INVOICE - ${emailSubjectId}`, emailContent);
 
       console.log(`[Email] Invoice PDF link sent successfully to ${email} by ${user.username}`);
       res.json({ success: true, message: "INVOICE 이메일이 전송되었습니다", pdfUrl });
