@@ -852,7 +852,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 <textarea
                   value={invoiceRemarks}
                   onChange={(e) => setInvoiceRemarks(e.target.value)}
-                  placeholder="기재된 계좌로 |"
+                  placeholder=""
                   style={{
                     width: "100%",
                     height: "100%",
