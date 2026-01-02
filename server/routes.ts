@@ -4483,10 +4483,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // - 손해방지 케이스: 복구면적 산출표 없어도 노무비/자재비만 있으면 완료
       // - 피해복구 케이스: 복구면적 산출표 필수
       const hasRecoveryRows = !!(estimateData?.rows && estimateData.rows.length > 0);
-      const hasLaborCosts = !!(estimateData?.estimate?.laborCostData && 
-        JSON.parse(String(estimateData.estimate.laborCostData) || '[]').length > 0);
-      const hasMaterialCosts = !!(estimateData?.estimate?.materialCostData && 
-        JSON.parse(String(estimateData.estimate.materialCostData) || '[]').length > 0);
+      // laborCostData와 materialCostData는 이미 파싱된 객체일 수 있음
+      let hasLaborCosts = false;
+      let hasMaterialCosts = false;
+      
+      if (estimateData?.estimate?.laborCostData) {
+        try {
+          const data = typeof estimateData.estimate.laborCostData === 'string' 
+            ? JSON.parse(estimateData.estimate.laborCostData) 
+            : estimateData.estimate.laborCostData;
+          hasLaborCosts = Array.isArray(data) && data.length > 0;
+        } catch { hasLaborCosts = false; }
+      }
+      
+      if (estimateData?.estimate?.materialCostData) {
+        try {
+          const data = typeof estimateData.estimate.materialCostData === 'string' 
+            ? JSON.parse(estimateData.estimate.materialCostData) 
+            : estimateData.estimate.materialCostData;
+          hasMaterialCosts = Array.isArray(data) && data.length > 0;
+        } catch { hasMaterialCosts = false; }
+      }
       
       // 각 섹션 완료 여부 체크
       const completionStatus = {

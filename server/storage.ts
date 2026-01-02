@@ -4052,7 +4052,51 @@ export class DbStorage implements IStorage {
       .from(cases)
       .where(eq(cases.id, caseId))
       .limit(1);
-    return result[0] || null;
+    
+    if (!result[0]) return null;
+    
+    const caseData = result[0];
+    
+    // 협력사가 배당되어 있지만 담당자 정보가 없는 경우 자동 채우기
+    if (caseData.assignedPartner && (!caseData.assignedPartnerManager || !caseData.assignedPartnerContact)) {
+      const partnerUsers = await db
+        .select()
+        .from(users)
+        .where(
+          and(
+            eq(users.company, caseData.assignedPartner),
+            eq(users.role, "협력사")
+          )
+        )
+        .limit(1);
+      
+      if (partnerUsers.length > 0) {
+        const partnerUser = partnerUsers[0];
+        const updatedFields: Partial<Case> = {};
+        
+        if (!caseData.assignedPartnerManager && partnerUser.name) {
+          updatedFields.assignedPartnerManager = partnerUser.name;
+        }
+        if (!caseData.assignedPartnerContact && partnerUser.phone) {
+          updatedFields.assignedPartnerContact = partnerUser.phone;
+        }
+        
+        if (Object.keys(updatedFields).length > 0) {
+          // 데이터베이스 업데이트
+          const updated = await db
+            .update(cases)
+            .set(updatedFields)
+            .where(eq(cases.id, caseId))
+            .returning();
+          
+          if (updated.length > 0) {
+            return updated[0];
+          }
+        }
+      }
+    }
+    
+    return caseData;
   }
 
   async getAssignedCasesForUser(user: User, search?: string): Promise<Case[]> {
