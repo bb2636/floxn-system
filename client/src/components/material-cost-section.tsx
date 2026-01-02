@@ -822,6 +822,36 @@ export function MaterialCostSection({
             })
           ))}
         </tbody>
+        <tfoot>
+          <tr style={{ 
+            height: "48px", 
+            background: "rgba(12, 12, 12, 0.04)",
+            borderTop: "2px solid rgba(12, 12, 12, 0.2)"
+          }}>
+            <td colSpan={8} style={{ 
+              padding: "0 12px", 
+              textAlign: "right",
+              fontFamily: "Pretendard",
+              fontSize: "16px",
+              fontWeight: 600,
+              color: "#0C0C0C",
+            }}>
+              총합계
+            </td>
+            <td style={{ 
+              padding: "0 12px", 
+              fontFamily: "Pretendard", 
+              fontSize: "18px", 
+              fontWeight: 700, 
+              color: "#008FED", 
+              textAlign: "right",
+              background: "rgba(0, 143, 237, 0.05)",
+            }} data-testid="text-material-total-in-table">
+              {rows.reduce((sum, row) => sum + (row.합계 || 0), 0).toLocaleString()}
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
   );
