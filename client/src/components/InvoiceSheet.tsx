@@ -974,15 +974,17 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
               }}
               data-testid="button-invoice-pdf"
               className="pl-[16px] pr-[16px] bg-[#fafafa]">
-              <span style={{
-                fontFamily: "'Pretendard'",
-                fontStyle: "normal",
-                fontWeight: 600,
-                fontSize: "16px",
-                lineHeight: "128%",
-                letterSpacing: "-0.02em",
-                color: "#008FED",
-              }}>
+              <span
+                style={{
+                  fontFamily: "'Pretendard'",
+                  fontStyle: "normal",
+                  fontWeight: 600,
+                  fontSize: "16px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "#008FED",
+                }}
+                className="text-[15px]">
                 {isSendingPdf ? "발송 중..." : "PDF 발송"}
               </span>
             </button>
