@@ -776,6 +776,7 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     insuredName: caseData.insuredName || caseData.victimName || '',
     address: fullAddress,
     documentDate: formatDate(new Date().toISOString()),
+    partnerCompany: caseData.assignedPartner || '',
     areaRowsHtml: areaRowsHtml,
     laborRowsHtml: laborRowsHtml,
     materialRowsHtml: materialRowsHtml,
