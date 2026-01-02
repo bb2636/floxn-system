@@ -69,7 +69,7 @@ async function generateCoverPage(caseData: any, partnerData: any): Promise<strin
     address: fullAddress,
     dispatchDateTime: dispatchDateTime,
     documentDate: formatDate(new Date().toISOString()),
-    senderCompany: 'FLOXN',
+    senderCompany: caseData.assignedPartner || '',
     senderName: partnerData?.name || '',
     senderContact: partnerData?.phone || '',
     footerText: '본 확인서는 현장 출동 사실을 증명합니다.',
