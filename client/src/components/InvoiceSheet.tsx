@@ -188,11 +188,20 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const truncation = totalBeforeTruncation % 1000;
   const totalAmount = totalBeforeTruncation - truncation;
 
-  const handleDownloadInvoicePdf = async () => {
+  const handleSendInvoicePdf = async () => {
     if (!caseData?.id) {
       toast({
         title: "PDF 생성 실패",
         description: "케이스 정보를 찾을 수 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!invoiceRecipientEmail) {
+      toast({
+        title: "이메일 주소 필요",
+        description: "수신자 이메일 주소를 입력해주세요.",
         variant: "destructive",
       });
       return;
@@ -206,12 +215,13 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       const fieldDispatchPreventionAmt = parseInt(fieldDispatchPreventionAmount || "0") || 0;
       const fieldDispatchPropertyAmt = parseInt(fieldDispatchPropertyAmount || "0") || 0;
       
-      const response = await fetch('/api/generate-invoice-pdf', {
+      const response = await fetch('/api/send-invoice-email-v2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          email: invoiceRecipientEmail,
           caseId: caseData.id,
           recipientName: caseData.insuranceCompany || '',
           damagePreventionAmount: damagePreventionAmt,
@@ -223,29 +233,21 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         }),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `INVOICE_${caseData.caseNumber || caseData.id}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
         toast({
-          title: "PDF 다운로드 완료",
-          description: "INVOICE PDF가 다운로드되었습니다.",
+          title: "이메일 전송 완료",
+          description: `${invoiceRecipientEmail}으로 INVOICE PDF 링크가 전송되었습니다.`,
         });
+        onOpenChange(false);
       } else {
-        const result = await response.json();
-        throw new Error(result.error || "PDF 생성에 실패했습니다");
+        throw new Error(result.error || "이메일 전송에 실패했습니다");
       }
     } catch (error) {
-      console.error("INVOICE PDF 다운로드 중 오류 발생", error);
+      console.error("INVOICE PDF 이메일 전송 중 오류 발생", error);
       toast({
-        title: "PDF 다운로드 실패",
+        title: "이메일 전송 실패",
         description: error instanceof Error ? error.message : "다시 시도해주세요.",
         variant: "destructive",
       });

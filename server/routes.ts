@@ -5507,7 +5507,7 @@ FLOXN 드림`;
         caseNumber: caseData.caseNumber || '-',
         acceptanceDate: caseData.accidentDate || new Date().toISOString(),
         submissionDate: new Date().toISOString(),
-        insuranceAccidentNo: accidentNo,
+        insuranceAccidentNo: accidentNo || undefined,
         particulars,
         totalAmount,
         remarks,
@@ -5648,7 +5648,7 @@ FLOXN 드림`;
         caseNumber: caseData.caseNumber || '-',
         acceptanceDate: caseData.accidentDate || new Date().toISOString(),
         submissionDate: new Date().toISOString(),
-        insuranceAccidentNo: accidentNo,
+        insuranceAccidentNo: accidentNo || undefined,
         particulars,
         totalAmount,
         remarks,
@@ -5661,11 +5661,84 @@ FLOXN 드림`;
 
       console.log(`[Invoice PDF] PDF generated, size: ${pdfBuffer.length} bytes`);
 
-      // Send email with PDF attachment
-      await sendInvoiceEmailWithAttachment(email, invoiceData, pdfBuffer);
+      // Upload PDF to Object Storage
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+      if (!bucketId) {
+        console.error("[send-invoice-email-v2] Missing Object Storage bucket ID");
+        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
+      }
 
-      console.log(`[Email] Invoice PDF attachment sent successfully to ${email} by ${user.username}`);
-      res.json({ success: true, message: "INVOICE 이메일이 전송되었습니다 (첨부파일)" });
+      const timestamp = Date.now();
+      const fileName = `invoice_${caseData.caseNumber || caseId}_${timestamp}.pdf`;
+      const bucket = objectStorageClient.bucket(bucketId);
+      const objectName = `public/invoice-pdfs/${fileName}`;
+      const file = bucket.file(objectName);
+
+      // Upload the PDF
+      await file.save(pdfBuffer, {
+        contentType: 'application/pdf',
+        metadata: {
+          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
+        },
+      });
+
+      // Generate signed URL for PDF (7 days validity)
+      const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
+      const pdfUrl = await signObjectURL({
+        bucketName: bucketId,
+        objectName: objectName,
+        method: 'GET',
+        ttlSec: SIGNED_URL_TTL_SEC,
+      });
+
+      console.log(`[PDF Upload] Invoice PDF uploaded with signed URL`);
+
+      // Format amounts
+      const formatAmount = (amt: number) => amt.toLocaleString('ko-KR');
+      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+      // Build amount lines for email
+      const amountLines: string[] = [];
+      if (damagePreventionAmount && damagePreventionAmount > 0) {
+        amountLines.push(`- 손해방지비용: ${formatAmount(damagePreventionAmount)}원`);
+      }
+      if (propertyRepairAmount && propertyRepairAmount > 0) {
+        amountLines.push(`- 대물복구비용: ${formatAmount(propertyRepairAmount)}원`);
+      }
+      if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
+        amountLines.push(`- 현장출동비용 (손해방지): ${formatAmount(fieldDispatchPreventionAmount)}원`);
+      }
+      if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
+        amountLines.push(`- 현장출동비용 (대물): ${formatAmount(fieldDispatchPropertyAmount)}원`);
+      }
+      amountLines.push(`- 합계: ${formatAmount(totalAmount)}원`);
+
+      // Send email with PDF link
+      const emailContent = `안녕하세요,
+
+INVOICE를 전송해드립니다.
+
+- 보험사: ${invoiceData.recipientName}
+- 사고번호: ${invoiceData.insuranceAccidentNo || '-'}
+- 사건번호: ${invoiceData.caseNumber || '-'}
+
+청구 금액:
+${amountLines.join('\n')}
+${remarks ? `\n비고: ${remarks}` : ''}
+
+아래 링크를 클릭하시면 INVOICE PDF를 다운로드하실 수 있습니다:
+${pdfUrl}
+
+- 발송일: ${dateStr}
+- 발송자: ${user.name || user.username}
+
+감사합니다.
+FLOXN 드림`;
+
+      await sendNotificationEmail(email, `FLOXN INVOICE - ${invoiceData.caseNumber || dateStr}`, emailContent);
+
+      console.log(`[Email] Invoice PDF link sent successfully to ${email} by ${user.username}`);
+      res.json({ success: true, message: "INVOICE 이메일이 전송되었습니다", pdfUrl });
     } catch (error) {
       console.error("Send invoice email v2 error:", error);
       const errorMessage = error instanceof Error ? error.message : "INVOICE 이메일 전송 중 오류가 발생했습니다";
