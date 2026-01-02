@@ -1224,6 +1224,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
+      // Debug: log partner info being returned
+      console.log(`[GET /api/cases/${id}] Partner info:`, {
+        caseNumber: caseData.caseNumber,
+        assignedPartner: caseData.assignedPartner,
+        assignedPartnerManager: caseData.assignedPartnerManager,
+        assignedPartnerContact: caseData.assignedPartnerContact,
+      });
+
       res.json(caseData);
     } catch (error) {
       console.error("Get case by ID error:", error);
