@@ -1072,8 +1072,12 @@ export function LaborCostSection({
     // 철거공사 동일 항목 병합
     const mergedRows = mergeDemolitionRows(inputRows);
     
-    // 공종별로 정렬 (같은 공종이 함께 그룹화되도록)
-    const sortedRows = [...mergedRows].sort((a, b) => {
+    // 연동 행과 독립(수동 추가) 행 분리
+    const linkedRows = mergedRows.filter(r => r.isLinkedFromRecovery || r.sourceAreaRowId);
+    const independentRows = mergedRows.filter(r => !r.isLinkedFromRecovery && !r.sourceAreaRowId);
+    
+    // 연동 행만 공종별로 정렬 (같은 공종이 함께 그룹화되도록)
+    const sortedLinkedRows = [...linkedRows].sort((a, b) => {
       const catA = a.category || "미지정";
       const catB = b.category || "미지정";
       if (catA !== catB) return catA.localeCompare(catB);
@@ -1082,6 +1086,9 @@ export function LaborCostSection({
       const workB = b.workName || "";
       return workA.localeCompare(workB);
     });
+    
+    // 독립(수동 추가) 행은 맨 아래에 순서 유지하며 배치
+    const sortedRows = [...sortedLinkedRows, ...independentRows];
     
     const groups: CategoryGroup[] = [];
     let currentGroup: CategoryGroup | null = null;
