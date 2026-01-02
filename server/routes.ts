@@ -4567,6 +4567,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         completionStatus.documents &&
         completionStatus.estimate;
       
+      // 디버그 로그
+      console.log(`[Report completionStatus] Case: ${caseData.caseNumber}`, {
+        isLossPreventionCase,
+        fieldSurvey: completionStatus.fieldSurvey,
+        drawing: completionStatus.drawing,
+        documents: completionStatus.documents,
+        estimate: completionStatus.estimate,
+        isComplete: completionStatus.isComplete,
+        details: {
+          visitDate: caseData.visitDate,
+          visitTime: caseData.visitTime,
+          accidentCategory: caseData.accidentCategory,
+          hasDrawing: !!drawing,
+          docCount: documents.length,
+          hasResidentRegistration,
+          hasLaborCosts,
+          hasMaterialCosts,
+          hasRecoveryRows
+        }
+      });
+      
       // 통합된 보고서 데이터 반환
       res.json({
         case: caseData,
