@@ -3,9 +3,6 @@ import { format } from "date-fns";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { X, Calendar, FileText, Send } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 interface InvoiceSheetProps {
   open: boolean;
@@ -22,11 +19,6 @@ interface InvoiceSheetProps {
     recoveryType?: string | null;
     estimateAmount?: string | null;
     assessorId?: string | null;
-    assignedPartner?: string | null;
-    accidentType?: string | null;
-    insuranceDepartment?: string | null;
-    insuranceContact?: string | null;
-    insuranceManager?: string | null;
   } | null;
   relatedCases?: Array<{
     id: string;
@@ -61,7 +53,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState<string>("");
   const [isSendingPdf, setIsSendingPdf] = useState(false);
   const [isLoadingAmounts, setIsLoadingAmounts] = useState(false);
-  const [submissionDate, setSubmissionDate] = useState<string>(format(new Date(), "yyyy-MM-dd"));
 
   const categorizedAmounts = useMemo(() => {
     let damagePreventionAmount = 0;
@@ -175,7 +166,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         
         setInvoiceRemarks(caseData.invoiceRemarks || "");
         setInvoiceRecipientEmail("");
-        setSubmissionDate(format(new Date(), "yyyy-MM-dd"));
       } else if (!open) {
         setInvoiceDamagePreventionAmount("");
         setInvoicePropertyRepairAmount("");
@@ -293,76 +283,40 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     }
   };
 
-  const sectionTitleStyle: React.CSSProperties = {
-    fontFamily: "'Pretendard'",
-    fontStyle: "normal",
-    fontWeight: 700,
-    fontSize: "22px",
-    lineHeight: "128%",
-    letterSpacing: "-0.02em",
-    color: "#0C0C0C",
-  };
-
-  const subSectionTitleStyle: React.CSSProperties = {
-    fontFamily: "'Pretendard'",
-    fontStyle: "normal",
-    fontWeight: 700,
-    fontSize: "18px",
-    lineHeight: "128%",
-    letterSpacing: "-0.02em",
-    color: "#0C0C0C",
-  };
-
+  // Common styles from CSS spec
   const labelStyle: React.CSSProperties = {
-    fontFamily: "'Pretendard'",
-    fontStyle: "normal",
-    fontWeight: 600,
-    fontSize: "16px",
-    lineHeight: "128%",
-    letterSpacing: "-0.02em",
-    color: "#5B9BD5",
-  };
-
-  const sectionTitleContainerStyle: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "row",
-    alignItems: "center",
-    padding: "10px 4px",
-    gap: "10px",
-    width: "698px",
-    height: "48px",
-    borderBottom: "2px solid #5B9BD5",
-    marginBottom: "8px",
-  };
-
-  const valueStyle: React.CSSProperties = {
-    fontFamily: "'Pretendard'",
-    fontStyle: "normal",
-    fontWeight: 500,
-    fontSize: "16px",
-    lineHeight: "128%",
-    letterSpacing: "-0.02em",
-    color: "rgba(12, 12, 12, 0.8)",
-  };
-
-  const tableHeaderStyle: React.CSSProperties = {
-    fontFamily: "'Pretendard'",
-    fontStyle: "normal",
-    fontWeight: 600,
-    fontSize: "15px",
-    lineHeight: "128%",
-    letterSpacing: "-0.02em",
-    color: "rgba(12, 12, 12, 0.7)",
-  };
-
-  const tableValueStyle: React.CSSProperties = {
     fontFamily: "'Pretendard'",
     fontStyle: "normal",
     fontWeight: 400,
     fontSize: "15px",
     lineHeight: "128%",
     letterSpacing: "-0.01em",
-    color: "rgba(12, 12, 12, 0.8)",
+    color: "rgba(12, 12, 12, 0.7)",
+  };
+
+  const valueStyle: React.CSSProperties = {
+    fontFamily: "'Pretendard'",
+    fontStyle: "normal",
+    fontWeight: 600,
+    fontSize: "15px",
+    lineHeight: "128%",
+    letterSpacing: "-0.02em",
+    color: "rgba(12, 12, 12, 0.9)",
+  };
+
+  const infoBoxStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    padding: "15px 16px",
+    gap: "15px",
+    width: "298px",
+    height: "98px",
+    background: "rgba(12, 12, 12, 0.04)",
+    backdropFilter: "blur(7px)",
+    borderRadius: "12px",
+    flex: "none",
+    flexGrow: 1,
   };
 
   const infoRowStyle: React.CSSProperties = {
@@ -372,26 +326,14 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     alignItems: "center",
     padding: "0px",
     width: "100%",
-    height: "44px",
+    height: "19px",
   };
 
-  const formatAmount = (amount: string | number) => {
-    const num = typeof amount === 'string' ? parseInt(amount) || 0 : amount;
-    return num.toLocaleString() + "원";
+  const dividerStyle: React.CSSProperties = {
+    width: "100%",
+    height: "0px",
+    border: "1px solid rgba(12, 12, 12, 0.1)",
   };
-
-  const damagePreventionAmt = parseInt(invoiceDamagePreventionAmount || "0") || 0;
-  const propertyRepairAmt = parseInt(invoicePropertyRepairAmount || "0") || 0;
-  
-  const damagePreventionDiff = damagePreventionAmt - categorizedAmounts.damagePreventionAmount;
-  const propertyRepairDiff = propertyRepairAmt - categorizedAmounts.propertyRepairAmount;
-  
-  const damagePreventionRate = categorizedAmounts.damagePreventionAmount > 0 
-    ? ((damagePreventionAmt / categorizedAmounts.damagePreventionAmount) * 100).toFixed(0) 
-    : "0";
-  const propertyRepairRate = categorizedAmounts.propertyRepairAmount > 0 
-    ? ((propertyRepairAmt / categorizedAmounts.propertyRepairAmount) * 100).toFixed(0) 
-    : "0";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -400,698 +342,649 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         style={{
           display: "flex",
           flexDirection: "column",
-          alignItems: "flex-end",
-          padding: "0px",
-          gap: "16px",
-          width: "810px",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          padding: "38px 0px 0px",
+          gap: "24px",
+          width: "680px",
           maxWidth: "95vw",
-          background: "#FDFDFD",
-          boxShadow: "0px 0px 20px #DBE9F5",
+          background: "#FFFFFF",
+          boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
           borderRadius: "12px 0 0 12px",
-          overflow: "hidden",
+          overflow: "auto",
         }}
         data-testid="dialog-invoice"
       >
-        {/* Header */}
+        {/* Header Section */}
         <div style={{
-          boxSizing: "border-box",
           display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "24px",
-          width: "100%",
-          height: "76px",
-          borderBottom: "2px solid rgba(12, 12, 12, 0.1)",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          padding: "0px",
+          gap: "16px",
+          width: "680px",
         }}>
-          <div style={{ width: "28px" }} />
-          <span style={{
-            fontFamily: "'Pretendard'",
-            fontStyle: "normal",
-            fontWeight: 600,
-            fontSize: "22px",
-            lineHeight: "128%",
-            letterSpacing: "-0.02em",
-            color: "#0C0C0C",
+          {/* INVOICE Title */}
+          <div style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            padding: "0px 38px",
+            gap: "10px",
+            width: "680px",
+            height: "41px",
           }}>
-            인보이스 관리
-          </span>
-          <button
-            onClick={() => onOpenChange(false)}
-            style={{
-              width: "28px",
-              height: "28px",
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            data-testid="button-close-invoice"
-          >
-            <X size={20} color="rgba(12, 12, 12, 0.8)" />
-          </button>
+            <span style={{
+              fontFamily: "'Pretendard'",
+              fontStyle: "normal",
+              fontWeight: 600,
+              fontSize: "32px",
+              lineHeight: "128%",
+              textAlign: "center",
+              color: "#0C0C0C",
+            }}>
+              INVOICE
+            </span>
+          </div>
+          {/* Divider */}
+          <div style={{ ...dividerStyle, width: "680px" }} />
         </div>
 
-        {/* Scrollable Content */}
-        <div style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "flex-start",
-          padding: "0px 8px 0px 20px",
-          gap: "10px",
-          width: "100%",
-          flex: 1,
-          overflow: "auto",
-        }}>
-          <div 
-            ref={invoicePdfRef}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              padding: "0px",
-              gap: "20px",
-              width: "762px",
-              paddingBottom: "32px",
-            }}
-          >
-            {/* 기본정보 Section */}
-            <div style={{
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              padding: "28px 32px 32px",
-              gap: "12px",
-              width: "762px",
-              background: "#FFFFFF",
-              border: "1px solid rgba(12, 12, 12, 0.12)",
-              borderRadius: "12px",
-            }}>
-              <div style={sectionTitleContainerStyle}>
-                <span style={sectionTitleStyle}>기본정보</span>
+        {/* Main Content */}
+        <div 
+          ref={invoicePdfRef}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            padding: "0px 38px",
+            gap: "26px",
+            width: "604px",
+            background: "#FFFFFF",
+          }}
+        >
+          {/* Info Boxes Row */}
+          <div style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            padding: "0px",
+            gap: "8px",
+            width: "604px",
+            height: "98px",
+          }}>
+            {/* Left Info Box - 수신, 사고번호 */}
+            <div style={infoBoxStyle}>
+              <div style={infoRowStyle}>
+                <span style={labelStyle}>수신</span>
+                <span style={valueStyle}>{caseData?.insuranceCompany || "-"}</span>
               </div>
-
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "0px",
-                gap: "2px",
-                width: "698px",
-              }}>
-                {/* 제출일 */}
-                <div style={infoRowStyle}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>제출일</span>
-                  </div>
-                  <div style={{
-                    boxSizing: "border-box",
-                    display: "flex",
-                    flexDirection: "row",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: "10px 16px 10px 12px",
-                    gap: "10px",
-                    height: "40px",
-                    background: "rgba(255, 255, 255, 0.04)",
-                    border: "1px solid rgba(12, 12, 12, 0.3)",
-                    boxShadow: "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
-                    backdropFilter: "blur(7px)",
-                    borderRadius: "6px",
-                  }}>
-                    <Calendar size={20} color="rgba(12, 12, 12, 0.7)" />
-                    <input
-                      type="date"
-                      value={submissionDate}
-                      onChange={(e) => setSubmissionDate(e.target.value)}
-                      style={{
-                        border: "none",
-                        background: "transparent",
-                        fontFamily: "'Pretendard'",
-                        fontWeight: 500,
-                        fontSize: "16px",
-                        color: "rgba(12, 12, 12, 0.7)",
-                        outline: "none",
-                      }}
-                      data-testid="input-submission-date"
-                    />
-                  </div>
-                </div>
-
-                {/* 수임일 */}
-                <div style={infoRowStyle}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>수임일</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={valueStyle}>{caseData?.receptionDate || "-"}</span>
-                  </div>
-                </div>
-
-                {/* 보험사 */}
-                <div style={infoRowStyle}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>보험사</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px", gap: "10px" }}>
-                    <span style={valueStyle}>{caseData?.insuranceCompany || "-"}</span>
-                    <span style={valueStyle}>{caseData?.insuranceDepartment || ""}</span>
-                    <span style={valueStyle}>{caseData?.insuranceContact || ""}</span>
-                  </div>
-                </div>
-
-                {/* 담당자 */}
-                <div style={infoRowStyle}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>담당자</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px", gap: "10px" }}>
-                    <span style={valueStyle}>{caseData?.insuranceManager || "-"}</span>
-                  </div>
-                </div>
-
-                {/* 접수번호 */}
-                <div style={infoRowStyle}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>접수번호</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={valueStyle}>{caseData?.caseNumber || "-"}</span>
-                  </div>
-                </div>
-
-                {/* 사고번호 */}
-                <div style={infoRowStyle}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>사고번호</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={valueStyle}>{caseData?.insuranceAccidentNo || "-"}</span>
-                  </div>
-                </div>
+              <div style={dividerStyle} />
+              <div style={infoRowStyle}>
+                <span style={labelStyle}>사고번호</span>
+                <span style={valueStyle}>{caseData?.insuranceAccidentNo || "-"}</span>
               </div>
             </div>
 
-            {/* 협력/현장 정보 Section */}
-            <div style={{
-              boxSizing: "border-box",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              padding: "28px 32px 32px",
-              gap: "12px",
-              width: "762px",
-              background: "#FFFFFF",
-              border: "1px solid rgba(12, 12, 12, 0.12)",
-              borderRadius: "12px",
-            }}>
-              <div style={sectionTitleContainerStyle}>
-                <span style={sectionTitleStyle}>협력/현장 정보</span>
+            {/* Right Info Box - 수임일자, 제출일자 */}
+            <div style={infoBoxStyle}>
+              <div style={infoRowStyle}>
+                <span style={labelStyle}>수임일자</span>
+                <span style={valueStyle}>{caseData?.receptionDate?.replace(/-/g, ".") || "0000.00.00"}</span>
               </div>
-
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                padding: "0px",
-                gap: "2px",
-                width: "698px",
-              }}>
-                {/* 협력업체 */}
-                <div style={infoRowStyle}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>협력업체</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={valueStyle}>{caseData?.assignedPartner || "-"}</span>
-                  </div>
-                </div>
-
-                {/* 사고유형 */}
-                <div style={infoRowStyle}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>사고유형</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={valueStyle}>{caseData?.accidentType || "-"}</span>
-                  </div>
-                </div>
-
-                {/* 공사유무 */}
-                <div style={infoRowStyle}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>공사유무</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={valueStyle}>{caseData?.recoveryType || "-"}</span>
-                  </div>
-                </div>
+              <div style={dividerStyle} />
+              <div style={infoRowStyle}>
+                <span style={labelStyle}>제출일자</span>
+                <span style={valueStyle}>{format(new Date(), "yyyy.MM.dd")}</span>
               </div>
             </div>
+          </div>
 
-            {/* 금액 Section */}
+          {/* Particulars Section */}
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            padding: "0px",
+            gap: "12px",
+            width: "604px",
+          }}>
+            {/* Particulars Label */}
             <div style={{
               display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              padding: "0px",
+              flexDirection: "row",
+              alignItems: "center",
+              padding: "16px 0px",
+              gap: "10px",
+              width: "604px",
+              height: "50px",
+            }}>
+              <span style={{
+                fontFamily: "'Pretendard'",
+                fontStyle: "normal",
+                fontWeight: 400,
+                fontSize: "14px",
+                lineHeight: "128%",
+                letterSpacing: "-0.01em",
+                color: "rgba(12, 12, 12, 0.5)",
+              }}>
+                Particulars
+              </span>
+            </div>
+
+            {/* Accident Number Header */}
+            <div style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              padding: "0px 4px",
               gap: "8px",
-              width: "762px",
+              width: "604px",
+              height: "19px",
             }}>
+              <span style={valueStyle}>사고번호</span>
+              <span style={valueStyle}>{caseData?.insuranceAccidentNo || "-"}</span>
+            </div>
+
+            {/* Table Container */}
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              padding: "0px",
+              width: "604px",
+              borderRadius: "12px",
+            }}>
+              {/* Table Header */}
               <div style={{
                 display: "flex",
                 flexDirection: "row",
+                justifyContent: "space-between",
                 alignItems: "center",
-                padding: "10px 4px",
-                gap: "10px",
-                width: "762px",
-                height: "43px",
-              }}>
-                <span style={subSectionTitleStyle}>금액</span>
-              </div>
-
-              {/* Amount Table */}
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
                 padding: "0px",
-                width: "762px",
-                borderRadius: "6px",
-                overflow: "hidden",
+                width: "604px",
+                height: "44px",
+                background: "rgba(12, 12, 12, 0.04)",
               }}>
-                {/* Table Header */}
                 <div style={{
                   display: "flex",
                   flexDirection: "row",
                   alignItems: "center",
-                  padding: "0px",
-                  width: "762px",
-                  height: "43px",
+                  padding: "0px 16px",
+                  gap: "10px",
+                  height: "44px",
                 }}>
-                  <div style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    padding: "17.5px 8px",
-                    gap: "10px",
-                    width: "141px",
-                    height: "43px",
-                    background: "rgba(12, 12, 12, 0.04)",
-                  }} />
-                  <div style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: "17.5px 12px",
-                    gap: "10px",
-                    width: "310.5px",
-                    height: "43px",
-                    background: "rgba(12, 12, 12, 0.04)",
+                  <span style={{
+                    fontFamily: "'Pretendard'",
+                    fontStyle: "normal",
+                    fontWeight: 400,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.5)",
                   }}>
-                    <span style={tableHeaderStyle}>손해방지비용</span>
-                  </div>
-                  <div style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: "17.5px 12px",
-                    gap: "10px",
-                    width: "310.5px",
-                    height: "43px",
-                    background: "rgba(12, 12, 12, 0.04)",
-                  }}>
-                    <span style={tableHeaderStyle}>대물비용</span>
-                  </div>
+                    PARTICULARS
+                  </span>
                 </div>
-
-                {/* Table Body */}
                 <div style={{
                   display: "flex",
                   flexDirection: "row",
-                  alignItems: "flex-start",
-                  padding: "0px",
-                  width: "762px",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  padding: "0px 16px",
+                  gap: "10px",
+                  height: "44px",
+                  flexGrow: 1,
                 }}>
-                  {/* Row Labels Column */}
-                  <div style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                    padding: "0px",
-                    width: "141px",
+                  <span style={{
+                    fontFamily: "'Pretendard'",
+                    fontStyle: "normal",
+                    fontWeight: 400,
+                    fontSize: "14px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.5)",
                   }}>
-                    {["견적금액(원)", "차액(원)", "수정률(%)", "승인금액(원)", "총 승인금액", "총 수수료(원)", "협력업체 지급액(원)"].map((label, idx) => (
-                      <div key={idx} style={{
-                        display: "flex",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        padding: "17.5px 12px",
-                        gap: "10px",
-                        width: "141px",
-                        height: "54px",
-                        background: "rgba(12, 12, 12, 0.04)",
-                      }}>
-                        <span style={tableHeaderStyle}>{label}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Values Columns */}
-                  <div style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "flex-start",
-                    padding: "0px",
-                    width: "621px",
-                  }}>
-                    {/* First 4 rows - split columns */}
-                    <div style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      padding: "0px",
-                      width: "621px",
-                    }}>
-                      {/* 손해방지비용 Column */}
-                      <div style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-start",
-                        padding: "0px",
-                        width: "310.5px",
-                      }}>
-                        <div style={{
-                          display: "flex",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          padding: "17.5px 12px",
-                          gap: "10px",
-                          width: "310.5px",
-                          height: "54px",
-                        }}>
-                          <span style={tableValueStyle}>{formatAmount(categorizedAmounts.damagePreventionAmount)}</span>
-                        </div>
-                        <div style={{
-                          display: "flex",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          padding: "17.5px 12px",
-                          gap: "10px",
-                          width: "310.5px",
-                          height: "54px",
-                        }}>
-                          <span style={tableValueStyle}>{formatAmount(damagePreventionDiff)}</span>
-                        </div>
-                        <div style={{
-                          display: "flex",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          padding: "17.5px 12px",
-                          gap: "10px",
-                          width: "310.5px",
-                          height: "54px",
-                        }}>
-                          <span style={tableValueStyle}>{damagePreventionRate}%</span>
-                        </div>
-                        <div style={{
-                          display: "flex",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          padding: "17.5px 12px",
-                          gap: "10px",
-                          width: "310.5px",
-                          height: "54px",
-                        }}>
-                          <span style={tableValueStyle}>{formatAmount(damagePreventionAmt)}</span>
-                        </div>
-                      </div>
-
-                      {/* 대물비용 Column */}
-                      <div style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "flex-start",
-                        padding: "0px",
-                        width: "310.5px",
-                      }}>
-                        <div style={{
-                          display: "flex",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          padding: "17.5px 12px",
-                          gap: "10px",
-                          width: "310.5px",
-                          height: "54px",
-                        }}>
-                          <span style={tableValueStyle}>{formatAmount(categorizedAmounts.propertyRepairAmount)}</span>
-                        </div>
-                        <div style={{
-                          display: "flex",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          padding: "17.5px 12px",
-                          gap: "10px",
-                          width: "310.5px",
-                          height: "54px",
-                        }}>
-                          <span style={tableValueStyle}>{formatAmount(propertyRepairDiff)}</span>
-                        </div>
-                        <div style={{
-                          display: "flex",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          padding: "17.5px 12px",
-                          gap: "10px",
-                          width: "310.5px",
-                          height: "54px",
-                        }}>
-                          <span style={tableValueStyle}>{propertyRepairRate}%</span>
-                        </div>
-                        <div style={{
-                          display: "flex",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          padding: "17.5px 12px",
-                          gap: "10px",
-                          width: "310.5px",
-                          height: "54px",
-                        }}>
-                          <span style={tableValueStyle}>{formatAmount(propertyRepairAmt)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Total rows - full width */}
-                    <div style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      padding: "17.5px 12px",
-                      gap: "10px",
-                      width: "621px",
-                      height: "54px",
-                      background: "rgba(12, 12, 12, 0.02)",
-                    }}>
-                      <span style={{ ...tableValueStyle, fontWeight: 600 }}>{formatAmount(totalAmount)}</span>
-                    </div>
-                    <div style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      padding: "17.5px 12px",
-                      gap: "10px",
-                      width: "621px",
-                      height: "54px",
-                    }}>
-                      <span style={tableValueStyle}>{formatAmount(Math.round(totalAmount * 0.1))}</span>
-                    </div>
-                    <div style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      padding: "17.5px 12px",
-                      gap: "10px",
-                      width: "621px",
-                      height: "54px",
-                    }}>
-                      <span style={tableValueStyle}>{formatAmount(Math.round(totalAmount * 0.9))}</span>
-                    </div>
-                  </div>
+                    AMOUNT
+                  </span>
                 </div>
               </div>
-            </div>
 
-            {/* 세금계산서/인보이스 Section */}
-            <div style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              padding: "28px 32px 32px",
-              gap: "12px",
-              width: "762px",
-              background: "rgba(12, 12, 12, 0.03)",
-              borderRadius: "12px",
-            }}>
-              <div style={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-                padding: "10px 4px",
-                gap: "10px",
-                width: "698px",
-                height: "43px",
-              }}>
-                <span style={subSectionTitleStyle}>세금계산서/인보이스</span>
-              </div>
-
+              {/* Table Rows */}
               <div style={{
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
                 padding: "0px",
-                gap: "2px",
-                width: "698px",
+                width: "604px",
               }}>
-                {/* 세금계산서 확인 */}
-                <div style={{
-                  ...infoRowStyle,
-                  height: "53px",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>세금계산서 확인</span>
-                  </div>
+                {/* 손해방지비용 Row */}
+                {categorizedAmounts.hasDirectRecoveryPrevention && (
                   <div style={{
-                    boxSizing: "border-box",
                     display: "flex",
                     flexDirection: "row",
-                    justifyContent: "center",
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "10px 16px 10px 12px",
-                    gap: "10px",
-                    height: "40px",
-                    background: "#FDFDFD",
-                    border: "1px solid rgba(12, 12, 12, 0.3)",
-                    boxShadow: "inset 0px -2px 4px rgba(0, 0, 0, 0.05), inset 0px 2px 4px rgba(0, 0, 0, 0.05)",
-                    backdropFilter: "blur(7px)",
-                    borderRadius: "6px",
-                    cursor: "pointer",
+                    padding: "0px",
+                    width: "604px",
+                    height: "54px",
                   }}>
-                    <Calendar size={20} color="rgba(12, 12, 12, 0.7)" />
-                    <span style={{ ...valueStyle, color: "rgba(12, 12, 12, 0.7)" }}>날짜 선택</span>
+                    <div style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      padding: "0px 16px",
+                      gap: "10px",
+                      height: "54px",
+                    }}>
+                      <span style={labelStyle}>손해방지비용</span>
+                    </div>
+                    <div style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      padding: "0px 16px",
+                      gap: "4px",
+                      height: "54px",
+                      flexGrow: 1,
+                    }}>
+                      <span
+                        style={{
+                          fontFamily: "'Pretendard'",
+                          fontStyle: "normal",
+                          fontWeight: 400,
+                          fontSize: "15px",
+                          lineHeight: "128%",
+                          letterSpacing: "-0.01em",
+                          color: "#0C0C0C",
+                          textAlign: "right",
+                        }}
+                        data-testid="text-damage-prevention-amount"
+                      >
+                        {invoiceDamagePreventionAmount ? Number(invoiceDamagePreventionAmount).toLocaleString() : "0"}
+                      </span>
+                      <span style={{
+                        fontFamily: "'Pretendard'",
+                        fontStyle: "normal",
+                        fontWeight: 400,
+                        fontSize: "15px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "#0C0C0C",
+                      }}>원</span>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* 인보이스 생성 */}
-                <div style={{
-                  ...infoRowStyle,
-                  height: "54px",
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>인보이스 생성</span>
+                {/* 대물복구비용 Row */}
+                {categorizedAmounts.hasDirectRecoveryProperty && (
+                  <div style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "0px",
+                    width: "604px",
+                    height: "54px",
+                  }}>
+                    <div style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      padding: "0px 16px",
+                      gap: "10px",
+                      height: "54px",
+                    }}>
+                      <span style={labelStyle}>대물복구비용</span>
+                    </div>
+                    <div style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      padding: "0px 16px",
+                      gap: "4px",
+                      height: "54px",
+                      flexGrow: 1,
+                    }}>
+                      <span
+                        style={{
+                          fontFamily: "'Pretendard'",
+                          fontStyle: "normal",
+                          fontWeight: 400,
+                          fontSize: "15px",
+                          lineHeight: "128%",
+                          letterSpacing: "-0.01em",
+                          color: "#0C0C0C",
+                          textAlign: "right",
+                        }}
+                        data-testid="text-property-repair-amount"
+                      >
+                        {invoicePropertyRepairAmount ? Number(invoicePropertyRepairAmount).toLocaleString() : "0"}
+                      </span>
+                      <span style={{
+                        fontFamily: "'Pretendard'",
+                        fontStyle: "normal",
+                        fontWeight: 400,
+                        fontSize: "15px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: "#0C0C0C",
+                      }}>원</span>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      style={{
-                        height: "40px",
-                        borderRadius: "6px",
-                        border: "1px solid rgba(12, 12, 12, 0.3)",
-                      }}
-                      data-testid="button-preview-invoice"
-                    >
-                      <FileText size={16} />
-                      <span style={{ marginLeft: "6px" }}>미리보기</span>
-                    </Button>
-                  </div>
-                </div>
+                )}
 
-                {/* 이메일 전송 */}
+                {/* TOTAL AMOUNT Row */}
                 <div style={{
-                  ...infoRowStyle,
+                  boxSizing: "border-box",
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "0px",
+                  width: "604px",
                   height: "54px",
+                  borderTop: "1px solid rgba(12, 12, 12, 0.1)",
                 }}>
-                  <div style={{ display: "flex", alignItems: "center", padding: "0px 4px" }}>
-                    <span style={labelStyle}>이메일 전송</span>
+                  <div style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: "0px 16px",
+                    gap: "10px",
+                    height: "54px",
+                    background: "rgba(12, 12, 12, 0.04)",
+                  }}>
+                    <span style={{
+                      fontFamily: "'Pretendard'",
+                      fontStyle: "normal",
+                      fontWeight: 400,
+                      fontSize: "14px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "rgba(12, 12, 12, 0.7)",
+                    }}>
+                      TOTAL AMOUNT
+                    </span>
                   </div>
-                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                    <Input
-                      type="email"
-                      placeholder="이메일 주소"
-                      value={invoiceRecipientEmail}
-                      onChange={(e) => setInvoiceRecipientEmail(e.target.value)}
-                      style={{
-                        width: "200px",
-                        height: "40px",
-                        borderRadius: "6px",
-                        border: "1px solid rgba(12, 12, 12, 0.3)",
-                      }}
-                      data-testid="input-recipient-email"
-                    />
-                    <Button
-                      onClick={handleSendInvoicePdf}
-                      disabled={isSendingPdf || !invoiceRecipientEmail}
-                      style={{
-                        height: "40px",
-                        borderRadius: "6px",
-                        background: "#2563EB",
-                        color: "#FFFFFF",
-                      }}
-                      data-testid="button-send-invoice"
-                    >
-                      <Send size={16} />
-                      <span style={{ marginLeft: "6px" }}>{isSendingPdf ? "전송중..." : "전송"}</span>
-                    </Button>
+                  <div style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    padding: "0px 16px",
+                    gap: "10px",
+                    height: "54px",
+                    flexGrow: 1,
+                  }}>
+                    <span style={{
+                      fontFamily: "'Pretendard'",
+                      fontStyle: "normal",
+                      fontWeight: 600,
+                      fontSize: "18px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.02em",
+                      color: "#0C0C0C",
+                    }} data-testid="text-total-amount">
+                      {totalAmount.toLocaleString()}원
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Bottom Action Buttons */}
+          {/* Bottom Section - 비고 & 입금정보 */}
+          <div style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            padding: "0px",
+            gap: "8px",
+            width: "604px",
+            height: "261px",
+          }}>
+            {/* 비고 Box */}
             <div style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              padding: "16px 0px",
-              gap: "12px",
-              width: "762px",
+              boxSizing: "border-box",
+              width: "298px",
+              height: "261px",
+              border: "1px solid rgba(12, 12, 12, 0.04)",
+              backdropFilter: "blur(7px)",
+              borderRadius: "12px",
+              position: "relative",
             }}>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                style={{
-                  height: "44px",
-                  padding: "0px 24px",
-                  borderRadius: "8px",
-                }}
-                data-testid="button-cancel-invoice"
-              >
-                취소
-              </Button>
-              <Button
-                onClick={handleSave}
-                style={{
-                  height: "44px",
-                  padding: "0px 24px",
-                  borderRadius: "8px",
-                  background: "#2563EB",
-                  color: "#FFFFFF",
-                }}
-                data-testid="button-save-invoice"
-              >
-                저장
-              </Button>
+              <span style={{
+                position: "absolute",
+                left: "16px",
+                top: "15px",
+                ...valueStyle,
+              }}>
+                비고
+              </span>
+              <div style={{
+                position: "absolute",
+                left: "16px",
+                top: "54px",
+                width: "266px",
+                height: "186px",
+              }}>
+                <textarea
+                  value={invoiceRemarks}
+                  onChange={(e) => setInvoiceRemarks(e.target.value)}
+                  placeholder="내용을 입력해주세요"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    fontFamily: "'Pretendard'",
+                    fontStyle: "normal",
+                    fontWeight: 400,
+                    fontSize: "15px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "#0C0C0C",
+                    background: "transparent",
+                    border: "none",
+                    outline: "none",
+                    resize: "none",
+                  }}
+                  data-testid="textarea-invoice-remarks"
+                />
+              </div>
             </div>
+
+            {/* 입금 정보 Box */}
+            <div style={{
+              width: "298px",
+              height: "261px",
+              background: "rgba(12, 12, 12, 0.04)",
+              backdropFilter: "blur(7px)",
+              borderRadius: "12px",
+              position: "relative",
+            }}>
+              <span style={{
+                position: "absolute",
+                left: "16px",
+                top: "15px",
+                ...valueStyle,
+              }}>
+                입금 정보
+              </span>
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                padding: "0px",
+                gap: "15px",
+                position: "absolute",
+                width: "266px",
+                left: "16px",
+                top: "64px",
+              }}>
+                {/* 은행명 */}
+                <div style={infoRowStyle}>
+                  <span style={labelStyle}>은행명</span>
+                  <span style={valueStyle}>신한은행
+</span>
+                </div>
+                <div style={dividerStyle} />
+                {/* 계좌번호 */}
+                <div style={infoRowStyle}>
+                  <span style={labelStyle}>계좌번호</span>
+                  <span style={valueStyle}>140-015-744120</span>
+                </div>
+                <div style={dividerStyle} />
+                {/* 예금주 */}
+                <div style={infoRowStyle}>
+                  <span style={labelStyle}>예금주</span>
+                  <span style={valueStyle}>주식회사 플록슨</span>
+                </div>
+                <div style={dividerStyle} />
+                {/* 사업자등록번호 */}
+                <div style={infoRowStyle}>
+                  <span style={labelStyle}>사업자등록번호</span>
+                  <span style={valueStyle}>517-89-03490</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 수신자 이메일 Section */}
+        <div style={{
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          padding: "16px 38px",
+          gap: "16px",
+          width: "680px",
+        }}>
+          <span style={{
+            fontFamily: "'Pretendard'",
+            fontStyle: "normal",
+            fontWeight: 500,
+            fontSize: "14px",
+            lineHeight: "128%",
+            letterSpacing: "-0.01em",
+            color: "rgba(12, 12, 12, 0.7)",
+            whiteSpace: "nowrap",
+          }}>수신자 이메일</span>
+          <input
+            type="email"
+            value={invoiceRecipientEmail}
+            onChange={(e) => setInvoiceRecipientEmail(e.target.value)}
+            placeholder="보험사 이메일 주소를 입력해주세요"
+            style={{
+              flex: 1,
+              fontFamily: "'Pretendard'",
+              fontStyle: "normal",
+              fontWeight: 400,
+              fontSize: "14px",
+              lineHeight: "128%",
+              letterSpacing: "-0.01em",
+              color: "#0C0C0C",
+              background: "rgba(12, 12, 12, 0.04)",
+              border: "1px solid rgba(12, 12, 12, 0.1)",
+              borderRadius: "8px",
+              padding: "10px 12px",
+              outline: "none",
+            }}
+            data-testid="input-recipient-email"
+          />
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          padding: "20px 38px",
+          gap: "10px",
+          width: "680px",
+          borderTop: "1px solid rgba(12, 12, 12, 0.1)",
+        }}>
+          <div style={{
+            display: "flex",
+            flexDirection: "row",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            padding: "0px",
+            gap: "8px",
+            width: "604px",
+            height: "40px",
+          }}>
+            {/* PDF 발송 Button */}
+            <button
+              onClick={handleSendInvoicePdf}
+              disabled={isSendingPdf || !invoiceRecipientEmail}
+              style={{
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "10px 16px",
+                gap: "10px",
+                minWidth: "100px",
+                height: "40px",
+                border: "1px solid rgba(12, 12, 12, 0.1)",
+                borderRadius: "8px",
+                background: "transparent",
+                cursor: isSendingPdf || !invoiceRecipientEmail ? "not-allowed" : "pointer",
+                opacity: isSendingPdf || !invoiceRecipientEmail ? 0.5 : 1,
+                whiteSpace: "nowrap",
+              }}
+              data-testid="button-invoice-pdf">
+              <span style={{
+                fontFamily: "'Pretendard'",
+                fontStyle: "normal",
+                fontWeight: 600,
+                fontSize: "16px",
+                lineHeight: "128%",
+                letterSpacing: "-0.02em",
+                color: "#008FED",
+                whiteSpace: "nowrap",
+              }}>
+                {isSendingPdf ? "발송 중..." : "PDF 발송"}
+              </span>
+            </button>
+
+            {/* 저장 Button */}
+            <button
+              onClick={handleSave}
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "10px 16px",
+                gap: "10px",
+                width: "60px",
+                height: "40px",
+                background: "#008FED",
+                borderRadius: "8px",
+                border: "none",
+                cursor: "pointer",
+              }}
+              data-testid="button-invoice-save"
+            >
+              <span style={{
+                fontFamily: "'Pretendard'",
+                fontStyle: "normal",
+                fontWeight: 600,
+                fontSize: "16px",
+                lineHeight: "128%",
+                letterSpacing: "-0.02em",
+                color: "#FFFFFF",
+              }}>
+                저장
+              </span>
+            </button>
           </div>
         </div>
       </SheetContent>
