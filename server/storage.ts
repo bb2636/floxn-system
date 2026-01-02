@@ -1673,6 +1673,24 @@ export class MemStorage implements IStorage {
           dateUpdates.claimDate = currentDate;
         }
         break;
+      case "입금완료":
+        // 입금완료일 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.paymentCompletedDate) {
+          dateUpdates.paymentCompletedDate = currentDate;
+        }
+        break;
+      case "부분입금":
+        // 일부입금일 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.partialPaymentDate) {
+          dateUpdates.partialPaymentDate = currentDate;
+        }
+        break;
+      case "정산완료":
+        // 정산완료일 자동 기록 (기존 값 없을 때만)
+        if (!caseItem.settlementCompletedDate) {
+          dateUpdates.settlementCompletedDate = currentDate;
+        }
+        break;
     }
 
     // 상태에 따라 recoveryType 자동 설정
@@ -4448,6 +4466,24 @@ export class DbStorage implements IStorage {
         // 청구일 자동 기록 (기존 값 없을 때만)
         if (!existingCase.claimDate) {
           dateUpdates.claimDate = currentDate;
+        }
+        break;
+      case "입금완료":
+        // 입금완료일 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.paymentCompletedDate) {
+          dateUpdates.paymentCompletedDate = currentDate;
+        }
+        break;
+      case "부분입금":
+        // 일부입금일 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.partialPaymentDate) {
+          dateUpdates.partialPaymentDate = currentDate;
+        }
+        break;
+      case "정산완료":
+        // 정산완료일 자동 기록 (기존 값 없을 때만)
+        if (!existingCase.settlementCompletedDate) {
+          dateUpdates.settlementCompletedDate = currentDate;
         }
         break;
     }
