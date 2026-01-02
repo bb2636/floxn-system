@@ -851,7 +851,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 <textarea
                   value={invoiceRemarks}
                   onChange={(e) => setInvoiceRemarks(e.target.value)}
-                  placeholder=""
+                  placeholder="내용을 입력해주세요"
                   style={{
                     width: "100%",
                     height: "100%",
