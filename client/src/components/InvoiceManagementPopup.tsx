@@ -131,8 +131,16 @@ export function InvoiceManagementPopup({
     memo: "",
   });
   
-  // 인보이스 승인 여부 확인
-  const isInvoiceApproved = !!caseData?.invoiceConfirmDate;
+  // 인보이스 확인 날짜 로컬 상태 (실시간 UI 업데이트용)
+  const [localInvoiceConfirmDate, setLocalInvoiceConfirmDate] = useState<string | null>(caseData?.invoiceConfirmDate || null);
+  
+  // caseData 변경 시 로컬 상태 동기화
+  useEffect(() => {
+    setLocalInvoiceConfirmDate(caseData?.invoiceConfirmDate || null);
+  }, [caseData?.invoiceConfirmDate]);
+  
+  // 인보이스 승인 여부 확인 (로컬 상태 사용)
+  const isInvoiceApproved = !!localInvoiceConfirmDate;
   
   // 인보이스 승인 권한이 있는 관리자만 확인 가능 (일반 관리자는 불가)
   const canApproveInvoice = hasItem("관리자 설정", "인보이스 승인");
@@ -375,6 +383,9 @@ export function InvoiceManagementPopup({
   const handleInvoiceConfirm = async (dateStr: string) => {
     if (!caseData) return;
     
+    // 즉시 로컬 상태 업데이트 (실시간 UI 반영)
+    setLocalInvoiceConfirmDate(dateStr);
+    
     try {
       await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
         invoiceConfirmDate: dateStr,
@@ -388,6 +399,8 @@ export function InvoiceManagementPopup({
         description: `인보이스가 확인되었습니다. (${dateStr})`,
       });
     } catch (error) {
+      // 에러 시 로컬 상태 롤백
+      setLocalInvoiceConfirmDate(caseData?.invoiceConfirmDate || null);
       toast({
         title: "확인 실패",
         description: "인보이스 확인 중 오류가 발생했습니다.",
@@ -399,6 +412,11 @@ export function InvoiceManagementPopup({
   // 인보이스 취소 핸들러
   const handleInvoiceCancel = async () => {
     if (!caseData) return;
+    
+    const previousDate = localInvoiceConfirmDate;
+    
+    // 즉시 로컬 상태 업데이트 (실시간 UI 반영)
+    setLocalInvoiceConfirmDate(null);
     
     try {
       await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
@@ -413,6 +431,8 @@ export function InvoiceManagementPopup({
         description: "인보이스 확인이 취소되었습니다.",
       });
     } catch (error) {
+      // 에러 시 로컬 상태 롤백
+      setLocalInvoiceConfirmDate(previousDate);
       toast({
         title: "취소 실패",
         description: "인보이스 취소 중 오류가 발생했습니다.",
@@ -1199,7 +1219,7 @@ export function InvoiceManagementPopup({
                   </span>
                   <div className="flex items-center gap-3">
                     <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                      {caseData.invoiceConfirmDate || "-"}
+                      {localInvoiceConfirmDate || "-"}
                     </span>
                     <Button
                       onClick={() => {
