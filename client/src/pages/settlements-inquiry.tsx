@@ -336,11 +336,11 @@ export default function SettlementsInquiry() {
       // 정산 데이터 파싱
       const settlement = settlementsByCaseIdMap.get(caseItem.id);
       const settlementAmount = settlement ? parseAmountValue(settlement.settlementAmount) : 0;
-      // 미수리(선견적요청)일 때: 수수료 = 0, 사용료 = 10만원
+      // 미수리(선견적요청)일 때: 수수료 = 4만원, 사용료 = 10만원
       // 수리(직접복구)일 때: 수수료 = DB값, 사용료 = 0
       const isNoRepair = caseItem.recoveryType === "선견적요청";
       const settlementCommission = isNoRepair 
-        ? 0 
+        ? 40000 
         : (settlement ? parseAmountValue(settlement.commission) : 0);
       const usageFee = isNoRepair ? 100000 : 0;
       const settlementDeposit = settlement ? parseAmountValue(settlement.discount) : 0;
@@ -440,11 +440,11 @@ export default function SettlementsInquiry() {
 
       // Sum settlement amounts for all cases in group
       const totalSettlementAmount = casesInGroup.reduce((sum, c) => sum + c.settlementAmount, 0);
-      // 수수료: 직접복구 건이 있을 때만 해당 건들의 수수료 합산
+      // 수수료: 직접복구 건이 있으면 해당 건들의 수수료 합산, 선견적요청이면 4만원
       const directRepairCases = casesInGroup.filter(c => c.recoveryType === "직접복구");
       const totalSettlementCommission = hasDirectRepair 
         ? directRepairCases.reduce((sum, c) => sum + c.settlementCommission, 0)
-        : 0;
+        : (allNoRepair ? 40000 : 0);
       // 사용료: 모든 건이 선견적요청일 때만 10만원, 직접복구 건이 하나라도 있으면 0
       const totalUsageFee = allNoRepair ? 100000 : 0;
       const totalSettlementDeposit = casesInGroup.reduce((sum, c) => sum + c.settlementDeposit, 0);
