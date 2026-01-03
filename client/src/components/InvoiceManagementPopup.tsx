@@ -1145,9 +1145,34 @@ export function InvoiceManagementPopup({
                   <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                     총 승인금액
                   </span>
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                    {totalApprovedAmount.toLocaleString()}원
-                  </span>
+                  {settlementStatus === "청구변경" ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="text"
+                        value={totalApprovedAmount.toLocaleString()}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
+                          // 총 승인금액 변경 시 손해방지비용 승인금액으로 설정 (대물복구비용은 0으로)
+                          setPreventionApprovedAmount(value || "0");
+                          setPropertyApprovedAmount("0");
+                        }}
+                        data-testid="input-total-approved-amount"
+                        style={{
+                          width: "120px",
+                          textAlign: "right",
+                          fontWeight: 400,
+                          fontSize: "15px",
+                          padding: "4px 8px",
+                          height: "32px",
+                        }}
+                      />
+                      <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>원</span>
+                    </div>
+                  ) : (
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                      {totalApprovedAmount.toLocaleString()}원
+                    </span>
+                  )}
                 </div>
 
                 {/* 총 수수료(원) */}
@@ -1401,9 +1426,32 @@ export function InvoiceManagementPopup({
                   <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                     자기부담금
                   </span>
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                    {deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}원
-                  </span>
+                  {settlementStatus === "청구변경" ? (
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="text"
+                        value={deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
+                          setDeductibleAmount(value || "0");
+                        }}
+                        data-testid="input-deductible-amount"
+                        style={{
+                          width: "120px",
+                          textAlign: "right",
+                          fontWeight: 400,
+                          fontSize: "15px",
+                          padding: "4px 8px",
+                          height: "32px",
+                        }}
+                      />
+                      <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>원</span>
+                    </div>
+                  ) : (
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                      {deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}원
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
