@@ -551,7 +551,7 @@ async function generateRecoveryAreaPage(caseData: any, estimateRowsData: any[]):
   return replaceTemplateVariables(template, data);
 }
 
-async function generateEstimatePage(caseData: any, estimateData: any, estimateRowsData: any[]): Promise<string> {
+async function generateEstimatePage(caseData: any, estimateData: any, estimateRowsData: any[], partnerData: any): Promise<string> {
   const templatePath = path.join(TEMPLATES_DIR, 'estimate.html');
   let template = fs.readFileSync(templatePath, 'utf-8');
   
@@ -777,6 +777,9 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     address: fullAddress,
     documentDate: formatDate(new Date().toISOString()),
     partnerCompany: caseData.assignedPartner || '',
+    supplierBusinessNumber: partnerData?.businessRegistrationNumber || '',
+    supplierCompanyName: partnerData?.company || caseData.assignedPartner || '',
+    supplierRepresentative: partnerData?.representativeName || '',
     areaRowsHtml: areaRowsHtml,
     laborRowsHtml: laborRowsHtml,
     materialRowsHtml: materialRowsHtml,
@@ -1115,7 +1118,7 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
       }
       
       // Generate estimate page (노무비/자재비 견적서)
-      const estimateHtml = await generateEstimatePage(caseData, estimateData, estimateRowsData);
+      const estimateHtml = await generateEstimatePage(caseData, estimateData, estimateRowsData, partnerData);
       const page = await browser.newPage();
       await page.setContent(estimateHtml, { waitUntil: 'networkidle0' });
       const pdfBuffer = await page.pdf({
