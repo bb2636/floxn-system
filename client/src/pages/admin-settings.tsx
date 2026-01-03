@@ -442,6 +442,7 @@ export default function AdminSettings() {
     address: "",
     addressDetail: "",
     businessRegistrationNumber: "",
+    representativeName: "",
     bankName: "",
     accountNumber: "",
     accountHolder: "",
@@ -4459,6 +4460,7 @@ export default function AdminSettings() {
                         office: selectedUser.office,
                         address: selectedUser.address,
                         businessRegistrationNumber: selectedUser.businessRegistrationNumber,
+                        representativeName: selectedUser.representativeName,
                         bankName: selectedUser.bankName,
                         accountNumber: selectedUser.accountNumber,
                         accountHolder: selectedUser.accountHolder,
@@ -5050,7 +5052,7 @@ export default function AdminSettings() {
                   {/* Partner-specific fields */}
                   {selectedUser.role === "협력사" && (
                     <>
-                      {/* Row: Business Registration Number */}
+                      {/* Row: Business Registration Number + Representative Name */}
                       <div className="flex gap-5">
                         <div className="flex-1 flex flex-col gap-2">
                           <span
@@ -5090,6 +5092,47 @@ export default function AdminSettings() {
                               }}
                             >
                               {selectedUser.businessRegistrationNumber || "-"}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex-1 flex flex-col gap-2">
+                          <span
+                            style={{
+                              fontFamily: "Pretendard",
+                              fontSize: "14px",
+                              fontWeight: 400,
+                              letterSpacing: "-0.01em",
+                              color: "rgba(12, 12, 12, 0.5)",
+                            }}
+                          >
+                            대표자 명
+                          </span>
+                          {isEditMode ? (
+                            <input
+                              type="text"
+                              value={editedUserData.representativeName || ""}
+                              onChange={(e) => setEditedUserData({ ...editedUserData, representativeName: e.target.value })}
+                              className="px-3 py-2 rounded-lg border"
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                color: "rgba(12, 12, 12, 0.9)",
+                                borderColor: "rgba(12, 12, 12, 0.1)",
+                              }}
+                              data-testid="input-edit-representativeName"
+                            />
+                          ) : (
+                            <span
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontSize: "16px",
+                                fontWeight: 400,
+                                letterSpacing: "-0.02em",
+                                color: "rgba(12, 12, 12, 0.9)",
+                              }}
+                            >
+                              {selectedUser.representativeName || "-"}
                             </span>
                           )}
                         </div>
@@ -6821,43 +6864,82 @@ export default function AdminSettings() {
                       </div>
                     </div>
 
-                    {/* 협력사 정보: Row 2.5 - 사업자 등록번호 */}
-                    <div style={{ width: "100%" }}>
-                      <label
-                        className="block mb-2"
-                        style={{
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          fontWeight: 400,
-                          letterSpacing: "-0.01em",
-                          color: "#686A6E",
-                        }}
-                      >
-                        사업자 등록번호
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="사업자 등록번호 입력 (예: 123-45-67890)"
-                        value={createAccountForm.businessRegistrationNumber}
-                        onChange={(e) =>
-                          setCreateAccountForm({
-                            ...createAccountForm,
-                            businessRegistrationNumber: e.target.value,
-                          })
-                        }
-                        className="w-full px-4 py-3 outline-none"
-                        style={{
-                          background: "#FDFDFD",
-                          border: "2px solid rgba(12, 12, 12, 0.08)",
-                          borderRadius: "8px",
-                          fontFamily: "Pretendard",
-                          fontSize: "14px",
-                          fontWeight: 400,
-                          letterSpacing: "-0.02em",
-                          color: "rgba(12, 12, 12, 0.9)",
-                        }}
-                        data-testid="input-business-registration-number"
-                      />
+                    {/* 협력사 정보: Row 2.5 - 사업자 등록번호 + 대표자 명 */}
+                    <div className="flex gap-4" style={{ width: "100%" }}>
+                      <div style={{ flex: 1 }}>
+                        <label
+                          className="block mb-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "#686A6E",
+                          }}
+                        >
+                          사업자 등록번호
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="사업자 등록번호 입력 (예: 123-45-67890)"
+                          value={createAccountForm.businessRegistrationNumber}
+                          onChange={(e) =>
+                            setCreateAccountForm({
+                              ...createAccountForm,
+                              businessRegistrationNumber: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12, 12, 12, 0.08)",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                          data-testid="input-business-registration-number"
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label
+                          className="block mb-2"
+                          style={{
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.01em",
+                            color: "#686A6E",
+                          }}
+                        >
+                          대표자 명
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="대표자 명 입력"
+                          value={createAccountForm.representativeName}
+                          onChange={(e) =>
+                            setCreateAccountForm({
+                              ...createAccountForm,
+                              representativeName: e.target.value,
+                            })
+                          }
+                          className="w-full px-4 py-3 outline-none"
+                          style={{
+                            background: "#FDFDFD",
+                            border: "2px solid rgba(12, 12, 12, 0.08)",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontSize: "14px",
+                            fontWeight: 400,
+                            letterSpacing: "-0.02em",
+                            color: "rgba(12, 12, 12, 0.9)",
+                          }}
+                          data-testid="input-representative-name"
+                        />
+                      </div>
                     </div>
 
                     {/* 협력사 정보: Row 3 - 주소 (full width) */}
@@ -7416,6 +7498,7 @@ export default function AdminSettings() {
                     address: "",
                     addressDetail: "",
                     businessRegistrationNumber: "",
+                    representativeName: "",
                     bankName: "",
                     accountNumber: "",
                     accountHolder: "",
@@ -7976,6 +8059,7 @@ export default function AdminSettings() {
                         address: "",
                         addressDetail: "",
                         businessRegistrationNumber: "",
+                        representativeName: "",
                         bankName: "",
                         accountNumber: "",
                         accountHolder: "",
@@ -8160,6 +8244,7 @@ export default function AdminSettings() {
                       address: "",
                       addressDetail: "",
                       businessRegistrationNumber: "",
+                      representativeName: "",
                       bankName: "",
                       accountNumber: "",
                       accountHolder: "",
