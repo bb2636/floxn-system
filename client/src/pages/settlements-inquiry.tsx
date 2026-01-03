@@ -1011,7 +1011,23 @@ export default function SettlementsInquiry() {
                     minWidth: "120px",
                   }}
                 >
-                  접수번호
+                  증권번호
+                </th>
+                <th
+                  rowSpan={2}
+                  style={{
+                    padding: "16px",
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "rgba(12, 12, 12, 0.8)",
+                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
+                    textAlign: "center",
+                    minWidth: "120px",
+                  }}
+                >
+                  사고번호
                 </th>
                 <th
                   rowSpan={2}
@@ -1059,23 +1075,7 @@ export default function SettlementsInquiry() {
                     minWidth: "120px",
                   }}
                 >
-                  증권번호
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "120px",
-                  }}
-                >
-                  사고번호
+                  접수번호
                 </th>
                 <th
                   rowSpan={2}
@@ -1540,7 +1540,19 @@ export default function SettlementsInquiry() {
                       textAlign: "center",
                     }}
                   >
-                    {formatCaseNumber(row.caseNumber)}
+                    {row.withdrawalNumber}
+                  </td>
+                  <td
+                    style={{
+                      padding: "14px 16px",
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.8)",
+                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
+                      textAlign: "center",
+                    }}
+                  >
+                    {row.accidentNumber}
                   </td>
                   <td
                     style={{
@@ -1576,19 +1588,7 @@ export default function SettlementsInquiry() {
                       textAlign: "center",
                     }}
                   >
-                    {row.withdrawalNumber}
-                  </td>
-                  <td
-                    style={{
-                      padding: "14px 16px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: "rgba(12, 12, 12, 0.8)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                      textAlign: "center",
-                    }}
-                  >
-                    {row.accidentNumber}
+                    {formatCaseNumber(row.caseNumber)}
                   </td>
                   <td
                     style={{
