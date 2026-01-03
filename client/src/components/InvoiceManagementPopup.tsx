@@ -1285,36 +1285,9 @@ export function InvoiceManagementPopup({
                   <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                     입금일
                   </span>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="justify-start text-left font-normal"
-                        data-testid="button-deposit-date"
-                        style={{
-                          height: "36px",
-                          background: "#FFFFFF",
-                          border: "1px solid rgba(12, 12, 12, 0.2)",
-                          borderRadius: "6px",
-                          fontWeight: 400,
-                          fontSize: "14px",
-                          color: depositDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
-                          padding: "0 12px",
-                        }}
-                      >
-                        <CalendarIcon size={16} style={{ marginRight: "8px", color: "rgba(12, 12, 12, 0.5)" }} />
-                        {depositDate ? format(depositDate, "yyyy-MM-dd") : "날짜 선택"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                      <Calendar
-                        mode="single"
-                        selected={depositDate}
-                        onSelect={setDepositDate}
-                        locale={ko}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {depositDate ? format(depositDate, "yyyy-MM-dd") : "-"}
+                  </span>
                 </div>
 
                 {/* 입금 구분 */}
@@ -1389,89 +1362,14 @@ export function InvoiceManagementPopup({
                   </RadioGroup>
                 </div>
 
-                {/* 총 승인 금액 */}
-                <div className="flex items-center justify-between">
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
-                    총 승인 금액
-                  </span>
-                  <div className="flex items-center">
-                    <Input
-                      type="text"
-                      value={totalApprovedAmountInput ? parseInt(totalApprovedAmountInput.replace(/,/g, "") || "0").toLocaleString() : "0"}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                        setTotalApprovedAmountInput(value);
-                      }}
-                      data-testid="input-total-approved-amount"
-                      className="text-right"
-                      style={{
-                        width: "140px",
-                        height: "36px",
-                        fontWeight: 400,
-                        fontSize: "15px",
-                        color: "rgba(12, 12, 12, 0.9)",
-                        border: "1px solid rgba(12, 12, 12, 0.2)",
-                        borderRadius: "6px",
-                      }}
-                    />
-                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)", marginLeft: "4px" }}>
-                      원
-                    </span>
-                  </div>
-                </div>
-
                 {/* 자기부담금 */}
                 <div className="flex items-center justify-between">
                   <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                     자기부담금
                   </span>
-                  <div className="flex items-center">
-                    <Input
-                      type="text"
-                      value={deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                        setDeductibleAmount(value);
-                      }}
-                      data-testid="input-deductible-amount"
-                      className="text-right"
-                      style={{
-                        width: "140px",
-                        height: "36px",
-                        fontWeight: 400,
-                        fontSize: "15px",
-                        color: "rgba(12, 12, 12, 0.9)",
-                        border: "1px solid rgba(12, 12, 12, 0.2)",
-                        borderRadius: "6px",
-                      }}
-                    />
-                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)", marginLeft: "4px" }}>
-                      원
-                    </span>
-                  </div>
-                </div>
-
-                {/* 비고란 */}
-                <div className="flex flex-col gap-2 mt-2">
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
-                    비고
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}원
                   </span>
-                  <textarea
-                    placeholder="내용을 입력하세요"
-                    data-testid="textarea-invoice-remarks"
-                    className="w-full resize-none"
-                    rows={4}
-                    style={{
-                      padding: "12px 16px",
-                      border: "1px solid rgba(12, 12, 12, 0.2)",
-                      borderRadius: "8px",
-                      fontSize: "14px",
-                      fontWeight: 400,
-                      color: "rgba(12, 12, 12, 0.9)",
-                      background: "#FFFFFF",
-                      outline: "none",
-                    }}
-                  />
                 </div>
               </div>
             </div>
