@@ -3996,15 +3996,24 @@ export class DbStorage implements IStorage {
   ): Promise<User | null> {
     const user = await this.getUserByUsername(username);
     if (!user) {
+      console.log("[VERIFY PASSWORD] User not found:", username);
       return null;
     }
 
     // Block login for deleted accounts (soft delete)
     if (user.status === "deleted") {
+      console.log("[VERIFY PASSWORD] Account deleted:", username);
       return null;
     }
 
     const isValid = await bcrypt.compare(password, user.password);
+    console.log("[VERIFY PASSWORD]", { 
+      username, 
+      userExists: true, 
+      status: user.status,
+      passwordValid: isValid,
+      hasPasswordHash: !!user.password
+    });
     return isValid ? user : null;
   }
 

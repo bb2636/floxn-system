@@ -70,12 +70,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = loginSchema.parse(req.body);
       
+      console.log("[LOGIN ATTEMPT]", {
+        username: validatedData.username,
+        isProduction: process.env.REPLIT_DEPLOYMENT === '1',
+        dbUrl: process.env.REPLIT_DEPLOYMENT === '1' ? 'PROD_DATABASE' : 'DEV_DATABASE'
+      });
+      
       const user = await storage.verifyPassword(
         validatedData.username,
         validatedData.password
       );
 
       if (!user) {
+        console.log("[LOGIN FAILED] User not found or password mismatch:", validatedData.username);
         return res.status(401).json({ 
           error: "아이디 또는 비밀번호가 올바르지 않습니다" 
         });
@@ -151,6 +158,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     res.json({ authenticated: false });
+  });
+
+  // Force reset admin passwords endpoint (temporary fix for production)
+  app.post("/api/reset-admin-passwords", async (req, res) => {
+    try {
+      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+      console.log("[RESET ADMIN] Starting password reset, isProduction:", isProduction);
+      
+      const adminUsernames = ["admin01", "admin02", "admin03", "admin04", "admin05"];
+      const results = [];
+      
+      for (const username of adminUsernames) {
+        const updated = await storage.updatePassword(username, "1234");
+        results.push({ username, success: !!updated });
+        console.log(`[RESET ADMIN] ${username}: ${updated ? 'SUCCESS' : 'FAILED'}`);
+      }
+      
+      res.json({ 
+        message: "Admin passwords reset complete",
+        isProduction,
+        results 
+      });
+    } catch (error) {
+      console.error("[RESET ADMIN] Error:", error);
+      res.status(500).json({ error: "Failed to reset passwords" });
+    }
   });
 
   // BUILD VERSION - Always accessible to verify deployment
