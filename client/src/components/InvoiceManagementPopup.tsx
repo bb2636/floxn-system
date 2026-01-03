@@ -768,32 +768,29 @@ export function InvoiceManagementPopup({
             maxHeight: "calc(90vh - 187px)",
           }}
         >
-          <div className="flex flex-col gap-6 p-0">
+          <div className="flex flex-col gap-5 p-0">
             {/* 기본정보 섹션 */}
             <div
               style={{
                 background: "#FFFFFF",
-                borderLeft: "4px solid #3B82F6",
-                borderRadius: "4px",
-                padding: "24px 28px",
-                boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                border: "1px solid rgba(12, 12, 12, 0.08)",
+                borderRadius: "8px",
+                padding: "28px 32px",
               }}
             >
               <div 
-                className="flex items-center mb-5"
+                className="flex items-center mb-6"
                 style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
               >
                 기본정보
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-4">
                 {/* 제출일 */}
-                <div className="flex items-center justify-between py-2">
-                  <div className="flex items-center" style={{ width: "100px" }}>
-                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
-                      제출일
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    제출일
+                  </span>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -801,21 +798,21 @@ export function InvoiceManagementPopup({
                         className="justify-start text-left font-normal"
                         data-testid="button-submission-date"
                         style={{
-                          width: "140px",
-                          height: "40px",
-                          background: "rgba(255, 255, 255, 0.04)",
-                          border: "1px solid rgba(12, 12, 12, 0.3)",
+                          height: "36px",
+                          background: "#FFFFFF",
+                          border: "1px solid rgba(12, 12, 12, 0.2)",
                           borderRadius: "6px",
-                          fontWeight: 500,
-                          fontSize: "16px",
-                          color: submissionDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.7)",
+                          fontWeight: 400,
+                          fontSize: "14px",
+                          color: submissionDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                          padding: "0 12px",
                         }}
                       >
-                        <CalendarIcon size={20} style={{ marginRight: "8px", color: "rgba(12, 12, 12, 0.7)" }} />
+                        <CalendarIcon size={16} style={{ marginRight: "8px", color: "rgba(12, 12, 12, 0.5)" }} />
                         {submissionDate ? format(submissionDate, "yyyy-MM-dd") : "날짜 선택"}
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0" align="end">
                       <Calendar
                         mode="single"
                         selected={submissionDate}
@@ -827,226 +824,112 @@ export function InvoiceManagementPopup({
                 </div>
 
                 {/* 수임일 */}
-                <div className="flex items-center justify-between py-0 h-11">
-                  <div className="flex items-center px-1">
-                    <span style={{ fontWeight: 600, fontSize: "16px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      수임일
-                    </span>
-                  </div>
-                  <div className="flex items-center px-1">
-                    <span style={{ fontWeight: 500, fontSize: "16px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {acceptanceDate || "-"}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    수임일
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {acceptanceDate || "-"}
+                  </span>
                 </div>
 
                 {/* 보험사 */}
-                <div className="flex items-center justify-between py-0 h-11">
-                  <div className="flex items-center px-1">
-                    <span style={{ fontWeight: 600, fontSize: "16px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      보험사
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2.5 px-1">
-                    <span style={{ fontWeight: 500, fontSize: "16px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {caseData.insuranceCompany || "-"}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    보험사
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.insuranceCompany || "-"} {caseData.clientName || ""} {caseData.clientContact || ""}
+                  </span>
                 </div>
 
                 {/* 담당자 */}
-                <div className="flex items-center justify-between py-0 h-11">
-                  <div className="flex items-center px-1">
-                    <span style={{ fontWeight: 600, fontSize: "16px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      담당자
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2.5 px-1">
-                    <span style={{ fontWeight: 500, fontSize: "16px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {managerName}
-                    </span>
-                    <span style={{ fontWeight: 500, fontSize: "16px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {managerContact}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    담당자
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {managerName} {managerContact}
+                  </span>
                 </div>
 
                 {/* 접수번호 */}
-                <div className="flex items-center justify-between py-0 h-11">
-                  <div className="flex items-center px-1">
-                    <span style={{ fontWeight: 600, fontSize: "16px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      접수번호
-                    </span>
-                  </div>
-                  <div className="flex items-center px-1">
-                    <span style={{ fontWeight: 500, fontSize: "16px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {caseData.caseNumber || "-"}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    접수번호
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.caseNumber || "-"}
+                  </span>
                 </div>
 
                 {/* 사고번호 */}
-                <div className="flex items-center justify-between py-0 h-11">
-                  <div className="flex items-center px-1">
-                    <span style={{ fontWeight: 600, fontSize: "16px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      사고번호
-                    </span>
-                  </div>
-                  <div className="flex items-center px-1">
-                    <span style={{ fontWeight: 500, fontSize: "16px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {caseData.insuranceAccidentNo || "-"}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    사고번호
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.insuranceAccidentNo || "-"}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* 협력/현장 정보 & 세금계산서/인보이스 섹션 */}
-            <div className="flex gap-4">
-              {/* 협력/현장 정보 */}
-              <div
-                className="flex-1"
-                style={{
-                  background: "#FFFFFF",
-                  border: "1px solid rgba(12, 12, 12, 0.12)",
-                  borderRadius: "12px",
-                  padding: "20px 24px",
-                }}
+            {/* 협력/현장 정보 섹션 */}
+            <div
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid rgba(12, 12, 12, 0.08)",
+                borderRadius: "8px",
+                padding: "28px 32px",
+              }}
+            >
+              <div 
+                className="flex items-center mb-6"
+                style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
               >
-                <div 
-                  className="flex items-center py-2 mb-2"
-                  style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
-                >
-                  협력/현장 정보
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  {/* 협력업체 */}
-                  <div className="flex items-center justify-between py-1.5">
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      협력업체
-                    </span>
-                    <span style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {caseData.assignedPartner || "-"}
-                    </span>
-                  </div>
-
-                  {/* 담당자 */}
-                  <div className="flex items-center justify-between py-1.5">
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      담당자
-                    </span>
-                    <span style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {caseData.assignedPartnerManager || "-"} {caseData.assignedPartnerContact || ""}
-                    </span>
-                  </div>
-
-                  {/* 사고유형 */}
-                  <div className="flex items-center justify-between py-1.5">
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      사고유형
-                    </span>
-                    <span style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {caseData.accidentType || "-"}
-                    </span>
-                  </div>
-
-                  {/* 공사유무 */}
-                  <div className="flex items-center justify-between py-1.5">
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      공사유무
-                    </span>
-                    <span style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {caseData.recoveryType === "직접복구" ? "수리" : caseData.recoveryType === "선견적요청" ? "미수리" : "-"}
-                    </span>
-                  </div>
-                </div>
+                협력/현장 정보
               </div>
 
-              {/* 세금계산서/인보이스 */}
-              <div
-                className="flex-1"
-                style={{
-                  background: "#FFFFFF",
-                  border: "1px solid rgba(12, 12, 12, 0.12)",
-                  borderRadius: "12px",
-                  padding: "20px 24px",
-                }}
-              >
-                <div 
-                  className="flex items-center py-2 mb-2"
-                  style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
-                >
-                  세금계산서/인보이스
+              <div className="flex flex-col gap-4">
+                {/* 협력업체 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    협력업체
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.assignedPartner || "-"}
+                  </span>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  {/* 세금계산서 확인 */}
-                  <div className="flex items-center justify-between py-1.5">
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      세금계산서 확인
-                    </span>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="justify-start text-left font-normal"
-                          data-testid="button-tax-invoice-date"
-                          style={{
-                            width: "120px",
-                            height: "32px",
-                            background: "rgba(255, 255, 255, 0.04)",
-                            border: "1px solid rgba(12, 12, 12, 0.3)",
-                            borderRadius: "6px",
-                            fontWeight: 500,
-                            fontSize: "13px",
-                            color: taxInvoiceDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.7)",
-                          }}
-                        >
-                          <CalendarIcon size={14} style={{ marginRight: "4px", color: "rgba(12, 12, 12, 0.7)" }} />
-                          {taxInvoiceDate ? format(taxInvoiceDate, "yyyy-MM-dd") : "날짜 선택"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="end">
-                        <Calendar
-                          mode="single"
-                          selected={taxInvoiceDate}
-                          onSelect={handleTaxInvoiceDateSelect}
-                          locale={ko}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                {/* 담당자 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    담당자
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.assignedPartnerManager || "-"} {caseData.assignedPartnerContact || ""}
+                  </span>
+                </div>
 
-                  {/* 인보이스 확인 */}
-                  <div className="flex items-center justify-between py-1.5">
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      인보이스 확인
-                    </span>
-                    <span style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {caseData.invoiceConfirmDate || "-"}
-                    </span>
-                  </div>
+                {/* 사고유형 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    사고유형
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.accidentType || "-"}
+                  </span>
+                </div>
 
-                  {/* 인보이스 속성 */}
-                  <div className="flex items-center justify-between py-1.5">
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      인보이스 속성
-                    </span>
-                    <span style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {caseData.invoiceAttribute || "일반"}
-                    </span>
-                  </div>
-
-                  {/* 메인 인보이스 */}
-                  <div className="flex items-center justify-between py-1.5">
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      메인 인보이스
-                    </span>
-                    <span style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {caseData.mainInvoiceLink || "연동"}
-                    </span>
-                  </div>
+                {/* 공사유무 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    공사유무
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.recoveryType === "직접복구" ? "수리" : caseData.recoveryType === "선견적요청" ? "미수리" : "-"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1645,6 +1528,92 @@ export function InvoiceManagementPopup({
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* 세금계산서/인보이스 섹션 */}
+            <div
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid rgba(12, 12, 12, 0.08)",
+                borderRadius: "8px",
+                padding: "28px 32px",
+              }}
+            >
+              <div 
+                className="flex items-center mb-6"
+                style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
+              >
+                세금계산서/인보이스
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {/* 세금계산서 확인 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    세금계산서 확인
+                  </span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="justify-start text-left font-normal"
+                        data-testid="button-tax-invoice-date"
+                        style={{
+                          height: "36px",
+                          background: "#FFFFFF",
+                          border: "1px solid rgba(12, 12, 12, 0.2)",
+                          borderRadius: "6px",
+                          fontWeight: 400,
+                          fontSize: "14px",
+                          color: taxInvoiceDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                          padding: "0 12px",
+                        }}
+                      >
+                        <CalendarIcon size={16} style={{ marginRight: "8px", color: "rgba(12, 12, 12, 0.5)" }} />
+                        {taxInvoiceDate ? format(taxInvoiceDate, "yyyy-MM-dd") : "날짜 선택"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={taxInvoiceDate}
+                        onSelect={handleTaxInvoiceDateSelect}
+                        locale={ko}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* 인보이스 확인 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    인보이스 확인
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.invoiceConfirmDate || "-"}
+                  </span>
+                </div>
+
+                {/* 인보이스 속성 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    인보이스 속성
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.invoiceAttribute || "일반"}
+                  </span>
+                </div>
+
+                {/* 메인 인보이스 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    메인 인보이스
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.mainInvoiceLink || "연동"}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
