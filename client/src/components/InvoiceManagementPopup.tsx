@@ -935,454 +935,393 @@ export function InvoiceManagementPopup({
             </div>
 
             {/* 금액 섹션 */}
-            <div className="flex flex-col gap-2">
+            <div
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid rgba(12, 12, 12, 0.08)",
+                borderRadius: "8px",
+                padding: "28px 32px",
+              }}
+            >
               <div 
-                className="flex items-center py-2.5 px-1"
+                className="flex items-center mb-6"
                 style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
               >
                 금액
               </div>
 
-              <div 
-                className="flex flex-col"
-                style={{ borderRadius: "6px", overflow: "hidden", border: "1px solid rgba(12, 12, 12, 0.08)" }}
-              >
+              <div className="flex flex-col">
                 {/* 헤더 행 */}
-                <div className="flex items-center" style={{ height: "48px" }}>
-                  <div 
-                    className="flex items-center justify-center"
-                    style={{ 
-                      width: "120px", 
-                      height: "48px", 
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  />
-                  <div 
-                    className="flex items-center justify-center flex-1"
-                    style={{ 
-                      height: "48px", 
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                <div 
+                  className="flex items-center"
+                  style={{ 
+                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
+                    paddingBottom: "12px",
+                    marginBottom: "4px",
+                  }}
+                >
+                  <div style={{ width: "140px" }} />
+                  <div className="flex-1 text-center">
+                    <span style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>
                       손해방지비용
                     </span>
                   </div>
-                  <div 
-                    className="flex items-center justify-center flex-1"
-                    style={{ 
-                      height: "48px", 
-                      background: "rgba(12, 12, 12, 0.04)",
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
+                  <div className="flex-1 text-center">
+                    <span style={{ fontWeight: 500, fontSize: "14px", color: "rgba(12, 12, 12, 0.5)" }}>
                       대물비용
                     </span>
                   </div>
                 </div>
 
                 {/* 견적금액 행 */}
-                <div className="flex items-center" style={{ height: "48px", borderTop: "1px solid rgba(12, 12, 12, 0.08)" }}>
-                  <div 
-                    className="flex items-center justify-center"
-                    style={{ 
-                      width: "120px", 
-                      height: "48px", 
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
+                <div className="flex items-center py-4">
+                  <div style={{ width: "140px" }}>
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                       견적금액(원)
                     </span>
                   </div>
-                  <div 
-                    className="flex items-center justify-center flex-1"
-                    style={{ 
-                      height: "48px", 
-                      background: "#FFFFFF",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                  <div className="flex-1 text-center">
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
                       {displayEstimates.preventionEstimate.toLocaleString()}원
                     </span>
                   </div>
-                  <div 
-                    className="flex items-center justify-center flex-1"
-                    style={{ 
-                      height: "48px", 
-                      background: "#FFFFFF",
-                    }}
-                  >
-                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                  <div className="flex-1 text-center">
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
                       {displayEstimates.propertyEstimate.toLocaleString()}원
                     </span>
                   </div>
                 </div>
 
-                {/* 승인금액 행 */}
-                <div className="flex items-center" style={{ height: "48px", borderTop: "1px solid rgba(12, 12, 12, 0.08)" }}>
-                  <div 
-                    className="flex items-center justify-center"
-                    style={{ 
-                      width: "120px", 
-                      height: "48px", 
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
-                      승인금액(원)
-                    </span>
-                  </div>
-                  <div 
-                    className="flex items-center justify-center flex-1"
-                    style={{ 
-                      height: "48px", 
-                      background: "#FFFFFF",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {(parseInt(preventionApprovedAmount || "0") || 0).toLocaleString()}원
-                    </span>
-                  </div>
-                  <div 
-                    className="flex items-center justify-center flex-1"
-                    style={{ 
-                      height: "48px", 
-                      background: "#FFFFFF",
-                    }}
-                  >
-                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                      {(parseInt(propertyApprovedAmount || "0") || 0).toLocaleString()}원
-                    </span>
-                  </div>
-                </div>
-
                 {/* 차액 행 */}
-                <div className="flex items-center" style={{ height: "48px", borderTop: "1px solid rgba(12, 12, 12, 0.08)" }}>
-                  <div 
-                    className="flex items-center justify-center"
-                    style={{ 
-                      width: "120px", 
-                      height: "48px", 
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
+                <div className="flex items-center py-4">
+                  <div style={{ width: "140px" }}>
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                       차액(원)
                     </span>
                   </div>
-                  <div 
-                    className="flex items-center justify-center flex-1"
-                    style={{ 
-                      height: "48px", 
-                      background: "#FFFFFF",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                  <div className="flex-1 text-center">
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
                       {((parseInt(preventionApprovedAmount || "0") || 0) - displayEstimates.preventionEstimate).toLocaleString()}원
                     </span>
                   </div>
-                  <div 
-                    className="flex items-center justify-center flex-1"
-                    style={{ 
-                      height: "48px", 
-                      background: "#FFFFFF",
-                    }}
-                  >
-                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                  <div className="flex-1 text-center">
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
                       {((parseInt(propertyApprovedAmount || "0") || 0) - displayEstimates.propertyEstimate).toLocaleString()}원
                     </span>
                   </div>
                 </div>
 
                 {/* 수정률 행 */}
-                <div className="flex items-center" style={{ height: "48px", borderTop: "1px solid rgba(12, 12, 12, 0.08)" }}>
-                  <div 
-                    className="flex items-center justify-center"
-                    style={{ 
-                      width: "120px", 
-                      height: "48px", 
-                      background: "rgba(12, 12, 12, 0.04)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
+                <div className="flex items-center py-4">
+                  <div style={{ width: "140px" }}>
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                       수정률(%)
                     </span>
                   </div>
-                  <div 
-                    className="flex items-center justify-center flex-1"
-                    style={{ 
-                      height: "48px", 
-                      background: "#FFFFFF",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    }}
-                  >
-                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                  <div className="flex-1 text-center">
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
                       {displayEstimates.preventionEstimate > 0 
-                        ? ((((parseInt(preventionApprovedAmount || "0") || 0) - displayEstimates.preventionEstimate) / displayEstimates.preventionEstimate) * 100).toFixed(1) + "%"
+                        ? ((((parseInt(preventionApprovedAmount || "0") || 0) - displayEstimates.preventionEstimate) / displayEstimates.preventionEstimate) * 100).toFixed(0) + "%"
                         : "0%"}
                     </span>
                   </div>
-                  <div 
-                    className="flex items-center justify-center flex-1"
-                    style={{ 
-                      height: "48px", 
-                      background: "#FFFFFF",
-                    }}
-                  >
-                    <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
+                  <div className="flex-1 text-center">
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
                       {displayEstimates.propertyEstimate > 0 
-                        ? ((((parseInt(propertyApprovedAmount || "0") || 0) - displayEstimates.propertyEstimate) / displayEstimates.propertyEstimate) * 100).toFixed(1) + "%"
+                        ? ((((parseInt(propertyApprovedAmount || "0") || 0) - displayEstimates.propertyEstimate) / displayEstimates.propertyEstimate) * 100).toFixed(0) + "%"
                         : "0%"}
                     </span>
                   </div>
+                </div>
+
+                {/* 승인금액 행 */}
+                <div className="flex items-center py-4">
+                  <div style={{ width: "140px" }}>
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                      승인금액(원)
+                    </span>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                      {(parseInt(preventionApprovedAmount || "0") || 0).toLocaleString()}원
+                    </span>
+                  </div>
+                  <div className="flex-1 text-center">
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                      {(parseInt(propertyApprovedAmount || "0") || 0).toLocaleString()}원
+                    </span>
+                  </div>
+                </div>
+
+                {/* 구분선 */}
+                <div style={{ borderTop: "1px solid rgba(12, 12, 12, 0.08)", marginTop: "8px", marginBottom: "8px" }} />
+
+                {/* 총 승인금액 */}
+                <div className="flex items-center justify-between py-4">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    총 승인금액
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {totalApprovedAmount.toLocaleString()}원
+                  </span>
+                </div>
+
+                {/* 총 수수료(원) */}
+                <div className="flex items-center justify-between py-4">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    총 수수료(원)
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {feeAmount.toLocaleString()}원
+                  </span>
+                </div>
+
+                {/* 협력업체 지급액(원) */}
+                <div className="flex items-center justify-between py-4">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    협력업체 지급액(원)
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {partnerPaymentAmount.toLocaleString()}원
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* 정산 섹션 */}
-            <div 
-              className="flex flex-col gap-3 p-7"
+            <div
               style={{
                 background: "#FFFFFF",
-                border: "1px solid rgba(12, 12, 12, 0.12)",
-                borderRadius: "12px",
+                border: "1px solid rgba(12, 12, 12, 0.08)",
+                borderRadius: "8px",
+                padding: "28px 32px",
               }}
             >
-              <div style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C", marginBottom: "8px" }}>
+              <div 
+                className="flex items-center mb-6"
+                style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
+              >
                 정산
               </div>
 
-              {/* 수수료(원) */}
-              <div className="flex items-center justify-between py-2">
-                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                  수수료(원)
-                </span>
-                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {feeAmount.toLocaleString()}원
-                </span>
-              </div>
+              <div className="flex flex-col gap-4">
+                {/* 협력업체 지급일 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    협력업체 지급일
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {partnerPaymentDate || "-"}
+                  </span>
+                </div>
 
-              {/* 협력업체 지급액(원) */}
-              <div className="flex items-center justify-between py-2">
-                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                  협력업체 지급액(원)
-                </span>
-                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {partnerPaymentAmount.toLocaleString()}원
-                </span>
-              </div>
+                {/* 입금일 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    입금일
+                  </span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="justify-start text-left font-normal"
+                        data-testid="button-deposit-date"
+                        style={{
+                          height: "36px",
+                          background: "#FFFFFF",
+                          border: "1px solid rgba(12, 12, 12, 0.2)",
+                          borderRadius: "6px",
+                          fontWeight: 400,
+                          fontSize: "14px",
+                          color: depositDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                          padding: "0 12px",
+                        }}
+                      >
+                        <CalendarIcon size={16} style={{ marginRight: "8px", color: "rgba(12, 12, 12, 0.5)" }} />
+                        {depositDate ? format(depositDate, "yyyy-MM-dd") : "날짜 선택"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={depositDate}
+                        onSelect={setDepositDate}
+                        locale={ko}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
 
-              {/* 협력업체 지급일 */}
-              <div className="flex items-center justify-between py-2">
-                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                  협력업체 지급일
-                </span>
-                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>
-                  {partnerPaymentDate || "-"}
-                </span>
-              </div>
+                {/* 입금 구분 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    입금 구분
+                  </span>
+                  <RadioGroup 
+                    value={settlementStatus} 
+                    onValueChange={handleSettlementStatusChange}
+                    className="flex items-center gap-4"
+                  >
+                    <div className="flex items-center gap-1">
+                      <RadioGroupItem 
+                        value="정산" 
+                        id="status-settlement"
+                        data-testid="radio-status-settlement"
+                        className={settlementStatus === "정산" ? "border-[#008FED] text-[#008FED]" : "border-gray-300"}
+                      />
+                      <Label 
+                        htmlFor="status-settlement"
+                        style={{ 
+                          fontWeight: 500, 
+                          fontSize: "14px", 
+                          color: settlementStatus === "정산" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        정산
+                      </Label>
+                    </div>
 
-              {/* 입금일 */}
-              <div className="flex items-center justify-between py-2">
-                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                  입금일
-                </span>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="justify-start text-left font-normal"
-                      data-testid="button-deposit-date"
+                    <div className="flex items-center gap-1">
+                      <RadioGroupItem 
+                        value="부분입금" 
+                        id="status-partial"
+                        data-testid="radio-status-partial"
+                        className={settlementStatus === "부분입금" ? "border-[#008FED] text-[#008FED]" : "border-gray-300"}
+                      />
+                      <Label 
+                        htmlFor="status-partial"
+                        style={{ 
+                          fontWeight: 500, 
+                          fontSize: "14px", 
+                          color: settlementStatus === "부분입금" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        부분입금
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <RadioGroupItem 
+                        value="청구변경" 
+                        id="status-change"
+                        data-testid="radio-status-change"
+                        className={settlementStatus === "청구변경" ? "border-[#008FED] text-[#008FED]" : "border-gray-300"}
+                      />
+                      <Label 
+                        htmlFor="status-change"
+                        style={{ 
+                          fontWeight: 500, 
+                          fontSize: "14px", 
+                          color: settlementStatus === "청구변경" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        청구변경
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* 총 승인 금액 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    총 승인 금액
+                  </span>
+                  <div className="flex items-center">
+                    <Input
+                      type="text"
+                      value={totalApprovedAmountInput ? parseInt(totalApprovedAmountInput.replace(/,/g, "") || "0").toLocaleString() : "0"}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
+                        setTotalApprovedAmountInput(value);
+                      }}
+                      data-testid="input-total-approved-amount"
+                      className="text-right"
                       style={{
                         width: "140px",
-                        height: "32px",
-                        background: "rgba(255, 255, 255, 0.04)",
-                        border: "1px solid rgba(12, 12, 12, 0.3)",
+                        height: "36px",
+                        fontWeight: 400,
+                        fontSize: "15px",
+                        color: "rgba(12, 12, 12, 0.9)",
+                        border: "1px solid rgba(12, 12, 12, 0.2)",
                         borderRadius: "6px",
-                        fontWeight: 500,
-                        fontSize: "13px",
-                        color: depositDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.7)",
                       }}
-                    >
-                      <CalendarIcon size={14} style={{ marginRight: "4px", color: "rgba(12, 12, 12, 0.7)" }} />
-                      {depositDate ? format(depositDate, "yyyy-MM-dd") : "날짜 선택"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    <Calendar
-                      mode="single"
-                      selected={depositDate}
-                      onSelect={setDepositDate}
-                      locale={ko}
                     />
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              {/* 입금 구분 */}
-              <div className="flex items-center justify-between py-2">
-                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                  입금 구분
-                </span>
-                <RadioGroup 
-                  value={settlementStatus} 
-                  onValueChange={handleSettlementStatusChange}
-                  className="flex items-center gap-4"
-                >
-                  <div className="flex items-center gap-1">
-                    <RadioGroupItem 
-                      value="정산" 
-                      id="status-settlement"
-                      data-testid="radio-status-settlement"
-                      className={settlementStatus === "정산" ? "border-[#008FED] text-[#008FED]" : "border-gray-300"}
-                    />
-                    <Label 
-                      htmlFor="status-settlement"
-                      style={{ 
-                        fontWeight: 500, 
-                        fontSize: "14px", 
-                        color: settlementStatus === "정산" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
-                        cursor: "pointer",
-                      }}
-                    >
-                      정산
-                    </Label>
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)", marginLeft: "4px" }}>
+                      원
+                    </span>
                   </div>
+                </div>
 
-                  <div className="flex items-center gap-1">
-                    <RadioGroupItem 
-                      value="부분입금" 
-                      id="status-partial"
-                      data-testid="radio-status-partial"
-                      className={settlementStatus === "부분입금" ? "border-[#008FED] text-[#008FED]" : "border-gray-300"}
-                    />
-                    <Label 
-                      htmlFor="status-partial"
-                      style={{ 
-                        fontWeight: 500, 
-                        fontSize: "14px", 
-                        color: settlementStatus === "부분입금" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
-                        cursor: "pointer",
+                {/* 자기부담금 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    자기부담금
+                  </span>
+                  <div className="flex items-center">
+                    <Input
+                      type="text"
+                      value={deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
+                        setDeductibleAmount(value);
                       }}
-                    >
-                      부분입금
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <RadioGroupItem 
-                      value="청구변경" 
-                      id="status-change"
-                      data-testid="radio-status-change"
-                      className={settlementStatus === "청구변경" ? "border-[#008FED] text-[#008FED]" : "border-gray-300"}
-                    />
-                    <Label 
-                      htmlFor="status-change"
-                      style={{ 
-                        fontWeight: 500, 
-                        fontSize: "14px", 
-                        color: settlementStatus === "청구변경" ? "#008FED" : "rgba(12, 12, 12, 0.8)",
-                        cursor: "pointer",
+                      data-testid="input-deductible-amount"
+                      className="text-right"
+                      style={{
+                        width: "140px",
+                        height: "36px",
+                        fontWeight: 400,
+                        fontSize: "15px",
+                        color: "rgba(12, 12, 12, 0.9)",
+                        border: "1px solid rgba(12, 12, 12, 0.2)",
+                        borderRadius: "6px",
                       }}
-                    >
-                      청구변경
-                    </Label>
+                    />
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)", marginLeft: "4px" }}>
+                      원
+                    </span>
                   </div>
-                </RadioGroup>
-              </div>
+                </div>
 
-              {/* 총 승인 금액 */}
-              <div className="flex items-center justify-between py-2">
-                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                  총 승인 금액
-                </span>
-                <div className="flex items-center">
-                  <Input
-                    type="text"
-                    value={totalApprovedAmountInput ? parseInt(totalApprovedAmountInput.replace(/,/g, "") || "0").toLocaleString() : "0"}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                      setTotalApprovedAmountInput(value);
-                    }}
-                    data-testid="input-total-approved-amount"
-                    className="text-right"
+                {/* 비고란 */}
+                <div className="flex flex-col gap-2 mt-2">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    비고
+                  </span>
+                  <textarea
+                    placeholder="내용을 입력하세요"
+                    data-testid="textarea-invoice-remarks"
+                    className="w-full resize-none"
+                    rows={4}
                     style={{
-                      width: "140px",
-                      fontWeight: 500,
-                      fontSize: "15px",
-                      color: "rgba(12, 12, 12, 0.8)",
+                      padding: "12px 16px",
+                      border: "1px solid rgba(12, 12, 12, 0.2)",
+                      borderRadius: "8px",
+                      fontSize: "14px",
+                      fontWeight: 400,
+                      color: "rgba(12, 12, 12, 0.9)",
+                      background: "#FFFFFF",
+                      outline: "none",
                     }}
                   />
-                  <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)", marginLeft: "4px" }}>
-                    원
-                  </span>
                 </div>
               </div>
+            </div>
 
-              {/* 자기부담금 */}
-              <div className="flex items-center justify-between py-2">
-                <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.7)" }}>
-                  자기부담금
-                </span>
-                <div className="flex items-center">
-                  <Input
-                    type="text"
-                    value={deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                      setDeductibleAmount(value);
-                    }}
-                    data-testid="input-deductible-amount"
-                    className="text-right"
-                    style={{
-                      width: "140px",
-                      fontWeight: 500,
-                      fontSize: "15px",
-                      color: "rgba(12, 12, 12, 0.8)",
-                    }}
-                  />
-                  <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)", marginLeft: "4px" }}>
-                    원
-                  </span>
-                </div>
-              </div>
-
-              {/* 비고란 */}
-              <div className="flex flex-col gap-2 mt-4">
-                <span style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.7)" }}>
-                  비고
-                </span>
-                <textarea
-                  placeholder="내용을 입력하세요"
-                  data-testid="textarea-invoice-remarks"
-                  className="w-full resize-none"
-                  rows={4}
-                  style={{
-                    padding: "12px 16px",
-                    border: "1px solid rgba(12, 12, 12, 0.12)",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: 400,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    background: "#FFFFFF",
-                    outline: "none",
-                  }}
-                />
-              </div>
-
-              {/* 입금관리 섹션 - 인보이스 승인 후에만 표시 */}
-              {isInvoiceApproved && (
-                <div className="flex flex-col gap-3 mt-6">
+            {/* 입금관리 섹션 - 인보이스 승인 후에만 표시 */}
+            {isInvoiceApproved && (
+              <div
+                style={{
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(12, 12, 12, 0.08)",
+                  borderRadius: "8px",
+                  padding: "28px 32px",
+                }}
+              >
+                <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <span style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}>
                       입금관리
@@ -1527,8 +1466,8 @@ export function InvoiceManagementPopup({
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* 세금계산서/인보이스 섹션 */}
             <div
