@@ -1042,7 +1042,7 @@ export function InvoiceManagementPopup({
                   </div>
                 </div>
 
-                {/* 차액 행 */}
+                {/* 차액 행 - 견적금액 - 승인금액 (A - A1) */}
                 <div className="flex items-center py-4">
                   <div style={{ width: "140px" }}>
                     <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
@@ -1051,17 +1051,17 @@ export function InvoiceManagementPopup({
                   </div>
                   <div className="flex-1 text-center">
                     <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                      {((parseInt(preventionApprovedAmount || "0") || 0) - displayEstimates.preventionEstimate).toLocaleString()}원
+                      {(displayEstimates.preventionEstimate - (parseInt(preventionApprovedAmount || "0") || 0)).toLocaleString()}원
                     </span>
                   </div>
                   <div className="flex-1 text-center">
                     <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                      {((parseInt(propertyApprovedAmount || "0") || 0) - displayEstimates.propertyEstimate).toLocaleString()}원
+                      {(displayEstimates.propertyEstimate - (parseInt(propertyApprovedAmount || "0") || 0)).toLocaleString()}원
                     </span>
                   </div>
                 </div>
 
-                {/* 수정률 행 */}
+                {/* 수정률 행 - (견적금액 - 승인금액) / 견적금액 * 100% = (A - A1) / A * 100% */}
                 <div className="flex items-center py-4">
                   <div style={{ width: "140px" }}>
                     <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
@@ -1071,14 +1071,14 @@ export function InvoiceManagementPopup({
                   <div className="flex-1 text-center">
                     <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
                       {displayEstimates.preventionEstimate > 0 
-                        ? ((((parseInt(preventionApprovedAmount || "0") || 0) - displayEstimates.preventionEstimate) / displayEstimates.preventionEstimate) * 100).toFixed(0) + "%"
+                        ? (((displayEstimates.preventionEstimate - (parseInt(preventionApprovedAmount || "0") || 0)) / displayEstimates.preventionEstimate) * 100).toFixed(0) + "%"
                         : "0%"}
                     </span>
                   </div>
                   <div className="flex-1 text-center">
                     <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
                       {displayEstimates.propertyEstimate > 0 
-                        ? ((((parseInt(propertyApprovedAmount || "0") || 0) - displayEstimates.propertyEstimate) / displayEstimates.propertyEstimate) * 100).toFixed(0) + "%"
+                        ? (((displayEstimates.propertyEstimate - (parseInt(propertyApprovedAmount || "0") || 0)) / displayEstimates.propertyEstimate) * 100).toFixed(0) + "%"
                         : "0%"}
                     </span>
                   </div>
