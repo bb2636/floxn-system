@@ -265,9 +265,10 @@ export function InvoiceManagementPopup({
       
       if (settlementData && settlementData.id) {
         // 기존 정산 데이터 업데이트
-        const settlementUpdateData: Record<string, string> = {
+        const settlementUpdateData: Record<string, unknown> = {
           deductible: deductibleAmount || "0",
-          discount: totalDepositAmount.toString(), // 입금액
+          discount: totalDepositAmount.toString(), // 입금액 합계 (레거시 호환용)
+          depositEntries: depositEntries, // 입금내역 배열 저장
           commission: feeAmount.toString(), // 수수료
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
           partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
@@ -290,7 +291,8 @@ export function InvoiceManagementPopup({
           settlementAmount: "0", // 필수 필드
           settlementDate: depositDateValue || todayDate, // 입금일
           deductible: deductibleAmount || "0",
-          discount: totalDepositAmount.toString(), // 입금액
+          discount: totalDepositAmount.toString(), // 입금액 합계 (레거시 호환용)
+          depositEntries: depositEntries, // 입금내역 배열 저장
           commission: feeAmount.toString(), // 수수료
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
           partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
@@ -604,8 +606,12 @@ export function InvoiceManagementPopup({
                   setPartnerPaymentDate(settlementData.partnerPaymentDate);
                 }
                 
-                // 입금내역 복원 (discount로)
-                if (settlementData.discount && parseInt(settlementData.discount) > 0) {
+                // 입금내역 복원 (depositEntries 배열 우선, 없으면 discount로 호환)
+                if (settlementData.depositEntries && Array.isArray(settlementData.depositEntries) && settlementData.depositEntries.length > 0) {
+                  // 새 형식: depositEntries 배열 사용
+                  setDepositEntries(settlementData.depositEntries);
+                } else if (settlementData.discount && parseInt(settlementData.discount) > 0) {
+                  // 레거시 형식: discount에서 단일 항목 생성 (하위 호환용)
                   const depositEntry: DepositEntry = {
                     id: `deposit-loaded-${Date.now()}`,
                     depositDate: settlementData.settlementDate || format(new Date(), "yyyy-MM-dd"),
@@ -700,9 +706,10 @@ export function InvoiceManagementPopup({
       
       if (settlementData && settlementData.id) {
         // 기존 정산 데이터 업데이트
-        const settlementUpdateData: Record<string, string> = {
+        const settlementUpdateData: Record<string, unknown> = {
           deductible: deductibleAmount || "0",
-          discount: totalDepositAmount.toString(), // 입금액
+          discount: totalDepositAmount.toString(), // 입금액 합계 (레거시 호환용)
+          depositEntries: depositEntries, // 입금내역 배열 저장
           commission: feeAmount.toString(), // 수수료
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
           partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
@@ -725,7 +732,8 @@ export function InvoiceManagementPopup({
           settlementAmount: "0", // 필수 필드
           settlementDate: depositDateValue || todayDate, // 입금일
           deductible: deductibleAmount || "0",
-          discount: totalDepositAmount.toString(), // 입금액
+          discount: totalDepositAmount.toString(), // 입금액 합계 (레거시 호환용)
+          depositEntries: depositEntries, // 입금내역 배열 저장
           commission: feeAmount.toString(), // 수수료
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
           partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일

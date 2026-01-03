@@ -806,6 +806,17 @@ export const insertCaseChangeLogSchema = createInsertSchema(caseChangeLogs).omit
 export type CaseChangeLog = typeof caseChangeLogs.$inferSelect;
 export type InsertCaseChangeLog = z.infer<typeof insertCaseChangeLogSchema>;
 
+// 입금내역 타입 정의
+export interface DepositEntryData {
+  id: string;
+  depositDate: string;
+  insuranceCompany: string;
+  claimAmount: number;
+  depositStatus: "입금" | "미입금";
+  depositAmount: number;
+  memo: string;
+}
+
 // 정산 테이블
 export const settlements = pgTable("settlements", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -813,7 +824,7 @@ export const settlements = pgTable("settlements", {
   settlementAmount: text("settlement_amount").notNull(), // 정산금액
   settlementDate: text("settlement_date").notNull(), // 정산일자
   commission: text("commission"), // 수수료
-  discount: text("discount"), // 입금액
+  discount: text("discount"), // 입금액 (레거시, 하위 호환용)
   deductible: text("deductible"), // 자기부담금
   invoiceDate: text("invoice_date"), // 계산서 발행일
   memo: text("memo"), // 정산 메모
@@ -821,6 +832,7 @@ export const settlements = pgTable("settlements", {
   closingDate: text("closing_date"), // 종결일 (정산완료 시 설정)
   partnerPaymentAmount: text("partner_payment_amount"), // 협력업체 지급금액
   partnerPaymentDate: text("partner_payment_date"), // 협력업체 지급일
+  depositEntries: json("deposit_entries").$type<DepositEntryData[]>(), // 입금내역 배열
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: text("created_at").notNull(),
 });
