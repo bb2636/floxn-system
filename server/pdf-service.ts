@@ -107,7 +107,7 @@ async function generateFieldReportPage(caseData: any, partnerData: any, repairIt
   let repairItemsHtml = '';
   if (repairItems && repairItems.length > 0) {
     repairItems.forEach((item, index) => {
-      const areaM2 = item.repairArea ? (Number(item.repairArea) / 1000000).toFixed(2) : '-';
+      const areaM2 = item.repairArea ? Number(item.repairArea).toFixed(2) : '-';
       repairItemsHtml += `
         <tr>
           <td>${index + 1}</td>
@@ -486,15 +486,15 @@ async function generateRecoveryAreaPage(caseData: any, estimateRowsData: any[]):
       const rowSpan = rows.length;
       
       rows.forEach((row, index) => {
-        // 피해면적 - mm to m conversion (stored as mm, display as m)
-        const damageW = row.damageWidth ? (Number(row.damageWidth) / 1000).toFixed(1) : '0.0';
-        const damageH = row.damageHeight ? (Number(row.damageHeight) / 1000).toFixed(1) : '0.0';
-        const damageAreaM2 = row.damageArea ? (Number(row.damageArea) / 1000000).toFixed(1) : '0.0';
+        // 피해면적 - 이미 m 단위로 저장됨
+        const damageW = row.damageWidth ? Number(row.damageWidth).toFixed(1) : '0.0';
+        const damageH = row.damageHeight ? Number(row.damageHeight).toFixed(1) : '0.0';
+        const damageAreaM2 = row.damageArea ? Number(row.damageArea).toFixed(1) : '0.0';
         
-        // 복구면적 - mm to m conversion
-        const repairW = row.repairWidth ? (Number(row.repairWidth) / 1000).toFixed(1) : '0.0';
-        const repairH = row.repairHeight ? (Number(row.repairHeight) / 1000).toFixed(1) : '0.0';
-        const repairAreaM2 = row.repairArea ? (Number(row.repairArea) / 1000000).toFixed(1) : '0.0';
+        // 복구면적 - 이미 m 단위로 저장됨
+        const repairW = row.repairWidth ? Number(row.repairWidth).toFixed(1) : '0.0';
+        const repairH = row.repairHeight ? Number(row.repairHeight).toFixed(1) : '0.0';
+        const repairAreaM2 = row.repairArea ? Number(row.repairArea).toFixed(1) : '0.0';
         
         // 공사내용 = location (위치), 공사분류 = workName (공사명)
         const workContent = row.location || '-';
@@ -563,12 +563,12 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     estimateRowsData.forEach((row, index) => {
       const damageW = row.damageWidth || '-';
       const damageH = row.damageHeight || '-';
-      const damageAreaM2 = row.damageArea ? (Number(row.damageArea) / 1000000).toFixed(2) : '-';
+      const damageAreaM2 = row.damageArea ? Number(row.damageArea).toFixed(2) : '-';
       const damageDisplay = `${damageW}×${damageH}=${damageAreaM2}㎡`;
       
       const repairW = row.repairWidth || '-';
       const repairH = row.repairHeight || '-';
-      const repairAreaM2 = row.repairArea ? (Number(row.repairArea) / 1000000).toFixed(2) : '-';
+      const repairAreaM2 = row.repairArea ? Number(row.repairArea).toFixed(2) : '-';
       const repairDisplay = `${repairW}×${repairH}=${repairAreaM2}㎡`;
       
       areaRowsHtml += `
