@@ -164,25 +164,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/reset-admin-passwords", async (req, res) => {
     try {
       const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
-      console.log("[RESET ADMIN] Starting password reset, isProduction:", isProduction);
+      const dbUrl = isProduction ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL;
+      const dbHost = dbUrl ? dbUrl.match(/@([^/]+)\//)?.[1] : 'unknown';
+      
+      console.log("[RESET ADMIN] Starting password reset", { isProduction, dbHost });
       
       const adminUsernames = ["admin01", "admin02", "admin03", "admin04", "admin05"];
       const results = [];
       
       for (const username of adminUsernames) {
-        const updated = await storage.updatePassword(username, "1234");
-        results.push({ username, success: !!updated });
-        console.log(`[RESET ADMIN] ${username}: ${updated ? 'SUCCESS' : 'FAILED'}`);
+        try {
+          const updated = await storage.updatePassword(username, "1234");
+          results.push({ username, success: !!updated, error: null });
+          console.log(`[RESET ADMIN] ${username}: ${updated ? 'SUCCESS' : 'USER NOT FOUND'}`);
+        } catch (err: any) {
+          results.push({ username, success: false, error: err.message });
+          console.error(`[RESET ADMIN] ${username} ERROR:`, err.message);
+        }
       }
       
       res.json({ 
         message: "Admin passwords reset complete",
         isProduction,
+        dbHost,
         results 
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("[RESET ADMIN] Error:", error);
-      res.status(500).json({ error: "Failed to reset passwords" });
+      res.status(500).json({ error: "Failed to reset passwords", details: error.message });
+    }
+  });
+
+  // Debug endpoint to check database connection
+  app.get("/api/debug/db-check", async (req, res) => {
+    try {
+      const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
+      const dbUrl = isProduction ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL;
+      const dbHost = dbUrl ? dbUrl.match(/@([^/]+)\//)?.[1] : 'unknown';
+      
+      // Try to get user count
+      const users = await storage.getAllUsers();
+      const adminUsers = users.filter(u => u.role === '관리자');
+      
+      res.json({
+        isProduction,
+        dbHost,
+        totalUsers: users.length,
+        adminUsers: adminUsers.map(u => ({ username: u.username, status: u.status }))
+      });
+    } catch (error: any) {
+      res.status(500).json({ 
+        error: "Database check failed", 
+        details: error.message,
+        isProduction: process.env.REPLIT_DEPLOYMENT === '1'
+      });
     }
   });
 
