@@ -920,18 +920,18 @@ export default function FieldReport() {
             <Button
               data-testid="button-approve-report"
               onClick={() => {
-                // 승인 가능 상태일 때만 다이얼로그 열기 (1차승인 상태 + 아직 보고서 승인 안됨)
-                if (caseData.status === "1차승인" && !caseData.reportApprovalDecision) {
+                // 승인 가능 상태일 때만 다이얼로그 열기 (현장정보제출 상태 + 아직 보고서 승인 안됨)
+                if (caseData.status === "현장정보제출" && !caseData.reportApprovalDecision) {
                   setShowApprovalDialog(true);
                 }
               }}
-              disabled={approvalMutation.isPending || caseData.status !== "1차승인" || !!caseData.reportApprovalDecision}
+              disabled={approvalMutation.isPending || caseData.status !== "현장정보제출" || !!caseData.reportApprovalDecision}
               className={
                 caseData.reportApprovalDecision === "승인"
                   ? "bg-green-100 text-green-700 hover:bg-green-100 cursor-default"
                   : caseData.reportApprovalDecision === "비승인"
                   ? "bg-red-100 text-red-700 hover:bg-red-100 cursor-default"
-                  : caseData.status === "1차승인"
+                  : caseData.status === "현장정보제출"
                   ? "bg-green-500 hover:bg-green-600"
                   : ""
               }
@@ -1961,6 +1961,18 @@ export default function FieldReport() {
                   const result = await response.json();
                   
                   if (response.ok) {
+                    // 이메일 전송 성공 시 케이스 상태를 "현장정보제출"로 변경
+                    try {
+                      await apiRequest("PATCH", `/api/cases/${selectedCaseId}`, {
+                        status: "현장정보제출"
+                      });
+                      // 케이스 데이터 새로고침
+                      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
+                      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+                    } catch (statusError) {
+                      console.error("상태 업데이트 오류:", statusError);
+                    }
+                    
                     const recipientList = emailRecipients.join(", ");
                     toast({
                       title: "전송 완료",

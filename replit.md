@@ -74,6 +74,14 @@ The system is a full-stack web application utilizing a React-based frontend and 
 - **Backend Libraries**: Express.js, bcrypt, express-session, memorystore, Zod.
 - **Database**: PostgreSQL (Neon-backed) with Drizzle ORM.
 
+## Recent Changes (2026-01-03)
+- **Field Survey Status Workflow Update**: Updated the field survey approval workflow
+  - 심사 (Review) → status "1차승인" (unchanged)
+  - 이메일 전송 (Email Send) → status "현장정보제출" (NEW)
+  - 승인 (Approval) → status "복구요청" (NEW - was not updating status before)
+  - Email button is visible when status is "1차승인" (after review approved)
+  - Approval button is enabled when status is "현장정보제출" (after email sent)
+
 ## Recent Changes (2025-12-31)
 - **Server Capacity Increase**: Fixed production 500 error for large document files.
   - Increased Express JSON body limit from 50MB to 500MB

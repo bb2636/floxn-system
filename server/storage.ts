@@ -4741,8 +4741,8 @@ export class DbStorage implements IStorage {
     // 현재 케이스 조회
     const existingCase = await this.getCaseById(caseId);
     
-    // 1차승인 상태가 아니면 보고서 승인 불가
-    if (!existingCase || existingCase.status !== "1차승인") {
+    // 현장정보제출 상태가 아니면 보고서 승인 불가
+    if (!existingCase || existingCase.status !== "현장정보제출") {
       return null;
     }
     
@@ -4765,7 +4765,8 @@ export class DbStorage implements IStorage {
         reportApprovalComment: approvalComment || null,
         reportApprovedAt: currentTimestamp,
         reportApprovedBy: approvedBy,
-        // 상태는 변경하지 않음 - 이메일 전송 후 유선 승인 받으면 관리자가 수동으로 2차승인 상태 변경
+        // 승인 시 상태를 "복구요청"으로 변경 (2차승인)
+        status: decision === "승인" ? "복구요청" : existingCase.status,
         ...additionalUpdates,
         updatedAt: currentDate,
       })
