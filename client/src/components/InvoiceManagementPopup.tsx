@@ -253,9 +253,12 @@ export function InvoiceManagementPopup({
         } else {
           // 인보이스가 없으면 새로 생성
           console.log("[Invoice Save] Creating new invoice, settlementStatus:", settlementStatus);
+          // 인보이스 타입 결정: recoveryType이 "선견적요청"이면 "선견적요청", 그 외는 "직접복구"
+          const invoiceType = caseData.recoveryType === "선견적요청" ? "선견적요청" : "직접복구";
           await apiRequest("POST", "/api/invoices", {
             caseGroupPrefix: caseGroupPrefix,
             caseId: caseData.id,
+            type: invoiceType,
             deductible: deductibleAmount || "0",
             settlementStatus: settlementStatus || "", // 입금구분 저장
           });
