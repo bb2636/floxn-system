@@ -3650,20 +3650,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const validated = estimateRowSchema.parse(row);
 
         // Convert to DB format with safe parsing
-        // For width/height: simple integer conversion (mm)
-        const toMillimeter = (val: string | number | null | undefined): number | null => {
-          if (val === null || val === undefined || val === "" || val === "0000") return null;
-          const num = typeof val === "string" ? parseInt(val, 10) : val;
+        // For width/height: parse as float (m 단위)
+        const toNumber = (val: string | number | null | undefined): number | null => {
+          if (val === null || val === undefined || val === "" || val === "0") return null;
+          const num = typeof val === "string" ? parseFloat(val) : val;
           return !isNaN(num) && num >= 0 ? num : null;
         };
 
-        // For area: convert m² to mm² (multiply by 1,000,000)
-        const squareMeterToMillimeter = (val: string | number | null | undefined): number | null => {
-          if (val === null || val === undefined || val === "" || val === "0000") return null;
+        // For area: parse as float (m² 단위, 변환 없이 그대로 저장)
+        const toArea = (val: string | number | null | undefined): number | null => {
+          if (val === null || val === undefined || val === "" || val === "0") return null;
           const num = typeof val === "string" ? parseFloat(val) : val;
           if (isNaN(num) || num < 0) return null;
-          // Convert m² to mm² (multiply by 1,000,000)
-          return Math.round(num * 1000000);
+          // 이미 m² 단위이므로 변환 없이 그대로 저장
+          return num;
         };
 
         return {
@@ -3671,12 +3671,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           location: validated.location === "선택" ? null : validated.location,
           workType: validated.workType || null,
           workName: validated.workName === "선택" ? null : validated.workName,
-          damageWidth: toMillimeter(validated.damageWidth),
-          damageHeight: toMillimeter(validated.damageHeight),
-          damageArea: squareMeterToMillimeter(validated.damageArea),
-          repairWidth: toMillimeter(validated.repairWidth),
-          repairHeight: toMillimeter(validated.repairHeight),
-          repairArea: squareMeterToMillimeter(validated.repairArea),
+          damageWidth: toNumber(validated.damageWidth),
+          damageHeight: toNumber(validated.damageHeight),
+          damageArea: toArea(validated.damageArea),
+          repairWidth: toNumber(validated.repairWidth),
+          repairHeight: toNumber(validated.repairHeight),
+          repairArea: toArea(validated.repairArea),
           note: validated.note || null,
           rowOrder: index + 1, // Server assigns 1-based ordering
         };
