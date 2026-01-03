@@ -2337,12 +2337,12 @@ export default function FieldEstimate() {
           location: row.location || (locations[0] || ""),
           workType: row.workType || "",
           workName: row.workName || (workNames[0] || ""),
-          damageWidth: row.damageWidth?.toString() || "0000",
-          damageHeight: row.damageHeight?.toString() || "0000",
-          damageArea: row.damageArea ? (row.damageArea / 1000000).toFixed(2) : "0000",
-          repairWidth: row.repairWidth?.toString() || "0000",
-          repairHeight: row.repairHeight?.toString() || "0000",
-          repairArea: row.repairArea ? (row.repairArea / 1000000).toFixed(2) : "0000",
+          damageWidth: row.damageWidth?.toString() || "0",
+          damageHeight: row.damageHeight?.toString() || "0",
+          damageArea: row.damageArea ? parseFloat(row.damageArea).toFixed(2) : "0",
+          repairWidth: row.repairWidth?.toString() || "0",
+          repairHeight: row.repairHeight?.toString() || "0",
+          repairArea: row.repairArea ? parseFloat(row.repairArea).toFixed(2) : "0",
           note: row.note || "",
         }));
         setRows(loadedRows);
@@ -2474,12 +2474,12 @@ export default function FieldEstimate() {
     location: "",
     workType: "",
     workName: "",
-    damageWidth: "0000",
-    damageHeight: "0000",
-    damageArea: "0000",
-    repairWidth: "0000",
-    repairHeight: "0000",
-    repairArea: "0000",
+    damageWidth: "0",
+    damageHeight: "0",
+    damageArea: "0",
+    repairWidth: "0",
+    repairHeight: "0",
+    repairArea: "0",
     note: "",
   });
 
@@ -2720,14 +2720,14 @@ export default function FieldEstimate() {
         // 공사명 변경 시 세로 값 처리
         if (field === 'workName') {
           if (isLinearWorkName(value)) {
-            // 걸레받이/몰딩으로 변경되면 세로를 1000mm(1m)로 고정
-            updated.damageHeight = '1000';
-            updated.repairHeight = '1000';
-            // 면적 재계산: 가로(mm) * 1000(mm) / 1000000 = 가로/1000 (m²)
+            // 걸레받이/몰딩으로 변경되면 세로를 1m로 고정
+            updated.damageHeight = '1';
+            updated.repairHeight = '1';
+            // 면적 재계산: 가로(m) * 1(m) = 가로 (m²)
             const damageWidth = parseFloat(updated.damageWidth) || 0;
             const repairWidth = parseFloat(updated.repairWidth) || 0;
-            const damageAreaM2 = (damageWidth * 1000 / 1000000).toFixed(2);
-            const repairAreaM2 = (repairWidth * 1000 / 1000000).toFixed(2);
+            const damageAreaM2 = (damageWidth * 1).toFixed(2);
+            const repairAreaM2 = (repairWidth * 1).toFixed(2);
             updated.damageArea = parseFloat(damageAreaM2) > 0 ? damageAreaM2 : '0.00';
             updated.repairArea = parseFloat(repairAreaM2) > 0 ? repairAreaM2 : '0.00';
           } else if (isLinearWorkName(row.workName) && !isLinearWorkName(value)) {
@@ -2760,16 +2760,14 @@ export default function FieldEstimate() {
           const width = parseFloat(field === 'damageWidth' ? value : row.damageWidth) || 0;
           
           if (isLinearWorkName(currentWorkName)) {
-            // 걸레받이/몰딩: 세로 1000mm(1m) 고정, 면적 = 가로*1000/1000000 (m²)
-            updated.damageHeight = '1000';
-            const areaM2 = (width * 1000 / 1000000).toFixed(2);
+            // 걸레받이/몰딩: 세로 1m 고정, 면적 = 가로 * 1 (m²)
+            updated.damageHeight = '1';
+            const areaM2 = (width * 1).toFixed(2);
             updated.damageArea = parseFloat(areaM2) > 0 ? areaM2 : '0.00';
           } else {
-            // 일반: mm -> m 변환하여 m² 계산 (1000mm = 1m)
+            // 일반: 가로(m) * 세로(m) = 면적(m²)
             const height = parseFloat(field === 'damageHeight' ? value : row.damageHeight) || 0;
-            const widthM = width / 1000;
-            const heightM = height / 1000;
-            const area = (widthM * heightM).toFixed(2);
+            const area = (width * height).toFixed(2);
             updated.damageArea = area;
           }
         }
@@ -2779,16 +2777,14 @@ export default function FieldEstimate() {
           const width = parseFloat(field === 'repairWidth' ? value : row.repairWidth) || 0;
           
           if (isLinearWorkName(currentWorkName)) {
-            // 걸레받이/몰딩: 세로 1000mm(1m) 고정, 면적 = 가로*1000/1000000 (m²)
-            updated.repairHeight = '1000';
-            const areaM2 = (width * 1000 / 1000000).toFixed(2);
+            // 걸레받이/몰딩: 세로 1m 고정, 면적 = 가로 * 1 (m²)
+            updated.repairHeight = '1';
+            const areaM2 = (width * 1).toFixed(2);
             updated.repairArea = parseFloat(areaM2) > 0 ? areaM2 : '0.00';
           } else {
-            // 일반: mm -> m 변환하여 m² 계산 (1000mm = 1m)
+            // 일반: 가로(m) * 세로(m) = 면적(m²)
             const height = parseFloat(field === 'repairHeight' ? value : row.repairHeight) || 0;
-            const widthM = width / 1000;
-            const heightM = height / 1000;
-            const area = (widthM * heightM).toFixed(2);
+            const area = (width * height).toFixed(2);
             updated.repairArea = area;
           }
           
@@ -3266,36 +3262,35 @@ export default function FieldEstimate() {
       }
       console.log(`[자재비 수량] ${workName} 전체 면적 합계: ${totalMaterialArea}㎡ (rows: ${rows.filter(r => r.workName === workName).length}개, 현재행포함: ${currentRowIncluded})`);
     } else if (lengthAggregationWorkNames.includes(workName)) {
-      // 몰딩/걸레받이: 길이 합산 (repairArea 필드 값은 mm 단위 → m로 변환: ÷1000)
-      let sumLengthMm = 0; // mm 단위 합계
+      // 몰딩/걸레받이: 길이 합산 (repairArea 필드 값은 m 단위)
+      let sumLengthM = 0; // m 단위 합계
       let currentRowIncluded = false;
       
       rows.forEach(row => {
         if (row.workName === workName) {
           if (row.id === sourceRowId) {
-            // 현재 편집 중인 행: 전달받은 repairArea 사용 (mm 단위)
-            sumLengthMm += (repairArea || 0);
+            // 현재 편집 중인 행: 전달받은 repairArea 사용 (m 단위)
+            sumLengthM += (repairArea || 0);
             currentRowIncluded = true;
           } else {
-            // 다른 행: rows 상태에서 읽기 (mm 단위)
-            const rowLengthMm = parseFloat(row.repairArea) || 0;
-            sumLengthMm += rowLengthMm;
+            // 다른 행: rows 상태에서 읽기 (m 단위)
+            const rowLengthM = parseFloat(row.repairArea) || 0;
+            sumLengthM += rowLengthM;
           }
         }
       });
       
       // 현재 행이 rows에 없는 경우 (새로 추가되는 경우) repairArea 추가
       if (!currentRowIncluded && repairArea) {
-        sumLengthMm += repairArea;
+        sumLengthM += repairArea;
       }
       
-      // mm → m 변환 (÷1000)
-      if (sumLengthMm > 0) {
-        const sumLengthM = sumLengthMm / 1000;
+      // 이미 m 단위이므로 변환 불필요
+      if (sumLengthM > 0) {
         totalMaterialLength = Math.round(sumLengthM * 100) / 100; // 소수점 둘째 자리
         totalMaterialArea = totalMaterialLength; // computeMaterialQuantity에서 사용
       }
-      console.log(`[자재비 수량] ${workName} 전체 길이 합계: ${sumLengthMm}mm → ${totalMaterialLength}m (rows: ${rows.filter(r => r.workName === workName).length}개, 현재행포함: ${currentRowIncluded})`);
+      console.log(`[자재비 수량] ${workName} 전체 길이 합계: ${totalMaterialLength}m (rows: ${rows.filter(r => r.workName === workName).length}개, 현재행포함: ${currentRowIncluded})`);
     }
     
     console.log('[일위대가 연동] 복구면적 → 노무비:', workType, workName);
@@ -4643,13 +4638,13 @@ export default function FieldEstimate() {
                           value={row.damageWidth}
                           onChange={(e) => updateRow(row.id, 'damageWidth', e.target.value)}
                           onFocus={() => {
-                            if (row.damageWidth === '0000' || row.damageWidth === '0') {
+                            if (row.damageWidth === '0') {
                               updateRow(row.id, 'damageWidth', '');
                             }
                           }}
                           onBlur={(e) => {
                             if (e.target.value === '') {
-                              updateRow(row.id, 'damageWidth', '0000');
+                              updateRow(row.id, 'damageWidth', '0');
                             }
                           }}
                           disabled={isReadOnly}
@@ -4673,13 +4668,13 @@ export default function FieldEstimate() {
                           value={row.damageHeight}
                           onChange={(e) => updateRow(row.id, 'damageHeight', e.target.value)}
                           onFocus={() => {
-                            if ((row.damageHeight === '0000' || row.damageHeight === '0' || row.damageHeight === '1000') && !isLinearWorkName(row.workName)) {
+                            if ((row.damageHeight === '0' || row.damageHeight === '1') && !isLinearWorkName(row.workName)) {
                               updateRow(row.id, 'damageHeight', '');
                             }
                           }}
                           onBlur={(e) => {
                             if (e.target.value === '' && !isLinearWorkName(row.workName)) {
-                              updateRow(row.id, 'damageHeight', '0000');
+                              updateRow(row.id, 'damageHeight', '0');
                             }
                           }}
                           disabled={isReadOnly}
@@ -4722,13 +4717,13 @@ export default function FieldEstimate() {
                           value={row.repairWidth}
                           onChange={(e) => updateRow(row.id, 'repairWidth', e.target.value)}
                           onFocus={() => {
-                            if (row.repairWidth === '0000' || row.repairWidth === '0') {
+                            if (row.repairWidth === '0') {
                               updateRow(row.id, 'repairWidth', '');
                             }
                           }}
                           onBlur={(e) => {
                             if (e.target.value === '') {
-                              updateRow(row.id, 'repairWidth', '0000');
+                              updateRow(row.id, 'repairWidth', '0');
                             }
                           }}
                           disabled={isReadOnly}
@@ -4752,13 +4747,13 @@ export default function FieldEstimate() {
                           value={row.repairHeight}
                           onChange={(e) => updateRow(row.id, 'repairHeight', e.target.value)}
                           onFocus={() => {
-                            if ((row.repairHeight === '0000' || row.repairHeight === '0' || row.repairHeight === '1000') && !isLinearWorkName(row.workName)) {
+                            if ((row.repairHeight === '0' || row.repairHeight === '1') && !isLinearWorkName(row.workName)) {
                               updateRow(row.id, 'repairHeight', '');
                             }
                           }}
                           onBlur={(e) => {
                             if (e.target.value === '' && !isLinearWorkName(row.workName)) {
-                              updateRow(row.id, 'repairHeight', '0000');
+                              updateRow(row.id, 'repairHeight', '0');
                             }
                           }}
                           disabled={isReadOnly}
