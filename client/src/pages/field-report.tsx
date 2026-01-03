@@ -3372,11 +3372,11 @@ export default function FieldReport() {
                                   <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">장소</th>
                                   <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">위치</th>
                                   <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">공사내용</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">가로(mm)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세로(mm)</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">가로(m)</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세로(m)</th>
                                   <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">면적(㎡)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">가로(mm)</th>
-                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세로(mm)</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">가로(m)</th>
+                                  <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">세로(m)</th>
                                   <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">면적(㎡)</th>
                                   <th style="padding: 10px 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">비고</th>
                                 </tr>
@@ -3389,10 +3389,10 @@ export default function FieldReport() {
                                     <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.workName || '-'}</td>
                                     <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageWidth || '0'}</td>
                                     <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageHeight || '0'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageArea ? (row.damageArea / 1_000_000).toFixed(2) : '0'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.damageArea ? parseFloat(String(row.damageArea)).toFixed(2) : '0'}</td>
                                     <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairWidth || '0'}</td>
                                     <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairHeight || '0'}</td>
-                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairArea ? (row.repairArea / 1_000_000).toFixed(2) : '0'}</td>
+                                    <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.repairArea ? parseFloat(String(row.repairArea)).toFixed(2) : '0'}</td>
                                     <td style="padding: 8px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.note || '-'}</td>
                                   </tr>
                                 `).join('')}
@@ -3627,11 +3627,11 @@ export default function FieldReport() {
                           </tr>
                           <tr style={{ background: "rgba(12, 12, 12, 0.02)" }}>
                             <th colSpan={3} style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
-                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>가로(mm)</th>
-                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>세로(mm)</th>
+                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>가로(m)</th>
+                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>세로(m)</th>
                             <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>면적(㎡)</th>
-                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>가로(mm)</th>
-                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>세로(mm)</th>
+                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}>가로(m)</th>
+                            <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>세로(m)</th>
                             <th style={{ padding: "8px", textAlign: "center", fontSize: "12px", borderBottom: "1px solid rgba(12, 12, 12, 0.1)" }}>면적(㎡)</th>
                             <th style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.1)", borderLeft: "1px solid rgba(12, 12, 12, 0.1)" }}></th>
                           </tr>
@@ -3642,15 +3642,15 @@ export default function FieldReport() {
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.category || '-'}</td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.location || '-'}</td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.workName || '-'}</td>
-                              <td style={{ padding: "10px 8px", textAlign: "center", borderLeft: "1px solid rgba(12, 12, 12, 0.06)" }}>{row.damageWidth || '0000'}</td>
-                              <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.damageHeight || '0000'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center", borderLeft: "1px solid rgba(12, 12, 12, 0.06)" }}>{row.damageWidth || '0'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.damageHeight || '0'}</td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>
-                                {row.damageArea ? (row.damageArea / 1_000_000).toFixed(2) : '0000'}
+                                {row.damageArea ? parseFloat(String(row.damageArea)).toFixed(2) : '0'}
                               </td>
-                              <td style={{ padding: "10px 8px", textAlign: "center", borderLeft: "1px solid rgba(12, 12, 12, 0.06)" }}>{row.repairWidth || '0000'}</td>
-                              <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.repairHeight || '0000'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center", borderLeft: "1px solid rgba(12, 12, 12, 0.06)" }}>{row.repairWidth || '0'}</td>
+                              <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.repairHeight || '0'}</td>
                               <td style={{ padding: "10px 8px", textAlign: "center" }}>
-                                {row.repairArea ? (row.repairArea / 1_000_000).toFixed(2) : '0000'}
+                                {row.repairArea ? parseFloat(String(row.repairArea)).toFixed(2) : '0'}
                               </td>
                               <td style={{ padding: "10px 8px", textAlign: "center", borderLeft: "1px solid rgba(12, 12, 12, 0.06)" }}>{row.note || '-'}</td>
                             </tr>
