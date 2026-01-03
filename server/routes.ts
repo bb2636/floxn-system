@@ -13,6 +13,7 @@ import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from 
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
 import { generatePdf } from "./pdf-service";
 import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
+import { sendFieldReportEmail } from "./hiworks-email";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
@@ -5687,6 +5688,92 @@ FLOXN 드림`;
     } catch (error) {
       console.error("Send invoice email error:", error);
       res.status(500).json({ error: "INVOICE 이메일 전송 중 오류가 발생했습니다" });
+    }
+  });
+
+  // ==========================================
+  // POST /api/reports/:caseId/send-email - 현장출동보고서 PDF 이메일 발송 (Hiworks SMTP)
+  // ==========================================
+  const sendFieldDispatchReportEmailSchema = z.object({
+    email: z.string().email("유효한 이메일 주소를 입력해주세요"),
+  });
+
+  app.post("/api/reports/:caseId/send-email", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    const user = await storage.getUser(req.session.userId);
+    if (!user) {
+      return res.status(403).json({ error: "사용자 정보를 찾을 수 없습니다" });
+    }
+
+    const allowedRoles = ["협력사", "관리자", "심사사"];
+    if (!allowedRoles.includes(user.role)) {
+      return res.status(403).json({ error: "현장출동보고서 이메일 발송 권한이 없습니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      
+      const validationResult = sendFieldDispatchReportEmailSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors.map(e => e.message).join(", ");
+        return res.status(400).json({ error: errorMessage });
+      }
+
+      const { email } = validationResult.data;
+
+      console.log(`[Field Report Email] Starting for case ${caseId} to ${email}`);
+
+      const caseData = await storage.getCaseById(caseId);
+      if (!caseData) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+
+      console.log(`[Field Report Email] Generating PDF for case ${caseData.caseNumber}`);
+
+      const pdfBuffer = await generatePdf({
+        caseId,
+        sections: {
+          cover: true,
+          fieldReport: true,
+          drawing: true,
+          evidence: false,
+          estimate: false,
+          etc: false,
+        },
+        evidence: {
+          tab: 'all',
+          selectedFileIds: [],
+        },
+      });
+
+      console.log(`[Field Report Email] PDF generated, size: ${pdfBuffer.length} bytes`);
+
+      const result = await sendFieldReportEmail(
+        email,
+        caseData.caseNumber || caseId,
+        caseData.insuredName || caseData.victimName || '',
+        pdfBuffer
+      );
+
+      if (!result.success) {
+        console.error(`[Field Report Email] Failed: ${result.error}`);
+        return res.status(500).json({ error: `이메일 발송 실패: ${result.error}` });
+      }
+
+      console.log(`[Field Report Email] Sent successfully to ${email}, messageId: ${result.messageId}`);
+
+      res.json({ 
+        success: true, 
+        message: "현장출동보고서가 이메일로 발송되었습니다",
+        messageId: result.messageId 
+      });
+    } catch (error) {
+      console.error("Send field report email error:", error);
+      const errorMessage = error instanceof Error ? error.message : "이메일 발송 중 오류가 발생했습니다";
+      res.status(500).json({ error: errorMessage });
     }
   });
 
