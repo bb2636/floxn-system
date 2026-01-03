@@ -244,6 +244,7 @@ export function InvoiceManagementPopup({
         const existingInvoiceData = await existingInvoice.json();
         
         if (existingInvoiceData && existingInvoiceData.id) {
+          console.log("[Invoice Save] Saving settlementStatus:", settlementStatus);
           await apiRequest("PATCH", `/api/invoices/${existingInvoiceData.id}`, {
             deductible: deductibleAmount || "0",
             settlementStatus: settlementStatus || "", // 입금구분 저장
@@ -549,9 +550,13 @@ export function InvoiceManagementPopup({
           try {
             const caseGroupPrefix = caseData.caseNumber?.split("-")[0] || "";
             if (caseGroupPrefix) {
-              const response = await fetch(`/api/invoices/group/${encodeURIComponent(caseGroupPrefix)}`);
+              const response = await fetch(`/api/invoices/group/${encodeURIComponent(caseGroupPrefix)}`, {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' }
+              });
               if (response.ok) {
                 const invoiceData = await response.json();
+                console.log("[Invoice Load] settlementStatus from server:", invoiceData.settlementStatus);
                 if (invoiceData) {
                   // 자기부담금
                   if (invoiceData.deductible) {
