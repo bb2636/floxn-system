@@ -1,8 +1,30 @@
 import nodemailer from 'nodemailer';
 
-const SMTP_HOST = 'smtps.hiworks.com';
-const SMTP_PORT = 465;
-const SMTP_USER = 'master@floxn.co.kr';
+const SMTP_CONFIGS = {
+  hiworks: {
+    host: 'smtps.hiworks.com',
+    port: 465,
+    secure: true,
+    user: 'master@floxn.co.kr',
+  },
+  gmail: {
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    user: process.env.GMAIL_USER || '',
+  },
+};
+
+function getSmtpConfig() {
+  const provider = (process.env.MAIL_PROVIDER || 'hiworks').toLowerCase();
+  const config = SMTP_CONFIGS[provider as keyof typeof SMTP_CONFIGS] || SMTP_CONFIGS.hiworks;
+  
+  if (provider === 'gmail' && process.env.GMAIL_USER) {
+    config.user = process.env.GMAIL_USER;
+  }
+  
+  return { provider, config };
+}
 
 let transporter: nodemailer.Transporter | null = null;
 
@@ -10,19 +32,23 @@ export function initializeEmailTransporter(): void {
   const password = process.env.MAIL_APP_PASSWORD;
   
   if (!password) {
-    console.warn('[Hiworks Email] MAIL_APP_PASSWORD not set - email sending will be disabled');
+    console.warn('[Email] MAIL_APP_PASSWORD not set - email sending will be disabled');
     return;
   }
 
-  console.log('[Hiworks Email] Initializing SMTP transporter...');
-  console.log(`[Hiworks Email] Host: ${SMTP_HOST}, Port: ${SMTP_PORT}, User: ${SMTP_USER}`);
+  const { provider, config } = getSmtpConfig();
+  
+  console.log('[Email] Initializing SMTP transporter...');
+  console.log(`[Email] Provider: ${provider}`);
+  console.log(`[Email] Host: ${config.host}, Port: ${config.port}, Secure: ${config.secure}`);
+  console.log(`[Email] User: ${config.user}`);
 
   transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: true,
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
     auth: {
-      user: SMTP_USER,
+      user: config.user,
       pass: password,
     },
   });
@@ -30,12 +56,18 @@ export function initializeEmailTransporter(): void {
   transporter.verify((error, success) => {
     if (error) {
       const err = error as any;
-      console.error('[Hiworks Email] SMTP connection verification FAILED');
-      console.error(`[Hiworks Email] Error code: ${err.code || 'N/A'}`);
-      console.error(`[Hiworks Email] Error message: ${err.message || 'N/A'}`);
-      console.error(`[Hiworks Email] Full error:`, JSON.stringify(err, null, 2));
+      console.error('[Email] ========== SMTP VERIFICATION FAILED ==========');
+      console.error(`[Email] Provider: ${provider}`);
+      console.error(`[Email] Host: ${config.host}:${config.port}`);
+      console.error(`[Email] User: ${config.user}`);
+      console.error(`[Email] Error code: ${err.code || 'N/A'}`);
+      console.error(`[Email] Error command: ${err.command || 'N/A'}`);
+      console.error(`[Email] Error responseCode: ${err.responseCode || 'N/A'}`);
+      console.error(`[Email] Error response: ${err.response || 'N/A'}`);
+      console.error(`[Email] Error message: ${err.message || 'N/A'}`);
+      console.error('[Email] ==============================================');
     } else {
-      console.log('[Hiworks Email] SMTP connection verified successfully');
+      console.log('[Email] SMTP connection verified successfully');
     }
   });
 }
@@ -55,31 +87,34 @@ interface SendEmailOptions {
 }
 
 export async function sendEmailWithAttachment(options: SendEmailOptions): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const { provider, config } = getSmtpConfig();
+  
   if (!transporter) {
     const password = process.env.MAIL_APP_PASSWORD;
     if (!password) {
       return { success: false, error: 'MAIL_APP_PASSWORD not configured' };
     }
     
-    console.log('[Hiworks Email] Creating transporter on-demand...');
+    console.log('[Email] Creating transporter on-demand...');
     transporter = nodemailer.createTransport({
-      host: SMTP_HOST,
-      port: SMTP_PORT,
-      secure: true,
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
       auth: {
-        user: SMTP_USER,
+        user: config.user,
         pass: password,
       },
     });
   }
 
   try {
-    console.log(`[Hiworks Email] Sending email to: ${options.to}`);
-    console.log(`[Hiworks Email] Subject: ${options.subject}`);
-    console.log(`[Hiworks Email] Attachments: ${options.attachments?.length || 0} files`);
+    console.log(`[Email] Sending email via ${provider}`);
+    console.log(`[Email] To: ${options.to}`);
+    console.log(`[Email] Subject: ${options.subject}`);
+    console.log(`[Email] Attachments: ${options.attachments?.length || 0} files`);
     
     const mailOptions: nodemailer.SendMailOptions = {
-      from: `"FLOXN" <${SMTP_USER}>`,
+      from: `"FLOXN" <${config.user}>`,
       to: options.to,
       subject: options.subject,
       text: options.text,
@@ -92,14 +127,19 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`[Hiworks Email] Email sent successfully. MessageId: ${result.messageId}`);
+    console.log(`[Email] Email sent successfully. MessageId: ${result.messageId}`);
     
     return { success: true, messageId: result.messageId };
   } catch (error: any) {
-    console.error('[Hiworks Email] Failed to send email');
-    console.error(`[Hiworks Email] Error code: ${error.code || 'N/A'}`);
-    console.error(`[Hiworks Email] Error message: ${error.message || 'N/A'}`);
-    console.error(`[Hiworks Email] Full error:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+    console.error('[Email] ========== SEND MAIL FAILED ==========');
+    console.error(`[Email] Provider: ${provider}`);
+    console.error(`[Email] To: ${options.to}`);
+    console.error(`[Email] Error code: ${error.code || 'N/A'}`);
+    console.error(`[Email] Error command: ${error.command || 'N/A'}`);
+    console.error(`[Email] Error responseCode: ${error.responseCode || 'N/A'}`);
+    console.error(`[Email] Error response: ${error.response || 'N/A'}`);
+    console.error(`[Email] Error message: ${error.message || 'N/A'}`);
+    console.error('[Email] ==========================================');
     return { success: false, error: error.message };
   }
 }
