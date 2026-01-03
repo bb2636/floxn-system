@@ -1958,6 +1958,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Add note to partner/admin notes history endpoint
+  app.post("/api/cases/:caseId/notes-history", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check authorization (협력사 또는 관리자만)
+    if (req.session.userRole !== "협력사" && req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "협력사 또는 관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      
+      // Validate input with Zod
+      const noteSchema = z.object({
+        content: z.string().min(1, "내용을 입력해주세요").max(1000, "특이사항은 최대 1000자까지 입력 가능합니다"),
+      });
+      
+      const { content } = noteSchema.parse(req.body);
+      const noteType = req.session.userRole === "협력사" ? "partner" : "admin";
+      
+      // Get existing case
+      const existingCase = await storage.getCaseById(caseId);
+      if (!existingCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+      
+      // Get current notes history
+      const historyField = noteType === "partner" ? "partnerNotesHistory" : "adminNotesHistory";
+      const currentHistory = existingCase[historyField] 
+        ? JSON.parse(existingCase[historyField] as string)
+        : [];
+      
+      // Add new note
+      const newNote = {
+        content,
+        createdAt: new Date().toISOString(),
+        createdBy: req.session.userId,
+        createdByName: req.session.userName || "",
+      };
+      
+      currentHistory.push(newNote);
+      
+      // Update case
+      const updateData: any = {};
+      updateData[historyField] = JSON.stringify(currentHistory);
+      
+      const updatedCase = await storage.updateCase(caseId, updateData);
+      
+      if (!updatedCase) {
+        return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+      }
+
+      res.json({ success: true, case: updatedCase, noteType });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      console.error("Add notes history error:", error);
+      res.status(500).json({ error: "특이사항 저장 중 오류가 발생했습니다" });
+    }
+  });
+
   // Add progress update endpoint (관리자 only)
   app.post("/api/cases/:caseId/progress", async (req, res) => {
     // Check authentication
