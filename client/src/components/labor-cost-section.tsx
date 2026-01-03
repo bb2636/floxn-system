@@ -1076,19 +1076,67 @@ export function LaborCostSection({
     const linkedRows = mergedRows.filter(r => r.isLinkedFromRecovery || r.sourceAreaRowId);
     const independentRows = mergedRows.filter(r => !r.isLinkedFromRecovery && !r.sourceAreaRowId);
     
-    // 연동 행만 공종별로 정렬 (같은 공종이 함께 그룹화되도록)
-    const sortedLinkedRows = [...linkedRows].sort((a, b) => {
-      const catA = a.category || "미지정";
-      const catB = b.category || "미지정";
-      if (catA !== catB) return catA.localeCompare(catB);
-      // 같은 공종 내에서는 공사명으로 정렬
-      const workA = a.workName || "";
-      const workB = b.workName || "";
-      return workA.localeCompare(workB);
+    // 연동 행의 공종 순서 추출 (등장 순서 유지)
+    const linkedCategories: string[] = [];
+    linkedRows.forEach(r => {
+      const cat = r.category || "미지정";
+      if (!linkedCategories.includes(cat)) {
+        linkedCategories.push(cat);
+      }
     });
     
-    // 독립(수동 추가) 행은 맨 아래에 순서 유지하며 배치
-    const sortedRows = [...sortedLinkedRows, ...independentRows];
+    // 공종별로 연동 행 + 독립 행 병합
+    const categoryRowsMap = new Map<string, MergedLaborCostRow[]>();
+    
+    // 먼저 연동 행을 공종별로 정리 (공사명으로 정렬)
+    linkedRows.forEach(row => {
+      const cat = row.category || "미지정";
+      if (!categoryRowsMap.has(cat)) {
+        categoryRowsMap.set(cat, []);
+      }
+      categoryRowsMap.get(cat)!.push(row);
+    });
+    
+    // 연동 행 공종별 정렬 (공사명 순)
+    categoryRowsMap.forEach((rows, cat) => {
+      rows.sort((a, b) => (a.workName || "").localeCompare(b.workName || ""));
+    });
+    
+    // 같은 공종의 독립 행을 해당 공종 그룹에 추가
+    const usedIndependentRows = new Set<string>();
+    linkedCategories.forEach(cat => {
+      const matchingIndependent = independentRows.filter(r => (r.category || "미지정") === cat);
+      matchingIndependent.forEach(row => {
+        categoryRowsMap.get(cat)!.push(row);
+        usedIndependentRows.add(row.id);
+      });
+    });
+    
+    // 연동 공종에 없는 독립 행들은 별도 그룹으로
+    const remainingIndependent = independentRows.filter(r => !usedIndependentRows.has(r.id));
+    remainingIndependent.forEach(row => {
+      const cat = row.category || "미지정";
+      if (!categoryRowsMap.has(cat)) {
+        categoryRowsMap.set(cat, []);
+      }
+      categoryRowsMap.get(cat)!.push(row);
+    });
+    
+    // 독립 행만 있는 공종 목록 추출
+    const independentOnlyCategories: string[] = [];
+    remainingIndependent.forEach(r => {
+      const cat = r.category || "미지정";
+      if (!linkedCategories.includes(cat) && !independentOnlyCategories.includes(cat)) {
+        independentOnlyCategories.push(cat);
+      }
+    });
+    
+    // 최종 정렬된 행 목록 생성 (연동 공종 우선, 독립만 있는 공종 후순위)
+    const sortedRows: MergedLaborCostRow[] = [];
+    [...linkedCategories, ...independentOnlyCategories].forEach(cat => {
+      const rows = categoryRowsMap.get(cat) || [];
+      sortedRows.push(...rows);
+    });
     
     const groups: CategoryGroup[] = [];
     let currentGroup: CategoryGroup | null = null;
