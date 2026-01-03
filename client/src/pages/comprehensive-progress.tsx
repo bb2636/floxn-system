@@ -55,6 +55,17 @@ import { InvoiceSheet, getCaseNumberPrefix } from "@/components/InvoiceSheet";
 import { FieldDispatchCostSheet } from "@/components/FieldDispatchCostSheet";
 import type { Case as SchemaCase } from "@shared/schema";
 
+// Safe JSON parse helper for notes history
+const safeParseNotesHistory = (json: string | null | undefined): Array<{ content: string; createdAt: string; createdByName?: string }> => {
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 // SMS 자동 발송을 위한 수신자 기본 설정
 const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   "접수완료": { partner: true, manager: true, assessorInvestigator: true },
@@ -1404,16 +1415,31 @@ export default function ComprehensiveProgress() {
                   >
                     {caseItem.latestProgress?.content || "-"}
                   </div>
-                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    {caseItem.specialNotes && (
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "4px" }}>
+                    {/* 협력사 특이사항 빨간색 점 */}
+                    {(caseItem.specialNotes || safeParseNotesHistory(caseItem.partnerNotesHistory as string).length > 0) && (
                       <div
                         style={{
                           width: "8px",
                           height: "8px",
                           borderRadius: "50%",
-                          background: caseItem.specialNotesConfirmedBy ? "#008FED" : "#ED1C00",
+                          background: "#ED1C00",
                         }}
-                        data-testid={`special-notes-indicator-${caseItem.id}`}
+                        title="협력사 특이사항"
+                        data-testid={`partner-notes-indicator-${caseItem.id}`}
+                      />
+                    )}
+                    {/* 관리자 특이사항 파란색 점 */}
+                    {safeParseNotesHistory(caseItem.adminNotesHistory as string).length > 0 && (
+                      <div
+                        style={{
+                          width: "8px",
+                          height: "8px",
+                          borderRadius: "50%",
+                          background: "#008FED",
+                        }}
+                        title="관리자 특이사항"
+                        data-testid={`admin-notes-indicator-${caseItem.id}`}
                       />
                     )}
                   </div>
@@ -2102,9 +2128,7 @@ export default function ComprehensiveProgress() {
                       minHeight: "80px",
                     }}>
                       {(() => {
-                        const partnerHistory = selectedCase.partnerNotesHistory 
-                          ? JSON.parse(selectedCase.partnerNotesHistory as string) 
-                          : [];
+                        const partnerHistory = safeParseNotesHistory(selectedCase.partnerNotesHistory as string);
                         const legacyNote = selectedCase.specialNotes;
                         
                         if (partnerHistory.length === 0 && !legacyNote) {
@@ -2247,9 +2271,7 @@ export default function ComprehensiveProgress() {
                       minHeight: "80px",
                     }}>
                       {(() => {
-                        const adminHistory = selectedCase.adminNotesHistory 
-                          ? JSON.parse(selectedCase.adminNotesHistory as string) 
-                          : [];
+                        const adminHistory = safeParseNotesHistory(selectedCase.adminNotesHistory as string);
                         
                         if (adminHistory.length === 0) {
                           return (
