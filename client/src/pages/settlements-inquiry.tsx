@@ -29,7 +29,6 @@ interface SettlementRow {
   withdrawalNumber: string;
   accidentNumber: string;
   admin: string;
-  depositBank: string; // 입금은행
   withdrawalDate: string;
   constructionStatus: string;
   recoveryType: string | null; // 복구 유형: 직접복구 | 선견적요청
@@ -465,7 +464,6 @@ export default function SettlementsInquiry() {
         withdrawalNumber: primaryCase.withdrawalNumber,
         accidentNumber: primaryCase.accidentNumber,
         admin: primaryCase.admin,
-        depositBank: primaryCase.depositBank,
         withdrawalDate: primaryCase.withdrawalDate,
         constructionStatus: hasDirectRepair ? "수리" : (allNoRepair ? "미수리" : "-"),
         recoveryType: hasDirectRepair ? "직접복구" : primaryCase.recoveryType,
@@ -1251,22 +1249,6 @@ export default function SettlementsInquiry() {
                     minWidth: "100px",
                   }}
                 >
-                  입금은행
-                </th>
-                <th
-                  rowSpan={2}
-                  style={{
-                    padding: "16px",
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "rgba(12, 12, 12, 0.8)",
-                    borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
-                    borderRight: "1px solid rgba(12, 12, 12, 0.08)",
-                    textAlign: "center",
-                    minWidth: "100px",
-                  }}
-                >
                   입금액
                 </th>
                 <th
@@ -1809,19 +1791,6 @@ export default function SettlementsInquiry() {
                     }}
                   >
                     {row.claimAmount > 0 ? row.claimAmount.toLocaleString() + "원" : "-"}
-                  </td>
-                  {/* 입금은행 */}
-                  <td
-                    style={{
-                      padding: "14px 16px",
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      color: row.depositBank !== "-" ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
-                      borderRight: "1px solid rgba(12, 12, 12, 0.05)",
-                      textAlign: "center",
-                    }}
-                  >
-                    {row.depositBank}
                   </td>
                   {/* 입금액 (정산 입금액) */}
                   <td
