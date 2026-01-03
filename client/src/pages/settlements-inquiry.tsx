@@ -604,7 +604,6 @@ export default function SettlementsInquiry() {
           }}
         />
       </div>
-
       {/* Search and Filter Section */}
       <div
         className="mb-6"
@@ -941,7 +940,6 @@ export default function SettlementsInquiry() {
           </div>
         </div>
       </div>
-
       {/* Results Count */}
       <div className="mb-4 flex items-center gap-2">
         <span
@@ -966,7 +964,6 @@ export default function SettlementsInquiry() {
           {filteredRows.length}
         </span>
       </div>
-
       {/* Wide Table with Horizontal Scroll */}
       <div
         style={{
@@ -1090,9 +1087,7 @@ export default function SettlementsInquiry() {
                     textAlign: "center",
                     minWidth: "100px",
                   }}
-                >
-                  관리자
-                </th>
+                >협력사</th>
                 <th
                   rowSpan={2}
                   style={{
@@ -1904,7 +1899,6 @@ export default function SettlementsInquiry() {
           </span>
         </div>
       </div>
-
       {/* Settlement Management Dialog */}
       <Dialog open={managementDialogOpen} onOpenChange={setManagementDialogOpen}>
         <DialogContent 
@@ -2038,8 +2032,6 @@ export default function SettlementsInquiry() {
           </div>
         </DialogContent>
       </Dialog>
-
-
       {/* INVOICE Sheet - 직접복구 케이스용 (손해방지비용 + 대물복구비용) */}
       <InvoiceSheet
         open={showInvoiceDialog}
@@ -2053,7 +2045,6 @@ export default function SettlementsInquiry() {
             : invoiceCase ? [invoiceCase] : [];
         })()}
       />
-
       {/* 현장출동비용 청구 Sheet - 선견적요청 케이스용 (현장출동비용만) */}
       <FieldDispatchCostSheet
         open={showFieldDispatchInvoiceDialog}
@@ -2067,7 +2058,6 @@ export default function SettlementsInquiry() {
             : invoiceCase ? [invoiceCase] : [];
         })()}
       />
-
       {/* 인보이스 관리 팝업 */}
       <InvoiceManagementPopup
         open={showInvoiceManagementPopup}
