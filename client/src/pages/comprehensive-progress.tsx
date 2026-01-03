@@ -1543,16 +1543,6 @@ export default function ComprehensiveProgress() {
                     </Button>
                   ) : null;
                 })()}
-                {user?.role === "관리자" && (
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setShowDeleteDialog(true)}
-                    data-testid="button-delete-case"
-                  >
-                    삭제
-                  </Button>
-                )}
               </div>
             </div>
           </SheetHeader>
