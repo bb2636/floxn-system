@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 
-const SMTP_HOST = 'smtps.hiworks.com';
-const SMTP_PORT = 465;
+const SMTP_HOST = 'smtp.hiworks.com';
+const SMTP_PORT = 587;
 const SMTP_USER = 'master@floxn.co.kr';
 
 let transporter: nodemailer.Transporter | null = null;
@@ -17,7 +17,8 @@ export function initializeEmailTransporter(): void {
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
-    secure: true,
+    secure: false,
+    requireTLS: true,
     auth: {
       user: SMTP_USER,
       pass: password,
@@ -57,7 +58,8 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
     transporter = nodemailer.createTransport({
       host: SMTP_HOST,
       port: SMTP_PORT,
-      secure: true,
+      secure: false,
+      requireTLS: true,
       auth: {
         user: SMTP_USER,
         pass: password,
