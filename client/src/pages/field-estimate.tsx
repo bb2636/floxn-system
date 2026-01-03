@@ -4265,7 +4265,7 @@ export default function FieldEstimate() {
                               justifyContent: "center",
                             }}
                           >
-                            가로(mm)
+                            가로(m)
                           </div>
                           <div 
                             style={{ 
@@ -4282,7 +4282,7 @@ export default function FieldEstimate() {
                               justifyContent: "center",
                             }}
                           >
-                            세로(mm)
+                            세로(m)
                           </div>
                           <div 
                             style={{ 
@@ -4346,7 +4346,7 @@ export default function FieldEstimate() {
                               justifyContent: "center",
                             }}
                           >
-                            가로(mm)
+                            가로(m)
                           </div>
                           <div 
                             style={{ 
@@ -4363,7 +4363,7 @@ export default function FieldEstimate() {
                               justifyContent: "center",
                             }}
                           >
-                            세로(mm)
+                            세로(m)
                           </div>
                           <div 
                             style={{ 
@@ -5284,11 +5284,11 @@ export default function FieldEstimate() {
                         <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>위치</th>
                         <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공종</th>
                         <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>공사명</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적 가로(mm)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적 세로(mm)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적 가로(m)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적 세로(m)</th>
                         <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>피해면적(㎡)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>복구면적 가로(mm)</th>
-                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>복구면적 세로(mm)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>복구면적 가로(m)</th>
+                        <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>복구면적 세로(m)</th>
                         <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>복구면적(㎡)</th>
                         <th style={{ padding: "12px", fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600, color: "rgba(12, 12, 12, 0.6)" }}>비고</th>
                       </tr>
