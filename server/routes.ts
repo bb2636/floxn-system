@@ -1065,6 +1065,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
+        // 추가 피해자 생성 시: parentCasePrefix가 있으면 해당 prefix 기반으로 케이스 생성
+        const parentCasePrefix = (req.body as any).parentCasePrefix;
+        if (parentCasePrefix) {
+          console.log(`[Case Create] Creating additional victim case with parentCasePrefix: ${parentCasePrefix}`);
+          const nextSuffix = await storage.getNextVictimSuffix(parentCasePrefix);
+          const caseNumber = `${parentCasePrefix}-${nextSuffix}`;
+          console.log(`[Case Create] Generated case number: ${caseNumber} (suffix: ${nextSuffix})`);
+          
+          const newCase = await storage.createCase({
+            ...validatedData,
+            caseNumber,
+            caseGroupId,
+            createdBy: req.session.userId,
+          });
+          completedCases.push(newCase);
+          
+          // 동기화
+          try {
+            const syncCount = await storage.syncIntakeDataToRelatedCases(newCase.id);
+            if (syncCount > 0) {
+              console.log(`[Case Create] Auto-synced intake data to ${syncCount} related cases`);
+            }
+          } catch (syncError) {
+            console.error("Failed to sync intake data to related cases:", syncError);
+          }
+          
+          return res.status(201).json({ success: true, cases: completedCases });
+        }
+        
         // 새 케이스 생성 (임시저장 없이 바로 접수완료)
         const { prefix, suffix } = await storage.getNextCaseSequence(
           fullDate, 
@@ -1144,17 +1173,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // 추가 피해자 생성 시: parentCasePrefix가 있으면 해당 prefix 기반으로 suffix 계산
       const parentCasePrefix = (req.body as any).parentCasePrefix;
+      console.log(`[Case Create] parentCasePrefix: ${parentCasePrefix}, existing caseNumber: ${caseNumber}`);
       if (parentCasePrefix && !caseNumber) {
         const nextSuffix = await storage.getNextVictimSuffix(parentCasePrefix);
         caseNumber = `${parentCasePrefix}-${nextSuffix}`;
-        console.log(`[Case Create] Creating additional victim case with number: ${caseNumber}`);
+        console.log(`[Case Create] Creating additional victim case with number: ${caseNumber} (suffix: ${nextSuffix})`);
       } else if (!caseNumber) {
+        console.log(`[Case Create] Fallback - generating new case number`);
         const fallbackDate = validatedData.accidentDate || new Date().toISOString().split('T')[0];
         const { prefix, suffix } = await storage.getNextCaseSequence(
           fallbackDate,
           validatedData.insuranceAccidentNo || undefined
         );
         caseNumber = `${prefix}-${suffix === 0 ? 1 : suffix}`;
+        console.log(`[Case Create] Generated new case number: ${caseNumber}`);
       }
       
       const newCase = await storage.createCase({
