@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   office: text("office"),
   address: text("address"),
   // Partner-specific fields
+  businessRegistrationNumber: text("business_registration_number"), // 사업자 등록번호
   bankName: text("bank_name"),
   accountNumber: text("account_number"),
   accountHolder: text("account_holder"),
@@ -78,6 +79,7 @@ export const createAccountSchema = z.object({
   office: z.string().optional(),
   address: z.string().optional(),
   // Partner-specific fields
+  businessRegistrationNumber: z.string().optional(),
   bankName: z.string().optional(),
   accountNumber: z.string().optional(),
   accountHolder: z.string().optional(),
@@ -95,6 +97,7 @@ export const updateUserSchema = z.object({
   office: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   // Partner-specific fields
+  businessRegistrationNumber: z.string().optional().nullable(),
   bankName: z.string().optional().nullable(),
   accountNumber: z.string().optional().nullable(),
   accountHolder: z.string().optional().nullable(),
