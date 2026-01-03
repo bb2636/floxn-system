@@ -145,12 +145,9 @@ export function InvoiceManagementPopup({
   // 인보이스 승인 권한이 있는 관리자만 확인 가능 (일반 관리자는 불가)
   const canApproveInvoice = hasItem("관리자 설정", "인보이스 승인");
   
-  // 입금구분 변경 핸들러 - 상태 변경 시 협력업체 지급일 자동 설정
+  // 입금구분 변경 핸들러 (날짜는 저장 시에만 설정)
   const handleSettlementStatusChange = (value: string) => {
     setSettlementStatus(value);
-    // 상태가 변경되면 현재 날짜를 협력업체 지급일로 자동 설정
-    const today = format(new Date(), "yyyy-MM-dd");
-    setPartnerPaymentDate(today);
   };
 
   // 총 승인금액 (손해방지비용 + 대물복구비용 승인금액)
@@ -260,8 +257,6 @@ export function InvoiceManagementPopup({
       
       // 입금 내역에서 입금액 계산
       const totalDepositAmount = depositEntries.reduce((sum, entry) => sum + entry.depositAmount, 0);
-      // 입금일: 팝업의 입금일 날짜 선택기 값 사용
-      const depositDateValue = depositDate ? format(depositDate, "yyyy-MM-dd") : null;
       
       if (settlementData && settlementData.id) {
         // 기존 정산 데이터 업데이트
@@ -271,16 +266,16 @@ export function InvoiceManagementPopup({
           depositEntries: depositEntries, // 입금내역 배열 저장
           commission: feeAmount.toString(), // 수수료
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
-          partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
         };
         
-        if (depositDateValue) {
-          settlementUpdateData.settlementDate = depositDateValue; // 입금일
-        }
-        
-        // "정산"이 선택된 경우 종결일 설정
+        // "정산"이 선택된 경우에만 날짜 설정
         if (settlementStatus === "정산") {
+          settlementUpdateData.partnerPaymentDate = todayDate; // 협력업체 지급일
+          settlementUpdateData.settlementDate = todayDate; // 입금일
           settlementUpdateData.closingDate = todayDate; // 종결일
+          // 로컬 상태도 업데이트
+          setPartnerPaymentDate(todayDate);
+          setDepositDate(new Date());
         }
         
         await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, settlementUpdateData);
@@ -289,18 +284,21 @@ export function InvoiceManagementPopup({
         const settlementCreateData: Record<string, unknown> = {
           caseId: caseData.id,
           settlementAmount: "0", // 필수 필드
-          settlementDate: depositDateValue || todayDate, // 입금일
+          settlementDate: todayDate, // 기본값 필요 (필수 필드)
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액 합계 (레거시 호환용)
           depositEntries: depositEntries, // 입금내역 배열 저장
           commission: feeAmount.toString(), // 수수료
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
-          partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
         };
         
-        // "정산"이 선택된 경우 종결일 설정
+        // "정산"이 선택된 경우에만 날짜 설정
         if (settlementStatus === "정산") {
+          settlementCreateData.partnerPaymentDate = todayDate; // 협력업체 지급일
           settlementCreateData.closingDate = todayDate; // 종결일
+          // 로컬 상태도 업데이트
+          setPartnerPaymentDate(todayDate);
+          setDepositDate(new Date());
         }
         
         await apiRequest("POST", "/api/settlements", settlementCreateData);
@@ -604,6 +602,8 @@ export function InvoiceManagementPopup({
                 // 협력업체 지급일
                 if (settlementData.partnerPaymentDate) {
                   setPartnerPaymentDate(settlementData.partnerPaymentDate);
+                } else {
+                  setPartnerPaymentDate("");
                 }
                 
                 // 입금내역 복원 (depositEntries 배열 우선, 없으면 discount로 호환)
@@ -701,8 +701,6 @@ export function InvoiceManagementPopup({
       
       // 입금 내역에서 입금액 계산
       const totalDepositAmount = depositEntries.reduce((sum, entry) => sum + entry.depositAmount, 0);
-      // 입금일: 팝업의 입금일 날짜 선택기 값 사용
-      const depositDateValue = depositDate ? format(depositDate, "yyyy-MM-dd") : null;
       
       if (settlementData && settlementData.id) {
         // 기존 정산 데이터 업데이트
@@ -712,16 +710,16 @@ export function InvoiceManagementPopup({
           depositEntries: depositEntries, // 입금내역 배열 저장
           commission: feeAmount.toString(), // 수수료
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
-          partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
         };
         
-        if (depositDateValue) {
-          settlementUpdateData.settlementDate = depositDateValue; // 입금일
-        }
-        
-        // "정산"이 선택된 경우 종결일 설정
+        // "정산"이 선택된 경우에만 날짜 설정
         if (settlementStatus === "정산") {
+          settlementUpdateData.partnerPaymentDate = todayDate; // 협력업체 지급일
+          settlementUpdateData.settlementDate = todayDate; // 입금일
           settlementUpdateData.closingDate = todayDate; // 종결일
+          // 로컬 상태도 업데이트
+          setPartnerPaymentDate(todayDate);
+          setDepositDate(new Date());
         }
         
         await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, settlementUpdateData);
@@ -730,18 +728,21 @@ export function InvoiceManagementPopup({
         const settlementCreateData: Record<string, unknown> = {
           caseId: caseData.id,
           settlementAmount: "0", // 필수 필드
-          settlementDate: depositDateValue || todayDate, // 입금일
+          settlementDate: todayDate, // 기본값 필요 (필수 필드)
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액 합계 (레거시 호환용)
           depositEntries: depositEntries, // 입금내역 배열 저장
           commission: feeAmount.toString(), // 수수료
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
-          partnerPaymentDate: partnerPaymentDate || todayDate, // 협력업체 지급일
         };
         
-        // "정산"이 선택된 경우 종결일 설정
+        // "정산"이 선택된 경우에만 날짜 설정
         if (settlementStatus === "정산") {
+          settlementCreateData.partnerPaymentDate = todayDate; // 협력업체 지급일
           settlementCreateData.closingDate = todayDate; // 종결일
+          // 로컬 상태도 업데이트
+          setPartnerPaymentDate(todayDate);
+          setDepositDate(new Date());
         }
         
         await apiRequest("POST", "/api/settlements", settlementCreateData);
