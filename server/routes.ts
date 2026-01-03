@@ -1987,6 +1987,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
       
+      // Get user info for name
+      const currentUser = await storage.getUser(req.session.userId);
+      
       // Get current notes history
       const historyField = noteType === "partner" ? "partnerNotesHistory" : "adminNotesHistory";
       const currentHistory = existingCase[historyField] 
@@ -1998,14 +2001,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content,
         createdAt: new Date().toISOString(),
         createdBy: req.session.userId,
-        createdByName: req.session.userName || "",
+        createdByName: currentUser?.name || "",
       };
       
       currentHistory.push(newNote);
       
-      // Update case
+      // Update case and reset ack flag (새 메모 추가시 확인 상태 리셋)
       const updateData: any = {};
       updateData[historyField] = JSON.stringify(currentHistory);
+      
+      // Reset ack flag when new note is added
+      if (noteType === "partner") {
+        updateData.partnerNotesAckedByAdmin = null; // 협력사 메모 추가 → 관리자 확인 리셋 → 빨간점 다시 표시
+      } else {
+        updateData.adminNotesAckedByPartner = null; // 관리자 메모 추가 → 협력사 확인 리셋 → 파란점 다시 표시
+      }
       
       const updatedCase = await storage.updateCase(caseId, updateData);
       
@@ -2020,6 +2030,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Add notes history error:", error);
       res.status(500).json({ error: "특이사항 저장 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Acknowledge notes endpoint (협력사가 관리자 특이사항 확인, 관리자가 협력사 특이사항 확인)
+  app.post("/api/cases/:caseId/notes-ack", async (req, res) => {
+    // Check authentication
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    // Check authorization (협력사 또는 관리자만)
+    if (req.session.userRole !== "협력사" && req.session.userRole !== "관리자") {
+      return res.status(403).json({ error: "협력사 또는 관리자 권한이 필요합니다" });
+    }
+
+    try {
+      const { caseId } = req.params;
+      
+      // Get existing case
+      const existingCase = await storage.getCaseById(caseId);
+      if (!existingCase) {
+        return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
+      }
+      
+      // Update appropriate ack field based on role
+      const updateData: any = {};
+      if (req.session.userRole === "협력사") {
+        // 협력사가 관리자 특이사항 확인 → 파란점 사라짐
+        updateData.adminNotesAckedByPartner = "true";
+      } else if (req.session.userRole === "관리자") {
+        // 관리자가 협력사 특이사항 확인 → 빨간점 사라짐
+        updateData.partnerNotesAckedByAdmin = "true";
+      }
+      
+      const updatedCase = await storage.updateCase(caseId, updateData);
+      
+      if (!updatedCase) {
+        return res.status(404).json({ error: "케이스 업데이트에 실패했습니다" });
+      }
+
+      res.json({ success: true, case: updatedCase });
+    } catch (error) {
+      console.error("Acknowledge notes error:", error);
+      res.status(500).json({ error: "특이사항 확인 처리 중 오류가 발생했습니다" });
     }
   });
 

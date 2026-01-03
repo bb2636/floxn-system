@@ -218,6 +218,8 @@ export const cases = pgTable("cases", {
   // 특이사항 히스토리 (협력사/관리자 별도 입력)
   partnerNotesHistory: text("partner_notes_history"), // JSON: [{content, createdAt, createdBy}]
   adminNotesHistory: text("admin_notes_history"), // JSON: [{content, createdAt, createdBy}]
+  partnerNotesAckedByAdmin: text("partner_notes_acked_by_admin"), // "true" when admin confirmed partner notes
+  adminNotesAckedByPartner: text("admin_notes_acked_by_partner"), // "true" when partner confirmed admin notes
   
   // 일정 관련 필드
   receptionDate: text("reception_date"), // 접수일 (접수완료 된 날짜)

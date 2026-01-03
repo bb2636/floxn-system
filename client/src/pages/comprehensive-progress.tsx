@@ -532,6 +532,27 @@ export default function ComprehensiveProgress() {
     },
   });
 
+  // 특이사항 확인 mutation (상대방 메모 확인 처리)
+  const ackNotesMutation = useMutation({
+    mutationFn: async (caseId: string) => {
+      return await apiRequest("POST", `/api/cases/${caseId}/notes-ack`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      toast({
+        variant: "snackbar",
+        title: "확인 처리되었습니다",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "확인 실패",
+        description: "확인 처리 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const addProgressMutation = useMutation({
     mutationFn: async ({ caseId, content }: { caseId: string; content: string }) => {
       return await apiRequest("POST", `/api/cases/${caseId}/progress`, { content });
@@ -1416,8 +1437,8 @@ export default function ComprehensiveProgress() {
                     {caseItem.latestProgress?.content || "-"}
                   </div>
                   <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "4px" }}>
-                    {/* 협력사 특이사항 빨간색 점 */}
-                    {(caseItem.specialNotes || safeParseNotesHistory(caseItem.partnerNotesHistory as string).length > 0) && (
+                    {/* 협력사 특이사항 빨간색 점 (관리자가 확인하지 않은 경우만 표시) */}
+                    {(caseItem.specialNotes || safeParseNotesHistory(caseItem.partnerNotesHistory as string).length > 0) && caseItem.partnerNotesAckedByAdmin !== "true" && (
                       <div
                         style={{
                           width: "8px",
@@ -1425,12 +1446,12 @@ export default function ComprehensiveProgress() {
                           borderRadius: "50%",
                           background: "#ED1C00",
                         }}
-                        title="협력사 특이사항"
+                        title="협력사 특이사항 (미확인)"
                         data-testid={`partner-notes-indicator-${caseItem.id}`}
                       />
                     )}
-                    {/* 관리자 특이사항 파란색 점 */}
-                    {safeParseNotesHistory(caseItem.adminNotesHistory as string).length > 0 && (
+                    {/* 관리자 특이사항 파란색 점 (협력사가 확인하지 않은 경우만 표시) */}
+                    {safeParseNotesHistory(caseItem.adminNotesHistory as string).length > 0 && caseItem.adminNotesAckedByPartner !== "true" && (
                       <div
                         style={{
                           width: "8px",
@@ -1438,7 +1459,7 @@ export default function ComprehensiveProgress() {
                           borderRadius: "50%",
                           background: "#008FED",
                         }}
-                        title="관리자 특이사항"
+                        title="관리자 특이사항 (미확인)"
                         data-testid={`admin-notes-indicator-${caseItem.id}`}
                       />
                     )}
@@ -2233,6 +2254,35 @@ export default function ComprehensiveProgress() {
                         </button>
                       </div>
                     )}
+
+                    {/* 관리자가 협력사 특이사항 확인 버튼 */}
+                    {user?.role === "관리자" && (safeParseNotesHistory(selectedCase.partnerNotesHistory as string).length > 0 || selectedCase.specialNotes) && selectedCase.partnerNotesAckedByAdmin !== "true" && (
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <button
+                          onClick={() => {
+                            if (selectedCase.id) {
+                              ackNotesMutation.mutate(selectedCase.id);
+                            }
+                          }}
+                          disabled={ackNotesMutation.isPending}
+                          style={{
+                            padding: "8px 16px",
+                            background: "transparent",
+                            border: "1px solid #ED1C00",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontWeight: 600,
+                            fontSize: "13px",
+                            color: "#ED1C00",
+                            cursor: ackNotesMutation.isPending ? "not-allowed" : "pointer",
+                            opacity: ackNotesMutation.isPending ? 0.6 : 1,
+                          }}
+                          data-testid="button-ack-partner-notes"
+                        >
+                          {ackNotesMutation.isPending ? "처리 중..." : "확인"}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* 관리자 특이사항 섹션 */}
@@ -2354,6 +2404,35 @@ export default function ComprehensiveProgress() {
                           data-testid="button-save-admin-notes"
                         >
                           {addNotesHistoryMutation.isPending ? "저장 중..." : "저장"}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* 협력사가 관리자 특이사항 확인 버튼 */}
+                    {user?.role === "협력사" && safeParseNotesHistory(selectedCase.adminNotesHistory as string).length > 0 && selectedCase.adminNotesAckedByPartner !== "true" && (
+                      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                        <button
+                          onClick={() => {
+                            if (selectedCase.id) {
+                              ackNotesMutation.mutate(selectedCase.id);
+                            }
+                          }}
+                          disabled={ackNotesMutation.isPending}
+                          style={{
+                            padding: "8px 16px",
+                            background: "transparent",
+                            border: "1px solid #008FED",
+                            borderRadius: "8px",
+                            fontFamily: "Pretendard",
+                            fontWeight: 600,
+                            fontSize: "13px",
+                            color: "#008FED",
+                            cursor: ackNotesMutation.isPending ? "not-allowed" : "pointer",
+                            opacity: ackNotesMutation.isPending ? 0.6 : 1,
+                          }}
+                          data-testid="button-ack-admin-notes"
+                        >
+                          {ackNotesMutation.isPending ? "처리 중..." : "확인"}
                         </button>
                       </div>
                     )}
