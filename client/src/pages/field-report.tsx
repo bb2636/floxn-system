@@ -772,7 +772,6 @@ export default function FieldReport() {
           pointerEvents: "none",
         }}
       />
-
       {/* 페이지 타이틀 및 버튼 */}
       <div className="relative flex items-center justify-between mb-4" style={{ zIndex: 1 }}>
         <div className="flex items-center gap-4">
@@ -953,7 +952,6 @@ export default function FieldReport() {
           )}
         </div>
       </div>
-
       {/* 제출 확인 다이얼로그 */}
       <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
         <AlertDialogContent>
@@ -1000,7 +998,6 @@ export default function FieldReport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* 심사 다이얼로그 */}
       <AlertDialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
         <AlertDialogContent className="max-w-md">
@@ -1148,7 +1145,6 @@ export default function FieldReport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* 보고서 승인 다이얼로그 (2차 승인) */}
       <AlertDialog open={showApprovalDialog} onOpenChange={setShowApprovalDialog}>
         <AlertDialogContent className="max-w-md">
@@ -1296,7 +1292,6 @@ export default function FieldReport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
       {/* 통합 PDF 다운로드/이메일 전송 Dialog */}
       <Dialog open={showPdfDialog} onOpenChange={setShowPdfDialog}>
         <DialogContent
@@ -1695,7 +1690,6 @@ export default function FieldReport() {
           </div>
         </DialogContent>
       </Dialog>
-
       {/* 이메일 입력 Dialog (Step 2) */}
       <Dialog open={showEmailInputDialog} onOpenChange={setShowEmailInputDialog}>
         <DialogContent
@@ -2009,7 +2003,6 @@ export default function FieldReport() {
           </div>
         </DialogContent>
       </Dialog>
-
       {/* 작성중인 건 */}
       <div className="relative mb-4" style={{ zIndex: 1 }}>
         <div
@@ -2151,7 +2144,6 @@ export default function FieldReport() {
           </div>
         </div>
       </div>
-
       {/* 탭 메뉴 + 다운로드/이메일 버튼 */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="relative w-full" style={{ zIndex: 1 }}>
         {/* 탭 헤더 - 새로운 디자인 */}
@@ -3159,7 +3151,6 @@ export default function FieldReport() {
                       >
                         {category} {categoryDocs.length}
                       </div>
-                      
                       {/* 파일 리스트 */}
                       <div className="flex flex-col" style={{ gap: "12px" }}>
                         {categoryDocs.map((doc) => {
@@ -3841,7 +3832,7 @@ export default function FieldReport() {
                           <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.profit.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center py-2">
-                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>만원단위 절사</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>만원미만 절사</span>
                           <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>-{calculateTotals.truncation.toLocaleString()}원</span>
                         </div>
                         <div className="flex justify-between items-center py-2">
@@ -3971,7 +3962,6 @@ export default function FieldReport() {
         </TabsContent>
         </div>
       </Tabs>
-      
       {/* SMS 알림 발송 다이얼로그 */}
       {reportData?.case && (
         <SmsNotificationDialog
