@@ -1575,15 +1575,29 @@ export default function SettlementsInquiry() {
                   </td>
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "8px 12px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
                       color: "rgba(12, 12, 12, 0.8)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
+                      width: "120px",
+                      maxWidth: "120px",
                     }}
                   >
-                    {formatCaseNumber(row.caseNumber)}
+                    <div
+                      style={{
+                        maxHeight: "48px",
+                        overflowY: "auto",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "2px",
+                      }}
+                    >
+                      {row.caseNumber?.split(", ").map((num, idx) => (
+                        <div key={idx}>{formatCaseNumber(num)}</div>
+                      )) || "-"}
+                    </div>
                   </td>
                   <td
                     style={{
