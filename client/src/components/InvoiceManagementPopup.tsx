@@ -603,7 +603,7 @@ export function InvoiceManagementPopup({
         };
         loadInvoiceData();
         
-        // 정산 데이터 로드 (입금일, 입금내역, 협력업체 지급일 등)
+        // 정산 데이터 로드 (입금일, 입금내역, 협력업체 지급일, 자기부담금 fallback 등)
         const loadSettlementData = async () => {
           try {
             const settlementResponse = await fetch(`/api/settlements/case/${caseData.id}/latest`);
@@ -622,6 +622,11 @@ export function InvoiceManagementPopup({
                   setPartnerPaymentDate(settlementData.partnerPaymentDate);
                 } else {
                   setPartnerPaymentDate("");
+                }
+                
+                // 자기부담금: 정산에 저장된 값이 있으면 사용 (인보이스에 없을 경우 fallback)
+                if (settlementData.deductible && parseInt(settlementData.deductible) > 0) {
+                  setDeductibleAmount(settlementData.deductible);
                 }
                 
                 // 입금내역 복원 (depositEntries 배열 우선, 없으면 discount로 호환)
