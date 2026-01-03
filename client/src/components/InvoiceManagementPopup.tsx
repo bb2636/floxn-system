@@ -371,6 +371,56 @@ export function InvoiceManagementPopup({
     }
   };
 
+  // 인보이스 확인 핸들러
+  const handleInvoiceConfirm = async (dateStr: string) => {
+    if (!caseData) return;
+    
+    try {
+      await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
+        invoiceConfirmDate: dateStr,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settlements"] });
+      
+      toast({
+        title: "인보이스 확인",
+        description: `인보이스가 확인되었습니다. (${dateStr})`,
+      });
+    } catch (error) {
+      toast({
+        title: "확인 실패",
+        description: "인보이스 확인 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // 인보이스 취소 핸들러
+  const handleInvoiceCancel = async () => {
+    if (!caseData) return;
+    
+    try {
+      await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
+        invoiceConfirmDate: null,
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/settlements"] });
+      
+      toast({
+        title: "인보이스 취소",
+        description: "인보이스 확인이 취소되었습니다.",
+      });
+    } catch (error) {
+      toast({
+        title: "취소 실패",
+        description: "인보이스 취소 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const categorizedCases = useMemo(() => {
     const allCases = relatedCases.length > 0 ? relatedCases : 
       (caseData ? [{
@@ -1147,9 +1197,48 @@ export function InvoiceManagementPopup({
                   <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                     인보이스 확인
                   </span>
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                    {caseData.invoiceConfirmDate || "-"}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                      {caseData.invoiceConfirmDate || "-"}
+                    </span>
+                    <Button
+                      onClick={() => {
+                        const today = format(new Date(), "yyyy.MM.dd");
+                        // Update case with invoice confirm date
+                        handleInvoiceConfirm(today);
+                      }}
+                      data-testid="button-invoice-confirm-action"
+                      style={{
+                        height: "36px",
+                        background: "#008FED",
+                        borderRadius: "6px",
+                        fontWeight: 500,
+                        fontSize: "14px",
+                        color: "#FFFFFF",
+                        padding: "0 16px",
+                      }}
+                    >
+                      인보이스 확인
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        // Clear invoice confirm date
+                        handleInvoiceCancel();
+                      }}
+                      data-testid="button-invoice-cancel-action"
+                      style={{
+                        height: "36px",
+                        background: "#DC2626",
+                        borderRadius: "6px",
+                        fontWeight: 500,
+                        fontSize: "14px",
+                        color: "#FFFFFF",
+                        padding: "0 16px",
+                      }}
+                    >
+                      인보이스 취소
+                    </Button>
+                  </div>
                 </div>
 
                 {/* 인보이스 속성 */}
@@ -1158,17 +1247,7 @@ export function InvoiceManagementPopup({
                     인보이스 속성
                   </span>
                   <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                    {caseData.invoiceAttribute || "일반"}
-                  </span>
-                </div>
-
-                {/* 메인 인보이스 */}
-                <div className="flex items-center justify-between">
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
-                    메인 인보이스
-                  </span>
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                    {caseData.mainInvoiceLink || "연동"}
+                    {caseData.recoveryType === "직접복구" ? "수리(인보이스 연동)" : "미수리"}
                   </span>
                 </div>
               </div>
