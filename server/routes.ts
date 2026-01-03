@@ -567,13 +567,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ Validated assignedPartnerContact:", validatedData.assignedPartnerContact);
       console.log("✅ Validated assignedPartner:", validatedData.assignedPartner);
       
+      // 사용자 정보 가져오기 (자동 채우기용)
+      const allUsersForAutoPopulate = await storage.getAllUsers();
+      
       // 협력사 배정 시 담당자 정보 자동 채우기
       // assignedPartner가 설정되고, assignedPartnerManager/Contact가 제공되지 않은 경우
       if (validatedData.assignedPartner && !validatedData.assignedPartnerManager) {
         const partnerCompanyName = validatedData.assignedPartner;
         // 해당 회사명을 가진 협력사 사용자 찾기
-        const allUsers = await storage.getAllUsers();
-        const partnerUser = allUsers.find(u => u.company === partnerCompanyName && u.role === "협력사");
+        const partnerUser = allUsersForAutoPopulate.find(u => u.company === partnerCompanyName && u.role === "협력사");
         if (partnerUser) {
           // 담당자명과 연락처 자동 채우기
           if (partnerUser.name) {
@@ -584,6 +586,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             (validatedData as any).assignedPartnerContact = partnerUser.phone;
             console.log(`[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`);
           }
+        }
+      }
+      
+      // 심사사 이메일 자동 채우기
+      // assessorTeam(심사자 이름)이 설정되면 해당 사용자의 이메일을 자동으로 채움
+      if (validatedData.assessorTeam) {
+        const assessorUser = allUsersForAutoPopulate.find(u => u.role === "심사사" && u.name === validatedData.assessorTeam);
+        if (assessorUser?.email) {
+          (validatedData as any).assessorEmail = assessorUser.email;
+          console.log(`[Auto-populate] Assessor email set to: ${assessorUser.email} for assessor: ${validatedData.assessorTeam}`);
+        }
+      }
+
+      // 조사사 이메일 자동 채우기
+      // investigatorTeamName(조사자 이름)이 설정되면 해당 사용자의 이메일을 자동으로 채움
+      if (validatedData.investigatorTeamName) {
+        const investigatorUser = allUsersForAutoPopulate.find(u => u.role === "조사사" && u.name === validatedData.investigatorTeamName);
+        if (investigatorUser?.email) {
+          (validatedData as any).investigatorEmail = investigatorUser.email;
+          console.log(`[Auto-populate] Investigator email set to: ${investigatorUser.email} for investigator: ${validatedData.investigatorTeamName}`);
         }
       }
       
@@ -1401,6 +1423,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             updateData.assignedPartnerContact = partnerUser.phone;
             console.log(`[Auto-populate] Partner contact set to: ${partnerUser.phone} for company: ${partnerCompanyName}`);
           }
+        }
+      }
+
+      // 심사사 이메일 자동 채우기
+      // assessorTeam(심사자 이름)이 설정되면 해당 사용자의 이메일을 자동으로 채움
+      const assessorName = updateData.assessorTeam || existingCase.assessorTeam;
+      if (assessorName) {
+        const assessorUser = allUsers.find(u => u.role === "심사사" && u.name === assessorName);
+        if (assessorUser?.email) {
+          updateData.assessorEmail = assessorUser.email;
+          console.log(`[Auto-populate] Assessor email set to: ${assessorUser.email} for assessor: ${assessorName}`);
+        }
+      }
+
+      // 조사사 이메일 자동 채우기
+      // investigatorTeamName(조사자 이름)이 설정되면 해당 사용자의 이메일을 자동으로 채움
+      const investigatorName = updateData.investigatorTeamName || existingCase.investigatorTeamName;
+      if (investigatorName) {
+        const investigatorUser = allUsers.find(u => u.role === "조사사" && u.name === investigatorName);
+        if (investigatorUser?.email) {
+          updateData.investigatorEmail = investigatorUser.email;
+          console.log(`[Auto-populate] Investigator email set to: ${investigatorUser.email} for investigator: ${investigatorName}`);
         }
       }
 
