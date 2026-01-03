@@ -244,8 +244,18 @@ export function InvoiceManagementPopup({
         const existingInvoiceData = await existingInvoice.json();
         
         if (existingInvoiceData && existingInvoiceData.id) {
-          console.log("[Invoice Save] Saving settlementStatus:", settlementStatus);
+          // 기존 인보이스 업데이트
+          console.log("[Invoice Save] Updating existing invoice, settlementStatus:", settlementStatus);
           await apiRequest("PATCH", `/api/invoices/${existingInvoiceData.id}`, {
+            deductible: deductibleAmount || "0",
+            settlementStatus: settlementStatus || "", // 입금구분 저장
+          });
+        } else {
+          // 인보이스가 없으면 새로 생성
+          console.log("[Invoice Save] Creating new invoice, settlementStatus:", settlementStatus);
+          await apiRequest("POST", "/api/invoices", {
+            caseGroupPrefix: caseGroupPrefix,
+            caseId: caseData.id,
             deductible: deductibleAmount || "0",
             settlementStatus: settlementStatus || "", // 입금구분 저장
           });
