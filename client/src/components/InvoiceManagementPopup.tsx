@@ -123,7 +123,7 @@ export function InvoiceManagementPopup({
   const [editingDepositId, setEditingDepositId] = useState<string | null>(null);
   const [newDeposit, setNewDeposit] = useState<DepositEntry>({
     id: "",
-    depositDate: format(new Date(), "yyyy-MM-dd"),
+    depositDate: "",
     insuranceCompany: caseData?.insuranceCompany || "전체",
     claimAmount: 0,
     depositStatus: "미입금",
@@ -194,7 +194,7 @@ export function InvoiceManagementPopup({
     setDepositEntries([...depositEntries, newEntry]);
     setNewDeposit({
       id: "",
-      depositDate: format(new Date(), "yyyy-MM-dd"),
+      depositDate: "",
       insuranceCompany: caseData?.insuranceCompany || "전체",
       claimAmount: 0,
       depositStatus: "미입금",
@@ -219,7 +219,7 @@ export function InvoiceManagementPopup({
     setEditingDepositId(null);
     setNewDeposit({
       id: "",
-      depositDate: format(new Date(), "yyyy-MM-dd"),
+      depositDate: "",
       insuranceCompany: caseData?.insuranceCompany || "전체",
       claimAmount: 0,
       depositStatus: "미입금",
@@ -1424,7 +1424,7 @@ export function InvoiceManagementPopup({
                         setEditingDepositId(null);
                         setNewDeposit({
                           id: "",
-                          depositDate: format(new Date(), "yyyy-MM-dd"),
+                          depositDate: "",
                           insuranceCompany: caseData?.insuranceCompany || "전체",
                           claimAmount: 0,
                           depositStatus: "미입금",
