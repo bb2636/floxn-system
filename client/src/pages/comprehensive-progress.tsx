@@ -1560,7 +1560,7 @@ export default function ComprehensiveProgress() {
                   borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                   padding: "0 20px",
                 }}>
-                  {["기본정보", "일자", "진행상황", "특이사항"].map((tab) => (
+                  {["기본정보", "일자", "진행단계", "특이사항"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setDetailTab(tab)}
@@ -1997,8 +1997,8 @@ export default function ComprehensiveProgress() {
                 </div>
               )}
 
-              {/* 진행상황 탭 */}
-              {detailTab === "진행상황" && (
+              {/* 진행단계 탭 */}
+              {detailTab === "진행단계" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                   <div style={{
                     display: "flex",
@@ -2012,27 +2012,8 @@ export default function ComprehensiveProgress() {
                       letterSpacing: "-0.02em",
                       color: "rgba(12, 12, 12, 0.9)",
                     }}>
-                      진행상황
+                      진행단계
                     </div>
-                    {user?.role === "관리자" && (
-                      <button
-                        onClick={() => setShowProgressDialog(true)}
-                        style={{
-                          padding: "8px 16px",
-                          background: "#008FED",
-                          border: "none",
-                          borderRadius: "8px",
-                          fontFamily: "Pretendard",
-                          fontWeight: 500,
-                          fontSize: "14px",
-                          color: "#FFFFFF",
-                          cursor: "pointer",
-                        }}
-                        data-testid="button-add-progress"
-                      >
-                        + 진행상황 추가
-                      </button>
-                    )}
                   </div>
 
                   <div 
@@ -2052,7 +2033,7 @@ export default function ComprehensiveProgress() {
                     }}
                     data-testid="text-progress-display"
                   >
-                    {selectedCase.latestProgress?.content || "관리자가 입력한 진행상황이 없습니다."}
+                    {selectedCase.latestProgress?.content || "관리자가 입력한 진행단계가 없습니다."}
                   </div>
                 </div>
               )}
