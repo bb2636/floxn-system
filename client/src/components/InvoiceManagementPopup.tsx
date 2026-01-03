@@ -558,53 +558,12 @@ export function InvoiceManagementPopup({
           "0"
         );
 
-        // 자기부담금 및 입금구분: 저장된 인보이스에서 로드
-        const loadInvoiceData = async () => {
-          try {
-            const caseGroupPrefix = caseData.caseNumber?.split("-")[0] || "";
-            if (caseGroupPrefix) {
-              const response = await fetch(`/api/invoices/group/${encodeURIComponent(caseGroupPrefix)}`, {
-                cache: 'no-store',
-                headers: { 'Cache-Control': 'no-cache' }
-              });
-              if (response.ok) {
-                const invoiceData = await response.json();
-                console.log("[Invoice Load] settlementStatus from server:", invoiceData.settlementStatus);
-                if (invoiceData) {
-                  // 자기부담금
-                  if (invoiceData.deductible) {
-                    setDeductibleAmount(invoiceData.deductible);
-                  } else {
-                    setDeductibleAmount("0");
-                  }
-                  // 입금구분 (정산/부분입금/청구변경)
-                  if (invoiceData.settlementStatus) {
-                    setSettlementStatus(invoiceData.settlementStatus);
-                  } else {
-                    setSettlementStatus("");
-                  }
-                } else {
-                  setDeductibleAmount("0");
-                  setSettlementStatus("");
-                }
-              } else {
-                setDeductibleAmount("0");
-                setSettlementStatus("");
-              }
-            } else {
-              setDeductibleAmount("0");
-              setSettlementStatus("");
-            }
-          } catch (error) {
-            console.error("Failed to load invoice data:", error);
-            setDeductibleAmount("0");
-            setSettlementStatus("");
-          }
-        };
-        loadInvoiceData();
-        
-        // 정산 데이터 로드 (입금일, 입금내역, 협력업체 지급일, 자기부담금 fallback 등)
-        const loadSettlementData = async () => {
+        // 자기부담금, 입금구분, 정산 데이터 모두 로드 (순차 처리로 race condition 방지)
+        const loadAllData = async () => {
+          let loadedDeductible = "0";
+          let loadedSettlementStatus = "";
+          
+          // 1. 정산 데이터 먼저 로드 (자기부담금 포함)
           try {
             const settlementResponse = await fetch(`/api/settlements/case/${caseData.id}/latest`);
             if (settlementResponse.ok) {
@@ -624,9 +583,9 @@ export function InvoiceManagementPopup({
                   setPartnerPaymentDate("");
                 }
                 
-                // 자기부담금: 정산에 저장된 값이 있으면 사용 (인보이스에 없을 경우 fallback)
+                // 자기부담금: 정산에서 먼저 로드
                 if (settlementData.deductible && parseInt(settlementData.deductible) > 0) {
-                  setDeductibleAmount(settlementData.deductible);
+                  loadedDeductible = settlementData.deductible;
                 }
                 
                 // 입금내역 복원 (depositEntries 배열 우선, 없으면 discount로 호환)
@@ -664,8 +623,39 @@ export function InvoiceManagementPopup({
             setDepositEntries([]);
             setPartnerPaymentDate("");
           }
+          
+          // 2. 인보이스 데이터 로드 (자기부담금이 있으면 덮어쓰기, 입금구분 로드)
+          try {
+            const caseGroupPrefix = caseData.caseNumber?.split("-")[0] || "";
+            if (caseGroupPrefix) {
+              const response = await fetch(`/api/invoices/group/${encodeURIComponent(caseGroupPrefix)}`, {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache' }
+              });
+              if (response.ok) {
+                const invoiceData = await response.json();
+                console.log("[Invoice Load] settlementStatus from server:", invoiceData.settlementStatus);
+                if (invoiceData) {
+                  // 자기부담금: 인보이스에 값이 있으면 덮어쓰기 (정산 값보다 우선)
+                  if (invoiceData.deductible && parseInt(invoiceData.deductible) > 0) {
+                    loadedDeductible = invoiceData.deductible;
+                  }
+                  // 입금구분 (정산/부분입금/청구변경)
+                  if (invoiceData.settlementStatus) {
+                    loadedSettlementStatus = invoiceData.settlementStatus;
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Failed to load invoice data:", error);
+          }
+          
+          // 3. 최종 값 설정
+          setDeductibleAmount(loadedDeductible);
+          setSettlementStatus(loadedSettlementStatus);
         };
-        loadSettlementData();
+        loadAllData();
         
         // 세금계산서 확인일 초기화
         if (caseData.taxInvoiceConfirmDate) {
