@@ -5738,9 +5738,7 @@ export default function FieldEstimate() {
                     fontWeight: 500,
                     color: "#0C0C0C",
                   }}
-                >
-                  만원단위절사
-                </span>
+                >만원미만절사</span>
                 <span
                   style={{
                     fontFamily: "Pretendard",
