@@ -211,9 +211,13 @@ export const cases = pgTable("cases", {
   
   // 진행상황 관련 필드
   progressStatus: text("progress_status"), // 주요진행사항 (서류보완요청 등)
-  specialNotes: text("special_notes"), // 협력사 특이사항 메모
+  specialNotes: text("special_notes"), // 협력사 특이사항 메모 (기존 - 레거시)
   specialNotesConfirmedBy: varchar("special_notes_confirmed_by").references(() => users.id), // 관리자 확인자 ID
   additionalNotes: text("additional_notes"), // 협력사 기타사항 (800자 제한)
+  
+  // 특이사항 히스토리 (협력사/관리자 별도 입력)
+  partnerNotesHistory: text("partner_notes_history"), // JSON: [{content, createdAt, createdBy}]
+  adminNotesHistory: text("admin_notes_history"), // JSON: [{content, createdAt, createdBy}]
   
   // 일정 관련 필드
   receptionDate: text("reception_date"), // 접수일 (접수완료 된 날짜)
