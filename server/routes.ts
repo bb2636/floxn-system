@@ -2236,10 +2236,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // 1차승인 상태만 보고서 승인 가능
-      if (existingCase.status !== "1차승인") {
+      // 현장정보제출 상태만 보고서 승인 가능 (이메일 전송 후 상태)
+      if (existingCase.status !== "현장정보제출") {
         return res.status(400).json({ 
-          error: "1차승인 상태인 보고서만 승인할 수 있습니다" 
+          error: "현장정보제출 상태인 보고서만 승인할 수 있습니다" 
         });
       }
 
