@@ -3160,8 +3160,9 @@ export class DbStorage implements IStorage {
       },
     ];
 
-    // 각 계정이 존재하지 않으면 생성
+    // 각 계정이 존재하지 않으면 생성, 존재하면 비밀번호 업데이트
     let createdCount = 0;
+    let updatedCount = 0;
     let existingCount = 0;
 
     for (const account of essentialAccounts) {
@@ -3180,7 +3181,19 @@ export class DbStorage implements IStorage {
           );
           createdCount++;
         } else {
-          existingCount++;
+          // 기존 계정 비밀번호 업데이트 (관리자 계정만)
+          if (account.role === "관리자") {
+            await db
+              .update(users)
+              .set({ password: account.password })
+              .where(eq(users.username, account.username));
+            console.log(
+              `[Essential Accounts] Password updated: ${account.username}`,
+            );
+            updatedCount++;
+          } else {
+            existingCount++;
+          }
         }
       } catch (error) {
         console.error(
@@ -3191,7 +3204,7 @@ export class DbStorage implements IStorage {
     }
 
     console.log(
-      `[Essential Accounts] Summary: ${createdCount} created, ${existingCount} already exist`,
+      `[Essential Accounts] Summary: ${createdCount} created, ${updatedCount} password updated, ${existingCount} already exist`,
     );
   }
 
