@@ -1088,6 +1088,92 @@ export function InvoiceManagementPopup({
               </div>
             </div>
 
+            {/* 세금계산서/인보이스 섹션 */}
+            <div
+              style={{
+                background: "#FFFFFF",
+                border: "1px solid rgba(12, 12, 12, 0.08)",
+                borderRadius: "8px",
+                padding: "28px 32px",
+              }}
+            >
+              <div 
+                className="flex items-center mb-6"
+                style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
+              >
+                세금계산서/인보이스
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {/* 세금계산서 확인 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    세금계산서 확인
+                  </span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="justify-start text-left font-normal"
+                        data-testid="button-tax-invoice-date"
+                        style={{
+                          height: "36px",
+                          background: "#FFFFFF",
+                          border: "1px solid rgba(12, 12, 12, 0.2)",
+                          borderRadius: "6px",
+                          fontWeight: 400,
+                          fontSize: "14px",
+                          color: taxInvoiceDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                          padding: "0 12px",
+                        }}
+                      >
+                        <CalendarIcon size={16} style={{ marginRight: "8px", color: "rgba(12, 12, 12, 0.5)" }} />
+                        {taxInvoiceDate ? format(taxInvoiceDate, "yyyy-MM-dd") : "날짜 선택"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={taxInvoiceDate}
+                        onSelect={handleTaxInvoiceDateSelect}
+                        locale={ko}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* 인보이스 확인 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    인보이스 확인
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.invoiceConfirmDate || "-"}
+                  </span>
+                </div>
+
+                {/* 인보이스 속성 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    인보이스 속성
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.invoiceAttribute || "일반"}
+                  </span>
+                </div>
+
+                {/* 메인 인보이스 */}
+                <div className="flex items-center justify-between">
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
+                    메인 인보이스
+                  </span>
+                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
+                    {caseData.mainInvoiceLink || "연동"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
             {/* 정산 섹션 */}
             <div
               style={{
@@ -1468,92 +1554,6 @@ export function InvoiceManagementPopup({
                 </div>
               </div>
             )}
-
-            {/* 세금계산서/인보이스 섹션 */}
-            <div
-              style={{
-                background: "#FFFFFF",
-                border: "1px solid rgba(12, 12, 12, 0.08)",
-                borderRadius: "8px",
-                padding: "28px 32px",
-              }}
-            >
-              <div 
-                className="flex items-center mb-6"
-                style={{ fontWeight: 700, fontSize: "18px", color: "#0C0C0C" }}
-              >
-                세금계산서/인보이스
-              </div>
-
-              <div className="flex flex-col gap-4">
-                {/* 세금계산서 확인 */}
-                <div className="flex items-center justify-between">
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
-                    세금계산서 확인
-                  </span>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="justify-start text-left font-normal"
-                        data-testid="button-tax-invoice-date"
-                        style={{
-                          height: "36px",
-                          background: "#FFFFFF",
-                          border: "1px solid rgba(12, 12, 12, 0.2)",
-                          borderRadius: "6px",
-                          fontWeight: 400,
-                          fontSize: "14px",
-                          color: taxInvoiceDate ? "rgba(12, 12, 12, 0.8)" : "rgba(12, 12, 12, 0.5)",
-                          padding: "0 12px",
-                        }}
-                      >
-                        <CalendarIcon size={16} style={{ marginRight: "8px", color: "rgba(12, 12, 12, 0.5)" }} />
-                        {taxInvoiceDate ? format(taxInvoiceDate, "yyyy-MM-dd") : "날짜 선택"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="end">
-                      <Calendar
-                        mode="single"
-                        selected={taxInvoiceDate}
-                        onSelect={handleTaxInvoiceDateSelect}
-                        locale={ko}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* 인보이스 확인 */}
-                <div className="flex items-center justify-between">
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
-                    인보이스 확인
-                  </span>
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                    {caseData.invoiceConfirmDate || "-"}
-                  </span>
-                </div>
-
-                {/* 인보이스 속성 */}
-                <div className="flex items-center justify-between">
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
-                    인보이스 속성
-                  </span>
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                    {caseData.invoiceAttribute || "일반"}
-                  </span>
-                </div>
-
-                {/* 메인 인보이스 */}
-                <div className="flex items-center justify-between">
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
-                    메인 인보이스
-                  </span>
-                  <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                    {caseData.mainInvoiceLink || "연동"}
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
