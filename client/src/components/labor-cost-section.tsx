@@ -1580,18 +1580,46 @@ export function LaborCostSection({
                     )}
                   </td>
                   
-                  {/* 복구면적 - 같은 공사명 그룹 내에서 첫 번째 행에만 rowspan으로 표시 */}
-                  {/* 복구면적은 공사명별로 합산 (바닥+벽체+천장×1.3) */}
+                  {/* 복구면적 - 연동행만 같은 공사명끼리 rowspan 병합, 직접추가는 개별 셀 (0 고정) */}
+                  {/* 복구면적은 공사명별로 합산 (바닥+벽체+천장×1.3) - 연동행만 적용 */}
                   {(() => {
-                    // 같은 공사명의 행들을 찾음 (공종 내에서)
-                    const sameWorkNameRows = group.rows.filter(r => r.workName === row.workName);
-                    const isFirstInWorkNameGroup = sameWorkNameRows.length > 0 && sameWorkNameRows[0].id === row.id;
-                    const workNameRowCount = sameWorkNameRows.length;
+                    // 직접 추가 행은 개별 셀로 표시 (항상 0, 수정 불가)
+                    if (!isLinkedRow) {
+                      return (
+                        <td 
+                          style={{ 
+                            padding: "0 8px", 
+                            background: "rgba(12, 12, 12, 0.02)",
+                            verticalAlign: "middle",
+                          }}
+                        >
+                          <Input
+                            type="number"
+                            value={0}
+                            className="h-9 border text-center"
+                            style={{ 
+                              fontFamily: "Pretendard", 
+                              fontSize: "14px",
+                              color: "rgba(12, 12, 12, 0.4)",
+                              backgroundColor: "rgba(12, 12, 12, 0.05)",
+                            }}
+                            disabled={true}
+                            title="직접 추가 행의 복구면적은 0 (수정 불가)"
+                            data-testid={`input-recoveryArea-labor-${globalIndex}`}
+                          />
+                        </td>
+                      );
+                    }
+                    
+                    // 연동 행만 같은 공사명끼리 rowspan 병합
+                    const sameWorkNameLinkedRows = group.rows.filter(r => r.workName === row.workName && r.isLinkedFromRecovery === true);
+                    const isFirstInWorkNameGroup = sameWorkNameLinkedRows.length > 0 && sameWorkNameLinkedRows[0].id === row.id;
+                    const workNameRowCount = sameWorkNameLinkedRows.length;
                     
                     // 공사명별 합산 복구면적 (calculateRecoveryAreaByWorkName에서 계산된 값 사용)
                     const aggregatedArea = calculateRecoveryAreaByWorkName[row.workName] || row.damageArea || 0;
                     
-                    // 첫 번째 행이 아니면 td 렌더링 스킵 (rowspan으로 병합됨)
+                    // 첫 번째 연동 행이 아니면 td 렌더링 스킵 (rowspan으로 병합됨)
                     if (!isFirstInWorkNameGroup) return null;
                     
                     return (
@@ -1599,7 +1627,7 @@ export function LaborCostSection({
                         rowSpan={workNameRowCount}
                         style={{ 
                           padding: "0 8px", 
-                          background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : "rgba(12, 12, 12, 0.02)",
+                          background: "rgba(59, 130, 246, 0.05)",
                           verticalAlign: "middle",
                         }}
                       >
@@ -1612,11 +1640,10 @@ export function LaborCostSection({
                           style={{ 
                             fontFamily: "Pretendard", 
                             fontSize: "14px",
-                            color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : "rgba(12, 12, 12, 0.5)",
-                            backgroundColor: isLinkedRow ? undefined : "rgba(12, 12, 12, 0.03)",
+                            color: "rgba(59, 130, 246, 0.9)",
                           }}
                           disabled={true}
-                          title={isLinkedRow ? "복구면적에서 자동 계산됨 (바닥+벽체+천장×1.3)" : "개별 행은 복구면적 입력 불가"}
+                          title="복구면적에서 자동 계산됨 (바닥+벽체+천장×1.3)"
                           data-testid={`input-recoveryArea-labor-${globalIndex}`}
                         />
                       </td>
