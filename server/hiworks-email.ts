@@ -5,7 +5,7 @@ const SMTP_CONFIGS = {
     host: 'smtps.hiworks.com',
     port: 465,
     secure: true,
-    user: 'master@floxn.co.kr',
+    user: 'contact@floxn.co.kr',
   },
   gmail: {
     host: 'smtp.gmail.com',
