@@ -4765,8 +4765,8 @@ export class DbStorage implements IStorage {
         reportApprovalComment: approvalComment || null,
         reportApprovedAt: currentTimestamp,
         reportApprovedBy: approvedBy,
-        // 승인 시 상태를 "복구요청"으로 변경 (2차승인)
-        status: decision === "승인" ? "복구요청" : existingCase.status,
+        // 승인 시 상태를 "복구요청(2차승인)"으로 변경
+        status: decision === "승인" ? "복구요청(2차승인)" : existingCase.status,
         ...additionalUpdates,
         updatedAt: currentDate,
       })
