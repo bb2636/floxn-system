@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer';
 
-const SMTP_HOST = 'smtp.hiworks.com';
-const SMTP_PORT = 587;
+const SMTP_HOST = 'smtps.hiworks.com';
+const SMTP_PORT = 465;
 const SMTP_USER = 'master@floxn.co.kr';
 
 let transporter: nodemailer.Transporter | null = null;
@@ -14,11 +14,13 @@ export function initializeEmailTransporter(): void {
     return;
   }
 
+  console.log('[Hiworks Email] Initializing SMTP transporter...');
+  console.log(`[Hiworks Email] Host: ${SMTP_HOST}, Port: ${SMTP_PORT}, User: ${SMTP_USER}`);
+
   transporter = nodemailer.createTransport({
     host: SMTP_HOST,
     port: SMTP_PORT,
-    secure: false,
-    requireTLS: true,
+    secure: true,
     auth: {
       user: SMTP_USER,
       pass: password,
@@ -27,7 +29,11 @@ export function initializeEmailTransporter(): void {
 
   transporter.verify((error, success) => {
     if (error) {
-      console.error('[Hiworks Email] SMTP connection verification failed:', error.message);
+      const err = error as any;
+      console.error('[Hiworks Email] SMTP connection verification FAILED');
+      console.error(`[Hiworks Email] Error code: ${err.code || 'N/A'}`);
+      console.error(`[Hiworks Email] Error message: ${err.message || 'N/A'}`);
+      console.error(`[Hiworks Email] Full error:`, JSON.stringify(err, null, 2));
     } else {
       console.log('[Hiworks Email] SMTP connection verified successfully');
     }
@@ -55,11 +61,11 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
       return { success: false, error: 'MAIL_APP_PASSWORD not configured' };
     }
     
+    console.log('[Hiworks Email] Creating transporter on-demand...');
     transporter = nodemailer.createTransport({
       host: SMTP_HOST,
       port: SMTP_PORT,
-      secure: false,
-      requireTLS: true,
+      secure: true,
       auth: {
         user: SMTP_USER,
         pass: password,
@@ -69,6 +75,8 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
 
   try {
     console.log(`[Hiworks Email] Sending email to: ${options.to}`);
+    console.log(`[Hiworks Email] Subject: ${options.subject}`);
+    console.log(`[Hiworks Email] Attachments: ${options.attachments?.length || 0} files`);
     
     const mailOptions: nodemailer.SendMailOptions = {
       from: `"FLOXN" <${SMTP_USER}>`,
@@ -88,7 +96,10 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
     
     return { success: true, messageId: result.messageId };
   } catch (error: any) {
-    console.error('[Hiworks Email] Failed to send email:', error.message);
+    console.error('[Hiworks Email] Failed to send email');
+    console.error(`[Hiworks Email] Error code: ${error.code || 'N/A'}`);
+    console.error(`[Hiworks Email] Error message: ${error.message || 'N/A'}`);
+    console.error(`[Hiworks Email] Full error:`, JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
     return { success: false, error: error.message };
   }
 }
