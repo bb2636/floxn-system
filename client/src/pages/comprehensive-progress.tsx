@@ -1933,33 +1933,31 @@ export default function ComprehensiveProgress() {
                           </div>
                         </div>
 
-                        {/* 보고서 열람 버튼 - 관리자이고 협력사가 현장출동보고서를 제출한 경우에만 표시 */}
-                        {user?.role === "관리자" && selectedCase.fieldSurveyStatus === "submitted" && (
-                          <button
-                            onClick={() => {
-                              // localStorage에 케이스 ID 저장하고 현장출동보고서 페이지로 이동
-                              localStorage.setItem('selectedFieldSurveyCaseId', selectedCase.id);
-                              localStorage.setItem('returnToComprehensiveProgress', 'true');
-                              setLocation('/field-survey/report');
-                            }}
-                            style={{
-                              width: "100%",
-                              padding: "14px",
-                              background: "#008FED",
-                              borderRadius: "8px",
-                              border: "none",
-                              fontFamily: "Pretendard",
-                              fontWeight: 600,
-                              fontSize: "16px",
-                              color: "#FFFFFF",
-                              cursor: "pointer",
-                              marginTop: "16px",
-                            }}
-                            data-testid="button-view-report"
-                          >
-                            보고서 열람
-                          </button>
-                        )}
+                        {/* 보고서 열람 버튼 - 항상 표시 */}
+                        <button
+                          onClick={() => {
+                            // localStorage에 케이스 ID 저장하고 현장출동보고서 페이지로 이동
+                            localStorage.setItem('selectedFieldSurveyCaseId', selectedCase.id);
+                            localStorage.setItem('returnToComprehensiveProgress', 'true');
+                            setLocation('/field-survey/report');
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "14px",
+                            background: "#008FED",
+                            borderRadius: "8px",
+                            border: "none",
+                            fontFamily: "Pretendard",
+                            fontWeight: 600,
+                            fontSize: "16px",
+                            color: "#FFFFFF",
+                            cursor: "pointer",
+                            marginTop: "16px",
+                          }}
+                          data-testid="button-view-report"
+                        >
+                          보고서 열람
+                        </button>
                       </>
                     )}
 
