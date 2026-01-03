@@ -6793,14 +6793,29 @@ ${documentLinksSection}
 감사합니다.
 FLOXN 드림`;
 
-      // 이메일 전송
+      // 이메일 전송 (Hiworks SMTP를 사용해 PDF 첨부)
       const sendResults: { email: string; success: boolean; error?: string }[] = [];
       
       for (const recipientEmail of emails) {
         try {
-          await sendNotificationEmail(recipientEmail, `FLOXN 현장조사 리포트 - ${caseData.caseNumber || dateStr}`, emailContent);
-          sendResults.push({ email: recipientEmail, success: true });
-          console.log(`[Email] Field Report PDF sent to ${recipientEmail} by ${user.username}`);
+          const result = await sendFieldReportEmail(
+            recipientEmail,
+            caseData.caseNumber || caseData.insuranceAccidentNo || 'UNKNOWN',
+            caseData.insuredName || caseData.clientName || '',
+            pdfBuffer
+          );
+          
+          if (result.success) {
+            sendResults.push({ email: recipientEmail, success: true });
+            console.log(`[Email] Field Report PDF attached and sent to ${recipientEmail} by ${user.username}`);
+          } else {
+            sendResults.push({ 
+              email: recipientEmail, 
+              success: false, 
+              error: result.error || '전송 실패'
+            });
+            console.error(`[Email] Failed to send to ${recipientEmail}:`, result.error);
+          }
         } catch (sendError) {
           console.error(`[Email] Failed to send to ${recipientEmail}:`, sendError);
           sendResults.push({ 
@@ -6816,14 +6831,14 @@ FLOXN 드림`;
 
       if (successCount === 0) {
         return res.status(500).json({ 
-          error: "모든 이메일 전송에 실패했습니다",
+          error: "이메일 전송에 실패했습니다. SMTP 설정을 확인해주세요.",
           details: sendResults.filter(r => !r.success)
         });
       }
 
       const message = failedCount > 0
         ? `${successCount}명에게 전송 완료, ${failedCount}명 전송 실패`
-        : `${successCount}명에게 현장조사 리포트 이메일이 전송되었습니다`;
+        : `${successCount}명에게 현장출동보고서가 PDF 첨부파일로 전송되었습니다`;
 
       res.json({ success: true, message, pdfUrl, results: sendResults });
     } catch (error) {
