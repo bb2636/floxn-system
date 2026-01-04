@@ -194,18 +194,30 @@ export default function Dashboard() {
   const myTasks = useMemo(() => {
     if (!allCases || !user) return [];
     
+    // 협력사의 경우 assignedPartner(회사명) 또는 assignedTo(사용자ID)로 필터링
+    // 다른 역할의 경우 assignedTo로만 필터링
+    const isPartner = user.role === "협력사";
+    
+    const filteredCases = allCases.filter(c => {
+      if (isPartner) {
+        // 협력사: 회사명 매칭 또는 사용자 ID 매칭
+        return c.assignedPartner === user.company || c.assignedTo === user.id;
+      }
+      // 다른 역할: 사용자 ID로만 필터링
+      return c.assignedTo === user.id;
+    });
+    
     console.log('내 작업 필터링:', {
       userId: user.id,
       username: user.username,
+      userCompany: user.company,
+      isPartner,
       totalCases: allCases.length,
-      casesWithAssignedTo: allCases.filter(c => c.assignedTo).length,
-      myAssignedCases: allCases.filter(c => c.assignedTo === user.id).length,
-      allCasesAssignedTo: allCases.map(c => ({ caseNumber: c.caseNumber, assignedTo: c.assignedTo }))
+      myFilteredCases: filteredCases.length,
     });
     
     // Get cases assigned to current user, sorted by updatedAt (most recent first)
-    return allCases
-      .filter(c => c.assignedTo === user.id)
+    return filteredCases
       .sort((a, b) => {
         const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
