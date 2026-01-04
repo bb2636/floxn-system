@@ -790,6 +790,7 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
     vat: formatNumber(vat),
     vatStatus: vatIncluded ? '포함' : '별도',
     truncation: formatNumber(truncation),
+    truncatedSubtotal: formatNumber(truncatedVatBase),
     grandTotal: formatNumber(grandTotal),
     estimateAmount: formatNumber(Number(caseData.estimateAmount) || grandTotal),
   };
