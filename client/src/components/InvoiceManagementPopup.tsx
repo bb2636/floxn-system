@@ -177,13 +177,12 @@ export function InvoiceManagementPopup({
     return { totalClaim, totalDeposit };
   }, [depositEntries]);
 
-  // 미수액 계산
+  // 미수액 계산 (금액 섹션의 총 승인금액 사용)
   const outstandingAmount = useMemo(() => {
-    const total = parseInt(totalApprovedAmountInput.replace(/,/g, "") || "0");
     const deductible = parseInt(deductibleAmount || "0");
-    const claimTotal = total - deductible;
+    const claimTotal = totalApprovedAmount - deductible;
     return claimTotal - depositTotals.totalDeposit;
-  }, [totalApprovedAmountInput, deductibleAmount, depositTotals.totalDeposit]);
+  }, [totalApprovedAmount, deductibleAmount, depositTotals.totalDeposit]);
 
   // 입금내역 추가
   const handleAddDeposit = () => {
@@ -1609,7 +1608,7 @@ export function InvoiceManagementPopup({
                   >
                     <div style={{ flex: 1, padding: "12px 8px", textAlign: "center", borderRight: "1px solid rgba(12, 12, 12, 0.08)" }}>
                       <div style={{ fontWeight: 600, fontSize: "12px", color: "rgba(12, 12, 12, 0.5)", marginBottom: "4px" }}>총 승인금액</div>
-                      <div style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>{parseInt(totalApprovedAmountInput.replace(/,/g, "") || "0").toLocaleString()}원</div>
+                      <div style={{ fontWeight: 600, fontSize: "14px", color: "rgba(12, 12, 12, 0.8)" }}>{totalApprovedAmount.toLocaleString()}원</div>
                     </div>
                     <div style={{ flex: 1, padding: "12px 8px", textAlign: "center", borderRight: "1px solid rgba(12, 12, 12, 0.08)" }}>
                       <div style={{ fontWeight: 600, fontSize: "12px", color: "rgba(12, 12, 12, 0.5)", marginBottom: "4px" }}>자기부담금</div>
