@@ -1198,7 +1198,7 @@ export default function FieldManagement() {
                         color: "#686A6E",
                       }}
                     >
-                      카테고리 <span style={{ color: "#FF4D4F" }}>*</span>
+                      누수유형 <span style={{ color: "#FF4D4F" }}>*</span>
                     </Label>
                     <div className="flex gap-2">
                       {["배관", "코킹", "방수", "기타"].map((category) => (
