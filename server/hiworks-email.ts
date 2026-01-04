@@ -144,14 +144,25 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
   }
 }
 
+export interface FieldReportEmailData {
+  insuranceAccidentNo?: string;
+  assessorTeam?: string;
+  investigatorTeam?: string;
+}
+
 export async function sendFieldReportEmail(
   to: string,
   caseNumber: string,
   insuredName: string,
-  pdfBuffer: Buffer
+  pdfBuffer: Buffer,
+  additionalData?: FieldReportEmailData
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const today = new Date();
   const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  
+  const accidentNo = additionalData?.insuranceAccidentNo || '-';
+  const assessor = additionalData?.assessorTeam || '-';
+  const investigator = additionalData?.investigatorTeam || '-';
   
   const subject = `[FLOXN] 현장출동보고서 - ${caseNumber}`;
   
@@ -167,16 +178,27 @@ export async function sendFieldReportEmail(
       
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
         <tr>
-          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 120px; font-weight: bold;">접수번호</td>
-          <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseNumber}</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 120px; font-weight: bold;">사고번호</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="3">${accidentNo}</td>
+        </tr>
+        <tr>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 120px; font-weight: bold;">담당자</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 80px; font-weight: bold;">심사자</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd; width: 100px;">${assessor}</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 80px; font-weight: bold;">조사자</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;">${investigator}</td>
         </tr>
         <tr>
           <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">피보험자</td>
-          <td style="padding: 10px 15px; border: 1px solid #ddd;">${insuredName || '-'}</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="3">${insuredName || '-'}</td>
+        </tr>
+        <tr>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">접수번호</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="3">${caseNumber}</td>
         </tr>
         <tr>
           <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
-          <td style="padding: 10px 15px; border: 1px solid #ddd;">${dateStr}</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="3">${dateStr}</td>
         </tr>
       </table>
       
@@ -204,8 +226,10 @@ export async function sendFieldReportEmail(
 
 아래 접수건에 대한 현장출동보고서를 첨부하여 송부드립니다.
 
-- 접수번호: ${caseNumber}
+- 사고번호: ${accidentNo}
+- 담당자: 심사자 ${assessor} / 조사자 ${investigator}
 - 피보험자: ${insuredName || '-'}
+- 접수번호: ${caseNumber}
 - 발송일: ${dateStr}
 
 첨부된 PDF 파일을 확인해 주시기 바랍니다.

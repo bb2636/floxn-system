@@ -5755,7 +5755,12 @@ FLOXN 드림`;
         email,
         caseData.caseNumber || caseId,
         caseData.insuredName || caseData.victimName || '',
-        pdfBuffer
+        pdfBuffer,
+        {
+          insuranceAccidentNo: caseData.insuranceAccidentNo || undefined,
+          assessorTeam: caseData.assessorTeam || undefined,
+          investigatorTeam: caseData.investigatorTeam || caseData.investigatorTeamName || undefined,
+        }
       );
 
       if (!result.success) {
@@ -6851,7 +6856,12 @@ FLOXN 드림`;
             recipientEmail,
             caseData.caseNumber || caseData.insuranceAccidentNo || 'UNKNOWN',
             caseData.insuredName || caseData.clientName || '',
-            pdfBuffer
+            pdfBuffer,
+            {
+              insuranceAccidentNo: caseData.insuranceAccidentNo || undefined,
+              assessorTeam: caseData.assessorTeam || undefined,
+              investigatorTeam: caseData.investigatorTeam || caseData.investigatorTeamName || undefined,
+            }
           );
           
           if (result.success) {
