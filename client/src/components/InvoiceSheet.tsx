@@ -238,7 +238,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       if (response.ok) {
         toast({
           title: "이메일 전송 완료",
-          description: `${invoiceRecipientEmail}으로 INVOICE PDF 링크가 전송되었습니다.`,
+          description: `${invoiceRecipientEmail}으로 INVOICE PDF가 첨부파일로 전송되었습니다.`,
         });
         onOpenChange(false);
       } else {

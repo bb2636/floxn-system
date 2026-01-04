@@ -13,7 +13,7 @@ import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from 
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
 import { generatePdf } from "./pdf-service";
 import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
-import { sendFieldReportEmail } from "./hiworks-email";
+import { sendFieldReportEmail, sendEmailWithAttachment } from "./hiworks-email";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
@@ -6041,38 +6041,6 @@ FLOXN 드림`;
 
       console.log(`[Invoice PDF] PDF generated, size: ${pdfBuffer.length} bytes`);
 
-      // Upload PDF to Object Storage
-      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
-      if (!bucketId) {
-        console.error("[send-invoice-email-v2] Missing Object Storage bucket ID");
-        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
-      }
-
-      const timestamp = Date.now();
-      const fileName = `invoice_${caseData.caseNumber || caseId}_${timestamp}.pdf`;
-      const bucket = objectStorageClient.bucket(bucketId);
-      const objectName = `public/invoice-pdfs/${fileName}`;
-      const file = bucket.file(objectName);
-
-      // Upload the PDF
-      await file.save(pdfBuffer, {
-        contentType: 'application/pdf',
-        metadata: {
-          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
-        },
-      });
-
-      // Generate signed URL for PDF (7 days validity)
-      const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60; // 7 days
-      const pdfUrl = await signObjectURL({
-        bucketName: bucketId,
-        objectName: objectName,
-        method: 'GET',
-        ttlSec: SIGNED_URL_TTL_SEC,
-      });
-
-      console.log(`[PDF Upload] Invoice PDF uploaded with signed URL`);
-
       // Format amounts
       const formatAmount = (amt: number) => amt.toLocaleString('ko-KR');
       const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -6093,10 +6061,70 @@ FLOXN 드림`;
       }
       amountLines.push(`- 합계: ${formatAmount(totalAmount)}원`);
 
-      // Send email with PDF link
-      const emailContent = `안녕하세요,
+      // Build email content (NO links, PDF is attached directly)
+      const emailSubjectId = invoiceData.insuranceAccidentNo || caseData.insurancePolicyNo || invoiceData.caseNumber || dateStr;
+      const emailSubject = `[FLOXN] INVOICE - ${emailSubjectId}`;
+      
+      const htmlContent = `
+        <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px;">INVOICE 전달드립니다</h2>
+          
+          <p style="color: #666; line-height: 1.8;">안녕하세요,</p>
+          
+          <p style="color: #666; line-height: 1.8;">
+            아래 내용의 <strong>INVOICE</strong>를 첨부하여 송부드립니다.
+          </p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 140px; font-weight: bold;">보험사</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${invoiceData.recipientName}</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">사고번호</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${invoiceData.insuranceAccidentNo || '-'}</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">청구 금액</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">
+                ${amountLines.map(line => `<div>${line}</div>`).join('')}
+              </td>
+            </tr>
+            ${remarks ? `
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">비고</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${remarks}</td>
+            </tr>` : ''}
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${dateStr}</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송자</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${user.name || user.username}</td>
+            </tr>
+          </table>
+          
+          <p style="color: #666; line-height: 1.8;">
+            첨부된 PDF 파일을 확인해 주시기 바랍니다.
+          </p>
+          
+          <p style="color: #666; line-height: 1.8; margin-top: 30px;">
+            감사합니다.<br/>
+            <strong>FLOXN</strong>
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;" />
+          
+          <p style="color: #999; font-size: 12px;">
+            본 메일은 FLOXN 시스템에서 자동 발송되었습니다.
+          </p>
+        </div>
+      `;
 
-INVOICE를 전송해드립니다.
+      const textContent = `안녕하세요,
+
+INVOICE를 첨부하여 전달드립니다.
 
 - 보험사: ${invoiceData.recipientName}
 - 사고번호: ${invoiceData.insuranceAccidentNo || '-'}
@@ -6105,20 +6133,41 @@ INVOICE를 전송해드립니다.
 ${amountLines.join('\n')}
 ${remarks ? `\n비고: ${remarks}` : ''}
 
-아래 링크를 클릭하시면 INVOICE PDF를 다운로드하실 수 있습니다:
-${pdfUrl}
-
 - 발송일: ${dateStr}
 - 발송자: ${user.name || user.username}
+
+첨부된 PDF 파일을 확인해 주시기 바랍니다.
 
 감사합니다.
 FLOXN 드림`;
 
-      const emailSubjectId = invoiceData.insuranceAccidentNo || caseData.insurancePolicyNo || invoiceData.caseNumber || dateStr;
-      await sendNotificationEmail(email, `FLOXN INVOICE - ${emailSubjectId}`, emailContent);
+      // Generate filename for the PDF attachment
+      const timestamp = Date.now();
+      const pdfFilename = `INVOICE_${caseData.caseNumber || caseId}_${timestamp}.pdf`;
 
-      console.log(`[Email] Invoice PDF link sent successfully to ${email} by ${user.username}`);
-      res.json({ success: true, message: "INVOICE 이메일이 전송되었습니다", pdfUrl });
+      // Send email with PDF attachment (NOT a link)
+      console.log(`[Invoice Email] Sending PDF attachment to ${email}`);
+      const emailResult = await sendEmailWithAttachment({
+        to: email,
+        subject: emailSubject,
+        text: textContent,
+        html: htmlContent,
+        attachments: [
+          {
+            filename: pdfFilename,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ],
+      });
+
+      if (!emailResult.success) {
+        console.error(`[Invoice Email] Failed to send: ${emailResult.error}`);
+        return res.status(500).json({ error: `이메일 전송 실패: ${emailResult.error}` });
+      }
+
+      console.log(`[Invoice Email] PDF attachment sent successfully to ${email} by ${user.username}`);
+      res.json({ success: true, message: "INVOICE PDF가 이메일 첨부파일로 전송되었습니다" });
     } catch (error) {
       console.error("Send invoice email v2 error:", error);
       const errorMessage = error instanceof Error ? error.message : "INVOICE 이메일 전송 중 오류가 발생했습니다";
