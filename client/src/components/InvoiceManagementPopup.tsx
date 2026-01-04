@@ -282,7 +282,7 @@ export function InvoiceManagementPopup({
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
         };
         
-        // "정산"이 선택된 경우에만 날짜 설정
+        // "정산"이 선택된 경우에만 날짜 설정, 그 외에는 날짜 초기화
         if (settlementStatus === "정산") {
           settlementUpdateData.partnerPaymentDate = todayDate; // 협력업체 지급일
           settlementUpdateData.settlementDate = todayDate; // 입금일
@@ -290,6 +290,10 @@ export function InvoiceManagementPopup({
           // 로컬 상태도 업데이트
           setPartnerPaymentDate(todayDate);
           setDepositDate(new Date());
+        } else {
+          // "정산"이 아닌 경우 입금일 초기화 (부분입금 등)
+          settlementUpdateData.settlementDate = ""; // 입금일 초기화
+          setDepositDate(undefined);
         }
         
         await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, settlementUpdateData);
@@ -298,7 +302,7 @@ export function InvoiceManagementPopup({
         const settlementCreateData: Record<string, unknown> = {
           caseId: caseData.id,
           settlementAmount: "0", // 필수 필드
-          settlementDate: todayDate, // 기본값 필요 (필수 필드)
+          settlementDate: settlementStatus === "정산" ? todayDate : "", // 정산인 경우에만 날짜 설정
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액 합계 (레거시 호환용)
           depositEntries: depositEntries, // 입금내역 배열 저장
@@ -313,6 +317,8 @@ export function InvoiceManagementPopup({
           // 로컬 상태도 업데이트
           setPartnerPaymentDate(todayDate);
           setDepositDate(new Date());
+        } else {
+          setDepositDate(undefined);
         }
         
         await apiRequest("POST", "/api/settlements", settlementCreateData);
@@ -725,7 +731,7 @@ export function InvoiceManagementPopup({
           partnerPaymentAmount: partnerPaymentAmount.toString(), // 협력업체 지급금액
         };
         
-        // "정산"이 선택된 경우에만 날짜 설정
+        // "정산"이 선택된 경우에만 날짜 설정, 그 외에는 날짜 초기화
         if (settlementStatus === "정산") {
           settlementUpdateData.partnerPaymentDate = todayDate; // 협력업체 지급일
           settlementUpdateData.settlementDate = todayDate; // 입금일
@@ -733,6 +739,10 @@ export function InvoiceManagementPopup({
           // 로컬 상태도 업데이트
           setPartnerPaymentDate(todayDate);
           setDepositDate(new Date());
+        } else {
+          // "정산"이 아닌 경우 입금일 초기화 (부분입금 등)
+          settlementUpdateData.settlementDate = ""; // 입금일 초기화
+          setDepositDate(undefined);
         }
         
         await apiRequest("PATCH", `/api/settlements/${settlementData.id}`, settlementUpdateData);
@@ -741,7 +751,7 @@ export function InvoiceManagementPopup({
         const settlementCreateData: Record<string, unknown> = {
           caseId: caseData.id,
           settlementAmount: "0", // 필수 필드
-          settlementDate: todayDate, // 기본값 필요 (필수 필드)
+          settlementDate: settlementStatus === "정산" ? todayDate : "", // 정산인 경우에만 날짜 설정
           deductible: deductibleAmount || "0",
           discount: totalDepositAmount.toString(), // 입금액 합계 (레거시 호환용)
           depositEntries: depositEntries, // 입금내역 배열 저장
@@ -756,6 +766,8 @@ export function InvoiceManagementPopup({
           // 로컬 상태도 업데이트
           setPartnerPaymentDate(todayDate);
           setDepositDate(new Date());
+        } else {
+          setDepositDate(undefined);
         }
         
         await apiRequest("POST", "/api/settlements", settlementCreateData);
