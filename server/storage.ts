@@ -1818,6 +1818,11 @@ export class MemStorage implements IStorage {
       ...caseItem,
       fieldSurveyStatus: "submitted",
       status: "검토중",
+      // 재제출 시 심사 정보 초기화 (관리자가 다시 심사할 수 있도록)
+      reviewDecision: null,
+      reviewComment: null,
+      reviewedAt: null,
+      reviewedBy: null,
       initialEstimateAmount: initialEstimateAmount,
       initialPreventionEstimateAmount: initialPreventionEstimateAmount,
       initialPropertyEstimateAmount: initialPropertyEstimateAmount,
@@ -4691,6 +4696,11 @@ export class DbStorage implements IStorage {
       .set({
         fieldSurveyStatus: "submitted",
         status: "검토중",
+        // 재제출 시 심사 정보 초기화 (관리자가 다시 심사할 수 있도록)
+        reviewDecision: null,
+        reviewComment: null,
+        reviewedAt: null,
+        reviewedBy: null,
         ...additionalUpdates,
         updatedAt: currentDate,
       })
