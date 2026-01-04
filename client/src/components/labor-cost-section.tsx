@@ -115,6 +115,7 @@ interface LaborCostSectionProps {
   enableAreaImport?: boolean; // 피해면적 불러오기 활성화 (손해방지 케이스만 true)
   isHydrated?: boolean; // 데이터 로딩 완료 여부 (재계산 방지용)
   laborRateTiers?: LaborRateTier[]; // C/D 비율 적용률 데이터 (DB에서 가져옴)
+  isLossPreventionCase?: boolean; // 손해방지 케이스 여부 (누수탐지 경비여부 자동체크용)
 }
 
 export function LaborCostSection({
@@ -133,6 +134,7 @@ export function LaborCostSection({
   enableAreaImport = true, // 기본값 true (하위 호환)
   isHydrated = true, // 기본값 true (하위 호환)
   laborRateTiers = DEFAULT_LABOR_RATE_TIERS_FALLBACK, // 기본값: 하드코딩된 요율 (하위 호환)
+  isLossPreventionCase = false, // 기본값 false
 }: LaborCostSectionProps) {
   // 드래그 앤 드롭 상태
   const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
@@ -187,8 +189,17 @@ export function LaborCostSection({
   };
 
   // 공사명 선택 시 단순 업데이트 (팝업 제거됨)
+  // 손해방지 케이스에서 공사명이 "누수탐지"면 경비여부 자동 체크
   const handleWorkNameChange = (rowId: string, workName: string) => {
-    updateRow(rowId, 'workName', workName);
+    // 손해방지 케이스이고 공사명이 "누수탐지"면 includeInEstimate를 false로 설정 (경비여부 체크)
+    if (isLossPreventionCase && workName === '누수탐지') {
+      onRowsChange(rows.map(r => r.id === rowId 
+        ? { ...r, workName, includeInEstimate: false } 
+        : r
+      ));
+    } else {
+      updateRow(rowId, 'workName', workName);
+    }
   };
 
   // 공사명별 복구면적 자동 계산 함수

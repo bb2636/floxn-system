@@ -5559,6 +5559,7 @@ export default function FieldEstimate() {
                 enableAreaImport={!isLossPreventionCase}
                 isHydrated={isHydratedState}
                 laborRateTiers={laborRateTiers}
+                isLossPreventionCase={isLossPreventionCase}
               />
             </div>
 
@@ -6080,6 +6081,7 @@ export default function FieldEstimate() {
                 enableAreaImport={!isLossPreventionCase}
                 isHydrated={isHydratedState}
                 laborRateTiers={laborRateTiers}
+                isLossPreventionCase={isLossPreventionCase}
               />
             </div>
 
