@@ -458,12 +458,29 @@ export default function FieldManagement() {
   const handleOpenEditVictimDialog = async (caseItem: Case) => {
     setEditingVictimCase(caseItem);
     
+    console.log(`[피해자 수정] 다이얼로그 열기: caseItem.id=${caseItem.id}, selectedCase=${selectedCase}`);
+    console.log(`[피해자 수정] caseItem 데이터:`, {
+      victimName: caseItem.victimName,
+      victimContact: caseItem.victimContact,
+      victimAddress: caseItem.victimAddress,
+      victimAddressDetail: caseItem.victimAddressDetail,
+    });
+    
     // 현재 선택된 케이스인 경우 selectedCaseDetail에서 데이터 로드 (API 목록에는 victim 필드가 없음)
     if (caseItem.id === selectedCase && selectedCaseDetail) {
+      console.log(`[피해자 수정] selectedCaseDetail 사용:`, {
+        victimName: selectedCaseDetail.victimName,
+        victimContact: selectedCaseDetail.victimContact,
+        victimAddress: selectedCaseDetail.victimAddress,
+        victimAddressDetail: selectedCaseDetail.victimAddressDetail,
+        insuredAddress: selectedCaseDetail.insuredAddress,
+        insuredAddressDetail: selectedCaseDetail.insuredAddressDetail,
+      });
       setEditVictimName(selectedCaseDetail.victimName || "");
       setEditVictimContact(selectedCaseDetail.victimContact || "");
-      setEditVictimAddress(selectedCaseDetail.victimAddress || "");
-      setEditVictimAddressDetail(selectedCaseDetail.victimAddressDetail || "");
+      // 피해자 주소가 없으면 피보험자 주소를 기본값으로 사용
+      setEditVictimAddress(selectedCaseDetail.victimAddress || selectedCaseDetail.insuredAddress || "");
+      setEditVictimAddressDetail(selectedCaseDetail.victimAddressDetail || selectedCaseDetail.insuredAddressDetail || "");
       setEditVictimDialogOpen(true);
     } else {
       // 다른 케이스인 경우 API에서 개별 조회
@@ -471,23 +488,35 @@ export default function FieldManagement() {
         const response = await fetch(`/api/cases/${caseItem.id}`);
         if (response.ok) {
           const caseData = await response.json();
+          console.log(`[피해자 수정] API 응답:`, {
+            victimName: caseData.victimName,
+            victimContact: caseData.victimContact,
+            victimAddress: caseData.victimAddress,
+            victimAddressDetail: caseData.victimAddressDetail,
+            insuredAddress: caseData.insuredAddress,
+            insuredAddressDetail: caseData.insuredAddressDetail,
+          });
           setEditVictimName(caseData.victimName || "");
           setEditVictimContact(caseData.victimContact || "");
-          setEditVictimAddress(caseData.victimAddress || "");
-          setEditVictimAddressDetail(caseData.victimAddressDetail || "");
+          // 피해자 주소가 없으면 피보험자 주소를 기본값으로 사용
+          setEditVictimAddress(caseData.victimAddress || caseData.insuredAddress || "");
+          setEditVictimAddressDetail(caseData.victimAddressDetail || caseData.insuredAddressDetail || "");
         } else {
           // 조회 실패 시 기존 데이터 사용
+          console.log(`[피해자 수정] API 실패, caseItem 데이터 사용`);
           setEditVictimName(caseItem.victimName || "");
           setEditVictimContact(caseItem.victimContact || "");
-          setEditVictimAddress(caseItem.victimAddress || "");
-          setEditVictimAddressDetail(caseItem.victimAddressDetail || "");
+          // 피해자 주소가 없으면 피보험자 주소를 기본값으로 사용
+          setEditVictimAddress(caseItem.victimAddress || caseItem.insuredAddress || "");
+          setEditVictimAddressDetail(caseItem.victimAddressDetail || caseItem.insuredAddressDetail || "");
         }
       } catch (error) {
         console.error("케이스 조회 실패:", error);
         setEditVictimName(caseItem.victimName || "");
         setEditVictimContact(caseItem.victimContact || "");
-        setEditVictimAddress(caseItem.victimAddress || "");
-        setEditVictimAddressDetail(caseItem.victimAddressDetail || "");
+        // 피해자 주소가 없으면 피보험자 주소를 기본값으로 사용
+        setEditVictimAddress(caseItem.victimAddress || caseItem.insuredAddress || "");
+        setEditVictimAddressDetail(caseItem.victimAddressDetail || caseItem.insuredAddressDetail || "");
       }
       setEditVictimDialogOpen(true);
     }
