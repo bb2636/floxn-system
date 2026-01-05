@@ -3824,6 +3824,13 @@ export default function FieldEstimate() {
         throw new Error("케이스가 선택되지 않았습니다");
       }
 
+      // 문자열을 숫자로 변환하는 헬퍼 함수
+      const toNumber = (val: string | number | null | undefined): number | null => {
+        if (val === null || val === undefined || val === '') return null;
+        const num = typeof val === 'string' ? parseFloat(val) : val;
+        return isNaN(num) ? null : num;
+      };
+      
       // UI 데이터를 API 형식으로 변환 (rowOrder는 서버에서 자동 할당)
       // category가 비어있는 행은 필터링 (손해방지 케이스에서 복구면적 산출표를 사용하지 않을 때)
       const apiRows = rows
@@ -3833,12 +3840,12 @@ export default function FieldEstimate() {
           location: row.location === "선택" ? null : row.location,
           workType: row.workType || null,
           workName: row.workName === "선택" ? null : row.workName,
-          damageWidth: row.damageWidth,
-          damageHeight: row.damageHeight,
-          damageArea: row.damageArea,
-          repairWidth: row.repairWidth,
-          repairHeight: row.repairHeight,
-          repairArea: row.repairArea,
+          damageWidth: toNumber(row.damageWidth),
+          damageHeight: toNumber(row.damageHeight),
+          damageArea: toNumber(row.damageArea),
+          repairWidth: toNumber(row.repairWidth),
+          repairHeight: toNumber(row.repairHeight),
+          repairArea: toNumber(row.repairArea),
           note: row.note,
         }));
 
