@@ -1481,7 +1481,11 @@ export default function ComprehensiveProgress() {
                       }}
                       data-testid={`button-field-survey-${caseItem.id}`}
                     >
-                      {caseItem.status === "직접복구" ? "청구자료 입력" : "현장조사 입력"}
+                      {(caseItem.status === "직접복구" || 
+                        caseItem.status === "(직접복구인 경우) 청구자료제출" || 
+                        caseItem.status?.includes("직접복구")) 
+                        ? "청구자료 입력" 
+                        : "현장조사 입력"}
                     </div>
                   )}
                   <div>
