@@ -592,7 +592,7 @@ export default function FieldReport() {
     mutationFn: async () => {
       return apiRequest("PATCH", `/api/cases/${selectedCaseId}/submit`);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "제출 완료",
         description: "현장출동보고서가 성공적으로 제출되었습니다.",
@@ -600,9 +600,25 @@ export default function FieldReport() {
       queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
       setShowSubmitDialog(false);
       
-      // SMS 알림 다이얼로그 표시 (현장정보제출)
-      setSmsStage("현장정보제출");
-      setSmsDialogOpen(true);
+      // 플록슨 담당자에게 SMS 자동 발송 (다이얼로그 없이)
+      try {
+        await apiRequest("POST", "/api/send-stage-notification", {
+          caseId: selectedCaseId,
+          stage: "현장정보제출",
+          recipients: { partner: false, manager: true, assessorInvestigator: false },
+        });
+        toast({
+          title: "문자 발송 완료",
+          description: "플록슨 담당자에게 현장정보제출 알림이 발송되었습니다.",
+        });
+      } catch (error) {
+        console.error("SMS 자동 발송 실패:", error);
+        toast({
+          title: "문자 발송 실패",
+          description: "문자 발송 중 오류가 발생했습니다.",
+          variant: "destructive",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
