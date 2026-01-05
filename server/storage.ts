@@ -5359,21 +5359,54 @@ export class DbStorage implements IStorage {
           rowOrder: index + 1, // 1부터 시작하는 순차적 번호
         }));
 
-        // Debug logging
-        console.log("[Estimate Insert Debug] First row:", JSON.stringify(rowsWithEstimateId[0], null, 2));
-        console.log("[Estimate Insert Debug] Types:", {
-          damageWidth: typeof rowsWithEstimateId[0]?.damageWidth,
-          damageHeight: typeof rowsWithEstimateId[0]?.damageHeight,
-          damageArea: typeof rowsWithEstimateId[0]?.damageArea,
-          repairWidth: typeof rowsWithEstimateId[0]?.repairWidth,
-          repairHeight: typeof rowsWithEstimateId[0]?.repairHeight,
-          repairArea: typeof rowsWithEstimateId[0]?.repairArea,
-        });
-
-        const insertedRows = await tx
-          .insert(estimateRows)
-          .values(rowsWithEstimateId)
-          .returning();
+        // Raw SQL insert를 사용하여 drizzle-orm의 bigint 타입 추론 문제 우회
+        const insertedRows: EstimateRow[] = [];
+        
+        for (const row of rowsWithEstimateId) {
+          const result = await tx.execute(sql`
+            INSERT INTO estimate_rows (
+              estimate_id, category, location, work_type, work_name,
+              damage_width, damage_height, damage_area,
+              repair_width, repair_height, repair_area,
+              note, row_order
+            ) VALUES (
+              ${row.estimateId},
+              ${row.category || null},
+              ${row.location || null},
+              ${row.workType || null},
+              ${row.workName || null},
+              ${row.damageWidth !== null && row.damageWidth !== undefined ? row.damageWidth : null}::double precision,
+              ${row.damageHeight !== null && row.damageHeight !== undefined ? row.damageHeight : null}::double precision,
+              ${row.damageArea !== null && row.damageArea !== undefined ? row.damageArea : null}::double precision,
+              ${row.repairWidth !== null && row.repairWidth !== undefined ? row.repairWidth : null}::double precision,
+              ${row.repairHeight !== null && row.repairHeight !== undefined ? row.repairHeight : null}::double precision,
+              ${row.repairArea !== null && row.repairArea !== undefined ? row.repairArea : null}::double precision,
+              ${row.note || null},
+              ${row.rowOrder}
+            )
+            RETURNING *
+          `);
+          
+          if (result.rows && result.rows.length > 0) {
+            const dbRow = result.rows[0] as any;
+            insertedRows.push({
+              id: dbRow.id,
+              estimateId: dbRow.estimate_id,
+              category: dbRow.category,
+              location: dbRow.location,
+              workType: dbRow.work_type,
+              workName: dbRow.work_name,
+              damageWidth: dbRow.damage_width,
+              damageHeight: dbRow.damage_height,
+              damageArea: dbRow.damage_area,
+              repairWidth: dbRow.repair_width,
+              repairHeight: dbRow.repair_height,
+              repairArea: dbRow.repair_area,
+              note: dbRow.note,
+              rowOrder: dbRow.row_order,
+            });
+          }
+        }
 
         // rowOrder로 정렬하여 반환
         const sortedRows = insertedRows.sort((a, b) => a.rowOrder - b.rowOrder);
