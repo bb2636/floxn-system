@@ -191,12 +191,24 @@ export function LaborCostSection({
   // 공사명 선택 시 단순 업데이트 (팝업 제거됨)
   // 손해방지 케이스에서 공사명이 "누수탐지"면 경비여부 자동 체크
   const handleWorkNameChange = (rowId: string, workName: string) => {
-    // 손해방지 케이스이고 공사명이 "누수탐지"면 includeInEstimate를 false로 설정 (경비여부 체크)
+    // 손해방지 케이스이고 공사명이 "누수탐지"면 updateRow 후 includeInEstimate 체크
     if (isLossPreventionCase && workName === '누수탐지') {
-      onRowsChange(rows.map(r => r.id === rowId 
-        ? { ...r, workName, includeInEstimate: false } 
-        : r
-      ));
+      // 먼저 updateRow로 workName 업데이트 및 금액 계산 수행
+      // updateRow 내부 로직을 복사하여 includeInEstimate도 함께 설정
+      const updatedRows = rows.map(row => {
+        if (row.id === rowId) {
+          const updated = { ...row, workName, includeInEstimate: false };
+          
+          // 금액 계산 (standardPrice * quantity)
+          const standardPrice = Number(updated.standardPrice) || 0;
+          const quantity = Number(updated.quantity) || 0;
+          updated.amount = Math.round(standardPrice * quantity);
+          
+          return updated;
+        }
+        return row;
+      });
+      onRowsChange(updatedRows);
     } else {
       updateRow(rowId, 'workName', workName);
     }
