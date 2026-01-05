@@ -3860,7 +3860,7 @@ export default function FieldReport() {
                           <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>{calculateTotals.profit.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between items-center py-2">
-                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>만원미만 절사</span>
+                          <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500 }}>천원단위 절사</span>
                           <span style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 600 }}>-{calculateTotals.truncation.toLocaleString()}원</span>
                         </div>
                         <div className="flex justify-between items-center py-2">
