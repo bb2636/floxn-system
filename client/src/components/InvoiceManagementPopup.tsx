@@ -1444,37 +1444,31 @@ export function InvoiceManagementPopup({
                   </RadioGroup>
                 </div>
 
-                {/* 자기부담금 - 청구변경 선택 시 또는 미입력 시 편집 가능 */}
+                {/* 자기부담금 - 항상 편집 가능 */}
                 <div className="flex items-center justify-between">
                   <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                     자기부담금
                   </span>
-                  {(settlementStatus === "청구변경" || !deductibleAmount || deductibleAmount === "0") ? (
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="text"
-                        value={deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
-                          setDeductibleAmount(value || "0");
-                        }}
-                        data-testid="input-deductible-amount"
-                        style={{
-                          width: "120px",
-                          textAlign: "right",
-                          fontWeight: 400,
-                          fontSize: "15px",
-                          padding: "4px 8px",
-                          height: "32px",
-                        }}
-                      />
-                      <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>원</span>
-                    </div>
-                  ) : (
-                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>
-                      {deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}원
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="text"
+                      value={deductibleAmount ? parseInt(deductibleAmount).toLocaleString() : "0"}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
+                        setDeductibleAmount(value || "0");
+                      }}
+                      data-testid="input-deductible-amount"
+                      style={{
+                        width: "120px",
+                        textAlign: "right",
+                        fontWeight: 400,
+                        fontSize: "15px",
+                        padding: "4px 8px",
+                        height: "32px",
+                      }}
+                    />
+                    <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.9)" }}>원</span>
+                  </div>
                 </div>
               </div>
             </div>
