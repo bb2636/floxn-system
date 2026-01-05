@@ -5359,6 +5359,17 @@ export class DbStorage implements IStorage {
           rowOrder: index + 1, // 1부터 시작하는 순차적 번호
         }));
 
+        // Debug logging
+        console.log("[Estimate Insert Debug] First row:", JSON.stringify(rowsWithEstimateId[0], null, 2));
+        console.log("[Estimate Insert Debug] Types:", {
+          damageWidth: typeof rowsWithEstimateId[0]?.damageWidth,
+          damageHeight: typeof rowsWithEstimateId[0]?.damageHeight,
+          damageArea: typeof rowsWithEstimateId[0]?.damageArea,
+          repairWidth: typeof rowsWithEstimateId[0]?.repairWidth,
+          repairHeight: typeof rowsWithEstimateId[0]?.repairHeight,
+          repairArea: typeof rowsWithEstimateId[0]?.repairArea,
+        });
+
         const insertedRows = await tx
           .insert(estimateRows)
           .values(rowsWithEstimateId)
