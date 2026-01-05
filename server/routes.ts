@@ -5760,6 +5760,7 @@ FLOXN 드림`;
         pdfBuffer,
         {
           insuranceAccidentNo: caseData.insuranceAccidentNo || undefined,
+          policyNumber: caseData.policyNumber || undefined,
           assessorTeam: caseData.assessorTeam || undefined,
           investigatorTeam: caseData.investigatorTeam || caseData.investigatorTeamName || undefined,
         }
@@ -6861,6 +6862,7 @@ FLOXN 드림`;
             pdfBuffer,
             {
               insuranceAccidentNo: caseData.insuranceAccidentNo || undefined,
+              policyNumber: caseData.policyNumber || undefined,
               assessorTeam: caseData.assessorTeam || undefined,
               investigatorTeam: caseData.investigatorTeam || caseData.investigatorTeamName || undefined,
             }

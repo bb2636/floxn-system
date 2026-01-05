@@ -146,6 +146,7 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
 
 export interface FieldReportEmailData {
   insuranceAccidentNo?: string;
+  policyNumber?: string;
   assessorTeam?: string;
   investigatorTeam?: string;
 }
@@ -161,10 +162,13 @@ export async function sendFieldReportEmail(
   const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   
   const accidentNo = additionalData?.insuranceAccidentNo || '-';
+  const policyNo = additionalData?.policyNumber || '-';
   const assessor = additionalData?.assessorTeam || '-';
   const investigator = additionalData?.investigatorTeam || '-';
   
-  const subject = `[FLOXN] 현장출동보고서 - ${caseNumber}`;
+  // 이메일 제목: 보험사 사고번호 우선, 없으면 증권번호, 둘 다 없으면 접수번호
+  const subjectIdentifier = additionalData?.insuranceAccidentNo || additionalData?.policyNumber || caseNumber;
+  const subject = `[FLOXN] 현장출동보고서 - ${subjectIdentifier}`;
   
   const htmlContent = `
     <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
