@@ -5430,8 +5430,9 @@ export class DbStorage implements IStorage {
           
           if (resultRows.length > 0) {
             const dbRow = resultRows[0];
+            const insertedId = dbRow.id;
             
-            // [C-2] DB RETURNING 결과 로깅 (snake_case)
+            // [C-2] INSERT 직후 SELECT로 실제 DB 저장값 확인
             if (row.rowOrder === 1) {
               console.log("========================================");
               console.log("[C-2] 서버: INSERT RETURNING 결과");
@@ -5439,6 +5440,29 @@ export class DbStorage implements IStorage {
               console.log("  repair_height (raw):", dbRow.repair_height, "타입:", typeof dbRow.repair_height);
               console.log("  repair_area (raw):", dbRow.repair_area, "타입:", typeof dbRow.repair_area);
               console.log("========================================");
+              
+              // INSERT 직후 SELECT로 실제 DB 저장값 확인
+              const verifyResult = await tx.execute(sql`
+                SELECT
+                  repair_width,
+                  repair_height,
+                  repair_area,
+                  pg_typeof(repair_width) AS type_width,
+                  pg_typeof(repair_height) AS type_height,
+                  pg_typeof(repair_area) AS type_area
+                FROM estimate_rows
+                WHERE id = ${insertedId}
+              `);
+              
+              if (verifyResult.rows.length > 0) {
+                const verifyRow = verifyResult.rows[0] as any;
+                console.log("========================================");
+                console.log("[C-3] 서버: INSERT 직후 SELECT 실제 DB 저장값");
+                console.log("  repair_width:", verifyRow.repair_width, "pg_typeof:", verifyRow.type_width);
+                console.log("  repair_height:", verifyRow.repair_height, "pg_typeof:", verifyRow.type_height);
+                console.log("  repair_area:", verifyRow.repair_area, "pg_typeof:", verifyRow.type_area);
+                console.log("========================================");
+              }
             }
             
             // numeric 타입은 문자열로 반환되므로 숫자로 파싱
