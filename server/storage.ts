@@ -5389,12 +5389,12 @@ export class DbStorage implements IStorage {
               ${row.location || null},
               ${row.workType || null},
               ${row.workName || null},
-              ${row.damageWidth !== null && row.damageWidth !== undefined ? row.damageWidth : null}::numeric,
-              ${row.damageHeight !== null && row.damageHeight !== undefined ? row.damageHeight : null}::numeric,
-              ${row.damageArea !== null && row.damageArea !== undefined ? row.damageArea : null}::numeric,
-              ${row.repairWidth !== null && row.repairWidth !== undefined ? row.repairWidth : null}::numeric,
-              ${row.repairHeight !== null && row.repairHeight !== undefined ? row.repairHeight : null}::numeric,
-              ${row.repairArea !== null && row.repairArea !== undefined ? row.repairArea : null}::numeric,
+              ${row.damageWidth !== null && row.damageWidth !== undefined ? String(row.damageWidth) : null},
+              ${row.damageHeight !== null && row.damageHeight !== undefined ? String(row.damageHeight) : null},
+              ${row.damageArea !== null && row.damageArea !== undefined ? String(row.damageArea) : null},
+              ${row.repairWidth !== null && row.repairWidth !== undefined ? String(row.repairWidth) : null},
+              ${row.repairHeight !== null && row.repairHeight !== undefined ? String(row.repairHeight) : null},
+              ${row.repairArea !== null && row.repairArea !== undefined ? String(row.repairArea) : null},
               ${row.note || null},
               ${row.rowOrder}
             )
