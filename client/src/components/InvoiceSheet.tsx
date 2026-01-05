@@ -3,6 +3,16 @@ import { format } from "date-fns";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
+import { Checkbox } from "@/components/ui/checkbox";
+
+interface CaseDocument {
+  id: string;
+  fileName: string;
+  fileType: string;
+  category: string;
+  fileUrl?: string;
+}
 
 interface InvoiceSheetProps {
   open: boolean;
@@ -19,6 +29,8 @@ interface InvoiceSheetProps {
     recoveryType?: string | null;
     estimateAmount?: string | null;
     assessorId?: string | null;
+    assessorEmail?: string | null;
+    investigatorEmail?: string | null;
   } | null;
   relatedCases?: Array<{
     id: string;
@@ -41,6 +53,8 @@ export function getCaseNumberPrefix(caseNumber: string | null | undefined): stri
   return parts.slice(0, -1).join("-");
 }
 
+const DOCUMENT_CATEGORIES = ["사진-수리중", "사진-복구완료", "기본자료", "증빙자료", "청구자료"] as const;
+
 export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }: InvoiceSheetProps) {
   const { toast } = useToast();
   const invoicePdfRef = useRef<HTMLDivElement>(null);
@@ -53,6 +67,47 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState<string>("");
   const [isSendingPdf, setIsSendingPdf] = useState(false);
   const [isLoadingAmounts, setIsLoadingAmounts] = useState(false);
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+
+  const { data: documents = [] } = useQuery<CaseDocument[]>({
+    queryKey: ['/api/cases', caseData?.id, 'documents'],
+    enabled: open && !!caseData?.id,
+  });
+
+  const documentsByCategory = useMemo(() => {
+    const grouped: Record<string, CaseDocument[]> = {};
+    for (const category of DOCUMENT_CATEGORIES) {
+      grouped[category] = documents.filter(doc => doc.category === category);
+    }
+    return grouped;
+  }, [documents]);
+
+  const toggleEmail = (email: string) => {
+    setSelectedEmails(prev => {
+      if (prev.includes(email)) {
+        return prev.filter(e => e !== email);
+      } else {
+        return [...prev, email];
+      }
+    });
+  };
+
+  const toggleDocumentId = (docId: string) => {
+    setSelectedDocumentIds(prev => {
+      if (prev.includes(docId)) {
+        return prev.filter(id => id !== docId);
+      } else {
+        return [...prev, docId];
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (selectedEmails.length > 0) {
+      setInvoiceRecipientEmail(selectedEmails.join(", "));
+    }
+  }, [selectedEmails]);
 
   const categorizedAmounts = useMemo(() => {
     let damagePreventionAmount = 0;
@@ -166,6 +221,8 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         
         setInvoiceRemarks(caseData.invoiceRemarks || "");
         setInvoiceRecipientEmail("");
+        setSelectedEmails([]);
+        setSelectedDocumentIds([]);
       } else if (!open) {
         setInvoiceDamagePreventionAmount("");
         setInvoicePropertyRepairAmount("");
@@ -173,6 +230,8 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         setFieldDispatchPropertyAmount("");
         setInvoiceRemarks("");
         setInvoiceRecipientEmail("");
+        setSelectedEmails([]);
+        setSelectedDocumentIds([]);
       }
     };
     
@@ -230,6 +289,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           fieldDispatchPropertyAmount: fieldDispatchPropertyAmt,
           totalAmount: totalAmount,
           remarks: invoiceRemarks,
+          selectedDocumentIds: selectedDocumentIds,
         }),
       });
 
@@ -853,14 +913,101 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           </div>
         </div>
 
-        {/* 수신자 이메일 Section */}
+        {/* 첨부 서류 Section */}
+        {documents.length > 0 && (
+          <div style={{
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            padding: "16px 38px",
+            gap: "12px",
+            width: "680px",
+          }}>
+            <span style={{
+              fontFamily: "'Pretendard'",
+              fontStyle: "normal",
+              fontWeight: 500,
+              fontSize: "14px",
+              lineHeight: "128%",
+              letterSpacing: "-0.01em",
+              color: "rgba(12, 12, 12, 0.7)",
+            }}>첨부 서류</span>
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}>
+              {DOCUMENT_CATEGORIES.map(category => {
+                const categoryDocs = documentsByCategory[category];
+                if (!categoryDocs || categoryDocs.length === 0) return null;
+                return (
+                  <div key={category} style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}>
+                    <span style={{
+                      fontFamily: "'Pretendard'",
+                      fontStyle: "normal",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      lineHeight: "128%",
+                      letterSpacing: "-0.01em",
+                      color: "rgba(12, 12, 12, 0.9)",
+                    }}>{category}</span>
+                    <div style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "6px",
+                      paddingLeft: "8px",
+                    }}>
+                      {categoryDocs.map(doc => (
+                        <label
+                          key={doc.id}
+                          style={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: "8px",
+                            cursor: "pointer",
+                          }}
+                          data-testid={`checkbox-document-${doc.id}`}
+                        >
+                          <Checkbox
+                            checked={selectedDocumentIds.includes(doc.id)}
+                            onCheckedChange={() => toggleDocumentId(doc.id)}
+                          />
+                          <span style={{
+                            fontFamily: "'Pretendard'",
+                            fontStyle: "normal",
+                            fontWeight: 400,
+                            fontSize: "13px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.01em",
+                            color: "rgba(12, 12, 12, 0.8)",
+                          }}>
+                            {doc.fileName}
+                            <span style={{ color: "rgba(12, 12, 12, 0.5)", marginLeft: "6px" }}>
+                              ({doc.fileType})
+                            </span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 이메일 수신자 선택 Section */}
         <div style={{
           boxSizing: "border-box",
           display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
+          flexDirection: "column",
           padding: "16px 38px",
-          gap: "16px",
+          gap: "12px",
           width: "680px",
         }}>
           <span style={{
@@ -871,12 +1018,83 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
             lineHeight: "128%",
             letterSpacing: "-0.01em",
             color: "rgba(12, 12, 12, 0.7)",
-            whiteSpace: "nowrap",
           }}>수신자 이메일</span>
+          
+          {/* Email Checkboxes */}
+          {(caseData?.assessorEmail || caseData?.investigatorEmail) && (
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              paddingLeft: "8px",
+            }}>
+              {caseData?.assessorEmail && (
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: "8px",
+                    cursor: "pointer",
+                  }}
+                  data-testid="checkbox-assessor-email"
+                >
+                  <Checkbox
+                    checked={selectedEmails.includes(caseData.assessorEmail)}
+                    onCheckedChange={() => toggleEmail(caseData.assessorEmail!)}
+                  />
+                  <span style={{
+                    fontFamily: "'Pretendard'",
+                    fontStyle: "normal",
+                    fontWeight: 400,
+                    fontSize: "13px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}>
+                    심사자 이메일: {caseData.assessorEmail}
+                  </span>
+                </label>
+              )}
+              {caseData?.investigatorEmail && (
+                <label
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: "8px",
+                    cursor: "pointer",
+                  }}
+                  data-testid="checkbox-investigator-email"
+                >
+                  <Checkbox
+                    checked={selectedEmails.includes(caseData.investigatorEmail)}
+                    onCheckedChange={() => toggleEmail(caseData.investigatorEmail!)}
+                  />
+                  <span style={{
+                    fontFamily: "'Pretendard'",
+                    fontStyle: "normal",
+                    fontWeight: 400,
+                    fontSize: "13px",
+                    lineHeight: "128%",
+                    letterSpacing: "-0.01em",
+                    color: "rgba(12, 12, 12, 0.8)",
+                  }}>
+                    조사자 이메일: {caseData.investigatorEmail}
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
+
+          {/* Email Input */}
           <input
             type="email"
             value={invoiceRecipientEmail}
-            onChange={(e) => setInvoiceRecipientEmail(e.target.value)}
+            onChange={(e) => {
+              setInvoiceRecipientEmail(e.target.value);
+              setSelectedEmails([]);
+            }}
             placeholder="보험사 이메일 주소를 입력해주세요"
             style={{
               flex: 1,

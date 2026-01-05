@@ -1,10 +1,22 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { format } from "date-fns";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 import { usePermissions } from "@/hooks/use-permissions";
+
+interface CaseDocument {
+  id: string;
+  fileName: string;
+  fileType: string;
+  category: string;
+  fileUrl?: string;
+}
+
+const DOCUMENT_CATEGORIES = ["사진-수리중", "사진-복구완료", "기본자료", "증빙자료", "청구자료"] as const;
 
 interface FieldDispatchCostSheetProps {
   open: boolean;
@@ -17,6 +29,8 @@ interface FieldDispatchCostSheetProps {
     receptionDate?: string | null;
     fieldDispatchInvoiceAmount?: string | null;
     fieldDispatchInvoiceRemarks?: string | null;
+    assessorEmail?: string | null;
+    investigatorEmail?: string | null;
   } | null;
   relatedCases?: Array<{
     id: string;
@@ -37,15 +51,60 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
   const [invoiceRemarks, setInvoiceRemarks] = useState<string>("");
   const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState<string>("");
   const [isSendingPdf, setIsSendingPdf] = useState(false);
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+
+  const { data: documents = [] } = useQuery<CaseDocument[]>({
+    queryKey: ['/api/cases', caseData?.id, 'documents'],
+    enabled: open && !!caseData?.id,
+  });
+
+  const documentsByCategory = useMemo(() => {
+    const grouped: Record<string, CaseDocument[]> = {};
+    for (const category of DOCUMENT_CATEGORIES) {
+      grouped[category] = documents.filter(doc => doc.category === category);
+    }
+    return grouped;
+  }, [documents]);
+
+  const toggleEmail = (email: string) => {
+    setSelectedEmails(prev => {
+      if (prev.includes(email)) {
+        return prev.filter(e => e !== email);
+      } else {
+        return [...prev, email];
+      }
+    });
+  };
+
+  const toggleDocumentId = (docId: string) => {
+    setSelectedDocumentIds(prev => {
+      if (prev.includes(docId)) {
+        return prev.filter(id => id !== docId);
+      } else {
+        return [...prev, docId];
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (selectedEmails.length > 0) {
+      setInvoiceRecipientEmail(selectedEmails.join(", "));
+    }
+  }, [selectedEmails]);
 
   useEffect(() => {
     if (open && caseData) {
       // 비고는 기존 저장된 값이 있으면 불러오기
       setInvoiceRemarks(caseData.fieldDispatchInvoiceRemarks || "");
       setInvoiceRecipientEmail("");
+      setSelectedEmails([]);
+      setSelectedDocumentIds([]);
     } else if (!open) {
       setInvoiceRemarks("");
       setInvoiceRecipientEmail("");
+      setSelectedEmails([]);
+      setSelectedDocumentIds([]);
     }
   }, [open, caseData]);
 
@@ -120,12 +179,14 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
         body: JSON.stringify({
           email: invoiceRecipientEmail,
           pdfBase64,
+          caseId: caseData?.id || '',
           caseNumber: caseData?.caseNumber || '',
           insuranceCompany: caseData?.insuranceCompany || '',
           accidentNo: caseData?.insuranceAccidentNo || '',
           fieldDispatchAmount: parseInt(FIXED_FIELD_DISPATCH_AMOUNT) || 0,
           totalAmount,
           remarks: invoiceRemarks,
+          selectedDocumentIds: selectedDocumentIds,
         }),
       });
 
@@ -712,6 +773,141 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
             flexDirection: "column",
             gap: "16px",
           }}>
+            {/* Document Attachment Section */}
+            {documents.length > 0 && (
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+              }}>
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "15px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.9)",
+                }}>
+                  첨부 문서 선택
+                </span>
+                {DOCUMENT_CATEGORIES.map(category => {
+                  const categoryDocs = documentsByCategory[category];
+                  if (!categoryDocs || categoryDocs.length === 0) return null;
+                  return (
+                    <div key={category} style={{ marginBottom: "8px" }}>
+                      <div style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 500,
+                        fontSize: "14px",
+                        color: "rgba(12, 12, 12, 0.7)",
+                        marginBottom: "6px",
+                      }}>
+                        {category}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        {categoryDocs.map(doc => (
+                          <div 
+                            key={doc.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                              padding: "6px 10px",
+                              background: "rgba(12, 12, 12, 0.04)",
+                              borderRadius: "6px",
+                            }}
+                          >
+                            <Checkbox
+                              id={`doc-field-${doc.id}`}
+                              checked={selectedDocumentIds.includes(doc.id)}
+                              onCheckedChange={() => toggleDocumentId(doc.id)}
+                              data-testid={`checkbox-field-doc-${doc.id}`}
+                            />
+                            <label
+                              htmlFor={`doc-field-${doc.id}`}
+                              style={{
+                                fontFamily: "Pretendard",
+                                fontWeight: 400,
+                                fontSize: "13px",
+                                color: "rgba(12, 12, 12, 0.8)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {doc.fileName} ({doc.fileType})
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Email Recipient Checkboxes */}
+            {(caseData?.assessorEmail || caseData?.investigatorEmail) && (
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}>
+                <span style={{
+                  fontFamily: "Pretendard",
+                  fontWeight: 600,
+                  fontSize: "15px",
+                  lineHeight: "128%",
+                  letterSpacing: "-0.02em",
+                  color: "rgba(12, 12, 12, 0.9)",
+                }}>
+                  이메일 수신자 선택
+                </span>
+                {caseData?.assessorEmail && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Checkbox
+                      id="assessor-email-field"
+                      checked={selectedEmails.includes(caseData.assessorEmail)}
+                      onCheckedChange={() => toggleEmail(caseData.assessorEmail!)}
+                      data-testid="checkbox-field-assessor-email"
+                    />
+                    <label
+                      htmlFor="assessor-email-field"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 400,
+                        fontSize: "14px",
+                        color: "rgba(12, 12, 12, 0.8)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      심사자 이메일: {caseData.assessorEmail}
+                    </label>
+                  </div>
+                )}
+                {caseData?.investigatorEmail && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <Checkbox
+                      id="investigator-email-field"
+                      checked={selectedEmails.includes(caseData.investigatorEmail)}
+                      onCheckedChange={() => toggleEmail(caseData.investigatorEmail!)}
+                      data-testid="checkbox-field-investigator-email"
+                    />
+                    <label
+                      htmlFor="investigator-email-field"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontWeight: 400,
+                        fontSize: "14px",
+                        color: "rgba(12, 12, 12, 0.8)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      조사자 이메일: {caseData.investigatorEmail}
+                    </label>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div style={{
               display: "flex",
               flexDirection: "row",

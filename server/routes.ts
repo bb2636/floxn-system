@@ -6018,6 +6018,7 @@ FLOXN 드림`;
     fieldDispatchPropertyAmount: z.number().optional().default(0),
     totalAmount: z.number().optional(),
     remarks: z.string().optional(),
+    selectedDocumentIds: z.array(z.string()).optional().default([]),
   });
 
   app.post("/api/send-invoice-email-v2", async (req, res) => {
@@ -6051,7 +6052,8 @@ FLOXN 드림`;
         fieldDispatchPreventionAmount,
         fieldDispatchPropertyAmount,
         totalAmount: clientTotalAmount,
-        remarks
+        remarks,
+        selectedDocumentIds
       } = validationResult.data;
 
       // Get case data
@@ -6130,9 +6132,82 @@ FLOXN 드림`;
       console.log(`[Invoice PDF] Generating PDF for case ${caseId}`);
 
       // Generate PDF from template
-      const pdfBuffer = await generateInvoicePdf(invoiceData);
+      let pdfBuffer = await generateInvoicePdf(invoiceData);
 
       console.log(`[Invoice PDF] PDF generated, size: ${pdfBuffer.length} bytes`);
+
+      // If documents are selected, merge them into the PDF
+      if (selectedDocumentIds && selectedDocumentIds.length > 0) {
+        console.log(`[Invoice PDF] Merging ${selectedDocumentIds.length} documents into PDF`);
+        
+        const { PDFDocument } = await import('pdf-lib');
+        const mainPdf = await PDFDocument.load(pdfBuffer);
+        
+        // Fetch selected documents
+        const allDocuments = await storage.getDocumentsByCaseId(caseId);
+        const selectedDocs = allDocuments.filter((doc: { id: string }) => selectedDocumentIds.includes(doc.id));
+        
+        for (const doc of selectedDocs) {
+          try {
+            if (!doc.fileData) continue;
+            
+            // Extract base64 data from data URL
+            const base64Match = doc.fileData.match(/^data:([^;]+);base64,(.+)$/);
+            if (!base64Match) continue;
+            
+            const mimeType = base64Match[1];
+            const base64Data = base64Match[2];
+            const imageBytes = Buffer.from(base64Data, 'base64');
+            
+            // Create a new page for each image
+            const A4_WIDTH = 595.28;
+            const A4_HEIGHT = 841.89;
+            
+            let embeddedImage;
+            if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
+              embeddedImage = await mainPdf.embedJpg(imageBytes);
+            } else if (mimeType === 'image/png') {
+              embeddedImage = await mainPdf.embedPng(imageBytes);
+            } else {
+              console.log(`[Invoice PDF] Skipping unsupported file type: ${mimeType}`);
+              continue;
+            }
+            
+            // Calculate dimensions to fit image on A4 page with margins
+            const margin = 40;
+            const maxWidth = A4_WIDTH - (margin * 2);
+            const maxHeight = A4_HEIGHT - (margin * 2);
+            
+            let width = embeddedImage.width;
+            let height = embeddedImage.height;
+            
+            const widthRatio = maxWidth / width;
+            const heightRatio = maxHeight / height;
+            const scale = Math.min(widthRatio, heightRatio, 1);
+            
+            width *= scale;
+            height *= scale;
+            
+            const page = mainPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+            const x = (A4_WIDTH - width) / 2;
+            const y = (A4_HEIGHT - height) / 2;
+            
+            page.drawImage(embeddedImage, {
+              x,
+              y,
+              width,
+              height,
+            });
+            
+            console.log(`[Invoice PDF] Added document: ${doc.fileName}`);
+          } catch (docError) {
+            console.error(`[Invoice PDF] Failed to add document ${doc.fileName}:`, docError);
+          }
+        }
+        
+        pdfBuffer = Buffer.from(await mainPdf.save());
+        console.log(`[Invoice PDF] Final PDF with documents, size: ${pdfBuffer.length} bytes`);
+      }
 
       // Format amounts
       const formatAmount = (amt: number) => amt.toLocaleString('ko-KR');
@@ -6286,11 +6361,13 @@ FLOXN 드림`;
         email, 
         pdfBase64, 
         caseNumber, 
+        caseId,
         insuranceCompany, 
         accidentNo,
         fieldDispatchAmount,
         totalAmount,
-        remarks
+        remarks,
+        selectedDocumentIds = []
       } = req.body;
 
       if (!email || !pdfBase64) {
@@ -6302,7 +6379,80 @@ FLOXN 드림`;
       const fileName = `field_dispatch_invoice_${caseNumber || 'unknown'}_${timestamp}.pdf`;
       
       // Convert base64 to buffer
-      const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+      let pdfBuffer = Buffer.from(pdfBase64, 'base64');
+
+      // If documents are selected and caseId provided, merge them into the PDF
+      if (caseId && selectedDocumentIds && selectedDocumentIds.length > 0) {
+        console.log(`[Field Dispatch PDF] Merging ${selectedDocumentIds.length} documents into PDF`);
+        
+        const { PDFDocument } = await import('pdf-lib');
+        const mainPdf = await PDFDocument.load(pdfBuffer);
+        
+        // Fetch selected documents
+        const allDocuments = await storage.getDocumentsByCaseId(caseId);
+        const selectedDocs = allDocuments.filter((doc: { id: string }) => selectedDocumentIds.includes(doc.id));
+        
+        for (const doc of selectedDocs) {
+          try {
+            if (!doc.fileData) continue;
+            
+            // Extract base64 data from data URL
+            const base64Match = doc.fileData.match(/^data:([^;]+);base64,(.+)$/);
+            if (!base64Match) continue;
+            
+            const mimeType = base64Match[1];
+            const base64Data = base64Match[2];
+            const imageBytes = Buffer.from(base64Data, 'base64');
+            
+            // Create a new page for each image
+            const A4_WIDTH = 595.28;
+            const A4_HEIGHT = 841.89;
+            
+            let embeddedImage;
+            if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
+              embeddedImage = await mainPdf.embedJpg(imageBytes);
+            } else if (mimeType === 'image/png') {
+              embeddedImage = await mainPdf.embedPng(imageBytes);
+            } else {
+              console.log(`[Field Dispatch PDF] Skipping unsupported file type: ${mimeType}`);
+              continue;
+            }
+            
+            // Calculate dimensions to fit image on A4 page with margins
+            const margin = 40;
+            const maxWidth = A4_WIDTH - (margin * 2);
+            const maxHeight = A4_HEIGHT - (margin * 2);
+            
+            let width = embeddedImage.width;
+            let height = embeddedImage.height;
+            
+            const widthRatio = maxWidth / width;
+            const heightRatio = maxHeight / height;
+            const scale = Math.min(widthRatio, heightRatio, 1);
+            
+            width *= scale;
+            height *= scale;
+            
+            const page = mainPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+            const x = (A4_WIDTH - width) / 2;
+            const y = (A4_HEIGHT - height) / 2;
+            
+            page.drawImage(embeddedImage, {
+              x,
+              y,
+              width,
+              height,
+            });
+            
+            console.log(`[Field Dispatch PDF] Added document: ${doc.fileName}`);
+          } catch (docError) {
+            console.error(`[Field Dispatch PDF] Failed to add document ${doc.fileName}:`, docError);
+          }
+        }
+        
+        pdfBuffer = Buffer.from(await mainPdf.save());
+        console.log(`[Field Dispatch PDF] Final PDF with documents, size: ${pdfBuffer.length} bytes`);
+      }
 
       // Upload PDF to Object Storage
       const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
