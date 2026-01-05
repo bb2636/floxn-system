@@ -1886,7 +1886,7 @@ export function InvoiceManagementPopup({
 
             {/* 입금 상태 */}
             <div className="flex items-center gap-4">
-              <label style={{ fontWeight: 600, fontSize: "15px", color: "#0C0C0C", width: "70px" }}>입금</label>
+              <label style={{ fontWeight: 600, fontSize: "15px", color: "#0C0C0C", width: "70px" }}>입금여부</label>
               <RadioGroup 
                 value={newDeposit.depositStatus} 
                 onValueChange={(value: "입금" | "미입금") => setNewDeposit({ ...newDeposit, depositStatus: value })}
@@ -1944,8 +1944,8 @@ export function InvoiceManagementPopup({
 
             {/* 입금액 */}
             <div className="flex flex-col gap-2">
-              <label style={{ fontWeight: 600, fontSize: "15px", color: "#0C0C0C" }}>입금액</label>
-              <div className="flex items-center" style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.12)", paddingBottom: "8px" }}>
+              <label style={{ fontWeight: 600, fontSize: "15px", color: newDeposit.depositStatus === "미입금" ? "rgba(12, 12, 12, 0.4)" : "#0C0C0C" }}>입금액</label>
+              <div className="flex items-center" style={{ borderBottom: "1px solid rgba(12, 12, 12, 0.12)", paddingBottom: "8px", opacity: newDeposit.depositStatus === "미입금" ? 0.5 : 1 }}>
                 <Input
                   type="text"
                   value={newDeposit.depositAmount ? newDeposit.depositAmount.toLocaleString() : ""}
@@ -1953,6 +1953,7 @@ export function InvoiceManagementPopup({
                     const value = e.target.value.replace(/,/g, "").replace(/[^0-9]/g, "");
                     setNewDeposit({ ...newDeposit, depositAmount: parseInt(value) || 0 });
                   }}
+                  disabled={newDeposit.depositStatus === "미입금"}
                   data-testid="input-deposit-amount"
                   placeholder="금액입력"
                   className="border-0 text-left focus-visible:ring-0"
@@ -1962,6 +1963,7 @@ export function InvoiceManagementPopup({
                     fontSize: "15px",
                     color: "rgba(12, 12, 12, 0.8)",
                     padding: "0",
+                    cursor: newDeposit.depositStatus === "미입금" ? "not-allowed" : "text",
                   }}
                 />
                 <span style={{ fontWeight: 500, fontSize: "15px", color: "rgba(12, 12, 12, 0.8)" }}>원</span>
