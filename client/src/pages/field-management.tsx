@@ -126,6 +126,7 @@ export default function FieldManagement() {
   const [victimName, setVictimName] = useState("");
   const [victimContact, setVictimContact] = useState("");
   const [victimAddress, setVictimAddress] = useState("");
+  const [victimAddressDetail, setVictimAddressDetail] = useState("");
   const [additionalVictims, setAdditionalVictims] = useState<Array<{name: string, phone: string, address: string}>>([]);
   const [voc, setVoc] = useState("");
   
@@ -592,6 +593,7 @@ export default function FieldManagement() {
     setVictimName(selectedCaseData.victimName || "");
     setVictimContact(selectedCaseData.victimContact || "");
     setVictimAddress(selectedCaseData.victimAddress || "");
+    setVictimAddressDetail(selectedCaseData.victimAddressDetail || "");
     
     // 추가 피해자 목록 (JSON 파싱)
     if (selectedCaseData.additionalVictims) {
@@ -2021,6 +2023,7 @@ export default function FieldManagement() {
                           victimName: victimName || selectedCaseData?.victimName || null,
                           victimContact: victimContact || selectedCaseData?.victimContact || null,
                           victimAddress: victimAddress || selectedCaseData?.victimAddress || null,
+                          victimAddressDetail: victimAddressDetail || selectedCaseData?.victimAddressDetail || null,
                           additionalVictims: JSON.stringify(additionalVictims),
                           specialRequests: voc,
                           processingTypes: JSON.stringify(Array.from(processingTypes)),
