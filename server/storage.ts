@@ -5377,6 +5377,12 @@ export class DbStorage implements IStorage {
         }
         
         for (const row of rowsWithEstimateId) {
+          // numeric 값을 raw SQL로 직접 삽입 (Neon 드라이버의 타입 추론 문제 우회)
+          const toSqlNumeric = (val: number | null | undefined): string => {
+            if (val === null || val === undefined) return 'NULL';
+            return String(val);
+          };
+          
           const result = await tx.execute(sql`
             INSERT INTO estimate_rows (
               estimate_id, category, location, work_type, work_name,
@@ -5389,12 +5395,12 @@ export class DbStorage implements IStorage {
               ${row.location || null},
               ${row.workType || null},
               ${row.workName || null},
-              ${row.damageWidth !== null && row.damageWidth !== undefined ? String(row.damageWidth) : null},
-              ${row.damageHeight !== null && row.damageHeight !== undefined ? String(row.damageHeight) : null},
-              ${row.damageArea !== null && row.damageArea !== undefined ? String(row.damageArea) : null},
-              ${row.repairWidth !== null && row.repairWidth !== undefined ? String(row.repairWidth) : null},
-              ${row.repairHeight !== null && row.repairHeight !== undefined ? String(row.repairHeight) : null},
-              ${row.repairArea !== null && row.repairArea !== undefined ? String(row.repairArea) : null},
+              ${sql.raw(toSqlNumeric(row.damageWidth))},
+              ${sql.raw(toSqlNumeric(row.damageHeight))},
+              ${sql.raw(toSqlNumeric(row.damageArea))},
+              ${sql.raw(toSqlNumeric(row.repairWidth))},
+              ${sql.raw(toSqlNumeric(row.repairHeight))},
+              ${sql.raw(toSqlNumeric(row.repairArea))},
               ${row.note || null},
               ${row.rowOrder}
             )
