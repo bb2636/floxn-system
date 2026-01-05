@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useRef, useLayoutEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { User, Case } from "@shared/schema";
-import { ChevronDown, ChevronRight, ChevronUp, Calendar as CalendarIcon, Clock, X, Plus, Check } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Calendar as CalendarIcon, Clock, X, Plus, Check, Pencil } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -134,6 +135,15 @@ export default function FieldManagement() {
   const [newVictimAddress, setNewVictimAddress] = useState("");
   const [newVictimAddressDetail, setNewVictimAddressDetail] = useState("");
   const [sameAsInsured, setSameAsInsured] = useState(false);
+  
+  // 피해자 정보 수정 다이얼로그 state
+  const [editVictimDialogOpen, setEditVictimDialogOpen] = useState(false);
+  const [editingVictimCase, setEditingVictimCase] = useState<Case | null>(null);
+  const [editVictimName, setEditVictimName] = useState("");
+  const [editVictimContact, setEditVictimContact] = useState("");
+  const [editVictimAddress, setEditVictimAddress] = useState("");
+  const [editVictimAddressDetail, setEditVictimAddressDetail] = useState("");
+  const [isEditingVictim, setIsEditingVictim] = useState(false);
   
   // 피해 복구 방식 및 차액 유형 관련 상태
   const [processingTypes, setProcessingTypes] = useState<Set<string>>(new Set());
@@ -441,6 +451,51 @@ export default function FieldManagement() {
     typingTimeoutRef.current = setTimeout(() => {
       isUserTypingRef.current = false;
     }, 2000);
+  };
+
+  // 피해자 정보 수정 다이얼로그 열기
+  const handleOpenEditVictimDialog = (caseItem: Case) => {
+    setEditingVictimCase(caseItem);
+    setEditVictimName(caseItem.victimName || "");
+    setEditVictimContact(caseItem.victimContact || "");
+    setEditVictimAddress(caseItem.victimAddress || "");
+    setEditVictimAddressDetail(caseItem.victimAddressDetail || "");
+    setEditVictimDialogOpen(true);
+  };
+
+  // 피해자 정보 저장
+  const handleSaveEditVictim = async () => {
+    if (!editingVictimCase) return;
+    
+    setIsEditingVictim(true);
+    try {
+      await apiRequest("PATCH", `/api/cases/${editingVictimCase.id}`, {
+        victimName: editVictimName,
+        victimContact: editVictimContact,
+        victimAddress: editVictimAddress,
+        victimAddressDetail: editVictimAddressDetail,
+      });
+      
+      // 케이스 목록 새로고침
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      
+      toast({
+        title: "저장 완료",
+        description: "피해자 정보가 수정되었습니다.",
+      });
+      
+      setEditVictimDialogOpen(false);
+      setEditingVictimCase(null);
+    } catch (error) {
+      console.error("피해자 정보 수정 실패:", error);
+      toast({
+        title: "저장 실패",
+        description: "피해자 정보 수정 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEditingVictim(false);
+    }
   };
 
   // 선택한 케이스의 데이터를 폼에 로드 - 실제로 케이스 ID가 바뀔 때만 실행
@@ -1393,6 +1448,29 @@ export default function FieldManagement() {
                           })()}
                         </span>
                       </div>
+                      
+                      {/* 피해자 정보 수정 버튼 - 협력사 및 관리자만 표시 */}
+                      {!isReadOnly && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditVictimDialog(caseItem);
+                          }}
+                          data-testid={`button-edit-victim-${caseItem.id}`}
+                          style={{
+                            width: "32px",
+                            height: "32px",
+                            padding: "4px",
+                          }}
+                        >
+                          <Pencil 
+                            size={16} 
+                            style={{ color: "rgba(12, 12, 12, 0.5)" }} 
+                          />
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -2004,6 +2082,128 @@ export default function FieldManagement() {
           </div>
         )}
         </div>
+        
+        {/* 피해자 정보 수정 다이얼로그 */}
+        <Dialog open={editVictimDialogOpen} onOpenChange={setEditVictimDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle style={{ fontFamily: "Pretendard", fontSize: "18px", fontWeight: 600 }}>
+                피해자 정보 수정
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="edit-victim-name"
+                  style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.7)" }}
+                >
+                  피해자 성함
+                </Label>
+                <Input
+                  id="edit-victim-name"
+                  value={editVictimName}
+                  onChange={(e) => setEditVictimName(e.target.value)}
+                  placeholder="성함을 입력해주세요"
+                  data-testid="input-edit-victim-name"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                  }}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="edit-victim-contact"
+                  style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.7)" }}
+                >
+                  연락처
+                </Label>
+                <Input
+                  id="edit-victim-contact"
+                  value={editVictimContact}
+                  onChange={(e) => setEditVictimContact(e.target.value)}
+                  placeholder="연락처를 입력해주세요"
+                  data-testid="input-edit-victim-contact"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                  }}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="edit-victim-address"
+                  style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.7)" }}
+                >
+                  주소
+                </Label>
+                <Input
+                  id="edit-victim-address"
+                  value={editVictimAddress}
+                  onChange={(e) => setEditVictimAddress(e.target.value)}
+                  placeholder="주소를 입력해주세요"
+                  data-testid="input-edit-victim-address"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                  }}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="edit-victim-address-detail"
+                  style={{ fontFamily: "Pretendard", fontSize: "14px", fontWeight: 500, color: "rgba(12, 12, 12, 0.7)" }}
+                >
+                  상세주소
+                </Label>
+                <Input
+                  id="edit-victim-address-detail"
+                  value={editVictimAddressDetail}
+                  onChange={(e) => setEditVictimAddressDetail(e.target.value)}
+                  placeholder="상세주소를 입력해주세요"
+                  data-testid="input-edit-victim-address-detail"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "15px",
+                  }}
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditVictimDialogOpen(false)}
+                data-testid="button-cancel-edit-victim"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                }}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleSaveEditVictim}
+                disabled={isEditingVictim}
+                data-testid="button-save-edit-victim"
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  background: "#008FED",
+                  color: "#FFFFFF",
+                }}
+              >
+                {isEditingVictim ? "저장 중..." : "저장"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </>
   );
 }
