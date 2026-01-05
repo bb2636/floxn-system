@@ -438,8 +438,12 @@ export default function SettlementsInquiry() {
         ? ((propertyDifference / propertyEstimateAmount) * 100).toFixed(1) + "%"
         : "-";
 
-      // Total claim amount (직접복구 건 기준)
-      const claimAmount = preventionEstimateAmount + propertyEstimateAmount;
+      // Total claim amount
+      // 직접복구 건이 있으면: 손해방지비용 + 대물복구비용
+      // 선견적요청만 있으면: 사용료 (100,000원)
+      const claimAmount = hasDirectRepair 
+        ? (preventionEstimateAmount + propertyEstimateAmount)
+        : (allNoRepair ? 100000 : 0);
 
       // Sum settlement amounts for all cases in group
       const totalSettlementAmount = casesInGroup.reduce((sum, c) => sum + c.settlementAmount, 0);
