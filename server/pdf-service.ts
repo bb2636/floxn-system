@@ -649,8 +649,8 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
       const quantity = item.quantity || 0;
       // 합계 - amount
       const amount = item.amount || 0;
-      // 경비 - includeInEstimate (경비여부)
-      const isExpense = item.includeInEstimate === true || item.includeInEstimate === 'true' ? 'O' : '-';
+      // 경비 - includeInEstimate: false = 경비체크됨(O), true = 경비체크안됨(-)
+      const isExpense = item.includeInEstimate === false || item.includeInEstimate === 'false' ? 'O' : '-';
       // 비고 - request
       const note = item.request || '-';
       
