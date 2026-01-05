@@ -3868,6 +3868,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ estimate: null, rows: [] });
       }
 
+      // [D] 서버 로깅: GET API 응답 직전 - 복구면적 데이터 확인
+      if (result.rows && result.rows.length > 0) {
+        console.log("========================================");
+        console.log("[D] 서버: GET /api/estimates/:caseId/latest 응답 직전");
+        console.log("케이스 ID:", caseId);
+        console.log("첫 번째 행 DB에서 조회된 값:");
+        console.log("  repairWidth:", result.rows[0].repairWidth, "타입:", typeof result.rows[0].repairWidth);
+        console.log("  repairHeight:", result.rows[0].repairHeight, "타입:", typeof result.rows[0].repairHeight);
+        console.log("  repairArea:", result.rows[0].repairArea, "타입:", typeof result.rows[0].repairArea);
+        console.log("========================================");
+      }
+
       res.json(result);
     } catch (error) {
       console.error("Get latest estimate error:", error);

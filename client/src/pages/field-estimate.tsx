@@ -2331,6 +2331,14 @@ export default function FieldEstimate() {
     if (latestEstimate) {
       // 복구면적 산출표 데이터 불러오기
       if (latestEstimate.rows && latestEstimate.rows.length > 0) {
+        // [E] 프론트엔드 로깅: API 응답 데이터 확인
+        console.log("========================================");
+        console.log("[E] 프론트엔드: latestEstimate.rows[0] API 응답 원본");
+        console.log("  repairWidth:", latestEstimate.rows[0].repairWidth, "타입:", typeof latestEstimate.rows[0].repairWidth);
+        console.log("  repairHeight:", latestEstimate.rows[0].repairHeight, "타입:", typeof latestEstimate.rows[0].repairHeight);
+        console.log("  repairArea:", latestEstimate.rows[0].repairArea, "타입:", typeof latestEstimate.rows[0].repairArea);
+        console.log("========================================");
+        
         const loadedRows = latestEstimate.rows.map((row: any) => ({
           id: `row-${row.id}`,
           category: row.category || (roomCategories[0] || ""),
@@ -2345,6 +2353,15 @@ export default function FieldEstimate() {
           repairArea: row.repairArea ? parseFloat(row.repairArea).toFixed(2) : "0",
           note: row.note || "",
         }));
+        
+        // [F] 프론트엔드 로깅: 변환 후 데이터 확인
+        console.log("========================================");
+        console.log("[F] 프론트엔드: loadedRows[0] 변환 후");
+        console.log("  repairWidth:", loadedRows[0].repairWidth, "타입:", typeof loadedRows[0].repairWidth);
+        console.log("  repairHeight:", loadedRows[0].repairHeight, "타입:", typeof loadedRows[0].repairHeight);
+        console.log("  repairArea:", loadedRows[0].repairArea, "타입:", typeof loadedRows[0].repairArea);
+        console.log("========================================");
+        
         setRows(loadedRows);
         
         // 기존 workType 값을 customWorkTypes에 추가
