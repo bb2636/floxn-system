@@ -458,8 +458,9 @@ export default function FieldManagement() {
     setEditingVictimCase(caseItem);
     setEditVictimName(caseItem.victimName || "");
     setEditVictimContact(caseItem.victimContact || "");
-    setEditVictimAddress(caseItem.victimAddress || "");
-    setEditVictimAddressDetail(caseItem.victimAddressDetail || "");
+    // 피해자 주소가 없으면 피보험자 주소로 대체
+    setEditVictimAddress(caseItem.victimAddress || caseItem.insuredAddress || "");
+    setEditVictimAddressDetail(caseItem.victimAddressDetail || caseItem.insuredAddressDetail || "");
     setEditVictimDialogOpen(true);
   };
 
