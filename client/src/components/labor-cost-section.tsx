@@ -959,8 +959,8 @@ export function LaborCostSection({
         const damageArea = Number(updated.damageArea) || 0;
         const standardWorkQty = Number(updated.standardWorkQuantity) || 0;
         
-        // 누수탐지비용은 standardPrice * quantity로 계산
-        if (updated.category === '누수탐지비용') {
+        // 누수탐지비용 또는 누수탐지는 standardPrice * quantity로 계산
+        if (updated.category === '누수탐지비용' || updated.category === '누수탐지') {
           updated.amount = Math.round(standardPrice * quantity);
         } else if (updated.detailWork === '노무비') {
           // 노무비: 기준가(단위) * 수량 (피해면적은 표시만, 곱하지 않음)
