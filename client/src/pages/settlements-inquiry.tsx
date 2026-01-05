@@ -438,13 +438,6 @@ export default function SettlementsInquiry() {
         ? ((propertyDifference / propertyEstimateAmount) * 100).toFixed(1) + "%"
         : "-";
 
-      // Total claim amount
-      // 직접복구 건이 있으면: 손해방지비용 + 대물복구비용
-      // 선견적요청만 있으면: 사용료 (100,000원)
-      const claimAmount = hasDirectRepair 
-        ? (preventionEstimateAmount + propertyEstimateAmount)
-        : (allNoRepair ? 100000 : 0);
-
       // Sum settlement amounts for all cases in group
       const totalSettlementAmount = casesInGroup.reduce((sum, c) => sum + c.settlementAmount, 0);
       // 수수료: 직접복구 건이 있으면 해당 건들의 수수료 합산, 선견적요청이면 4만원
@@ -456,6 +449,14 @@ export default function SettlementsInquiry() {
       const totalUsageFee = allNoRepair ? 100000 : 0;
       const totalSettlementDeposit = casesInGroup.reduce((sum, c) => sum + c.settlementDeposit, 0);
       const totalSettlementDeductible = casesInGroup.reduce((sum, c) => sum + c.settlementDeductible, 0);
+
+      // Total claim amount = 총 승인금액 - 자기부담금
+      // 직접복구: (손해방지 승인금액 + 대물복구 승인금액) - 자기부담금
+      // 선견적요청: 사용료(100,000) - 자기부담금
+      const totalApprovedAmount = hasDirectRepair 
+        ? (preventionApprovedAmount + propertyApprovedAmount)
+        : (allNoRepair ? 100000 : 0);
+      const claimAmount = totalApprovedAmount - totalSettlementDeductible;
 
       // 협력업체 지급 정보 합산
       const totalPartnerPaymentAmount = casesInGroup.reduce((sum, c) => sum + c.partnerPaymentAmount, 0);

@@ -185,16 +185,11 @@ export function InvoiceManagementPopup({
     return { totalClaim, totalDeposit };
   }, [depositEntries]);
 
-  // 청구액: 정산조회에서 전달받은 값 사용 (동기화)
+  // 청구액 = 총 승인금액 - 자기부담금
   const claimAmount = useMemo(() => {
-    // 정산조회에서 전달받은 청구액이 있으면 그것을 사용
-    if (settlementClaimAmount !== undefined && settlementClaimAmount > 0) {
-      return settlementClaimAmount;
-    }
-    // 없으면 총 승인금액 - 자기부담금으로 계산
     const deductible = parseInt(deductibleAmount || "0");
     return totalApprovedAmount - deductible;
-  }, [settlementClaimAmount, totalApprovedAmount, deductibleAmount]);
+  }, [totalApprovedAmount, deductibleAmount]);
 
   // 미수액 계산 (청구액 - 입금액)
   const outstandingAmount = useMemo(() => {
