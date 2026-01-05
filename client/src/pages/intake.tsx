@@ -4225,6 +4225,30 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       </div>
                     </div>
                   ))}
+                  {/* 없음 옵션 - 심사사 정보 삭제용 */}
+                  <div 
+                    className="flex flex-row items-center w-full h-[50px]"
+                    style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)', cursor: 'pointer', backgroundColor: tempSelectedAssessor?.name === '__NONE__' ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }}
+                    onClick={() => setTempSelectedAssessor({ name: '__NONE__', displayName: '없음' })}
+                    data-testid="row-assessor-none"
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', fontStyle: 'italic', color: tempSelectedAssessor?.name === '__NONE__' ? '#008FED' : '#999' }}>
+                        없음
+                      </span>
+                    </div>
+                    <div 
+                      style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px' }}
+                      data-testid="radio-assessor-none"
+                    >
+                      <div style={{ position: 'relative', width: '18px', height: '18px' }}>
+                        <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedAssessor?.name === '__NONE__' ? '#008FED' : '#FDFDFD', border: tempSelectedAssessor?.name === '__NONE__' ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
+                        {tempSelectedAssessor?.name === '__NONE__' && (
+                          <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -4234,9 +4258,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               <div className="w-full px-5" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
-                    <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
-                      {tempSelectedAssessor.name}
+                    <div style={{ width: '8px', height: '8px', background: tempSelectedAssessor.name === '__NONE__' ? '#999' : '#008FED', borderRadius: '50%' }}></div>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)', fontStyle: tempSelectedAssessor.name === '__NONE__' ? 'italic' : 'normal' }}>
+                      {tempSelectedAssessor.name === '__NONE__' ? '없음 (심사사 정보 삭제)' : tempSelectedAssessor.name}
                     </span>
                   </div>
                 </div>
@@ -4254,7 +4278,13 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   </button>
                   <button
                     onClick={() => {
-                      handleInputChange("assessorId", tempSelectedAssessor.name);
+                      if (tempSelectedAssessor.name === '__NONE__') {
+                        handleInputChange("assessorId", "");
+                        handleInputChange("assessorTeam", "");
+                        handleInputChange("assessorContact", "");
+                      } else {
+                        handleInputChange("assessorId", tempSelectedAssessor.name);
+                      }
                       setIsAssessorSearchOpen(false);
                       setTempSelectedAssessor(null);
                       setAssessorSearchQuery("");
@@ -4404,6 +4434,30 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                       </div>
                     </div>
                   ))}
+                  {/* 없음 옵션 - 조사사 정보 삭제용 */}
+                  <div 
+                    className="flex flex-row items-center w-full h-[50px]"
+                    style={{ borderBottom: '1px solid rgba(12, 12, 12, 0.08)', cursor: 'pointer', backgroundColor: tempSelectedInvestigator?.name === '__NONE__' ? 'rgba(0, 143, 237, 0.08)' : 'transparent' }}
+                    onClick={() => setTempSelectedInvestigator({ name: '__NONE__', displayName: '없음' })}
+                    data-testid="row-investigator-none"
+                  >
+                    <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '10px 12px', flex: 1 }}>
+                      <span style={{ fontFamily: 'Pretendard', fontWeight: 500, fontSize: '15px', fontStyle: 'italic', color: tempSelectedInvestigator?.name === '__NONE__' ? '#008FED' : '#999' }}>
+                        없음
+                      </span>
+                    </div>
+                    <div 
+                      style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: '10px 12px', width: '60px' }}
+                      data-testid="radio-investigator-none"
+                    >
+                      <div style={{ position: 'relative', width: '18px', height: '18px' }}>
+                        <div style={{ position: 'absolute', left: '0%', right: '0%', top: '0%', bottom: '0%', background: tempSelectedInvestigator?.name === '__NONE__' ? '#008FED' : '#FDFDFD', border: tempSelectedInvestigator?.name === '__NONE__' ? 'none' : '2px solid rgba(12, 12, 12, 0.2)', borderRadius: '50%' }}></div>
+                        {tempSelectedInvestigator?.name === '__NONE__' && (
+                          <div style={{ position: 'absolute', left: '27.78%', right: '27.78%', top: '27.78%', bottom: '27.78%', background: '#FDFDFD', borderRadius: '50%' }}></div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -4413,9 +4467,9 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
               <div className="w-full px-5" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0px', gap: '8px', flexShrink: 0 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', padding: '16px', gap: '8px', width: '100%', background: '#F8F8F8', borderRadius: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '0px', gap: '16px' }}>
-                    <div style={{ width: '8px', height: '8px', background: '#008FED', borderRadius: '50%' }}></div>
-                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)' }}>
-                      {tempSelectedInvestigator.name}
+                    <div style={{ width: '8px', height: '8px', background: tempSelectedInvestigator.name === '__NONE__' ? '#999' : '#008FED', borderRadius: '50%' }}></div>
+                    <span style={{ fontFamily: 'Pretendard', fontWeight: 600, fontSize: '18px', lineHeight: '128%', letterSpacing: '-0.02em', color: 'rgba(12, 12, 12, 0.9)', fontStyle: tempSelectedInvestigator.name === '__NONE__' ? 'italic' : 'normal' }}>
+                      {tempSelectedInvestigator.name === '__NONE__' ? '없음 (조사사 정보 삭제)' : tempSelectedInvestigator.name}
                     </span>
                   </div>
                 </div>
@@ -4433,7 +4487,13 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
                   </button>
                   <button
                     onClick={() => {
-                      handleInputChange("investigatorTeam", tempSelectedInvestigator.name);
+                      if (tempSelectedInvestigator.name === '__NONE__') {
+                        handleInputChange("investigatorTeam", "");
+                        handleInputChange("investigatorTeamName", "");
+                        handleInputChange("investigatorContact", "");
+                      } else {
+                        handleInputChange("investigatorTeam", tempSelectedInvestigator.name);
+                      }
                       setIsInvestigatorSearchOpen(false);
                       setTempSelectedInvestigator(null);
                       setInvestigatorSearchQuery("");
