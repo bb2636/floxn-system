@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, bigint, serial, timestamp, json, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, bigint, serial, timestamp, json, unique, doublePrecision } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -677,12 +677,12 @@ export const estimateRows = pgTable("estimate_rows", {
   location: text("location"), // 위치: 천장, 벽면, 바닥
   workType: text("work_type"), // 공종: 목공사, 수장공사, 철거공사 등
   workName: text("work_name"), // 공사명: 합판, 석고보드, 도배 등
-  damageWidth: bigint("damage_width", { mode: "number" }), // 피해면적 가로 (mm)
-  damageHeight: bigint("damage_height", { mode: "number" }), // 피해면적 세로 (mm)
-  damageArea: bigint("damage_area", { mode: "number" }), // 피해면적 면적 (mm²) - 계산된 값
-  repairWidth: bigint("repair_width", { mode: "number" }), // 복구면적 가로 (mm)
-  repairHeight: bigint("repair_height", { mode: "number" }), // 복구면적 세로 (mm)
-  repairArea: bigint("repair_area", { mode: "number" }), // 복구면적 면적 (mm²) - 계산된 값
+  damageWidth: doublePrecision("damage_width"), // 피해면적 가로 (m) - 소수점 허용
+  damageHeight: doublePrecision("damage_height"), // 피해면적 세로 (m) - 소수점 허용
+  damageArea: doublePrecision("damage_area"), // 피해면적 면적 (m²) - 계산된 값, 소수점 허용
+  repairWidth: doublePrecision("repair_width"), // 복구면적 가로 (m) - 소수점 허용
+  repairHeight: doublePrecision("repair_height"), // 복구면적 세로 (m) - 소수점 허용
+  repairArea: doublePrecision("repair_area"), // 복구면적 면적 (m²) - 계산된 값, 소수점 허용
   note: text("note"), // 비고
   rowOrder: integer("row_order").notNull(), // 행 순서
   createdAt: timestamp("created_at").defaultNow().notNull(),
