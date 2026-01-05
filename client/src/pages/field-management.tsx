@@ -1488,8 +1488,8 @@ export default function FieldManagement() {
                         </span>
                       </div>
                       
-                      {/* 피해자 정보 수정 버튼 - 협력사 및 관리자만 표시 */}
-                      {!isReadOnly && (
+                      {/* 피해자 정보 수정 버튼 - 협력사 및 관리자만 표시, 현장출동보고서 제출 전까지만 수정 가능 */}
+                      {!isReadOnly && caseItem.fieldSurveyStatus !== "submitted" && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -1514,8 +1514,8 @@ export default function FieldManagement() {
                   ))}
                 </div>
 
-                {/* 새 피해자 추가 폼 */}
-                {!isReadOnly && (
+                {/* 새 피해자 추가 폼 - 현장출동보고서 제출 전까지만 추가 가능 */}
+                {!isReadOnly && !isSubmitted && (
                   <div className="mt-6 space-y-4">
                     <div
                       style={{
