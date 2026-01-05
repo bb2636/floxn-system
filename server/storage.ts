@@ -5389,12 +5389,12 @@ export class DbStorage implements IStorage {
               ${row.location || null},
               ${row.workType || null},
               ${row.workName || null},
-              ${row.damageWidth !== null && row.damageWidth !== undefined ? row.damageWidth : null}::double precision,
-              ${row.damageHeight !== null && row.damageHeight !== undefined ? row.damageHeight : null}::double precision,
-              ${row.damageArea !== null && row.damageArea !== undefined ? row.damageArea : null}::double precision,
-              ${row.repairWidth !== null && row.repairWidth !== undefined ? row.repairWidth : null}::double precision,
-              ${row.repairHeight !== null && row.repairHeight !== undefined ? row.repairHeight : null}::double precision,
-              ${row.repairArea !== null && row.repairArea !== undefined ? row.repairArea : null}::double precision,
+              ${row.damageWidth !== null && row.damageWidth !== undefined ? row.damageWidth : null}::numeric,
+              ${row.damageHeight !== null && row.damageHeight !== undefined ? row.damageHeight : null}::numeric,
+              ${row.damageArea !== null && row.damageArea !== undefined ? row.damageArea : null}::numeric,
+              ${row.repairWidth !== null && row.repairWidth !== undefined ? row.repairWidth : null}::numeric,
+              ${row.repairHeight !== null && row.repairHeight !== undefined ? row.repairHeight : null}::numeric,
+              ${row.repairArea !== null && row.repairArea !== undefined ? row.repairArea : null}::numeric,
               ${row.note || null},
               ${row.rowOrder}
             )
@@ -5414,6 +5414,13 @@ export class DbStorage implements IStorage {
               console.log("========================================");
             }
             
+            // numeric 타입은 문자열로 반환되므로 숫자로 파싱
+            const parseNumeric = (val: any): number | null => {
+              if (val === null || val === undefined) return null;
+              const num = typeof val === 'string' ? parseFloat(val) : val;
+              return isNaN(num) ? null : num;
+            };
+            
             insertedRows.push({
               id: dbRow.id,
               estimateId: dbRow.estimate_id,
@@ -5421,12 +5428,12 @@ export class DbStorage implements IStorage {
               location: dbRow.location,
               workType: dbRow.work_type,
               workName: dbRow.work_name,
-              damageWidth: dbRow.damage_width,
-              damageHeight: dbRow.damage_height,
-              damageArea: dbRow.damage_area,
-              repairWidth: dbRow.repair_width,
-              repairHeight: dbRow.repair_height,
-              repairArea: dbRow.repair_area,
+              damageWidth: parseNumeric(dbRow.damage_width),
+              damageHeight: parseNumeric(dbRow.damage_height),
+              damageArea: parseNumeric(dbRow.damage_area),
+              repairWidth: parseNumeric(dbRow.repair_width),
+              repairHeight: parseNumeric(dbRow.repair_height),
+              repairArea: parseNumeric(dbRow.repair_area),
               note: dbRow.note,
               rowOrder: dbRow.row_order,
             });
@@ -5461,11 +5468,28 @@ export class DbStorage implements IStorage {
     const estimate = latestEstimate[0];
 
     // 해당 견적의 행들을 조회
-    const rows = await db
+    const rawRows = await db
       .select()
       .from(estimateRows)
       .where(eq(estimateRows.estimateId, estimate.id))
       .orderBy(asc(estimateRows.rowOrder));
+
+    // numeric 타입은 문자열로 반환되므로 숫자로 파싱
+    const parseNumeric = (val: any): number | null => {
+      if (val === null || val === undefined) return null;
+      const num = typeof val === 'string' ? parseFloat(val) : val;
+      return isNaN(num) ? null : num;
+    };
+
+    const rows = rawRows.map(row => ({
+      ...row,
+      damageWidth: parseNumeric(row.damageWidth),
+      damageHeight: parseNumeric(row.damageHeight),
+      damageArea: parseNumeric(row.damageArea),
+      repairWidth: parseNumeric(row.repairWidth),
+      repairHeight: parseNumeric(row.repairHeight),
+      repairArea: parseNumeric(row.repairArea),
+    }));
 
     return { estimate, rows };
   }
@@ -5488,11 +5512,28 @@ export class DbStorage implements IStorage {
     const estimate = result[0];
 
     // 해당 견적의 행들을 조회
-    const rows = await db
+    const rawRows = await db
       .select()
       .from(estimateRows)
       .where(eq(estimateRows.estimateId, estimate.id))
       .orderBy(asc(estimateRows.rowOrder));
+
+    // numeric 타입은 문자열로 반환되므로 숫자로 파싱
+    const parseNumeric = (val: any): number | null => {
+      if (val === null || val === undefined) return null;
+      const num = typeof val === 'string' ? parseFloat(val) : val;
+      return isNaN(num) ? null : num;
+    };
+
+    const rows = rawRows.map(row => ({
+      ...row,
+      damageWidth: parseNumeric(row.damageWidth),
+      damageHeight: parseNumeric(row.damageHeight),
+      damageArea: parseNumeric(row.damageArea),
+      repairWidth: parseNumeric(row.repairWidth),
+      repairHeight: parseNumeric(row.repairHeight),
+      repairArea: parseNumeric(row.repairArea),
+    }));
 
     return { estimate, rows };
   }
