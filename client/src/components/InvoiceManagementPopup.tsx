@@ -150,10 +150,16 @@ export function InvoiceManagementPopup({
     setSettlementStatus(value);
   };
 
-  // 총 승인금액 (손해방지비용 + 대물복구비용 승인금액)
-  const totalApprovedAmount = 
-    (parseInt(preventionApprovedAmount || "0") || 0) + 
-    (parseInt(propertyApprovedAmount || "0") || 0);
+  // 총 승인금액 (선견적요청: 현장출동비용, 직접복구: 손해방지비용 + 대물복구비용 승인금액)
+  const totalApprovedAmount = useMemo(() => {
+    if (caseData?.recoveryType === "선견적요청") {
+      // 선견적요청 케이스는 현장출동비용(100,000원) 또는 저장된 값 사용
+      return parseInt(caseData?.fieldDispatchInvoiceAmount || "0") || FIXED_FIELD_DISPATCH_COST;
+    }
+    // 직접복구 케이스는 손해방지비용 + 대물복구비용
+    return (parseInt(preventionApprovedAmount || "0") || 0) + 
+           (parseInt(propertyApprovedAmount || "0") || 0);
+  }, [caseData?.recoveryType, caseData?.fieldDispatchInvoiceAmount, preventionApprovedAmount, propertyApprovedAmount]);
 
   // 수수료 - 정산조회에서 전달받은 값 사용, 없으면 7.7% 계산
   const feeAmount = useMemo(() => {
