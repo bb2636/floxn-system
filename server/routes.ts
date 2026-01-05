@@ -3756,7 +3756,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return num;
         };
 
-        return {
+        // 디버그: 첫 행의 값 추적
+        if (index === 0) {
+          console.log("[Estimate Debug] Raw row from request:", {
+            repairWidth: row.repairWidth,
+            repairHeight: row.repairHeight,
+            repairArea: row.repairArea,
+            types: {
+              repairWidth: typeof row.repairWidth,
+              repairHeight: typeof row.repairHeight,
+              repairArea: typeof row.repairArea,
+            }
+          });
+          console.log("[Estimate Debug] Validated row:", {
+            repairWidth: validated.repairWidth,
+            repairHeight: validated.repairHeight,
+            repairArea: validated.repairArea,
+          });
+        }
+
+        const result = {
           category: validated.category,
           location: validated.location === "선택" ? null : validated.location,
           workType: validated.workType || null,
@@ -3770,6 +3789,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           note: validated.note || null,
           rowOrder: index + 1, // Server assigns 1-based ordering
         };
+
+        // 디버그: 변환 후 값 확인
+        if (index === 0) {
+          console.log("[Estimate Debug] After toNumber conversion:", {
+            repairWidth: result.repairWidth,
+            repairHeight: result.repairHeight,
+            repairArea: result.repairArea,
+          });
+        }
+
+        return result;
       });
 
       const result = await storage.createEstimateVersion(
