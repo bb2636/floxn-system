@@ -877,8 +877,15 @@ export async function generatePdf(payload: PdfGenerationPayload, imageQuality: n
   
   let partnerData: any = null;
   if (caseData.assignedPartner) {
+    console.log(`[PDF 생성] 협력사 검색: "${caseData.assignedPartner}"`);
     const partners = await db.select().from(users).where(eq(users.company, caseData.assignedPartner));
-    partnerData = partners[0] || null;
+    console.log(`[PDF 생성] 검색 결과: ${partners.length}개 사용자 발견`);
+    if (partners.length > 0) {
+      partnerData = partners[0];
+      console.log(`[PDF 생성] 협력사 정보 - 회사: ${partnerData.company}, 사업자번호: ${partnerData.businessRegistrationNumber || '없음'}, 대표자: ${partnerData.representativeName || '없음'}`);
+    } else {
+      console.log(`[PDF 생성] 협력사 "${caseData.assignedPartner}"에 해당하는 사용자를 찾을 수 없음`);
+    }
   }
   
   let browser: any = null;
