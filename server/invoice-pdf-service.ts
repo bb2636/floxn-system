@@ -365,43 +365,105 @@ export function generateInvoiceHtml(data: InvoiceData): string {
 </html>`;
 }
 
+// Get Chromium executable path dynamically
+function getChromiumPath(): string | undefined {
+  // Check environment variable first
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  
+  // Try common Nix store paths
+  const possiblePaths = [
+    '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+  ];
+  
+  // Check hardcoded paths first (synchronous but safe)
+  for (const p of possiblePaths) {
+    try {
+      if (fs.existsSync(p)) {
+        return p;
+      }
+    } catch {}
+  }
+  
+  // Try which command (wrapped in try-catch to prevent stalling)
+  try {
+    const { execSync } = require('child_process');
+    const chromiumPath = execSync('which chromium 2>/dev/null || which chromium-browser 2>/dev/null || true', { 
+      encoding: 'utf8',
+      timeout: 5000, // 5 second timeout
+    }).trim();
+    if (chromiumPath && fs.existsSync(chromiumPath)) {
+      return chromiumPath;
+    }
+  } catch (e) {
+    console.warn('[Chromium] which command failed:', e);
+  }
+  
+  // Let puppeteer try to use its bundled Chromium
+  console.warn('[Chromium] No system Chromium found, will try bundled version');
+  return undefined;
+}
+
 export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   const html = generateInvoiceHtml(data);
   
   let browser = null;
-  try {
-    browser = await puppeteer.launch({
-      headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--single-process',
-      ],
-    });
-    
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '0', right: '0', bottom: '0', left: '0' },
-    });
-    
-    await page.close();
-    await browser.close();
-    browser = null;
-    
-    return Buffer.from(pdfBuffer);
-  } catch (error) {
-    if (browser) {
+  const chromiumPath = getChromiumPath();
+  console.log(`[Invoice PDF] Using Chromium path: ${chromiumPath || 'bundled'}`);
+  
+  // Create a timeout promise
+  const TIMEOUT_MS = 60000; // 60 second timeout
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error('PDF 생성 시간 초과 (60초). Chromium 브라우저 실행에 실패했을 수 있습니다.')), TIMEOUT_MS);
+  });
+  
+  const generatePdf = async (): Promise<Buffer> => {
+    try {
+      console.log('[Invoice PDF] Launching browser...');
+      browser = await puppeteer.launch({
+        headless: true,
+        ...(chromiumPath && { executablePath: chromiumPath }),
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu',
+          '--single-process',
+        ],
+      });
+      console.log('[Invoice PDF] Browser launched successfully');
+      
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
+      
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '0', right: '0', bottom: '0', left: '0' },
+      });
+      
+      await page.close();
       await browser.close();
+      browser = null;
+      
+      console.log(`[Invoice PDF] PDF generated successfully, size: ${pdfBuffer.length} bytes`);
+      return Buffer.from(pdfBuffer);
+    } catch (error) {
+      if (browser) {
+        try { await browser.close(); } catch {}
+      }
+      const err = error as Error;
+      console.error(`[Invoice PDF] Generation failed: ${err.message}`);
+      throw new Error(`PDF 생성 실패: ${err.message}. Chromium 브라우저가 설치되어 있는지 확인하세요.`);
     }
-    throw error;
-  }
+  };
+  
+  // Race between PDF generation and timeout
+  return Promise.race([generatePdf(), timeoutPromise]);
 }
 
 export async function sendInvoiceEmailWithAttachment(

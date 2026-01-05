@@ -3,11 +3,54 @@ import { PDFDocument } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
+import { execSync } from 'child_process';
 import { db } from './db';
 import { cases, caseDocuments, drawings, estimates, estimateRows, users } from '@shared/schema';
 import { eq, and, inArray, ilike, sql } from 'drizzle-orm';
 
 const TEMPLATES_DIR = path.join(process.cwd(), 'server/pdf-templates');
+
+// Get Chromium executable path dynamically
+function getChromiumPath(): string | undefined {
+  // Check environment variable first
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    return process.env.PUPPETEER_EXECUTABLE_PATH;
+  }
+  
+  // Try common Nix store paths
+  const possiblePaths = [
+    '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
+    '/usr/bin/google-chrome',
+  ];
+  
+  // Check hardcoded paths first (synchronous but safe)
+  for (const p of possiblePaths) {
+    try {
+      if (fs.existsSync(p)) {
+        return p;
+      }
+    } catch {}
+  }
+  
+  // Try which command (wrapped in try-catch to prevent stalling)
+  try {
+    const chromiumPath = execSync('which chromium 2>/dev/null || which chromium-browser 2>/dev/null || true', { 
+      encoding: 'utf8',
+      timeout: 5000, // 5 second timeout
+    }).trim();
+    if (chromiumPath && fs.existsSync(chromiumPath)) {
+      return chromiumPath;
+    }
+  } catch (e) {
+    console.warn('[Chromium] which command failed:', e);
+  }
+  
+  // Let puppeteer try to use its bundled Chromium
+  console.warn('[Chromium] No system Chromium found, will try bundled version');
+  return undefined;
+}
 
 // PDF 최대 크기 (10MB)
 const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024;
@@ -918,10 +961,12 @@ export async function generatePdf(payload: PdfGenerationPayload, imageQuality: n
   let browser: any = null;
   
   try {
+    const chromiumPath = getChromiumPath();
+    console.log(`[PDF] Using Chromium path: ${chromiumPath || 'bundled'}`);
     browser = await puppeteer.launch({
       headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      ...(chromiumPath && { executablePath: chromiumPath }),
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
     });
     
     const pdfParts: Buffer[] = [];
@@ -1135,10 +1180,11 @@ export async function generatePdf(payload: PdfGenerationPayload, imageQuality: n
         
         // 브라우저가 아직 열려있는지 확인하고, 필요시 다시 열기
         if (!browser) {
+          const chromiumPath2 = getChromiumPath();
           browser = await puppeteer.launch({
             headless: true,
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+            ...(chromiumPath2 && { executablePath: chromiumPath2 }),
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
           });
         }
         
