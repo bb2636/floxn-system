@@ -5,7 +5,7 @@ import path from 'path';
 import sharp from 'sharp';
 import { db } from './db';
 import { cases, caseDocuments, drawings, estimates, estimateRows, users } from '@shared/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, ilike, sql } from 'drizzle-orm';
 
 const TEMPLATES_DIR = path.join(process.cwd(), 'server/pdf-templates');
 
@@ -877,14 +877,41 @@ export async function generatePdf(payload: PdfGenerationPayload, imageQuality: n
   
   let partnerData: any = null;
   if (caseData.assignedPartner) {
-    console.log(`[PDF 생성] 협력사 검색: "${caseData.assignedPartner}"`);
-    const partners = await db.select().from(users).where(eq(users.company, caseData.assignedPartner));
+    const trimmedPartnerName = caseData.assignedPartner.trim();
+    console.log(`[PDF 생성] 협력사 검색: "${trimmedPartnerName}"`);
+    
+    // 1차 시도: 정확히 일치 (trim 적용)
+    let partners = await db.select().from(users).where(
+      sql`TRIM(${users.company}) = ${trimmedPartnerName}`
+    );
+    
+    // 2차 시도: 대소문자 무시 + LIKE 검색
+    if (partners.length === 0) {
+      console.log(`[PDF 생성] 정확히 일치하는 협력사 없음, ILIKE 검색 시도...`);
+      partners = await db.select().from(users).where(
+        ilike(users.company, `%${trimmedPartnerName}%`)
+      );
+    }
+    
+    // 3차 시도: 담당자 이름으로 검색
+    if (partners.length === 0 && caseData.assignedPartnerManager) {
+      console.log(`[PDF 생성] 회사명 검색 실패, 담당자명 "${caseData.assignedPartnerManager}"로 검색 시도...`);
+      partners = await db.select().from(users).where(
+        eq(users.name, caseData.assignedPartnerManager.trim())
+      );
+    }
+    
     console.log(`[PDF 생성] 검색 결과: ${partners.length}개 사용자 발견`);
     if (partners.length > 0) {
-      partnerData = partners[0];
+      // 협력사 역할을 가진 사용자 우선
+      const partnerUser = partners.find(p => p.role === '협력사') || partners[0];
+      partnerData = partnerUser;
       console.log(`[PDF 생성] 협력사 정보 - 회사: ${partnerData.company}, 사업자번호: ${partnerData.businessRegistrationNumber || '없음'}, 대표자: ${partnerData.representativeName || '없음'}`);
     } else {
-      console.log(`[PDF 생성] 협력사 "${caseData.assignedPartner}"에 해당하는 사용자를 찾을 수 없음`);
+      console.log(`[PDF 생성] 협력사 "${trimmedPartnerName}"에 해당하는 사용자를 찾을 수 없음`);
+      // 모든 협력사 목록 출력 (디버깅용)
+      const allPartners = await db.select({ company: users.company, name: users.name }).from(users).where(eq(users.role, '협력사'));
+      console.log(`[PDF 생성] 시스템 내 등록된 협력사 목록: ${allPartners.map(p => `${p.company}(${p.name})`).join(', ')}`);
     }
   }
   

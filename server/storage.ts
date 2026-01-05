@@ -5403,6 +5403,17 @@ export class DbStorage implements IStorage {
           
           if (result.rows && result.rows.length > 0) {
             const dbRow = result.rows[0] as any;
+            
+            // [C-2] DB RETURNING 결과 로깅
+            if (row.rowOrder === 1) {
+              console.log("========================================");
+              console.log("[C-2] 서버: INSERT RETURNING 결과");
+              console.log("  repair_width (raw):", dbRow.repair_width, "타입:", typeof dbRow.repair_width);
+              console.log("  repair_height (raw):", dbRow.repair_height, "타입:", typeof dbRow.repair_height);
+              console.log("  repair_area (raw):", dbRow.repair_area, "타입:", typeof dbRow.repair_area);
+              console.log("========================================");
+            }
+            
             insertedRows.push({
               id: dbRow.id,
               estimateId: dbRow.estimate_id,
