@@ -3756,23 +3756,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return num;
         };
 
-        // 디버그: 첫 행의 값 추적
+        // [B] 서버 로깅: request body 수신 직후
         if (index === 0) {
-          console.log("[Estimate Debug] Raw row from request:", {
-            repairWidth: row.repairWidth,
-            repairHeight: row.repairHeight,
-            repairArea: row.repairArea,
-            types: {
-              repairWidth: typeof row.repairWidth,
-              repairHeight: typeof row.repairHeight,
-              repairArea: typeof row.repairArea,
-            }
-          });
-          console.log("[Estimate Debug] Validated row:", {
-            repairWidth: validated.repairWidth,
-            repairHeight: validated.repairHeight,
-            repairArea: validated.repairArea,
-          });
+          console.log("========================================");
+          console.log("[B] 서버: request body 수신 직후");
+          console.log("케이스 ID:", caseId);
+          console.log("Raw row from request:");
+          console.log("  repairWidth:", row.repairWidth, "타입:", typeof row.repairWidth);
+          console.log("  repairHeight:", row.repairHeight, "타입:", typeof row.repairHeight);
+          console.log("  repairArea:", row.repairArea, "타입:", typeof row.repairArea);
+          console.log("  damageWidth:", row.damageWidth, "타입:", typeof row.damageWidth);
+          console.log("  damageHeight:", row.damageHeight, "타입:", typeof row.damageHeight);
+          console.log("  damageArea:", row.damageArea, "타입:", typeof row.damageArea);
+          console.log("Validated row:");
+          console.log("  repairWidth:", validated.repairWidth);
+          console.log("  repairHeight:", validated.repairHeight);
+          console.log("  repairArea:", validated.repairArea);
+          console.log("========================================");
         }
 
         const result = {

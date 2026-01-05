@@ -3841,6 +3841,22 @@ export default function FieldEstimate() {
         };
       });
 
+      // [A] 프론트엔드 로깅: 저장 버튼 클릭 직전 payload
+      console.log("========================================");
+      console.log("[A] 프론트엔드: 저장 직전 payload");
+      console.log("케이스 ID:", selectedCaseId);
+      console.log("첫 번째 행 데이터:");
+      if (apiRows.length > 0) {
+        console.log("  repairWidth:", apiRows[0].repairWidth, "타입:", typeof apiRows[0].repairWidth);
+        console.log("  repairHeight:", apiRows[0].repairHeight, "타입:", typeof apiRows[0].repairHeight);
+        console.log("  repairArea:", apiRows[0].repairArea, "타입:", typeof apiRows[0].repairArea);
+        console.log("  damageWidth:", apiRows[0].damageWidth, "타입:", typeof apiRows[0].damageWidth);
+        console.log("  damageHeight:", apiRows[0].damageHeight, "타입:", typeof apiRows[0].damageHeight);
+        console.log("  damageArea:", apiRows[0].damageArea, "타입:", typeof apiRows[0].damageArea);
+      }
+      console.log("전체 apiRows:", JSON.stringify(apiRows, null, 2));
+      console.log("========================================");
+
       return await apiRequest("POST", `/api/estimates/${selectedCaseId}`, { 
         rows: apiRows,
         laborCostData,

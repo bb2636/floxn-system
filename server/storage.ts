@@ -5362,6 +5362,20 @@ export class DbStorage implements IStorage {
         // Raw SQL insert를 사용하여 drizzle-orm의 bigint 타입 추론 문제 우회
         const insertedRows: EstimateRow[] = [];
         
+        // [C] 서버 로깅: DB insert 직전
+        if (rowsWithEstimateId.length > 0) {
+          console.log("========================================");
+          console.log("[C] 서버: DB insert 직전");
+          console.log("첫 번째 행 데이터:");
+          console.log("  repairWidth:", rowsWithEstimateId[0].repairWidth, "타입:", typeof rowsWithEstimateId[0].repairWidth);
+          console.log("  repairHeight:", rowsWithEstimateId[0].repairHeight, "타입:", typeof rowsWithEstimateId[0].repairHeight);
+          console.log("  repairArea:", rowsWithEstimateId[0].repairArea, "타입:", typeof rowsWithEstimateId[0].repairArea);
+          console.log("  damageWidth:", rowsWithEstimateId[0].damageWidth, "타입:", typeof rowsWithEstimateId[0].damageWidth);
+          console.log("  damageHeight:", rowsWithEstimateId[0].damageHeight, "타입:", typeof rowsWithEstimateId[0].damageHeight);
+          console.log("  damageArea:", rowsWithEstimateId[0].damageArea, "타입:", typeof rowsWithEstimateId[0].damageArea);
+          console.log("========================================");
+        }
+        
         for (const row of rowsWithEstimateId) {
           const result = await tx.execute(sql`
             INSERT INTO estimate_rows (
