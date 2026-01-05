@@ -1444,12 +1444,12 @@ export function InvoiceManagementPopup({
                   </RadioGroup>
                 </div>
 
-                {/* 자기부담금 */}
+                {/* 자기부담금 - 청구변경 선택 시 또는 미입력 시 편집 가능 */}
                 <div className="flex items-center justify-between">
                   <span style={{ fontWeight: 400, fontSize: "15px", color: "rgba(12, 12, 12, 0.6)" }}>
                     자기부담금
                   </span>
-                  {settlementStatus === "청구변경" ? (
+                  {(settlementStatus === "청구변경" || !deductibleAmount || deductibleAmount === "0") ? (
                     <div className="flex items-center gap-1">
                       <Input
                         type="text"
