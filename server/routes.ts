@@ -11,7 +11,7 @@ import https from "https";
 import crypto from "crypto";
 import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from "./replit_integrations/object_storage";
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
-import { generatePdf } from "./pdf-service";
+import { generatePdf, generatePdfWithSizeLimit } from "./pdf-service";
 import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
 import { sendFieldReportEmail, sendEmailWithAttachment } from "./hiworks-email";
 
@@ -5777,7 +5777,8 @@ FLOXN 드림`;
 
       console.log(`[Field Report Email] Generating PDF for case ${caseData.caseNumber}`);
 
-      const pdfBuffer = await generatePdf({
+      // 10MB 제한을 적용한 PDF 생성 (이메일 첨부 용량 제한)
+      const pdfBuffer = await generatePdfWithSizeLimit({
         caseId,
         sections: {
           cover: true,
@@ -6752,9 +6753,9 @@ FLOXN 드림`;
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // 서버 측에서 PDF 생성 (다운로드와 동일한 방식)
+      // 서버 측에서 PDF 생성 (10MB 제한을 적용하여 이메일 첨부 용량 제한)
       console.log(`[send-field-report-email-v2] Generating PDF for case ${caseId}`);
-      const pdfBuffer = await generatePdf({
+      const pdfBuffer = await generatePdfWithSizeLimit({
         caseId,
         sections,
         evidence,

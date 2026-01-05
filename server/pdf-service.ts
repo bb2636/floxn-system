@@ -2,11 +2,59 @@ import puppeteer from 'puppeteer';
 import { PDFDocument } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
+import sharp from 'sharp';
 import { db } from './db';
 import { cases, caseDocuments, drawings, estimates, estimateRows, users } from '@shared/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 
 const TEMPLATES_DIR = path.join(process.cwd(), 'server/pdf-templates');
+
+// PDF 최대 크기 (10MB)
+const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024;
+
+// 이미지 압축 함수 - quality는 1-100 (기본 80)
+async function compressImage(base64Data: string, quality: number = 80, maxWidth: number = 1200): Promise<string> {
+  try {
+    // base64 데이터에서 실제 이미지 데이터 추출
+    let imageBuffer: Buffer;
+    let mimeType = 'image/jpeg';
+    
+    if (base64Data.startsWith('data:')) {
+      const matches = base64Data.match(/^data:([^;]+);base64,(.+)$/);
+      if (matches) {
+        mimeType = matches[1];
+        imageBuffer = Buffer.from(matches[2], 'base64');
+      } else {
+        return base64Data;
+      }
+    } else {
+      imageBuffer = Buffer.from(base64Data, 'base64');
+    }
+    
+    // Sharp로 이미지 처리
+    const image = sharp(imageBuffer);
+    const metadata = await image.metadata();
+    
+    // 너무 큰 이미지는 리사이즈
+    let processedImage = image;
+    if (metadata.width && metadata.width > maxWidth) {
+      processedImage = image.resize(maxWidth, undefined, { withoutEnlargement: true });
+    }
+    
+    // JPEG로 압축 (PNG도 JPEG로 변환하여 용량 감소)
+    const compressedBuffer = await processedImage
+      .jpeg({ quality, mozjpeg: true })
+      .toBuffer();
+    
+    const compressedBase64 = compressedBuffer.toString('base64');
+    console.log(`[PDF 이미지압축] 원본: ${Math.round(imageBuffer.length / 1024)}KB → 압축: ${Math.round(compressedBuffer.length / 1024)}KB (품질: ${quality}%)`);
+    
+    return `data:image/jpeg;base64,${compressedBase64}`;
+  } catch (error) {
+    console.error('[PDF 이미지압축] 압축 실패:', error);
+    return base64Data;
+  }
+}
 
 interface PdfGenerationPayload {
   caseId: string;
@@ -319,9 +367,11 @@ async function generateDrawingPage(caseData: any, drawingData: any): Promise<str
   return replaceTemplateVariables(template, data);
 }
 
-async function generateEvidencePages(caseData: any, documents: any[]): Promise<string> {
+async function generateEvidencePages(caseData: any, documents: any[], imageQuality: number = 80): Promise<string> {
   const templatePath = path.join(TEMPLATES_DIR, 'evidence-images.html');
   let template = fs.readFileSync(templatePath, 'utf-8');
+  
+  console.log(`[PDF 증빙자료] 이미지 품질: ${imageQuality}%`);
   
   const categoryGroups: Record<string, any[]> = {};
   
@@ -402,6 +452,8 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
     if (firstImageDataUri && !firstImageDataUri.startsWith('data:')) {
       firstImageDataUri = `data:${firstImage.doc.fileType || 'image/jpeg'};base64,${firstImageDataUri}`;
     }
+    // 이미지 압축 적용
+    firstImageDataUri = await compressImage(firstImageDataUri, imageQuality);
     
     imagesBlockHtml += `
       <div class="image-block">
@@ -423,6 +475,8 @@ async function generateEvidencePages(caseData: any, documents: any[]): Promise<s
       if (secondImageDataUri && !secondImageDataUri.startsWith('data:')) {
         secondImageDataUri = `data:${secondImage.doc.fileType || 'image/jpeg'};base64,${secondImageDataUri}`;
       }
+      // 이미지 압축 적용
+      secondImageDataUri = await compressImage(secondImageDataUri, imageQuality);
       
       imagesBlockHtml += `
         <div class="image-block">
@@ -812,8 +866,9 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
   return replaceTemplateVariables(template, data);
 }
 
-export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer> {
+export async function generatePdf(payload: PdfGenerationPayload, imageQuality: number = 80): Promise<Buffer> {
   const { caseId, sections, evidence } = payload;
+  console.log(`[PDF 생성] 이미지 품질: ${imageQuality}%`);
   
   const [caseData] = await db.select().from(cases).where(eq(cases.id, caseId));
   if (!caseData) {
@@ -928,7 +983,7 @@ export async function generatePdf(payload: PdfGenerationPayload): Promise<Buffer
       console.log('[PDF 생성] PDF 문서 목록:', pdfDocs.map(d => ({ id: d.id, name: d.fileName, type: d.fileType, category: d.category })));
       
       if (imageDocs.length > 0) {
-        const evidenceHtml = await generateEvidencePages(caseData, imageDocs);
+        const evidenceHtml = await generateEvidencePages(caseData, imageDocs, imageQuality);
         // Only add to PDF if there's actual content
         if (evidenceHtml && evidenceHtml.trim().length > 0) {
           const page = await browser.newPage();
@@ -1203,3 +1258,32 @@ export const pdfGenerationPayloadSchema = {
     selectedFileIds: 'string[]',
   },
 };
+
+// 10MB 제한을 고려한 PDF 생성 함수 (자동 품질 조절)
+export async function generatePdfWithSizeLimit(payload: PdfGenerationPayload): Promise<Buffer> {
+  // 품질 레벨: 80% -> 60% -> 40% -> 25% 순으로 시도
+  const qualityLevels = [80, 60, 40, 25];
+  
+  for (let i = 0; i < qualityLevels.length; i++) {
+    const quality = qualityLevels[i];
+    console.log(`[PDF 생성] 품질 ${quality}%로 PDF 생성 시도 (${i + 1}/${qualityLevels.length})`);
+    
+    const pdfBuffer = await generatePdf(payload, quality);
+    const sizeInMB = pdfBuffer.length / (1024 * 1024);
+    
+    console.log(`[PDF 생성] PDF 크기: ${sizeInMB.toFixed(2)}MB (제한: ${MAX_PDF_SIZE_BYTES / (1024 * 1024)}MB)`);
+    
+    if (pdfBuffer.length <= MAX_PDF_SIZE_BYTES) {
+      console.log(`[PDF 생성] 품질 ${quality}%로 성공 - 크기: ${sizeInMB.toFixed(2)}MB`);
+      return pdfBuffer;
+    }
+    
+    if (i < qualityLevels.length - 1) {
+      console.log(`[PDF 생성] PDF 크기 초과 - 더 낮은 품질(${qualityLevels[i + 1]}%)로 재시도`);
+    }
+  }
+  
+  // 최저 품질로도 10MB 초과 시 마지막 결과 반환하고 경고
+  console.warn(`[PDF 생성] 최저 품질(${qualityLevels[qualityLevels.length - 1]}%)로도 10MB 초과 - 마지막 결과 반환`);
+  return await generatePdf(payload, qualityLevels[qualityLevels.length - 1]);
+}
