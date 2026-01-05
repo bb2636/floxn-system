@@ -5377,46 +5377,41 @@ export class DbStorage implements IStorage {
         }
         
         for (const row of rowsWithEstimateId) {
-          // numeric 값을 raw SQL로 직접 삽입 (Neon 드라이버의 타입 추론 문제 우회)
-          const toSqlNumeric = (val: number | null | undefined): string => {
-            if (val === null || val === undefined) return 'NULL';
+          // Drizzle ORM insert 사용 (스키마에 numeric 타입 명시됨)
+          // numeric 컬럼은 문자열로 전달해야 정밀도 유지됨
+          const toNumericString = (val: number | null | undefined): string | null => {
+            if (val === null || val === undefined) return null;
             return String(val);
           };
           
-          const result = await tx.execute(sql`
-            INSERT INTO estimate_rows (
-              estimate_id, category, location, work_type, work_name,
-              damage_width, damage_height, damage_area,
-              repair_width, repair_height, repair_area,
-              note, row_order
-            ) VALUES (
-              ${row.estimateId},
-              ${row.category || null},
-              ${row.location || null},
-              ${row.workType || null},
-              ${row.workName || null},
-              ${sql.raw(toSqlNumeric(row.damageWidth))},
-              ${sql.raw(toSqlNumeric(row.damageHeight))},
-              ${sql.raw(toSqlNumeric(row.damageArea))},
-              ${sql.raw(toSqlNumeric(row.repairWidth))},
-              ${sql.raw(toSqlNumeric(row.repairHeight))},
-              ${sql.raw(toSqlNumeric(row.repairArea))},
-              ${row.note || null},
-              ${row.rowOrder}
-            )
-            RETURNING *
-          `);
+          const insertData = {
+            estimateId: row.estimateId,
+            category: row.category || '',
+            location: row.location || null,
+            workType: row.workType || null,
+            workName: row.workName || null,
+            damageWidth: toNumericString(row.damageWidth),
+            damageHeight: toNumericString(row.damageHeight),
+            damageArea: toNumericString(row.damageArea),
+            repairWidth: toNumericString(row.repairWidth),
+            repairHeight: toNumericString(row.repairHeight),
+            repairArea: toNumericString(row.repairArea),
+            note: row.note || null,
+            rowOrder: row.rowOrder,
+          };
           
-          if (result.rows && result.rows.length > 0) {
-            const dbRow = result.rows[0] as any;
+          const resultRows = await tx.insert(estimateRows).values(insertData).returning();
+          
+          if (resultRows.length > 0) {
+            const dbRow = resultRows[0];
             
             // [C-2] DB RETURNING 결과 로깅
             if (row.rowOrder === 1) {
               console.log("========================================");
               console.log("[C-2] 서버: INSERT RETURNING 결과");
-              console.log("  repair_width (raw):", dbRow.repair_width, "타입:", typeof dbRow.repair_width);
-              console.log("  repair_height (raw):", dbRow.repair_height, "타입:", typeof dbRow.repair_height);
-              console.log("  repair_area (raw):", dbRow.repair_area, "타입:", typeof dbRow.repair_area);
+              console.log("  repairWidth (raw):", dbRow.repairWidth, "타입:", typeof dbRow.repairWidth);
+              console.log("  repairHeight (raw):", dbRow.repairHeight, "타입:", typeof dbRow.repairHeight);
+              console.log("  repairArea (raw):", dbRow.repairArea, "타입:", typeof dbRow.repairArea);
               console.log("========================================");
             }
             
@@ -5429,19 +5424,19 @@ export class DbStorage implements IStorage {
             
             insertedRows.push({
               id: dbRow.id,
-              estimateId: dbRow.estimate_id,
+              estimateId: dbRow.estimateId,
               category: dbRow.category,
               location: dbRow.location,
-              workType: dbRow.work_type,
-              workName: dbRow.work_name,
-              damageWidth: parseNumeric(dbRow.damage_width),
-              damageHeight: parseNumeric(dbRow.damage_height),
-              damageArea: parseNumeric(dbRow.damage_area),
-              repairWidth: parseNumeric(dbRow.repair_width),
-              repairHeight: parseNumeric(dbRow.repair_height),
-              repairArea: parseNumeric(dbRow.repair_area),
+              workType: dbRow.workType,
+              workName: dbRow.workName,
+              damageWidth: parseNumeric(dbRow.damageWidth),
+              damageHeight: parseNumeric(dbRow.damageHeight),
+              damageArea: parseNumeric(dbRow.damageArea),
+              repairWidth: parseNumeric(dbRow.repairWidth),
+              repairHeight: parseNumeric(dbRow.repairHeight),
+              repairArea: parseNumeric(dbRow.repairArea),
               note: dbRow.note,
-              rowOrder: dbRow.row_order,
+              rowOrder: dbRow.rowOrder,
             });
           }
         }
