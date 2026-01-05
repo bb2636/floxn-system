@@ -180,29 +180,29 @@ export async function sendFieldReportEmail(
         아래 접수건에 대한 <strong>현장출동보고서</strong>를 첨부하여 송부드립니다.
       </p>
       
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; table-layout: fixed;">
         <tr>
-          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 120px; font-weight: bold;">사고번호</td>
-          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="3">${accidentNo}</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 20%; font-weight: bold;">사고번호</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${accidentNo}</td>
         </tr>
         <tr>
-          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 120px; font-weight: bold;">담당자</td>
-          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 80px; font-weight: bold;">심사자</td>
-          <td style="padding: 10px 15px; border: 1px solid #ddd; width: 100px;">${assessor}</td>
-          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 80px; font-weight: bold;">조사자</td>
-          <td style="padding: 10px 15px; border: 1px solid #ddd;">${investigator}</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 20%; font-weight: bold;">담당자</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 15%; font-weight: bold; text-align: center;">심사자</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd; width: 25%; word-break: break-word;">${assessor}</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 15%; font-weight: bold; text-align: center;">조사자</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd; width: 25%; word-break: break-word;">${investigator}</td>
         </tr>
         <tr>
           <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">피보험자</td>
-          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="3">${insuredName || '-'}</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${insuredName || '-'}</td>
         </tr>
         <tr>
           <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">접수번호</td>
-          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="3">${caseNumber}</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${caseNumber}</td>
         </tr>
         <tr>
           <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
-          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="3">${dateStr}</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${dateStr}</td>
         </tr>
       </table>
       
