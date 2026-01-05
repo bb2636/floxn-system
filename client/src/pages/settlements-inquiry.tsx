@@ -78,6 +78,7 @@ export default function SettlementsInquiry() {
   const [selectedCaseForInvoice, setSelectedCaseForInvoice] = useState<CaseWithLatestProgress | null>(null);
   const [selectedRelatedCasesForInvoice, setSelectedRelatedCasesForInvoice] = useState<CaseWithLatestProgress[]>([]);
   const [selectedCommission, setSelectedCommission] = useState<number>(0);
+  const [selectedClaimAmount, setSelectedClaimAmount] = useState<number>(0);
   const [selectedEstimateData, setSelectedEstimateData] = useState<{
     preventionEstimate: number;
     preventionApproved: number;
@@ -146,6 +147,8 @@ export default function SettlementsInquiry() {
       });
       // 해당 케이스의 수수료를 가져옴 (settlementCommission은 이미 그룹별로 계산된 값)
       setSelectedCommission(row.settlementCommission || 0);
+      // 청구액 설정
+      setSelectedClaimAmount(row.claimAmount || 0);
       setShowInvoiceManagementPopup(true);
     }
   };
@@ -2064,6 +2067,7 @@ export default function SettlementsInquiry() {
           return manager?.phone || "-";
         })()}
         settlementCommission={selectedCommission}
+        settlementClaimAmount={selectedClaimAmount}
       />
     </div>
   );

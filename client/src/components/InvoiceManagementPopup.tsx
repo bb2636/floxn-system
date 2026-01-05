@@ -60,6 +60,7 @@ interface InvoiceManagementPopupProps {
   managerName?: string;
   managerContact?: string;
   settlementCommission?: number; // 정산조회에서 가져온 수수료 값
+  settlementClaimAmount?: number; // 정산조회에서 가져온 청구액
 }
 
 const FIXED_FIELD_DISPATCH_COST = 100000;
@@ -97,6 +98,7 @@ export function InvoiceManagementPopup({
   managerName = "-",
   managerContact = "-",
   settlementCommission,
+  settlementClaimAmount,
 }: InvoiceManagementPopupProps) {
   const { toast } = useToast();
   const { hasItem, isAdmin } = usePermissions();
@@ -205,7 +207,7 @@ export function InvoiceManagementPopup({
       id: "",
       depositDate: "",
       insuranceCompany: caseData?.insuranceCompany || "전체",
-      claimAmount: 0,
+      claimAmount: settlementClaimAmount || 0,
       depositStatus: "미입금",
       depositAmount: 0,
       memo: "",
@@ -230,7 +232,7 @@ export function InvoiceManagementPopup({
       id: "",
       depositDate: "",
       insuranceCompany: caseData?.insuranceCompany || "전체",
-      claimAmount: 0,
+      claimAmount: settlementClaimAmount || 0,
       depositStatus: "미입금",
       depositAmount: 0,
       memo: "",
@@ -1502,7 +1504,7 @@ export function InvoiceManagementPopup({
                           id: "",
                           depositDate: "",
                           insuranceCompany: caseData?.insuranceCompany || "전체",
-                          claimAmount: 0,
+                          claimAmount: settlementClaimAmount || 0,
                           depositStatus: "미입금",
                           depositAmount: 0,
                           memo: "",
