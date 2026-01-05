@@ -478,6 +478,14 @@ export default function FieldManagement() {
         victimAddressDetail: editVictimAddressDetail,
       });
       
+      // 현재 선택된 케이스와 동일한 케이스를 수정한 경우, 로컬 상태도 업데이트
+      if (editingVictimCase.id === selectedCase) {
+        setVictimName(editVictimName);
+        setVictimContact(editVictimContact);
+        setVictimAddress(editVictimAddress);
+        setVictimAddressDetail(editVictimAddressDetail);
+      }
+      
       // 케이스 목록 새로고침
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       
