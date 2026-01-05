@@ -455,14 +455,42 @@ export default function FieldManagement() {
   };
 
   // 피해자 정보 수정 다이얼로그 열기
-  const handleOpenEditVictimDialog = (caseItem: Case) => {
+  const handleOpenEditVictimDialog = async (caseItem: Case) => {
     setEditingVictimCase(caseItem);
-    setEditVictimName(caseItem.victimName || "");
-    setEditVictimContact(caseItem.victimContact || "");
-    // 피해자 주소만 표시 (없으면 빈 값)
-    setEditVictimAddress(caseItem.victimAddress || "");
-    setEditVictimAddressDetail(caseItem.victimAddressDetail || "");
-    setEditVictimDialogOpen(true);
+    
+    // 현재 선택된 케이스인 경우 selectedCaseDetail에서 데이터 로드 (API 목록에는 victim 필드가 없음)
+    if (caseItem.id === selectedCase && selectedCaseDetail) {
+      setEditVictimName(selectedCaseDetail.victimName || "");
+      setEditVictimContact(selectedCaseDetail.victimContact || "");
+      setEditVictimAddress(selectedCaseDetail.victimAddress || "");
+      setEditVictimAddressDetail(selectedCaseDetail.victimAddressDetail || "");
+      setEditVictimDialogOpen(true);
+    } else {
+      // 다른 케이스인 경우 API에서 개별 조회
+      try {
+        const response = await fetch(`/api/cases/${caseItem.id}`);
+        if (response.ok) {
+          const caseData = await response.json();
+          setEditVictimName(caseData.victimName || "");
+          setEditVictimContact(caseData.victimContact || "");
+          setEditVictimAddress(caseData.victimAddress || "");
+          setEditVictimAddressDetail(caseData.victimAddressDetail || "");
+        } else {
+          // 조회 실패 시 기존 데이터 사용
+          setEditVictimName(caseItem.victimName || "");
+          setEditVictimContact(caseItem.victimContact || "");
+          setEditVictimAddress(caseItem.victimAddress || "");
+          setEditVictimAddressDetail(caseItem.victimAddressDetail || "");
+        }
+      } catch (error) {
+        console.error("케이스 조회 실패:", error);
+        setEditVictimName(caseItem.victimName || "");
+        setEditVictimContact(caseItem.victimContact || "");
+        setEditVictimAddress(caseItem.victimAddress || "");
+        setEditVictimAddressDetail(caseItem.victimAddressDetail || "");
+      }
+      setEditVictimDialogOpen(true);
+    }
   };
 
   // 피해자 정보 저장
