@@ -5377,41 +5377,66 @@ export class DbStorage implements IStorage {
         }
         
         for (const row of rowsWithEstimateId) {
-          // Drizzle ORM insert 사용 (스키마에 numeric 타입 명시됨)
-          // numeric 컬럼은 문자열로 전달해야 정밀도 유지됨
-          const toNumericString = (val: number | null | undefined): string | null => {
+          // numeric 값 변환 (null 처리)
+          const toNumericVal = (val: number | null | undefined): number | null => {
             if (val === null || val === undefined) return null;
-            return String(val);
+            return val;
           };
           
-          const insertData = {
-            estimateId: row.estimateId,
-            category: row.category || '',
-            location: row.location || null,
-            workType: row.workType || null,
-            workName: row.workName || null,
-            damageWidth: toNumericString(row.damageWidth),
-            damageHeight: toNumericString(row.damageHeight),
-            damageArea: toNumericString(row.damageArea),
-            repairWidth: toNumericString(row.repairWidth),
-            repairHeight: toNumericString(row.repairHeight),
-            repairArea: toNumericString(row.repairArea),
-            note: row.note || null,
-            rowOrder: row.rowOrder,
-          };
+          const damageW = toNumericVal(row.damageWidth);
+          const damageH = toNumericVal(row.damageHeight);
+          const damageA = toNumericVal(row.damageArea);
+          const repairW = toNumericVal(row.repairWidth);
+          const repairH = toNumericVal(row.repairHeight);
+          const repairA = toNumericVal(row.repairArea);
           
-          const resultRows = await tx.insert(estimateRows).values(insertData).returning();
+          // [C-1] 로깅 (실제 DB에 전달되는 값)
+          if (row.rowOrder === 1) {
+            console.log("========================================");
+            console.log("[C-1] 서버: INSERT 파라미터 (::numeric 캐스팅)");
+            console.log("  repairWidth:", repairW, "타입:", typeof repairW);
+            console.log("  repairHeight:", repairH, "타입:", typeof repairH);
+            console.log("  repairArea:", repairA, "타입:", typeof repairA);
+            console.log("========================================");
+          }
+          
+          // SQL 템플릿에 명시적 ::numeric 캐스팅 사용
+          const result = await tx.execute(sql`
+            INSERT INTO estimate_rows (
+              estimate_id, category, location, work_type, work_name,
+              damage_width, damage_height, damage_area,
+              repair_width, repair_height, repair_area,
+              note, row_order
+            ) VALUES (
+              ${row.estimateId},
+              ${row.category || null},
+              ${row.location || null},
+              ${row.workType || null},
+              ${row.workName || null},
+              ${damageW}::numeric,
+              ${damageH}::numeric,
+              ${damageA}::numeric,
+              ${repairW}::numeric,
+              ${repairH}::numeric,
+              ${repairA}::numeric,
+              ${row.note || null},
+              ${row.rowOrder}
+            )
+            RETURNING *
+          `);
+          
+          const resultRows = result.rows as any[];
           
           if (resultRows.length > 0) {
             const dbRow = resultRows[0];
             
-            // [C-2] DB RETURNING 결과 로깅
+            // [C-2] DB RETURNING 결과 로깅 (snake_case)
             if (row.rowOrder === 1) {
               console.log("========================================");
               console.log("[C-2] 서버: INSERT RETURNING 결과");
-              console.log("  repairWidth (raw):", dbRow.repairWidth, "타입:", typeof dbRow.repairWidth);
-              console.log("  repairHeight (raw):", dbRow.repairHeight, "타입:", typeof dbRow.repairHeight);
-              console.log("  repairArea (raw):", dbRow.repairArea, "타입:", typeof dbRow.repairArea);
+              console.log("  repair_width (raw):", dbRow.repair_width, "타입:", typeof dbRow.repair_width);
+              console.log("  repair_height (raw):", dbRow.repair_height, "타입:", typeof dbRow.repair_height);
+              console.log("  repair_area (raw):", dbRow.repair_area, "타입:", typeof dbRow.repair_area);
               console.log("========================================");
             }
             
@@ -5424,19 +5449,19 @@ export class DbStorage implements IStorage {
             
             insertedRows.push({
               id: dbRow.id,
-              estimateId: dbRow.estimateId,
+              estimateId: dbRow.estimate_id,
               category: dbRow.category,
               location: dbRow.location,
-              workType: dbRow.workType,
-              workName: dbRow.workName,
-              damageWidth: parseNumeric(dbRow.damageWidth),
-              damageHeight: parseNumeric(dbRow.damageHeight),
-              damageArea: parseNumeric(dbRow.damageArea),
-              repairWidth: parseNumeric(dbRow.repairWidth),
-              repairHeight: parseNumeric(dbRow.repairHeight),
-              repairArea: parseNumeric(dbRow.repairArea),
+              workType: dbRow.work_type,
+              workName: dbRow.work_name,
+              damageWidth: parseNumeric(dbRow.damage_width),
+              damageHeight: parseNumeric(dbRow.damage_height),
+              damageArea: parseNumeric(dbRow.damage_area),
+              repairWidth: parseNumeric(dbRow.repair_width),
+              repairHeight: parseNumeric(dbRow.repair_height),
+              repairArea: parseNumeric(dbRow.repair_area),
               note: dbRow.note,
-              rowOrder: dbRow.rowOrder,
+              rowOrder: dbRow.row_order,
             });
           }
         }
