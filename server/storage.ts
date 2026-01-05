@@ -5377,30 +5377,31 @@ export class DbStorage implements IStorage {
         }
         
         for (const row of rowsWithEstimateId) {
-          // numeric 값 변환 (null 처리)
-          const toNumericVal = (val: number | null | undefined): number | null => {
+          // numeric 값을 문자열로 변환 (Neon 드라이버가 text로 바인딩 → ::numeric 캐스팅)
+          const toNumericStr = (val: number | null | undefined): string | null => {
             if (val === null || val === undefined) return null;
-            return val;
+            // 정밀도 유지를 위해 문자열로 변환
+            return String(val);
           };
           
-          const damageW = toNumericVal(row.damageWidth);
-          const damageH = toNumericVal(row.damageHeight);
-          const damageA = toNumericVal(row.damageArea);
-          const repairW = toNumericVal(row.repairWidth);
-          const repairH = toNumericVal(row.repairHeight);
-          const repairA = toNumericVal(row.repairArea);
+          const damageW = toNumericStr(row.damageWidth);
+          const damageH = toNumericStr(row.damageHeight);
+          const damageA = toNumericStr(row.damageArea);
+          const repairW = toNumericStr(row.repairWidth);
+          const repairH = toNumericStr(row.repairHeight);
+          const repairA = toNumericStr(row.repairArea);
           
-          // [C-1] 로깅 (실제 DB에 전달되는 값)
+          // [C-1] 로깅 (실제 DB에 전달되는 값 - 문자열)
           if (row.rowOrder === 1) {
             console.log("========================================");
-            console.log("[C-1] 서버: INSERT 파라미터 (::numeric 캐스팅)");
+            console.log("[C-1] 서버: INSERT 파라미터 (문자열 → ::numeric 캐스팅)");
             console.log("  repairWidth:", repairW, "타입:", typeof repairW);
             console.log("  repairHeight:", repairH, "타입:", typeof repairH);
             console.log("  repairArea:", repairA, "타입:", typeof repairA);
             console.log("========================================");
           }
           
-          // SQL 템플릿에 명시적 ::numeric 캐스팅 사용
+          // SQL 템플릿에 문자열 파라미터 + ::numeric 캐스팅
           const result = await tx.execute(sql`
             INSERT INTO estimate_rows (
               estimate_id, category, location, work_type, work_name,
