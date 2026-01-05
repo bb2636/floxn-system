@@ -4785,6 +4785,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
+      // 심사사/조사사 이메일 자동 조회 (DB에 저장되지 않은 경우 users 테이블에서 찾기)
+      const allUsers = await storage.getAllUsers();
+      
+      // 심사사 이메일이 없고 심사자 이름이 있으면 조회
+      if (!caseData.assessorEmail && caseData.assessorTeam) {
+        const assessorUser = allUsers.find(u => u.role === "심사사" && u.name === caseData.assessorTeam);
+        if (assessorUser?.email) {
+          (caseData as any).assessorEmail = assessorUser.email;
+          console.log(`[Report] Auto-populated assessorEmail: ${assessorUser.email} (from ${caseData.assessorTeam})`);
+        }
+      }
+      
+      // 조사사 이메일이 없고 조사자 이름이 있으면 조회
+      if (!caseData.investigatorEmail && caseData.investigatorTeamName) {
+        const investigatorUser = allUsers.find(u => u.role === "조사사" && u.name === caseData.investigatorTeamName);
+        if (investigatorUser?.email) {
+          (caseData as any).investigatorEmail = investigatorUser.email;
+          console.log(`[Report] Auto-populated investigatorEmail: ${investigatorUser.email} (from ${caseData.investigatorTeamName})`);
+        }
+      }
+
       // 도면 조회
       const drawing = await storage.getDrawingByCaseId(caseId);
       
