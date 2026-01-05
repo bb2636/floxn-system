@@ -64,14 +64,17 @@ async function generateCoverPage(caseData: any, partnerData: any): Promise<strin
     recipientName: caseData.insuranceCompany || '',
     insuranceAccidentNo: caseData.insuranceAccidentNo || '',
     insuredName: caseData.insuredName || caseData.victimName || '',
-    investigatorName: partnerData?.name || '',
+    // 출동담당자: 접수 시 입력한 담당자명 우선, 없으면 협력사 계정 이름
+    investigatorName: caseData.assignedPartnerManager || partnerData?.name || '',
     partnerCompany: caseData.assignedPartner || '',
     address: fullAddress,
     dispatchDateTime: dispatchDateTime,
     documentDate: formatDate(new Date().toISOString()),
     senderCompany: caseData.assignedPartner || '',
-    senderName: partnerData?.name || '',
-    senderContact: partnerData?.phone || '',
+    // 담당자: 접수 시 입력한 담당자명 우선
+    senderName: caseData.assignedPartnerManager || partnerData?.name || '',
+    // 연락처: 접수 시 입력한 담당자 연락처 우선
+    senderContact: caseData.assignedPartnerContact || partnerData?.phone || '',
   };
   
   return replaceTemplateVariables(template, data);
@@ -124,7 +127,8 @@ async function generateFieldReportPage(caseData: any, partnerData: any, repairIt
   
   const data = {
     visitDateTime: visitDateTime || '-',
-    dispatchManager: caseData.dispatchManager || partnerData?.name || '-',
+    // 출동담당자: 접수 시 입력한 담당자명 우선
+    dispatchManager: caseData.assignedPartnerManager || caseData.dispatchManager || partnerData?.name || '-',
     dispatchLocation: caseData.dispatchLocation || '-',
     partnerCompany: caseData.assignedPartner || '-',
     insuredFullAddress: insuredFullAddress || '-',
@@ -140,7 +144,8 @@ async function generateFieldReportPage(caseData: any, partnerData: any, repairIt
     recoveryMethodType: caseData.recoveryMethodType || '-',
     repairItemsHtml: repairItemsHtml,
     documentDate: formatDate(new Date().toISOString()),
-    authorName: partnerData?.name || caseData.dispatchManager || '-',
+    // 작성자: 접수 시 입력한 담당자명 우선
+    authorName: caseData.assignedPartnerManager || partnerData?.name || caseData.dispatchManager || '-',
   };
   
   template = template.replace('{{repairItemsHtml}}', repairItemsHtml);
