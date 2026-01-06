@@ -14,6 +14,7 @@ import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
 import { generatePdfWithPdfLib, generatePdfWithSizeLimitPdfLib } from "./pdf-lib-service";
 import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
 import { sendFieldReportEmail, sendEmailWithAttachment } from "./hiworks-email";
+import { generateEvidencePdfs, logAttachmentSummary } from "./evidence-pdf-service";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
@@ -6281,143 +6282,25 @@ FLOXN 드림`;
 
       console.log(`[Invoice PDF] PDF generated, size: ${pdfBuffer.length} bytes`);
 
-      // If documents are selected, merge them into the PDF
+      // NEW POLICY: Invoice PDF contains ONLY text/tables (no images)
+      // Evidence images are generated as separate PDFs per tab
+      let evidencePdfs: Awaited<ReturnType<typeof generateEvidencePdfs>> = [];
+      
       if (selectedDocumentIds && selectedDocumentIds.length > 0) {
-        console.log(`[Invoice PDF] Merging ${selectedDocumentIds.length} documents into PDF`);
+        console.log(`[Invoice Email] Generating separate evidence PDFs for ${selectedDocumentIds.length} documents`);
         
-        const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
-        const sharp = await import('sharp');
-        const mainPdf = await PDFDocument.load(pdfBuffer);
-        const font = await mainPdf.embedFont(StandardFonts.Helvetica);
-        
-        // Fetch selected documents
+        // Fetch all documents for this case
         const allDocuments = await storage.getDocumentsByCaseId(caseId);
-        const selectedDocs = allDocuments.filter((doc: { id: string }) => selectedDocumentIds.includes(doc.id));
         
-        // Separate PDFs and images (same logic as download endpoint)
-        const pdfDocs: any[] = [];
-        const imageDocs: any[] = [];
+        // Generate evidence PDFs by tab (with automatic splitting if > 8MB)
+        evidencePdfs = await generateEvidencePdfs(
+          allDocuments,
+          selectedDocumentIds,
+          caseData.caseNumber || '',
+          caseData.insuranceAccidentNo || ''
+        );
         
-        for (const doc of selectedDocs) {
-          if (!doc.fileData) continue;
-          const mimeType = doc.fileType || '';
-          if (mimeType === 'application/pdf') {
-            pdfDocs.push(doc);
-          } else if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) {
-            imageDocs.push(doc);
-          }
-        }
-        
-        // Add PDF documents first
-        for (const doc of pdfDocs) {
-          try {
-            const base64Data = doc.fileData.includes(',') 
-              ? doc.fileData.split(',')[1] 
-              : doc.fileData;
-            const fileBuffer = Buffer.from(base64Data, 'base64');
-            const attachedPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
-            const pages = await mainPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
-            pages.forEach((page: any) => mainPdf.addPage(page));
-            console.log(`[Invoice PDF] Added PDF document: ${doc.fileName}`);
-          } catch (docError) {
-            console.error(`[Invoice PDF] Failed to add PDF ${doc.fileName}:`, docError);
-          }
-        }
-        
-        // Add images using pdf-lib (no Puppeteer)
-        if (imageDocs.length > 0) {
-          const categoryToTab: Record<string, string> = {
-            '현장출동사진': '현장사진', '현장': '현장사진',
-            '수리중 사진': '현장사진', '수리중': '현장사진',
-            '복구완료 사진': '현장사진', '복구완료': '현장사진',
-            '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
-            '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
-            '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
-            '위임장': '청구자료', '도급계약서': '청구자료',
-            '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
-          };
-          
-          const A4_WIDTH = 595.28;
-          const A4_HEIGHT = 841.89;
-          const MARGIN = 30;
-          const HEADER_HEIGHT = 25;
-          const GAP = 10;
-          const caseNumber = caseData.caseNumber || '';
-          
-          for (const doc of imageDocs) {
-            try {
-              const base64Data = doc.fileData.includes(',') 
-                ? doc.fileData.split(',')[1] 
-                : doc.fileData;
-              const fileBuffer = Buffer.from(base64Data, 'base64');
-              const imageBuffer = await sharp.default(fileBuffer)
-                .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
-                .jpeg({ quality: 75 })
-                .toBuffer();
-              
-              const tab = categoryToTab[doc.category] || '기타';
-              const headerText = `[${caseNumber}] ${tab} - ${doc.category || '기타'}`;
-              
-              const page = mainPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-              
-              page.drawRectangle({
-                x: MARGIN,
-                y: A4_HEIGHT - MARGIN - HEADER_HEIGHT,
-                width: A4_WIDTH - (MARGIN * 2),
-                height: HEADER_HEIGHT,
-                color: rgb(0.95, 0.95, 0.95),
-                borderColor: rgb(0.8, 0.8, 0.8),
-                borderWidth: 0.5,
-              });
-              
-              page.drawText(headerText, {
-                x: MARGIN + 10,
-                y: A4_HEIGHT - MARGIN - HEADER_HEIGHT + 8,
-                size: 10,
-                font,
-                color: rgb(0.2, 0.2, 0.2),
-              });
-              
-              try {
-                const embeddedImage = await mainPdf.embedJpg(imageBuffer);
-                const imageDims = embeddedImage.scale(1);
-                const maxImageWidth = A4_WIDTH - (MARGIN * 2);
-                const maxImageHeight = A4_HEIGHT - (MARGIN * 2) - HEADER_HEIGHT - GAP;
-                
-                let scale = 1;
-                if (imageDims.width > maxImageWidth) {
-                  scale = maxImageWidth / imageDims.width;
-                }
-                if (imageDims.height * scale > maxImageHeight) {
-                  scale = maxImageHeight / imageDims.height;
-                }
-                
-                const finalWidth = imageDims.width * scale;
-                const finalHeight = imageDims.height * scale;
-                const imageX = MARGIN + (maxImageWidth - finalWidth) / 2;
-                const imageY = MARGIN + (maxImageHeight - finalHeight) / 2;
-                
-                page.drawImage(embeddedImage, {
-                  x: imageX,
-                  y: imageY,
-                  width: finalWidth,
-                  height: finalHeight,
-                });
-                
-                console.log(`[Invoice PDF Email] Added image: ${doc.fileName}`);
-              } catch (imgErr) {
-                console.error(`[Invoice PDF Email] Failed to embed image ${doc.fileName}:`, imgErr);
-              }
-            } catch (err) {
-              console.error(`[Invoice PDF Email] Failed to process image ${doc.fileName}:`, err);
-            }
-          }
-          
-          console.log(`[Invoice PDF Email] Added ${imageDocs.length} images via pdf-lib`);
-        }
-        
-        pdfBuffer = Buffer.from(await mainPdf.save());
-        console.log(`[Invoice PDF] Final PDF with documents, size: ${pdfBuffer.length} bytes`);
+        console.log(`[Invoice Email] Generated ${evidencePdfs.length} evidence PDF files`);
       }
 
       // Format amounts
@@ -6521,24 +6404,39 @@ ${amountLines.join('\n')}
 감사합니다.
 FLOXN 드림`;
 
-      // Generate filename for the PDF attachment
+      // Generate filename for the Invoice PDF attachment
       const timestamp = Date.now();
-      const pdfFilename = `INVOICE_${caseData.insuranceAccidentNo || caseData.caseNumber || caseId}_${timestamp}.pdf`;
+      const invoiceFilename = `Invoice.pdf`;
 
-      // Send email with PDF attachment (NOT a link)
-      console.log(`[Invoice Email] Sending PDF attachment to ${email}`);
+      // Build attachments array: Invoice PDF + Evidence PDFs (per tab)
+      const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [
+        {
+          filename: invoiceFilename,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ];
+
+      // Add evidence PDFs (separated by tab, auto-split if > 8MB)
+      for (const evidencePdf of evidencePdfs) {
+        attachments.push({
+          filename: evidencePdf.filename,
+          content: evidencePdf.buffer,
+          contentType: 'application/pdf',
+        });
+      }
+
+      // Log attachment summary before sending (SMTP requirement)
+      logAttachmentSummary(pdfBuffer, evidencePdfs);
+
+      // Send email with all PDF attachments
+      console.log(`[Invoice Email] Sending ${attachments.length} PDF attachments to ${email}`);
       const emailResult = await sendEmailWithAttachment({
         to: email,
         subject: emailSubject,
         text: textContent,
         html: htmlContent,
-        attachments: [
-          {
-            filename: pdfFilename,
-            content: pdfBuffer,
-            contentType: 'application/pdf',
-          },
-        ],
+        attachments,
       });
 
       if (!emailResult.success) {
@@ -6546,8 +6444,12 @@ FLOXN 드림`;
         return res.status(500).json({ error: `이메일 전송 실패: ${emailResult.error}` });
       }
 
-      console.log(`[Invoice Email] PDF attachment sent successfully to ${email} by ${user.username}`);
-      res.json({ success: true, message: "INVOICE PDF가 이메일 첨부파일로 전송되었습니다" });
+      console.log(`[Invoice Email] ${attachments.length} PDF attachments sent successfully to ${email} by ${user.username}`);
+      res.json({ 
+        success: true, 
+        message: `INVOICE PDF가 이메일 첨부파일로 전송되었습니다 (총 ${attachments.length}개 파일)`,
+        attachmentCount: attachments.length
+      });
     } catch (error) {
       console.error("Send invoice email v2 error:", error);
       const errorMessage = error instanceof Error ? error.message : "INVOICE 이메일 전송 중 오류가 발생했습니다";
