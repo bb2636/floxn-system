@@ -221,9 +221,8 @@ async function generateEvidencePdfWithPdfLib(
   console.log(`[PDF 증빙자료] 유효한 이미지 수: ${imageDocs.length}`);
   
   if (imageDocs.length === 0) {
-    console.log(`[PDF 증빙자료] 유효한 이미지 없음 - 빈 PDF 반환`);
-    const emptyPdfBytes = await pdfDoc.save();
-    return { pdfBuffer: Buffer.from(emptyPdfBytes), errors };
+    console.log(`[PDF 증빙자료] 유효한 이미지 없음 - 빈 버퍼 반환`);
+    return { pdfBuffer: Buffer.alloc(0), errors };
   }
   
   // 3. 페이지 생성 (2개 이미지씩)
