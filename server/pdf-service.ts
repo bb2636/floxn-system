@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
@@ -54,6 +54,308 @@ function getChromiumPath(): string | undefined {
 
 // PDF 최대 크기 (10MB)
 const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024;
+
+// 지원하는 이미지 확장자
+const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
+// 지원하지 않는 확장자 (명확한 안내용)
+const UNSUPPORTED_EXTENSIONS = ['.heic', '.heif', '.webp', '.mov', '.mp4', '.avi', '.tiff', '.raw'];
+// 최대 이미지 크기 (5MB)
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+// 최대 이미지 픽셀 크기
+const MAX_IMAGE_DIMENSION = 4000;
+
+// 파일 정보 로깅
+function logFileInfo(doc: any, stage: string) {
+  const ext = path.extname(doc.fileName || '').toLowerCase();
+  const sizeBytes = doc.fileData ? Buffer.from(doc.fileData.replace(/^data:[^;]+;base64,/, ''), 'base64').length : 0;
+  console.log(`[PDF 증빙자료] [${stage}] file_id=${doc.id}, filename=${doc.fileName}, ext=${ext}, size_bytes=${sizeBytes}, mime=${doc.fileType || 'unknown'}`);
+}
+
+// 지원 여부 체크
+function checkFileSupport(doc: any): { supported: boolean; reason?: string } {
+  const ext = path.extname(doc.fileName || '').toLowerCase();
+  const mime = doc.fileType || '';
+  
+  // 지원하지 않는 확장자 체크
+  if (UNSUPPORTED_EXTENSIONS.includes(ext)) {
+    return { supported: false, reason: `지원하지 않는 파일 형식입니다: ${ext}` };
+  }
+  
+  // 이미지 파일 체크
+  if (mime.startsWith('image/')) {
+    if (!SUPPORTED_IMAGE_EXTENSIONS.includes(ext) && ext !== '') {
+      return { supported: false, reason: `지원하지 않는 이미지 형식입니다: ${ext}` };
+    }
+    return { supported: true };
+  }
+  
+  // PDF 파일 체크
+  if (mime === 'application/pdf' || ext === '.pdf') {
+    return { supported: true };
+  }
+  
+  return { supported: false, reason: `지원하지 않는 파일 형식입니다: ${mime || ext}` };
+}
+
+// 이미지 정규화 (리사이즈 & 압축)
+async function normalizeImage(base64Data: string, quality: number = 80): Promise<{ success: boolean; data?: Buffer; error?: string }> {
+  const startTime = Date.now();
+  try {
+    let imageBuffer: Buffer;
+    
+    if (base64Data.startsWith('data:')) {
+      const matches = base64Data.match(/^data:[^;]+;base64,(.+)$/);
+      if (matches) {
+        imageBuffer = Buffer.from(matches[1], 'base64');
+      } else {
+        return { success: false, error: '잘못된 이미지 데이터 형식' };
+      }
+    } else {
+      imageBuffer = Buffer.from(base64Data, 'base64');
+    }
+    
+    const originalSize = imageBuffer.length;
+    console.log(`[PDF 증빙자료] [B] 이미지 처리 시작, 원본 크기: ${Math.round(originalSize / 1024)}KB`);
+    
+    // Sharp로 이미지 처리
+    const image = sharp(imageBuffer);
+    const metadata = await image.metadata();
+    
+    // 너무 큰 이미지는 리사이즈
+    let processedImage = image;
+    const needsResize = (metadata.width && metadata.width > MAX_IMAGE_DIMENSION) || 
+                        (metadata.height && metadata.height > MAX_IMAGE_DIMENSION) ||
+                        originalSize > MAX_IMAGE_SIZE_BYTES;
+    
+    if (needsResize) {
+      const maxDim = Math.min(MAX_IMAGE_DIMENSION, 2000); // PDF용으로 더 작게
+      processedImage = image.resize(maxDim, maxDim, { 
+        fit: 'inside', 
+        withoutEnlargement: true 
+      });
+      console.log(`[PDF 증빙자료] [B] 이미지 리사이즈: ${metadata.width}x${metadata.height} → max ${maxDim}px`);
+    }
+    
+    // JPEG로 압축
+    const compressedBuffer = await processedImage
+      .jpeg({ quality, mozjpeg: true })
+      .toBuffer();
+    
+    const elapsedMs = Date.now() - startTime;
+    console.log(`[PDF 증빙자료] [B] 이미지 처리 완료: ${Math.round(originalSize / 1024)}KB → ${Math.round(compressedBuffer.length / 1024)}KB, elapsed_ms=${elapsedMs}`);
+    
+    return { success: true, data: compressedBuffer };
+  } catch (error: any) {
+    const elapsedMs = Date.now() - startTime;
+    console.error(`[PDF 증빙자료] [B] 이미지 처리 실패, elapsed_ms=${elapsedMs}:`, error.message);
+    return { success: false, error: error.message || '이미지 처리 오류' };
+  }
+}
+
+// pdf-lib로 이미지를 PDF 페이지에 직접 삽입 (Puppeteer 미사용)
+async function generateEvidencePdfWithPdfLib(
+  caseData: any, 
+  documents: any[], 
+  imageQuality: number = 80
+): Promise<{ pdfBuffer: Buffer; errors: Array<{ fileName: string; reason: string }> }> {
+  const startTime = Date.now();
+  const errors: Array<{ fileName: string; reason: string }> = [];
+  
+  console.log(`[PDF 증빙자료] === pdf-lib 직접 생성 시작 ===`);
+  console.log(`[PDF 증빙자료] 총 파일 수: ${documents.length}, 품질: ${imageQuality}%`);
+  
+  // 1. 파일 리스트 상세 로그
+  documents.forEach((doc, idx) => {
+    logFileInfo(doc, `파일목록 ${idx + 1}/${documents.length}`);
+  });
+  
+  const pdfDoc = await PDFDocument.create();
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  
+  // A4 사이즈 (포인트 단위)
+  const pageWidth = 595.28;
+  const pageHeight = 841.89;
+  const margin = 40;
+  const headerHeight = 50;
+  const imageAreaTop = headerHeight + margin;
+  const imageAreaHeight = (pageHeight - imageAreaTop - margin - 30) / 2; // 페이지당 2개 이미지
+  
+  // 카테고리 -> 탭 매핑
+  const categoryToTab: Record<string, string> = {
+    '현장출동사진': '현장사진', '현장': '현장사진',
+    '수리중 사진': '현장사진', '수리중': '현장사진',
+    '복구완료 사진': '현장사진', '복구완료': '현장사진',
+    '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
+    '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
+    '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
+    '위임장': '청구자료', '도급계약서': '청구자료',
+    '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
+  };
+  
+  // 2. 이미지 문서만 필터링 및 지원 여부 체크
+  const imageDocs: Array<{ doc: any; tab: string }> = [];
+  
+  for (const doc of documents) {
+    const fileStartTime = Date.now();
+    const supportCheck = checkFileSupport(doc);
+    
+    if (!supportCheck.supported) {
+      console.log(`[PDF 증빙자료] [A] 지원하지 않는 파일: ${doc.fileName} - ${supportCheck.reason}`);
+      errors.push({ fileName: doc.fileName, reason: supportCheck.reason || '지원하지 않는 형식' });
+      continue;
+    }
+    
+    const isImage = doc.fileType?.startsWith('image/');
+    const hasValidData = doc.fileData && doc.fileData.length > 100;
+    
+    if (isImage && hasValidData) {
+      const tab = categoryToTab[doc.category] || '기타';
+      imageDocs.push({ doc, tab });
+      console.log(`[PDF 증빙자료] [A] 이미지 파일 확인: ${doc.fileName}, tab=${tab}, elapsed_ms=${Date.now() - fileStartTime}`);
+    } else if (isImage && !hasValidData) {
+      console.log(`[PDF 증빙자료] [A] 이미지 데이터 없음: ${doc.fileName}`);
+      errors.push({ fileName: doc.fileName, reason: '이미지 데이터가 없습니다' });
+    }
+  }
+  
+  console.log(`[PDF 증빙자료] 유효한 이미지 수: ${imageDocs.length}`);
+  
+  if (imageDocs.length === 0) {
+    console.log(`[PDF 증빙자료] 유효한 이미지 없음 - 빈 PDF 반환`);
+    const emptyPdfBytes = await pdfDoc.save();
+    return { pdfBuffer: Buffer.from(emptyPdfBytes), errors };
+  }
+  
+  // 3. 페이지 생성 (2개 이미지씩)
+  for (let i = 0; i < imageDocs.length; i += 2) {
+    const page = pdfDoc.addPage([pageWidth, pageHeight]);
+    
+    // 헤더 그리기
+    page.drawRectangle({
+      x: 0, y: pageHeight - headerHeight,
+      width: pageWidth, height: headerHeight,
+      color: rgb(0.23, 0.51, 0.96),
+    });
+    page.drawText('Evidence Documents', {
+      x: margin, y: pageHeight - 35,
+      size: 16, font, color: rgb(1, 1, 1),
+    });
+    page.drawText(`Case: ${caseData.caseNumber || ''}`, {
+      x: pageWidth - margin - 150, y: pageHeight - 35,
+      size: 10, font, color: rgb(1, 1, 1),
+    });
+    
+    // 첫 번째 이미지
+    const first = imageDocs[i];
+    const firstY = pageHeight - imageAreaTop - imageAreaHeight;
+    await embedImageToPage(pdfDoc, page, first, margin, firstY, pageWidth - 2 * margin, imageAreaHeight - 40, imageQuality, errors, font);
+    
+    // 두 번째 이미지 (있으면)
+    if (imageDocs[i + 1]) {
+      const second = imageDocs[i + 1];
+      const secondY = margin + 20;
+      await embedImageToPage(pdfDoc, page, second, margin, secondY, pageWidth - 2 * margin, imageAreaHeight - 40, imageQuality, errors, font);
+    }
+  }
+  
+  const pdfBytes = await pdfDoc.save();
+  const elapsedMs = Date.now() - startTime;
+  console.log(`[PDF 증빙자료] === pdf-lib 직접 생성 완료 ===`);
+  console.log(`[PDF 증빙자료] 생성된 PDF 크기: ${Math.round(pdfBytes.length / 1024)}KB, 페이지 수: ${Math.ceil(imageDocs.length / 2)}, 오류 파일: ${errors.length}, elapsed_ms=${elapsedMs}`);
+  
+  return { pdfBuffer: Buffer.from(pdfBytes), errors };
+}
+
+// 이미지를 PDF 페이지에 삽입하는 헬퍼 함수
+async function embedImageToPage(
+  pdfDoc: PDFDocument,
+  page: any,
+  imageData: { doc: any; tab: string },
+  x: number, y: number, maxWidth: number, maxHeight: number,
+  quality: number,
+  errors: Array<{ fileName: string; reason: string }>,
+  font: any
+): Promise<void> {
+  const fileStartTime = Date.now();
+  const { doc, tab } = imageData;
+  
+  try {
+    console.log(`[PDF 증빙자료] [C] 이미지 삽입 시작: ${doc.fileName}`);
+    
+    // 이미지 정규화
+    const normalized = await normalizeImage(doc.fileData, quality);
+    
+    if (!normalized.success || !normalized.data) {
+      throw new Error(normalized.error || '이미지 정규화 실패');
+    }
+    
+    // pdf-lib에 이미지 임베드
+    let embeddedImage;
+    try {
+      embeddedImage = await pdfDoc.embedJpg(normalized.data);
+    } catch (jpgError) {
+      // PNG로 재시도
+      try {
+        embeddedImage = await pdfDoc.embedPng(normalized.data);
+      } catch (pngError) {
+        throw new Error('이미지 포맷을 처리할 수 없습니다');
+      }
+    }
+    
+    // 이미지 크기 계산 (비율 유지)
+    const imgWidth = embeddedImage.width;
+    const imgHeight = embeddedImage.height;
+    const aspectRatio = imgWidth / imgHeight;
+    
+    let drawWidth = maxWidth;
+    let drawHeight = drawWidth / aspectRatio;
+    
+    if (drawHeight > maxHeight - 30) {
+      drawHeight = maxHeight - 30;
+      drawWidth = drawHeight * aspectRatio;
+    }
+    
+    // 중앙 정렬
+    const drawX = x + (maxWidth - drawWidth) / 2;
+    const drawY = y + (maxHeight - drawHeight - 30) / 2 + 20;
+    
+    // 이미지 그리기
+    page.drawImage(embeddedImage, {
+      x: drawX, y: drawY,
+      width: drawWidth, height: drawHeight,
+    });
+    
+    // 파일명 표시
+    page.drawText(`${tab} - ${doc.category}: ${doc.fileName}`, {
+      x: x, y: y + maxHeight - 15,
+      size: 8, font, color: rgb(0.3, 0.3, 0.3),
+    });
+    
+    const elapsedMs = Date.now() - fileStartTime;
+    console.log(`[PDF 증빙자료] [C] 이미지 삽입 완료: ${doc.fileName}, elapsed_ms=${elapsedMs}`);
+    
+  } catch (error: any) {
+    const elapsedMs = Date.now() - fileStartTime;
+    console.error(`[PDF 증빙자료] [C] 이미지 삽입 실패: ${doc.fileName}, elapsed_ms=${elapsedMs}, error=${error.message}`);
+    errors.push({ fileName: doc.fileName, reason: error.message || '첨부 불가' });
+    
+    // 오류 페이지 대체 표시
+    page.drawRectangle({
+      x: x, y: y,
+      width: maxWidth, height: maxHeight - 30,
+      borderColor: rgb(0.8, 0.2, 0.2),
+      borderWidth: 1,
+    });
+    page.drawText(`첨부 불가: ${doc.fileName}`, {
+      x: x + 10, y: y + maxHeight / 2,
+      size: 10, font, color: rgb(0.8, 0.2, 0.2),
+    });
+    page.drawText(`사유: ${error.message || '처리 오류'}`, {
+      x: x + 10, y: y + maxHeight / 2 - 15,
+      size: 8, font, color: rgb(0.5, 0.5, 0.5),
+    });
+  }
+}
 
 // 이미지 압축 함수 - quality는 1-100 (기본 80)
 async function compressImage(base64Data: string, quality: number = 80, maxWidth: number = 1200): Promise<string> {
@@ -1062,21 +1364,20 @@ export async function generatePdf(payload: PdfGenerationPayload, imageQuality: n
       console.log('[PDF 생성] PDF 문서 목록:', pdfDocs.map(d => ({ id: d.id, name: d.fileName, type: d.fileType, category: d.category })));
       
       if (imageDocs.length > 0) {
-        const evidenceHtml = await generateEvidencePages(caseData, imageDocs, imageQuality);
-        // Only add to PDF if there's actual content
-        if (evidenceHtml && evidenceHtml.trim().length > 0) {
-          const page = await browser.newPage();
-          // domcontentloaded 사용하여 프레임 분리 오류 방지
-          await page.setContent(evidenceHtml, { waitUntil: 'domcontentloaded', timeout: 120000 });
-          // 짧은 대기 후 PDF 생성 (base64 인라인 이미지는 즉시 로드됨)
-          await new Promise(resolve => setTimeout(resolve, 500));
-          const pdfBuffer = await page.pdf({
-            format: 'A4',
-            printBackground: true,
-            margin: { top: '0', right: '0', bottom: '0', left: '0' },
+        // pdf-lib로 직접 PDF 생성 (Puppeteer 미사용 - 안정성 향상)
+        console.log(`[PDF 생성] 증빙자료 이미지 pdf-lib로 직접 생성 시작`);
+        const { pdfBuffer: evidencePdfBuffer, errors: evidenceErrors } = await generateEvidencePdfWithPdfLib(caseData, imageDocs, imageQuality);
+        
+        if (evidenceErrors.length > 0) {
+          console.log(`[PDF 생성] 증빙자료 처리 중 오류 발생: ${evidenceErrors.length}개 파일`);
+          evidenceErrors.forEach(err => {
+            console.log(`[PDF 생성]   - ${err.fileName}: ${err.reason}`);
           });
-          pdfParts.push(Buffer.from(pdfBuffer));
-          await page.close();
+        }
+        
+        if (evidencePdfBuffer.length > 0) {
+          pdfParts.push(evidencePdfBuffer);
+          console.log(`[PDF 생성] 증빙자료 PDF 생성 완료: ${Math.round(evidencePdfBuffer.length / 1024)}KB`);
         } else {
           console.log('[PDF 생성] 증빙자료 이미지 없음 - 페이지 건너뜀');
         }
