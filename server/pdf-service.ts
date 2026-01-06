@@ -1068,17 +1068,8 @@ export async function generatePdf(payload: PdfGenerationPayload, imageQuality: n
           const page = await browser.newPage();
           // domcontentloaded 사용하여 프레임 분리 오류 방지
           await page.setContent(evidenceHtml, { waitUntil: 'domcontentloaded', timeout: 120000 });
-          // Wait for all images to load
-          await page.evaluate(() => {
-            return Promise.all(
-              Array.from(document.images)
-                .filter(img => !img.complete)
-                .map(img => new Promise((resolve, reject) => {
-                  img.onload = resolve;
-                  img.onerror = resolve; // Continue even if image fails
-                }))
-            );
-          });
+          // 짧은 대기 후 PDF 생성 (base64 인라인 이미지는 즉시 로드됨)
+          await new Promise(resolve => setTimeout(resolve, 500));
           const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
