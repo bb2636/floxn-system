@@ -1307,40 +1307,55 @@ async function renderRecoveryAreaPage(
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
   
-  drawText(page, {
+  // Title with green X icon
+  page.drawRectangle({
     x: MARGIN,
-    y: y - 5,
+    y: y - 25,
+    width: 20,
+    height: 20,
+    color: rgb(0.4, 0.8, 0.4),
+  });
+  
+  drawText(page, {
+    x: MARGIN + 4,
+    y: y - 20,
+    text: 'X',
+    font: fonts.bold,
+    size: 12,
+    color: { r: 1, g: 1, b: 1 },
+  });
+  
+  drawText(page, {
+    x: MARGIN + 30,
+    y: y - 18,
     text: '현장 피해/복구 면적 산출표',
     font: fonts.bold,
-    size: 14,
+    size: 16,
   });
   
-  page.drawLine({
-    start: { x: MARGIN, y: y - 20 },
-    end: { x: A4_WIDTH - MARGIN, y: y - 20 },
-    thickness: 1,
-    color: rgb(0, 0, 0),
-  });
-  
-  y -= 35;
+  y -= 45;
   
   const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
     .filter(Boolean).join(' ');
   
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+  
+  // Info table
   const headerRows: TableCell[][] = [
     [
       { text: '접수번호', width: 70, isHeader: true, align: 'center' },
-      { text: caseData.caseNumber || '-', width: 100, align: 'left' },
+      { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 120, align: 'left' },
       { text: '고객사', width: 60, isHeader: true, align: 'center' },
       { text: caseData.insuranceCompany || '-', width: 100, align: 'left' },
-      { text: '사고번호', width: 70, isHeader: true, align: 'center' },
-      { text: caseData.insuranceAccidentNo || '-', width: 115, align: 'left' },
+      { text: '고객사 번호', width: 70, isHeader: true, align: 'center' },
+      { text: caseData.insuredPhone || caseData.victimPhone || '-', width: 95, align: 'left' },
     ],
     [
       { text: '장소', width: 70, isHeader: true, align: 'center' },
-      { text: fullAddress || '-', width: 260, align: 'left' },
+      { text: fullAddress || '-', width: 280, align: 'left' },
       { text: '작성일자', width: 70, isHeader: true, align: 'center' },
-      { text: formatDate(new Date().toISOString()), width: 115, align: 'left' },
+      { text: dateStr, width: 95, align: 'left' },
     ],
   ];
   
@@ -1349,73 +1364,141 @@ async function renderRecoveryAreaPage(
     y,
     rows: headerRows,
     fonts,
-    fontSize: 8,
-    rowHeight: 20,
+    fontSize: 9,
+    rowHeight: 24,
   });
   
-  y -= 15;
+  y -= 20;
   
   drawText(page, {
     x: A4_WIDTH - MARGIN - 60,
     y,
-    text: '단위: ㎡',
+    text: 'Unit : ㎡',
     font: fonts.regular,
-    size: 8,
+    size: 9,
   });
   
   y -= 15;
   
-  const areaTableHeader: TableCell[] = [
-    { text: '구분', width: 50, isHeader: true, align: 'center' },
+  // Two-row header for area table
+  const headerRow1: TableCell[] = [
+    { text: '구분', width: 55, isHeader: true, align: 'center' },
     { text: '공사내용', width: 70, isHeader: true, align: 'center' },
     { text: '공사분류', width: 70, isHeader: true, align: 'center' },
-    { text: '피해면적', width: 50, isHeader: true, align: 'center' },
-    { text: '가로', width: 40, isHeader: true, align: 'center' },
-    { text: '세로', width: 40, isHeader: true, align: 'center' },
-    { text: '복구면적', width: 50, isHeader: true, align: 'center' },
-    { text: '가로', width: 40, isHeader: true, align: 'center' },
-    { text: '세로', width: 40, isHeader: true, align: 'center' },
-    { text: '비고', width: 65, isHeader: true, align: 'center' },
+    { text: '피해면적', width: 130, isHeader: true, align: 'center' },
+    { text: '복구면적', width: 130, isHeader: true, align: 'center' },
+    { text: '비고', width: 60, isHeader: true, align: 'center' },
   ];
   
-  const areaTableRows: TableCell[][] = [areaTableHeader];
+  const headerRow2: TableCell[] = [
+    { text: '', width: 55, isHeader: true, align: 'center' },
+    { text: '', width: 70, isHeader: true, align: 'center' },
+    { text: '', width: 70, isHeader: true, align: 'center' },
+    { text: '면적', width: 43, isHeader: true, align: 'center' },
+    { text: '가로', width: 43, isHeader: true, align: 'center' },
+    { text: '세로', width: 44, isHeader: true, align: 'center' },
+    { text: '면적', width: 43, isHeader: true, align: 'center' },
+    { text: '가로', width: 43, isHeader: true, align: 'center' },
+    { text: '세로', width: 44, isHeader: true, align: 'center' },
+    { text: '', width: 60, isHeader: true, align: 'center' },
+  ];
   
-  if (estimateRowsData && estimateRowsData.length > 0) {
-    for (const row of estimateRowsData) {
-      const damageW = row.damageWidth ? Number(row.damageWidth).toFixed(1) : '0.0';
-      const damageH = row.damageHeight ? Number(row.damageHeight).toFixed(1) : '0.0';
-      const damageAreaM2 = row.damageArea ? Number(row.damageArea).toFixed(1) : '0.0';
-      
-      const repairW = row.repairWidth ? Number(row.repairWidth).toFixed(1) : '0.0';
-      const repairH = row.repairHeight ? Number(row.repairHeight).toFixed(1) : '0.0';
-      const repairAreaM2 = row.repairArea ? Number(row.repairArea).toFixed(1) : '0.0';
-      
-      areaTableRows.push([
-        { text: row.category || '-', width: 50, align: 'center' },
-        { text: row.location || '-', width: 70, align: 'left' },
-        { text: row.workName || '-', width: 70, align: 'left' },
-        { text: damageAreaM2, width: 50, align: 'right' },
-        { text: damageW, width: 40, align: 'right' },
-        { text: damageH, width: 40, align: 'right' },
-        { text: repairAreaM2, width: 50, align: 'right' },
-        { text: repairW, width: 40, align: 'right' },
-        { text: repairH, width: 40, align: 'right' },
-        { text: row.note || '-', width: 65, align: 'left' },
-      ]);
-    }
-  } else {
-    areaTableRows.push([
-      { text: '등록된 복구면적 데이터가 없습니다.', width: 515, align: 'center' },
-    ]);
-  }
-  
-  drawTable(page, {
+  // Draw first header row
+  y = drawTable(page, {
     x: MARGIN,
     y,
-    rows: areaTableRows,
+    rows: [headerRow1],
     fonts,
-    fontSize: 7,
-    rowHeight: 18,
+    fontSize: 8,
+    rowHeight: 20,
+  });
+  
+  // Draw second header row
+  y = drawTable(page, {
+    x: MARGIN,
+    y,
+    rows: [headerRow2],
+    fonts,
+    fontSize: 8,
+    rowHeight: 20,
+  });
+  
+  // Group rows by category (location)
+  const groupedRows: Record<string, any[]> = {};
+  if (estimateRowsData && estimateRowsData.length > 0) {
+    for (const row of estimateRowsData) {
+      const category = row.category || '기타';
+      if (!groupedRows[category]) {
+        groupedRows[category] = [];
+      }
+      groupedRows[category].push(row);
+    }
+  }
+  
+  // Draw data rows grouped by category
+  const categories = Object.keys(groupedRows);
+  
+  if (categories.length > 0) {
+    for (const category of categories) {
+      const rows = groupedRows[category];
+      const isFirstRow = true;
+      
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const damageW = row.damageWidth ? Number(row.damageWidth).toFixed(1) : '0.0';
+        const damageH = row.damageHeight ? Number(row.damageHeight).toFixed(1) : '0.0';
+        const damageAreaM2 = row.damageArea ? Number(row.damageArea).toFixed(1) : '0.0';
+        
+        const repairW = row.repairWidth ? Number(row.repairWidth).toFixed(1) : '0.0';
+        const repairH = row.repairHeight ? Number(row.repairHeight).toFixed(1) : '0.0';
+        const repairAreaM2 = row.repairArea ? Number(row.repairArea).toFixed(1) : '0.0';
+        
+        const dataRow: TableCell[] = [
+          { text: i === 0 ? category : '', width: 55, align: 'center' },
+          { text: row.location || '-', width: 70, align: 'center' },
+          { text: row.workName || '-', width: 70, align: 'center' },
+          { text: damageAreaM2, width: 43, align: 'center' },
+          { text: damageW, width: 43, align: 'center' },
+          { text: damageH, width: 44, align: 'center' },
+          { text: repairAreaM2, width: 43, align: 'center' },
+          { text: repairW, width: 43, align: 'center' },
+          { text: repairH, width: 44, align: 'center' },
+          { text: row.note || '-', width: 60, align: 'center' },
+        ];
+        
+        y = drawTable(page, {
+          x: MARGIN,
+          y,
+          rows: [dataRow],
+          fonts,
+          fontSize: 8,
+          rowHeight: 22,
+        });
+      }
+    }
+  } else {
+    const emptyRow: TableCell[] = [
+      { text: '등록된 복구면적 데이터가 없습니다.', width: 515, align: 'center' },
+    ];
+    
+    drawTable(page, {
+      x: MARGIN,
+      y,
+      rows: [emptyRow],
+      fonts,
+      fontSize: 8,
+      rowHeight: 22,
+    });
+  }
+  
+  // Footer
+  const footerY = MARGIN + 20;
+  drawText(page, {
+    x: A4_WIDTH - MARGIN - 120,
+    y: footerY,
+    text: `작성일: ${dateStr}`,
+    font: fonts.regular,
+    size: 9,
   });
 }
 
