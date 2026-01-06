@@ -692,26 +692,53 @@ async function renderFieldReportPage(
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
   
-  // Title: 출동보고서 with underline
+  // Title: 출동확인서 (centered) with FLOXN logo at top-right
   drawText(page, {
     x: MARGIN,
     y: y - 25,
-    text: '출동보고서',
+    text: '출동확인서',
     font: fonts.bold,
     size: 20,
     maxWidth: CONTENT_WIDTH,
     align: 'center',
   });
   
-  // Underline
-  page.drawLine({
-    start: { x: A4_WIDTH / 2 - 50, y: y - 35 },
-    end: { x: A4_WIDTH / 2 + 50, y: y - 35 },
-    thickness: 1,
-    color: rgb(0.3, 0.3, 0.3),
+  // FLOXN logo at top-right
+  const logoX = A4_WIDTH - MARGIN - 60;
+  const logoY = y - 20;
+  const chainColor = rgb(0.15, 0.15, 0.15);
+  const linkWidth = 12;
+  const linkHeight = 7;
+  const linkThickness = 1.8;
+  const linkGap = 4;
+  
+  page.drawEllipse({
+    x: logoX - 15,
+    y: logoY + 5,
+    xScale: linkWidth / 2,
+    yScale: linkHeight / 2,
+    borderColor: chainColor,
+    borderWidth: linkThickness,
   });
   
-  y -= 70;
+  page.drawEllipse({
+    x: logoX - 15 + linkWidth - linkGap,
+    y: logoY + 5,
+    xScale: linkWidth / 2,
+    yScale: linkHeight / 2,
+    borderColor: chainColor,
+    borderWidth: linkThickness,
+  });
+  
+  drawText(page, {
+    x: logoX,
+    y: logoY,
+    text: 'FLOXN',
+    font: fonts.bold,
+    size: 10,
+  });
+  
+  y -= 55;
   
   const insuredFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
     .filter(Boolean).join(' ');
@@ -722,22 +749,30 @@ async function renderFieldReportPage(
   const accidentDateTime = [caseData.accidentDate, caseData.accidentTime]
     .filter(Boolean).join(' ');
   
-  // Section 1: 현장정보
-  drawText(page, {
-    x: MARGIN,
-    y,
-    text: '현장정보',
-    font: fonts.bold,
-    size: 11,
-  });
-  page.drawLine({
-    start: { x: MARGIN, y: y - 5 },
-    end: { x: A4_WIDTH - MARGIN, y: y - 5 },
-    thickness: 0.5,
-    color: rgb(0.3, 0.3, 0.3),
-  });
+  // Helper function to draw section header with grey background
+  const drawSectionHeader = (title: string, currentY: number): number => {
+    const headerHeight = 22;
+    page.drawRectangle({
+      x: MARGIN,
+      y: currentY - headerHeight,
+      width: CONTENT_WIDTH,
+      height: headerHeight,
+      color: rgb(0.85, 0.85, 0.85),
+    });
+    
+    drawText(page, {
+      x: MARGIN + 8,
+      y: currentY - 15,
+      text: title,
+      font: fonts.bold,
+      size: 10,
+    });
+    
+    return currentY - headerHeight - 5;
+  };
   
-  y -= 25;
+  // Section 1: 현장정보
+  y = drawSectionHeader('현장정보', y);
   
   const fieldInfoRows: TableCell[][] = [
     [
@@ -767,31 +802,17 @@ async function renderFieldReportPage(
     rowHeight: 24,
   });
   
-  y -= 25;
+  y -= 15;
   
   // Section 2: 사고 원인(+수리항목)
-  drawText(page, {
-    x: MARGIN,
-    y,
-    text: '사고 원인(+수리항목)',
-    font: fonts.bold,
-    size: 11,
-  });
-  page.drawLine({
-    start: { x: MARGIN, y: y - 5 },
-    end: { x: A4_WIDTH - MARGIN, y: y - 5 },
-    thickness: 0.5,
-    color: rgb(0.3, 0.3, 0.3),
-  });
-  
-  y -= 25;
+  y = drawSectionHeader('사고 원인(+수리항목)', y);
   
   const accidentInfoRows: TableCell[][] = [
     [
       { text: '사고 발생일시', width: 90, isHeader: true, align: 'center' },
       { text: accidentDateTime || '-', width: 168, align: 'left' },
-      { text: '카테고리', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.accidentCategory || '-', width: 167, align: 'left' },
+      { text: '누수유형', width: 90, isHeader: true, align: 'center' },
+      { text: caseData.leakType || caseData.accidentCategory || '-', width: 167, align: 'left' },
     ],
     [
       { text: '사고원인', width: 90, isHeader: true, align: 'center' },
@@ -808,64 +829,60 @@ async function renderFieldReportPage(
     rowHeight: 24,
   });
   
-  y -= 25;
+  y -= 15;
   
-  // Section 3: 특이사항 및 요청사항 (VOC)
-  drawText(page, {
-    x: MARGIN,
-    y,
-    text: '특이사항 및 요청사항 (VOC)',
-    font: fonts.bold,
-    size: 11,
-  });
-  page.drawLine({
-    start: { x: MARGIN, y: y - 5 },
-    end: { x: A4_WIDTH - MARGIN, y: y - 5 },
-    thickness: 0.5,
-    color: rgb(0.3, 0.3, 0.3),
-  });
+  // Section 3: 현장 특이사항 (separate from VOC)
+  y = drawSectionHeader('현장 특이사항', y);
   
-  y -= 25;
+  const siteNotesText = caseData.siteNotes || caseData.specialNotes || '-';
   
-  const vocText = caseData.vocNotes || caseData.siteNotes || caseData.specialNotes || '-';
-  
-  // VOC box
   page.drawRectangle({
     x: MARGIN,
-    y: y - 50,
+    y: y - 45,
     width: CONTENT_WIDTH,
-    height: 55,
+    height: 50,
     borderColor: rgb(0.7, 0.7, 0.7),
     borderWidth: 0.5,
   });
   
   drawText(page, {
-    x: MARGIN + 10,
-    y: y - 10,
+    x: MARGIN + 8,
+    y: y - 12,
+    text: siteNotesText,
+    font: fonts.regular,
+    size: 9,
+    maxWidth: CONTENT_WIDTH - 16,
+  });
+  
+  y -= 60;
+  
+  // Section 4: 특이사항 및 요청사항 (VOC)
+  y = drawSectionHeader('특이사항 및 요청사항 (VOC)', y);
+  
+  const vocText = caseData.vocNotes || '-';
+  
+  page.drawRectangle({
+    x: MARGIN,
+    y: y - 45,
+    width: CONTENT_WIDTH,
+    height: 50,
+    borderColor: rgb(0.7, 0.7, 0.7),
+    borderWidth: 0.5,
+  });
+  
+  drawText(page, {
+    x: MARGIN + 8,
+    y: y - 12,
     text: vocText,
     font: fonts.regular,
     size: 9,
-    maxWidth: CONTENT_WIDTH - 20,
+    maxWidth: CONTENT_WIDTH - 16,
   });
   
-  y -= 75;
+  y -= 60;
   
-  // Section 4: 피해 복구방식 및 처리 유형
-  drawText(page, {
-    x: MARGIN,
-    y,
-    text: '피해 복구방식 및 처리 유형',
-    font: fonts.bold,
-    size: 11,
-  });
-  page.drawLine({
-    start: { x: MARGIN, y: y - 5 },
-    end: { x: A4_WIDTH - MARGIN, y: y - 5 },
-    thickness: 0.5,
-    color: rgb(0.3, 0.3, 0.3),
-  });
-  
-  y -= 25;
+  // Section 5: 피해 복구방식 및 처리 유형
+  y = drawSectionHeader('피해 복구방식 및 처리 유형', y);
   
   const victimFullAddress = [caseData.victimAddress, caseData.victimAddressDetail]
     .filter(Boolean).join(' ') || insuredFullAddress;
@@ -1373,7 +1390,7 @@ async function renderRecoveryAreaPage(
   drawText(page, {
     x: A4_WIDTH - MARGIN - 60,
     y,
-    text: 'Unit : ㎡',
+    text: '단위: ㎡',
     font: fonts.regular,
     size: 9,
   });
@@ -1770,7 +1787,8 @@ async function renderEstimatePage(
   const adminFee = Math.round(subtotal * adminFeeRate);
   const profit = Math.round(subtotal * profitRate);
   const beforeRounding = subtotal + adminFee + profit;
-  const rounded = Math.floor(beforeRounding / 10000) * 10000;
+  // 천원단위 절사 (1000원 단위)
+  const rounded = Math.floor(beforeRounding / 1000) * 1000;
   const roundingDiff = beforeRounding - rounded;
   const vat = Math.round(rounded * vatRate);
   const grandTotal = rounded + vat;
@@ -1797,8 +1815,12 @@ async function renderEstimatePage(
       { text: formatNumber(profit), width: 110, align: 'right' },
     ],
     [
-      { text: '만원미만 절사', width: 150, isHeader: true, align: 'center' },
+      { text: '천원단위 절사', width: 150, isHeader: true, align: 'center' },
       { text: roundingDiff > 0 ? `-${formatNumber(roundingDiff)}` : '0', width: 110, align: 'right' },
+    ],
+    [
+      { text: '합계', width: 150, isHeader: true, align: 'center' },
+      { text: formatNumber(rounded), width: 110, align: 'right' },
     ],
     [
       { text: '부가세 (10%) - 포함', width: 150, isHeader: true, align: 'center' },
