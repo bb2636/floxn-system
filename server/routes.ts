@@ -5928,7 +5928,7 @@ FLOXN 드림`;
       // Build particulars based on amounts
       const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
-      const addressLabel = caseData.victimAddressDetail || accidentNo;
+      const addressLabel = caseData.victimAddressDetail || '-';
 
       if (damagePreventionAmount && damagePreventionAmount > 0) {
         particulars.push({
@@ -6272,7 +6272,7 @@ FLOXN 드림`;
       // Build particulars based on amounts (each category gets its own line)
       const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
-      const addressLabel = caseData.victimAddressDetail || accidentNo;
+      const addressLabel = caseData.victimAddressDetail || '-';
 
       if (damagePreventionAmount && damagePreventionAmount > 0) {
         particulars.push({
