@@ -5384,6 +5384,13 @@ export class DbStorage implements IStorage {
             return isNaN(num) ? null : num;
           };
           
+          // 소수점 값을 문자열로 명시적 변환 (4자리 보장)
+          const toNumericStr = (val: number | null): string | null => {
+            if (val === null) return null;
+            // 소수점 4자리까지 보장하여 PostgreSQL NUMERIC 정확도 유지
+            return val.toFixed(4);
+          };
+          
           const rowId = randomUUID();
           const damageWidth = toNumber(row.damageWidth);
           const damageHeight = toNumber(row.damageHeight);
@@ -5392,7 +5399,14 @@ export class DbStorage implements IStorage {
           const repairHeight = toNumber(row.repairHeight);
           const repairArea = toNumber(row.repairArea);
           
-          // Raw SQL INSERT로 Drizzle의 타입 변환 문제 우회 - 명시적 NUMERIC 캐스팅
+          // Raw SQL INSERT로 Drizzle의 타입 변환 문제 우회 - 명시적 문자열 캐스팅
+          const damageWidthStr = toNumericStr(damageWidth);
+          const damageHeightStr = toNumericStr(damageHeight);
+          const damageAreaStr = toNumericStr(damageArea);
+          const repairWidthStr = toNumericStr(repairWidth);
+          const repairHeightStr = toNumericStr(repairHeight);
+          const repairAreaStr = toNumericStr(repairArea);
+          
           await tx.execute(sql`
             INSERT INTO estimate_rows (
               id, estimate_id, category, location, work_type, work_name,
@@ -5406,12 +5420,12 @@ export class DbStorage implements IStorage {
               ${row.location || null},
               ${row.workType || null},
               ${row.workName || null},
-              ${sql.raw(damageWidth !== null ? `${damageWidth}::numeric` : 'NULL')},
-              ${sql.raw(damageHeight !== null ? `${damageHeight}::numeric` : 'NULL')},
-              ${sql.raw(damageArea !== null ? `${damageArea}::numeric` : 'NULL')},
-              ${sql.raw(repairWidth !== null ? `${repairWidth}::numeric` : 'NULL')},
-              ${sql.raw(repairHeight !== null ? `${repairHeight}::numeric` : 'NULL')},
-              ${sql.raw(repairArea !== null ? `${repairArea}::numeric` : 'NULL')},
+              ${damageWidthStr},
+              ${damageHeightStr},
+              ${damageAreaStr},
+              ${repairWidthStr},
+              ${repairHeightStr},
+              ${repairAreaStr},
               ${row.note || null},
               ${row.rowOrder},
               NOW()
@@ -5422,9 +5436,9 @@ export class DbStorage implements IStorage {
           if (row.rowOrder === 1) {
             console.log("========================================");
             console.log("[C-2] 서버: Raw SQL INSERT 완료");
-            console.log("  repairWidth:", repairWidth, "타입:", typeof repairWidth);
-            console.log("  repairHeight:", repairHeight, "타입:", typeof repairHeight);
-            console.log("  repairArea:", repairArea, "타입:", typeof repairArea);
+            console.log("  repairWidth:", repairWidth, "→ DB:", repairWidthStr);
+            console.log("  repairHeight:", repairHeight, "→ DB:", repairHeightStr);
+            console.log("  repairArea:", repairArea, "→ DB:", repairAreaStr);
             console.log("========================================");
           }
           
