@@ -451,25 +451,97 @@ export default function FieldReport() {
   }, [reportData?.case.additionalNotes]);
 
   // Parse and memoize labor cost and material cost data
+  // 복구면적 산출표(estimateRows)를 기반으로 노무비 복구면적 재계산
   const parsedLaborCosts = useMemo(() => {
-    return safeParseLaborCosts(reportData?.estimate?.estimate?.laborCostData);
-  }, [reportData?.estimate?.estimate?.laborCostData]);
+    const laborRows = safeParseLaborCosts(reportData?.estimate?.estimate?.laborCostData);
+    const estimateRows = reportData?.estimate?.rows || [];
+    
+    // estimateRows가 없으면 저장된 값 그대로 반환
+    if (estimateRows.length === 0) {
+      return laborRows;
+    }
+    
+    // 공사명별 복구면적 합계 계산 (estimateRows 기준)
+    const recoveryAreaByWorkName = new Map<string, number>();
+    estimateRows.forEach((row: any) => {
+      const workName = row.workName || '';
+      const repairArea = parseFloat(row.repairArea) || 0;
+      if (workName) {
+        recoveryAreaByWorkName.set(workName, (recoveryAreaByWorkName.get(workName) || 0) + repairArea);
+      }
+    });
+    
+    // 노무비 행의 복구면적을 estimateRows 기준으로 업데이트
+    return laborRows.map(row => {
+      const workName = row.workName || '';
+      const calculatedArea = recoveryAreaByWorkName.get(workName);
+      
+      // estimateRows에서 해당 공사명의 면적을 찾았으면 사용
+      if (calculatedArea !== undefined) {
+        return {
+          ...row,
+          damageArea: calculatedArea, // estimateRows 기반 복구면적
+        };
+      }
+      return row;
+    });
+  }, [reportData?.estimate?.estimate?.laborCostData, reportData?.estimate?.rows]);
 
   // materialCostData에서 자재비 배열과 VAT 옵션 추출
+  // 복구면적 산출표(estimateRows)를 기반으로 자재비 수량 재계산
   const { materialRows: parsedMaterialCosts, vatIncluded } = useMemo(() => {
     const materialData = reportData?.estimate?.estimate?.materialCostData as any;
+    const estimateRows = reportData?.estimate?.rows || [];
+    
+    let rows: MaterialCostRow[];
+    let vatValue: boolean;
+    
     // 새 형식 (객체: {rows, vatIncluded}) 또는 기존 형식 (배열)
     if (materialData && !Array.isArray(materialData) && materialData.rows) {
-      return {
-        materialRows: safeParseMaterialCosts(materialData.rows),
-        vatIncluded: materialData.vatIncluded ?? true,
-      };
+      rows = safeParseMaterialCosts(materialData.rows);
+      vatValue = materialData.vatIncluded ?? true;
+    } else {
+      rows = safeParseMaterialCosts(materialData);
+      vatValue = true;
     }
-    return {
-      materialRows: safeParseMaterialCosts(materialData),
-      vatIncluded: true,
-    };
-  }, [reportData?.estimate?.estimate?.materialCostData]);
+    
+    // estimateRows가 없으면 저장된 값 그대로 반환
+    if (estimateRows.length === 0) {
+      return { materialRows: rows, vatIncluded: vatValue };
+    }
+    
+    // 공사명별 복구면적 합계 계산 (estimateRows 기준)
+    const recoveryAreaByWorkName = new Map<string, number>();
+    estimateRows.forEach((row: any) => {
+      const workName = row.workName || '';
+      const repairArea = parseFloat(row.repairArea) || 0;
+      if (workName) {
+        recoveryAreaByWorkName.set(workName, (recoveryAreaByWorkName.get(workName) || 0) + repairArea);
+      }
+    });
+    
+    // 자재비 행의 수량을 estimateRows 기준으로 업데이트
+    const updatedRows = rows.map(row => {
+      const workName = row.공사명 || '';
+      const calculatedArea = recoveryAreaByWorkName.get(workName);
+      
+      // estimateRows에서 해당 공사명의 면적을 찾았으면 수량 업데이트
+      if (calculatedArea !== undefined && row.단위 === 'm²') {
+        const newQuantity = calculatedArea;
+        const unitPrice = row.단가 || row.기준단가 || 0;
+        const newAmount = Math.round(unitPrice * newQuantity);
+        return {
+          ...row,
+          수량: newQuantity,
+          금액: newAmount,
+          합계: newAmount,
+        };
+      }
+      return row;
+    });
+    
+    return { materialRows: updatedRows, vatIncluded: vatValue };
+  }, [reportData?.estimate?.estimate?.materialCostData, reportData?.estimate?.rows]);
 
   // 견적 합계 계산
   const calculateTotals = useMemo(() => {
