@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { FileText, Image as ImageIcon, File } from "lucide-react";
 
 interface CaseDocument {
   id: string;
@@ -55,6 +57,34 @@ export function getCaseNumberPrefix(caseNumber: string | null | undefined): stri
 
 const DOCUMENT_CATEGORIES = ["사진-수리중", "사진-복구완료", "기본자료", "증빙자료", "청구자료"] as const;
 
+const DOCUMENT_TABS = ["전체", "현장사진", "기본자료", "증빙자료", "청구자료"] as const;
+type DocumentTab = typeof DOCUMENT_TABS[number];
+
+const CATEGORY_TO_TAB: Record<string, DocumentTab> = {
+  "현장출동사진": "현장사진",
+  "현장": "현장사진",
+  "수리중 사진": "현장사진",
+  "수리중": "현장사진",
+  "사진-수리중": "현장사진",
+  "복구완료 사진": "현장사진",
+  "복구완료": "현장사진",
+  "사진-복구완료": "현장사진",
+  "보험금 청구서": "기본자료",
+  "개인정보 동의서(가족용)": "기본자료",
+  "기본자료": "기본자료",
+  "주민등록등본": "증빙자료",
+  "등기부등본": "증빙자료",
+  "건축물대장": "증빙자료",
+  "기타증빙자료(민원일지 등)": "증빙자료",
+  "증빙자료": "증빙자료",
+  "위임장": "청구자료",
+  "도급계약서": "청구자료",
+  "복구완료확인서": "청구자료",
+  "부가세 청구자료": "청구자료",
+  "청구": "청구자료",
+  "청구자료": "청구자료",
+};
+
 export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }: InvoiceSheetProps) {
   const { toast } = useToast();
   const invoicePdfRef = useRef<HTMLDivElement>(null);
@@ -69,6 +99,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [isLoadingAmounts, setIsLoadingAmounts] = useState(false);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+  const [selectedDocTab, setSelectedDocTab] = useState<DocumentTab>("전체");
 
   const { data: documents = [] } = useQuery<CaseDocument[]>({
     queryKey: ['/api/cases', caseData?.id, 'documents'],
@@ -82,6 +113,47 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     }
     return grouped;
   }, [documents]);
+
+  const filteredDocumentsForGrid = useMemo(() => {
+    if (selectedDocTab === "전체") return documents;
+    return documents.filter(doc => CATEGORY_TO_TAB[doc.category] === selectedDocTab);
+  }, [documents, selectedDocTab]);
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType?.startsWith("image/")) return <ImageIcon className="w-6 h-6 text-muted-foreground" />;
+    if (fileType === "application/pdf") return <FileText className="w-6 h-6 text-muted-foreground" />;
+    return <File className="w-6 h-6 text-muted-foreground" />;
+  };
+
+  const getFileThumbnail = (doc: CaseDocument) => {
+    if (doc.fileType?.startsWith("image/") && doc.fileUrl) {
+      return (
+        <img 
+          src={doc.fileUrl} 
+          alt={doc.fileName}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            borderRadius: "8px",
+          }}
+        />
+      );
+    }
+    return (
+      <div style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "rgba(12, 12, 12, 0.04)",
+        borderRadius: "8px",
+      }}>
+        {getFileIcon(doc.fileType)}
+      </div>
+    );
+  };
 
   const toggleEmail = (email: string) => {
     setSelectedEmails(prev => {
@@ -913,7 +985,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           </div>
         </div>
 
-        {/* 첨부 서류 Section */}
+        {/* 협력사 제출 증빙자료 Section */}
         {documents.length > 0 && (
           <div style={{
             boxSizing: "border-box",
@@ -931,73 +1003,216 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
               lineHeight: "128%",
               letterSpacing: "-0.01em",
               color: "rgba(12, 12, 12, 0.7)",
-            }}>첨부 서류</span>
+            }}>협력사 제출 증빙자료</span>
+            
+            {/* Category Tabs */}
             <div style={{
               display: "flex",
-              flexDirection: "column",
-              gap: "16px",
+              flexDirection: "row",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap",
             }}>
-              {DOCUMENT_CATEGORIES.map(category => {
-                const categoryDocs = documentsByCategory[category];
-                if (!categoryDocs || categoryDocs.length === 0) return null;
+              {DOCUMENT_TABS.map(tab => {
+                const isSelected = selectedDocTab === tab;
+                const tabCount = tab === "전체" 
+                  ? documents.length 
+                  : documents.filter(doc => CATEGORY_TO_TAB[doc.category] === tab).length;
                 return (
-                  <div key={category} style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "8px",
-                  }}>
+                  <button
+                    key={tab}
+                    onClick={() => setSelectedDocTab(tab)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      padding: "6px 12px",
+                      gap: "4px",
+                      background: isSelected ? "#008FED" : "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "16px",
+                      border: "none",
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                    }}
+                    data-testid={`tab-doc-${tab}`}
+                  >
                     <span style={{
                       fontFamily: "'Pretendard'",
                       fontStyle: "normal",
-                      fontWeight: 600,
-                      fontSize: "13px",
+                      fontWeight: 500,
+                      fontSize: "12px",
                       lineHeight: "128%",
                       letterSpacing: "-0.01em",
-                      color: "rgba(12, 12, 12, 0.9)",
-                    }}>{category}</span>
-                    <div style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "6px",
-                      paddingLeft: "8px",
+                      color: isSelected ? "#FFFFFF" : "rgba(12, 12, 12, 0.7)",
                     }}>
-                      {categoryDocs.map(doc => (
-                        <label
-                          key={doc.id}
-                          style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                            gap: "8px",
-                            cursor: "pointer",
-                          }}
-                          data-testid={`checkbox-document-${doc.id}`}
-                        >
-                          <Checkbox
-                            checked={selectedDocumentIds.includes(doc.id)}
-                            onCheckedChange={() => toggleDocumentId(doc.id)}
-                          />
-                          <span style={{
-                            fontFamily: "'Pretendard'",
-                            fontStyle: "normal",
-                            fontWeight: 400,
-                            fontSize: "13px",
-                            lineHeight: "128%",
-                            letterSpacing: "-0.01em",
-                            color: "rgba(12, 12, 12, 0.8)",
-                          }}>
-                            {doc.fileName}
-                            <span style={{ color: "rgba(12, 12, 12, 0.5)", marginLeft: "6px" }}>
-                              ({doc.fileType})
-                            </span>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
+                      {tab}
+                    </span>
+                    {tabCount > 0 && (
+                      <span style={{
+                        fontFamily: "'Pretendard'",
+                        fontWeight: 500,
+                        fontSize: "11px",
+                        color: isSelected ? "rgba(255, 255, 255, 0.8)" : "rgba(12, 12, 12, 0.5)",
+                      }}>
+                        {tabCount}
+                      </span>
+                    )}
+                  </button>
                 );
               })}
             </div>
+
+            {/* Select All Row */}
+            <div style={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "8px 0",
+              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+            }}>
+              <label style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: "8px",
+                cursor: "pointer",
+              }}>
+                <Checkbox
+                  checked={filteredDocumentsForGrid.length > 0 && filteredDocumentsForGrid.every(doc => selectedDocumentIds.includes(doc.id))}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      const newIds = filteredDocumentsForGrid.map(doc => doc.id);
+                      setSelectedDocumentIds(prev => Array.from(new Set([...prev, ...newIds])));
+                    } else {
+                      const currentTabIds = new Set(filteredDocumentsForGrid.map(doc => doc.id));
+                      setSelectedDocumentIds(prev => prev.filter(id => !currentTabIds.has(id)));
+                    }
+                  }}
+                  disabled={filteredDocumentsForGrid.length === 0}
+                  data-testid="checkbox-select-all-docs"
+                />
+                <span style={{
+                  fontFamily: "'Pretendard'",
+                  fontSize: "12px",
+                  color: "rgba(12, 12, 12, 0.7)",
+                }}>
+                  전체 선택
+                </span>
+              </label>
+              <span style={{
+                fontFamily: "'Pretendard'",
+                fontSize: "12px",
+                color: "rgba(12, 12, 12, 0.5)",
+              }}>
+                {selectedDocumentIds.length}개 선택됨
+              </span>
+            </div>
+
+            {/* Document Grid */}
+            <ScrollArea style={{ maxHeight: "280px" }}>
+              {filteredDocumentsForGrid.length === 0 ? (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "40px",
+                  color: "rgba(12, 12, 12, 0.5)",
+                  fontFamily: "'Pretendard'",
+                  fontSize: "13px",
+                }}>
+                  해당 카테고리에 자료가 없습니다.
+                </div>
+              ) : (
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: "12px",
+                  padding: "4px",
+                }}>
+                  {filteredDocumentsForGrid.map(doc => {
+                    const isSelected = selectedDocumentIds.includes(doc.id);
+                    return (
+                      <div
+                        key={doc.id}
+                        onClick={() => toggleDocumentId(doc.id)}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "6px",
+                          cursor: "pointer",
+                          position: "relative",
+                        }}
+                        data-testid={`doc-thumbnail-${doc.id}`}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleDocumentId(doc.id);
+                          }
+                        }}
+                      >
+                        <div style={{
+                          width: "100%",
+                          aspectRatio: "1",
+                          borderRadius: "8px",
+                          overflow: "visible",
+                          border: isSelected ? "2px solid #008FED" : "1px solid rgba(12, 12, 12, 0.1)",
+                          position: "relative",
+                        }}>
+                          <div style={{
+                            width: "100%",
+                            height: "100%",
+                            overflow: "hidden",
+                            borderRadius: "6px",
+                          }}>
+                            {getFileThumbnail(doc)}
+                          </div>
+                          {/* Selection indicator overlay */}
+                          <div style={{
+                            position: "absolute",
+                            top: "6px",
+                            right: "6px",
+                            width: "20px",
+                            height: "20px",
+                            borderRadius: "4px",
+                            background: isSelected ? "#008FED" : "rgba(255, 255, 255, 0.9)",
+                            border: isSelected ? "none" : "1px solid rgba(12, 12, 12, 0.2)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                            pointerEvents: "none",
+                          }}>
+                            {isSelected && (
+                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M2.5 6L5 8.5L9.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                        <span style={{
+                          fontFamily: "'Pretendard'",
+                          fontStyle: "normal",
+                          fontWeight: 400,
+                          fontSize: "11px",
+                          lineHeight: "128%",
+                          letterSpacing: "-0.01em",
+                          color: "rgba(12, 12, 12, 0.7)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          maxWidth: "100%",
+                        }}>
+                          {doc.fileName}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </ScrollArea>
           </div>
         )}
 
