@@ -13,7 +13,7 @@ interface CaseDocument {
   fileName: string;
   fileType: string;
   category: string;
-  fileUrl?: string;
+  fileData?: string;
 }
 
 interface InvoiceSheetProps {
@@ -187,10 +187,13 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   };
 
   const getFileThumbnail = (doc: CaseDocument) => {
-    if (doc.fileType?.startsWith("image/") && doc.fileUrl) {
+    if (doc.fileType?.startsWith("image/") && doc.fileData) {
+      const imageSrc = doc.fileData.startsWith("data:") 
+        ? doc.fileData 
+        : `data:${doc.fileType};base64,${doc.fileData}`;
       return (
         <img 
-          src={doc.fileUrl} 
+          src={imageSrc} 
           alt={doc.fileName}
           style={{
             width: "100%",
