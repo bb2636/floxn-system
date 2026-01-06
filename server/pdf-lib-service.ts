@@ -925,6 +925,165 @@ async function renderFieldReportPage(
   });
 }
 
+async function renderDrawingPage(
+  pdfDoc: PDFDocument,
+  fonts: FontSet,
+  caseData: any,
+  drawingData: any
+): Promise<void> {
+  const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+  let y = A4_HEIGHT - MARGIN;
+  
+  // Header: 현장 피해상황 도면 with gray background
+  const headerHeight = 35;
+  page.drawRectangle({
+    x: MARGIN,
+    y: y - headerHeight,
+    width: CONTENT_WIDTH,
+    height: headerHeight,
+    color: rgb(0.92, 0.92, 0.92),
+    borderColor: rgb(0.7, 0.7, 0.7),
+    borderWidth: 0.5,
+  });
+  
+  drawText(page, {
+    x: MARGIN + 15,
+    y: y - 25,
+    text: '현장 피해상황 도면',
+    font: fonts.bold,
+    size: 14,
+  });
+  
+  // 접수번호 on the right
+  const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '-';
+  drawText(page, {
+    x: A4_WIDTH - MARGIN - 150,
+    y: y - 25,
+    text: `접수번호: ${accidentNo}`,
+    font: fonts.regular,
+    size: 10,
+  });
+  
+  y -= headerHeight + 15;
+  
+  // Info line: 고객사, 피보험자, 주소
+  const insuranceCompany = caseData.insuranceCompany || '-';
+  const insuredName = caseData.insuredName || caseData.victimName || '-';
+  const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
+    .filter(Boolean).join(' ') || '-';
+  
+  drawText(page, {
+    x: MARGIN,
+    y,
+    text: `고객사: ${insuranceCompany}     피보험자: ${insuredName}     주소: ${fullAddress}`,
+    font: fonts.regular,
+    size: 9,
+  });
+  
+  y -= 30;
+  
+  // Drawing area - large box for the drawing image
+  const drawingAreaHeight = A4_HEIGHT - MARGIN * 2 - headerHeight - 80;
+  const drawingAreaWidth = CONTENT_WIDTH;
+  
+  page.drawRectangle({
+    x: MARGIN,
+    y: y - drawingAreaHeight,
+    width: drawingAreaWidth,
+    height: drawingAreaHeight,
+    borderColor: rgb(0.7, 0.7, 0.7),
+    borderWidth: 0.5,
+  });
+  
+  // Try to embed drawing image if available
+  if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
+    try {
+      // Use the first uploaded image as the main drawing
+      const mainImage = drawingData.uploadedImages[0];
+      if (mainImage.src) {
+        let imageData: Buffer;
+        
+        if (mainImage.src.startsWith('data:image/')) {
+          const base64Data = mainImage.src.split(',')[1];
+          imageData = Buffer.from(base64Data, 'base64');
+        } else {
+          imageData = Buffer.from(mainImage.src, 'base64');
+        }
+        
+        // Determine image type and embed
+        let embeddedImage;
+        const srcLower = mainImage.src.toLowerCase();
+        if (srcLower.includes('image/png') || srcLower.includes('.png')) {
+          embeddedImage = await pdfDoc.embedPng(imageData);
+        } else {
+          // Convert to JPEG using sharp if needed
+          const processedBuffer = await sharp(imageData)
+            .jpeg({ quality: 85 })
+            .toBuffer();
+          embeddedImage = await pdfDoc.embedJpg(processedBuffer);
+        }
+        
+        const imgDims = embeddedImage.scale(1);
+        const maxWidth = drawingAreaWidth - 40;
+        const maxHeight = drawingAreaHeight - 40;
+        
+        const scaleX = maxWidth / imgDims.width;
+        const scaleY = maxHeight / imgDims.height;
+        const scale = Math.min(scaleX, scaleY, 1);
+        
+        const drawWidth = imgDims.width * scale;
+        const drawHeight = imgDims.height * scale;
+        
+        const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
+        const drawY = (y - drawingAreaHeight) + (drawingAreaHeight - drawHeight) / 2;
+        
+        page.drawImage(embeddedImage, {
+          x: drawX,
+          y: drawY,
+          width: drawWidth,
+          height: drawHeight,
+        });
+        
+        console.log('[pdf-lib] 도면 이미지 삽입 완료');
+      }
+    } catch (err) {
+      console.error('[pdf-lib] 도면 이미지 삽입 실패:', err);
+      // Draw placeholder text
+      drawText(page, {
+        x: MARGIN + drawingAreaWidth / 2 - 50,
+        y: y - drawingAreaHeight / 2,
+        text: '도면 이미지 로드 실패',
+        font: fonts.regular,
+        size: 12,
+        color: { r: 0.6, g: 0.6, b: 0.6 },
+      });
+    }
+  } else {
+    // No drawing data - show placeholder
+    drawText(page, {
+      x: MARGIN + drawingAreaWidth / 2 - 60,
+      y: y - drawingAreaHeight / 2,
+      text: '등록된 도면이 없습니다',
+      font: fonts.regular,
+      size: 12,
+      color: { r: 0.6, g: 0.6, b: 0.6 },
+    });
+  }
+  
+  // Footer
+  const footerY = MARGIN + 15;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+  
+  drawText(page, {
+    x: MARGIN,
+    y: footerY,
+    text: `작성일: ${dateStr} | 사고접수번호: ${accidentNo}`,
+    font: fonts.regular,
+    size: 9,
+  });
+}
+
 async function renderEvidencePages(
   pdfDoc: PDFDocument,
   fonts: FontSet,
@@ -1706,6 +1865,20 @@ export async function generatePdfWithPdfLib(
     } catch (err: any) {
       console.error('[pdf-lib] 출동확인서 페이지 생성 실패:', err.message);
       renderErrorPage(pdfDoc, fonts, '출동확인서', err.message);
+    }
+  }
+  
+  if (sections.drawing) {
+    try {
+      // Get drawing data for this case
+      const [drawingData] = await db.select().from(drawings)
+        .where(eq(drawings.caseId, caseId));
+      
+      await renderDrawingPage(pdfDoc, fonts, caseData, drawingData);
+      console.log('[pdf-lib] 도면 페이지 생성 완료');
+    } catch (err: any) {
+      console.error('[pdf-lib] 도면 페이지 생성 실패:', err.message);
+      renderErrorPage(pdfDoc, fonts, '현장 피해상황 도면', err.message);
     }
   }
   
