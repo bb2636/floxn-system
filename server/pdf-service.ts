@@ -745,12 +745,12 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
       // 복구면적 - damageArea field (in mm² stored, display as m²)
       const damageAreaValue = item.damageArea || 0;
       const damageAreaDisplay = damageAreaValue > 0 ? `${Number(damageAreaValue).toFixed(0)}㎡` : '-';
-      // 적용단가 - pricePerSqm (기준가 m²)
-      const pricePerSqm = item.pricePerSqm || item.standardPrice || 0;
-      // 수량(인) - quantity
-      const quantity = item.quantity || 0;
+      // 적용단가 - standardPrice (E: DB 노임단가)
+      const standardPrice = item.standardPrice || 0;
       // 합계 - amount
       const amount = item.amount || 0;
+      // 수량(인) - I ÷ E (합계 ÷ 노임단가), 소수점 둘째 자리
+      const displayQuantity = standardPrice > 0 ? (amount / standardPrice) : 0;
       // 경비 - includeInEstimate: false = 경비체크됨(O), true = 경비체크안됨(-)
       const isExpense = item.includeInEstimate === false || item.includeInEstimate === 'false' ? 'O' : '-';
       // 비고 - request
@@ -762,8 +762,8 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
           <td style="text-align:center">${workName}</td>
           <td style="text-align:center">${detailItem}</td>
           <td style="text-align:right">${damageAreaDisplay}</td>
-          <td style="text-align:right">${formatNumber(Math.round(pricePerSqm))}</td>
-          <td style="text-align:center">${Number(quantity).toFixed(2)}</td>
+          <td style="text-align:right">${formatNumber(Math.round(standardPrice))}</td>
+          <td style="text-align:center">${displayQuantity.toFixed(2)}</td>
           <td style="text-align:right">${formatNumber(Math.round(amount))}</td>
           <td style="text-align:center">${isExpense}</td>
           <td style="text-align:left">${note}</td>

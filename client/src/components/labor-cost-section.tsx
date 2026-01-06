@@ -1673,13 +1673,13 @@ export function LaborCostSection({
                     );
                   })()}
                   
-                  {/* 적용단가 - 연동 행은 수정 불가, 천단위 콤마 표시 */}
+                  {/* 적용단가 - DB 노임단가(E) 표시, 연동 행은 수정 불가, 천단위 콤마 표시 */}
                   <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
                     <Input
                       type="text"
                       inputMode="numeric"
-                      defaultValue={(row.pricePerSqm || 0) > 0 ? (row.pricePerSqm || 0).toLocaleString() : '0'}
-                      key={`price-${row.id}-${row.pricePerSqm}`}
+                      defaultValue={(row.standardPrice || 0) > 0 ? (row.standardPrice || 0).toLocaleString() : '0'}
+                      key={`price-${row.id}-${row.standardPrice}`}
                       onFocus={(e) => {
                         // 포커스 시 콤마 제거하여 편집 용이하게
                         const rawValue = e.target.value.replace(/[,\s]/g, '');
@@ -1690,7 +1690,7 @@ export function LaborCostSection({
                         const rawValue = e.target.value.replace(/[,\s]/g, '');
                         const val = parseInt(rawValue, 10) || 0;
                         e.target.value = val > 0 ? val.toLocaleString() : '0';
-                        updateRow(row.id, 'pricePerSqm', val);
+                        updateRow(row.id, 'standardPrice', val);
                       }}
                       onKeyDown={(e) => {
                         // Enter 키로도 blur 트리거
@@ -1709,22 +1709,30 @@ export function LaborCostSection({
                     />
                   </td>
                   
-                  {/* 수량(인) - 연동 행은 수정 불가, 병합된 행은 합산값 표시 */}
+                  {/* 수량(인) - I÷E (합계÷노임단가) 표시, 소수점 둘째 자리 */}
                   <td style={{ padding: "0 8px", background: isLinkedRow ? "rgba(59, 130, 246, 0.05)" : undefined }}>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={(row as MergedLaborCostRow).mergedQuantity ?? row.quantity}
-                      onChange={(e) => updateRow(row.id, 'quantity', Number(e.target.value) || 0)}
-                      className="h-9 border text-center"
-                      style={{ 
-                        fontFamily: "Pretendard", 
-                        fontSize: "14px",
-                        color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
-                      }}
-                      disabled={isLinkedRow || ((row as MergedLaborCostRow).mergedSourceIds?.length ?? 0) > 1}
-                      data-testid={`input-quantity-labor-${globalIndex}`}
-                    />
+                    {(() => {
+                      // 수량 = I ÷ E (합계 ÷ 노임단가), 소수점 둘째 자리
+                      const I = (row as MergedLaborCostRow).mergedAmount ?? row.amount ?? 0;
+                      const E = row.standardPrice || 0;
+                      const displayQuantity = E > 0 ? Math.round((I / E) * 100) / 100 : 0;
+                      return (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={displayQuantity.toFixed(2)}
+                          onChange={(e) => updateRow(row.id, 'quantity', Number(e.target.value) || 0)}
+                          className="h-9 border text-center"
+                          style={{ 
+                            fontFamily: "Pretendard", 
+                            fontSize: "14px",
+                            color: isLinkedRow ? "rgba(59, 130, 246, 0.9)" : undefined,
+                          }}
+                          disabled={isLinkedRow || ((row as MergedLaborCostRow).mergedSourceIds?.length ?? 0) > 1}
+                          data-testid={`input-quantity-labor-${globalIndex}`}
+                        />
+                      );
+                    })()}
                   </td>
                   
                   {/* 합계 - 병합된 행은 합산값 표시 */}
