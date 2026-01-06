@@ -80,8 +80,9 @@ async function embedFonts(pdfDoc: PDFDocument): Promise<FontSet> {
   
   const fontBytes = loadFontBytes();
   
-  const regular = await pdfDoc.embedFont(fontBytes.regular);
-  const bold = await pdfDoc.embedFont(fontBytes.bold);
+  // subset: false로 전체 폰트를 임베딩하여 한글 인코딩 문제 방지
+  const regular = await pdfDoc.embedFont(fontBytes.regular, { subset: false });
+  const bold = await pdfDoc.embedFont(fontBytes.bold, { subset: false });
   
   return { regular, bold };
 }
