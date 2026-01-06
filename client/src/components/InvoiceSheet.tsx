@@ -104,7 +104,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
 
   // Fetch documents from main case
   const { data: mainCaseDocuments = [] } = useQuery<CaseDocument[]>({
-    queryKey: [`/api/cases/${caseData?.id}/documents`],
+    queryKey: [`/api/documents/case/${caseData?.id}`],
     enabled: open && !!caseData?.id,
   });
 
@@ -115,7 +115,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
 
   const relatedDocsQueries = useQueries({
     queries: relatedCaseIds.map(caseId => ({
-      queryKey: [`/api/cases/${caseId}/documents`],
+      queryKey: [`/api/documents/case/${caseId}`],
       enabled: open && !!caseId,
     })),
   });
