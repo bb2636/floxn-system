@@ -190,7 +190,15 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
         }),
       });
 
-      const result = await response.json();
+      // 502/프록시 에러 대응: text()로 먼저 받고 안전하게 JSON 파싱
+      const responseText = await response.text();
+      let result: any;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("JSON 파싱 실패. 원본 응답:", responseText);
+        throw new Error(`서버 응답 오류 (${response.status}): ${responseText.substring(0, 100)}`);
+      }
 
       if (response.ok) {
         toast({
