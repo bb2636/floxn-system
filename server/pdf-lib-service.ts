@@ -1147,6 +1147,7 @@ async function renderEstimatePage(
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
   
+  // ===== 견적서 타이틀 =====
   page.drawRectangle({
     x: MARGIN,
     y: y - 30,
@@ -1169,43 +1170,60 @@ async function renderEstimatePage(
   
   y -= 45;
   
+  // ===== 상단 정보 테이블 (Golden Master 양식) =====
   const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
     .filter(Boolean).join(' ');
   
-  const estimateInfoRows: TableCell[][] = [
+  const partnerCompany = partnerData?.company || caseData.assignedPartner || '-';
+  const partnerBusinessNo = partnerData?.businessNumber || '-';
+  const partnerRepName = partnerData?.representativeName || partnerData?.name || '-';
+  
+  // 공급자 정보: 회사명 + 사업자번호
+  const supplierInfo = partnerBusinessNo !== '-' 
+    ? `${partnerCompany} (사업자번호: ${partnerBusinessNo})`
+    : partnerCompany;
+  
+  const headerInfoRows: TableCell[][] = [
     [
-      { text: '접수번호', width: 80, isHeader: true, align: 'center' },
-      { text: caseData.caseNumber || '-', width: 178, align: 'left' },
-      { text: '고객사', width: 80, isHeader: true, align: 'center' },
+      { text: '현장명(주소)', width: 80, isHeader: true, align: 'center' },
+      { text: fullAddress || '-', width: 435, align: 'left' },
+    ],
+    [
+      { text: '공급자', width: 80, isHeader: true, align: 'center' },
+      { text: supplierInfo, width: 178, align: 'left' },
+      { text: '보험사', width: 80, isHeader: true, align: 'center' },
       { text: caseData.insuranceCompany || '-', width: 177, align: 'left' },
     ],
     [
-      { text: '피보험자', width: 80, isHeader: true, align: 'center' },
-      { text: caseData.insuredName || caseData.victimName || '-', width: 178, align: 'left' },
-      { text: '사고번호', width: 80, isHeader: true, align: 'center' },
-      { text: caseData.insuranceAccidentNo || '-', width: 177, align: 'left' },
+      { text: '상호명', width: 80, isHeader: true, align: 'center' },
+      { text: partnerCompany, width: 178, align: 'left' },
+      { text: '접수번호', width: 80, isHeader: true, align: 'center' },
+      { text: caseData.caseNumber || '-', width: 177, align: 'left' },
     ],
     [
-      { text: '현장주소', width: 80, isHeader: true, align: 'center' },
-      { text: fullAddress || '-', width: 435, align: 'left' },
+      { text: '대표자', width: 80, isHeader: true, align: 'center' },
+      { text: partnerRepName, width: 178, align: 'left' },
+      { text: '사고번호', width: 80, isHeader: true, align: 'center' },
+      { text: caseData.insuranceAccidentNo || '-', width: 177, align: 'left' },
     ],
   ];
   
   y = drawTable(page, {
     x: MARGIN,
     y,
-    rows: estimateInfoRows,
+    rows: headerInfoRows,
     fonts,
     fontSize: 9,
     rowHeight: 22,
   });
   
-  y -= 20;
+  y -= 15;
   
+  // ===== 노무비 테이블 (Golden Master 컬럼: 공종|공사명|노임항목|복구면적|적용단가|수량(인)|합계|경비|비고) =====
   drawText(page, {
     x: MARGIN,
     y,
-    text: '■ 노무비',
+    text: '[ 노무비 ]',
     font: fonts.bold,
     size: 10,
   });
@@ -1226,35 +1244,43 @@ async function renderEstimatePage(
     } catch {}
   }
   
+  // Golden Master 노무비 컬럼: 공종 | 공사명 | 노임항목 | 복구면적 | 적용단가 | 수량(인) | 합계 | 경비 | 비고
   const laborHeader: TableCell[] = [
-    { text: '번호', width: 35, isHeader: true, align: 'center' },
-    { text: '직종', width: 100, isHeader: true, align: 'center' },
-    { text: '단가', width: 90, isHeader: true, align: 'center' },
-    { text: '투입일', width: 60, isHeader: true, align: 'center' },
-    { text: '인원', width: 50, isHeader: true, align: 'center' },
-    { text: '금액', width: 90, isHeader: true, align: 'center' },
-    { text: '비고', width: 90, isHeader: true, align: 'center' },
+    { text: '공종', width: 55, isHeader: true, align: 'center' },
+    { text: '공사명', width: 60, isHeader: true, align: 'center' },
+    { text: '노임항목', width: 60, isHeader: true, align: 'center' },
+    { text: '복구면적', width: 55, isHeader: true, align: 'center' },
+    { text: '적용단가', width: 65, isHeader: true, align: 'center' },
+    { text: '수량(인)', width: 45, isHeader: true, align: 'center' },
+    { text: '합계', width: 70, isHeader: true, align: 'center' },
+    { text: '경비', width: 50, isHeader: true, align: 'center' },
+    { text: '비고', width: 55, isHeader: true, align: 'center' },
   ];
   
   const laborRows: TableCell[][] = [laborHeader];
   let laborTotal = 0;
+  let laborExpenseTotal = 0;
   
   if (laborCostItems.length > 0) {
-    laborCostItems.forEach((row, idx) => {
-      const unitPrice = Number(row.unitPrice) || 0;
-      const days = Number(row.days) || 0;
-      const workers = Number(row.workers) || 0;
-      const amount = unitPrice * days * workers;
+    laborCostItems.forEach((row) => {
+      const repairArea = Number(row.repairArea) || Number(row.area) || 0;
+      const unitPrice = Number(row.unitPrice) || Number(row.appliedRate) || 0;
+      const quantity = Number(row.quantity) || Number(row.workers) || 1;
+      const amount = Number(row.amount) || (unitPrice * quantity);
+      const expense = Number(row.expense) || 0;
       laborTotal += amount;
+      laborExpenseTotal += expense;
       
       laborRows.push([
-        { text: String(idx + 1), width: 35, align: 'center' },
-        { text: row.jobType || '-', width: 100, align: 'left' },
-        { text: formatNumber(unitPrice), width: 90, align: 'right' },
-        { text: String(days), width: 60, align: 'center' },
-        { text: String(workers), width: 50, align: 'center' },
-        { text: formatNumber(amount), width: 90, align: 'right' },
-        { text: row.note || '-', width: 90, align: 'left' },
+        { text: row.workType || row.category || '-', width: 55, align: 'center' },
+        { text: row.workName || '-', width: 60, align: 'left' },
+        { text: row.laborItem || row.jobType || '-', width: 60, align: 'left' },
+        { text: repairArea > 0 ? repairArea.toFixed(2) : '-', width: 55, align: 'right' },
+        { text: formatNumber(unitPrice), width: 65, align: 'right' },
+        { text: String(quantity), width: 45, align: 'center' },
+        { text: formatNumber(amount), width: 70, align: 'right' },
+        { text: expense > 0 ? formatNumber(expense) : '-', width: 50, align: 'right' },
+        { text: row.note || '-', width: 55, align: 'left' },
       ]);
     });
   } else {
@@ -1263,9 +1289,12 @@ async function renderEstimatePage(
     ]);
   }
   
+  // 노무비 소계 행
   laborRows.push([
-    { text: '소계', width: 425, isHeader: true, align: 'right' },
-    { text: formatNumber(laborTotal), width: 90, align: 'right' },
+    { text: '노무비 소계', width: 350, isHeader: true, align: 'right' },
+    { text: formatNumber(laborTotal), width: 70, align: 'right' },
+    { text: formatNumber(laborExpenseTotal), width: 50, align: 'right' },
+    { text: '', width: 55, align: 'left' },
   ]);
   
   y = drawTable(page, {
@@ -1273,16 +1302,17 @@ async function renderEstimatePage(
     y,
     rows: laborRows,
     fonts,
-    fontSize: 8,
-    rowHeight: 18,
+    fontSize: 7,
+    rowHeight: 16,
   });
   
-  y -= 20;
+  y -= 15;
   
+  // ===== 자재비 테이블 (Golden Master 컬럼: 공종|공사명|자재항목|단가|수량|단위|합계|비고) =====
   drawText(page, {
     x: MARGIN,
     y,
-    text: '■ 자재비',
+    text: '[ 자재비 ]',
     font: fonts.bold,
     size: 10,
   });
@@ -1303,34 +1333,37 @@ async function renderEstimatePage(
     } catch {}
   }
   
+  // Golden Master 자재비 컬럼: 공종 | 공사명 | 자재항목 | 단가 | 수량 | 단위 | 합계 | 비고
   const materialHeader: TableCell[] = [
-    { text: '번호', width: 35, isHeader: true, align: 'center' },
-    { text: '자재명', width: 140, isHeader: true, align: 'center' },
-    { text: '규격', width: 80, isHeader: true, align: 'center' },
-    { text: '단위', width: 50, isHeader: true, align: 'center' },
-    { text: '수량', width: 50, isHeader: true, align: 'center' },
+    { text: '공종', width: 55, isHeader: true, align: 'center' },
+    { text: '공사명', width: 70, isHeader: true, align: 'center' },
+    { text: '자재항목', width: 90, isHeader: true, align: 'center' },
     { text: '단가', width: 70, isHeader: true, align: 'center' },
-    { text: '금액', width: 90, isHeader: true, align: 'center' },
+    { text: '수량', width: 50, isHeader: true, align: 'center' },
+    { text: '단위', width: 40, isHeader: true, align: 'center' },
+    { text: '합계', width: 80, isHeader: true, align: 'center' },
+    { text: '비고', width: 60, isHeader: true, align: 'center' },
   ];
   
   const materialRows: TableCell[][] = [materialHeader];
   let materialTotal = 0;
   
   if (materialCostItems.length > 0) {
-    materialCostItems.forEach((row, idx) => {
-      const qty = Number(row.quantity) || 0;
+    materialCostItems.forEach((row) => {
+      const qty = Number(row.quantity) || 1;
       const unitPrice = Number(row.unitPrice) || 0;
-      const amount = qty * unitPrice;
+      const amount = Number(row.amount) || (qty * unitPrice);
       materialTotal += amount;
       
       materialRows.push([
-        { text: String(idx + 1), width: 35, align: 'center' },
-        { text: row.materialName || '-', width: 140, align: 'left' },
-        { text: row.spec || '-', width: 80, align: 'left' },
-        { text: row.unit || '-', width: 50, align: 'center' },
-        { text: String(qty), width: 50, align: 'center' },
+        { text: row.workType || row.category || '-', width: 55, align: 'center' },
+        { text: row.workName || '-', width: 70, align: 'left' },
+        { text: row.materialItem || row.materialName || '-', width: 90, align: 'left' },
         { text: formatNumber(unitPrice), width: 70, align: 'right' },
-        { text: formatNumber(amount), width: 90, align: 'right' },
+        { text: String(qty), width: 50, align: 'center' },
+        { text: row.unit || '-', width: 40, align: 'center' },
+        { text: formatNumber(amount), width: 80, align: 'right' },
+        { text: row.note || '-', width: 60, align: 'left' },
       ]);
     });
   } else {
@@ -1339,9 +1372,11 @@ async function renderEstimatePage(
     ]);
   }
   
+  // 자재비 소계 행
   materialRows.push([
-    { text: '소계', width: 425, isHeader: true, align: 'right' },
-    { text: formatNumber(materialTotal), width: 90, align: 'right' },
+    { text: '자재비 소계', width: 375, isHeader: true, align: 'right' },
+    { text: formatNumber(materialTotal), width: 80, align: 'right' },
+    { text: '', width: 60, align: 'left' },
   ]);
   
   y = drawTable(page, {
@@ -1349,47 +1384,96 @@ async function renderEstimatePage(
     y,
     rows: materialRows,
     fonts,
-    fontSize: 8,
-    rowHeight: 18,
+    fontSize: 7,
+    rowHeight: 16,
   });
   
-  y -= 25;
+  y -= 20;
   
+  // ===== 합계/정산 구간 (Golden Master 양식) =====
   const subtotal = laborTotal + materialTotal;
+  const adminFeeRate = 0.06;
+  const profitRate = 0.15;
   const vatRate = 0.1;
-  const vat = Math.round(subtotal * vatRate);
-  const grandTotal = subtotal + vat;
+  
+  const adminFee = Math.round(subtotal * adminFeeRate);
+  const profit = Math.round(subtotal * profitRate);
+  const beforeRounding = subtotal + adminFee + profit;
+  const rounded = Math.floor(beforeRounding / 10000) * 10000;
+  const roundingDiff = beforeRounding - rounded;
+  const vat = Math.round(rounded * vatRate);
+  const grandTotal = rounded + vat;
   
   const totalRows: TableCell[][] = [
     [
       { text: '노무비 합계', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(laborTotal), width: 108, align: 'right' },
+      { text: formatNumber(laborTotal), width: 110, align: 'right' },
     ],
     [
       { text: '자재비 합계', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(materialTotal), width: 108, align: 'right' },
+      { text: formatNumber(materialTotal), width: 110, align: 'right' },
     ],
     [
-      { text: '합계', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(subtotal), width: 108, align: 'right' },
+      { text: '소계', width: 150, isHeader: true, align: 'center' },
+      { text: formatNumber(subtotal), width: 110, align: 'right' },
     ],
     [
-      { text: '부가세(10%)', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(vat), width: 108, align: 'right' },
+      { text: '일반관리비 (6%)', width: 150, isHeader: true, align: 'center' },
+      { text: formatNumber(adminFee), width: 110, align: 'right' },
     ],
     [
-      { text: '총계', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(grandTotal), width: 108, align: 'right' },
+      { text: '이윤 (15%)', width: 150, isHeader: true, align: 'center' },
+      { text: formatNumber(profit), width: 110, align: 'right' },
+    ],
+    [
+      { text: '만원미만 절사', width: 150, isHeader: true, align: 'center' },
+      { text: roundingDiff > 0 ? `-${formatNumber(roundingDiff)}` : '0', width: 110, align: 'right' },
+    ],
+    [
+      { text: '부가세 (10%) - 포함', width: 150, isHeader: true, align: 'center' },
+      { text: formatNumber(vat), width: 110, align: 'right' },
+    ],
+    [
+      { text: '총 합계', width: 150, isHeader: true, align: 'center' },
+      { text: formatNumber(grandTotal), width: 110, align: 'right' },
     ],
   ];
   
   drawTable(page, {
-    x: A4_WIDTH - MARGIN - 258,
+    x: A4_WIDTH - MARGIN - 260,
     y,
     rows: totalRows,
     fonts,
     fontSize: 9,
-    rowHeight: 20,
+    rowHeight: 18,
+  });
+  
+  // ===== 하단 문구 및 작성일 =====
+  y -= (totalRows.length * 18) + 30;
+  
+  drawText(page, {
+    x: MARGIN,
+    y,
+    text: '상기 견적은 현장조사 시점을 기준으로 작성되었으며, 실제 복구 시 현장 상황에 따라 변동될 수 있습니다.',
+    font: fonts.regular,
+    size: 8,
+    maxWidth: CONTENT_WIDTH,
+    align: 'left',
+  });
+  
+  y -= 25;
+  
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
+  
+  drawText(page, {
+    x: MARGIN,
+    y,
+    text: `작성일: ${dateStr}`,
+    font: fonts.regular,
+    size: 9,
+    maxWidth: CONTENT_WIDTH,
+    align: 'right',
   });
 }
 
