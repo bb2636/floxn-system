@@ -259,7 +259,6 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            borderRadius: "8px",
           }}
         />
       );
@@ -1465,7 +1464,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                             width: "100%",
                             aspectRatio: "1",
                             borderRadius: "8px",
-                            overflow: "visible",
+                            overflow: "hidden",
                             border: isSelected ? "2px solid #008FED" : "1px solid rgba(12, 12, 12, 0.1)",
                             position: "relative",
                             background: "rgba(12, 12, 12, 0.04)",
