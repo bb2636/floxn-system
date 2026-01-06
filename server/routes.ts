@@ -6572,9 +6572,9 @@ FLOXN 드림`;
       const emailSubjectId = invoiceData.insuranceAccidentNo || caseData.insurancePolicyNo || invoiceData.caseNumber || dateStr;
       const emailSubject = `[FLOXN] INVOICE - ${emailSubjectId}`;
       
-      // Get assessor and investigator names
-      const assessorName = caseData.assessorId ? (await storage.getUser(caseData.assessorId))?.name || '-' : '-';
-      const investigatorName = caseData.investigatorId ? (await storage.getUser(caseData.investigatorId))?.name || '-' : '-';
+      // Get assessor and investigator names from case data fields
+      const assessorName = caseData.assessorTeam || '-';
+      const investigatorName = caseData.investigatorTeamName || '-';
       
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
