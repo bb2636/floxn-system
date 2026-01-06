@@ -12,7 +12,7 @@ import crypto from "crypto";
 import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from "./replit_integrations/object_storage";
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
 import { generatePdf, generatePdfWithSizeLimit } from "./pdf-service";
-import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
+import { generateInvoicePdf, sendInvoiceEmailWithAttachment, getChromiumPath } from "./invoice-pdf-service";
 import { sendFieldReportEmail, sendEmailWithAttachment } from "./hiworks-email";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
@@ -6163,12 +6163,12 @@ FLOXN 드림`;
 </html>`;
               
               // Generate PDF with Puppeteer
-              const chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH || 
-                '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
+              const chromiumPath = getChromiumPath();
+              console.log(`[Invoice PDF Images] Using Chromium path: ${chromiumPath || 'bundled'}`);
               
               const browser = await puppeteer.default.launch({
                 headless: true,
-                executablePath: chromiumPath,
+                ...(chromiumPath && { executablePath: chromiumPath }),
                 args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
               });
               
@@ -6512,12 +6512,12 @@ FLOXN 드림`;
 </html>`;
             
             // Generate PDF with Puppeteer
-            const chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH || 
-              '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
+            const chromiumPathEmail = getChromiumPath();
+            console.log(`[Invoice PDF Email Images] Using Chromium path: ${chromiumPathEmail || 'bundled'}`);
             
             const browser = await puppeteer.default.launch({
               headless: true,
-              executablePath: chromiumPath,
+              ...(chromiumPathEmail && { executablePath: chromiumPathEmail }),
               args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
             });
             

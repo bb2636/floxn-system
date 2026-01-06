@@ -366,7 +366,7 @@ export function generateInvoiceHtml(data: InvoiceData): string {
 }
 
 // Get Chromium executable path dynamically
-function getChromiumPath(): string | undefined {
+export function getChromiumPath(): string | undefined {
   // Check environment variable first
   if (process.env.PUPPETEER_EXECUTABLE_PATH) {
     return process.env.PUPPETEER_EXECUTABLE_PATH;
