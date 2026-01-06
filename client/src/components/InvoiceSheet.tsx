@@ -100,7 +100,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [isLoadingAmounts, setIsLoadingAmounts] = useState(false);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
-  const [selectedDocTab, setSelectedDocTab] = useState<DocumentTab>("전체");
+  const [selectedDocTabByCaseId, setSelectedDocTabByCaseId] = useState<Record<string, DocumentTab>>({});
 
   // Fetch documents from main case
   const { data: mainCaseDocuments = [] } = useQuery<CaseDocument[]>({
@@ -120,6 +120,37 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     })),
   });
 
+  // Build all cases list (main case + related cases)
+  const allCases = useMemo(() => {
+    const cases: Array<{ id: string; caseNumber: string | null }> = [];
+    if (caseData) {
+      cases.push({ id: caseData.id, caseNumber: caseData.caseNumber || null });
+    }
+    for (const rc of relatedCases) {
+      if (rc.id !== caseData?.id) {
+        cases.push({ id: rc.id, caseNumber: rc.caseNumber || null });
+      }
+    }
+    return cases;
+  }, [caseData, relatedCases]);
+
+  // Build documents by caseId
+  const documentsByCaseId = useMemo(() => {
+    const result: Record<string, CaseDocument[]> = {};
+    if (caseData?.id) {
+      result[caseData.id] = mainCaseDocuments;
+    }
+    relatedCaseIds.forEach((caseId, index) => {
+      const query = relatedDocsQueries[index];
+      if (query?.data) {
+        result[caseId] = query.data as CaseDocument[];
+      } else {
+        result[caseId] = [];
+      }
+    });
+    return result;
+  }, [caseData?.id, mainCaseDocuments, relatedCaseIds, relatedDocsQueries]);
+
   // Merge all documents from main case and related cases
   const documents = useMemo(() => {
     const allDocs: CaseDocument[] = [...mainCaseDocuments];
@@ -131,18 +162,23 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     return allDocs;
   }, [mainCaseDocuments, relatedDocsQueries]);
 
-  const documentsByCategory = useMemo(() => {
-    const grouped: Record<string, CaseDocument[]> = {};
-    for (const category of DOCUMENT_CATEGORIES) {
-      grouped[category] = documents.filter(doc => doc.category === category);
-    }
-    return grouped;
-  }, [documents]);
+  // Get filtered documents for a specific case
+  const getFilteredDocsForCase = (caseId: string) => {
+    const caseDocs = documentsByCaseId[caseId] || [];
+    const selectedTab = selectedDocTabByCaseId[caseId] || "전체";
+    if (selectedTab === "전체") return caseDocs;
+    return caseDocs.filter(doc => CATEGORY_TO_TAB[doc.category] === selectedTab);
+  };
 
-  const filteredDocumentsForGrid = useMemo(() => {
-    if (selectedDocTab === "전체") return documents;
-    return documents.filter(doc => CATEGORY_TO_TAB[doc.category] === selectedDocTab);
-  }, [documents, selectedDocTab]);
+  // Get tab for a specific case
+  const getTabForCase = (caseId: string): DocumentTab => {
+    return selectedDocTabByCaseId[caseId] || "전체";
+  };
+
+  // Set tab for a specific case
+  const setTabForCase = (caseId: string, tab: DocumentTab) => {
+    setSelectedDocTabByCaseId(prev => ({ ...prev, [caseId]: tab }));
+  };
 
   const getFileIcon = (fileType: string) => {
     if (fileType?.startsWith("image/")) return <ImageIcon className="w-6 h-6 text-muted-foreground" />;
@@ -329,6 +365,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         setInvoiceRecipientEmail("");
         setSelectedEmails([]);
         setSelectedDocumentIds([]);
+        setSelectedDocTabByCaseId({});
       }
     };
     
@@ -1084,236 +1121,265 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
           </div>
         </div>
 
-        {/* 협력사 제출 증빙자료 Section */}
-        {documents.length > 0 && (
-          <div style={{
-            boxSizing: "border-box",
-            display: "flex",
-            flexDirection: "column",
-            padding: "16px 38px",
-            gap: "12px",
-            width: "680px",
-          }}>
-            <span style={{
-              fontFamily: "'Pretendard'",
-              fontStyle: "normal",
-              fontWeight: 500,
-              fontSize: "14px",
-              lineHeight: "128%",
-              letterSpacing: "-0.01em",
-              color: "rgba(12, 12, 12, 0.7)",
-            }}>협력사 제출 증빙자료</span>
-            
-            {/* Category Tabs */}
-            <div style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              gap: "8px",
-              flexWrap: "wrap",
-            }}>
-              {DOCUMENT_TABS.map(tab => {
-                const isSelected = selectedDocTab === tab;
-                const tabCount = tab === "전체" 
-                  ? documents.length 
-                  : documents.filter(doc => CATEGORY_TO_TAB[doc.category] === tab).length;
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setSelectedDocTab(tab)}
-                    style={{
-                      display: "flex",
-                      flexDirection: "row",
-                      alignItems: "center",
-                      padding: "6px 12px",
-                      gap: "4px",
-                      background: isSelected ? "#008FED" : "rgba(12, 12, 12, 0.04)",
-                      borderRadius: "16px",
-                      border: "none",
-                      cursor: "pointer",
-                      transition: "all 0.2s",
-                    }}
-                    data-testid={`tab-doc-${tab}`}
-                  >
-                    <span style={{
-                      fontFamily: "'Pretendard'",
-                      fontStyle: "normal",
-                      fontWeight: 500,
-                      fontSize: "12px",
-                      lineHeight: "128%",
-                      letterSpacing: "-0.01em",
-                      color: isSelected ? "#FFFFFF" : "rgba(12, 12, 12, 0.7)",
-                    }}>
-                      {tab}
-                    </span>
-                    {tabCount > 0 && (
-                      <span style={{
-                        fontFamily: "'Pretendard'",
-                        fontWeight: 500,
-                        fontSize: "11px",
-                        color: isSelected ? "rgba(255, 255, 255, 0.8)" : "rgba(12, 12, 12, 0.5)",
-                      }}>
-                        {tabCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Select All Row */}
-            <div style={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "8px 0",
-              borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
-            }}>
-              <label style={{
+        {/* 접수번호별 증빙자료 선택 Section */}
+        {allCases.map((caseItem, caseIndex) => {
+          const caseDocs = documentsByCaseId[caseItem.id] || [];
+          const currentTab = getTabForCase(caseItem.id);
+          const filteredDocs = getFilteredDocsForCase(caseItem.id);
+          const caseSelectedCount = caseDocs.filter(doc => selectedDocumentIds.includes(doc.id)).length;
+          
+          return (
+            <div 
+              key={caseItem.id}
+              style={{
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "column",
+                padding: "16px 38px",
+                gap: "12px",
+                width: "680px",
+                borderTop: caseIndex > 0 ? "1px solid rgba(12, 12, 12, 0.1)" : "none",
+              }}
+            >
+              <div style={{
                 display: "flex",
                 flexDirection: "row",
+                justifyContent: "space-between",
                 alignItems: "center",
-                gap: "8px",
-                cursor: "pointer",
               }}>
-                <Checkbox
-                  checked={filteredDocumentsForGrid.length > 0 && filteredDocumentsForGrid.every(doc => selectedDocumentIds.includes(doc.id))}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      const newIds = filteredDocumentsForGrid.map(doc => doc.id);
-                      setSelectedDocumentIds(prev => Array.from(new Set([...prev, ...newIds])));
-                    } else {
-                      const currentTabIds = new Set(filteredDocumentsForGrid.map(doc => doc.id));
-                      setSelectedDocumentIds(prev => prev.filter(id => !currentTabIds.has(id)));
-                    }
-                  }}
-                  disabled={filteredDocumentsForGrid.length === 0}
-                  data-testid="checkbox-select-all-docs"
-                />
-                <span style={{
-                  fontFamily: "'Pretendard'",
-                  fontSize: "12px",
-                  color: "rgba(12, 12, 12, 0.7)",
-                }}>
-                  전체 선택
-                </span>
-              </label>
+              <span style={{
+                fontFamily: "'Pretendard'",
+                fontStyle: "normal",
+                fontWeight: 500,
+                fontSize: "14px",
+                lineHeight: "128%",
+                letterSpacing: "-0.01em",
+                color: "rgba(12, 12, 12, 0.7)",
+              }}>
+                증빙자료 선택 (접수번호: {caseItem.caseNumber || caseItem.id})
+              </span>
               <span style={{
                 fontFamily: "'Pretendard'",
                 fontSize: "12px",
-                color: "rgba(12, 12, 12, 0.5)",
+                color: "#008FED",
+                fontWeight: 500,
               }}>
-                {selectedDocumentIds.length}개 선택됨
+                {caseSelectedCount}/{caseDocs.length}개 선택
               </span>
-            </div>
-
-            {/* Document Grid */}
-            <ScrollArea style={{ maxHeight: "280px" }}>
-              {filteredDocumentsForGrid.length === 0 ? (
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "40px",
-                  color: "rgba(12, 12, 12, 0.5)",
-                  fontFamily: "'Pretendard'",
-                  fontSize: "13px",
-                }}>
-                  해당 카테고리에 자료가 없습니다.
-                </div>
-              ) : (
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
-                  gap: "12px",
-                  padding: "4px",
-                }}>
-                  {filteredDocumentsForGrid.map(doc => {
-                    const isSelected = selectedDocumentIds.includes(doc.id);
-                    return (
-                      <div
-                        key={doc.id}
-                        onClick={() => toggleDocumentId(doc.id)}
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "6px",
-                          cursor: "pointer",
-                          position: "relative",
-                        }}
-                        data-testid={`doc-thumbnail-${doc.id}`}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            toggleDocumentId(doc.id);
-                          }
-                        }}
-                      >
-                        <div style={{
-                          width: "100%",
-                          aspectRatio: "1",
-                          borderRadius: "8px",
-                          overflow: "visible",
-                          border: isSelected ? "2px solid #008FED" : "1px solid rgba(12, 12, 12, 0.1)",
-                          position: "relative",
-                        }}>
-                          <div style={{
-                            width: "100%",
-                            height: "100%",
-                            overflow: "hidden",
-                            borderRadius: "6px",
-                          }}>
-                            {getFileThumbnail(doc)}
-                          </div>
-                          {/* Selection indicator overlay */}
-                          <div style={{
-                            position: "absolute",
-                            top: "6px",
-                            right: "6px",
-                            width: "20px",
-                            height: "20px",
-                            borderRadius: "4px",
-                            background: isSelected ? "#008FED" : "rgba(255, 255, 255, 0.9)",
-                            border: isSelected ? "none" : "1px solid rgba(12, 12, 12, 0.2)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                            pointerEvents: "none",
-                          }}>
-                            {isSelected && (
-                              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                                <path d="M2.5 6L5 8.5L9.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            )}
-                          </div>
-                        </div>
+              </div>
+              
+              {/* Category Tabs */}
+              <div style={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                gap: "4px",
+                flexWrap: "wrap",
+              }}>
+                {DOCUMENT_TABS.map(tab => {
+                  const isSelected = currentTab === tab;
+                  const tabCount = tab === "전체" 
+                    ? caseDocs.length 
+                    : caseDocs.filter(doc => CATEGORY_TO_TAB[doc.category] === tab).length;
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setTabForCase(caseItem.id, tab)}
+                      style={{
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center",
+                        padding: "6px 12px",
+                        gap: "4px",
+                        background: isSelected ? "#008FED" : "rgba(12, 12, 12, 0.04)",
+                        borderRadius: "16px",
+                        border: "none",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                      data-testid={`tab-doc-${caseItem.id}-${tab}`}
+                    >
+                      <span style={{
+                        fontFamily: "'Pretendard'",
+                        fontStyle: "normal",
+                        fontWeight: 500,
+                        fontSize: "12px",
+                        lineHeight: "128%",
+                        letterSpacing: "-0.01em",
+                        color: isSelected ? "#FFFFFF" : "rgba(12, 12, 12, 0.7)",
+                      }}>
+                        {tab}
+                      </span>
+                      {tabCount > 0 && (
                         <span style={{
                           fontFamily: "'Pretendard'",
-                          fontStyle: "normal",
-                          fontWeight: 400,
+                          fontWeight: 500,
                           fontSize: "11px",
-                          lineHeight: "128%",
-                          letterSpacing: "-0.01em",
-                          color: "rgba(12, 12, 12, 0.7)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          maxWidth: "100%",
+                          color: isSelected ? "rgba(255, 255, 255, 0.8)" : "rgba(12, 12, 12, 0.5)",
                         }}>
-                          {doc.fileName}
+                          {tabCount}
                         </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </ScrollArea>
-          </div>
-        )}
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Select All Row */}
+              <div style={{
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "8px 0",
+                borderBottom: "1px solid rgba(12, 12, 12, 0.1)",
+              }}>
+                <label style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: "8px",
+                  cursor: "pointer",
+                }}>
+                  <Checkbox
+                    checked={filteredDocs.length > 0 && filteredDocs.every(doc => selectedDocumentIds.includes(doc.id))}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        const newIds = filteredDocs.map(doc => doc.id);
+                        setSelectedDocumentIds(prev => Array.from(new Set([...prev, ...newIds])));
+                      } else {
+                        const currentDocIds = new Set(filteredDocs.map(doc => doc.id));
+                        setSelectedDocumentIds(prev => prev.filter(id => !currentDocIds.has(id)));
+                      }
+                    }}
+                    disabled={filteredDocs.length === 0}
+                    data-testid={`checkbox-select-all-${caseItem.id}`}
+                  />
+                  <span style={{
+                    fontFamily: "'Pretendard'",
+                    fontSize: "12px",
+                    color: "rgba(12, 12, 12, 0.7)",
+                  }}>
+                    전체 선택
+                  </span>
+                </label>
+                <span style={{
+                  fontFamily: "'Pretendard'",
+                  fontSize: "12px",
+                  color: "rgba(12, 12, 12, 0.5)",
+                }}>
+                  {filteredDocs.filter(doc => selectedDocumentIds.includes(doc.id)).length}개 선택됨 / {filteredDocs.length}개
+                </span>
+              </div>
+
+              {/* Document Grid */}
+              <ScrollArea style={{ maxHeight: "280px" }}>
+                {filteredDocs.length === 0 ? (
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "40px",
+                    color: "rgba(12, 12, 12, 0.5)",
+                    fontFamily: "'Pretendard'",
+                    fontSize: "13px",
+                  }}>
+                    해당 카테고리에 자료가 없습니다.
+                  </div>
+                ) : (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(5, 1fr)",
+                    gap: "12px",
+                    padding: "4px",
+                  }}>
+                    {filteredDocs.map(doc => {
+                      const isSelected = selectedDocumentIds.includes(doc.id);
+                      return (
+                        <div
+                          key={doc.id}
+                          onClick={() => toggleDocumentId(doc.id)}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "6px",
+                            cursor: "pointer",
+                            position: "relative",
+                          }}
+                          data-testid={`doc-thumbnail-${doc.id}`}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              toggleDocumentId(doc.id);
+                            }
+                          }}
+                        >
+                          <div style={{
+                            width: "100%",
+                            aspectRatio: "1",
+                            borderRadius: "8px",
+                            overflow: "visible",
+                            border: isSelected ? "2px solid #008FED" : "1px solid rgba(12, 12, 12, 0.1)",
+                            position: "relative",
+                            background: "rgba(12, 12, 12, 0.04)",
+                          }}>
+                            <div style={{
+                              width: "100%",
+                              height: "100%",
+                              overflow: "hidden",
+                              borderRadius: "6px",
+                            }}>
+                              {getFileThumbnail(doc)}
+                            </div>
+                            {/* Selection indicator overlay */}
+                            <div style={{
+                              position: "absolute",
+                              top: "6px",
+                              right: "6px",
+                              width: "20px",
+                              height: "20px",
+                              borderRadius: "4px",
+                              background: isSelected ? "#008FED" : "rgba(255, 255, 255, 0.9)",
+                              border: isSelected ? "none" : "1px solid rgba(12, 12, 12, 0.2)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                              pointerEvents: "none",
+                            }}>
+                              {isSelected && (
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                  <path d="M2.5 6L5 8.5L9.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              )}
+                            </div>
+                          </div>
+                          <span style={{
+                            fontFamily: "'Pretendard'",
+                            fontStyle: "normal",
+                            fontWeight: 400,
+                            fontSize: "11px",
+                            lineHeight: "128%",
+                            letterSpacing: "-0.01em",
+                            color: "rgba(12, 12, 12, 0.7)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            maxWidth: "100%",
+                          }}>
+                            {doc.fileName}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          );
+        })}
 
         {/* 이메일 수신자 선택 Section */}
         <div style={{
