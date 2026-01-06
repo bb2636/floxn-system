@@ -692,27 +692,26 @@ async function renderFieldReportPage(
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
   
-  page.drawRectangle({
-    x: MARGIN,
-    y: y - 35,
-    width: CONTENT_WIDTH,
-    height: 35,
-    color: rgb(0.95, 0.95, 0.95),
-    borderColor: rgb(0.3, 0.3, 0.3),
-    borderWidth: 1,
-  });
-  
+  // Title: 출동보고서 with underline
   drawText(page, {
     x: MARGIN,
     y: y - 25,
-    text: '출동확인서',
+    text: '출동보고서',
     font: fonts.bold,
-    size: 16,
+    size: 20,
     maxWidth: CONTENT_WIDTH,
     align: 'center',
   });
   
-  y -= 50;
+  // Underline
+  page.drawLine({
+    start: { x: A4_WIDTH / 2 - 50, y: y - 35 },
+    end: { x: A4_WIDTH / 2 + 50, y: y - 35 },
+    thickness: 1,
+    color: rgb(0.3, 0.3, 0.3),
+  });
+  
+  y -= 70;
   
   const insuredFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
     .filter(Boolean).join(' ');
@@ -723,25 +722,32 @@ async function renderFieldReportPage(
   const accidentDateTime = [caseData.accidentDate, caseData.accidentTime]
     .filter(Boolean).join(' ');
   
+  // Section 1: 현장정보
   drawText(page, {
     x: MARGIN,
     y,
-    text: '■ 현장정보',
+    text: '현장정보',
     font: fonts.bold,
     size: 11,
   });
+  page.drawLine({
+    start: { x: MARGIN, y: y - 5 },
+    end: { x: A4_WIDTH - MARGIN, y: y - 5 },
+    thickness: 0.5,
+    color: rgb(0.3, 0.3, 0.3),
+  });
   
-  y -= 20;
+  y -= 25;
   
   const fieldInfoRows: TableCell[][] = [
     [
       { text: '방문일시', width: 90, isHeader: true, align: 'center' },
       { text: visitDateTime || '-', width: 168, align: 'left' },
-      { text: '출동담당자', width: 90, isHeader: true, align: 'center' },
+      { text: '출동 담당자', width: 90, isHeader: true, align: 'center' },
       { text: caseData.assignedPartnerManager || partnerData?.name || '-', width: 167, align: 'left' },
     ],
     [
-      { text: '출동담당지', width: 90, isHeader: true, align: 'center' },
+      { text: '출동 담당지', width: 90, isHeader: true, align: 'center' },
       { text: caseData.dispatchLocation || '-', width: 168, align: 'left' },
       { text: '협력업체', width: 90, isHeader: true, align: 'center' },
       { text: caseData.assignedPartner || '-', width: 167, align: 'left' },
@@ -758,35 +764,38 @@ async function renderFieldReportPage(
     rows: fieldInfoRows,
     fonts,
     fontSize: 9,
-    rowHeight: 22,
+    rowHeight: 24,
   });
   
-  y -= 20;
+  y -= 25;
   
+  // Section 2: 사고 원인(+수리항목)
   drawText(page, {
     x: MARGIN,
     y,
-    text: '■ 사고 내용',
+    text: '사고 원인(+수리항목)',
     font: fonts.bold,
     size: 11,
   });
+  page.drawLine({
+    start: { x: MARGIN, y: y - 5 },
+    end: { x: A4_WIDTH - MARGIN, y: y - 5 },
+    thickness: 0.5,
+    color: rgb(0.3, 0.3, 0.3),
+  });
   
-  y -= 20;
+  y -= 25;
   
   const accidentInfoRows: TableCell[][] = [
     [
-      { text: '사고일시', width: 90, isHeader: true, align: 'center' },
+      { text: '사고 발생일시', width: 90, isHeader: true, align: 'center' },
       { text: accidentDateTime || '-', width: 168, align: 'left' },
-      { text: '사고유형', width: 90, isHeader: true, align: 'center' },
+      { text: '카테고리', width: 90, isHeader: true, align: 'center' },
       { text: caseData.accidentCategory || '-', width: 167, align: 'left' },
     ],
     [
       { text: '사고원인', width: 90, isHeader: true, align: 'center' },
       { text: caseData.accidentCause || '-', width: 425, align: 'left' },
-    ],
-    [
-      { text: '현장 특이사항', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.siteNotes || caseData.specialNotes || '특이사항 없음', width: 425, align: 'left' },
     ],
   ];
   
@@ -796,73 +805,121 @@ async function renderFieldReportPage(
     rows: accidentInfoRows,
     fonts,
     fontSize: 9,
-    rowHeight: 22,
+    rowHeight: 24,
   });
   
-  y -= 20;
+  y -= 25;
   
+  // Section 3: 특이사항 및 요청사항 (VOC)
   drawText(page, {
     x: MARGIN,
     y,
-    text: '■ 피해/복구 내역',
+    text: '특이사항 및 요청사항 (VOC)',
     font: fonts.bold,
     size: 11,
   });
+  page.drawLine({
+    start: { x: MARGIN, y: y - 5 },
+    end: { x: A4_WIDTH - MARGIN, y: y - 5 },
+    thickness: 0.5,
+    color: rgb(0.3, 0.3, 0.3),
+  });
   
-  y -= 20;
+  y -= 25;
   
-  const repairHeaderRow: TableCell[] = [
-    { text: '번호', width: 40, isHeader: true, align: 'center' },
-    { text: '구분', width: 80, isHeader: true, align: 'center' },
-    { text: '위치', width: 90, isHeader: true, align: 'center' },
-    { text: '공사내용', width: 130, isHeader: true, align: 'center' },
-    { text: '면적(㎡)', width: 80, isHeader: true, align: 'center' },
-    { text: '비고', width: 95, isHeader: true, align: 'center' },
+  const vocText = caseData.vocNotes || caseData.siteNotes || caseData.specialNotes || '-';
+  
+  // VOC box
+  page.drawRectangle({
+    x: MARGIN,
+    y: y - 50,
+    width: CONTENT_WIDTH,
+    height: 55,
+    borderColor: rgb(0.7, 0.7, 0.7),
+    borderWidth: 0.5,
+  });
+  
+  drawText(page, {
+    x: MARGIN + 10,
+    y: y - 10,
+    text: vocText,
+    font: fonts.regular,
+    size: 9,
+    maxWidth: CONTENT_WIDTH - 20,
+  });
+  
+  y -= 75;
+  
+  // Section 4: 피해 복구방식 및 처리 유형
+  drawText(page, {
+    x: MARGIN,
+    y,
+    text: '피해 복구방식 및 처리 유형',
+    font: fonts.bold,
+    size: 11,
+  });
+  page.drawLine({
+    start: { x: MARGIN, y: y - 5 },
+    end: { x: A4_WIDTH - MARGIN, y: y - 5 },
+    thickness: 0.5,
+    color: rgb(0.3, 0.3, 0.3),
+  });
+  
+  y -= 25;
+  
+  const victimFullAddress = [caseData.victimAddress, caseData.victimAddressDetail]
+    .filter(Boolean).join(' ') || insuredFullAddress;
+  
+  const recoveryInfoRows: TableCell[][] = [
+    [
+      { text: '피해자명', width: 90, isHeader: true, align: 'center' },
+      { text: caseData.victimName || '-', width: 168, align: 'left' },
+      { text: '피해자 연락처', width: 90, isHeader: true, align: 'center' },
+      { text: caseData.victimContact || caseData.victimPhone || '-', width: 167, align: 'left' },
+    ],
+    [
+      { text: '피해주소', width: 90, isHeader: true, align: 'center' },
+      { text: victimFullAddress || '-', width: 425, align: 'left' },
+    ],
+    [
+      { text: '처리유형', width: 90, isHeader: true, align: 'center' },
+      { text: caseData.processingType || caseData.estimateType || '-', width: 425, align: 'left' },
+    ],
+    [
+      { text: '복구방식', width: 90, isHeader: true, align: 'center' },
+      { text: caseData.recoveryMethod || caseData.repairType || '-', width: 425, align: 'left' },
+    ],
   ];
-  
-  const repairDataRows: TableCell[][] = [repairHeaderRow];
-  
-  if (repairItems && repairItems.length > 0) {
-    repairItems.forEach((item, index) => {
-      const areaM2 = item.repairArea ? Number(item.repairArea).toFixed(2) : '-';
-      repairDataRows.push([
-        { text: String(index + 1), width: 40, align: 'center' },
-        { text: item.category || '-', width: 80, align: 'center' },
-        { text: item.location || '-', width: 90, align: 'left' },
-        { text: item.workName || '-', width: 130, align: 'left' },
-        { text: `${areaM2} ㎡`, width: 80, align: 'right' },
-        { text: item.note || '-', width: 95, align: 'left' },
-      ]);
-    });
-  } else {
-    repairDataRows.push([
-      { text: '등록된 복구 내역이 없습니다.', width: 515, align: 'center' },
-    ]);
-  }
   
   y = drawTable(page, {
     x: MARGIN,
     y,
-    rows: repairDataRows,
+    rows: recoveryInfoRows,
     fonts,
-    fontSize: 8,
-    rowHeight: 20,
+    fontSize: 9,
+    rowHeight: 24,
   });
   
-  y -= 30;
+  // Footer: 작성일 and 작성자
+  const footerY = MARGIN + 20;
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
   
   drawText(page, {
     x: MARGIN,
-    y,
-    text: `작성일: ${formatDate(new Date().toISOString())}`,
+    y: footerY,
+    text: `작성일: ${dateStr}`,
     font: fonts.regular,
     size: 9,
   });
   
+  const partnerName = caseData.assignedPartner || '-';
+  const managerName = caseData.assignedPartnerManager || partnerData?.name || '-';
+  
   drawText(page, {
-    x: A4_WIDTH - MARGIN - 150,
-    y,
-    text: `작성자: ${caseData.assignedPartnerManager || partnerData?.name || '-'}`,
+    x: A4_WIDTH - MARGIN - 180,
+    y: footerY,
+    text: `작성자: ${managerName} (${partnerName})`,
     font: fonts.regular,
     size: 9,
   });
