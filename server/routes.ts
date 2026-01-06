@@ -5928,38 +5928,39 @@ FLOXN 드림`;
       // Build particulars based on amounts
       const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
+      const addressLabel = caseData.victimAddressDetail || accidentNo;
 
       if (damagePreventionAmount && damagePreventionAmount > 0) {
         particulars.push({
-          title: `[${accidentNo}] - 손해방지비용`,
+          title: `[${addressLabel}] - 손해방지비용`,
           amount: damagePreventionAmount,
         });
       }
 
       if (propertyRepairAmount && propertyRepairAmount > 0) {
         particulars.push({
-          title: `[${accidentNo}] - 대물복구비용`,
+          title: `[${addressLabel}] - 대물복구비용`,
           amount: propertyRepairAmount,
         });
       }
 
       if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
         particulars.push({
-          title: `[${accidentNo}] - 현장출동비용 (손해방지)`,
+          title: `[${addressLabel}] - 현장출동비용 (손해방지)`,
           amount: fieldDispatchPreventionAmount,
         });
       }
 
       if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
         particulars.push({
-          title: `[${accidentNo}] - 현장출동비용 (대물)`,
+          title: `[${addressLabel}] - 현장출동비용 (대물)`,
           amount: fieldDispatchPropertyAmount,
         });
       }
 
       if (particulars.length === 0) {
         particulars.push({
-          title: `[${accidentNo}]`,
+          title: `[${addressLabel}]`,
           detail: '청구 내역 없음',
           amount: 0,
         });
@@ -6271,31 +6272,32 @@ FLOXN 드림`;
       // Build particulars based on amounts (each category gets its own line)
       const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
+      const addressLabel = caseData.victimAddressDetail || accidentNo;
 
       if (damagePreventionAmount && damagePreventionAmount > 0) {
         particulars.push({
-          title: `[${accidentNo}] - 손해방지비용`,
+          title: `[${addressLabel}] - 손해방지비용`,
           amount: damagePreventionAmount,
         });
       }
 
       if (propertyRepairAmount && propertyRepairAmount > 0) {
         particulars.push({
-          title: `[${accidentNo}] - 대물복구비용`,
+          title: `[${addressLabel}] - 대물복구비용`,
           amount: propertyRepairAmount,
         });
       }
 
       if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
         particulars.push({
-          title: `[${accidentNo}] - 현장출동비용 (손해방지)`,
+          title: `[${addressLabel}] - 현장출동비용 (손해방지)`,
           amount: fieldDispatchPreventionAmount,
         });
       }
 
       if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
         particulars.push({
-          title: `[${accidentNo}] - 현장출동비용 (대물)`,
+          title: `[${addressLabel}] - 현장출동비용 (대물)`,
           amount: fieldDispatchPropertyAmount,
         });
       }
@@ -6303,7 +6305,7 @@ FLOXN 드림`;
       // If no particulars, add a default entry
       if (particulars.length === 0) {
         particulars.push({
-          title: `[${accidentNo}]`,
+          title: `[${addressLabel}]`,
           detail: '청구 내역 없음',
           amount: 0,
         });
