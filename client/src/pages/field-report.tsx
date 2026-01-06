@@ -3525,7 +3525,7 @@ export default function FieldReport() {
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right;">${(row.standardPrice || 0).toLocaleString()}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${(row.standardPrice > 0 ? ((row.amount || 0) / row.standardPrice).toFixed(2) : '0.00')}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: right; font-weight: 600;">${(row.amount || 0).toLocaleString()}</td>
-                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.includeInEstimate ? '포함' : '경비'}</td>
+                                    <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.includeInEstimate ? '부' : '여'}</td>
                                     <td style="padding: 5px 3px; border: 1px solid rgba(12,12,12,0.1); text-align: center;">${row.request || '-'}</td>
                                   </tr>
                                 `).join('')}
@@ -3807,7 +3807,7 @@ export default function FieldReport() {
                                   <td style={{ padding: "10px 8px", textAlign: "right" }}>{(row.standardPrice || 0).toLocaleString()}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.standardPrice > 0 ? ((row.amount || 0) / row.standardPrice).toFixed(2) : '0.00'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{(row.amount || 0).toLocaleString()}</td>
-                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.includeInEstimate ? '포함' : '경비'}</td>
+                                  <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.includeInEstimate ? '부' : '여'}</td>
                                   <td style={{ padding: "10px 8px", textAlign: "center" }}>{row.request || '-'}</td>
                                 </tr>
                             ))}
