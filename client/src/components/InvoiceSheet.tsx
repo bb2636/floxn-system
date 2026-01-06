@@ -455,6 +455,15 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       return;
     }
 
+    // Show warning toast if many documents are selected
+    if (selectedDocumentIds.length >= 5) {
+      toast({
+        title: "PDF 생성 중",
+        description: "PDF파일 용량이 커 다운받는데 시간이 소요될 수 있습니다.",
+        duration: 5000,
+      });
+    }
+
     setIsDownloadingPdf(true);
 
     try {
@@ -528,6 +537,15 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         variant: "destructive",
       });
       return;
+    }
+
+    // Show warning toast if many documents are selected
+    if (selectedDocumentIds.length >= 5) {
+      toast({
+        title: "PDF 생성 중",
+        description: "PDF파일 용량이 커 전송에 시간이 소요될 수 있습니다.",
+        duration: 5000,
+      });
     }
 
     setIsSendingPdf(true);
