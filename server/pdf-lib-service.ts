@@ -638,32 +638,47 @@ async function renderCoverPage(
   
   // FLOXN logo at bottom center
   const logoY = MARGIN + 30;
+  const centerX = A4_WIDTH / 2;
   
-  // Draw FLOXN logo text
+  // Draw chain icon (two interlocking links)
+  const chainColor = rgb(0.15, 0.15, 0.15);
+  const linkWidth = 18;
+  const linkHeight = 10;
+  const linkThickness = 2.5;
+  const linkGap = 6;
+  
+  // Left chain link (horizontal oval)
+  const leftLinkX = centerX - 55;
+  const linkY = logoY + 4;
+  
+  // Draw left link outline
+  page.drawEllipse({
+    x: leftLinkX,
+    y: linkY,
+    xScale: linkWidth / 2,
+    yScale: linkHeight / 2,
+    borderColor: chainColor,
+    borderWidth: linkThickness,
+  });
+  
+  // Draw right link outline (overlapping)
+  const rightLinkX = leftLinkX + linkWidth - linkGap;
+  page.drawEllipse({
+    x: rightLinkX,
+    y: linkY,
+    xScale: linkWidth / 2,
+    yScale: linkHeight / 2,
+    borderColor: chainColor,
+    borderWidth: linkThickness,
+  });
+  
+  // Draw FLOXN text
   drawText(page, {
-    x: MARGIN,
+    x: centerX - 25,
     y: logoY,
     text: 'FLOXN',
     font: fonts.bold,
     size: 14,
-    maxWidth: CONTENT_WIDTH,
-    align: 'center',
-  });
-  
-  // Draw decorative dots before FLOXN
-  const logoTextWidth = 60;
-  const centerX = A4_WIDTH / 2;
-  page.drawCircle({
-    x: centerX - logoTextWidth / 2 - 15,
-    y: logoY + 5,
-    size: 3,
-    color: rgb(0.2, 0.2, 0.2),
-  });
-  page.drawCircle({
-    x: centerX - logoTextWidth / 2 - 8,
-    y: logoY + 5,
-    size: 3,
-    color: rgb(0.2, 0.2, 0.2),
   });
 }
 
