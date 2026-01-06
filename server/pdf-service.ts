@@ -1066,7 +1066,8 @@ export async function generatePdf(payload: PdfGenerationPayload, imageQuality: n
         // Only add to PDF if there's actual content
         if (evidenceHtml && evidenceHtml.trim().length > 0) {
           const page = await browser.newPage();
-          await page.setContent(evidenceHtml, { waitUntil: 'networkidle0', timeout: 60000 });
+          // domcontentloaded 사용하여 프레임 분리 오류 방지
+          await page.setContent(evidenceHtml, { waitUntil: 'domcontentloaded', timeout: 120000 });
           // Wait for all images to load
           await page.evaluate(() => {
             return Promise.all(
