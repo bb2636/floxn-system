@@ -1,7 +1,13 @@
-import puppeteer from 'puppeteer';
+import { PDFDocument, PDFPage, PDFFont, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
 import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
+
+const A4_WIDTH = 595.28;
+const A4_HEIGHT = 841.89;
+const MARGIN = 50;
+const CONTENT_WIDTH = A4_WIDTH - (MARGIN * 2);
 
 interface InvoiceData {
   recipientName: string;
@@ -16,6 +22,78 @@ interface InvoiceData {
   }>;
   totalAmount: number;
   remarks?: string;
+}
+
+interface FontSet {
+  regular: PDFFont;
+  bold: PDFFont;
+}
+
+let cachedFonts: { regular: Buffer; bold: Buffer } | null = null;
+
+function loadFontBytes(): { regular: Buffer; bold: Buffer } {
+  if (cachedFonts) return cachedFonts;
+  
+  const fontsDir = path.join(process.cwd(), 'server/fonts');
+  
+  const regularWoff2 = path.join(fontsDir, 'NotoSansKR-Regular.woff2');
+  const boldWoff2 = path.join(fontsDir, 'NotoSansKR-Bold.woff2');
+  const regularOtf = path.join(fontsDir, 'NotoSansKR-Regular.otf');
+  const boldOtf = path.join(fontsDir, 'NotoSansKR-Bold.otf');
+  
+  const npmFontsDir = path.join(process.cwd(), 'node_modules/noto-sans-kr/fonts');
+  const regularNpm = path.join(npmFontsDir, 'NotoSans-Regular.woff2');
+  const lightNpm = path.join(npmFontsDir, 'NotoSans-Light.woff2');
+  
+  let regular: Buffer | null = null;
+  let bold: Buffer | null = null;
+  
+  for (const fontPath of [regularWoff2, regularNpm, regularOtf]) {
+    try {
+      if (fs.existsSync(fontPath)) {
+        const buf = fs.readFileSync(fontPath);
+        if (buf[0] !== 0x3c && buf[0] !== 0x0a) {
+          regular = buf;
+          break;
+        }
+      }
+    } catch {}
+  }
+  
+  for (const fontPath of [boldWoff2, lightNpm, boldOtf]) {
+    try {
+      if (fs.existsSync(fontPath)) {
+        const buf = fs.readFileSync(fontPath);
+        if (buf[0] !== 0x3c && buf[0] !== 0x0a) {
+          bold = buf;
+          break;
+        }
+      }
+    } catch {}
+  }
+  
+  if (!regular || !bold) {
+    throw new Error('한글 폰트를 로드할 수 없습니다. server/fonts 디렉토리에 NotoSansKR-Regular.woff2 파일이 있는지 확인하세요.');
+  }
+  
+  cachedFonts = { regular, bold };
+  return cachedFonts;
+}
+
+async function embedFonts(pdfDoc: PDFDocument): Promise<FontSet> {
+  pdfDoc.registerFontkit(fontkit);
+  const fontBytes = loadFontBytes();
+  const regular = await pdfDoc.embedFont(fontBytes.regular);
+  const bold = await pdfDoc.embedFont(fontBytes.bold);
+  return { regular, bold };
+}
+
+function measureTextWidth(text: string, font: PDFFont, size: number): number {
+  try {
+    return font.widthOfTextAtSize(text, size);
+  } catch {
+    return text.length * size * 0.5;
+  }
 }
 
 function formatAmount(amount: number): string {
@@ -43,425 +121,287 @@ function formatDate(dateStr: string | undefined): string {
   }
 }
 
-export function generateInvoiceHtml(data: InvoiceData): string {
-  const particularsContent = data.particulars.map(item => {
-    let html = `<div class="particulars-item">
-      <div class="particulars-item-title">■ ${item.title}</div>`;
-    if (item.detail) {
-      html += `<div class="particulars-item-detail">${item.detail}</div>`;
-    }
-    html += `</div>`;
-    return html;
-  }).join('');
-
-  const amountContent = data.particulars.map(item => {
-    return `<div class="amount-item">${formatAmount(item.amount)}</div>`;
-  }).join('');
-
-  return `<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>INVOICE</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-      font-size: 12px;
-      line-height: 1.5;
-      color: #000;
-      background: #fff;
-      width: 210mm;
-      min-height: 297mm;
-      padding: 20mm 15mm;
-    }
-    
-    .container {
-      width: 100%;
-      max-width: 180mm;
-      margin: 0 auto;
-    }
-    
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #000;
-    }
-    
-    .header h1 {
-      font-size: 28px;
-      font-weight: 700;
-      letter-spacing: 3px;
-    }
-    
-    .info-section {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 40px;
-    }
-    
-    .info-left, .info-right {
-      width: 48%;
-    }
-    
-    .info-row {
-      display: flex;
-      margin-bottom: 8px;
-    }
-    
-    .info-label {
-      width: 80px;
-      font-weight: 500;
-      color: #333;
-    }
-    
-    .info-colon {
-      width: 20px;
-      text-align: center;
-    }
-    
-    .info-value {
-      flex: 1;
-      color: #0066cc;
-      font-weight: 500;
-    }
-    
-    .table-section {
-      margin-bottom: 40px;
-    }
-    
-    .particulars-table {
-      width: 100%;
-      border-collapse: collapse;
-      border: 1px solid #000;
-    }
-    
-    .particulars-table th {
-      background: #f5f5f5;
-      padding: 12px 16px;
-      text-align: center;
-      font-weight: 600;
-      border: 1px solid #000;
-      font-size: 13px;
-    }
-    
-    .particulars-table td {
-      padding: 16px;
-      border: 1px solid #000;
-      vertical-align: top;
-    }
-    
-    .particulars-table .col-particulars {
-      width: 65%;
-    }
-    
-    .particulars-table .col-amount {
-      width: 35%;
-      text-align: right;
-    }
-    
-    .particulars-content {
-      min-height: 80px;
-    }
-    
-    .particulars-item {
-      margin-bottom: 12px;
-    }
-    
-    .particulars-item-title {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-    
-    .particulars-item-detail {
-      color: #666;
-      font-size: 11px;
-      margin-left: 16px;
-    }
-    
-    .amount-item {
-      margin-bottom: 12px;
-      color: #cc0000;
-      font-weight: 500;
-      min-height: 20px;
-    }
-    
-    .total-row td {
-      background: #fafafa;
-      font-weight: 700;
-    }
-    
-    .total-label {
-      text-align: left !important;
-      padding-left: 16px !important;
-    }
-    
-    .total-amount {
-      color: #cc0000;
-      font-weight: 700;
-      font-size: 14px;
-    }
-    
-    .account-section {
-      border: 1px solid #000;
-      margin-bottom: 40px;
-    }
-    
-    .account-header {
-      text-align: center;
-      padding: 12px;
-      background: #f9f9f9;
-      border-bottom: 1px solid #000;
-      font-weight: 600;
-    }
-    
-    .account-body {
-      padding: 16px;
-    }
-    
-    .account-row {
-      display: flex;
-      margin-bottom: 8px;
-    }
-    
-    .account-row:last-child {
-      margin-bottom: 0;
-    }
-    
-    .account-label {
-      width: 120px;
-      text-align: center;
-      font-weight: 500;
-    }
-    
-    .account-value {
-      flex: 1;
-      text-align: center;
-    }
-    
-    .footer {
-      text-align: center;
-      padding-top: 30px;
-      border-top: 2px solid #000;
-      margin-top: 40px;
-    }
-    
-    .footer-text {
-      font-size: 18px;
-      font-weight: 600;
-      letter-spacing: 2px;
-    }
-    
-    @media print {
-      body {
-        print-color-adjust: exact;
-        -webkit-print-color-adjust: exact;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>INVOICE</h1>
-    </div>
-    
-    <div class="info-section">
-      <div class="info-left">
-        <div class="info-row">
-          <span class="info-label">수 신</span>
-          <span class="info-colon">:</span>
-          <span class="info-value">${data.recipientName || '-'}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">사고번호</span>
-          <span class="info-colon">:</span>
-          <span class="info-value">${data.insuranceAccidentNo || '-'}</span>
-        </div>
-      </div>
-      <div class="info-right">
-        <div class="info-row">
-          <span class="info-label">수임일자</span>
-          <span class="info-colon">:</span>
-          <span class="info-value">${formatDate(data.acceptanceDate)}</span>
-        </div>
-        <div class="info-row">
-          <span class="info-label">청구일자</span>
-          <span class="info-colon">:</span>
-          <span class="info-value">${formatDate(data.submissionDate)}</span>
-        </div>
-      </div>
-    </div>
-    
-    <div class="table-section">
-      <table class="particulars-table">
-        <thead>
-          <tr>
-            <th class="col-particulars">PARTICULARS</th>
-            <th class="col-amount">AMOUNT</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="col-particulars">
-              <div class="particulars-content">
-                ${particularsContent}
-              </div>
-            </td>
-            <td class="col-amount">
-              <div class="particulars-content">
-                ${amountContent}
-              </div>
-            </td>
-          </tr>
-          <tr class="total-row">
-            <td class="total-label">TOTAL AMOUNT</td>
-            <td class="col-amount">
-              <span class="total-amount">${formatAmount(data.totalAmount)}</span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    
-    <div class="account-section">
-      <div class="account-header">
-        아래의 계좌로 입금 부탁드립니다.
-      </div>
-      <div class="account-body">
-        <div class="account-row">
-          <span class="account-label">은행명</span>
-          <span class="account-value">신한은행</span>
-        </div>
-        <div class="account-row">
-          <span class="account-label">계좌번호</span>
-          <span class="account-value">140-015-744120</span>
-        </div>
-        <div class="account-row">
-          <span class="account-label">예금주</span>
-          <span class="account-value">주식회사 플록슨</span>
-        </div>
-        <div class="account-row">
-          <span class="account-label">사업자등록번호</span>
-          <span class="account-value">517-89-03490</span>
-        </div>
-      </div>
-    </div>
-    
-    <div class="footer">
-      <span class="footer-text">FLOXN., Inc</span>
-    </div>
-  </div>
-</body>
-</html>`;
+function drawTextLine(
+  page: PDFPage,
+  text: string,
+  x: number,
+  y: number,
+  font: PDFFont,
+  size: number,
+  color: { r: number; g: number; b: number } = { r: 0, g: 0, b: 0 }
+): void {
+  try {
+    page.drawText(text, {
+      x,
+      y,
+      size,
+      font,
+      color: rgb(color.r, color.g, color.b),
+    });
+  } catch (e) {
+    console.warn(`[invoice-pdf] Failed to draw text: "${text.substring(0, 20)}..."`);
+  }
 }
 
-// Get Chromium executable path dynamically
-export function getChromiumPath(): string | undefined {
-  // Check environment variable first
-  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-    return process.env.PUPPETEER_EXECUTABLE_PATH;
-  }
-  
-  // Try common Nix store paths
-  const possiblePaths = [
-    '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
-    '/usr/bin/chromium',
-    '/usr/bin/chromium-browser',
-    '/usr/bin/google-chrome',
-  ];
-  
-  // Check hardcoded paths first (synchronous but safe)
-  for (const p of possiblePaths) {
-    try {
-      if (fs.existsSync(p)) {
-        return p;
-      }
-    } catch {}
-  }
-  
-  // Try which command (wrapped in try-catch to prevent stalling)
-  try {
-    const { execSync } = require('child_process');
-    const chromiumPath = execSync('which chromium 2>/dev/null || which chromium-browser 2>/dev/null || true', { 
-      encoding: 'utf8',
-      timeout: 5000, // 5 second timeout
-    }).trim();
-    if (chromiumPath && fs.existsSync(chromiumPath)) {
-      return chromiumPath;
-    }
-  } catch (e) {
-    console.warn('[Chromium] which command failed:', e);
-  }
-  
-  // Let puppeteer try to use its bundled Chromium
-  console.warn('[Chromium] No system Chromium found, will try bundled version');
-  return undefined;
+function drawCenteredText(
+  page: PDFPage,
+  text: string,
+  y: number,
+  font: PDFFont,
+  size: number,
+  color: { r: number; g: number; b: number } = { r: 0, g: 0, b: 0 }
+): void {
+  const textWidth = measureTextWidth(text, font, size);
+  const x = (A4_WIDTH - textWidth) / 2;
+  drawTextLine(page, text, x, y, font, size, color);
+}
+
+function drawRightAlignedText(
+  page: PDFPage,
+  text: string,
+  rightX: number,
+  y: number,
+  font: PDFFont,
+  size: number,
+  color: { r: number; g: number; b: number } = { r: 0, g: 0, b: 0 }
+): void {
+  const textWidth = measureTextWidth(text, font, size);
+  const x = rightX - textWidth;
+  drawTextLine(page, text, x, y, font, size, color);
 }
 
 export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
-  const html = generateInvoiceHtml(data);
+  console.log('[Invoice PDF] Generating PDF with pdf-lib...');
   
-  let browser = null;
-  const chromiumPath = getChromiumPath();
-  console.log(`[Invoice PDF] Using Chromium path: ${chromiumPath || 'bundled'}`);
+  const pdfDoc = await PDFDocument.create();
+  const fonts = await embedFonts(pdfDoc);
   
-  // Create a timeout promise
-  const TIMEOUT_MS = 60000; // 60 second timeout
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('PDF 생성 시간 초과 (60초). Chromium 브라우저 실행에 실패했을 수 있습니다.')), TIMEOUT_MS);
+  const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+  
+  let y = A4_HEIGHT - MARGIN;
+  
+  drawCenteredText(page, 'INVOICE', y, fonts.bold, 28);
+  y -= 15;
+  
+  page.drawLine({
+    start: { x: MARGIN, y },
+    end: { x: A4_WIDTH - MARGIN, y },
+    thickness: 2,
+    color: rgb(0, 0, 0),
   });
   
-  const generatePdf = async (): Promise<Buffer> => {
-    try {
-      console.log('[Invoice PDF] Launching browser...');
-      browser = await puppeteer.launch({
-        headless: true,
-        ...(chromiumPath && { executablePath: chromiumPath }),
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--single-process',
-        ],
-      });
-      console.log('[Invoice PDF] Browser launched successfully');
-      
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
-      
-      const pdfBuffer = await page.pdf({
-        format: 'A4',
-        printBackground: true,
-        margin: { top: '0', right: '0', bottom: '0', left: '0' },
-      });
-      
-      await page.close();
-      await browser.close();
-      browser = null;
-      
-      console.log(`[Invoice PDF] PDF generated successfully, size: ${pdfBuffer.length} bytes`);
-      return Buffer.from(pdfBuffer);
-    } catch (error) {
-      if (browser) {
-        try { await browser.close(); } catch {}
-      }
-      const err = error as Error;
-      console.error(`[Invoice PDF] Generation failed: ${err.message}`);
-      throw new Error(`PDF 생성 실패: ${err.message}. Chromium 브라우저가 설치되어 있는지 확인하세요.`);
-    }
-  };
+  y -= 40;
   
-  // Race between PDF generation and timeout
-  return Promise.race([generatePdf(), timeoutPromise]);
+  const leftColX = MARGIN;
+  const rightColX = A4_WIDTH / 2 + 20;
+  const labelWidth = 70;
+  const fontSize = 11;
+  const lineHeight = 20;
+  
+  drawTextLine(page, '수 신', leftColX, y, fonts.bold, fontSize);
+  drawTextLine(page, ':', leftColX + labelWidth, y, fonts.regular, fontSize);
+  drawTextLine(page, data.recipientName || '-', leftColX + labelWidth + 15, y, fonts.regular, fontSize, { r: 0, g: 0.4, b: 0.8 });
+  
+  drawTextLine(page, '수임일자', rightColX, y, fonts.bold, fontSize);
+  drawTextLine(page, ':', rightColX + labelWidth, y, fonts.regular, fontSize);
+  drawTextLine(page, formatDate(data.acceptanceDate), rightColX + labelWidth + 15, y, fonts.regular, fontSize, { r: 0, g: 0.4, b: 0.8 });
+  
+  y -= lineHeight;
+  
+  drawTextLine(page, '사고번호', leftColX, y, fonts.bold, fontSize);
+  drawTextLine(page, ':', leftColX + labelWidth, y, fonts.regular, fontSize);
+  drawTextLine(page, data.insuranceAccidentNo || '-', leftColX + labelWidth + 15, y, fonts.regular, fontSize, { r: 0, g: 0.4, b: 0.8 });
+  
+  drawTextLine(page, '청구일자', rightColX, y, fonts.bold, fontSize);
+  drawTextLine(page, ':', rightColX + labelWidth, y, fonts.regular, fontSize);
+  drawTextLine(page, formatDate(data.submissionDate), rightColX + labelWidth + 15, y, fonts.regular, fontSize, { r: 0, g: 0.4, b: 0.8 });
+  
+  y -= 40;
+  
+  const tableX = MARGIN;
+  const tableWidth = CONTENT_WIDTH;
+  const particularsColWidth = tableWidth * 0.65;
+  const amountColWidth = tableWidth * 0.35;
+  const headerHeight = 30;
+  const cellPadding = 10;
+  
+  page.drawRectangle({
+    x: tableX,
+    y: y - headerHeight,
+    width: particularsColWidth,
+    height: headerHeight,
+    color: rgb(0.95, 0.95, 0.95),
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1,
+  });
+  
+  page.drawRectangle({
+    x: tableX + particularsColWidth,
+    y: y - headerHeight,
+    width: amountColWidth,
+    height: headerHeight,
+    color: rgb(0.95, 0.95, 0.95),
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1,
+  });
+  
+  const headerTextY = y - headerHeight / 2 - 5;
+  const particularsHeaderWidth = measureTextWidth('PARTICULARS', fonts.bold, 12);
+  drawTextLine(page, 'PARTICULARS', tableX + (particularsColWidth - particularsHeaderWidth) / 2, headerTextY, fonts.bold, 12);
+  
+  const amountHeaderWidth = measureTextWidth('AMOUNT', fonts.bold, 12);
+  drawTextLine(page, 'AMOUNT', tableX + particularsColWidth + (amountColWidth - amountHeaderWidth) / 2, headerTextY, fonts.bold, 12);
+  
+  y -= headerHeight;
+  
+  const itemLineHeight = 18;
+  const detailLineHeight = 14;
+  let contentHeight = 20;
+  
+  for (const item of data.particulars) {
+    contentHeight += itemLineHeight;
+    if (item.detail) {
+      contentHeight += detailLineHeight;
+    }
+    contentHeight += 8;
+  }
+  
+  contentHeight = Math.max(contentHeight, 100);
+  
+  page.drawRectangle({
+    x: tableX,
+    y: y - contentHeight,
+    width: particularsColWidth,
+    height: contentHeight,
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1,
+  });
+  
+  page.drawRectangle({
+    x: tableX + particularsColWidth,
+    y: y - contentHeight,
+    width: amountColWidth,
+    height: contentHeight,
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1,
+  });
+  
+  let itemY = y - cellPadding - 10;
+  let amountY = y - cellPadding - 10;
+  
+  for (const item of data.particulars) {
+    drawTextLine(page, `■ ${item.title}`, tableX + cellPadding, itemY, fonts.bold, 11);
+    drawRightAlignedText(page, formatAmount(item.amount), tableX + tableWidth - cellPadding, amountY, fonts.regular, 11, { r: 0.8, g: 0, b: 0 });
+    
+    itemY -= itemLineHeight;
+    amountY -= itemLineHeight;
+    
+    if (item.detail) {
+      drawTextLine(page, item.detail, tableX + cellPadding + 16, itemY, fonts.regular, 9, { r: 0.4, g: 0.4, b: 0.4 });
+      itemY -= detailLineHeight;
+      amountY -= detailLineHeight;
+    }
+    
+    itemY -= 4;
+    amountY -= 4;
+  }
+  
+  y -= contentHeight;
+  
+  const totalRowHeight = 30;
+  
+  page.drawRectangle({
+    x: tableX,
+    y: y - totalRowHeight,
+    width: particularsColWidth,
+    height: totalRowHeight,
+    color: rgb(0.98, 0.98, 0.98),
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1,
+  });
+  
+  page.drawRectangle({
+    x: tableX + particularsColWidth,
+    y: y - totalRowHeight,
+    width: amountColWidth,
+    height: totalRowHeight,
+    color: rgb(0.98, 0.98, 0.98),
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1,
+  });
+  
+  const totalTextY = y - totalRowHeight / 2 - 5;
+  drawTextLine(page, 'TOTAL AMOUNT', tableX + cellPadding, totalTextY, fonts.bold, 12);
+  drawRightAlignedText(page, formatAmount(data.totalAmount), tableX + tableWidth - cellPadding, totalTextY, fonts.bold, 13, { r: 0.8, g: 0, b: 0 });
+  
+  y -= totalRowHeight + 30;
+  
+  const accountBoxWidth = CONTENT_WIDTH;
+  const accountBoxHeight = 120;
+  
+  page.drawRectangle({
+    x: tableX,
+    y: y - 25,
+    width: accountBoxWidth,
+    height: 25,
+    color: rgb(0.97, 0.97, 0.97),
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1,
+  });
+  
+  const accountHeaderText = '아래의 계좌로 입금 부탁드립니다.';
+  const accountHeaderWidth = measureTextWidth(accountHeaderText, fonts.bold, 11);
+  drawTextLine(page, accountHeaderText, tableX + (accountBoxWidth - accountHeaderWidth) / 2, y - 17, fonts.bold, 11);
+  
+  y -= 25;
+  
+  page.drawRectangle({
+    x: tableX,
+    y: y - (accountBoxHeight - 25),
+    width: accountBoxWidth,
+    height: accountBoxHeight - 25,
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 1,
+  });
+  
+  const accountLabelX = tableX + 80;
+  const accountValueX = tableX + 200;
+  const accountLineHeight = 20;
+  let accountY = y - 20;
+  
+  const accountData = [
+    { label: '은행명', value: '신한은행' },
+    { label: '계좌번호', value: '140-015-744120' },
+    { label: '예금주', value: '주식회사 플록슨' },
+    { label: '사업자등록번호', value: '517-89-03490' },
+  ];
+  
+  for (const row of accountData) {
+    const labelWidth = measureTextWidth(row.label, fonts.bold, 10);
+    drawTextLine(page, row.label, accountLabelX + (80 - labelWidth) / 2, accountY, fonts.bold, 10);
+    const valueWidth = measureTextWidth(row.value, fonts.regular, 10);
+    drawTextLine(page, row.value, accountValueX + (200 - valueWidth) / 2, accountY, fonts.regular, 10);
+    accountY -= accountLineHeight;
+  }
+  
+  y -= accountBoxHeight + 30;
+  
+  page.drawLine({
+    start: { x: MARGIN, y },
+    end: { x: A4_WIDTH - MARGIN, y },
+    thickness: 2,
+    color: rgb(0, 0, 0),
+  });
+  
+  y -= 25;
+  
+  drawCenteredText(page, 'FLOXN., Inc', y, fonts.bold, 16);
+  
+  const pdfBytes = await pdfDoc.save();
+  const buffer = Buffer.from(pdfBytes);
+  
+  console.log(`[Invoice PDF] PDF generated successfully, size: ${buffer.length} bytes`);
+  return buffer;
 }
 
 export async function sendInvoiceEmailWithAttachment(

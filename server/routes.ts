@@ -11,8 +11,8 @@ import https from "https";
 import crypto from "crypto";
 import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from "./replit_integrations/object_storage";
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
-import { generatePdf, generatePdfWithSizeLimit } from "./pdf-service";
-import { generateInvoicePdf, sendInvoiceEmailWithAttachment, getChromiumPath } from "./invoice-pdf-service";
+import { generatePdfWithPdfLib, generatePdfWithSizeLimitPdfLib } from "./pdf-lib-service";
+import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
 import { sendFieldReportEmail, sendEmailWithAttachment } from "./hiworks-email";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
@@ -5820,7 +5820,7 @@ FLOXN 드림`;
       console.log(`[Field Report Email] Generating PDF for case ${caseData.caseNumber}`);
 
       // 10MB 제한을 적용한 PDF 생성 (이메일 첨부 용량 제한)
-      const pdfBuffer = await generatePdfWithSizeLimit({
+      const pdfBuffer = await generatePdfWithSizeLimitPdfLib({
         caseId,
         sections: {
           cover: true,
@@ -6039,11 +6039,8 @@ FLOXN 드림`;
             }
           }
           
-          // Add images using Puppeteer for Korean header support
+          // Add images using pdf-lib (no Puppeteer)
           if (imageDocs.length > 0) {
-            const puppeteer = await import('puppeteer');
-            
-            // 카테고리 -> 탭 매핑
             const categoryToTab: Record<string, string> = {
               '현장출동사진': '현장사진', '현장': '현장사진',
               '수리중 사진': '현장사진', '수리중': '현장사진',
@@ -6055,8 +6052,13 @@ FLOXN 드림`;
               '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
             };
             
-            // Process images with sharp
-            const processedImages: Array<{ base64: string; tab: string; category: string }> = [];
+            const A4_WIDTH = 595.28;
+            const A4_HEIGHT = 841.89;
+            const MARGIN = 30;
+            const HEADER_HEIGHT = 25;
+            const GAP = 10;
+            const caseNumber = caseData.caseNumber || '';
+            
             for (const doc of imageDocs) {
               try {
                 const base64Data = doc.fileData.includes(',') 
@@ -6067,132 +6069,66 @@ FLOXN 드림`;
                   .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
                   .jpeg({ quality: 75 })
                   .toBuffer();
+                
                 const tab = categoryToTab[doc.category] || '기타';
-                processedImages.push({
-                  base64: `data:image/jpeg;base64,${imageBuffer.toString('base64')}`,
-                  tab,
-                  category: doc.category || '기타'
+                const headerText = `[${caseNumber}] ${tab} - ${doc.category || '기타'}`;
+                
+                const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                
+                page.drawRectangle({
+                  x: MARGIN,
+                  y: A4_HEIGHT - MARGIN - HEADER_HEIGHT,
+                  width: A4_WIDTH - (MARGIN * 2),
+                  height: HEADER_HEIGHT,
+                  color: rgb(0.95, 0.95, 0.95),
+                  borderColor: rgb(0.8, 0.8, 0.8),
+                  borderWidth: 0.5,
                 });
-                console.log(`[Invoice PDF] Processed image: ${doc.fileName}`);
+                
+                page.drawText(headerText, {
+                  x: MARGIN + 10,
+                  y: A4_HEIGHT - MARGIN - HEADER_HEIGHT + 8,
+                  size: 10,
+                  font,
+                  color: rgb(0.2, 0.2, 0.2),
+                });
+                
+                try {
+                  const embeddedImage = await mergedPdf.embedJpg(imageBuffer);
+                  const imageDims = embeddedImage.scale(1);
+                  const maxImageWidth = A4_WIDTH - (MARGIN * 2);
+                  const maxImageHeight = A4_HEIGHT - (MARGIN * 2) - HEADER_HEIGHT - GAP;
+                  
+                  let scale = 1;
+                  if (imageDims.width > maxImageWidth) {
+                    scale = maxImageWidth / imageDims.width;
+                  }
+                  if (imageDims.height * scale > maxImageHeight) {
+                    scale = maxImageHeight / imageDims.height;
+                  }
+                  
+                  const finalWidth = imageDims.width * scale;
+                  const finalHeight = imageDims.height * scale;
+                  const imageX = MARGIN + (maxImageWidth - finalWidth) / 2;
+                  const imageY = MARGIN + (maxImageHeight - finalHeight) / 2;
+                  
+                  page.drawImage(embeddedImage, {
+                    x: imageX,
+                    y: imageY,
+                    width: finalWidth,
+                    height: finalHeight,
+                  });
+                  
+                  console.log(`[Invoice PDF] Added image: ${doc.fileName}`);
+                } catch (imgErr) {
+                  console.error(`[Invoice PDF] Failed to embed image ${doc.fileName}:`, imgErr);
+                }
               } catch (err) {
                 console.error(`[Invoice PDF] Failed to process image ${doc.fileName}:`, err);
               }
             }
             
-            if (processedImages.length > 0) {
-              // Generate HTML for images
-              const caseNumber = caseData.caseNumber || '';
-              let pagesHtml = '';
-              
-              for (let i = 0; i < processedImages.length; i += 2) {
-                const first = processedImages[i];
-                const second = processedImages[i + 1];
-                
-                pagesHtml += `
-                  <div class="page">
-                    <div class="image-section">
-                      <div class="image-header">접수번호:${caseNumber} | ${first.tab}(${first.category})</div>
-                      <div class="image-container">
-                        <img src="${first.base64}" alt="Evidence ${i + 1}" />
-                      </div>
-                    </div>
-                    ${second ? `
-                    <div class="image-section">
-                      <div class="image-header">접수번호:${caseNumber} | ${second.tab}(${second.category})</div>
-                      <div class="image-container">
-                        <img src="${second.base64}" alt="Evidence ${i + 2}" />
-                      </div>
-                    </div>
-                    ` : ''}
-                  </div>
-                `;
-              }
-              
-              const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <style>
-    @page { size: A4; margin: 0; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; background: white; }
-    .page {
-      width: 210mm;
-      height: 297mm;
-      padding: 10mm;
-      page-break-after: always;
-      display: flex;
-      flex-direction: column;
-      gap: 8mm;
-    }
-    .page:last-child { page-break-after: auto; }
-    .image-section {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #e5e5e5;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .image-header {
-      background: #f8f8f8;
-      border-bottom: 1px solid #e5e5e5;
-      padding: 8px 15px;
-      font-size: 11pt;
-      color: #333;
-    }
-    .image-container {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px;
-      background: white;
-    }
-    .image-container img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-  </style>
-</head>
-<body>
-  ${pagesHtml}
-</body>
-</html>`;
-              
-              // Generate PDF with Puppeteer
-              const chromiumPath = getChromiumPath();
-              console.log(`[Invoice PDF Images] Using Chromium path: ${chromiumPath || 'bundled'}`);
-              
-              const browser = await puppeteer.default.launch({
-                headless: true,
-                ...(chromiumPath && { executablePath: chromiumPath }),
-                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
-              });
-              
-              try {
-                const page = await browser.newPage();
-                await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
-                await new Promise(resolve => setTimeout(resolve, 1500)); // Wait for font loading
-                const imagePdfBuffer = await page.pdf({
-                  format: 'A4',
-                  printBackground: true,
-                  margin: { top: '0', right: '0', bottom: '0', left: '0' },
-                });
-                await page.close();
-                
-                // Merge image PDF with invoice PDF
-                const imagePdf = await PDFDocument.load(imagePdfBuffer);
-                const imagePages = await mergedPdf.copyPages(imagePdf, imagePdf.getPageIndices());
-                imagePages.forEach((p: any) => mergedPdf.addPage(p));
-                
-                console.log(`[Invoice PDF] Added ${processedImages.length} images via Puppeteer`);
-              } finally {
-                await browser.close();
-              }
-            }
+            console.log(`[Invoice PDF] Added ${imageDocs.length} images via pdf-lib`);
           }
           
           pdfBuffer = Buffer.from(await mergedPdf.save());
@@ -6388,11 +6324,8 @@ FLOXN 드림`;
           }
         }
         
-        // Add images using Puppeteer for Korean header support
+        // Add images using pdf-lib (no Puppeteer)
         if (imageDocs.length > 0) {
-          const puppeteer = await import('puppeteer');
-          
-          // 카테고리 -> 탭 매핑
           const categoryToTab: Record<string, string> = {
             '현장출동사진': '현장사진', '현장': '현장사진',
             '수리중 사진': '현장사진', '수리중': '현장사진',
@@ -6404,8 +6337,13 @@ FLOXN 드림`;
             '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
           };
           
-          // Process images with sharp
-          const processedImages: Array<{ base64: string; tab: string; category: string }> = [];
+          const A4_WIDTH = 595.28;
+          const A4_HEIGHT = 841.89;
+          const MARGIN = 30;
+          const HEADER_HEIGHT = 25;
+          const GAP = 10;
+          const caseNumber = caseData.caseNumber || '';
+          
           for (const doc of imageDocs) {
             try {
               const base64Data = doc.fileData.includes(',') 
@@ -6416,132 +6354,66 @@ FLOXN 드림`;
                 .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
                 .jpeg({ quality: 75 })
                 .toBuffer();
+              
               const tab = categoryToTab[doc.category] || '기타';
-              processedImages.push({
-                base64: `data:image/jpeg;base64,${imageBuffer.toString('base64')}`,
-                tab,
-                category: doc.category || '기타'
+              const headerText = `[${caseNumber}] ${tab} - ${doc.category || '기타'}`;
+              
+              const page = mainPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+              
+              page.drawRectangle({
+                x: MARGIN,
+                y: A4_HEIGHT - MARGIN - HEADER_HEIGHT,
+                width: A4_WIDTH - (MARGIN * 2),
+                height: HEADER_HEIGHT,
+                color: rgb(0.95, 0.95, 0.95),
+                borderColor: rgb(0.8, 0.8, 0.8),
+                borderWidth: 0.5,
               });
-              console.log(`[Invoice PDF Email] Processed image: ${doc.fileName}`);
+              
+              page.drawText(headerText, {
+                x: MARGIN + 10,
+                y: A4_HEIGHT - MARGIN - HEADER_HEIGHT + 8,
+                size: 10,
+                font,
+                color: rgb(0.2, 0.2, 0.2),
+              });
+              
+              try {
+                const embeddedImage = await mainPdf.embedJpg(imageBuffer);
+                const imageDims = embeddedImage.scale(1);
+                const maxImageWidth = A4_WIDTH - (MARGIN * 2);
+                const maxImageHeight = A4_HEIGHT - (MARGIN * 2) - HEADER_HEIGHT - GAP;
+                
+                let scale = 1;
+                if (imageDims.width > maxImageWidth) {
+                  scale = maxImageWidth / imageDims.width;
+                }
+                if (imageDims.height * scale > maxImageHeight) {
+                  scale = maxImageHeight / imageDims.height;
+                }
+                
+                const finalWidth = imageDims.width * scale;
+                const finalHeight = imageDims.height * scale;
+                const imageX = MARGIN + (maxImageWidth - finalWidth) / 2;
+                const imageY = MARGIN + (maxImageHeight - finalHeight) / 2;
+                
+                page.drawImage(embeddedImage, {
+                  x: imageX,
+                  y: imageY,
+                  width: finalWidth,
+                  height: finalHeight,
+                });
+                
+                console.log(`[Invoice PDF Email] Added image: ${doc.fileName}`);
+              } catch (imgErr) {
+                console.error(`[Invoice PDF Email] Failed to embed image ${doc.fileName}:`, imgErr);
+              }
             } catch (err) {
               console.error(`[Invoice PDF Email] Failed to process image ${doc.fileName}:`, err);
             }
           }
           
-          if (processedImages.length > 0) {
-            // Generate HTML for images
-            const caseNumber = caseData.caseNumber || '';
-            let pagesHtml = '';
-            
-            for (let i = 0; i < processedImages.length; i += 2) {
-              const first = processedImages[i];
-              const second = processedImages[i + 1];
-              
-              pagesHtml += `
-                <div class="page">
-                  <div class="image-section">
-                    <div class="image-header">접수번호:${caseNumber} | ${first.tab}(${first.category})</div>
-                    <div class="image-container">
-                      <img src="${first.base64}" alt="Evidence ${i + 1}" />
-                    </div>
-                  </div>
-                  ${second ? `
-                  <div class="image-section">
-                    <div class="image-header">접수번호:${caseNumber} | ${second.tab}(${second.category})</div>
-                    <div class="image-container">
-                      <img src="${second.base64}" alt="Evidence ${i + 2}" />
-                    </div>
-                  </div>
-                  ` : ''}
-                </div>
-              `;
-            }
-            
-            const imageHtml = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-  <style>
-    @page { size: A4; margin: 0; }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; background: white; }
-    .page {
-      width: 210mm;
-      height: 297mm;
-      padding: 10mm;
-      page-break-after: always;
-      display: flex;
-      flex-direction: column;
-      gap: 8mm;
-    }
-    .page:last-child { page-break-after: auto; }
-    .image-section {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid #e5e5e5;
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .image-header {
-      background: #f8f8f8;
-      border-bottom: 1px solid #e5e5e5;
-      padding: 8px 15px;
-      font-size: 11pt;
-      color: #333;
-    }
-    .image-container {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 10px;
-      background: white;
-    }
-    .image-container img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-  </style>
-</head>
-<body>
-  ${pagesHtml}
-</body>
-</html>`;
-            
-            // Generate PDF with Puppeteer
-            const chromiumPathEmail = getChromiumPath();
-            console.log(`[Invoice PDF Email Images] Using Chromium path: ${chromiumPathEmail || 'bundled'}`);
-            
-            const browser = await puppeteer.default.launch({
-              headless: true,
-              ...(chromiumPathEmail && { executablePath: chromiumPathEmail }),
-              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
-            });
-            
-            try {
-              const browserPage = await browser.newPage();
-              await browserPage.setContent(imageHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
-              await new Promise(resolve => setTimeout(resolve, 1500)); // Wait for font loading
-              const imagePdfBuffer = await browserPage.pdf({
-                format: 'A4',
-                printBackground: true,
-                margin: { top: '0', right: '0', bottom: '0', left: '0' },
-              });
-              await browserPage.close();
-              
-              // Merge image PDF with invoice PDF
-              const imagePdf = await PDFDocument.load(imagePdfBuffer);
-              const imagePages = await mainPdf.copyPages(imagePdf, imagePdf.getPageIndices());
-              imagePages.forEach((p: any) => mainPdf.addPage(p));
-              
-              console.log(`[Invoice PDF Email] Added ${processedImages.length} images via Puppeteer`);
-            } finally {
-              await browser.close();
-            }
-          }
+          console.log(`[Invoice PDF Email] Added ${imageDocs.length} images via pdf-lib`);
         }
         
         pdfBuffer = Buffer.from(await mainPdf.save());
@@ -7287,7 +7159,7 @@ FLOXN 드림`;
 
       // 서버 측에서 PDF 생성 (10MB 제한을 적용하여 이메일 첨부 용량 제한)
       console.log(`[send-field-report-email-v2] Generating PDF for case ${caseId}`);
-      const pdfBuffer = await generatePdfWithSizeLimit({
+      const pdfBuffer = await generatePdfWithSizeLimitPdfLib({
         caseId,
         sections,
         evidence,
@@ -8445,7 +8317,7 @@ https://peulrogseun-aqaqaq4561.replit.app
     try {
       const payload = pdfDownloadSchema.parse(req.body);
       
-      const pdfBuffer = await generatePdf(payload);
+      const pdfBuffer = await generatePdfWithPdfLib(payload);
       
       const caseData = await storage.getCaseById(payload.caseId);
       const filename = caseData?.caseNumber 
