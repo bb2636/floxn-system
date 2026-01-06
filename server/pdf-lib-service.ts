@@ -41,51 +41,34 @@ function loadFontBytes(): { regular: Buffer; bold: Buffer } {
   
   const fontsDir = path.join(process.cwd(), 'server/fonts');
   
-  // Try woff2 first (more reliable), then fallback to otf
-  const regularWoff2 = path.join(fontsDir, 'NotoSansKR-Regular.woff2');
-  const boldWoff2 = path.join(fontsDir, 'NotoSansKR-Bold.woff2');
-  const regularOtf = path.join(fontsDir, 'NotoSansKR-Regular.otf');
-  const boldOtf = path.join(fontsDir, 'NotoSansKR-Bold.otf');
-  
-  // Also try from npm package location
-  const npmFontsDir = path.join(process.cwd(), 'node_modules/noto-sans-kr/fonts');
-  const regularNpm = path.join(npmFontsDir, 'NotoSans-Regular.woff2');
-  const lightNpm = path.join(npmFontsDir, 'NotoSans-Light.woff2');
+  // Use NotoSansKR-Regular-static.ttf (16MB full Korean font)
+  const regularTtf = path.join(fontsDir, 'NotoSansKR-Regular-static.ttf');
+  // Bold uses same font as Regular (will appear same weight)
+  const boldTtf = path.join(fontsDir, 'NotoSansKR-Regular-static.ttf');
   
   let regular: Buffer | null = null;
   let bold: Buffer | null = null;
   
-  // Load regular font
-  for (const fontPath of [regularWoff2, regularNpm, regularOtf]) {
-    try {
-      if (fs.existsSync(fontPath)) {
-        const buf = fs.readFileSync(fontPath);
-        // Check if it's a valid font (not HTML)
-        if (buf[0] !== 0x3c && buf[0] !== 0x0a) { // Not '<' or newline
-          regular = buf;
-          console.log(`[pdf-lib] Loaded regular font from: ${fontPath}`);
-          break;
-        }
-      }
-    } catch {}
+  try {
+    if (fs.existsSync(regularTtf)) {
+      regular = fs.readFileSync(regularTtf);
+      console.log(`[pdf-lib] NotoSansKR-Regular-static.ttf 로드 완료 (${Math.round(regular.length / 1024 / 1024)}MB)`);
+    }
+  } catch (err) {
+    console.error('[pdf-lib] NotoSansKR-Regular-static.ttf 로드 실패:', err);
   }
   
-  // Load bold/light font
-  for (const fontPath of [boldWoff2, lightNpm, boldOtf]) {
-    try {
-      if (fs.existsSync(fontPath)) {
-        const buf = fs.readFileSync(fontPath);
-        if (buf[0] !== 0x3c && buf[0] !== 0x0a) {
-          bold = buf;
-          console.log(`[pdf-lib] Loaded bold font from: ${fontPath}`);
-          break;
-        }
-      }
-    } catch {}
+  try {
+    if (fs.existsSync(boldTtf)) {
+      bold = fs.readFileSync(boldTtf);
+      console.log(`[pdf-lib] Bold 폰트 로드 완료`);
+    }
+  } catch (err) {
+    console.error('[pdf-lib] Bold 폰트 로드 실패:', err);
   }
   
   if (!regular || !bold) {
-    throw new Error('한글 폰트를 로드할 수 없습니다. server/fonts 디렉토리에 NotoSansKR-Regular.woff2 파일이 있는지 확인하세요.');
+    throw new Error('한글 폰트를 로드할 수 없습니다. server/fonts 디렉토리에 NotoSansKR-Regular-static.ttf 파일이 있는지 확인하세요.');
   }
   
   cachedFonts = { regular, bold };
