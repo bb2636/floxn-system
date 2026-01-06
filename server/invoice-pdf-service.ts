@@ -285,7 +285,7 @@ export function generateInvoiceHtml(data: InvoiceData): string {
         <div class="info-row">
           <span class="info-label">사고번호</span>
           <span class="info-colon">:</span>
-          <span class="info-value">${data.caseNumber || '-'}</span>
+          <span class="info-value">${data.insuranceAccidentNo || '-'}</span>
         </div>
       </div>
       <div class="info-right">
@@ -295,7 +295,7 @@ export function generateInvoiceHtml(data: InvoiceData): string {
           <span class="info-value">${formatDate(data.acceptanceDate)}</span>
         </div>
         <div class="info-row">
-          <span class="info-label">제출일자</span>
+          <span class="info-label">청구일자</span>
           <span class="info-colon">:</span>
           <span class="info-value">${formatDate(data.submissionDate)}</span>
         </div>
