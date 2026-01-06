@@ -96,6 +96,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [invoiceRemarks, setInvoiceRemarks] = useState<string>("");
   const [invoiceRecipientEmail, setInvoiceRecipientEmail] = useState<string>("");
   const [isSendingPdf, setIsSendingPdf] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [isLoadingAmounts, setIsLoadingAmounts] = useState(false);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
@@ -342,6 +343,72 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   
   const truncation = totalBeforeTruncation % 1000;
   const totalAmount = totalBeforeTruncation - truncation;
+
+  const handleDownloadPdf = async () => {
+    if (!caseData?.id) {
+      toast({
+        title: "PDF 다운로드 실패",
+        description: "케이스 정보를 찾을 수 없습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDownloadingPdf(true);
+
+    try {
+      const damagePreventionAmt = parseInt(invoiceDamagePreventionAmount || "0") || 0;
+      const propertyRepairAmt = parseInt(invoicePropertyRepairAmount || "0") || 0;
+      const fieldDispatchPreventionAmt = parseInt(fieldDispatchPreventionAmount || "0") || 0;
+      const fieldDispatchPropertyAmt = parseInt(fieldDispatchPropertyAmount || "0") || 0;
+      
+      const response = await fetch('/api/generate-invoice-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          caseId: caseData.id,
+          damagePreventionAmount: damagePreventionAmt,
+          propertyRepairAmount: propertyRepairAmt,
+          fieldDispatchPreventionAmount: fieldDispatchPreventionAmt,
+          fieldDispatchPropertyAmount: fieldDispatchPropertyAmt,
+          totalAmount: totalAmount,
+          remarks: invoiceRemarks,
+          selectedDocumentIds: selectedDocumentIds,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "PDF 생성 실패");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `인보이스_${caseData.caseNumber || caseData.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "PDF 다운로드 완료",
+        description: "인보이스 PDF가 다운로드되었습니다.",
+      });
+    } catch (error: any) {
+      console.error("PDF 다운로드 오류:", error);
+      toast({
+        title: "PDF 다운로드 실패",
+        description: error?.message || "PDF 다운로드 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   const handleSendInvoicePdf = async () => {
     if (!caseData?.id) {
@@ -1383,6 +1450,42 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
             width: "604px",
             height: "40px",
           }}>
+            {/* PDF 다운로드 Button */}
+            <button
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              style={{
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "10px 16px",
+                gap: "10px",
+                minWidth: "100px",
+                height: "40px",
+                border: "1px solid rgba(12, 12, 12, 0.1)",
+                borderRadius: "8px",
+                background: "transparent",
+                cursor: isDownloadingPdf ? "not-allowed" : "pointer",
+                opacity: isDownloadingPdf ? 0.5 : 1,
+                whiteSpace: "nowrap",
+              }}
+              data-testid="button-invoice-download-pdf">
+              <span style={{
+                fontFamily: "'Pretendard'",
+                fontStyle: "normal",
+                fontWeight: 600,
+                fontSize: "16px",
+                lineHeight: "128%",
+                letterSpacing: "-0.02em",
+                color: "#0C0C0C",
+                whiteSpace: "nowrap",
+              }}>
+                {isDownloadingPdf ? "다운로드 중..." : "PDF 다운로드"}
+              </span>
+            </button>
+
             {/* PDF 발송 Button */}
             <button
               onClick={handleSendInvoicePdf}

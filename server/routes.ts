@@ -5882,6 +5882,7 @@ FLOXN 드림`;
     fieldDispatchPropertyAmount: z.number().optional().default(0),
     totalAmount: z.number().optional(),
     remarks: z.string().optional(),
+    selectedDocumentIds: z.array(z.string()).optional().default([]),
   });
 
   app.post("/api/generate-invoice-pdf", async (req, res) => {
@@ -5914,7 +5915,8 @@ FLOXN 드림`;
         fieldDispatchPreventionAmount,
         fieldDispatchPropertyAmount,
         totalAmount: clientTotalAmount,
-        remarks
+        remarks,
+        selectedDocumentIds
       } = validationResult.data;
 
       // Get case data
@@ -5988,9 +5990,68 @@ FLOXN 드림`;
 
       console.log(`[Invoice PDF] Generating PDF for download - case ${caseId}`);
 
-      const pdfBuffer = await generateInvoicePdf(invoiceData);
+      let pdfBuffer = await generateInvoicePdf(invoiceData);
 
       console.log(`[Invoice PDF] PDF generated for download, size: ${pdfBuffer.length} bytes`);
+
+      // Merge selected documents if any
+      if (selectedDocumentIds && selectedDocumentIds.length > 0) {
+        console.log(`[Invoice PDF] Merging ${selectedDocumentIds.length} documents into PDF`);
+        
+        const documents = await storage.getDocumentsByCaseId(caseId);
+        const selectedDocs = documents.filter((doc: any) => selectedDocumentIds.includes(doc.id));
+        
+        if (selectedDocs.length > 0) {
+          const { PDFDocument } = await import('pdf-lib');
+          const sharp = await import('sharp');
+          
+          const mergedPdf = await PDFDocument.load(pdfBuffer);
+          
+          for (const doc of selectedDocs) {
+            try {
+              if (!doc.fileData) continue;
+              
+              const base64Data = doc.fileData.includes(',') 
+                ? doc.fileData.split(',')[1] 
+                : doc.fileData;
+              const fileBuffer = Buffer.from(base64Data, 'base64');
+              
+              const mimeType = doc.fileType || '';
+              
+              if (mimeType === 'application/pdf') {
+                const attachedPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+                const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
+                pages.forEach(page => mergedPdf.addPage(page));
+                console.log(`[Invoice PDF] Added PDF document: ${doc.fileName}`);
+              } else if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) {
+                const imageBuffer = await sharp.default(fileBuffer)
+                  .resize(1600, 2200, { fit: 'inside', withoutEnlargement: true })
+                  .jpeg({ quality: 75 })
+                  .toBuffer();
+                
+                const jpgImage = await mergedPdf.embedJpg(imageBuffer);
+                const page = mergedPdf.addPage([595, 842]); // A4
+                const { width, height } = jpgImage.scale(1);
+                const scale = Math.min(555 / width, 802 / height);
+                page.drawImage(jpgImage, {
+                  x: (595 - width * scale) / 2,
+                  y: 842 - 20 - height * scale,
+                  width: width * scale,
+                  height: height * scale,
+                });
+                console.log(`[Invoice PDF] Added image document: ${doc.fileName}`);
+              } else {
+                console.log(`[Invoice PDF] Skipping unsupported file type: ${mimeType}`);
+              }
+            } catch (docError) {
+              console.error(`[Invoice PDF] Failed to add document ${doc.fileName}:`, docError);
+            }
+          }
+          
+          pdfBuffer = Buffer.from(await mergedPdf.save());
+          console.log(`[Invoice PDF] Final PDF with documents, size: ${pdfBuffer.length} bytes`);
+        }
+      }
 
       const fileName = `INVOICE_${caseData.caseNumber || caseId}_${Date.now()}.pdf`;
       
