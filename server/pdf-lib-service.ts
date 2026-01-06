@@ -1514,29 +1514,19 @@ async function renderEstimatePage(
   let y = A4_HEIGHT - MARGIN;
   
   // ===== 견적서 타이틀 =====
-  page.drawRectangle({
-    x: MARGIN,
-    y: y - 30,
-    width: CONTENT_WIDTH,
-    height: 30,
-    color: rgb(0.95, 0.95, 0.95),
-    borderColor: rgb(0.3, 0.3, 0.3),
-    borderWidth: 1,
-  });
-  
   drawText(page, {
     x: MARGIN,
-    y: y - 22,
+    y: y - 10,
     text: '견 적 서',
     font: fonts.bold,
-    size: 16,
+    size: 18,
     maxWidth: CONTENT_WIDTH,
     align: 'center',
   });
   
-  y -= 45;
+  y -= 40;
   
-  // ===== 상단 정보 테이블 (Golden Master 양식) =====
+  // ===== 상단 정보 테이블 =====
   const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
     .filter(Boolean).join(' ');
   
@@ -1544,33 +1534,32 @@ async function renderEstimatePage(
   const partnerBusinessNo = partnerData?.businessNumber || '-';
   const partnerRepName = partnerData?.representativeName || partnerData?.name || '-';
   
-  // 공급자 정보: 회사명 + 사업자번호
-  const supplierInfo = partnerBusinessNo !== '-' 
-    ? `${partnerCompany} (사업자번호: ${partnerBusinessNo})`
-    : partnerCompany;
+  // 공급자 세로 라벨 (3행 병합)
+  const rowHeight = 20;
+  const supplierLabelX = MARGIN + 250;
+  const supplierLabelWidth = 30;
   
   const headerInfoRows: TableCell[][] = [
     [
-      { text: '현장명(주소)', width: 80, isHeader: true, align: 'center' },
-      { text: fullAddress || '-', width: 435, align: 'left' },
+      { text: '현장명(주소)', width: 70, isHeader: true, align: 'center' },
+      { text: fullAddress || '-', width: 180, align: 'left' },
+      { text: '공', width: 30, isHeader: true, align: 'center' },
+      { text: '사업자번호', width: 70, isHeader: true, align: 'center' },
+      { text: partnerBusinessNo, width: 165, align: 'left' },
     ],
     [
-      { text: '공급자', width: 80, isHeader: true, align: 'center' },
-      { text: supplierInfo, width: 178, align: 'left' },
-      { text: '보험사', width: 80, isHeader: true, align: 'center' },
-      { text: caseData.insuranceCompany || '-', width: 177, align: 'left' },
+      { text: '보험사', width: 70, isHeader: true, align: 'center' },
+      { text: caseData.insuranceCompany || '-', width: 180, align: 'left' },
+      { text: '급', width: 30, isHeader: true, align: 'center' },
+      { text: '상호명', width: 70, isHeader: true, align: 'center' },
+      { text: partnerCompany, width: 165, align: 'left' },
     ],
     [
-      { text: '상호명', width: 80, isHeader: true, align: 'center' },
-      { text: partnerCompany, width: 178, align: 'left' },
-      { text: '접수번호', width: 80, isHeader: true, align: 'center' },
-      { text: caseData.caseNumber || '-', width: 177, align: 'left' },
-    ],
-    [
-      { text: '대표자', width: 80, isHeader: true, align: 'center' },
-      { text: partnerRepName, width: 178, align: 'left' },
-      { text: '사고번호', width: 80, isHeader: true, align: 'center' },
-      { text: caseData.insuranceAccidentNo || '-', width: 177, align: 'left' },
+      { text: '접수번호', width: 70, isHeader: true, align: 'center' },
+      { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 180, align: 'left' },
+      { text: '자', width: 30, isHeader: true, align: 'center' },
+      { text: '대표자', width: 70, isHeader: true, align: 'center' },
+      { text: partnerRepName, width: 165, align: 'left' },
     ],
   ];
   
@@ -1580,21 +1569,29 @@ async function renderEstimatePage(
     rows: headerInfoRows,
     fonts,
     fontSize: 9,
-    rowHeight: 22,
+    rowHeight: 20,
   });
   
-  y -= 15;
+  y -= 10;
   
-  // ===== 노무비 테이블 (Golden Master 컬럼: 공종|공사명|노임항목|복구면적|적용단가|수량(인)|합계|경비|비고) =====
-  drawText(page, {
+  // ===== 노무비 테이블 =====
+  page.drawRectangle({
     x: MARGIN,
-    y,
-    text: '[ 노무비 ]',
-    font: fonts.bold,
-    size: 10,
+    y: y - 15,
+    width: CONTENT_WIDTH,
+    height: 15,
+    color: rgb(0.95, 0.9, 0.7),
   });
   
-  y -= 15;
+  drawText(page, {
+    x: MARGIN + 5,
+    y: y - 12,
+    text: '노무비',
+    font: fonts.bold,
+    size: 9,
+  });
+  
+  y -= 20;
   
   let laborCostItems: any[] = [];
   if (estimateData?.laborCostData) {
@@ -1674,16 +1671,24 @@ async function renderEstimatePage(
   
   y -= 15;
   
-  // ===== 자재비 테이블 (Golden Master 컬럼: 공종|공사명|자재항목|단가|수량|단위|합계|비고) =====
-  drawText(page, {
+  // ===== 자재비 테이블 =====
+  page.drawRectangle({
     x: MARGIN,
-    y,
-    text: '[ 자재비 ]',
-    font: fonts.bold,
-    size: 10,
+    y: y - 15,
+    width: CONTENT_WIDTH,
+    height: 15,
+    color: rgb(0.95, 0.9, 0.7),
   });
   
-  y -= 15;
+  drawText(page, {
+    x: MARGIN + 5,
+    y: y - 12,
+    text: '자재비',
+    font: fonts.bold,
+    size: 9,
+  });
+  
+  y -= 20;
   
   let materialCostItems: any[] = [];
   if (estimateData?.materialCostData) {
@@ -1815,31 +1820,41 @@ async function renderEstimatePage(
   });
   
   // ===== 하단 문구 및 작성일 =====
-  y -= (totalRows.length * 18) + 30;
-  
-  drawText(page, {
-    x: MARGIN,
-    y,
-    text: '상기 견적은 현장조사 시점을 기준으로 작성되었으며, 실제 복구 시 현장 상황에 따라 변동될 수 있습니다.',
-    font: fonts.regular,
-    size: 8,
-    maxWidth: CONTENT_WIDTH,
-    align: 'left',
-  });
-  
-  y -= 25;
+  const footerY = MARGIN + 30;
   
   const today = new Date();
   const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
   
   drawText(page, {
     x: MARGIN,
-    y,
+    y: footerY + 10,
     text: `작성일: ${dateStr}`,
     font: fonts.regular,
     size: 9,
-    maxWidth: CONTENT_WIDTH,
-    align: 'right',
+  });
+  
+  drawText(page, {
+    x: A4_WIDTH - MARGIN - 80,
+    y: footerY + 10,
+    text: partnerCompany,
+    font: fonts.regular,
+    size: 9,
+  });
+  
+  page.drawLine({
+    start: { x: MARGIN, y: footerY - 5 },
+    end: { x: A4_WIDTH - MARGIN, y: footerY - 5 },
+    thickness: 0.5,
+    color: rgb(0.7, 0.7, 0.7),
+  });
+  
+  drawText(page, {
+    x: MARGIN + 50,
+    y: footerY - 20,
+    text: '상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.',
+    font: fonts.regular,
+    size: 8,
+    color: { r: 0.4, g: 0.4, b: 0.4 },
   });
 }
 
