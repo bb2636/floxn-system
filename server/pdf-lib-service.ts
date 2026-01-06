@@ -1211,16 +1211,16 @@ async function renderEstimatePage(
   
   y -= 15;
   
-  let laborCostData: any[] = [];
-  if (estimateData?.laborCost) {
+  let laborCostItems: any[] = [];
+  if (estimateData?.laborCostData) {
     try {
-      const rawLaborData = typeof estimateData.laborCost === 'string'
-        ? JSON.parse(estimateData.laborCost)
-        : estimateData.laborCost;
+      const rawLaborData = typeof estimateData.laborCostData === 'string'
+        ? JSON.parse(estimateData.laborCostData)
+        : estimateData.laborCostData;
       if (Array.isArray(rawLaborData)) {
-        laborCostData = rawLaborData;
+        laborCostItems = rawLaborData;
       } else if (rawLaborData.rows && Array.isArray(rawLaborData.rows)) {
-        laborCostData = rawLaborData.rows;
+        laborCostItems = rawLaborData.rows;
       }
     } catch {}
   }
@@ -1238,8 +1238,8 @@ async function renderEstimatePage(
   const laborRows: TableCell[][] = [laborHeader];
   let laborTotal = 0;
   
-  if (laborCostData.length > 0) {
-    laborCostData.forEach((row, idx) => {
+  if (laborCostItems.length > 0) {
+    laborCostItems.forEach((row, idx) => {
       const unitPrice = Number(row.unitPrice) || 0;
       const days = Number(row.days) || 0;
       const workers = Number(row.workers) || 0;
@@ -1288,16 +1288,16 @@ async function renderEstimatePage(
   
   y -= 15;
   
-  let materialCostData: any[] = [];
-  if (estimateData?.materialCost) {
+  let materialCostItems: any[] = [];
+  if (estimateData?.materialCostData) {
     try {
-      const rawMaterialData = typeof estimateData.materialCost === 'string'
-        ? JSON.parse(estimateData.materialCost)
-        : estimateData.materialCost;
+      const rawMaterialData = typeof estimateData.materialCostData === 'string'
+        ? JSON.parse(estimateData.materialCostData)
+        : estimateData.materialCostData;
       if (Array.isArray(rawMaterialData)) {
-        materialCostData = rawMaterialData;
+        materialCostItems = rawMaterialData;
       } else if (rawMaterialData.rows && Array.isArray(rawMaterialData.rows)) {
-        materialCostData = rawMaterialData.rows;
+        materialCostItems = rawMaterialData.rows;
       }
     } catch {}
   }
@@ -1315,8 +1315,8 @@ async function renderEstimatePage(
   const materialRows: TableCell[][] = [materialHeader];
   let materialTotal = 0;
   
-  if (materialCostData.length > 0) {
-    materialCostData.forEach((row, idx) => {
+  if (materialCostItems.length > 0) {
+    materialCostItems.forEach((row, idx) => {
       const qty = Number(row.quantity) || 0;
       const unitPrice = Number(row.unitPrice) || 0;
       const amount = qty * unitPrice;
