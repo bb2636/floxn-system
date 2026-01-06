@@ -55,14 +55,24 @@ function getChromiumPath(): string | undefined {
 // PDF 최대 크기 (10MB)
 const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024;
 
-// 지원하는 이미지 확장자
-const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp'];
-// 지원하지 않는 확장자 (명확한 안내용)
-const UNSUPPORTED_EXTENSIONS = ['.heic', '.heif', '.webp', '.mov', '.mp4', '.avi', '.tiff', '.raw'];
-// 최대 이미지 크기 (5MB)
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
-// 최대 이미지 픽셀 크기
-const MAX_IMAGE_DIMENSION = 4000;
+// 지원하는 이미지 확장자 (HEIC/WEBP도 변환 처리)
+const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.heic', '.heif', '.webp'];
+// 지원하지 않는 확장자 (동영상 파일만)
+const UNSUPPORTED_EXTENSIONS = ['.mov', '.mp4', '.avi', '.tiff', '.raw'];
+
+// 이미지 전처리 설정 (해상도 + 품질 조합)
+interface ImageProcessingConfig {
+  maxDimension: number;
+  quality: number;
+}
+
+// 단계적 품질/해상도 하향 설정
+const PROCESSING_LEVELS: ImageProcessingConfig[] = [
+  { maxDimension: 1600, quality: 60 },  // 1단계: 기본
+  { maxDimension: 1400, quality: 50 },  // 2단계
+  { maxDimension: 1200, quality: 40 },  // 3단계
+  { maxDimension: 1000, quality: 30 },  // 4단계: 최저
+];
 
 // 파일 정보 로깅
 function logFileInfo(doc: any, stage: string) {
@@ -97,9 +107,15 @@ function checkFileSupport(doc: any): { supported: boolean; reason?: string } {
   return { supported: false, reason: `지원하지 않는 파일 형식입니다: ${mime || ext}` };
 }
 
-// 이미지 정규화 (리사이즈 & 압축)
-async function normalizeImage(base64Data: string, quality: number = 80): Promise<{ success: boolean; data?: Buffer; error?: string }> {
+// 강화된 이미지 정규화 (리사이즈 & JPEG 강제 변환 & 압축)
+// 모든 이미지를 JPEG로 변환 (HEIC/WEBP 포함), 지정된 해상도/품질로 처리
+async function normalizeImage(
+  base64Data: string, 
+  config: ImageProcessingConfig = PROCESSING_LEVELS[0]
+): Promise<{ success: boolean; data?: Buffer; error?: string }> {
   const startTime = Date.now();
+  const { maxDimension, quality } = config;
+  
   try {
     let imageBuffer: Buffer;
     
@@ -115,34 +131,32 @@ async function normalizeImage(base64Data: string, quality: number = 80): Promise
     }
     
     const originalSize = imageBuffer.length;
-    console.log(`[PDF 증빙자료] [B] 이미지 처리 시작, 원본 크기: ${Math.round(originalSize / 1024)}KB`);
+    console.log(`[PDF 증빙자료] [B] 이미지 처리 시작, 원본 크기: ${Math.round(originalSize / 1024)}KB, 목표: ${maxDimension}px / ${quality}%`);
     
-    // Sharp로 이미지 처리
-    const image = sharp(imageBuffer);
+    // Sharp로 이미지 처리 (HEIC/WEBP 자동 변환 지원)
+    const image = sharp(imageBuffer, { failOnError: false });
     const metadata = await image.metadata();
     
-    // 너무 큰 이미지는 리사이즈
-    let processedImage = image;
-    const needsResize = (metadata.width && metadata.width > MAX_IMAGE_DIMENSION) || 
-                        (metadata.height && metadata.height > MAX_IMAGE_DIMENSION) ||
-                        originalSize > MAX_IMAGE_SIZE_BYTES;
+    // 항상 리사이즈 적용 (maxDimension 이하로)
+    const processedImage = image.resize(maxDimension, maxDimension, { 
+      fit: 'inside', 
+      withoutEnlargement: true 
+    });
     
-    if (needsResize) {
-      const maxDim = Math.min(MAX_IMAGE_DIMENSION, 2000); // PDF용으로 더 작게
-      processedImage = image.resize(maxDim, maxDim, { 
-        fit: 'inside', 
-        withoutEnlargement: true 
-      });
-      console.log(`[PDF 증빙자료] [B] 이미지 리사이즈: ${metadata.width}x${metadata.height} → max ${maxDim}px`);
+    if (metadata.width && metadata.height) {
+      console.log(`[PDF 증빙자료] [B] 이미지 리사이즈: ${metadata.width}x${metadata.height} → max ${maxDimension}px`);
     }
     
-    // JPEG로 압축
+    // JPEG로 강제 변환 및 압축 (mozjpeg으로 최적화)
     const compressedBuffer = await processedImage
-      .jpeg({ quality, mozjpeg: true })
+      .jpeg({ quality, mozjpeg: true, force: true })
       .toBuffer();
     
     const elapsedMs = Date.now() - startTime;
-    console.log(`[PDF 증빙자료] [B] 이미지 처리 완료: ${Math.round(originalSize / 1024)}KB → ${Math.round(compressedBuffer.length / 1024)}KB, elapsed_ms=${elapsedMs}`);
+    const targetSize = 500 * 1024; // 목표 500KB
+    const resultSize = compressedBuffer.length;
+    
+    console.log(`[PDF 증빙자료] [B] 이미지 처리 완료: ${Math.round(originalSize / 1024)}KB → ${Math.round(resultSize / 1024)}KB (목표: ~500KB), elapsed_ms=${elapsedMs}`);
     
     return { success: true, data: compressedBuffer };
   } catch (error: any) {
@@ -156,13 +170,13 @@ async function normalizeImage(base64Data: string, quality: number = 80): Promise
 async function generateEvidencePdfWithPdfLib(
   caseData: any, 
   documents: any[], 
-  imageQuality: number = 80
+  processingConfig: ImageProcessingConfig = PROCESSING_LEVELS[0]
 ): Promise<{ pdfBuffer: Buffer; errors: Array<{ fileName: string; reason: string }> }> {
   const startTime = Date.now();
   const errors: Array<{ fileName: string; reason: string }> = [];
   
   console.log(`[PDF 증빙자료] === Puppeteer 기반 생성 시작 ===`);
-  console.log(`[PDF 증빙자료] 총 파일 수: ${documents.length}, 품질: ${imageQuality}%`);
+  console.log(`[PDF 증빙자료] 총 파일 수: ${documents.length}, 설정: ${processingConfig.maxDimension}px / ${processingConfig.quality}%`);
   
   // 1. 파일 리스트 상세 로그
   documents.forEach((doc, idx) => {
@@ -214,19 +228,40 @@ async function generateEvidencePdfWithPdfLib(
     return { pdfBuffer: Buffer.alloc(0), errors };
   }
   
-  // 3. 이미지 압축 및 base64 준비
-  const processedImages: Array<{ base64: string; tab: string; category: string }> = [];
+  // 3. 이미지 압축 및 base64 준비 (개별 try/catch로 전체 실패 방지)
+  const processedImages: Array<{ base64: string; tab: string; category: string; fileName: string; failed?: boolean; errorReason?: string }> = [];
   
   for (const { doc, tab } of imageDocs) {
     try {
-      const normalized = await normalizeImage(doc.fileData, imageQuality);
+      const normalized = await normalizeImage(doc.fileData, processingConfig);
       if (normalized.success && normalized.data) {
         const base64 = `data:image/jpeg;base64,${normalized.data.toString('base64')}`;
-        processedImages.push({ base64, tab, category: doc.category || '기타' });
+        processedImages.push({ base64, tab, category: doc.category || '기타', fileName: doc.fileName });
+      } else {
+        // 이미지 처리 실패 시 에러 페이지로 대체
+        console.warn(`[PDF 증빙자료] 이미지 처리 실패 - 에러 페이지로 대체: ${doc.fileName}`);
+        processedImages.push({ 
+          base64: '', 
+          tab, 
+          category: doc.category || '기타', 
+          fileName: doc.fileName,
+          failed: true,
+          errorReason: normalized.error || '이미지 처리 실패'
+        });
+        errors.push({ fileName: doc.fileName, reason: normalized.error || '이미지 처리 실패' });
       }
-    } catch (err) {
-      console.error(`[PDF 증빙자료] 이미지 처리 실패: ${doc.fileName}`);
-      errors.push({ fileName: doc.fileName, reason: '이미지 처리 실패' });
+    } catch (err: any) {
+      // 예외 발생 시에도 에러 페이지로 대체 (전체 PDF 실패 방지)
+      console.error(`[PDF 증빙자료] 이미지 처리 예외 - 에러 페이지로 대체: ${doc.fileName}`, err.message);
+      processedImages.push({ 
+        base64: '', 
+        tab, 
+        category: doc.category || '기타', 
+        fileName: doc.fileName,
+        failed: true,
+        errorReason: err.message || '파일 손상/지원 불가'
+      });
+      errors.push({ fileName: doc.fileName, reason: err.message || '파일 손상/지원 불가' });
     }
   }
   
@@ -235,9 +270,35 @@ async function generateEvidencePdfWithPdfLib(
     return { pdfBuffer: Buffer.alloc(0), errors };
   }
   
-  // 4. HTML 생성 (2개 이미지씩 페이지 구성)
+  // 4. HTML 생성 (2개 이미지씩 페이지 구성, 실패 시 에러 페이지 대체)
   const caseNumber = caseData.caseNumber || '';
   let pagesHtml = '';
+  
+  // 이미지 섹션 HTML 생성 헬퍼 함수
+  const generateImageSection = (img: typeof processedImages[0], index: number) => {
+    if (img.failed) {
+      // 실패한 이미지 - 에러 안내 페이지로 대체
+      return `
+        <div class="image-section error-section">
+          <div class="image-header error-header">접수번호:${caseNumber} | ${img.tab}(${img.category})</div>
+          <div class="error-container">
+            <div class="error-icon">⚠</div>
+            <div class="error-title">첨부 실패</div>
+            <div class="error-filename">${img.fileName}</div>
+            <div class="error-reason">${img.errorReason || '파일 손상/지원 불가'}</div>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="image-section">
+        <div class="image-header">접수번호:${caseNumber} | ${img.tab}(${img.category})</div>
+        <div class="image-container">
+          <img src="${img.base64}" alt="Evidence ${index + 1}" />
+        </div>
+      </div>
+    `;
+  };
   
   for (let i = 0; i < processedImages.length; i += 2) {
     const first = processedImages[i];
@@ -245,20 +306,8 @@ async function generateEvidencePdfWithPdfLib(
     
     pagesHtml += `
       <div class="page">
-        <div class="image-section">
-          <div class="image-header">접수번호:${caseNumber} | ${first.tab}(${first.category})</div>
-          <div class="image-container">
-            <img src="${first.base64}" alt="Evidence ${i + 1}" />
-          </div>
-        </div>
-        ${second ? `
-        <div class="image-section">
-          <div class="image-header">접수번호:${caseNumber} | ${second.tab}(${second.category})</div>
-          <div class="image-container">
-            <img src="${second.base64}" alt="Evidence ${i + 2}" />
-          </div>
-        </div>
-        ` : ''}
+        ${generateImageSection(first, i)}
+        ${second ? generateImageSection(second, i + 1) : ''}
       </div>
     `;
   }
@@ -313,6 +362,48 @@ async function generateEvidencePdfWithPdfLib(
       max-height: 100%;
       object-fit: contain;
     }
+    /* 에러 페이지 스타일 */
+    .error-section {
+      background: #fef2f2;
+    }
+    .error-header {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .error-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+    }
+    .error-icon {
+      font-size: 48pt;
+      color: #dc2626;
+      margin-bottom: 10px;
+    }
+    .error-title {
+      font-size: 18pt;
+      font-weight: bold;
+      color: #991b1b;
+      margin-bottom: 15px;
+    }
+    .error-filename {
+      font-size: 11pt;
+      color: #374151;
+      word-break: break-all;
+      max-width: 90%;
+      margin-bottom: 10px;
+    }
+    .error-reason {
+      font-size: 10pt;
+      color: #6b7280;
+      background: #fee2e2;
+      padding: 8px 15px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
@@ -358,7 +449,7 @@ async function embedImageToPage(
   page: any,
   imageData: { doc: any; tab: string },
   x: number, y: number, maxWidth: number, maxHeight: number,
-  quality: number,
+  processingConfig: ImageProcessingConfig,
   errors: Array<{ fileName: string; reason: string }>,
   font: any,
   caseNumber?: string
@@ -370,7 +461,7 @@ async function embedImageToPage(
     console.log(`[PDF 증빙자료] [C] 이미지 삽입 시작: ${doc.fileName}`);
     
     // 이미지 정규화
-    const normalized = await normalizeImage(doc.fileData, quality);
+    const normalized = await normalizeImage(doc.fileData, processingConfig);
     
     if (!normalized.success || !normalized.data) {
       throw new Error(normalized.error || '이미지 정규화 실패');
@@ -1301,9 +1392,10 @@ async function generateEstimatePage(caseData: any, estimateData: any, estimateRo
   return replaceTemplateVariables(template, data);
 }
 
-export async function generatePdf(payload: PdfGenerationPayload, imageQuality: number = 80): Promise<Buffer> {
+export async function generatePdf(payload: PdfGenerationPayload, processingLevel: number = 0): Promise<Buffer> {
   const { caseId, sections, evidence } = payload;
-  console.log(`[PDF 생성] 이미지 품질: ${imageQuality}%`);
+  const processingConfig = PROCESSING_LEVELS[processingLevel] || PROCESSING_LEVELS[0];
+  console.log(`[PDF 생성] 처리 레벨 ${processingLevel}: ${processingConfig.maxDimension}px / ${processingConfig.quality}%`);
   
   const [caseData] = await db.select().from(cases).where(eq(cases.id, caseId));
   if (!caseData) {
@@ -1456,7 +1548,7 @@ export async function generatePdf(payload: PdfGenerationPayload, imageQuality: n
       if (imageDocs.length > 0) {
         // pdf-lib로 직접 PDF 생성 (Puppeteer 미사용 - 안정성 향상)
         console.log(`[PDF 생성] 증빙자료 이미지 pdf-lib로 직접 생성 시작`);
-        const { pdfBuffer: evidencePdfBuffer, errors: evidenceErrors } = await generateEvidencePdfWithPdfLib(caseData, imageDocs, imageQuality);
+        const { pdfBuffer: evidencePdfBuffer, errors: evidenceErrors } = await generateEvidencePdfWithPdfLib(caseData, imageDocs, processingConfig);
         
         if (evidenceErrors.length > 0) {
           console.log(`[PDF 생성] 증빙자료 처리 중 오류 발생: ${evidenceErrors.length}개 파일`);
@@ -1722,31 +1814,54 @@ export const pdfGenerationPayloadSchema = {
   },
 };
 
-// 10MB 제한을 고려한 PDF 생성 함수 (자동 품질 조절)
+// 10MB 제한을 고려한 PDF 생성 함수 (해상도+품질 단계적 하향)
+// 에러로 종료하지 않고, 화질을 더 낮춰서라도 단일 PDF를 반드시 생성
 export async function generatePdfWithSizeLimit(payload: PdfGenerationPayload): Promise<Buffer> {
-  // 품질 레벨: 80% -> 60% -> 40% -> 25% 순으로 시도
-  const qualityLevels = [80, 60, 40, 25];
+  // 처리 레벨: 1600px/60% → 1400px/50% → 1200px/40% → 1000px/30% 순으로 시도
+  const totalLevels = PROCESSING_LEVELS.length;
   
-  for (let i = 0; i < qualityLevels.length; i++) {
-    const quality = qualityLevels[i];
-    console.log(`[PDF 생성] 품질 ${quality}%로 PDF 생성 시도 (${i + 1}/${qualityLevels.length})`);
+  for (let level = 0; level < totalLevels; level++) {
+    const config = PROCESSING_LEVELS[level];
+    console.log(`[PDF 생성] 레벨 ${level + 1}/${totalLevels}: ${config.maxDimension}px / ${config.quality}%로 PDF 생성 시도`);
     
-    const pdfBuffer = await generatePdf(payload, quality);
-    const sizeInMB = pdfBuffer.length / (1024 * 1024);
-    
-    console.log(`[PDF 생성] PDF 크기: ${sizeInMB.toFixed(2)}MB (제한: ${MAX_PDF_SIZE_BYTES / (1024 * 1024)}MB)`);
-    
-    if (pdfBuffer.length <= MAX_PDF_SIZE_BYTES) {
-      console.log(`[PDF 생성] 품질 ${quality}%로 성공 - 크기: ${sizeInMB.toFixed(2)}MB`);
-      return pdfBuffer;
-    }
-    
-    if (i < qualityLevels.length - 1) {
-      console.log(`[PDF 생성] PDF 크기 초과 - 더 낮은 품질(${qualityLevels[i + 1]}%)로 재시도`);
+    try {
+      const pdfBuffer = await generatePdf(payload, level);
+      const sizeInMB = pdfBuffer.length / (1024 * 1024);
+      
+      console.log(`[PDF 생성] PDF 크기: ${sizeInMB.toFixed(2)}MB (제한: ${MAX_PDF_SIZE_BYTES / (1024 * 1024)}MB)`);
+      
+      if (pdfBuffer.length <= MAX_PDF_SIZE_BYTES) {
+        console.log(`[PDF 생성] 레벨 ${level + 1} 성공 - 크기: ${sizeInMB.toFixed(2)}MB`);
+        return pdfBuffer;
+      }
+      
+      if (level < totalLevels - 1) {
+        const nextConfig = PROCESSING_LEVELS[level + 1];
+        console.log(`[PDF 생성] PDF 크기 초과 - 레벨 ${level + 2} (${nextConfig.maxDimension}px/${nextConfig.quality}%)로 재시도`);
+      }
+    } catch (err: any) {
+      console.error(`[PDF 생성] 레벨 ${level + 1} 생성 실패:`, err.message);
+      // 다음 레벨로 계속 시도
+      if (level < totalLevels - 1) {
+        console.log(`[PDF 생성] 다음 레벨로 재시도...`);
+        continue;
+      }
     }
   }
   
-  // 최저 품질로도 10MB 초과 시 마지막 결과 반환하고 경고
-  console.warn(`[PDF 생성] 최저 품질(${qualityLevels[qualityLevels.length - 1]}%)로도 10MB 초과 - 마지막 결과 반환`);
-  return await generatePdf(payload, qualityLevels[qualityLevels.length - 1]);
+  // 최저 레벨로도 10MB 초과 시 마지막 결과 반환 (에러 없이 반드시 생성)
+  const lastLevel = totalLevels - 1;
+  const lastConfig = PROCESSING_LEVELS[lastLevel];
+  console.warn(`[PDF 생성] 최저 레벨 (${lastConfig.maxDimension}px/${lastConfig.quality}%)로도 10MB 초과 - 마지막 결과 반환`);
+  
+  try {
+    return await generatePdf(payload, lastLevel);
+  } catch (err: any) {
+    console.error(`[PDF 생성] 최종 생성 실패:`, err.message);
+    // 빈 PDF라도 반환 (에러 throw 하지 않음)
+    const { PDFDocument } = await import('pdf-lib');
+    const emptyPdf = await PDFDocument.create();
+    emptyPdf.addPage();
+    return Buffer.from(await emptyPdf.save());
+  }
 }
