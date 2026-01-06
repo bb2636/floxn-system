@@ -5407,6 +5407,7 @@ export class DbStorage implements IStorage {
           const repairHeightStr = toNumericStr(repairHeight);
           const repairAreaStr = toNumericStr(repairArea);
           
+          // 명시적 NUMERIC 캐스팅으로 소수점 정확도 보장
           await tx.execute(sql`
             INSERT INTO estimate_rows (
               id, estimate_id, category, location, work_type, work_name,
@@ -5420,12 +5421,12 @@ export class DbStorage implements IStorage {
               ${row.location || null},
               ${row.workType || null},
               ${row.workName || null},
-              ${damageWidthStr},
-              ${damageHeightStr},
-              ${damageAreaStr},
-              ${repairWidthStr},
-              ${repairHeightStr},
-              ${repairAreaStr},
+              ${damageWidthStr !== null ? sql`CAST(${damageWidthStr} AS NUMERIC(20,4))` : sql`NULL`},
+              ${damageHeightStr !== null ? sql`CAST(${damageHeightStr} AS NUMERIC(20,4))` : sql`NULL`},
+              ${damageAreaStr !== null ? sql`CAST(${damageAreaStr} AS NUMERIC(20,4))` : sql`NULL`},
+              ${repairWidthStr !== null ? sql`CAST(${repairWidthStr} AS NUMERIC(20,4))` : sql`NULL`},
+              ${repairHeightStr !== null ? sql`CAST(${repairHeightStr} AS NUMERIC(20,4))` : sql`NULL`},
+              ${repairAreaStr !== null ? sql`CAST(${repairAreaStr} AS NUMERIC(20,4))` : sql`NULL`},
               ${row.note || null},
               ${row.rowOrder},
               NOW()
