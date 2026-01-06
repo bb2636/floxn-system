@@ -6572,6 +6572,10 @@ FLOXN 드림`;
       const emailSubjectId = invoiceData.insuranceAccidentNo || caseData.insurancePolicyNo || invoiceData.caseNumber || dateStr;
       const emailSubject = `[FLOXN] INVOICE - ${emailSubjectId}`;
       
+      // Get assessor and investigator names
+      const assessorName = caseData.assessorId ? (await storage.getUser(caseData.assessorId))?.name || '-' : '-';
+      const investigatorName = caseData.investigatorId ? (await storage.getUser(caseData.investigatorId))?.name || '-' : '-';
+      
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px;">INVOICE 전달드립니다</h2>
@@ -6584,31 +6588,29 @@ FLOXN 드림`;
           
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr>
-              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 140px; font-weight: bold;">보험사</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${invoiceData.recipientName}</td>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 140px; font-weight: bold;">사고번호</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="3">${invoiceData.insuranceAccidentNo || '-'}</td>
             </tr>
             <tr>
-              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">사고번호</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${invoiceData.insuranceAccidentNo || '-'}</td>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">담당자</td>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold; width: 80px;">심사자</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${assessorName}</td>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold; width: 80px;">조사자</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${investigatorName}</td>
             </tr>
             <tr>
-              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">청구 금액</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">청구금액</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">
                 ${amountLines.map(line => `<div>${line}</div>`).join('')}
               </td>
             </tr>
-            ${remarks ? `
             <tr>
-              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">비고</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${remarks}</td>
-            </tr>` : ''}
-            <tr>
-              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${dateStr}</td>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">접수번호</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${caseData.caseNumber || '-'}</td>
             </tr>
             <tr>
-              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송자</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;">${user.name || user.username}</td>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${dateStr}</td>
             </tr>
           </table>
           
@@ -6633,15 +6635,14 @@ FLOXN 드림`;
 
 INVOICE를 첨부하여 전달드립니다.
 
-- 보험사: ${invoiceData.recipientName}
 - 사고번호: ${invoiceData.insuranceAccidentNo || '-'}
+- 담당자: 심사자 ${assessorName} / 조사자 ${investigatorName}
 
-청구 금액:
+청구금액:
 ${amountLines.join('\n')}
-${remarks ? `\n비고: ${remarks}` : ''}
 
+- 접수번호: ${caseData.caseNumber || '-'}
 - 발송일: ${dateStr}
-- 발송자: ${user.name || user.username}
 
 첨부된 PDF 파일을 확인해 주시기 바랍니다.
 
