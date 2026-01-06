@@ -6174,7 +6174,8 @@ FLOXN 드림`;
               
               try {
                 const page = await browser.newPage();
-                await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
+                await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
+                await new Promise(resolve => setTimeout(resolve, 1500)); // Wait for font loading
                 const imagePdfBuffer = await page.pdf({
                   format: 'A4',
                   printBackground: true,
@@ -6357,26 +6358,27 @@ FLOXN 드림`;
         const allDocuments = await storage.getDocumentsByCaseId(caseId);
         const selectedDocs = allDocuments.filter((doc: { id: string }) => selectedDocumentIds.includes(doc.id));
         
-        // Separate PDFs and images
+        // Separate PDFs and images (same logic as download endpoint)
         const pdfDocs: any[] = [];
         const imageDocs: any[] = [];
         
         for (const doc of selectedDocs) {
           if (!doc.fileData) continue;
-          const base64Match = doc.fileData.match(/^data:([^;]+);base64,(.+)$/);
-          if (!base64Match) continue;
-          const mimeType = base64Match[1];
+          const mimeType = doc.fileType || '';
           if (mimeType === 'application/pdf') {
-            pdfDocs.push({ ...doc, mimeType, base64Data: base64Match[2] });
+            pdfDocs.push(doc);
           } else if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) {
-            imageDocs.push({ ...doc, mimeType, base64Data: base64Match[2] });
+            imageDocs.push(doc);
           }
         }
         
         // Add PDF documents first
         for (const doc of pdfDocs) {
           try {
-            const fileBuffer = Buffer.from(doc.base64Data, 'base64');
+            const base64Data = doc.fileData.includes(',') 
+              ? doc.fileData.split(',')[1] 
+              : doc.fileData;
+            const fileBuffer = Buffer.from(base64Data, 'base64');
             const attachedPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
             const pages = await mainPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
             pages.forEach((page: any) => mainPdf.addPage(page));
@@ -6406,7 +6408,10 @@ FLOXN 드림`;
           const processedImages: Array<{ base64: string; tab: string; category: string }> = [];
           for (const doc of imageDocs) {
             try {
-              const fileBuffer = Buffer.from(doc.base64Data, 'base64');
+              const base64Data = doc.fileData.includes(',') 
+                ? doc.fileData.split(',')[1] 
+                : doc.fileData;
+              const fileBuffer = Buffer.from(base64Data, 'base64');
               const imageBuffer = await sharp.default(fileBuffer)
                 .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
                 .jpeg({ quality: 75 })
@@ -6518,7 +6523,8 @@ FLOXN 드림`;
             
             try {
               const browserPage = await browser.newPage();
-              await browserPage.setContent(imageHtml, { waitUntil: 'networkidle0', timeout: 60000 });
+              await browserPage.setContent(imageHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
+              await new Promise(resolve => setTimeout(resolve, 1500)); // Wait for font loading
               const imagePdfBuffer = await browserPage.pdf({
                 format: 'A4',
                 printBackground: true,
