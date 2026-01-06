@@ -6038,105 +6038,156 @@ FLOXN 드림`;
             }
           }
           
-          // Add images - 2 per page with headers
-          const pageWidth = 595;
-          const pageHeight = 842;
-          const margin = 30;
-          const headerHeight = 25;
-          const imageAreaHeight = (pageHeight - margin * 2 - headerHeight * 2 - 20) / 2;
-          
-          for (let i = 0; i < imageDocs.length; i += 2) {
-            const page = mergedPdf.addPage([pageWidth, pageHeight]);
+          // Add images using Puppeteer for Korean header support
+          if (imageDocs.length > 0) {
+            const puppeteer = await import('puppeteer');
             
-            // First image
-            const firstDoc = imageDocs[i];
-            try {
-              const base64Data = firstDoc.fileData.includes(',') 
-                ? firstDoc.fileData.split(',')[1] 
-                : firstDoc.fileData;
-              const fileBuffer = Buffer.from(base64Data, 'base64');
-              const imageBuffer = await sharp.default(fileBuffer)
-                .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
-                .jpeg({ quality: 75 })
-                .toBuffer();
-              
-              const jpgImage = await mergedPdf.embedJpg(imageBuffer);
-              const { width, height } = jpgImage.scale(1);
-              const maxWidth = pageWidth - margin * 2;
-              const maxHeight = imageAreaHeight - 10;
-              const scale = Math.min(maxWidth / width, maxHeight / height);
-              const drawWidth = width * scale;
-              const drawHeight = height * scale;
-              
-              const firstY = pageHeight - margin - headerHeight - imageAreaHeight;
-              const drawX = margin + (maxWidth - drawWidth) / 2;
-              const drawY = firstY + (maxHeight - drawHeight) / 2;
-              
-              // Draw header for first image (English only - Korean encoding not supported)
-              const headerText1 = `Case: ${caseData.caseNumber || '-'}`;
-              page.drawText(headerText1, {
-                x: margin,
-                y: pageHeight - margin - 15,
-                size: 10,
-                font,
-                color: rgb(0.2, 0.2, 0.2),
-              });
-              
-              page.drawImage(jpgImage, {
-                x: drawX,
-                y: drawY,
-                width: drawWidth,
-                height: drawHeight,
-              });
-              console.log(`[Invoice PDF] Added image 1/2: ${firstDoc.fileName}`);
-            } catch (docError) {
-              console.error(`[Invoice PDF] Failed to add image ${firstDoc.fileName}:`, docError);
-            }
+            // 카테고리 -> 탭 매핑
+            const categoryToTab: Record<string, string> = {
+              '현장출동사진': '현장사진', '현장': '현장사진',
+              '수리중 사진': '현장사진', '수리중': '현장사진',
+              '복구완료 사진': '현장사진', '복구완료': '현장사진',
+              '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
+              '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
+              '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
+              '위임장': '청구자료', '도급계약서': '청구자료',
+              '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
+            };
             
-            // Second image (if exists)
-            if (imageDocs[i + 1]) {
-              const secondDoc = imageDocs[i + 1];
+            // Process images with sharp
+            const processedImages: Array<{ base64: string; tab: string; category: string }> = [];
+            for (const doc of imageDocs) {
               try {
-                const base64Data = secondDoc.fileData.includes(',') 
-                  ? secondDoc.fileData.split(',')[1] 
-                  : secondDoc.fileData;
+                const base64Data = doc.fileData.includes(',') 
+                  ? doc.fileData.split(',')[1] 
+                  : doc.fileData;
                 const fileBuffer = Buffer.from(base64Data, 'base64');
                 const imageBuffer = await sharp.default(fileBuffer)
                   .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
                   .jpeg({ quality: 75 })
                   .toBuffer();
-                
-                const jpgImage = await mergedPdf.embedJpg(imageBuffer);
-                const { width, height } = jpgImage.scale(1);
-                const maxWidth = pageWidth - margin * 2;
-                const maxHeight = imageAreaHeight - 10;
-                const scale = Math.min(maxWidth / width, maxHeight / height);
-                const drawWidth = width * scale;
-                const drawHeight = height * scale;
-                
-                const secondY = margin;
-                const drawX = margin + (maxWidth - drawWidth) / 2;
-                const drawY = secondY + (maxHeight - drawHeight) / 2;
-                
-                // Draw header for second image (English only - Korean encoding not supported)
-                const headerText2 = `Case: ${caseData.caseNumber || '-'}`;
-                page.drawText(headerText2, {
-                  x: margin,
-                  y: margin + imageAreaHeight + 5,
-                  size: 10,
-                  font,
-                  color: rgb(0.2, 0.2, 0.2),
+                const tab = categoryToTab[doc.category] || '기타';
+                processedImages.push({
+                  base64: `data:image/jpeg;base64,${imageBuffer.toString('base64')}`,
+                  tab,
+                  category: doc.category || '기타'
                 });
+                console.log(`[Invoice PDF] Processed image: ${doc.fileName}`);
+              } catch (err) {
+                console.error(`[Invoice PDF] Failed to process image ${doc.fileName}:`, err);
+              }
+            }
+            
+            if (processedImages.length > 0) {
+              // Generate HTML for images
+              const caseNumber = caseData.caseNumber || '';
+              let pagesHtml = '';
+              
+              for (let i = 0; i < processedImages.length; i += 2) {
+                const first = processedImages[i];
+                const second = processedImages[i + 1];
                 
-                page.drawImage(jpgImage, {
-                  x: drawX,
-                  y: drawY,
-                  width: drawWidth,
-                  height: drawHeight,
+                pagesHtml += `
+                  <div class="page">
+                    <div class="image-section">
+                      <div class="image-header">접수번호:${caseNumber} | ${first.tab}(${first.category})</div>
+                      <div class="image-container">
+                        <img src="${first.base64}" alt="Evidence ${i + 1}" />
+                      </div>
+                    </div>
+                    ${second ? `
+                    <div class="image-section">
+                      <div class="image-header">접수번호:${caseNumber} | ${second.tab}(${second.category})</div>
+                      <div class="image-container">
+                        <img src="${second.base64}" alt="Evidence ${i + 2}" />
+                      </div>
+                    </div>
+                    ` : ''}
+                  </div>
+                `;
+              }
+              
+              const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: white; }
+    .page {
+      width: 210mm;
+      height: 297mm;
+      padding: 10mm;
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      gap: 8mm;
+    }
+    .page:last-child { page-break-after: auto; }
+    .image-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .image-header {
+      background: #f8f8f8;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 8px 15px;
+      font-size: 11pt;
+      color: #333;
+    }
+    .image-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      background: white;
+    }
+    .image-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  ${pagesHtml}
+</body>
+</html>`;
+              
+              // Generate PDF with Puppeteer
+              const chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH || 
+                '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
+              
+              const browser = await puppeteer.default.launch({
+                headless: true,
+                executablePath: chromiumPath,
+                args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
+              });
+              
+              try {
+                const page = await browser.newPage();
+                await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
+                const imagePdfBuffer = await page.pdf({
+                  format: 'A4',
+                  printBackground: true,
+                  margin: { top: '0', right: '0', bottom: '0', left: '0' },
                 });
-                console.log(`[Invoice PDF] Added image 2/2: ${secondDoc.fileName}`);
-              } catch (docError) {
-                console.error(`[Invoice PDF] Failed to add image ${secondDoc.fileName}:`, docError);
+                await page.close();
+                
+                // Merge image PDF with invoice PDF
+                const imagePdf = await PDFDocument.load(imagePdfBuffer);
+                const imagePages = await mergedPdf.copyPages(imagePdf, imagePdf.getPageIndices());
+                imagePages.forEach((p: any) => mergedPdf.addPage(p));
+                
+                console.log(`[Invoice PDF] Added ${processedImages.length} images via Puppeteer`);
+              } finally {
+                await browser.close();
               }
             }
           }
@@ -6332,99 +6383,153 @@ FLOXN 드림`;
           }
         }
         
-        // Add images - 2 per page with headers
-        const pageWidth = 595;
-        const pageHeight = 842;
-        const margin = 30;
-        const headerHeight = 25;
-        const imageAreaHeight = (pageHeight - margin * 2 - headerHeight * 2 - 20) / 2;
-        
-        for (let i = 0; i < imageDocs.length; i += 2) {
-          const page = mainPdf.addPage([pageWidth, pageHeight]);
+        // Add images using Puppeteer for Korean header support
+        if (imageDocs.length > 0) {
+          const puppeteer = await import('puppeteer');
           
-          // First image
-          const firstDoc = imageDocs[i];
-          try {
-            const fileBuffer = Buffer.from(firstDoc.base64Data, 'base64');
-            const imageBuffer = await sharp.default(fileBuffer)
-              .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
-              .jpeg({ quality: 75 })
-              .toBuffer();
-            
-            const jpgImage = await mainPdf.embedJpg(imageBuffer);
-            const { width, height } = jpgImage.scale(1);
-            const maxWidth = pageWidth - margin * 2;
-            const maxHeight = imageAreaHeight - 10;
-            const scale = Math.min(maxWidth / width, maxHeight / height);
-            const drawWidth = width * scale;
-            const drawHeight = height * scale;
-            
-            const firstY = pageHeight - margin - headerHeight - imageAreaHeight;
-            const drawX = margin + (maxWidth - drawWidth) / 2;
-            const drawY = firstY + (maxHeight - drawHeight) / 2;
-            
-            // Draw header for first image (English only - Korean encoding not supported)
-            const headerText1 = `Case: ${caseData.caseNumber || '-'}`;
-            page.drawText(headerText1, {
-              x: margin,
-              y: pageHeight - margin - 15,
-              size: 10,
-              font,
-              color: rgb(0.2, 0.2, 0.2),
-            });
-            
-            page.drawImage(jpgImage, {
-              x: drawX,
-              y: drawY,
-              width: drawWidth,
-              height: drawHeight,
-            });
-            console.log(`[Invoice PDF] Added image 1/2: ${firstDoc.fileName}`);
-          } catch (docError) {
-            console.error(`[Invoice PDF] Failed to add image ${firstDoc.fileName}:`, docError);
-          }
+          // 카테고리 -> 탭 매핑
+          const categoryToTab: Record<string, string> = {
+            '현장출동사진': '현장사진', '현장': '현장사진',
+            '수리중 사진': '현장사진', '수리중': '현장사진',
+            '복구완료 사진': '현장사진', '복구완료': '현장사진',
+            '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
+            '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
+            '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
+            '위임장': '청구자료', '도급계약서': '청구자료',
+            '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
+          };
           
-          // Second image (if exists)
-          if (imageDocs[i + 1]) {
-            const secondDoc = imageDocs[i + 1];
+          // Process images with sharp
+          const processedImages: Array<{ base64: string; tab: string; category: string }> = [];
+          for (const doc of imageDocs) {
             try {
-              const fileBuffer = Buffer.from(secondDoc.base64Data, 'base64');
+              const fileBuffer = Buffer.from(doc.base64Data, 'base64');
               const imageBuffer = await sharp.default(fileBuffer)
                 .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
                 .jpeg({ quality: 75 })
                 .toBuffer();
-              
-              const jpgImage = await mainPdf.embedJpg(imageBuffer);
-              const { width, height } = jpgImage.scale(1);
-              const maxWidth = pageWidth - margin * 2;
-              const maxHeight = imageAreaHeight - 10;
-              const scale = Math.min(maxWidth / width, maxHeight / height);
-              const drawWidth = width * scale;
-              const drawHeight = height * scale;
-              
-              const secondY = margin;
-              const drawX = margin + (maxWidth - drawWidth) / 2;
-              const drawY = secondY + (maxHeight - drawHeight) / 2;
-              
-              // Draw header for second image (English only - Korean encoding not supported)
-              const headerText2 = `Case: ${caseData.caseNumber || '-'}`;
-              page.drawText(headerText2, {
-                x: margin,
-                y: margin + imageAreaHeight + 5,
-                size: 10,
-                font,
-                color: rgb(0.2, 0.2, 0.2),
+              const tab = categoryToTab[doc.category] || '기타';
+              processedImages.push({
+                base64: `data:image/jpeg;base64,${imageBuffer.toString('base64')}`,
+                tab,
+                category: doc.category || '기타'
               });
+              console.log(`[Invoice PDF Email] Processed image: ${doc.fileName}`);
+            } catch (err) {
+              console.error(`[Invoice PDF Email] Failed to process image ${doc.fileName}:`, err);
+            }
+          }
+          
+          if (processedImages.length > 0) {
+            // Generate HTML for images
+            const caseNumber = caseData.caseNumber || '';
+            let pagesHtml = '';
+            
+            for (let i = 0; i < processedImages.length; i += 2) {
+              const first = processedImages[i];
+              const second = processedImages[i + 1];
               
-              page.drawImage(jpgImage, {
-                x: drawX,
-                y: drawY,
-                width: drawWidth,
-                height: drawHeight,
+              pagesHtml += `
+                <div class="page">
+                  <div class="image-section">
+                    <div class="image-header">접수번호:${caseNumber} | ${first.tab}(${first.category})</div>
+                    <div class="image-container">
+                      <img src="${first.base64}" alt="Evidence ${i + 1}" />
+                    </div>
+                  </div>
+                  ${second ? `
+                  <div class="image-section">
+                    <div class="image-header">접수번호:${caseNumber} | ${second.tab}(${second.category})</div>
+                    <div class="image-container">
+                      <img src="${second.base64}" alt="Evidence ${i + 2}" />
+                    </div>
+                  </div>
+                  ` : ''}
+                </div>
+              `;
+            }
+            
+            const imageHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; background: white; }
+    .page {
+      width: 210mm;
+      height: 297mm;
+      padding: 10mm;
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      gap: 8mm;
+    }
+    .page:last-child { page-break-after: auto; }
+    .image-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .image-header {
+      background: #f8f8f8;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 8px 15px;
+      font-size: 11pt;
+      color: #333;
+    }
+    .image-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      background: white;
+    }
+    .image-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  ${pagesHtml}
+</body>
+</html>`;
+            
+            // Generate PDF with Puppeteer
+            const chromiumPath = process.env.PUPPETEER_EXECUTABLE_PATH || 
+              '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium';
+            
+            const browser = await puppeteer.default.launch({
+              headless: true,
+              executablePath: chromiumPath,
+              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
+            });
+            
+            try {
+              const browserPage = await browser.newPage();
+              await browserPage.setContent(imageHtml, { waitUntil: 'networkidle0', timeout: 60000 });
+              const imagePdfBuffer = await browserPage.pdf({
+                format: 'A4',
+                printBackground: true,
+                margin: { top: '0', right: '0', bottom: '0', left: '0' },
               });
-              console.log(`[Invoice PDF] Added image 2/2: ${secondDoc.fileName}`);
-            } catch (docError) {
-              console.error(`[Invoice PDF] Failed to add image ${secondDoc.fileName}:`, docError);
+              await browserPage.close();
+              
+              // Merge image PDF with invoice PDF
+              const imagePdf = await PDFDocument.load(imagePdfBuffer);
+              const imagePages = await mainPdf.copyPages(imagePdf, imagePdf.getPageIndices());
+              imagePages.forEach((p: any) => mainPdf.addPage(p));
+              
+              console.log(`[Invoice PDF Email] Added ${processedImages.length} images via Puppeteer`);
+            } finally {
+              await browser.close();
             }
           }
         }
