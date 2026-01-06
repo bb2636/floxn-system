@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, Image as ImageIcon, File } from "lucide-react";
@@ -101,10 +101,34 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [selectedDocTab, setSelectedDocTab] = useState<DocumentTab>("전체");
 
-  const { data: documents = [] } = useQuery<CaseDocument[]>({
+  // Fetch documents from main case
+  const { data: mainCaseDocuments = [] } = useQuery<CaseDocument[]>({
     queryKey: [`/api/cases/${caseData?.id}/documents`],
     enabled: open && !!caseData?.id,
   });
+
+  // Fetch documents from all related cases (피해세대 subcases)
+  const relatedCaseIds = useMemo(() => {
+    return relatedCases.map(c => c.id).filter(id => id !== caseData?.id);
+  }, [relatedCases, caseData?.id]);
+
+  const relatedDocsQueries = useQueries({
+    queries: relatedCaseIds.map(caseId => ({
+      queryKey: [`/api/cases/${caseId}/documents`],
+      enabled: open && !!caseId,
+    })),
+  });
+
+  // Merge all documents from main case and related cases
+  const documents = useMemo(() => {
+    const allDocs: CaseDocument[] = [...mainCaseDocuments];
+    for (const query of relatedDocsQueries) {
+      if (query.data) {
+        allDocs.push(...(query.data as CaseDocument[]));
+      }
+    }
+    return allDocs;
+  }, [mainCaseDocuments, relatedDocsQueries]);
 
   const documentsByCategory = useMemo(() => {
     const grouped: Record<string, CaseDocument[]> = {};
