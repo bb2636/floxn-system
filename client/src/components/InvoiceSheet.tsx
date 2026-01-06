@@ -102,7 +102,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [selectedDocTab, setSelectedDocTab] = useState<DocumentTab>("전체");
 
   const { data: documents = [] } = useQuery<CaseDocument[]>({
-    queryKey: ['/api/cases', caseData?.id, 'documents'],
+    queryKey: [`/api/cases/${caseData?.id}/documents`],
     enabled: open && !!caseData?.id,
   });
 
