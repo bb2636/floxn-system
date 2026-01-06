@@ -247,13 +247,13 @@ async function generateEvidencePdfWithPdfLib(
     // 첫 번째 이미지
     const first = imageDocs[i];
     const firstY = pageHeight - imageAreaTop - imageAreaHeight;
-    await embedImageToPage(pdfDoc, page, first, margin, firstY, pageWidth - 2 * margin, imageAreaHeight - 40, imageQuality, errors, font);
+    await embedImageToPage(pdfDoc, page, first, margin, firstY, pageWidth - 2 * margin, imageAreaHeight - 40, imageQuality, errors, font, caseData.caseNumber);
     
     // 두 번째 이미지 (있으면)
     if (imageDocs[i + 1]) {
       const second = imageDocs[i + 1];
       const secondY = margin + 20;
-      await embedImageToPage(pdfDoc, page, second, margin, secondY, pageWidth - 2 * margin, imageAreaHeight - 40, imageQuality, errors, font);
+      await embedImageToPage(pdfDoc, page, second, margin, secondY, pageWidth - 2 * margin, imageAreaHeight - 40, imageQuality, errors, font, caseData.caseNumber);
     }
   }
   
@@ -273,7 +273,8 @@ async function embedImageToPage(
   x: number, y: number, maxWidth: number, maxHeight: number,
   quality: number,
   errors: Array<{ fileName: string; reason: string }>,
-  font: any
+  font: any,
+  caseNumber?: string
 ): Promise<void> {
   const fileStartTime = Date.now();
   const { doc, tab } = imageData;
@@ -324,10 +325,13 @@ async function embedImageToPage(
       width: drawWidth, height: drawHeight,
     });
     
-    // 파일명 표시
-    page.drawText(`${tab} - ${doc.category}: ${doc.fileName}`, {
+    // 이미지 상단에 접수번호와 카테고리 정보 표시
+    const headerText = caseNumber 
+      ? `접수번호: ${caseNumber} ${tab}(${doc.category})`
+      : `${tab}(${doc.category})`;
+    page.drawText(headerText, {
       x: x, y: y + maxHeight - 15,
-      size: 8, font, color: rgb(0.3, 0.3, 0.3),
+      size: 9, font, color: rgb(0.2, 0.2, 0.2),
     });
     
     const elapsedMs = Date.now() - fileStartTime;
