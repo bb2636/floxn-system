@@ -423,7 +423,7 @@ async function generateEvidencePdfWithPdfLib(
   
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
+    await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
     
     const pdfBuffer = await page.pdf({
       format: 'A4',
@@ -1458,7 +1458,7 @@ export async function generatePdf(payload: PdfGenerationPayload, processingLevel
     if (sections.cover) {
       const coverHtml = await generateCoverPage(caseData, partnerData);
       const page = await browser.newPage();
-      await page.setContent(coverHtml, { waitUntil: 'networkidle0' });
+      await page.setContent(coverHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
@@ -1483,7 +1483,7 @@ export async function generatePdf(payload: PdfGenerationPayload, processingLevel
       
       const fieldReportHtml = await generateFieldReportPage(caseData, partnerData, repairItems);
       const page = await browser.newPage();
-      await page.setContent(fieldReportHtml, { waitUntil: 'networkidle0' });
+      await page.setContent(fieldReportHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
@@ -1497,7 +1497,7 @@ export async function generatePdf(payload: PdfGenerationPayload, processingLevel
       const [drawingData] = await db.select().from(drawings).where(eq(drawings.caseId, caseId));
       const drawingHtml = await generateDrawingPage(caseData, drawingData);
       const page = await browser.newPage();
-      await page.setContent(drawingHtml, { waitUntil: 'networkidle0' });
+      await page.setContent(drawingHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
@@ -1735,7 +1735,7 @@ export async function generatePdf(payload: PdfGenerationPayload, processingLevel
       // Generate estimate page (노무비/자재비 견적서)
       const estimateHtml = await generateEstimatePage(caseData, estimateData, estimateRowsData, partnerData);
       const page = await browser.newPage();
-      await page.setContent(estimateHtml, { waitUntil: 'networkidle0' });
+      await page.setContent(estimateHtml, { waitUntil: 'domcontentloaded', timeout: 30000 });
       const pdfBuffer = await page.pdf({
         format: 'A4',
         printBackground: true,
