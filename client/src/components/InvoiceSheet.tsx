@@ -85,6 +85,43 @@ const CATEGORY_TO_TAB: Record<string, DocumentTab> = {
   "청구자료": "청구자료",
 };
 
+// 세부 카테고리 정의
+const SUB_CATEGORIES: Record<DocumentTab, string[]> = {
+  "전체": [],
+  "현장사진": ["전체", "현장출동사진", "수리중 사진", "복구완료 사진"],
+  "기본자료": ["전체", "보험금 청구서", "개인정보 동의서(가족용)"],
+  "증빙자료": ["전체", "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)"],
+  "청구자료": ["전체", "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"],
+};
+
+// 카테고리가 세부 카테고리에 매칭되는지 확인
+const matchesSubCategory = (docCategory: string, subCategory: string): boolean => {
+  if (subCategory === "전체") return true;
+  
+  // 정확한 매칭
+  if (docCategory === subCategory) return true;
+  
+  // 유사 매칭
+  const categoryMappings: Record<string, string[]> = {
+    "현장출동사진": ["현장출동사진", "현장"],
+    "수리중 사진": ["수리중 사진", "수리중", "사진-수리중"],
+    "복구완료 사진": ["복구완료 사진", "복구완료", "사진-복구완료"],
+    "보험금 청구서": ["보험금 청구서"],
+    "개인정보 동의서(가족용)": ["개인정보 동의서(가족용)"],
+    "주민등록등본": ["주민등록등본"],
+    "등기부등본": ["등기부등본"],
+    "건축물대장": ["건축물대장"],
+    "기타증빙자료(민원일지 등)": ["기타증빙자료(민원일지 등)"],
+    "위임장": ["위임장"],
+    "도급계약서": ["도급계약서"],
+    "복구완료확인서": ["복구완료확인서"],
+    "부가세 청구자료": ["부가세 청구자료"],
+  };
+  
+  const matchingCategories = categoryMappings[subCategory] || [];
+  return matchingCategories.includes(docCategory);
+};
+
 export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }: InvoiceSheetProps) {
   const { toast } = useToast();
   const invoicePdfRef = useRef<HTMLDivElement>(null);
@@ -101,6 +138,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
   const [selectedDocTabByCaseId, setSelectedDocTabByCaseId] = useState<Record<string, DocumentTab>>({});
+  const [selectedSubCategoryByCaseId, setSelectedSubCategoryByCaseId] = useState<Record<string, string>>({});
 
   // Fetch documents from main case
   const { data: mainCaseDocuments = [] } = useQuery<CaseDocument[]>({
@@ -166,8 +204,19 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const getFilteredDocsForCase = (caseId: string) => {
     const caseDocs = documentsByCaseId[caseId] || [];
     const selectedTab = selectedDocTabByCaseId[caseId] || "전체";
+    const selectedSubCategory = selectedSubCategoryByCaseId[caseId] || "전체";
+    
     if (selectedTab === "전체") return caseDocs;
-    return caseDocs.filter(doc => CATEGORY_TO_TAB[doc.category] === selectedTab);
+    
+    // 먼저 메인 탭으로 필터링
+    const tabFiltered = caseDocs.filter(doc => CATEGORY_TO_TAB[doc.category] === selectedTab);
+    
+    // 세부 카테고리가 "전체"가 아니면 추가 필터링
+    if (selectedSubCategory !== "전체") {
+      return tabFiltered.filter(doc => matchesSubCategory(doc.category, selectedSubCategory));
+    }
+    
+    return tabFiltered;
   };
 
   // Get tab for a specific case
@@ -175,9 +224,20 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     return selectedDocTabByCaseId[caseId] || "전체";
   };
 
-  // Set tab for a specific case
+  // Get sub-category for a specific case
+  const getSubCategoryForCase = (caseId: string): string => {
+    return selectedSubCategoryByCaseId[caseId] || "전체";
+  };
+
+  // Set tab for a specific case (also reset sub-category)
   const setTabForCase = (caseId: string, tab: DocumentTab) => {
     setSelectedDocTabByCaseId(prev => ({ ...prev, [caseId]: tab }));
+    setSelectedSubCategoryByCaseId(prev => ({ ...prev, [caseId]: "전체" }));
+  };
+
+  // Set sub-category for a specific case
+  const setSubCategoryForCase = (caseId: string, subCategory: string) => {
+    setSelectedSubCategoryByCaseId(prev => ({ ...prev, [caseId]: subCategory }));
   };
 
   const getFileIcon = (fileType: string) => {
@@ -369,6 +429,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         setSelectedEmails([]);
         setSelectedDocumentIds([]);
         setSelectedDocTabByCaseId({});
+        setSelectedSubCategoryByCaseId({});
       }
     };
     
@@ -1227,6 +1288,69 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                   );
                 })}
               </div>
+
+              {/* Sub-Category Tabs - 메인 탭이 "전체"가 아닐 때만 표시 */}
+              {currentTab !== "전체" && SUB_CATEGORIES[currentTab].length > 0 && (
+                <div style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: "8px",
+                  flexWrap: "wrap",
+                  padding: "8px 0",
+                  borderBottom: "1px solid rgba(12, 12, 12, 0.06)",
+                }}>
+                  {SUB_CATEGORIES[currentTab].map(subCat => {
+                    const isSubSelected = getSubCategoryForCase(caseItem.id) === subCat;
+                    const tabDocs = caseDocs.filter(doc => CATEGORY_TO_TAB[doc.category] === currentTab);
+                    const subCatCount = subCat === "전체" 
+                      ? tabDocs.length 
+                      : tabDocs.filter(doc => matchesSubCategory(doc.category, subCat)).length;
+                    
+                    return (
+                      <button
+                        key={subCat}
+                        onClick={() => setSubCategoryForCase(caseItem.id, subCat)}
+                        style={{
+                          display: "flex",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          padding: "4px 10px",
+                          gap: "4px",
+                          background: isSubSelected ? "rgba(0, 143, 237, 0.1)" : "transparent",
+                          borderRadius: "4px",
+                          border: isSubSelected ? "1px solid #008FED" : "1px solid transparent",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                        }}
+                        data-testid={`subtab-doc-${caseItem.id}-${subCat}`}
+                      >
+                        <span style={{
+                          fontFamily: "'Pretendard'",
+                          fontStyle: "normal",
+                          fontWeight: isSubSelected ? 600 : 400,
+                          fontSize: "11px",
+                          lineHeight: "128%",
+                          letterSpacing: "-0.01em",
+                          color: isSubSelected ? "#008FED" : "rgba(12, 12, 12, 0.6)",
+                        }}>
+                          {subCat}
+                        </span>
+                        {subCatCount > 0 && (
+                          <span style={{
+                            fontFamily: "'Pretendard'",
+                            fontWeight: 400,
+                            fontSize: "10px",
+                            color: isSubSelected ? "#008FED" : "rgba(12, 12, 12, 0.4)",
+                          }}>
+                            {subCatCount}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Select All Row */}
               <div style={{
