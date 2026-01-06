@@ -65,8 +65,6 @@ export function generateInvoiceHtml(data: InvoiceData): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>INVOICE</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
-    
     * {
       margin: 0;
       padding: 0;
@@ -74,7 +72,7 @@ export function generateInvoiceHtml(data: InvoiceData): string {
     }
     
     body {
-      font-family: 'Noto Sans KR', sans-serif;
+      font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
       font-size: 12px;
       line-height: 1.5;
       color: #000;
@@ -438,7 +436,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
       console.log('[Invoice PDF] Browser launched successfully');
       
       const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'load', timeout: 30000 });
+      await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 30000 });
       
       const pdfBuffer = await page.pdf({
         format: 'A4',
