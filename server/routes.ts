@@ -6002,49 +6002,142 @@ FLOXN 드림`;
         const selectedDocs = documents.filter((doc: any) => selectedDocumentIds.includes(doc.id));
         
         if (selectedDocs.length > 0) {
-          const { PDFDocument } = await import('pdf-lib');
+          const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
           const sharp = await import('sharp');
           
           const mergedPdf = await PDFDocument.load(pdfBuffer);
+          const font = await mergedPdf.embedFont(StandardFonts.Helvetica);
+          
+          // Separate PDFs and images
+          const pdfDocs: any[] = [];
+          const imageDocs: any[] = [];
           
           for (const doc of selectedDocs) {
+            if (!doc.fileData) continue;
+            const mimeType = doc.fileType || '';
+            if (mimeType === 'application/pdf') {
+              pdfDocs.push(doc);
+            } else if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) {
+              imageDocs.push(doc);
+            }
+          }
+          
+          // Add PDF documents first
+          for (const doc of pdfDocs) {
             try {
-              if (!doc.fileData) continue;
-              
               const base64Data = doc.fileData.includes(',') 
                 ? doc.fileData.split(',')[1] 
                 : doc.fileData;
               const fileBuffer = Buffer.from(base64Data, 'base64');
+              const attachedPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+              const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
+              pages.forEach((page: any) => mergedPdf.addPage(page));
+              console.log(`[Invoice PDF] Added PDF document: ${doc.fileName}`);
+            } catch (docError) {
+              console.error(`[Invoice PDF] Failed to add PDF ${doc.fileName}:`, docError);
+            }
+          }
+          
+          // Add images - 2 per page with headers
+          const pageWidth = 595;
+          const pageHeight = 842;
+          const margin = 30;
+          const headerHeight = 25;
+          const imageAreaHeight = (pageHeight - margin * 2 - headerHeight * 2 - 20) / 2;
+          
+          for (let i = 0; i < imageDocs.length; i += 2) {
+            const page = mergedPdf.addPage([pageWidth, pageHeight]);
+            
+            // First image
+            const firstDoc = imageDocs[i];
+            try {
+              const base64Data = firstDoc.fileData.includes(',') 
+                ? firstDoc.fileData.split(',')[1] 
+                : firstDoc.fileData;
+              const fileBuffer = Buffer.from(base64Data, 'base64');
+              const imageBuffer = await sharp.default(fileBuffer)
+                .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
+                .jpeg({ quality: 75 })
+                .toBuffer();
               
-              const mimeType = doc.fileType || '';
+              const jpgImage = await mergedPdf.embedJpg(imageBuffer);
+              const { width, height } = jpgImage.scale(1);
+              const maxWidth = pageWidth - margin * 2;
+              const maxHeight = imageAreaHeight - 10;
+              const scale = Math.min(maxWidth / width, maxHeight / height);
+              const drawWidth = width * scale;
+              const drawHeight = height * scale;
               
-              if (mimeType === 'application/pdf') {
-                const attachedPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
-                const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
-                pages.forEach(page => mergedPdf.addPage(page));
-                console.log(`[Invoice PDF] Added PDF document: ${doc.fileName}`);
-              } else if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) {
+              const firstY = pageHeight - margin - headerHeight - imageAreaHeight;
+              const drawX = margin + (maxWidth - drawWidth) / 2;
+              const drawY = firstY + (maxHeight - drawHeight) / 2;
+              
+              // Draw header for first image
+              const headerText1 = `접수번호: ${caseData.caseNumber || '-'} ${firstDoc.category || '기타'}`;
+              page.drawText(headerText1, {
+                x: margin,
+                y: pageHeight - margin - 15,
+                size: 10,
+                font,
+                color: rgb(0.2, 0.2, 0.2),
+              });
+              
+              page.drawImage(jpgImage, {
+                x: drawX,
+                y: drawY,
+                width: drawWidth,
+                height: drawHeight,
+              });
+              console.log(`[Invoice PDF] Added image 1/2: ${firstDoc.fileName}`);
+            } catch (docError) {
+              console.error(`[Invoice PDF] Failed to add image ${firstDoc.fileName}:`, docError);
+            }
+            
+            // Second image (if exists)
+            if (imageDocs[i + 1]) {
+              const secondDoc = imageDocs[i + 1];
+              try {
+                const base64Data = secondDoc.fileData.includes(',') 
+                  ? secondDoc.fileData.split(',')[1] 
+                  : secondDoc.fileData;
+                const fileBuffer = Buffer.from(base64Data, 'base64');
                 const imageBuffer = await sharp.default(fileBuffer)
-                  .resize(1600, 2200, { fit: 'inside', withoutEnlargement: true })
+                  .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
                   .jpeg({ quality: 75 })
                   .toBuffer();
                 
                 const jpgImage = await mergedPdf.embedJpg(imageBuffer);
-                const page = mergedPdf.addPage([595, 842]); // A4
                 const { width, height } = jpgImage.scale(1);
-                const scale = Math.min(555 / width, 802 / height);
-                page.drawImage(jpgImage, {
-                  x: (595 - width * scale) / 2,
-                  y: 842 - 20 - height * scale,
-                  width: width * scale,
-                  height: height * scale,
+                const maxWidth = pageWidth - margin * 2;
+                const maxHeight = imageAreaHeight - 10;
+                const scale = Math.min(maxWidth / width, maxHeight / height);
+                const drawWidth = width * scale;
+                const drawHeight = height * scale;
+                
+                const secondY = margin;
+                const drawX = margin + (maxWidth - drawWidth) / 2;
+                const drawY = secondY + (maxHeight - drawHeight) / 2;
+                
+                // Draw header for second image
+                const headerText2 = `접수번호: ${caseData.caseNumber || '-'} ${secondDoc.category || '기타'}`;
+                page.drawText(headerText2, {
+                  x: margin,
+                  y: margin + imageAreaHeight + 5,
+                  size: 10,
+                  font,
+                  color: rgb(0.2, 0.2, 0.2),
                 });
-                console.log(`[Invoice PDF] Added image document: ${doc.fileName}`);
-              } else {
-                console.log(`[Invoice PDF] Skipping unsupported file type: ${mimeType}`);
+                
+                page.drawImage(jpgImage, {
+                  x: drawX,
+                  y: drawY,
+                  width: drawWidth,
+                  height: drawHeight,
+                });
+                console.log(`[Invoice PDF] Added image 2/2: ${secondDoc.fileName}`);
+              } catch (docError) {
+                console.error(`[Invoice PDF] Failed to add image ${secondDoc.fileName}:`, docError);
               }
-            } catch (docError) {
-              console.error(`[Invoice PDF] Failed to add document ${doc.fileName}:`, docError);
             }
           }
           
@@ -6201,68 +6294,138 @@ FLOXN 드림`;
       if (selectedDocumentIds && selectedDocumentIds.length > 0) {
         console.log(`[Invoice PDF] Merging ${selectedDocumentIds.length} documents into PDF`);
         
-        const { PDFDocument } = await import('pdf-lib');
+        const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
+        const sharp = await import('sharp');
         const mainPdf = await PDFDocument.load(pdfBuffer);
+        const font = await mainPdf.embedFont(StandardFonts.Helvetica);
         
         // Fetch selected documents
         const allDocuments = await storage.getDocumentsByCaseId(caseId);
         const selectedDocs = allDocuments.filter((doc: { id: string }) => selectedDocumentIds.includes(doc.id));
         
+        // Separate PDFs and images
+        const pdfDocs: any[] = [];
+        const imageDocs: any[] = [];
+        
         for (const doc of selectedDocs) {
+          if (!doc.fileData) continue;
+          const base64Match = doc.fileData.match(/^data:([^;]+);base64,(.+)$/);
+          if (!base64Match) continue;
+          const mimeType = base64Match[1];
+          if (mimeType === 'application/pdf') {
+            pdfDocs.push({ ...doc, mimeType, base64Data: base64Match[2] });
+          } else if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) {
+            imageDocs.push({ ...doc, mimeType, base64Data: base64Match[2] });
+          }
+        }
+        
+        // Add PDF documents first
+        for (const doc of pdfDocs) {
           try {
-            if (!doc.fileData) continue;
+            const fileBuffer = Buffer.from(doc.base64Data, 'base64');
+            const attachedPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+            const pages = await mainPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
+            pages.forEach((page: any) => mainPdf.addPage(page));
+            console.log(`[Invoice PDF] Added PDF document: ${doc.fileName}`);
+          } catch (docError) {
+            console.error(`[Invoice PDF] Failed to add PDF ${doc.fileName}:`, docError);
+          }
+        }
+        
+        // Add images - 2 per page with headers
+        const pageWidth = 595;
+        const pageHeight = 842;
+        const margin = 30;
+        const headerHeight = 25;
+        const imageAreaHeight = (pageHeight - margin * 2 - headerHeight * 2 - 20) / 2;
+        
+        for (let i = 0; i < imageDocs.length; i += 2) {
+          const page = mainPdf.addPage([pageWidth, pageHeight]);
+          
+          // First image
+          const firstDoc = imageDocs[i];
+          try {
+            const fileBuffer = Buffer.from(firstDoc.base64Data, 'base64');
+            const imageBuffer = await sharp.default(fileBuffer)
+              .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
+              .jpeg({ quality: 75 })
+              .toBuffer();
             
-            // Extract base64 data from data URL
-            const base64Match = doc.fileData.match(/^data:([^;]+);base64,(.+)$/);
-            if (!base64Match) continue;
+            const jpgImage = await mainPdf.embedJpg(imageBuffer);
+            const { width, height } = jpgImage.scale(1);
+            const maxWidth = pageWidth - margin * 2;
+            const maxHeight = imageAreaHeight - 10;
+            const scale = Math.min(maxWidth / width, maxHeight / height);
+            const drawWidth = width * scale;
+            const drawHeight = height * scale;
             
-            const mimeType = base64Match[1];
-            const base64Data = base64Match[2];
-            const imageBytes = Buffer.from(base64Data, 'base64');
+            const firstY = pageHeight - margin - headerHeight - imageAreaHeight;
+            const drawX = margin + (maxWidth - drawWidth) / 2;
+            const drawY = firstY + (maxHeight - drawHeight) / 2;
             
-            // Create a new page for each image
-            const A4_WIDTH = 595.28;
-            const A4_HEIGHT = 841.89;
-            
-            let embeddedImage;
-            if (mimeType === 'image/jpeg' || mimeType === 'image/jpg') {
-              embeddedImage = await mainPdf.embedJpg(imageBytes);
-            } else if (mimeType === 'image/png') {
-              embeddedImage = await mainPdf.embedPng(imageBytes);
-            } else {
-              console.log(`[Invoice PDF] Skipping unsupported file type: ${mimeType}`);
-              continue;
-            }
-            
-            // Calculate dimensions to fit image on A4 page with margins
-            const margin = 40;
-            const maxWidth = A4_WIDTH - (margin * 2);
-            const maxHeight = A4_HEIGHT - (margin * 2);
-            
-            let width = embeddedImage.width;
-            let height = embeddedImage.height;
-            
-            const widthRatio = maxWidth / width;
-            const heightRatio = maxHeight / height;
-            const scale = Math.min(widthRatio, heightRatio, 1);
-            
-            width *= scale;
-            height *= scale;
-            
-            const page = mainPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-            const x = (A4_WIDTH - width) / 2;
-            const y = (A4_HEIGHT - height) / 2;
-            
-            page.drawImage(embeddedImage, {
-              x,
-              y,
-              width,
-              height,
+            // Draw header for first image
+            const headerText1 = `접수번호: ${caseData.caseNumber || '-'} ${firstDoc.category || '기타'}`;
+            page.drawText(headerText1, {
+              x: margin,
+              y: pageHeight - margin - 15,
+              size: 10,
+              font,
+              color: rgb(0.2, 0.2, 0.2),
             });
             
-            console.log(`[Invoice PDF] Added document: ${doc.fileName}`);
+            page.drawImage(jpgImage, {
+              x: drawX,
+              y: drawY,
+              width: drawWidth,
+              height: drawHeight,
+            });
+            console.log(`[Invoice PDF] Added image 1/2: ${firstDoc.fileName}`);
           } catch (docError) {
-            console.error(`[Invoice PDF] Failed to add document ${doc.fileName}:`, docError);
+            console.error(`[Invoice PDF] Failed to add image ${firstDoc.fileName}:`, docError);
+          }
+          
+          // Second image (if exists)
+          if (imageDocs[i + 1]) {
+            const secondDoc = imageDocs[i + 1];
+            try {
+              const fileBuffer = Buffer.from(secondDoc.base64Data, 'base64');
+              const imageBuffer = await sharp.default(fileBuffer)
+                .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
+                .jpeg({ quality: 75 })
+                .toBuffer();
+              
+              const jpgImage = await mainPdf.embedJpg(imageBuffer);
+              const { width, height } = jpgImage.scale(1);
+              const maxWidth = pageWidth - margin * 2;
+              const maxHeight = imageAreaHeight - 10;
+              const scale = Math.min(maxWidth / width, maxHeight / height);
+              const drawWidth = width * scale;
+              const drawHeight = height * scale;
+              
+              const secondY = margin;
+              const drawX = margin + (maxWidth - drawWidth) / 2;
+              const drawY = secondY + (maxHeight - drawHeight) / 2;
+              
+              // Draw header for second image
+              const headerText2 = `접수번호: ${caseData.caseNumber || '-'} ${secondDoc.category || '기타'}`;
+              page.drawText(headerText2, {
+                x: margin,
+                y: margin + imageAreaHeight + 5,
+                size: 10,
+                font,
+                color: rgb(0.2, 0.2, 0.2),
+              });
+              
+              page.drawImage(jpgImage, {
+                x: drawX,
+                y: drawY,
+                width: drawWidth,
+                height: drawHeight,
+              });
+              console.log(`[Invoice PDF] Added image 2/2: ${secondDoc.fileName}`);
+            } catch (docError) {
+              console.error(`[Invoice PDF] Failed to add image ${secondDoc.fileName}:`, docError);
+            }
           }
         }
         
