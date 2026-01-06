@@ -325,10 +325,10 @@ async function embedImageToPage(
       width: drawWidth, height: drawHeight,
     });
     
-    // 이미지 상단에 접수번호와 카테고리 정보 표시
+    // 이미지 상단에 접수번호와 카테고리 정보 표시 (영문만 - 한글 인코딩 불가)
     const headerText = caseNumber 
-      ? `접수번호: ${caseNumber} ${tab}(${doc.category})`
-      : `${tab}(${doc.category})`;
+      ? `Case: ${caseNumber}`
+      : `Document`;
     page.drawText(headerText, {
       x: x, y: y + maxHeight - 15,
       size: 9, font, color: rgb(0.2, 0.2, 0.2),
@@ -342,18 +342,18 @@ async function embedImageToPage(
     console.error(`[PDF 증빙자료] [C] 이미지 삽입 실패: ${doc.fileName}, elapsed_ms=${elapsedMs}, error=${error.message}`);
     errors.push({ fileName: doc.fileName, reason: error.message || '첨부 불가' });
     
-    // 오류 페이지 대체 표시
+    // 오류 페이지 대체 표시 (영문만 - 한글 인코딩 불가)
     page.drawRectangle({
       x: x, y: y,
       width: maxWidth, height: maxHeight - 30,
       borderColor: rgb(0.8, 0.2, 0.2),
       borderWidth: 1,
     });
-    page.drawText(`첨부 불가: ${doc.fileName}`, {
+    page.drawText(`Cannot attach: ${doc.fileName}`, {
       x: x + 10, y: y + maxHeight / 2,
       size: 10, font, color: rgb(0.8, 0.2, 0.2),
     });
-    page.drawText(`사유: ${error.message || '처리 오류'}`, {
+    page.drawText(`Error`, {
       x: x + 10, y: y + maxHeight / 2 - 15,
       size: 8, font, color: rgb(0.5, 0.5, 0.5),
     });

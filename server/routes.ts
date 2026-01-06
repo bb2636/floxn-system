@@ -6072,8 +6072,8 @@ FLOXN 드림`;
               const drawX = margin + (maxWidth - drawWidth) / 2;
               const drawY = firstY + (maxHeight - drawHeight) / 2;
               
-              // Draw header for first image
-              const headerText1 = `접수번호: ${caseData.caseNumber || '-'} ${firstDoc.category || '기타'}`;
+              // Draw header for first image (English only - Korean encoding not supported)
+              const headerText1 = `Case: ${caseData.caseNumber || '-'}`;
               page.drawText(headerText1, {
                 x: margin,
                 y: pageHeight - margin - 15,
@@ -6118,8 +6118,8 @@ FLOXN 드림`;
                 const drawX = margin + (maxWidth - drawWidth) / 2;
                 const drawY = secondY + (maxHeight - drawHeight) / 2;
                 
-                // Draw header for second image
-                const headerText2 = `접수번호: ${caseData.caseNumber || '-'} ${secondDoc.category || '기타'}`;
+                // Draw header for second image (English only - Korean encoding not supported)
+                const headerText2 = `Case: ${caseData.caseNumber || '-'}`;
                 page.drawText(headerText2, {
                   x: margin,
                   y: margin + imageAreaHeight + 5,
@@ -6363,8 +6363,8 @@ FLOXN 드림`;
             const drawX = margin + (maxWidth - drawWidth) / 2;
             const drawY = firstY + (maxHeight - drawHeight) / 2;
             
-            // Draw header for first image
-            const headerText1 = `접수번호: ${caseData.caseNumber || '-'} ${firstDoc.category || '기타'}`;
+            // Draw header for first image (English only - Korean encoding not supported)
+            const headerText1 = `Case: ${caseData.caseNumber || '-'}`;
             page.drawText(headerText1, {
               x: margin,
               y: pageHeight - margin - 15,
@@ -6406,8 +6406,8 @@ FLOXN 드림`;
               const drawX = margin + (maxWidth - drawWidth) / 2;
               const drawY = secondY + (maxHeight - drawHeight) / 2;
               
-              // Draw header for second image
-              const headerText2 = `접수번호: ${caseData.caseNumber || '-'} ${secondDoc.category || '기타'}`;
+              // Draw header for second image (English only - Korean encoding not supported)
+              const headerText2 = `Case: ${caseData.caseNumber || '-'}`;
               page.drawText(headerText2, {
                 x: margin,
                 y: margin + imageAreaHeight + 5,
