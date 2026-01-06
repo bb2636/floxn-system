@@ -6200,7 +6200,7 @@ FLOXN 드림`;
         }
       }
 
-      const fileName = `INVOICE_${caseData.caseNumber || caseId}_${Date.now()}.pdf`;
+      const fileName = `INVOICE_${caseData.insuranceAccidentNo || caseData.caseNumber || caseId}_${Date.now()}.pdf`;
       
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
@@ -6651,7 +6651,7 @@ FLOXN 드림`;
 
       // Generate filename for the PDF attachment
       const timestamp = Date.now();
-      const pdfFilename = `INVOICE_${caseData.caseNumber || caseId}_${timestamp}.pdf`;
+      const pdfFilename = `INVOICE_${caseData.insuranceAccidentNo || caseData.caseNumber || caseId}_${timestamp}.pdf`;
 
       // Send email with PDF attachment (NOT a link)
       console.log(`[Invoice Email] Sending PDF attachment to ${email}`);

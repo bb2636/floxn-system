@@ -498,7 +498,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `인보이스_${caseData.caseNumber || caseData.id}.pdf`;
+      a.download = `INVOICE_${caseData.insuranceAccidentNo || caseData.caseNumber || caseData.id}.pdf`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
