@@ -441,27 +441,21 @@ async function renderCoverPage(
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
   
+  // Title: 현장출동확인서
   drawText(page, {
     x: MARGIN,
-    y: y - 40,
+    y: y - 30,
     text: '현장출동확인서',
     font: fonts.bold,
-    size: 22,
+    size: 24,
     maxWidth: CONTENT_WIDTH,
     align: 'center',
   });
   
-  y -= 80;
+  y -= 90;
   
-  page.drawLine({
-    start: { x: MARGIN, y },
-    end: { x: A4_WIDTH - MARGIN, y },
-    thickness: 1,
-    color: rgb(0.3, 0.3, 0.3),
-  });
-  
-  y -= 30;
-  
+  // 수 신 line with underline
+  const recipientName = caseData.insuranceCompany || '-';
   drawText(page, {
     x: MARGIN,
     y,
@@ -471,9 +465,26 @@ async function renderCoverPage(
   });
   
   drawText(page, {
-    x: MARGIN + 50,
+    x: MARGIN + 60,
     y,
-    text: `${caseData.insuranceCompany || ''} 귀중`,
+    text: recipientName,
+    font: fonts.regular,
+    size: 12,
+  });
+  
+  // Underline under recipient name
+  const recipientWidth = recipientName.length * 8;
+  page.drawLine({
+    start: { x: MARGIN + 60, y: y - 4 },
+    end: { x: MARGIN + 60 + Math.max(recipientWidth, 150), y: y - 4 },
+    thickness: 0.5,
+    color: rgb(0.3, 0.3, 0.3),
+  });
+  
+  drawText(page, {
+    x: A4_WIDTH - MARGIN - 30,
+    y,
+    text: '귀하',
     font: fonts.regular,
     size: 12,
   });
@@ -486,11 +497,12 @@ async function renderCoverPage(
   const dispatchDateTime = [caseData.visitDate, caseData.visitTime]
     .filter(Boolean).join(' ');
   
+  // Main info table
   const tableRows: TableCell[][] = [
     [
-      { text: '사고번호', width: 100, isHeader: true, align: 'center' },
+      { text: '사고접수번호', width: 100, isHeader: true, align: 'center' },
       { text: caseData.insuranceAccidentNo || '-', width: 150, align: 'left' },
-      { text: '피보험자', width: 100, isHeader: true, align: 'center' },
+      { text: '피보험자명', width: 100, isHeader: true, align: 'center' },
       { text: caseData.insuredName || caseData.victimName || '-', width: 165, align: 'left' },
     ],
     [
@@ -500,7 +512,7 @@ async function renderCoverPage(
       { text: caseData.assignedPartner || '-', width: 165, align: 'left' },
     ],
     [
-      { text: '현장주소', width: 100, isHeader: true, align: 'center' },
+      { text: '주소', width: 100, isHeader: true, align: 'center' },
       { text: fullAddress || '-', width: 415, align: 'left' },
     ],
     [
@@ -515,59 +527,142 @@ async function renderCoverPage(
     rows: tableRows,
     fonts,
     fontSize: 10,
-    rowHeight: 26,
-  });
-  
-  y -= 30;
-  
-  const confirmationText = `위 사고와 관련하여 현장에 방문, 피해 상황 조사 및 복구공사 착수 여부를 확인하였기에 관련 서류(현장사진 및 견적서) 첨부하여 확인서를 제출합니다.`;
-  
-  y = drawText(page, {
-    x: MARGIN,
-    y,
-    text: confirmationText,
-    font: fonts.regular,
-    size: 11,
-    maxWidth: CONTENT_WIDTH,
-    lineHeight: 1.8,
+    rowHeight: 28,
   });
   
   y -= 40;
   
+  // Body text - two lines
   drawText(page, {
     x: MARGIN,
     y,
-    text: formatDate(new Date().toISOString()),
+    text: '상기 건에 대하여 현장 출동 조사를 실시하였으며,',
     font: fonts.regular,
+    size: 11,
+  });
+  
+  y -= 22;
+  
+  drawText(page, {
+    x: MARGIN,
+    y,
+    text: '조사 결과를 별첨 보고서와 같이 제출합니다.',
+    font: fonts.regular,
+    size: 11,
+  });
+  
+  y -= 50;
+  
+  // Confirmation text (bold, centered)
+  drawText(page, {
+    x: MARGIN,
+    y,
+    text: '위 내용이 사실과 다름없음을 확인합니다.',
+    font: fonts.bold,
     size: 12,
     maxWidth: CONTENT_WIDTH,
     align: 'center',
   });
   
-  y -= 60;
+  y -= 50;
   
-  const senderTableRows: TableCell[][] = [
-    [
-      { text: '업 체 명', width: 80, isHeader: true, align: 'center' },
-      { text: caseData.assignedPartner || '-', width: 200, align: 'left' },
-    ],
-    [
-      { text: '담 당 자', width: 80, isHeader: true, align: 'center' },
-      { text: caseData.assignedPartnerManager || partnerData?.name || '-', width: 200, align: 'left' },
-    ],
-    [
-      { text: '연 락 처', width: 80, isHeader: true, align: 'center' },
-      { text: caseData.assignedPartnerContact || partnerData?.phone || '-', width: 200, align: 'left' },
-    ],
-  ];
-  
-  drawTable(page, {
-    x: A4_WIDTH - MARGIN - 280,
+  // Date (centered)
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
+  drawText(page, {
+    x: MARGIN,
     y,
-    rows: senderTableRows,
-    fonts,
-    fontSize: 10,
-    rowHeight: 24,
+    text: dateStr,
+    font: fonts.regular,
+    size: 13,
+    maxWidth: CONTENT_WIDTH,
+    align: 'center',
+  });
+  
+  y -= 70;
+  
+  // Company info (right-aligned label: value format)
+  const infoX = A4_WIDTH / 2 + 30;
+  const labelWidth = 70;
+  const valueX = infoX + labelWidth + 20;
+  
+  drawText(page, {
+    x: infoX,
+    y,
+    text: '회 사 명 :',
+    font: fonts.bold,
+    size: 11,
+  });
+  drawText(page, {
+    x: valueX,
+    y,
+    text: caseData.assignedPartner || '-',
+    font: fonts.regular,
+    size: 11,
+  });
+  
+  y -= 25;
+  
+  drawText(page, {
+    x: infoX,
+    y,
+    text: '담 당 자 :',
+    font: fonts.bold,
+    size: 11,
+  });
+  drawText(page, {
+    x: valueX,
+    y,
+    text: caseData.assignedPartnerManager || partnerData?.name || '-',
+    font: fonts.regular,
+    size: 11,
+  });
+  
+  y -= 25;
+  
+  drawText(page, {
+    x: infoX,
+    y,
+    text: '연 락 처 :',
+    font: fonts.bold,
+    size: 11,
+  });
+  drawText(page, {
+    x: valueX,
+    y,
+    text: caseData.assignedPartnerContact || partnerData?.phone || '-',
+    font: fonts.regular,
+    size: 11,
+  });
+  
+  // FLOXN logo at bottom center
+  const logoY = MARGIN + 30;
+  
+  // Draw FLOXN logo text
+  drawText(page, {
+    x: MARGIN,
+    y: logoY,
+    text: 'FLOXN',
+    font: fonts.bold,
+    size: 14,
+    maxWidth: CONTENT_WIDTH,
+    align: 'center',
+  });
+  
+  // Draw decorative dots before FLOXN
+  const logoTextWidth = 60;
+  const centerX = A4_WIDTH / 2;
+  page.drawCircle({
+    x: centerX - logoTextWidth / 2 - 15,
+    y: logoY + 5,
+    size: 3,
+    color: rgb(0.2, 0.2, 0.2),
+  });
+  page.drawCircle({
+    x: centerX - logoTextWidth / 2 - 8,
+    y: logoY + 5,
+    size: 3,
+    color: rgb(0.2, 0.2, 0.2),
   });
 }
 
