@@ -1147,21 +1147,24 @@ async function renderEvidencePages(
       color: { r: 1, g: 1, b: 1 },
     });
     
+    const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '';
     drawText(page, {
       x: A4_WIDTH - MARGIN - 150,
       y: A4_HEIGHT - MARGIN - 22,
-      text: `접수번호: ${caseData.caseNumber || ''}`,
+      text: `접수번호: ${accidentNo}`,
       font: fonts.regular,
       size: 9,
       color: { r: 1, g: 1, b: 1 },
     });
     
     const firstImage = imageDocs[i];
-    const firstY = A4_HEIGHT - MARGIN - 30 - spacing - headerHeight - imageHeight;
+    const footerHeight = 25;
+    const firstY = A4_HEIGHT - MARGIN - 30 - spacing - headerHeight - imageHeight - footerHeight;
     
+    // Category header for first image
     page.drawRectangle({
       x: MARGIN,
-      y: firstY + imageHeight,
+      y: firstY + imageHeight + footerHeight,
       width: CONTENT_WIDTH,
       height: headerHeight,
       color: rgb(0.96, 0.96, 0.96),
@@ -1171,15 +1174,16 @@ async function renderEvidencePages(
     
     drawText(page, {
       x: MARGIN + 10,
-      y: firstY + imageHeight + 8,
+      y: firstY + imageHeight + footerHeight + 8,
       text: `${firstImage.tab} - ${firstImage.doc.category || ''}`,
       font: fonts.regular,
       size: 9,
     });
     
+    // Image area for first image
     page.drawRectangle({
       x: MARGIN,
-      y: firstY,
+      y: firstY + footerHeight,
       width: CONTENT_WIDTH,
       height: imageHeight,
       borderColor: rgb(0.8, 0.8, 0.8),
@@ -1188,23 +1192,47 @@ async function renderEvidencePages(
     
     const firstResult = await embedImage(
       pdfDoc, page, firstImage.doc.fileData,
-      MARGIN + 5, firstY + 5, imageWidth - 10, imageHeight - 10,
+      MARGIN + 5, firstY + footerHeight + 5, imageWidth - 10, imageHeight - 10,
       processingConfig
     );
     
     if (!firstResult.success) {
-      drawErrorSection(page, fonts, MARGIN + 5, firstY + 5, imageWidth - 10, imageHeight - 10,
+      drawErrorSection(page, fonts, MARGIN + 5, firstY + footerHeight + 5, imageWidth - 10, imageHeight - 10,
         firstImage.doc.fileName, firstResult.error || '첨부 실패');
       errors.push({ fileName: firstImage.doc.fileName, reason: firstResult.error || '첨부 실패' });
     }
     
+    // Footer with filename and upload date for first image
+    const firstUploadDate = firstImage.doc.createdAt 
+      ? new Date(firstImage.doc.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric' })
+      : '-';
+    
+    drawText(page, {
+      x: MARGIN + 5,
+      y: firstY + 8,
+      text: firstImage.doc.fileName || '',
+      font: fonts.regular,
+      size: 8,
+      color: { r: 0.3, g: 0.3, b: 0.3 },
+    });
+    
+    drawText(page, {
+      x: A4_WIDTH - MARGIN - 100,
+      y: firstY + 8,
+      text: `업로드: ${firstUploadDate}`,
+      font: fonts.regular,
+      size: 8,
+      color: { r: 0.3, g: 0.3, b: 0.3 },
+    });
+    
     if (imageDocs[i + 1]) {
       const secondImage = imageDocs[i + 1];
-      const secondY = firstY - spacing - headerHeight - imageHeight;
+      const secondY = firstY - spacing - headerHeight - imageHeight - footerHeight;
       
+      // Category header for second image
       page.drawRectangle({
         x: MARGIN,
-        y: secondY + imageHeight,
+        y: secondY + imageHeight + footerHeight,
         width: CONTENT_WIDTH,
         height: headerHeight,
         color: rgb(0.96, 0.96, 0.96),
@@ -1214,15 +1242,16 @@ async function renderEvidencePages(
       
       drawText(page, {
         x: MARGIN + 10,
-        y: secondY + imageHeight + 8,
+        y: secondY + imageHeight + footerHeight + 8,
         text: `${secondImage.tab} - ${secondImage.doc.category || ''}`,
         font: fonts.regular,
         size: 9,
       });
       
+      // Image area for second image
       page.drawRectangle({
         x: MARGIN,
-        y: secondY,
+        y: secondY + footerHeight,
         width: CONTENT_WIDTH,
         height: imageHeight,
         borderColor: rgb(0.8, 0.8, 0.8),
@@ -1231,15 +1260,38 @@ async function renderEvidencePages(
       
       const secondResult = await embedImage(
         pdfDoc, page, secondImage.doc.fileData,
-        MARGIN + 5, secondY + 5, imageWidth - 10, imageHeight - 10,
+        MARGIN + 5, secondY + footerHeight + 5, imageWidth - 10, imageHeight - 10,
         processingConfig
       );
       
       if (!secondResult.success) {
-        drawErrorSection(page, fonts, MARGIN + 5, secondY + 5, imageWidth - 10, imageHeight - 10,
+        drawErrorSection(page, fonts, MARGIN + 5, secondY + footerHeight + 5, imageWidth - 10, imageHeight - 10,
           secondImage.doc.fileName, secondResult.error || '첨부 실패');
         errors.push({ fileName: secondImage.doc.fileName, reason: secondResult.error || '첨부 실패' });
       }
+      
+      // Footer with filename and upload date for second image
+      const secondUploadDate = secondImage.doc.createdAt 
+        ? new Date(secondImage.doc.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric' })
+        : '-';
+      
+      drawText(page, {
+        x: MARGIN + 5,
+        y: secondY + 8,
+        text: secondImage.doc.fileName || '',
+        font: fonts.regular,
+        size: 8,
+        color: { r: 0.3, g: 0.3, b: 0.3 },
+      });
+      
+      drawText(page, {
+        x: A4_WIDTH - MARGIN - 100,
+        y: secondY + 8,
+        text: `업로드: ${secondUploadDate}`,
+        font: fonts.regular,
+        size: 8,
+        color: { r: 0.3, g: 0.3, b: 0.3 },
+      });
     }
   }
   
