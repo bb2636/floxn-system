@@ -152,7 +152,7 @@ async function normalizeImage(base64Data: string, quality: number = 80): Promise
   }
 }
 
-// pdf-lib로 이미지를 PDF 페이지에 직접 삽입 (Puppeteer 미사용)
+// Puppeteer를 사용하여 한글 헤더가 포함된 증빙자료 PDF 생성
 async function generateEvidencePdfWithPdfLib(
   caseData: any, 
   documents: any[], 
@@ -161,24 +161,13 @@ async function generateEvidencePdfWithPdfLib(
   const startTime = Date.now();
   const errors: Array<{ fileName: string; reason: string }> = [];
   
-  console.log(`[PDF 증빙자료] === pdf-lib 직접 생성 시작 ===`);
+  console.log(`[PDF 증빙자료] === Puppeteer 기반 생성 시작 ===`);
   console.log(`[PDF 증빙자료] 총 파일 수: ${documents.length}, 품질: ${imageQuality}%`);
   
   // 1. 파일 리스트 상세 로그
   documents.forEach((doc, idx) => {
     logFileInfo(doc, `파일목록 ${idx + 1}/${documents.length}`);
   });
-  
-  const pdfDoc = await PDFDocument.create();
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  
-  // A4 사이즈 (포인트 단위)
-  const pageWidth = 595.28;
-  const pageHeight = 841.89;
-  const margin = 40;
-  const headerHeight = 50;
-  const imageAreaTop = headerHeight + margin;
-  const imageAreaHeight = (pageHeight - imageAreaTop - margin - 30) / 2; // 페이지당 2개 이미지
   
   // 카테고리 -> 탭 매핑
   const categoryToTab: Record<string, string> = {
@@ -225,44 +214,141 @@ async function generateEvidencePdfWithPdfLib(
     return { pdfBuffer: Buffer.alloc(0), errors };
   }
   
-  // 3. 페이지 생성 (2개 이미지씩)
-  for (let i = 0; i < imageDocs.length; i += 2) {
-    const page = pdfDoc.addPage([pageWidth, pageHeight]);
-    
-    // 헤더 그리기
-    page.drawRectangle({
-      x: 0, y: pageHeight - headerHeight,
-      width: pageWidth, height: headerHeight,
-      color: rgb(0.23, 0.51, 0.96),
-    });
-    page.drawText('Evidence Documents', {
-      x: margin, y: pageHeight - 35,
-      size: 16, font, color: rgb(1, 1, 1),
-    });
-    page.drawText(`Case: ${caseData.caseNumber || ''}`, {
-      x: pageWidth - margin - 150, y: pageHeight - 35,
-      size: 10, font, color: rgb(1, 1, 1),
-    });
-    
-    // 첫 번째 이미지
-    const first = imageDocs[i];
-    const firstY = pageHeight - imageAreaTop - imageAreaHeight;
-    await embedImageToPage(pdfDoc, page, first, margin, firstY, pageWidth - 2 * margin, imageAreaHeight - 40, imageQuality, errors, font, caseData.caseNumber);
-    
-    // 두 번째 이미지 (있으면)
-    if (imageDocs[i + 1]) {
-      const second = imageDocs[i + 1];
-      const secondY = margin + 20;
-      await embedImageToPage(pdfDoc, page, second, margin, secondY, pageWidth - 2 * margin, imageAreaHeight - 40, imageQuality, errors, font, caseData.caseNumber);
+  // 3. 이미지 압축 및 base64 준비
+  const processedImages: Array<{ base64: string; tab: string; category: string }> = [];
+  
+  for (const { doc, tab } of imageDocs) {
+    try {
+      const normalized = await normalizeImage(doc.fileData, imageQuality);
+      if (normalized.success && normalized.data) {
+        const base64 = `data:image/jpeg;base64,${normalized.data.toString('base64')}`;
+        processedImages.push({ base64, tab, category: doc.category || '기타' });
+      }
+    } catch (err) {
+      console.error(`[PDF 증빙자료] 이미지 처리 실패: ${doc.fileName}`);
+      errors.push({ fileName: doc.fileName, reason: '이미지 처리 실패' });
     }
   }
   
-  const pdfBytes = await pdfDoc.save();
-  const elapsedMs = Date.now() - startTime;
-  console.log(`[PDF 증빙자료] === pdf-lib 직접 생성 완료 ===`);
-  console.log(`[PDF 증빙자료] 생성된 PDF 크기: ${Math.round(pdfBytes.length / 1024)}KB, 페이지 수: ${Math.ceil(imageDocs.length / 2)}, 오류 파일: ${errors.length}, elapsed_ms=${elapsedMs}`);
+  if (processedImages.length === 0) {
+    console.log(`[PDF 증빙자료] 처리된 이미지 없음 - 빈 버퍼 반환`);
+    return { pdfBuffer: Buffer.alloc(0), errors };
+  }
   
-  return { pdfBuffer: Buffer.from(pdfBytes), errors };
+  // 4. HTML 생성 (2개 이미지씩 페이지 구성)
+  const caseNumber = caseData.caseNumber || '';
+  let pagesHtml = '';
+  
+  for (let i = 0; i < processedImages.length; i += 2) {
+    const first = processedImages[i];
+    const second = processedImages[i + 1];
+    
+    pagesHtml += `
+      <div class="page">
+        <div class="image-section">
+          <div class="image-header">접수번호:${caseNumber} | ${first.tab}(${first.category})</div>
+          <div class="image-container">
+            <img src="${first.base64}" alt="Evidence ${i + 1}" />
+          </div>
+        </div>
+        ${second ? `
+        <div class="image-section">
+          <div class="image-header">접수번호:${caseNumber} | ${second.tab}(${second.category})</div>
+          <div class="image-container">
+            <img src="${second.base64}" alt="Evidence ${i + 2}" />
+          </div>
+        </div>
+        ` : ''}
+      </div>
+    `;
+  }
+  
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: A4; margin: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Noto Sans KR', sans-serif; 
+      background: white;
+    }
+    .page {
+      width: 210mm;
+      height: 297mm;
+      padding: 10mm;
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      gap: 8mm;
+    }
+    .page:last-child { page-break-after: auto; }
+    .image-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid #e5e5e5;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .image-header {
+      background: #f8f8f8;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 8px 15px;
+      font-size: 11pt;
+      color: #333;
+    }
+    .image-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      background: white;
+    }
+    .image-container img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  ${pagesHtml}
+</body>
+</html>`;
+  
+  // 5. Puppeteer로 PDF 생성
+  const chromiumPath = getChromiumPath();
+  console.log(`[PDF 증빙자료] Using Chromium path: ${chromiumPath || 'bundled'}`);
+  
+  const browser = await puppeteer.launch({
+    headless: true,
+    ...(chromiumPath && { executablePath: chromiumPath }),
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu', '--single-process'],
+  });
+  
+  try {
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '0', right: '0', bottom: '0', left: '0' },
+    });
+    
+    await page.close();
+    
+    const elapsedMs = Date.now() - startTime;
+    console.log(`[PDF 증빙자료] === Puppeteer 기반 생성 완료 ===`);
+    console.log(`[PDF 증빙자료] 생성된 PDF 크기: ${Math.round(pdfBuffer.length / 1024)}KB, 페이지 수: ${Math.ceil(processedImages.length / 2)}, 오류 파일: ${errors.length}, elapsed_ms=${elapsedMs}`);
+    
+    return { pdfBuffer: Buffer.from(pdfBuffer), errors };
+  } finally {
+    await browser.close();
+  }
 }
 
 // 이미지를 PDF 페이지에 삽입하는 헬퍼 함수
