@@ -66,6 +66,16 @@ const safeParseNotesHistory = (json: string | null | undefined): Array<{ content
   }
 };
 
+// 만원단위 절사 금액 포맷 함수
+const formatAmountTruncated = (amount: string | number | null | undefined): string => {
+  if (!amount) return "-";
+  const numAmount = typeof amount === 'string' ? parseInt(amount) : amount;
+  if (isNaN(numAmount)) return "-";
+  // 만원(10,000원) 단위 절사
+  const truncated = Math.floor(numAmount / 10000) * 10000;
+  return `₩${truncated.toLocaleString()}`;
+};
+
 // SMS 자동 발송을 위한 수신자 기본 설정
 const STAGE_RECIPIENT_DEFAULTS: Record<NotificationStage, RecipientConfig> = {
   "접수완료": { partner: true, manager: true, assessorInvestigator: true },
@@ -1331,10 +1341,10 @@ export default function ComprehensiveProgress() {
                     {caseItem.assignedPartner || "-"}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    {caseItem.initialEstimateAmount ? `₩${parseInt(caseItem.initialEstimateAmount).toLocaleString()}` : "-"}
+                    {formatAmountTruncated(caseItem.initialEstimateAmount)}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    {caseItem.approvedAmount ? `₩${parseInt(caseItem.approvedAmount).toLocaleString()}` : "-"}
+                    {formatAmountTruncated(caseItem.approvedAmount)}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     {calculateDays(caseItem.createdAt)}
@@ -1808,7 +1818,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              {selectedCase.initialEstimateAmount ? `₩${parseInt(selectedCase.initialEstimateAmount).toLocaleString()}` : "-"}
+                              {formatAmountTruncated(selectedCase.initialEstimateAmount)}
                             </div>
                           </div>
 
@@ -1835,7 +1845,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              {selectedCase.approvedAmount ? `₩${parseInt(selectedCase.approvedAmount).toLocaleString()}` : "-"}
+                              {formatAmountTruncated(selectedCase.approvedAmount)}
                             </div>
                           </div>
                         </div>
