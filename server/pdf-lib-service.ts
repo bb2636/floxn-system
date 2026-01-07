@@ -636,50 +636,33 @@ async function renderCoverPage(
     size: 11,
   });
   
-  // FLOXN logo at bottom center
-  const logoY = MARGIN + 30;
+  // FLOXN logo at bottom center (using image file)
+  const logoY = MARGIN + 20;
   const centerX = A4_WIDTH / 2;
   
-  // Draw chain icon (two interlocking links)
-  const chainColor = rgb(0.15, 0.15, 0.15);
-  const linkWidth = 18;
-  const linkHeight = 10;
-  const linkThickness = 2.5;
-  const linkGap = 6;
-  
-  // Left chain link (horizontal oval)
-  const leftLinkX = centerX - 55;
-  const linkY = logoY + 4;
-  
-  // Draw left link outline
-  page.drawEllipse({
-    x: leftLinkX,
-    y: linkY,
-    xScale: linkWidth / 2,
-    yScale: linkHeight / 2,
-    borderColor: chainColor,
-    borderWidth: linkThickness,
-  });
-  
-  // Draw right link outline (overlapping)
-  const rightLinkX = leftLinkX + linkWidth - linkGap;
-  page.drawEllipse({
-    x: rightLinkX,
-    y: linkY,
-    xScale: linkWidth / 2,
-    yScale: linkHeight / 2,
-    borderColor: chainColor,
-    borderWidth: linkThickness,
-  });
-  
-  // Draw FLOXN text
-  drawText(page, {
-    x: centerX - 25,
-    y: logoY,
-    text: 'FLOXN',
-    font: fonts.bold,
-    size: 14,
-  });
+  try {
+    const logoPath = path.join(process.cwd(), 'server/assets/floxn-logo.png');
+    if (fs.existsSync(logoPath)) {
+      const logoData = fs.readFileSync(logoPath);
+      const logoImage = await pdfDoc.embedPng(logoData);
+      const logoDims = logoImage.scale(1);
+      
+      // Scale logo to fit nicely (max width ~120px)
+      const maxLogoWidth = 120;
+      const logoScale = Math.min(maxLogoWidth / logoDims.width, 1);
+      const drawLogoWidth = logoDims.width * logoScale;
+      const drawLogoHeight = logoDims.height * logoScale;
+      
+      page.drawImage(logoImage, {
+        x: centerX - drawLogoWidth / 2,
+        y: logoY,
+        width: drawLogoWidth,
+        height: drawLogoHeight,
+      });
+    }
+  } catch (err) {
+    console.error('[pdf-lib] 로고 이미지 로드 실패:', err);
+  }
 }
 
 async function renderFieldReportPage(
@@ -692,7 +675,7 @@ async function renderFieldReportPage(
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
   
-  // Title: 출동확인서 (centered) with FLOXN logo at top-right
+  // Title: 출동확인서 (centered)
   drawText(page, {
     x: MARGIN,
     y: y - 25,
@@ -701,41 +684,6 @@ async function renderFieldReportPage(
     size: 20,
     maxWidth: CONTENT_WIDTH,
     align: 'center',
-  });
-  
-  // FLOXN logo at top-right
-  const logoX = A4_WIDTH - MARGIN - 60;
-  const logoY = y - 20;
-  const chainColor = rgb(0.15, 0.15, 0.15);
-  const linkWidth = 12;
-  const linkHeight = 7;
-  const linkThickness = 1.8;
-  const linkGap = 4;
-  
-  page.drawEllipse({
-    x: logoX - 15,
-    y: logoY + 5,
-    xScale: linkWidth / 2,
-    yScale: linkHeight / 2,
-    borderColor: chainColor,
-    borderWidth: linkThickness,
-  });
-  
-  page.drawEllipse({
-    x: logoX - 15 + linkWidth - linkGap,
-    y: logoY + 5,
-    xScale: linkWidth / 2,
-    yScale: linkHeight / 2,
-    borderColor: chainColor,
-    borderWidth: linkThickness,
-  });
-  
-  drawText(page, {
-    x: logoX,
-    y: logoY,
-    text: 'FLOXN',
-    font: fonts.bold,
-    size: 10,
   });
   
   y -= 55;
