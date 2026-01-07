@@ -238,15 +238,15 @@ export async function sendFieldReportEmail(
       </p>
       
       <p style="color: #666; line-height: 1.8; margin-top: 30px;">
-        감사합니다.<br/>
-        <strong>FLOXN</strong>
+        감사합니다.
       </p>
       
-      <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;" />
-      
-      <p style="color: #999; font-size: 12px;">
-        본 메일은 FLOXN 시스템에서 자동 발송되었습니다.
-      </p>
+      <div style="border-top: 1px solid #e0e0e0; padding-top: 16px; margin-top: 24px;">
+        <img src="data:image/png;base64,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" alt="FLOXN" style="height: 24px; margin-bottom: 8px;">
+        <p style="font-size: 12px; color: #666; margin: 0 0 8px 0;">Front·Line·Ops·Xpert·Net</p>
+        <p style="font-size: 12px; color: #666; margin: 0;">주식회사 플록슨(FLOXN Co., Ltd.)</p>
+        <p style="font-size: 12px; color: #666; margin: 0;">서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호</p>
+      </div>
     </div>
   `;
 
@@ -350,15 +350,15 @@ export async function sendFieldReportEmailWithLink(
       </div>
       
       <p style="color: #666; line-height: 1.8; margin-top: 30px;">
-        감사합니다.<br/>
-        <strong>FLOXN</strong>
+        감사합니다.
       </p>
       
-      <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;" />
-      
-      <p style="color: #999; font-size: 12px;">
-        본 메일은 FLOXN 시스템에서 자동 발송되었습니다.
-      </p>
+      <div style="border-top: 1px solid #e0e0e0; padding-top: 16px; margin-top: 24px;">
+        <img src="data:image/png;base64,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" alt="FLOXN" style="height: 24px; margin-bottom: 8px;">
+        <p style="font-size: 12px; color: #666; margin: 0 0 8px 0;">Front·Line·Ops·Xpert·Net</p>
+        <p style="font-size: 12px; color: #666; margin: 0;">주식회사 플록슨(FLOXN Co., Ltd.)</p>
+        <p style="font-size: 12px; color: #666; margin: 0;">서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호</p>
+      </div>
     </div>
   `;
 
