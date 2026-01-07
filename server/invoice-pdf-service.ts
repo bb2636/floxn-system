@@ -42,33 +42,67 @@ const fontCache: FontCache = {
 function loadPretendardFonts(): { regular: Buffer; semiBold: Buffer } {
   const fontsDir = path.join(process.cwd(), 'server/fonts');
   
-  // 사용자 첨부 OTF 파일 사용 (Medium을 Regular로, SemiBold를 Bold로)
-  const regularPath = path.join(fontsDir, 'Pretendard-Medium.otf');
-  const semiBoldPath = path.join(fontsDir, 'Pretendard-SemiBold.otf');
+  // TTF 파일만 사용 (OTF는 "Not a CFF Font" 에러 발생)
+  const regularPath = path.join(fontsDir, 'Pretendard-Regular.ttf');
+  const semiBoldPath = path.join(fontsDir, 'Pretendard-SemiBold.ttf');
+  
+  console.log(`[Invoice PDF] ========== TTF 폰트 로딩 ==========`);
+  console.log(`[Invoice PDF] Regular 경로: ${regularPath}`);
+  console.log(`[Invoice PDF] SemiBold 경로: ${semiBoldPath}`);
   
   // 파일 존재 확인 - 없으면 즉시 에러
   if (!fs.existsSync(regularPath)) {
-    throw new Error(`Pretendard-Medium.otf를 찾을 수 없습니다: ${regularPath}`);
+    throw new Error(`Pretendard-Regular.ttf를 찾을 수 없습니다: ${regularPath}`);
   }
   if (!fs.existsSync(semiBoldPath)) {
-    throw new Error(`Pretendard-SemiBold.otf를 찾을 수 없습니다: ${semiBoldPath}`);
+    throw new Error(`Pretendard-SemiBold.ttf를 찾을 수 없습니다: ${semiBoldPath}`);
   }
   
-  // 항상 파일 크기 확인 (캐시된 버전과 다르면 재로드)
+  // 파일 크기 확인 및 로그
   const regularStat = fs.statSync(regularPath);
   const semiBoldStat = fs.statSync(semiBoldPath);
+  console.log(`[Invoice PDF] Regular 파일 크기: ${regularStat.size} bytes (${(regularStat.size / 1024 / 1024).toFixed(2)}MB)`);
+  console.log(`[Invoice PDF] SemiBold 파일 크기: ${semiBoldStat.size} bytes (${(semiBoldStat.size / 1024 / 1024).toFixed(2)}MB)`);
   
+  // 캐시된 버전과 크기가 다르면 재로드
   if (!fontCache.regular || fontCache.regular.length !== regularStat.size) {
     fontCache.regular = fs.readFileSync(regularPath);
-    console.log(`[Invoice PDF] Pretendard-Medium.otf 로드: ${regularPath}`);
-    console.log(`[Invoice PDF] 파일 크기: ${fontCache.regular.length} bytes (${(fontCache.regular.length / 1024 / 1024).toFixed(2)}MB)`);
+    
+    // 파일 시그니처 검증 (TTF: 0x00010000)
+    const signature = fontCache.regular.slice(0, 4).toString('hex');
+    console.log(`[Invoice PDF] Regular 시그니처: ${signature}`);
+    
+    // HTML/에러 페이지 감지 (<!DOCTYPE 또는 <html로 시작하는 경우)
+    const firstChars = fontCache.regular.slice(0, 10).toString('utf8');
+    if (firstChars.includes('<!') || firstChars.includes('<html')) {
+      throw new Error(`Regular 폰트 파일이 HTML/에러 페이지입니다. 첫 10자: ${firstChars}`);
+    }
+    
+    if (signature !== '00010000') {
+      throw new Error(`Regular 폰트가 TTF 형식이 아닙니다. 시그니처: ${signature} (예상: 00010000)`);
+    }
   }
   
   if (!fontCache.semiBold || fontCache.semiBold.length !== semiBoldStat.size) {
     fontCache.semiBold = fs.readFileSync(semiBoldPath);
-    console.log(`[Invoice PDF] Pretendard-SemiBold.otf 로드: ${semiBoldPath}`);
-    console.log(`[Invoice PDF] 파일 크기: ${fontCache.semiBold.length} bytes (${(fontCache.semiBold.length / 1024 / 1024).toFixed(2)}MB)`);
+    
+    // 파일 시그니처 검증
+    const signature = fontCache.semiBold.slice(0, 4).toString('hex');
+    console.log(`[Invoice PDF] SemiBold 시그니처: ${signature}`);
+    
+    // HTML/에러 페이지 감지
+    const firstChars = fontCache.semiBold.slice(0, 10).toString('utf8');
+    if (firstChars.includes('<!') || firstChars.includes('<html')) {
+      throw new Error(`SemiBold 폰트 파일이 HTML/에러 페이지입니다. 첫 10자: ${firstChars}`);
+    }
+    
+    if (signature !== '00010000') {
+      throw new Error(`SemiBold 폰트가 TTF 형식이 아닙니다. 시그니처: ${signature} (예상: 00010000)`);
+    }
   }
+  
+  console.log(`[Invoice PDF] TTF 폰트 로딩 완료`);
+  console.log(`[Invoice PDF] ================================`);
   
   return { regular: fontCache.regular, semiBold: fontCache.semiBold };
 }
@@ -129,38 +163,24 @@ async function embedPretendardFonts(pdfDoc: PDFDocument): Promise<FontSet> {
   
   const { regular, semiBold } = loadPretendardFonts();
   
-  // 진단 로깅 - 폰트 파일 검증
   console.log(`[Invoice PDF] ========== 폰트 임베딩 (pdf-lib subset) ==========`);
-  console.log(`[Invoice PDF] Medium 파일 크기: ${regular.length} bytes (${(regular.length / 1024 / 1024).toFixed(2)}MB)`);
-  console.log(`[Invoice PDF] SemiBold 파일 크기: ${semiBold.length} bytes (${(semiBold.length / 1024 / 1024).toFixed(2)}MB)`);
   
-  // 폰트 헤더 검증 (OTF: 'OTTO' = 4F544F4F, TTF: 00010000)
-  const fontSignature = regular.slice(0, 4).toString('hex');
-  console.log(`[Invoice PDF] 폰트 헤더 (첫 4바이트): ${fontSignature}`);
-  
-  const isOTF = fontSignature === '4f54544f'; // 'OTTO'
-  const isTTF = fontSignature === '00010000';
-  
-  if (!isOTF && !isTTF) {
-    throw new Error(`지원하지 않는 폰트 형식입니다. 헤더: ${fontSignature}. OTF(4f54544f) 또는 TTF(00010000)만 지원합니다.`);
-  }
-  console.log(`[Invoice PDF] 폰트 형식: ${isOTF ? 'OTF (OpenType)' : 'TTF (TrueType)'} - 검증 통과`);
-  
-  // pdf-lib 내장 서브셋팅 사용 - 실제 사용된 글리프만 임베드됨
-  // embedFont 실패 시 기본 폰트로 fallback 하지 않고 즉시 에러 발생
+  // embedFont 실패 시 fallback 없이 즉시 에러 발생
   let regularFont: PDFFont;
   let semiBoldFont: PDFFont;
   
   try {
     regularFont = await pdfDoc.embedFont(regular, { subset: true });
+    console.log(`[Invoice PDF] Regular 폰트 임베딩 성공`);
   } catch (error) {
-    throw new Error(`Pretendard-Medium.otf embedFont 실패: ${error}`);
+    throw new Error(`Pretendard-Regular.ttf embedFont 실패 - fallback 없음: ${error}`);
   }
   
   try {
     semiBoldFont = await pdfDoc.embedFont(semiBold, { subset: true });
+    console.log(`[Invoice PDF] SemiBold 폰트 임베딩 성공`);
   } catch (error) {
-    throw new Error(`Pretendard-SemiBold.otf embedFont 실패: ${error}`);
+    throw new Error(`Pretendard-SemiBold.ttf embedFont 실패 - fallback 없음: ${error}`);
   }
   
   console.log(`[Invoice PDF] 폰트 임베딩 완료 (subset: true)`);
