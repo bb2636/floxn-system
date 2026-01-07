@@ -6490,15 +6490,15 @@ FLOXN 드림`;
           </p>
           
           <p style="color: #666; line-height: 1.8; margin-top: 30px;">
-            감사합니다.<br/>
-            <strong>FLOXN</strong>
+            감사합니다.
           </p>
           
-          <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;" />
-          
-          <p style="color: #999; font-size: 12px;">
-            본 메일은 FLOXN 시스템에서 자동 발송되었습니다.
-          </p>
+          <div style="border-top: 1px solid #ddd; padding-top: 16px; margin-top: 24px;">
+            <p style="font-size: 18px; font-weight: bold; color: #333; margin: 0 0 4px 0;">FLOXN</p>
+            <p style="font-size: 12px; color: #666; margin: 0 0 8px 0;">Front·Line·Ops·Xpert·Net</p>
+            <p style="font-size: 12px; color: #666; margin: 0;">주식회사 플록슨(FLOXN Co., Ltd.)</p>
+            <p style="font-size: 12px; color: #666; margin: 0;">서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호</p>
+          </div>
         </div>
       `;
 
@@ -6518,7 +6518,12 @@ ${amountLines.join('\n')}
 첨부된 PDF 파일을 확인해 주시기 바랍니다.
 
 감사합니다.
-FLOXN 드림`;
+
+---
+FLOXN
+Front·Line·Ops·Xpert·Net
+주식회사 플록슨(FLOXN Co., Ltd.)
+서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호`;
 
       // Generate filename for the Invoice PDF attachment
       const timestamp = Date.now();
@@ -6738,7 +6743,12 @@ ${pdfUrl}
 - 발송자: ${user.name || user.username}
 
 감사합니다.
-FLOXN 드림`;
+
+---
+FLOXN
+Front·Line·Ops·Xpert·Net
+주식회사 플록슨(FLOXN Co., Ltd.)
+서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호`;
 
       await sendNotificationEmail(email, `FLOXN 현장출동비용 청구서 - ${caseNumber || dateStr}`, emailContent);
 
@@ -7275,8 +7285,14 @@ FLOXN 드림`;
     
     <p style="color: #333; margin-bottom: 24px;">첨부된 PDF 파일을 확인해 주시기 바랍니다.</p>
     
-    <p style="color: #333; margin-bottom: 8px;">감사합니다.</p>
-    <p style="color: #333; font-weight: bold;">FLOXN</p>
+    <p style="color: #333; margin-bottom: 16px;">감사합니다.</p>
+    
+    <div style="border-top: 1px solid #e0e0e0; padding-top: 16px; margin-top: 24px;">
+      <p style="font-size: 18px; font-weight: bold; color: #333; margin: 0 0 4px 0;">FLOXN</p>
+      <p style="font-size: 12px; color: #666; margin: 0 0 8px 0;">Front·Line·Ops·Xpert·Net</p>
+      <p style="font-size: 12px; color: #666; margin: 0;">주식회사 플록슨(FLOXN Co., Ltd.)</p>
+      <p style="font-size: 12px; color: #666; margin: 0;">서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호</p>
+    </div>
   </div>
 </body>
 </html>`;
@@ -7297,7 +7313,12 @@ FLOXN 드림`;
 첨부된 PDF 파일을 확인해 주시기 바랍니다.
 
 감사합니다.
-FLOXN`;
+
+---
+FLOXN
+Front·Line·Ops·Xpert·Net
+주식회사 플록슨(FLOXN Co., Ltd.)
+서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호`;
 
       // ========== 이메일 전송 (PDF 직접 첨부) ==========
       const sendResults: { email: string; success: boolean; error?: string }[] = [];
