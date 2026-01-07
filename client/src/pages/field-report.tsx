@@ -250,10 +250,37 @@ export default function FieldReport() {
   const canApproveReport = hasItem("관리자 설정", "보고서 승인");
   
   // 통합 보고서 데이터 가져오기
-  const { data: reportData, isLoading } = useQuery<ReportData>({
+  const { 
+    data: reportData, 
+    isLoading, 
+    isFetching,
+    isError,
+    error,
+    refetch,
+    status,
+    fetchStatus 
+  } = useQuery<ReportData>({
     queryKey: ["/api/field-surveys", selectedCaseId, "report"],
     enabled: !!selectedCaseId,
+    retry: 2, // 실패 시 2회 재시도
+    retryDelay: 1000, // 1초 후 재시도
+    staleTime: 30000, // 30초 동안 데이터를 fresh로 유지
   });
+  
+  // 디버깅 로그
+  useEffect(() => {
+    console.log('[FieldReport] Query state:', {
+      selectedCaseId,
+      status,
+      fetchStatus,
+      isLoading,
+      isFetching,
+      isError,
+      hasData: !!reportData,
+      dataShape: reportData ? Object.keys(reportData) : null,
+      error: error?.message
+    });
+  }, [selectedCaseId, status, fetchStatus, isLoading, isFetching, isError, reportData, error]);
   
   // 협력사가 제출 후에는 증빙자료 외 모든 섹션 수정 불가 (반려 시는 수정 가능)
   const isPartnerReadOnly = isPartner && reportData?.case?.fieldSurveyStatus === "submitted" && reportData?.case?.status !== "반려";
@@ -714,25 +741,67 @@ export default function FieldReport() {
     );
   }
 
-  // 역할 정보 로딩 중이거나 데이터 로딩 중이면 로딩 화면 표시
-  if (isLoading || isUserLoading) {
+  // 상태 1: 초기 로딩 중 (데이터가 없고 로딩 중)
+  // isLoading: 초기 로딩 (캐시 데이터 없음)
+  // isFetching && !reportData: 데이터 없는 상태에서 fetch 진행 중
+  const isInitialLoading = isLoading || isUserLoading || (isFetching && !reportData);
+  
+  if (isInitialLoading) {
     return (
       <div className="p-8">
         <Card>
           <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">로딩중...</p>
+            <div className="flex flex-col items-center gap-2">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <p className="text-muted-foreground">보고서 데이터를 불러오는 중...</p>
+            </div>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (!reportData) {
+  // 상태 2: 에러 발생
+  if (isError) {
     return (
       <div className="p-8">
         <Card>
           <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">보고서 데이터를 찾을 수 없습니다.</p>
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-destructive">데이터를 불러오는 중 오류가 발생했습니다.</p>
+              <p className="text-sm text-muted-foreground">{error?.message || '알 수 없는 오류'}</p>
+              <Button 
+                variant="outline" 
+                onClick={() => refetch()}
+                data-testid="button-retry-report"
+              >
+                다시 시도
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // 상태 3: 데이터가 진짜 없음 (로딩 완료 후 데이터 없음, 에러 아님)
+  // status === 'success'이고 reportData가 없거나 빈 객체인 경우
+  if (!reportData || (status === 'success' && !reportData?.case)) {
+    return (
+      <div className="p-8">
+        <Card>
+          <CardContent className="p-6 text-center">
+            <div className="flex flex-col items-center gap-4">
+              <p className="text-muted-foreground">보고서 데이터를 찾을 수 없습니다.</p>
+              <p className="text-sm text-muted-foreground">케이스 ID: {selectedCaseId}</p>
+              <Button 
+                variant="outline" 
+                onClick={() => refetch()}
+                data-testid="button-retry-report-notfound"
+              >
+                다시 시도
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
