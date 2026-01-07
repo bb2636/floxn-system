@@ -246,6 +246,7 @@ export default function FieldDrawing() {
       
       // 캔버스를 이미지로 캡처 (PDF용)
       let canvasImage: string | null = null;
+      console.log('[Drawing Save] canvasRef.current:', !!canvasRef.current);
       if (canvasRef.current) {
         try {
           // UI 요소들을 일시적으로 숨김
@@ -258,6 +259,7 @@ export default function FieldDrawing() {
             if (el instanceof HTMLElement) el.style.display = 'none';
           });
           
+          console.log('[Drawing Save] Starting html2canvas capture...');
           const canvas = await html2canvas(canvasRef.current, {
             backgroundColor: '#ffffff',
             scale: 2, // 고해상도
@@ -265,6 +267,11 @@ export default function FieldDrawing() {
           });
           
           canvasImage = canvas.toDataURL('image/png');
+          console.log('[Drawing Save] Canvas captured:', {
+            success: !!canvasImage,
+            length: canvasImage?.length || 0,
+            prefix: canvasImage?.substring(0, 50) || 'null',
+          });
           
           // UI 요소들 다시 표시
           elementsToHide.forEach(el => {
@@ -273,6 +280,8 @@ export default function FieldDrawing() {
         } catch (err) {
           console.error('캔버스 이미지 생성 실패:', err);
         }
+      } else {
+        console.warn('[Drawing Save] canvasRef.current is null - skipping canvas capture');
       }
       
       const response = await apiRequest("POST", "/api/drawings", {

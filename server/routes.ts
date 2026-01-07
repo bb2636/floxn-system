@@ -3164,6 +3164,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract drawingId if provided (for updates)
       const { drawingId, ...bodyData } = req.body;
       
+      // Debug: Check if canvasImage is received
+      console.log('[Drawing Save] canvasImage received:', {
+        hasCanvasImage: !!bodyData.canvasImage,
+        canvasImageLength: bodyData.canvasImage?.length || 0,
+        canvasImagePreview: bodyData.canvasImage?.substring(0, 100) || 'null',
+      });
+      
       // Validate the request data
       const validatedData = insertDrawingSchema.parse({
         ...bodyData,
