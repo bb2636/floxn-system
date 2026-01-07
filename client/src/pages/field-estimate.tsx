@@ -2808,15 +2808,14 @@ export default function FieldEstimate() {
     // VAT 기준액 (소계 + 일반관리비 + 이윤)
     const vatBase = subtotal + managementFee + profit;
 
-    // 만원단위절사 (10000원 미만 버림) - VAT 적용 전에 절사 (용어는 '천원단위 절사')
-    const truncation = vatBase % 10000;
-    const truncatedVatBase = vatBase - truncation;
+    // 절사 없이 계산 (truncation = 0)
+    const truncation = 0;
 
-    // VAT (10%) - 절사된 금액에 적용
-    const vat = vatIncluded ? Math.round(truncatedVatBase * 0.1) : 0;
+    // VAT (10%)
+    const vat = vatIncluded ? Math.round(vatBase * 0.1) : 0;
 
-    // 총 합계 = 만원단위절사된 금액 + VAT
-    const total = truncatedVatBase + vat;
+    // 총 합계 = VAT 기준액 + VAT
+    const total = vatBase + vat;
 
     return {
       subtotal,
