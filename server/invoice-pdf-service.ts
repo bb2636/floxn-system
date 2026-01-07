@@ -389,6 +389,27 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   const pdfBytes = await pdfDoc.save();
   const buffer = Buffer.from(pdfBytes);
   
+  // 진단 로깅: PDF 구성 요소 분석
+  console.log('[Invoice PDF] ========== PDF 구성 분석 ==========');
+  console.log(`[Invoice PDF] 페이지 수: ${pdfDoc.getPageCount()}`);
+  
+  // 폰트 정보
+  const fontBytes = loadFontBytes();
+  const regularFontSize = fontBytes.regular.length;
+  const boldFontSize = fontBytes.bold.length;
+  console.log(`[Invoice PDF] 폰트 (Regular): ${(regularFontSize / 1024 / 1024).toFixed(2)}MB`);
+  console.log(`[Invoice PDF] 폰트 (Bold): ${(boldFontSize / 1024 / 1024).toFixed(2)}MB`);
+  console.log(`[Invoice PDF] 폰트 총 용량: ${((regularFontSize + boldFontSize) / 1024 / 1024).toFixed(2)}MB`);
+  
+  // 텍스트/도형 예상 (PDF 크기 - 폰트 크기)
+  const estimatedContentSize = buffer.length - regularFontSize - boldFontSize;
+  console.log(`[Invoice PDF] 텍스트/표/도형 (예상): ${(estimatedContentSize / 1024).toFixed(1)}KB`);
+  console.log(`[Invoice PDF] 이미지: 0개 (텍스트/표만 포함)`);
+  console.log('[Invoice PDF] ------------------------------------------');
+  console.log(`[Invoice PDF] 최종 PDF 크기: ${(buffer.length / 1024 / 1024).toFixed(2)}MB`);
+  console.log(`[Invoice PDF] 폰트가 PDF 크기의 ${((regularFontSize + boldFontSize) / buffer.length * 100).toFixed(1)}% 차지`);
+  console.log('[Invoice PDF] ==============================================');
+  
   console.log(`[Invoice PDF] PDF generated successfully, size: ${buffer.length} bytes`);
   return buffer;
 }
