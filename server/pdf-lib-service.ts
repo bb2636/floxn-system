@@ -1622,12 +1622,10 @@ async function renderEstimatePage(
     ]);
   }
   
-  // 노무비 소계 행
+  // 노무비 소계 행 (전체 너비에 맞춤: 55+60+60+55+65+45+70+50+55 = 515)
   laborRows.push([
-    { text: '노무비 소계', width: 350, isHeader: true, align: 'right' },
-    { text: formatNumber(laborTotal), width: 70, align: 'right' },
-    { text: formatNumber(laborExpenseTotal), width: 50, align: 'right' },
-    { text: '', width: 55, align: 'left' },
+    { text: '노무비 소계', width: 400, isHeader: true, align: 'center' },
+    { text: formatNumber(laborTotal), width: 115, align: 'right' },
   ]);
   
   y = drawTable(page, {
@@ -1715,11 +1713,10 @@ async function renderEstimatePage(
     ]);
   }
   
-  // 자재비 소계 행
+  // 자재비 소계 행 (전체 너비에 맞춤: 55+70+90+70+50+40+80+60 = 515)
   materialRows.push([
-    { text: '자재비 소계', width: 375, isHeader: true, align: 'right' },
-    { text: formatNumber(materialTotal), width: 80, align: 'right' },
-    { text: '', width: 60, align: 'left' },
+    { text: '자재비 소계', width: 400, isHeader: true, align: 'center' },
+    { text: formatNumber(materialTotal), width: 115, align: 'right' },
   ]);
   
   y = drawTable(page, {
