@@ -6196,18 +6196,23 @@ FLOXN`;
         // Get documents from main case AND all related cases
         const mainDocs = await storage.getDocumentsByCaseId(caseId);
         
+        // Build caseId -> caseNumber mapping
+        const caseNumberMap: Record<string, string> = {
+          [caseId]: caseData.caseNumber || ''
+        };
+        
         // Get related cases (same insuranceAccidentNo)
         let allDocuments = [...mainDocs];
         if (caseData.insuranceAccidentNo) {
           const relatedCases = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
-          const relatedCaseIds = relatedCases.map((c: any) => c.id);
           
-          // Fetch documents from all related cases
-          for (const relatedCaseId of relatedCaseIds) {
-            const relatedDocs = await storage.getDocumentsByCaseId(relatedCaseId);
+          // Fetch documents from all related cases and build mapping
+          for (const relatedCase of relatedCases) {
+            caseNumberMap[relatedCase.id] = relatedCase.caseNumber || '';
+            const relatedDocs = await storage.getDocumentsByCaseId(relatedCase.id);
             allDocuments = allDocuments.concat(relatedDocs);
           }
-          console.log(`[Invoice PDF] Total documents from ${1 + relatedCaseIds.length} cases: ${allDocuments.length}`);
+          console.log(`[Invoice PDF] Total documents from ${1 + relatedCases.length} cases: ${allDocuments.length}`);
         }
         
         const selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
@@ -6277,7 +6282,6 @@ FLOXN`;
             const MARGIN = 30;
             const HEADER_HEIGHT = 25;
             const GAP = 10;
-            const caseNumber = caseData.caseNumber || '';
             
             for (const doc of imageDocs) {
               try {
@@ -6290,8 +6294,10 @@ FLOXN`;
                   .jpeg({ quality: 75 })
                   .toBuffer();
                 
+                // Use the caseNumber from the document's own case
+                const docCaseNumber = caseNumberMap[doc.caseId] || caseData.caseNumber || '';
                 const tab = categoryToTab[doc.category] || '기타';
-                const headerText = `[${caseNumber}] ${tab} - ${doc.category || '기타'}`;
+                const headerText = `[${docCaseNumber}] ${tab} - ${doc.category || '기타'}`;
                 
                 const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
                 
