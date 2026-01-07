@@ -2626,7 +2626,7 @@ export default function FieldReport() {
               </CardContent>
             </Card>
 
-            {/* 특이사항 및 요청사항 (VOC) */}
+            {/* 특이사항 및 요청사항 (VOC) - 협력사가 현장입력시 작성한 VOC */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle
@@ -2651,7 +2651,7 @@ export default function FieldReport() {
                     whiteSpace: "pre-wrap",
                   }}
                 >
-                  {caseData.specialRequests || "-"}
+                  {caseData.specialNotes || "-"}
                 </div>
               </CardContent>
             </Card>

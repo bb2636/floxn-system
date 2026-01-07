@@ -783,7 +783,8 @@ async function renderFieldReportPage(
   // Section 3: 특이사항 및 요청사항 (VOC) - 현장 특이사항 섹션 제거됨
   y = drawSectionHeader('특이사항 및 요청사항 (VOC)', y);
   
-  const vocText = caseData.vocNotes || '-';
+  // VOC는 협력사가 현장입력시 작성한 specialNotes 필드 사용
+  const vocText = caseData.specialNotes || '-';
   
   page.drawRectangle({
     x: MARGIN,

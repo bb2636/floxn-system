@@ -673,8 +673,8 @@ export default function FieldManagement() {
       setAdditionalVictims([]);
     }
 
-    // VOC 정보
-    setVoc(selectedCaseData.specialRequests || "");
+    // VOC 정보 (협력사 VOC는 specialNotes 필드 사용 - 관리자 specialRequests와 분리)
+    setVoc(selectedCaseData.specialNotes || "");
 
     // 처리유형 정보 (JSON 파싱)
     if (selectedCaseData.processingTypes) {
@@ -2084,13 +2084,13 @@ export default function FieldManagement() {
                           accidentTime,
                           accidentCategory: accidentCategory || null,
                           accidentCause,
-                          specialNotes,
+                          specialNotes: voc, // VOC(고객의 소리)를 specialNotes에 저장 (관리자 specialRequests와 분리)
                           victimName: victimName || selectedCaseData?.victimName || null,
                           victimContact: victimContact || selectedCaseData?.victimContact || null,
                           victimAddress: victimAddress || selectedCaseData?.victimAddress || null,
                           victimAddressDetail: victimAddressDetail || selectedCaseData?.victimAddressDetail || null,
                           additionalVictims: JSON.stringify(additionalVictims),
-                          specialRequests: voc,
+                          // specialRequests는 관리자 접수시 입력한 값 유지 (협력사가 덮어쓰지 않음)
                           processingTypes: JSON.stringify(Array.from(processingTypes)),
                           processingTypeOther,
                           recoveryMethodType,
