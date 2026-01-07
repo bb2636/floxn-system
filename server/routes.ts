@@ -7185,25 +7185,17 @@ FLOXN 드림`;
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // ========== 본문 PDF 생성 (증빙 제외) ==========
-      console.log(`[send-field-report-email-v2] Generating main PDF for case ${caseId} (skipEvidence=true)`);
+      // ========== 현장출동보고서 PDF 생성 (증빙자료 포함) ==========
+      console.log(`[send-field-report-email-v2] Generating PDF for case ${caseId} (with evidence included)`);
       const mainPdfBuffer = await generatePdfWithSizeLimitPdfLib({
         caseId,
         sections,
         evidence,
-        skipEvidence: true, // 본문 PDF에서 증빙 이미지 제외
+        skipEvidence: false, // 증빙자료를 현장출동보고서 PDF에 포함
       });
-      console.log(`[send-field-report-email-v2] Main PDF generated: ${Math.round(mainPdfBuffer.length / 1024)}KB`);
+      console.log(`[send-field-report-email-v2] PDF generated: ${Math.round(mainPdfBuffer.length / 1024)}KB (${(mainPdfBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
 
-      // ========== 탭별 증빙 PDF 생성 (8MB 분할) ==========
-      let evidencePdfs: Array<{ tabName: string; fileName: string; buffer: Buffer; pageCount: number; imageCount: number }> = [];
-      if (sections.evidence && evidence.selectedFileIds.length > 0) {
-        console.log(`[send-field-report-email-v2] Generating evidence PDFs by tab (${evidence.selectedFileIds.length} files)`);
-        evidencePdfs = await generateEvidencePDFsByTab(caseId, evidence.selectedFileIds);
-        console.log(`[send-field-report-email-v2] Evidence PDFs: ${evidencePdfs.length} files`);
-      }
-
-      // ========== 첨부파일 준비 ==========
+      // ========== 첨부파일 준비 (단일 PDF) ==========
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || 'UNKNOWN';
       const mainFileName = `현장출동보고서_${accidentNo}.pdf`;
       
@@ -7214,15 +7206,6 @@ FLOXN 드림`;
           contentType: 'application/pdf',
         },
       ];
-
-      // 탭별 증빙 PDF 첨부
-      for (const evidencePdf of evidencePdfs) {
-        attachments.push({
-          filename: `${accidentNo}_${evidencePdf.fileName}`,
-          content: evidencePdf.buffer,
-          contentType: 'application/pdf',
-        });
-      }
 
       // ========== 첨부파일 용량 검증 ==========
       let totalBytes = 0;
