@@ -5977,7 +5977,8 @@ FLOXN 드림`;
           (propertyRepairAmount || 0) + 
           (fieldDispatchPreventionAmount || 0) + 
           (fieldDispatchPropertyAmount || 0);
-        const truncation = sumBeforeTruncation % 1000;
+        // 만원단위 절사 (10000원 단위)
+        const truncation = sumBeforeTruncation % 10000;
         totalAmount = sumBeforeTruncation - truncation;
       }
 
@@ -6261,7 +6262,8 @@ FLOXN 드림`;
           (propertyRepairAmount || 0) + 
           (fieldDispatchPreventionAmount || 0) + 
           (fieldDispatchPropertyAmount || 0);
-        const truncation = sumBeforeTruncation % 1000;
+        // 만원단위 절사 (10000원 단위)
+        const truncation = sumBeforeTruncation % 10000;
         totalAmount = sumBeforeTruncation - truncation;
       }
 

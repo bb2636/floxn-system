@@ -441,7 +441,8 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     (parseInt(fieldDispatchPreventionAmount || "0") || 0) +
     (parseInt(fieldDispatchPropertyAmount || "0") || 0);
   
-  const truncation = totalBeforeTruncation % 1000;
+  // 만원단위절사 (용어는 '천원단위절사')
+  const truncation = totalBeforeTruncation % 10000;
   const totalAmount = totalBeforeTruncation - truncation;
 
   const handleDownloadPdf = async () => {
