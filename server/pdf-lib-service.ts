@@ -848,11 +848,11 @@ async function renderFieldReportPage(
     ],
     [
       { text: '처리유형', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.processingType || caseData.estimateType || '-', width: 425, align: 'left' },
+      { text: caseData.recoveryType || caseData.processingType || caseData.estimateType || '-', width: 425, align: 'left' },
     ],
     [
       { text: '복구방식', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.recoveryMethod || caseData.repairType || '-', width: 425, align: 'left' },
+      { text: caseData.recoveryMethodType || caseData.restorationMethod || caseData.recoveryMethod || '-', width: 425, align: 'left' },
     ],
   ];
   
@@ -961,6 +961,13 @@ async function renderDrawingPage(
   });
   
   // Try to embed drawing image if available
+  console.log('[pdf-lib] 도면 데이터:', drawingData ? JSON.stringify({
+    id: drawingData.id,
+    caseId: drawingData.caseId,
+    uploadedImagesCount: Array.isArray(drawingData.uploadedImages) ? drawingData.uploadedImages.length : 'not array',
+    rectanglesCount: Array.isArray(drawingData.rectangles) ? drawingData.rectangles.length : 'not array',
+  }) : 'null');
+  
   if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
     try {
       // Use the first uploaded image as the main drawing
