@@ -1818,8 +1818,8 @@ async function renderEstimatePage(
   const adminFee = Math.round(subtotal * adminFeeRate);
   const profit = Math.round(subtotal * profitRate);
   const beforeRounding = subtotal + adminFee + profit;
-  // 천원단위 절사 (1000원 단위)
-  const rounded = Math.floor(beforeRounding / 1000) * 1000;
+  // 만원단위 절사 (10000원 단위) - 용어는 '천원단위 절사'로 표시
+  const rounded = Math.floor(beforeRounding / 10000) * 10000;
   const roundingDiff = beforeRounding - rounded;
   const vat = Math.round(rounded * vatRate);
   const grandTotal = rounded + vat;

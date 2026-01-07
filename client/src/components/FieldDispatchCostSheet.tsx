@@ -110,8 +110,8 @@ export function FieldDispatchCostSheet({ open, onOpenChange, caseData, relatedCa
 
   const totalBeforeTruncation = parseInt(FIXED_FIELD_DISPATCH_AMOUNT) || 0;
   
-  // 천원단위절사
-  const truncation = totalBeforeTruncation % 1000;
+  // 만원단위절사 (용어는 '천원단위절사')
+  const truncation = totalBeforeTruncation % 10000;
   const totalAmount = totalBeforeTruncation - truncation;
 
   const handleSendInvoicePdf = async () => {
