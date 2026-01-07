@@ -157,7 +157,8 @@ async function createEvidencePdfForTab(
   const fontBytes = loadFontBytes();
   let currentPdf = await PDFDocument.create();
   currentPdf.registerFontkit(fontkit);
-  let font = await currentPdf.embedFont(fontBytes, { subset: false });
+  // subset: true로 사용되는 글자만 임베딩 (16MB → 수백KB로 감소)
+  let font = await currentPdf.embedFont(fontBytes, { subset: true });
   
   let currentImageCount = 0;
   let partNumber = 1;
@@ -187,7 +188,8 @@ async function createEvidencePdfForTab(
     // Reset for next chunk
     currentPdf = await PDFDocument.create();
     currentPdf.registerFontkit(fontkit);
-    font = await currentPdf.embedFont(fontBytes, { subset: false });
+    // subset: true로 사용되는 글자만 임베딩 (16MB → 수백KB로 감소)
+    font = await currentPdf.embedFont(fontBytes, { subset: true });
     currentImageCount = 0;
     partNumber++;
   };
