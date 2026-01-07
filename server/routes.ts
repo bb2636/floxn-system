@@ -6163,13 +6163,11 @@ FLOXN`;
       if (clientTotalAmount !== undefined) {
         totalAmount = clientTotalAmount;
       } else {
-        const sumBeforeTruncation = (damagePreventionAmount || 0) + 
+        // 절사 없이 합계 계산
+        totalAmount = (damagePreventionAmount || 0) + 
           (propertyRepairAmount || 0) + 
           (fieldDispatchPreventionAmount || 0) + 
           (fieldDispatchPropertyAmount || 0);
-        // 만원단위 절사 (10000원 단위)
-        const truncation = sumBeforeTruncation % 10000;
-        totalAmount = sumBeforeTruncation - truncation;
       }
 
       const invoiceData = {
@@ -6475,19 +6473,16 @@ FLOXN`;
         });
       }
 
-      // Use client-provided totalAmount (which includes truncation to thousands) if available
-      // Otherwise compute server-side with same truncation rule
+      // Use client-provided totalAmount if available, otherwise compute server-side (no truncation)
       let totalAmount: number;
       if (clientTotalAmount !== undefined) {
         totalAmount = clientTotalAmount;
       } else {
-        const sumBeforeTruncation = (damagePreventionAmount || 0) + 
+        // 절사 없이 합계 계산
+        totalAmount = (damagePreventionAmount || 0) + 
           (propertyRepairAmount || 0) + 
           (fieldDispatchPreventionAmount || 0) + 
           (fieldDispatchPropertyAmount || 0);
-        // 만원단위 절사 (10000원 단위)
-        const truncation = sumBeforeTruncation % 10000;
-        totalAmount = sumBeforeTruncation - truncation;
       }
 
       // Build invoice data
