@@ -6034,7 +6034,8 @@ FLOXN 드림`;
       // Build particulars based on amounts
       const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
-      const addressLabel = caseData.victimAddressDetail || '-';
+      // 상세주소 우선, 없으면 전체주소, 그것도 없으면 '-'
+      const addressLabel = caseData.victimAddressDetail || caseData.victimAddress || caseData.insuredAddressDetail || caseData.insuredAddress || '-';
 
       if (damagePreventionAmount && damagePreventionAmount > 0) {
         particulars.push({
@@ -6325,7 +6326,8 @@ FLOXN 드림`;
       // Build particulars based on amounts (each category gets its own line)
       const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
-      const addressLabel = caseData.victimAddressDetail || '-';
+      // 상세주소 우선, 없으면 전체주소, 그것도 없으면 '-'
+      const addressLabel = caseData.victimAddressDetail || caseData.victimAddress || caseData.insuredAddressDetail || caseData.insuredAddress || '-';
 
       if (damagePreventionAmount && damagePreventionAmount > 0) {
         particulars.push({
