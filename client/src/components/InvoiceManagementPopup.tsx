@@ -335,23 +335,33 @@ export function InvoiceManagementPopup({
         await apiRequest("POST", "/api/settlements", settlementCreateData);
       }
       
-      // "정산" 또는 "부분입금"이 선택된 경우 같은 사고번호의 모든 케이스 상태 변경
+      // "정산" 또는 "부분입금"이 선택된 경우 같은 사고번호의 모든 케이스 상태 변경 및 날짜 설정
       if (settlementStatus === "정산" || settlementStatus === "부분입금") {
         const newStatus = settlementStatus === "정산" ? "정산완료" : "부분입금";
         
-        // 현재 케이스 상태 변경
-        await apiRequest("PATCH", `/api/cases/${caseData.id}`, {
+        // 날짜 필드 설정
+        const caseUpdateData: Record<string, unknown> = {
           status: newStatus,
-        });
+        };
         
-        // 관련 케이스들도 모두 상태 변경 (같은 사고번호)
+        if (settlementStatus === "정산") {
+          // 정산 선택 시: 입금완료일, 정산완료일 설정
+          caseUpdateData.paymentCompletedDate = todayDate;
+          caseUpdateData.settlementCompletedDate = todayDate;
+        } else if (settlementStatus === "부분입금") {
+          // 부분입금 선택 시: 일부입금일 설정
+          caseUpdateData.partialPaymentDate = todayDate;
+        }
+        
+        // 현재 케이스 상태 및 날짜 변경
+        await apiRequest("PATCH", `/api/cases/${caseData.id}`, caseUpdateData);
+        
+        // 관련 케이스들도 모두 상태 및 날짜 변경 (같은 사고번호)
         if (relatedCases && relatedCases.length > 0) {
           const updatePromises = relatedCases
             .filter(rc => rc.id !== caseData.id) // 현재 케이스 제외
             .map(rc => 
-              apiRequest("PATCH", `/api/cases/${rc.id}`, {
-                status: newStatus,
-              })
+              apiRequest("PATCH", `/api/cases/${rc.id}`, caseUpdateData)
             );
           await Promise.all(updatePromises);
         }
