@@ -447,15 +447,12 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
     fetchApprovedAmounts();
   }, [open, caseData, categorizedAmounts, relatedCases]);
 
-  const totalBeforeTruncation = 
+  // 절사 없이 합계 계산
+  const totalAmount = 
     (parseInt(invoiceDamagePreventionAmount || "0") || 0) + 
     (parseInt(invoicePropertyRepairAmount || "0") || 0) +
     (parseInt(fieldDispatchPreventionAmount || "0") || 0) +
     (parseInt(fieldDispatchPropertyAmount || "0") || 0);
-  
-  // 만원단위절사 (용어는 '천원단위절사')
-  const truncation = totalBeforeTruncation % 10000;
-  const totalAmount = totalBeforeTruncation - truncation;
 
   const handleDownloadPdf = async () => {
     if (!caseData?.id) {
