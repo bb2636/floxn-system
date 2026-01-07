@@ -20,6 +20,9 @@ interface RelatedCase {
   caseNumber?: string | null;
   recoveryType?: string | null;
   estimateAmount?: number | null;
+  paymentCompletedDate?: string | null;
+  partialPaymentDate?: string | null;
+  settlementCompletedDate?: string | null;
 }
 
 interface InvoiceManagementPopupProps {
@@ -49,6 +52,10 @@ interface InvoiceManagementPopupProps {
     invoiceConfirmDate?: string | null; // 인보이스 확인 날짜
     invoiceAttribute?: string | null; // 인보이스 속성
     mainInvoiceLink?: string | null; // 메인 인보이스 연동 여부
+    // 정산 관련 날짜
+    paymentCompletedDate?: string | null; // 입금완료일
+    partialPaymentDate?: string | null; // 일부입금일
+    settlementCompletedDate?: string | null; // 정산완료일
   } | null;
   estimateData?: {
     preventionEstimate: number;
@@ -339,19 +346,32 @@ export function InvoiceManagementPopup({
       if (settlementStatus === "정산" || settlementStatus === "부분입금") {
         const newStatus = settlementStatus === "정산" ? "정산완료" : "부분입금";
         
-        // 날짜 필드 설정
+        // 날짜 필드 설정 - 기존 값 보존하면서 새 값만 업데이트
         const caseUpdateData: Record<string, unknown> = {
           status: newStatus,
+          // 기존 날짜 값 보존 (없으면 undefined로 두어 덮어쓰지 않음)
+          paymentCompletedDate: caseData.paymentCompletedDate || undefined,
+          partialPaymentDate: caseData.partialPaymentDate || undefined,
+          settlementCompletedDate: caseData.settlementCompletedDate || undefined,
         };
         
         if (settlementStatus === "정산") {
-          // 정산 선택 시: 입금완료일, 정산완료일 설정
+          // 정산 선택 시: 입금완료일, 정산완료일 설정 (새로 설정)
           caseUpdateData.paymentCompletedDate = todayDate;
           caseUpdateData.settlementCompletedDate = todayDate;
+          // partialPaymentDate는 기존 값 유지 (위에서 이미 설정됨)
         } else if (settlementStatus === "부분입금") {
-          // 부분입금 선택 시: 일부입금일 설정
+          // 부분입금 선택 시: 일부입금일 설정 (새로 설정)
           caseUpdateData.partialPaymentDate = todayDate;
+          // paymentCompletedDate, settlementCompletedDate는 기존 값 유지
         }
+        
+        // undefined 값 제거 (PATCH 시 덮어쓰지 않도록)
+        Object.keys(caseUpdateData).forEach(key => {
+          if (caseUpdateData[key] === undefined) {
+            delete caseUpdateData[key];
+          }
+        });
         
         // 현재 케이스 상태 및 날짜 변경
         await apiRequest("PATCH", `/api/cases/${caseData.id}`, caseUpdateData);
@@ -360,9 +380,32 @@ export function InvoiceManagementPopup({
         if (relatedCases && relatedCases.length > 0) {
           const updatePromises = relatedCases
             .filter(rc => rc.id !== caseData.id) // 현재 케이스 제외
-            .map(rc => 
-              apiRequest("PATCH", `/api/cases/${rc.id}`, caseUpdateData)
-            );
+            .map(rc => {
+              // 각 관련 케이스의 기존 날짜 값도 보존
+              const rcUpdateData: Record<string, unknown> = {
+                status: newStatus,
+              };
+              
+              if (settlementStatus === "정산") {
+                rcUpdateData.paymentCompletedDate = todayDate;
+                rcUpdateData.settlementCompletedDate = todayDate;
+                // 기존 partialPaymentDate 보존
+                if (rc.partialPaymentDate) {
+                  rcUpdateData.partialPaymentDate = rc.partialPaymentDate;
+                }
+              } else if (settlementStatus === "부분입금") {
+                rcUpdateData.partialPaymentDate = todayDate;
+                // 기존 paymentCompletedDate, settlementCompletedDate 보존
+                if (rc.paymentCompletedDate) {
+                  rcUpdateData.paymentCompletedDate = rc.paymentCompletedDate;
+                }
+                if (rc.settlementCompletedDate) {
+                  rcUpdateData.settlementCompletedDate = rc.settlementCompletedDate;
+                }
+              }
+              
+              return apiRequest("PATCH", `/api/cases/${rc.id}`, rcUpdateData);
+            });
           await Promise.all(updatePromises);
         }
       }
