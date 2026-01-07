@@ -222,6 +222,16 @@ function formatDate(dateStr: string | undefined): string {
   }
 }
 
+let drawTextCallCount = 0;
+
+function resetDrawTextCounter(): void {
+  drawTextCallCount = 0;
+}
+
+function getDrawTextCount(): number {
+  return drawTextCallCount;
+}
+
 function drawTextLine(
   page: PDFPage,
   text: string,
@@ -231,7 +241,10 @@ function drawTextLine(
   size: number,
   color: { r: number; g: number; b: number } = { r: 0, g: 0, b: 0 }
 ): void {
+  drawTextCallCount++;
   try {
+    // 한 번의 drawText로 전체 텍스트 렌더링 (문자 단위 분리 금지)
+    // characterSpacing, wordSpacing 사용 안함 (기본값 0)
     page.drawText(text, {
       x,
       y,
@@ -240,7 +253,7 @@ function drawTextLine(
       color: rgb(color.r, color.g, color.b),
     });
   } catch (e) {
-    console.warn(`[invoice-pdf] Failed to draw text: "${text.substring(0, 20)}..."`);
+    console.warn(`[Invoice PDF] Failed to draw text: "${text.substring(0, 20)}..." - ${e}`);
   }
 }
 
@@ -273,6 +286,9 @@ function drawRightAlignedText(
 
 export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   console.log('[Invoice PDF] Generating PDF with Pretendard (pdf-lib subset)...');
+  
+  // drawText 호출 횟수 카운터 초기화
+  resetDrawTextCounter();
   
   // 진단 로깅 - 사용될 텍스트 수집
   collectAllInvoiceText(data);
