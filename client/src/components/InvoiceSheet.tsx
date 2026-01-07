@@ -141,7 +141,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   const [selectedSubCategoryByCaseId, setSelectedSubCategoryByCaseId] = useState<Record<string, string>>({});
 
   // Fetch documents from main case
-  const { data: mainCaseDocuments = [] } = useQuery<CaseDocument[]>({
+  const { data: mainCaseDocuments = [], isLoading: isLoadingMainDocs, isFetching: isFetchingMainDocs } = useQuery<CaseDocument[]>({
     queryKey: [`/api/documents/case/${caseData?.id}`],
     enabled: open && !!caseData?.id,
   });
@@ -157,6 +157,18 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       enabled: open && !!caseId,
     })),
   });
+
+  // Check loading state for each case's documents
+  const isLoadingDocsForCase = (caseId: string): boolean => {
+    if (caseId === caseData?.id) {
+      return isLoadingMainDocs || isFetchingMainDocs;
+    }
+    const index = relatedCaseIds.indexOf(caseId);
+    if (index >= 0 && relatedDocsQueries[index]) {
+      return relatedDocsQueries[index].isLoading || relatedDocsQueries[index].isFetching;
+    }
+    return false;
+  };
 
   // Build all cases list (main case + related cases)
   const allCases = useMemo(() => {
@@ -1419,7 +1431,33 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
 
               {/* Document Grid */}
               <ScrollArea style={{ maxHeight: "280px" }}>
-                {filteredDocs.length === 0 ? (
+                {isLoadingDocsForCase(caseItem.id) ? (
+                  <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "40px",
+                    gap: "12px",
+                  }}>
+                    <div style={{
+                      width: "32px",
+                      height: "32px",
+                      border: "3px solid rgba(0, 143, 237, 0.2)",
+                      borderTopColor: "#008FED",
+                      borderRadius: "50%",
+                      animation: "spin 1s linear infinite",
+                    }} />
+                    <span style={{
+                      color: "rgba(12, 12, 12, 0.5)",
+                      fontFamily: "'Pretendard'",
+                      fontSize: "13px",
+                    }}>
+                      증빙자료 불러오는 중...
+                    </span>
+                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                  </div>
+                ) : filteredDocs.length === 0 ? (
                   <div style={{
                     display: "flex",
                     alignItems: "center",
