@@ -1921,6 +1921,17 @@ async function renderEstimatePage(
   const today = new Date();
   const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
   
+  // 안내문구 (합계표 아래, 작성일 위 - 초록색 박스 위치)
+  drawText(page, {
+    x: MARGIN + 50,
+    y: footerY + 35,
+    text: '상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.',
+    font: fonts.regular,
+    size: 8,
+    color: { r: 0.8, g: 0.2, b: 0.2 },
+  });
+  
+  // 작성일 (안내문구 아래)
   drawText(page, {
     x: MARGIN,
     y: footerY + 10,
@@ -1929,28 +1940,13 @@ async function renderEstimatePage(
     size: 9,
   });
   
+  // 회사명 (오른쪽)
   drawText(page, {
     x: A4_WIDTH - MARGIN - 80,
     y: footerY + 10,
     text: partnerCompany,
     font: fonts.regular,
     size: 9,
-  });
-  
-  page.drawLine({
-    start: { x: MARGIN, y: footerY - 5 },
-    end: { x: A4_WIDTH - MARGIN, y: footerY - 5 },
-    thickness: 0.5,
-    color: rgb(0.7, 0.7, 0.7),
-  });
-  
-  drawText(page, {
-    x: MARGIN + 50,
-    y: footerY - 20,
-    text: '상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.',
-    font: fonts.regular,
-    size: 8,
-    color: { r: 0.4, g: 0.4, b: 0.4 },
   });
 }
 
