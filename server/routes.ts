@@ -5849,33 +5849,112 @@ FLOXN 드림`;
       // Format amounts
       const formatAmount = (amount: number) => amount.toLocaleString('ko-KR');
 
-      // Send email via Bubble.io API with PDF link
-      const emailContent = `안녕하세요,
+      // Send email via Hiworks SMTP with PDF attachment
+      const subject = `[FLOXN] INVOICE - ${accidentNo || caseNumber || dateStr}`;
+      
+      const htmlContent = `
+        <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px;">INVOICE 송부</h2>
+          
+          <p style="color: #666; line-height: 1.8;">안녕하세요,</p>
+          
+          <p style="color: #666; line-height: 1.8;">
+            아래 청구건에 대한 <strong>INVOICE</strong>를 첨부하여 송부드립니다.
+          </p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 30%; font-weight: bold;">보험사</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${insuranceCompany || '-'}</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">사고번호</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${accidentNo || '-'}</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">사건번호</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseNumber || '-'}</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">손해방지비용</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${formatAmount(damagePreventionAmount || 0)}원</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">대물복구비용</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${formatAmount(propertyRepairAmount || 0)}원</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">합계</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd; font-weight: bold; color: #0066cc;">${formatAmount(totalAmount || 0)}원</td>
+            </tr>
+            ${remarks ? `<tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">비고</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${remarks}</td>
+            </tr>` : ''}
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${dateStr}</td>
+            </tr>
+          </table>
+          
+          <p style="color: #666; line-height: 1.8;">
+            첨부된 INVOICE PDF 파일을 확인해 주시기 바랍니다.
+          </p>
+          
+          <p style="color: #666; line-height: 1.8; margin-top: 30px;">
+            감사합니다.<br/>
+            <strong>FLOXN</strong>
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;" />
+          
+          <p style="color: #999; font-size: 12px;">
+            본 메일은 FLOXN 시스템에서 자동 발송되었습니다.
+          </p>
+        </div>
+      `;
 
-INVOICE를 전송해드립니다.
+      const textContent = `INVOICE 송부
+
+안녕하세요,
+
+아래 청구건에 대한 INVOICE를 첨부하여 송부드립니다.
 
 - 보험사: ${insuranceCompany || '-'}
 - 사고번호: ${accidentNo || '-'}
 - 사건번호: ${caseNumber || '-'}
-
-청구 금액:
 - 손해방지비용: ${formatAmount(damagePreventionAmount || 0)}원
 - 대물복구비용: ${formatAmount(propertyRepairAmount || 0)}원
 - 합계: ${formatAmount(totalAmount || 0)}원
-${remarks ? `\n비고: ${remarks}` : ''}
-
-아래 링크를 클릭하시면 INVOICE PDF를 다운로드하실 수 있습니다:
-${pdfUrl}
-
+${remarks ? `- 비고: ${remarks}` : ''}
 - 발송일: ${dateStr}
-- 발송자: ${user.name || user.username}
+
+첨부된 INVOICE PDF 파일을 확인해 주시기 바랍니다.
 
 감사합니다.
-FLOXN 드림`;
+FLOXN`;
 
-      await sendNotificationEmail(email, `FLOXN INVOICE - ${caseNumber || dateStr}`, emailContent);
+      // Use Hiworks SMTP with PDF attachment
+      const emailResult = await sendEmailWithAttachment({
+        to: email,
+        subject,
+        text: textContent,
+        html: htmlContent,
+        attachments: [
+          {
+            filename: fileName,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ],
+      });
 
-      console.log(`[Email] Invoice PDF link sent successfully to ${email} by ${user.username}`);
+      if (!emailResult.success) {
+        console.error(`[Email] Invoice email failed:`, emailResult.error);
+        return res.status(500).json({ error: `이메일 전송 실패: ${emailResult.error}` });
+      }
+
+      console.log(`[Email] Invoice PDF sent successfully to ${email} by ${user.username} (MessageId: ${emailResult.messageId})`);
       res.json({ success: true, message: "INVOICE 이메일이 전송되었습니다", pdfUrl });
     } catch (error) {
       console.error("Send invoice email error:", error);
@@ -6741,37 +6820,104 @@ Front·Line·Ops·Xpert·Net
       // Format amounts
       const formatAmount = (amount: number) => amount.toLocaleString('ko-KR');
 
-      // Send email via Bubble.io API with PDF link
-      const emailContent = `안녕하세요,
+      // Send email via Hiworks SMTP with PDF attachment
+      const subject = `[FLOXN] 현장출동비용 청구서 - ${accidentNo || caseNumber || dateStr}`;
+      
+      const htmlContent = `
+        <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px;">현장출동비용 청구서</h2>
+          
+          <p style="color: #666; line-height: 1.8;">안녕하세요,</p>
+          
+          <p style="color: #666; line-height: 1.8;">
+            아래 청구건에 대한 <strong>현장출동비용 청구서</strong>를 첨부하여 송부드립니다.
+          </p>
+          
+          <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 30%; font-weight: bold;">보험사</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${insuranceCompany || '-'}</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">사고번호</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${accidentNo || '-'}</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">사건번호</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${caseNumber || '-'}</td>
+            </tr>
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">현장출동비용</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd; font-weight: bold; color: #0066cc;">${formatAmount(fieldDispatchAmount || 0)}원</td>
+            </tr>
+            ${remarks ? `<tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">비고</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${remarks}</td>
+            </tr>` : ''}
+            <tr>
+              <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;">${dateStr}</td>
+            </tr>
+          </table>
+          
+          <p style="color: #666; line-height: 1.8;">
+            첨부된 현장출동비용 청구서 PDF 파일을 확인해 주시기 바랍니다.
+          </p>
+          
+          <p style="color: #666; line-height: 1.8; margin-top: 30px;">
+            감사합니다.<br/>
+            <strong>FLOXN</strong><br/>
+            <span style="font-size: 12px; color: #999;">주식회사 플록슨(FLOXN Co., Ltd.)</span>
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;" />
+          
+          <p style="color: #999; font-size: 12px;">
+            본 메일은 FLOXN 시스템에서 자동 발송되었습니다.
+          </p>
+        </div>
+      `;
 
-현장출동비용 청구서를 전송해드립니다.
+      const textContent = `현장출동비용 청구서
+
+안녕하세요,
+
+아래 청구건에 대한 현장출동비용 청구서를 첨부하여 송부드립니다.
 
 - 보험사: ${insuranceCompany || '-'}
 - 사고번호: ${accidentNo || '-'}
 - 사건번호: ${caseNumber || '-'}
-
-청구 금액:
 - 현장출동비용: ${formatAmount(fieldDispatchAmount || 0)}원
-- 합계: ${formatAmount(totalAmount || 0)}원
-${remarks ? `\n비고: ${remarks}` : ''}
-
-아래 링크를 클릭하시면 현장출동비용 청구서 PDF를 다운로드하실 수 있습니다:
-${pdfUrl}
-
+${remarks ? `- 비고: ${remarks}` : ''}
 - 발송일: ${dateStr}
-- 발송자: ${user.name || user.username}
+
+첨부된 현장출동비용 청구서 PDF 파일을 확인해 주시기 바랍니다.
 
 감사합니다.
-
----
 FLOXN
-Front·Line·Ops·Xpert·Net
-주식회사 플록슨(FLOXN Co., Ltd.)
-서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호`;
+주식회사 플록슨(FLOXN Co., Ltd.)`;
 
-      await sendNotificationEmail(email, `FLOXN 현장출동비용 청구서 - ${caseNumber || dateStr}`, emailContent);
+      // Use Hiworks SMTP with PDF attachment
+      const emailResult = await sendEmailWithAttachment({
+        to: email,
+        subject,
+        text: textContent,
+        html: htmlContent,
+        attachments: [
+          {
+            filename: fileName,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ],
+      });
 
-      console.log(`[Email] Field dispatch invoice PDF link sent successfully to ${email} by ${user.username}`);
+      if (!emailResult.success) {
+        console.error(`[Email] Field dispatch invoice email failed:`, emailResult.error);
+        return res.status(500).json({ error: `이메일 전송 실패: ${emailResult.error}` });
+      }
+
+      console.log(`[Email] Field dispatch invoice PDF sent successfully to ${email} by ${user.username} (MessageId: ${emailResult.messageId})`);
       res.json({ success: true, message: "현장출동비용 청구서 이메일이 전송되었습니다", pdfUrl });
     } catch (error) {
       console.error("Send field dispatch invoice email error:", error);
