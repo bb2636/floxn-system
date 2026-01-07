@@ -7231,144 +7231,73 @@ FLOXN 드림`;
         console.warn(`[send-field-report-email-v2] 경고: 총 첨부파일 용량 ${totalMB}MB가 25MB를 초과합니다. SMTP 552 오류 가능성`);
       }
 
-      const pdfBuffer = mainPdfBuffer; // 기존 코드 호환성
+      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '-').replace(/ /g, '').replace(/-$/, '');
 
-      const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
-      const timestamp = Date.now();
-      const fileName = `field-report_${caseData.caseNumber || timestamp}_${timestamp}.pdf`;
+      // HTML 이메일 본문 생성 (표 형식, 링크 없음)
+      const emailHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: 'Malgun Gothic', '맑은 고딕', sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 8px;">
+    <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #333;">현장출동보고서 송부</h1>
+    <hr style="border: none; border-top: 3px solid #e85a1b; margin-bottom: 24px;">
+    
+    <p style="color: #333; margin-bottom: 16px;">안녕하세요.<br>아래 접수건에 대한 현장출동보고서를 첨부하여 송부드립니다.</p>
+    
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 14px;">
+      <tr>
+        <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 120px;">사고번호</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.insuranceAccidentNo || '-'}</td>
+      </tr>
+      <tr>
+        <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">담당자</td>
+        <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 80px;">심사자</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.assessorTeam || '-'}</td>
+        <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold; width: 80px;">조사자</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;">${caseData.investigatorTeam || '-'}</td>
+      </tr>
+      <tr>
+        <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">피보험자</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.insuredName || '-'}</td>
+      </tr>
+      <tr>
+        <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">접수번호</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${caseData.caseNumber || '-'}</td>
+      </tr>
+      <tr>
+        <td style="background-color: #f8f8f8; padding: 12px 16px; border: 1px solid #e0e0e0; font-weight: bold;">발송일</td>
+        <td style="padding: 12px 16px; border: 1px solid #e0e0e0;" colspan="4">${new Date().toISOString().split('T')[0]}</td>
+      </tr>
+    </table>
+    
+    <p style="color: #333; margin-bottom: 24px;">첨부된 PDF 파일을 확인해 주시기 바랍니다.</p>
+    
+    <p style="color: #333; margin-bottom: 8px;">감사합니다.</p>
+    <p style="color: #333; font-weight: bold;">FLOXN</p>
+  </div>
+</body>
+</html>`;
 
-      // Object Storage에 업로드
-      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
-      if (!bucketId) {
-        console.error("[send-field-report-email-v2] Missing Object Storage bucket ID");
-        return res.status(500).json({ error: "Object Storage 설정이 필요합니다" });
-      }
+      // 텍스트 버전 (HTML 미지원 클라이언트용)
+      const emailText = `현장출동보고서 송부
 
-      const bucket = objectStorageClient.bucket(bucketId);
-      const objectName = `public/field-report-pdfs/${fileName}`;
-      const file = bucket.file(objectName);
+안녕하세요.
+아래 접수건에 대한 현장출동보고서를 첨부하여 송부드립니다.
 
-      await file.save(pdfBuffer, {
-        contentType: 'application/pdf',
-        metadata: {
-          'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'public' }),
-        },
-      });
+사고번호: ${caseData.insuranceAccidentNo || '-'}
+심사자: ${caseData.assessorTeam || '-'}
+조사자: ${caseData.investigatorTeam || '-'}
+피보험자: ${caseData.insuredName || '-'}
+접수번호: ${caseData.caseNumber || '-'}
+발송일: ${new Date().toISOString().split('T')[0]}
 
-      // PDF 다운로드 URL 생성
-      const SIGNED_URL_TTL_SEC = 7 * 24 * 60 * 60;
-      const pdfUrl = await signObjectURL({
-        bucketName: bucketId,
-        objectName: objectName,
-        method: 'GET',
-        ttlSec: SIGNED_URL_TTL_SEC,
-      });
-
-      console.log(`[send-field-report-email-v2] PDF uploaded with signed URL`);
-
-      // 증빙자료 다운로드 링크 생성
-      let documentLinksSection = '';
-      try {
-        const documents = await storage.getDocumentsByCaseId(caseId);
-        if (documents && documents.length > 0) {
-          const categoryOrder = [
-            "현장출동사진", "수리중 사진", "복구완료 사진",
-            "보험금 청구서", "개인정보 동의서(가족용)",
-            "주민등록등본", "등기부등본", "건축물대장", "기타증빙자료(민원일지 등)",
-            "위임장", "도급계약서", "복구완료확인서", "부가세 청구자료"
-          ];
-          
-          const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
-          if (privateObjectDir) {
-            const privateDirParts = privateObjectDir.startsWith('/') 
-              ? privateObjectDir.slice(1).split('/') 
-              : privateObjectDir.split('/');
-            const privateBucketName = privateDirParts[0];
-            const privatePrefix = privateDirParts.slice(1).join('/');
-            const privateBucket = objectStorageClient.bucket(privateBucketName);
-            
-            const categoryGroups: Record<string, Array<{ fileName: string; url: string }>> = {};
-            
-            for (const doc of documents) {
-              if (!doc.fileData || !doc.category) continue;
-              
-              try {
-                const fileBuffer = Buffer.from(doc.fileData, 'base64');
-                const sanitizedFileName = doc.fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
-                const docObjectName = `${privatePrefix}/email-documents/${caseId}/${timestamp}_${sanitizedFileName}`;
-                const docFile = privateBucket.file(docObjectName);
-                
-                await docFile.save(fileBuffer, {
-                  contentType: doc.fileType,
-                  metadata: {
-                    'custom:aclPolicy': JSON.stringify({ owner: user.id, visibility: 'private' }),
-                  },
-                });
-                
-                const docUrl = await signObjectURL({
-                  bucketName: privateBucketName,
-                  objectName: docObjectName,
-                  method: 'GET',
-                  ttlSec: SIGNED_URL_TTL_SEC,
-                });
-                
-                if (!categoryGroups[doc.category]) {
-                  categoryGroups[doc.category] = [];
-                }
-                categoryGroups[doc.category].push({ fileName: doc.fileName, url: docUrl });
-              } catch (docError) {
-                console.error(`[send-field-report-email-v2] Failed for ${doc.fileName}:`, docError);
-              }
-            }
-            
-            // 카테고리 순서대로 링크 생성
-            const sortedCategories = Object.keys(categoryGroups).sort((a, b) => {
-              const indexA = categoryOrder.indexOf(a);
-              const indexB = categoryOrder.indexOf(b);
-              return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-            });
-            
-            if (sortedCategories.length > 0) {
-              documentLinksSection = '\n\n📎 증빙자료 다운로드 링크:\n' + sortedCategories.map(category => {
-                const docs = categoryGroups[category];
-                return `\n[${category}]\n` + docs.map(d => `  - ${d.fileName}: ${d.url}`).join('\n');
-              }).join('\n');
-            }
-          }
-        }
-      } catch (docError) {
-        console.error("[send-field-report-email-v2] Failed to generate document links:", docError);
-      }
-
-      // 이메일 내용 생성 (첨부파일 안내 포함)
-      const attachmentSummary = attachments.length > 1 
-        ? `\n\n▶ 첨부파일 (${attachments.length}개)\n` + attachments.map(a => `- ${a.filename}`).join('\n')
-        : '';
-      
-      const emailContent = `안녕하세요.
-
-FLOXN 현장조사 리포트를 전송드립니다.
-
-▶ 리포트 정보
-- 보험사: ${caseData.insuranceCompany || '미지정'}
-- 사고번호: ${caseData.insuranceAccidentNo || '미지정'}
-- 의뢰인: ${caseData.clientName || '미지정'}
-- 피보험자: ${caseData.insuredName || '미지정'}
-- 출동일: ${caseData.visitDate || '미지정'}
-- 사고유형: ${caseData.accidentCategory || '미지정'}
-- 사고원인: ${caseData.accidentCause || '미지정'}
-- 복구방식: ${caseData.recoveryMethodType || '미지정'}
-${attachmentSummary}
-
-▶ PDF 백업 다운로드 링크 (7일간 유효)
-${pdfUrl}
-${documentLinksSection}
-
-- 발송일시: ${dateStr}
-- 발송자: ${user.name || user.username}
+첨부된 PDF 파일을 확인해 주시기 바랍니다.
 
 감사합니다.
-FLOXN 드림`;
+FLOXN`;
 
       // ========== 이메일 전송 (PDF 직접 첨부) ==========
       const sendResults: { email: string; success: boolean; error?: string }[] = [];
@@ -7380,7 +7309,8 @@ FLOXN 드림`;
           const result = await sendEmailWithAttachment({
             to: recipientEmail,
             subject: `[FLOXN] 현장출동보고서 - ${accidentNo} (${caseData.insuredName || caseData.clientName || ''})`,
-            text: emailContent,
+            text: emailText,
+            html: emailHtml,
             attachments: attachments,
           });
           
@@ -7425,7 +7355,7 @@ FLOXN 드림`;
         ? `${successCount}명에게 전송 완료, ${failedCount}명 전송 실패`
         : `${successCount}명에게 현장출동보고서가 PDF 첨부파일로 전송되었습니다`;
 
-      res.json({ success: true, message, pdfUrl, results: sendResults });
+      res.json({ success: true, message, results: sendResults });
     } catch (error) {
       console.error("Send field report email v2 error:", error);
       res.status(500).json({ error: "현장조사 리포트 이메일 전송 중 오류가 발생했습니다" });
