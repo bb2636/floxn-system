@@ -1,7 +1,5 @@
 import { PDFDocument, PDFPage, PDFFont, rgb } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
-// @ts-ignore - subset-font has no type declarations
-import subsetFont from 'subset-font';
 import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
@@ -31,29 +29,58 @@ interface FontSet {
   bold: PDFFont;
 }
 
-let cachedFullFont: Buffer | null = null;
-
-function loadFullFontBytes(): Buffer {
-  if (cachedFullFont) return cachedFullFont;
-  
-  const fontsDir = path.join(process.cwd(), 'server/fonts');
-  const fontPath = path.join(fontsDir, 'NotoSansKR-Regular-static.ttf');
-  
-  if (!fs.existsSync(fontPath)) {
-    throw new Error('한글 폰트를 찾을 수 없습니다: ' + fontPath);
-  }
-  
-  cachedFullFont = fs.readFileSync(fontPath);
-  console.log(`[Invoice PDF] 원본 폰트 로드: ${(cachedFullFont.length / 1024 / 1024).toFixed(2)}MB`);
-  return cachedFullFont;
+interface FontCache {
+  regular: Buffer | null;
+  semiBold: Buffer | null;
 }
 
-function collectAllText(data: InvoiceData): string {
+const fontCache: FontCache = {
+  regular: null,
+  semiBold: null,
+};
+
+function loadPretendardFonts(): { regular: Buffer; semiBold: Buffer } {
+  const fontsDir = path.join(process.cwd(), 'server/fonts');
+  
+  if (!fontCache.regular) {
+    const regularPath = path.join(fontsDir, 'Pretendard-Regular.ttf');
+    if (!fs.existsSync(regularPath)) {
+      throw new Error('Pretendard-Regular.ttf를 찾을 수 없습니다: ' + regularPath);
+    }
+    fontCache.regular = fs.readFileSync(regularPath);
+    console.log(`[Invoice PDF] Pretendard-Regular 로드: ${(fontCache.regular.length / 1024).toFixed(1)}KB`);
+  }
+  
+  if (!fontCache.semiBold) {
+    const semiBoldPath = path.join(fontsDir, 'Pretendard-SemiBold.ttf');
+    if (!fs.existsSync(semiBoldPath)) {
+      throw new Error('Pretendard-SemiBold.ttf를 찾을 수 없습니다: ' + semiBoldPath);
+    }
+    fontCache.semiBold = fs.readFileSync(semiBoldPath);
+    console.log(`[Invoice PDF] Pretendard-SemiBold 로드: ${(fontCache.semiBold.length / 1024).toFixed(1)}KB`);
+  }
+  
+  return { regular: fontCache.regular, semiBold: fontCache.semiBold };
+}
+
+function collectAllInvoiceText(data: InvoiceData): string {
   const texts: string[] = [
+    // 헤더
     'INVOICE',
-    '수 신', ':', '수임일자', '사고번호', '청구일자',
-    'PARTICULARS', 'AMOUNT', 'TOTAL',
-    '비 고', '상기 금액을 청구합니다.', 'FLOXN., Inc',
+    // 정보 레이블
+    '수 신', '수신', ':', '수임일자', '사고번호', '청구일자',
+    // 테이블 헤더
+    'PARTICULARS', 'AMOUNT', 'TOTAL AMOUNT', 'TOTAL',
+    // 계좌 정보 박스
+    '아래의 계좌로 입금 부탁드립니다.',
+    '은행명', '은행', '계좌번호', '예금주', '사업자등록번호', '사업자 등록번호',
+    '신한은행', '신한', '㈜플록슨', '플록슨',
+    '140-015-744120', '517-89-03490',
+    // 푸터
+    'FLOXN., Inc', 'FLOXN',
+    // 비고
+    '비 고', '비고',
+    // 동적 데이터
     data.recipientName || '-',
     data.caseNumber || '-',
     data.insuranceAccidentNo || '-',
@@ -61,9 +88,17 @@ function collectAllText(data: InvoiceData): string {
     formatDate(data.submissionDate),
     formatAmount(data.totalAmount),
     data.remarks || '',
-    '0123456789,원.-/',
+    // 특수 문자 및 숫자
+    '0123456789',
+    ',원₩.-/()[]{}:;',
+    '㈜株',
+    // 흔히 사용되는 한글 문자
+    '가나다라마바사아자차카타파하',
+    '보험사손해방지비용대물복구청구금액합계',
+    '접수등록번호일자',
   ];
   
+  // 항목 데이터
   for (const item of data.particulars) {
     texts.push(item.title || '');
     texts.push(item.detail || '');
@@ -72,48 +107,30 @@ function collectAllText(data: InvoiceData): string {
   
   const allText = texts.join('');
   const uniqueChars = Array.from(new Set(allText.split(''))).join('');
+  
+  console.log(`[Invoice PDF] 수집된 고유 문자 수: ${uniqueChars.length}개`);
+  console.log(`[Invoice PDF] 샘플 문자: ${uniqueChars.substring(0, 50)}...`);
+  
   return uniqueChars;
 }
 
-async function createSubsetFont(fullFont: Buffer, text: string): Promise<Buffer> {
-  try {
-    const subsetBuffer = await subsetFont(fullFont, text, {
-      targetFormat: 'truetype',
-    });
-    return Buffer.from(subsetBuffer);
-  } catch (err) {
-    console.error('[Invoice PDF] 서브셋 생성 실패, 원본 폰트 사용:', err);
-    return fullFont;
-  }
-}
-
-async function embedSubsetFonts(pdfDoc: PDFDocument, data: InvoiceData): Promise<{ fonts: FontSet; stats: { uniqueChars: number; subsetSize: number; originalSize: number } }> {
+async function embedPretendardFonts(pdfDoc: PDFDocument): Promise<FontSet> {
   pdfDoc.registerFontkit(fontkit);
   
-  const fullFont = loadFullFontBytes();
-  const originalSize = fullFont.length;
+  const { regular, semiBold } = loadPretendardFonts();
   
-  const uniqueText = collectAllText(data);
-  const uniqueChars = uniqueText.length;
+  console.log(`[Invoice PDF] ========== 폰트 임베딩 (pdf-lib subset) ==========`);
+  console.log(`[Invoice PDF] Regular 원본: ${(regular.length / 1024).toFixed(1)}KB`);
+  console.log(`[Invoice PDF] SemiBold 원본: ${(semiBold.length / 1024).toFixed(1)}KB`);
   
-  console.log(`[Invoice PDF] 서브셋 생성 중... (고유 문자: ${uniqueChars}개)`);
+  // pdf-lib 내장 서브셋팅 사용 - 실제 사용된 글리프만 임베드됨
+  const regularFont = await pdfDoc.embedFont(regular, { subset: true });
+  const semiBoldFont = await pdfDoc.embedFont(semiBold, { subset: true });
   
-  const subsetBuffer = await createSubsetFont(fullFont, uniqueText);
-  const subsetSize = subsetBuffer.length;
+  console.log(`[Invoice PDF] 폰트 임베딩 완료 (subset: true)`);
+  console.log(`[Invoice PDF] =====================================================`);
   
-  console.log(`[Invoice PDF] ========== 폰트 서브셋 결과 ==========`);
-  console.log(`[Invoice PDF] 원본 폰트: ${(originalSize / 1024 / 1024).toFixed(2)}MB`);
-  console.log(`[Invoice PDF] 서브셋 폰트: ${(subsetSize / 1024).toFixed(1)}KB`);
-  console.log(`[Invoice PDF] 압축률: ${((1 - subsetSize / originalSize) * 100).toFixed(1)}%`);
-  console.log(`[Invoice PDF] 고유 문자 수: ${uniqueChars}개`);
-  console.log(`[Invoice PDF] ===========================================`);
-  
-  const font = await pdfDoc.embedFont(subsetBuffer);
-  
-  return {
-    fonts: { regular: font, bold: font },
-    stats: { uniqueChars, subsetSize, originalSize }
-  };
+  return { regular: regularFont, bold: semiBoldFont };
 }
 
 function measureTextWidth(text: string, font: PDFFont, size: number): number {
@@ -199,10 +216,13 @@ function drawRightAlignedText(
 }
 
 export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
-  console.log('[Invoice PDF] Generating PDF with pdf-lib (font subset)...');
+  console.log('[Invoice PDF] Generating PDF with Pretendard (pdf-lib subset)...');
+  
+  // 진단 로깅 - 사용될 텍스트 수집
+  collectAllInvoiceText(data);
   
   const pdfDoc = await PDFDocument.create();
-  const { fonts, stats } = await embedSubsetFonts(pdfDoc, data);
+  const fonts = await embedPretendardFonts(pdfDoc);
   
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   
@@ -429,13 +449,10 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   const buffer = Buffer.from(pdfBytes);
   
   // 진단 로깅: PDF 구성 요소 분석
-  console.log('[Invoice PDF] ========== 최종 PDF 구성 ==========');
+  console.log('[Invoice PDF] ========== 최종 PDF 결과 ==========');
   console.log(`[Invoice PDF] 페이지 수: ${pdfDoc.getPageCount()}`);
-  console.log(`[Invoice PDF] 원본 폰트: ${(stats.originalSize / 1024 / 1024).toFixed(2)}MB`);
-  console.log(`[Invoice PDF] 서브셋 폰트: ${(stats.subsetSize / 1024).toFixed(1)}KB`);
-  console.log(`[Invoice PDF] 고유 문자 수: ${stats.uniqueChars}개`);
+  console.log(`[Invoice PDF] 폰트: Pretendard (Regular + SemiBold)`);
   console.log(`[Invoice PDF] 이미지: 0개 (텍스트/표만 포함)`);
-  console.log('[Invoice PDF] ------------------------------------------');
   console.log(`[Invoice PDF] 최종 PDF 크기: ${(buffer.length / 1024).toFixed(1)}KB (${(buffer.length / 1024 / 1024).toFixed(3)}MB)`);
   
   // 크기 검증
