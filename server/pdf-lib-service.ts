@@ -835,6 +835,24 @@ async function renderFieldReportPage(
   const victimFullAddress = [caseData.victimAddress, caseData.victimAddressDetail]
     .filter(Boolean).join(' ') || insuredFullAddress;
   
+  // 처리유형 파싱 (JSON 배열)
+  let processingTypesStr = '-';
+  try {
+    if (caseData.processingTypes) {
+      const types = typeof caseData.processingTypes === 'string' 
+        ? JSON.parse(caseData.processingTypes) 
+        : caseData.processingTypes;
+      if (Array.isArray(types) && types.length > 0) {
+        processingTypesStr = types.join(', ');
+        if (caseData.processingTypeOther) {
+          processingTypesStr += ` (${caseData.processingTypeOther})`;
+        }
+      }
+    }
+  } catch (e) {
+    processingTypesStr = caseData.processingTypes?.toString() || '-';
+  }
+  
   const recoveryInfoRows: TableCell[][] = [
     [
       { text: '피해자명', width: 90, isHeader: true, align: 'center' },
@@ -848,7 +866,7 @@ async function renderFieldReportPage(
     ],
     [
       { text: '처리유형', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.recoveryType || caseData.processingType || caseData.estimateType || '-', width: 425, align: 'left' },
+      { text: processingTypesStr, width: 425, align: 'left' },
     ],
     [
       { text: '복구방식', width: 90, isHeader: true, align: 'center' },
