@@ -4811,7 +4811,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get field survey report data (통합 조회)
   app.get("/api/field-surveys/:caseId/report", async (req, res) => {
+    const requestPath = req.path;
+    const queryString = JSON.stringify(req.query);
+    const rawCaseId = req.params.caseId;
+    
+    // 디버깅 로그 - 요청 정보
+    console.log(`[FieldSurveyReport] === REQUEST START ===`);
+    console.log(`[FieldSurveyReport] Path: ${requestPath}`);
+    console.log(`[FieldSurveyReport] Query: ${queryString}`);
+    console.log(`[FieldSurveyReport] CaseId raw value: "${rawCaseId}"`);
+    console.log(`[FieldSurveyReport] CaseId type: ${typeof rawCaseId}`);
+    console.log(`[FieldSurveyReport] CaseId empty check: isEmpty=${!rawCaseId}, isNull=${rawCaseId === 'null'}, isUndefined=${rawCaseId === 'undefined'}`);
+    
     if (!req.session?.userId) {
+      console.log(`[FieldSurveyReport] ERROR: Unauthorized - no session userId`);
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
@@ -4820,13 +4833,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Validate caseId format
       if (!caseId || caseId === "null" || caseId === "undefined") {
-        console.error("Invalid caseId for field survey report:", caseId);
+        console.error(`[FieldSurveyReport] ERROR: Invalid caseId format: "${caseId}"`);
         return res.status(400).json({ error: "유효하지 않은 케이스 ID입니다" });
       }
       
       // 케이스 정보 조회
-      const caseData = await storage.getCaseById(caseId);
+      console.log(`[FieldSurveyReport] Step 1: Fetching case data for caseId: ${caseId}`);
+      let caseData;
+      try {
+        caseData = await storage.getCaseById(caseId);
+        console.log(`[FieldSurveyReport] Step 1 result: caseData ${caseData ? 'FOUND' : 'NOT FOUND'}`);
+        if (caseData) {
+          console.log(`[FieldSurveyReport] Case caseNumber: ${caseData.caseNumber || 'N/A'}`);
+        }
+      } catch (caseError: any) {
+        console.error(`[FieldSurveyReport] Step 1 ERROR: Failed to fetch case`, {
+          message: caseError?.message,
+          code: caseError?.code,
+          detail: caseError?.detail
+        });
+        throw caseError;
+      }
+      
       if (!caseData) {
+        console.log(`[FieldSurveyReport] ERROR: Case not found for caseId: ${caseId}`);
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
@@ -4852,13 +4882,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 도면 조회
-      const drawing = await storage.getDrawingByCaseId(caseId);
+      console.log(`[FieldSurveyReport] Step 2: Fetching drawing for caseId: ${caseId}`);
+      let drawing = null;
+      try {
+        drawing = await storage.getDrawingByCaseId(caseId);
+        console.log(`[FieldSurveyReport] Step 2 result: drawing ${drawing ? 'FOUND' : 'NOT FOUND'}`);
+      } catch (drawingError: any) {
+        console.error(`[FieldSurveyReport] Step 2 ERROR: Failed to fetch drawing`, {
+          message: drawingError?.message,
+          code: drawingError?.code,
+          detail: drawingError?.detail
+        });
+        // 도면 조회 실패해도 계속 진행
+      }
       
       // 증빙자료 조회
-      const documents = await storage.getDocumentsByCaseId(caseId);
+      console.log(`[FieldSurveyReport] Step 3: Fetching documents for caseId: ${caseId}`);
+      let documents: any[] = [];
+      try {
+        documents = await storage.getDocumentsByCaseId(caseId);
+        console.log(`[FieldSurveyReport] Step 3 result: documents count = ${documents?.length || 0}`);
+      } catch (docsError: any) {
+        console.error(`[FieldSurveyReport] Step 3 ERROR: Failed to fetch documents`, {
+          message: docsError?.message,
+          code: docsError?.code,
+          detail: docsError?.detail
+        });
+        // 문서 조회 실패해도 계속 진행
+      }
       
       // 최신 견적 조회
-      const estimateData = await storage.getLatestEstimate(caseId);
+      console.log(`[FieldSurveyReport] Step 4: Fetching estimate for caseId: ${caseId}`);
+      let estimateData = null;
+      try {
+        estimateData = await storage.getLatestEstimate(caseId);
+        console.log(`[FieldSurveyReport] Step 4 result: estimate ${estimateData?.estimate ? 'FOUND' : 'NOT FOUND'}, rows count = ${estimateData?.rows?.length || 0}`);
+      } catch (estimateError: any) {
+        console.error(`[FieldSurveyReport] Step 4 ERROR: Failed to fetch estimate`, {
+          message: estimateError?.message,
+          code: estimateError?.code,
+          detail: estimateError?.detail
+        });
+        // 견적 조회 실패해도 계속 진행
+      }
       
       // 손해방지 케이스 여부 (접수번호가 -0으로 끝나면 손해방지)
       const isLossPreventionCase = /-0$/.test(caseData.caseNumber || '');
@@ -4941,6 +5007,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
+      // 응답 데이터 shape 로그
+      const responseShape = {
+        hasCase: !!caseData,
+        caseNumber: caseData?.caseNumber,
+        hasDrawing: !!drawing,
+        documentsCount: documents?.length || 0,
+        hasEstimate: !!estimateData?.estimate,
+        estimateRowsCount: estimateData?.rows?.length || 0,
+        completionStatus
+      };
+      console.log(`[FieldSurveyReport] === SUCCESS === Response shape:`, responseShape);
+      
       // 통합된 보고서 데이터 반환
       res.json({
         case: caseData,
@@ -4949,9 +5027,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         estimate: estimateData || { estimate: null, rows: [] },
         completionStatus,
       });
-    } catch (error) {
-      console.error("Get field survey report error:", error);
-      res.status(500).json({ error: "현장조사 보고서를 조회하는 중 오류가 발생했습니다" });
+    } catch (error: any) {
+      // 상세 에러 로깅
+      console.error(`[FieldSurveyReport] === FATAL ERROR ===`);
+      console.error(`[FieldSurveyReport] Error message: ${error?.message || 'Unknown error'}`);
+      console.error(`[FieldSurveyReport] Error stack: ${error?.stack || 'No stack trace'}`);
+      console.error(`[FieldSurveyReport] DB error code: ${error?.code || 'N/A'}`);
+      console.error(`[FieldSurveyReport] DB error detail: ${error?.detail || 'N/A'}`);
+      console.error(`[FieldSurveyReport] Full error object:`, error);
+      
+      // 에러 타입에 따른 상태 코드 분리
+      if (error?.code === '22P02' || error?.message?.includes('invalid input syntax')) {
+        return res.status(400).json({ 
+          error: "잘못된 케이스 ID 형식입니다",
+          details: error?.message
+        });
+      }
+      
+      if (error?.code === '42P01') {
+        return res.status(500).json({ 
+          error: "데이터베이스 테이블이 존재하지 않습니다",
+          details: error?.message
+        });
+      }
+      
+      res.status(500).json({ 
+        error: "현장조사 보고서를 조회하는 중 오류가 발생했습니다",
+        details: error?.message || 'Unknown server error'
+      });
     }
   });
 
