@@ -4825,9 +4825,11 @@ export class DbStorage implements IStorage {
       accidentCategory?: string | null;
       accidentCause?: string | null;
       specialNotes?: string | null;
+      vocContent?: string | null; // VOC(고객의 소리) - 협력사 특이사항과 분리
       victimName?: string | null;
       victimContact?: string | null;
       victimAddress?: string | null;
+      victimAddressDetail?: string | null;
       additionalVictims?: string | null;
       specialRequests?: string | null;
       processingTypes?: string | null;

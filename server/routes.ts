@@ -2556,9 +2556,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         accidentCategory: z.string().nullable().optional(),
         accidentCause: z.string().nullable().optional(),
         specialNotes: z.string().nullable().optional(),
+        vocContent: z.string().nullable().optional(), // VOC(고객의 소리) - 협력사 특이사항과 분리
         victimName: z.string().nullable().optional(),
         victimContact: z.string().nullable().optional(),
         victimAddress: z.string().nullable().optional(),
+        victimAddressDetail: z.string().nullable().optional(),
         additionalVictims: z.string().nullable().optional(),
         specialRequests: z.string().nullable().optional(),
         processingTypes: z.string().nullable().optional(),

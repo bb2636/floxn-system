@@ -220,6 +220,7 @@ export const cases = pgTable("cases", {
   specialNotes: text("special_notes"), // 협력사 특이사항 메모 (기존 - 레거시)
   specialNotesConfirmedBy: varchar("special_notes_confirmed_by").references(() => users.id), // 관리자 확인자 ID
   additionalNotes: text("additional_notes"), // 협력사 기타사항 (800자 제한)
+  vocContent: text("voc_content"), // VOC(고객의 소리) - 협력사가 현장에서 작성 (특이사항과 별개)
   
   // 특이사항 히스토리 (협력사/관리자 별도 입력)
   partnerNotesHistory: text("partner_notes_history"), // JSON: [{content, createdAt, createdBy}]

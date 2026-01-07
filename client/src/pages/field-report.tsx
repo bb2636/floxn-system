@@ -2627,7 +2627,7 @@ export default function FieldReport() {
               </CardContent>
             </Card>
 
-            {/* 특이사항 및 요청사항 (VOC) - 협력사가 현장입력시 작성한 VOC */}
+            {/* VOC(고객의 소리) - 협력사가 현장입력시 작성한 VOC */}
             <Card className="mb-6">
               <CardHeader>
                 <CardTitle
@@ -2638,7 +2638,7 @@ export default function FieldReport() {
                     color: "rgba(12, 12, 12, 0.8)",
                   }}
                 >
-                  특이사항 및 요청사항 (VOC)
+                  VOC(고객의 소리)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -2652,7 +2652,7 @@ export default function FieldReport() {
                     whiteSpace: "pre-wrap",
                   }}
                 >
-                  {caseData.specialNotes || "-"}
+                  {(caseData as any).vocContent || "-"}
                 </div>
               </CardContent>
             </Card>
