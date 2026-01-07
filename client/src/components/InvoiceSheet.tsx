@@ -1472,7 +1472,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 ) : (
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(5, 1fr)",
+                    gridTemplateColumns: "repeat(auto-fill, 90px)",
                     gap: "12px",
                     padding: "4px",
                   }}>
