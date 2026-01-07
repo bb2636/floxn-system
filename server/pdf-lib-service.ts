@@ -2376,7 +2376,7 @@ async function generateSingleTabEvidencePdf(
   
   let currentPdfDoc = await PDFDocument.create();
   currentPdfDoc.registerFontkit(fontkit);
-  const currentFonts = await embedFonts(currentPdfDoc);
+  let currentFonts = await embedFonts(currentPdfDoc);
   
   let currentPartIndex = 1;
   let currentImageCount = 0;
@@ -2416,10 +2416,10 @@ async function generateSingleTabEvidencePdf(
         
         console.log(`[pdf-lib] 탭 "${tabName}" 파트 ${currentPartIndex} 완료 - ${currentImageCount}개 이미지, ${Math.round(pdfBytes.length / 1024)}KB`);
         
-        // 새 PDF 시작
+        // 새 PDF 시작 (폰트도 새 문서에 재할당)
         currentPdfDoc = await PDFDocument.create();
         currentPdfDoc.registerFontkit(fontkit);
-        const newFonts = await embedFonts(currentPdfDoc);
+        currentFonts = await embedFonts(currentPdfDoc);
         currentPartIndex++;
         currentImageCount = 0;
         estimatedSize = 0;

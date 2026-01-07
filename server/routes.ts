@@ -11,7 +11,7 @@ import https from "https";
 import crypto from "crypto";
 import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from "./replit_integrations/object_storage";
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
-import { generatePdfWithPdfLib, generatePdfWithSizeLimitPdfLib } from "./pdf-lib-service";
+import { generatePdfWithPdfLib, generatePdfWithSizeLimitPdfLib, generateEvidencePDFsByTab } from "./pdf-lib-service";
 import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
 import { sendFieldReportEmail, sendFieldReportEmailWithLink, sendEmailWithAttachment } from "./hiworks-email";
 import { generateEvidencePdfs, logAttachmentSummary } from "./evidence-pdf-service";
@@ -7166,13 +7166,63 @@ FLOXN 드림`;
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // 서버 측에서 PDF 생성 (10MB 제한을 적용하여 이메일 첨부 용량 제한)
-      console.log(`[send-field-report-email-v2] Generating PDF for case ${caseId}`);
-      const pdfBuffer = await generatePdfWithSizeLimitPdfLib({
+      // ========== 본문 PDF 생성 (증빙 제외) ==========
+      console.log(`[send-field-report-email-v2] Generating main PDF for case ${caseId} (skipEvidence=true)`);
+      const mainPdfBuffer = await generatePdfWithSizeLimitPdfLib({
         caseId,
         sections,
         evidence,
+        skipEvidence: true, // 본문 PDF에서 증빙 이미지 제외
       });
+      console.log(`[send-field-report-email-v2] Main PDF generated: ${Math.round(mainPdfBuffer.length / 1024)}KB`);
+
+      // ========== 탭별 증빙 PDF 생성 (8MB 분할) ==========
+      let evidencePdfs: Array<{ tabName: string; fileName: string; buffer: Buffer; pageCount: number; imageCount: number }> = [];
+      if (sections.evidence && evidence.selectedFileIds.length > 0) {
+        console.log(`[send-field-report-email-v2] Generating evidence PDFs by tab (${evidence.selectedFileIds.length} files)`);
+        evidencePdfs = await generateEvidencePDFsByTab(caseId, evidence.selectedFileIds);
+        console.log(`[send-field-report-email-v2] Evidence PDFs: ${evidencePdfs.length} files`);
+      }
+
+      // ========== 첨부파일 준비 ==========
+      const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || 'UNKNOWN';
+      const mainFileName = `현장출동보고서_${accidentNo}.pdf`;
+      
+      const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [
+        {
+          filename: mainFileName,
+          content: mainPdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ];
+
+      // 탭별 증빙 PDF 첨부
+      for (const evidencePdf of evidencePdfs) {
+        attachments.push({
+          filename: `${accidentNo}_${evidencePdf.fileName}`,
+          content: evidencePdf.buffer,
+          contentType: 'application/pdf',
+        });
+      }
+
+      // ========== 첨부파일 용량 검증 ==========
+      let totalBytes = 0;
+      console.log(`[send-field-report-email-v2] ===== 첨부파일 상세 =====`);
+      for (const att of attachments) {
+        const sizeKB = Math.round(att.content.length / 1024);
+        const sizeMB = (att.content.length / (1024 * 1024)).toFixed(2);
+        console.log(`[send-field-report-email-v2]   - ${att.filename}: ${sizeKB}KB (${sizeMB}MB)`);
+        totalBytes += att.content.length;
+      }
+      const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
+      console.log(`[send-field-report-email-v2] ===== 총 첨부파일: ${attachments.length}개, ${totalMB}MB =====`);
+
+      // 25MB 초과 시 경고 (Hiworks SMTP 제한)
+      if (totalBytes > 25 * 1024 * 1024) {
+        console.warn(`[send-field-report-email-v2] 경고: 총 첨부파일 용량 ${totalMB}MB가 25MB를 초과합니다. SMTP 552 오류 가능성`);
+      }
+
+      const pdfBuffer = mainPdfBuffer; // 기존 코드 호환성
 
       const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
       const timestamp = Date.now();
@@ -7281,7 +7331,11 @@ FLOXN 드림`;
         console.error("[send-field-report-email-v2] Failed to generate document links:", docError);
       }
 
-      // 이메일 내용 생성
+      // 이메일 내용 생성 (첨부파일 안내 포함)
+      const attachmentSummary = attachments.length > 1 
+        ? `\n\n▶ 첨부파일 (${attachments.length}개)\n` + attachments.map(a => `- ${a.filename}`).join('\n')
+        : '';
+      
       const emailContent = `안녕하세요.
 
 FLOXN 현장조사 리포트를 전송드립니다.
@@ -7295,8 +7349,9 @@ FLOXN 현장조사 리포트를 전송드립니다.
 - 사고유형: ${caseData.accidentCategory || '미지정'}
 - 사고원인: ${caseData.accidentCause || '미지정'}
 - 복구방식: ${caseData.recoveryMethodType || '미지정'}
+${attachmentSummary}
 
-▶ PDF 다운로드 링크 (7일간 유효)
+▶ PDF 백업 다운로드 링크 (7일간 유효)
 ${pdfUrl}
 ${documentLinksSection}
 
@@ -7306,27 +7361,23 @@ ${documentLinksSection}
 감사합니다.
 FLOXN 드림`;
 
-      // 이메일 전송 (PDF 다운로드 링크 방식 - 첨부파일 크기 제한 회피)
+      // ========== 이메일 전송 (PDF 직접 첨부) ==========
       const sendResults: { email: string; success: boolean; error?: string }[] = [];
       
       for (const recipientEmail of emails) {
         try {
-          const result = await sendFieldReportEmailWithLink(
-            recipientEmail,
-            caseData.caseNumber || caseData.insuranceAccidentNo || 'UNKNOWN',
-            caseData.insuredName || caseData.clientName || '',
-            pdfUrl,
-            {
-              insuranceAccidentNo: caseData.insuranceAccidentNo || undefined,
-              policyNumber: caseData.policyNumber || undefined,
-              assessorTeam: caseData.assessorTeam || undefined,
-              investigatorTeam: caseData.investigatorTeam || caseData.investigatorTeamName || undefined,
-            }
-          );
+          console.log(`[send-field-report-email-v2] Sending email to ${recipientEmail} with ${attachments.length} attachments`);
+          
+          const result = await sendEmailWithAttachment({
+            to: recipientEmail,
+            subject: `[FLOXN] 현장출동보고서 - ${accidentNo} (${caseData.insuredName || caseData.clientName || ''})`,
+            text: emailContent,
+            attachments: attachments,
+          });
           
           if (result.success) {
             sendResults.push({ email: recipientEmail, success: true });
-            console.log(`[Email] Field Report link sent to ${recipientEmail} by ${user.username}`);
+            console.log(`[Email] Field Report with attachments sent to ${recipientEmail} by ${user.username}`);
           } else {
             sendResults.push({ 
               email: recipientEmail, 
@@ -7335,13 +7386,19 @@ FLOXN 드림`;
             });
             console.error(`[Email] Failed to send to ${recipientEmail}:`, result.error);
           }
-        } catch (sendError) {
+        } catch (sendError: any) {
           console.error(`[Email] Failed to send to ${recipientEmail}:`, sendError);
+          const errorMsg = sendError?.message || sendError?.toString() || '전송 실패';
           sendResults.push({ 
             email: recipientEmail, 
             success: false, 
-            error: sendError instanceof Error ? sendError.message : '전송 실패'
+            error: errorMsg
           });
+          
+          // SMTP 552 오류 감지
+          if (errorMsg.includes('552') || errorMsg.includes('size')) {
+            console.error(`[send-field-report-email-v2] SMTP 552 오류 감지 - 총 첨부파일 크기: ${totalMB}MB`);
+          }
         }
       }
 
