@@ -6503,8 +6503,32 @@ FLOXN`;
       if (selectedDocumentIds && selectedDocumentIds.length > 0) {
         console.log(`[Invoice Email] Generating separate evidence PDFs for ${selectedDocumentIds.length} documents`);
         
-        // Fetch all documents for this case
-        const allDocuments = await storage.getDocumentsByCaseId(caseId);
+        // Fetch documents from ALL related cases (same insuranceAccidentNo base: -0, -1, -2)
+        let allDocuments: any[] = [];
+        
+        // Get base accident number for finding related cases
+        const baseAccidentNo = caseData.insuranceAccidentNo?.replace(/-\d+$/, '') || '';
+        
+        if (baseAccidentNo) {
+          // Find all related cases with same base accident number
+          const allCases = await storage.getAllCases();
+          const relatedCaseIds = allCases
+            .filter(c => c.insuranceAccidentNo?.startsWith(baseAccidentNo))
+            .map(c => c.id);
+          
+          console.log(`[Invoice Email] Found ${relatedCaseIds.length} related cases for base accident: ${baseAccidentNo}`);
+          
+          // Fetch documents from all related cases
+          for (const relatedCaseId of relatedCaseIds) {
+            const caseDocs = await storage.getDocumentsByCaseId(relatedCaseId);
+            allDocuments = allDocuments.concat(caseDocs);
+          }
+          
+          console.log(`[Invoice Email] Total documents from all related cases: ${allDocuments.length}`);
+        } else {
+          // Fallback: just get documents from current case
+          allDocuments = await storage.getDocumentsByCaseId(caseId);
+        }
         
         // Generate evidence PDFs by tab (with automatic splitting if > 8MB)
         evidencePdfs = await generateEvidencePdfs(
