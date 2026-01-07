@@ -6110,11 +6110,20 @@ FLOXN 드림`;
         const selectedDocs = documents.filter((doc: any) => selectedDocumentIds.includes(doc.id));
         
         if (selectedDocs.length > 0) {
-          const { PDFDocument, rgb, StandardFonts } = await import('pdf-lib');
+          const { PDFDocument, rgb } = await import('pdf-lib');
+          const fontkit = (await import('@pdf-lib/fontkit')).default;
           const sharp = await import('sharp');
+          const fs = await import('fs');
+          const path = await import('path');
           
           const mergedPdf = await PDFDocument.load(pdfBuffer);
-          const font = await mergedPdf.embedFont(StandardFonts.Helvetica);
+          
+          // 한글 폰트 로드
+          mergedPdf.registerFontkit(fontkit);
+          const fontsDir = path.join(process.cwd(), 'server/fonts');
+          const fontPath = path.join(fontsDir, 'NotoSansKR-Regular-static.ttf');
+          const fontBytes = fs.readFileSync(fontPath);
+          const font = await mergedPdf.embedFont(fontBytes);
           
           // Separate PDFs and images
           const pdfDocs: any[] = [];
