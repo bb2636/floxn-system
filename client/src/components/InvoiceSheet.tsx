@@ -704,16 +704,18 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
         style={{
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
+          justifyContent: "flex-start",
           alignItems: "flex-start",
-          padding: "38px 0px 0px",
+          padding: "38px 0px 38px",
           gap: "24px",
           width: "680px",
           maxWidth: "95vw",
+          maxHeight: "100vh",
           background: "#FFFFFF",
           boxShadow: "0px -2px 70px rgba(179, 193, 205, 0.8)",
           borderRadius: "12px 0 0 12px",
-          overflow: "auto",
+          overflowY: "auto",
+          overflowX: "hidden",
         }}
         data-testid="dialog-invoice"
       >
