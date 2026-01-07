@@ -260,18 +260,31 @@ export default function FieldDrawing() {
           });
           
           console.log('[Drawing Save] Starting html2canvas capture...');
+          console.log('[Drawing Save] Canvas ref dimensions:', {
+            width: canvasRef.current.offsetWidth,
+            height: canvasRef.current.offsetHeight,
+            scrollWidth: canvasRef.current.scrollWidth,
+            scrollHeight: canvasRef.current.scrollHeight,
+          });
+          
           const canvas = await html2canvas(canvasRef.current, {
             backgroundColor: '#ffffff',
             scale: 2, // 고해상도
-            logging: false,
+            logging: true, // 디버깅을 위해 로깅 활성화
+            useCORS: true, // CORS 이미지 허용
           });
           
-          canvasImage = canvas.toDataURL('image/png');
-          console.log('[Drawing Save] Canvas captured:', {
-            success: !!canvasImage,
-            length: canvasImage?.length || 0,
-            prefix: canvasImage?.substring(0, 50) || 'null',
-          });
+          console.log('[Drawing Save] html2canvas completed, canvas size:', canvas.width, 'x', canvas.height);
+          
+          try {
+            canvasImage = canvas.toDataURL('image/png');
+            console.log('[Drawing Save] Canvas captured successfully:', {
+              length: canvasImage?.length || 0,
+              prefix: canvasImage?.substring(0, 50) || 'null',
+            });
+          } catch (toDataUrlErr) {
+            console.error('[Drawing Save] toDataURL failed (CORS/taint issue):', toDataUrlErr);
+          }
           
           // UI 요소들 다시 표시
           elementsToHide.forEach(el => {
