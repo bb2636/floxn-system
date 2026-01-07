@@ -1872,8 +1872,11 @@ async function renderEstimatePage(
   const profitRate = 0.15;
   const vatRate = 0.1;
   
-  const adminFee = Math.round(subtotal * adminFeeRate);
-  const profit = Math.round(subtotal * profitRate);
+  // 일반관리비/이윤 계산 기준: 경비 항목 제외 (includeInEstimate === true인 항목 제외)
+  // feeBase = 전체 소계 - 경비 항목 합계
+  const feeBase = subtotal - laborExpenseTotal;
+  const adminFee = Math.round(feeBase * adminFeeRate);
+  const profit = Math.round(feeBase * profitRate);
   const beforeRounding = subtotal + adminFee + profit;
   // 만원단위 절사 (10000원 단위) - 용어는 '천원단위 절사'로 표시
   const rounded = Math.floor(beforeRounding / 10000) * 10000;
