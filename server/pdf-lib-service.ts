@@ -1506,43 +1506,99 @@ async function renderEstimatePage(
   const partnerBusinessNo = partnerData?.businessNumber || '-';
   const partnerRepName = partnerData?.representativeName || partnerData?.name || '-';
   
-  // 공급자 세로 라벨 (3행 병합)
   const rowHeight = 20;
-  const supplierLabelX = MARGIN + 250;
-  const supplierLabelWidth = 30;
+  const leftTableWidth = 250; // 현장명/보험사/접수번호 테이블
+  const supplierLabelWidth = 30; // 공/급/자 병합 셀
+  const rightTableWidth = 235; // 사업자번호/상호명/대표자 테이블
   
-  const headerInfoRows: TableCell[][] = [
+  // 좌측 테이블 (현장명/보험사/접수번호)
+  const leftTableRows: TableCell[][] = [
     [
       { text: '현장명(주소)', width: 70, isHeader: true, align: 'center' },
       { text: fullAddress || '-', width: 180, align: 'left' },
-      { text: '공', width: 30, isHeader: true, align: 'center' },
-      { text: '사업자번호', width: 70, isHeader: true, align: 'center' },
-      { text: partnerBusinessNo, width: 165, align: 'left' },
     ],
     [
       { text: '보험사', width: 70, isHeader: true, align: 'center' },
       { text: caseData.insuranceCompany || '-', width: 180, align: 'left' },
-      { text: '급', width: 30, isHeader: true, align: 'center' },
-      { text: '상호명', width: 70, isHeader: true, align: 'center' },
-      { text: partnerCompany, width: 165, align: 'left' },
     ],
     [
       { text: '접수번호', width: 70, isHeader: true, align: 'center' },
       { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 180, align: 'left' },
-      { text: '자', width: 30, isHeader: true, align: 'center' },
+    ],
+  ];
+  
+  drawTable(page, {
+    x: MARGIN,
+    y,
+    rows: leftTableRows,
+    fonts,
+    fontSize: 9,
+    rowHeight,
+  });
+  
+  // 공급자 병합 셀 (3행 세로 병합)
+  const supplierX = MARGIN + leftTableWidth;
+  const supplierHeight = rowHeight * 3;
+  
+  // 공급자 셀 배경
+  page.drawRectangle({
+    x: supplierX,
+    y: y - supplierHeight,
+    width: supplierLabelWidth,
+    height: supplierHeight,
+    color: rgb(0.94, 0.94, 0.94),
+  });
+  
+  // 공급자 셀 테두리
+  page.drawRectangle({
+    x: supplierX,
+    y: y - supplierHeight,
+    width: supplierLabelWidth,
+    height: supplierHeight,
+    borderColor: rgb(0.3, 0.3, 0.3),
+    borderWidth: 0.5,
+  });
+  
+  // 공/급/자 텍스트 (세로 중앙에 배치)
+  const supplierLabels = ['공', '급', '자'];
+  supplierLabels.forEach((label, idx) => {
+    const labelY = y - (idx + 0.5) * rowHeight;
+    const labelWidth = measureTextWidth(label, fonts.bold, 9);
+    page.drawText(label, {
+      x: supplierX + (supplierLabelWidth - labelWidth) / 2,
+      y: labelY - 3,
+      size: 9,
+      font: fonts.bold,
+      color: rgb(0, 0, 0),
+    });
+  });
+  
+  // 우측 테이블 (사업자번호/상호명/대표자)
+  const rightTableRows: TableCell[][] = [
+    [
+      { text: '사업자번호', width: 70, isHeader: true, align: 'center' },
+      { text: partnerBusinessNo, width: 165, align: 'left' },
+    ],
+    [
+      { text: '상호명', width: 70, isHeader: true, align: 'center' },
+      { text: partnerCompany, width: 165, align: 'left' },
+    ],
+    [
       { text: '대표자', width: 70, isHeader: true, align: 'center' },
       { text: partnerRepName, width: 165, align: 'left' },
     ],
   ];
   
-  y = drawTable(page, {
-    x: MARGIN,
+  drawTable(page, {
+    x: supplierX + supplierLabelWidth,
     y,
-    rows: headerInfoRows,
+    rows: rightTableRows,
     fonts,
     fontSize: 9,
-    rowHeight: 20,
+    rowHeight,
   });
+  
+  y -= supplierHeight;
   
   y -= 10;
   
