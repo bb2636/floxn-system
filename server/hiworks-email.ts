@@ -113,6 +113,33 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
     console.log(`[Email] Subject: ${options.subject}`);
     console.log(`[Email] Attachments: ${options.attachments?.length || 0} files`);
     
+    // 상세 첨부 파일 로깅
+    let totalAttachmentBytes = 0;
+    let totalBase64Bytes = 0;
+    if (options.attachments && options.attachments.length > 0) {
+      console.log('[Email] ========== 첨부 파일 상세 정보 ==========');
+      for (const att of options.attachments) {
+        const rawBytes = att.content.length;
+        const base64Bytes = Math.ceil(rawBytes * 4 / 3); // base64 인코딩 후 예상 크기
+        totalAttachmentBytes += rawBytes;
+        totalBase64Bytes += base64Bytes;
+        console.log(`[Email]   ${att.filename}: ${(rawBytes / 1024 / 1024).toFixed(3)}MB (raw) → ${(base64Bytes / 1024 / 1024).toFixed(3)}MB (base64)`);
+      }
+      console.log('[Email] ------------------------------------------');
+      console.log(`[Email] 총 첨부 파일: ${options.attachments.length}개`);
+      console.log(`[Email] 총 raw 용량: ${(totalAttachmentBytes / 1024 / 1024).toFixed(3)}MB`);
+      console.log(`[Email] 총 base64 용량 (예상): ${(totalBase64Bytes / 1024 / 1024).toFixed(3)}MB`);
+      
+      // 이메일 본문 크기 추가
+      const textBytes = options.text?.length || 0;
+      const htmlBytes = options.html?.length || 0;
+      const headerEstimate = 2000; // MIME 헤더 예상
+      const totalMessageEstimate = totalBase64Bytes + textBytes + htmlBytes + headerEstimate;
+      console.log(`[Email] 본문(text/html): ${((textBytes + htmlBytes) / 1024).toFixed(1)}KB`);
+      console.log(`[Email] 전체 메시지 예상 크기: ${(totalMessageEstimate / 1024 / 1024).toFixed(3)}MB`);
+      console.log('[Email] ==============================================');
+    }
+    
     const mailOptions: nodemailer.SendMailOptions = {
       from: `"FLOXN" <${config.user}>`,
       to: options.to,
