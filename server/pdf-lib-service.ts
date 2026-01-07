@@ -1279,26 +1279,9 @@ async function renderRecoveryAreaPage(
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
   
-  // Title with green X icon
-  page.drawRectangle({
+  // Title (no Excel icon)
+  drawText(page, {
     x: MARGIN,
-    y: y - 25,
-    width: 20,
-    height: 20,
-    color: rgb(0.4, 0.8, 0.4),
-  });
-  
-  drawText(page, {
-    x: MARGIN + 4,
-    y: y - 20,
-    text: 'X',
-    font: fonts.bold,
-    size: 12,
-    color: { r: 1, g: 1, b: 1 },
-  });
-  
-  drawText(page, {
-    x: MARGIN + 30,
     y: y - 18,
     text: '현장 피해/복구 면적 산출표',
     font: fonts.bold,
@@ -1407,14 +1390,45 @@ async function renderRecoveryAreaPage(
     }
   }
   
-  // Draw data rows grouped by category
+  // Draw data rows grouped by category with merged cells
   const categories = Object.keys(groupedRows);
+  const dataRowHeight = 22;
+  const categoryColWidth = 55;
   
   if (categories.length > 0) {
     for (const category of categories) {
       const rows = groupedRows[category];
-      const isFirstRow = true;
+      const groupHeight = rows.length * dataRowHeight;
+      const groupStartY = y;
       
+      // Draw merged category cell (spans all rows in this group)
+      page.drawRectangle({
+        x: MARGIN,
+        y: groupStartY - groupHeight,
+        width: categoryColWidth,
+        height: groupHeight,
+        color: rgb(1, 1, 1),
+      });
+      page.drawRectangle({
+        x: MARGIN,
+        y: groupStartY - groupHeight,
+        width: categoryColWidth,
+        height: groupHeight,
+        borderColor: rgb(0.3, 0.3, 0.3),
+        borderWidth: 0.5,
+      });
+      
+      // Draw category text centered vertically in merged cell
+      const categoryTextWidth = measureTextWidth(category, fonts.regular, 8);
+      page.drawText(category, {
+        x: MARGIN + (categoryColWidth - categoryTextWidth) / 2,
+        y: groupStartY - groupHeight / 2 - 3,
+        size: 8,
+        font: fonts.regular,
+        color: rgb(0, 0, 0),
+      });
+      
+      // Draw individual rows (excluding category column)
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
         const damageW = row.damageWidth ? Number(row.damageWidth).toFixed(1) : '0.0';
@@ -1425,8 +1439,8 @@ async function renderRecoveryAreaPage(
         const repairH = row.repairHeight ? Number(row.repairHeight).toFixed(1) : '0.0';
         const repairAreaM2 = row.repairArea ? Number(row.repairArea).toFixed(1) : '0.0';
         
+        // Row without category column (starts after category column)
         const dataRow: TableCell[] = [
-          { text: i === 0 ? category : '', width: 55, align: 'center' },
           { text: row.location || '-', width: 70, align: 'center' },
           { text: row.workName || '-', width: 70, align: 'center' },
           { text: damageAreaM2, width: 43, align: 'center' },
@@ -1438,15 +1452,17 @@ async function renderRecoveryAreaPage(
           { text: row.note || '-', width: 60, align: 'center' },
         ];
         
-        y = drawTable(page, {
-          x: MARGIN,
-          y,
+        drawTable(page, {
+          x: MARGIN + categoryColWidth,
+          y: groupStartY - i * dataRowHeight,
           rows: [dataRow],
           fonts,
           fontSize: 8,
-          rowHeight: 22,
+          rowHeight: dataRowHeight,
         });
       }
+      
+      y = groupStartY - groupHeight;
     }
   } else {
     const emptyRow: TableCell[] = [

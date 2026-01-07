@@ -258,3 +258,108 @@ FLOXN
     ],
   });
 }
+
+export async function sendFieldReportEmailWithLink(
+  to: string,
+  caseNumber: string,
+  insuredName: string,
+  pdfUrl: string,
+  additionalData?: FieldReportEmailData
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  const today = new Date();
+  const dateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  
+  const accidentNo = additionalData?.insuranceAccidentNo || '-';
+  const assessor = additionalData?.assessorTeam || '-';
+  const investigator = additionalData?.investigatorTeam || '-';
+  
+  const subjectIdentifier = additionalData?.insuranceAccidentNo || additionalData?.policyNumber || caseNumber;
+  const subject = `[FLOXN] 현장출동보고서 - ${subjectIdentifier}`;
+  
+  const htmlContent = `
+    <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h2 style="color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px;">현장출동보고서 송부</h2>
+      
+      <p style="color: #666; line-height: 1.8;">안녕하세요,</p>
+      
+      <p style="color: #666; line-height: 1.8;">
+        아래 접수건에 대한 <strong>현장출동보고서</strong>를 송부드립니다.
+      </p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; table-layout: fixed;">
+        <tr>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 20%; font-weight: bold;">사고번호</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${accidentNo}</td>
+        </tr>
+        <tr>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 20%; font-weight: bold;">담당자</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 15%; font-weight: bold; text-align: center;">심사자</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd; width: 25%; word-break: break-word;">${assessor}</td>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 15%; font-weight: bold; text-align: center;">조사자</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd; width: 25%; word-break: break-word;">${investigator}</td>
+        </tr>
+        <tr>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">피보험자</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${insuredName || '-'}</td>
+        </tr>
+        <tr>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">접수번호</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${caseNumber}</td>
+        </tr>
+        <tr>
+          <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
+          <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${dateStr}</td>
+        </tr>
+      </table>
+      
+      <div style="background: #f0f7ff; border: 1px solid #0066cc; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+        <p style="color: #333; margin: 0 0 15px 0; font-weight: bold;">📎 PDF 다운로드</p>
+        <a href="${pdfUrl}" style="display: inline-block; background: #0066cc; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+          현장출동보고서 다운로드
+        </a>
+        <p style="color: #666; font-size: 12px; margin: 15px 0 0 0;">
+          (링크는 7일간 유효합니다)
+        </p>
+      </div>
+      
+      <p style="color: #666; line-height: 1.8; margin-top: 30px;">
+        감사합니다.<br/>
+        <strong>FLOXN</strong>
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;" />
+      
+      <p style="color: #999; font-size: 12px;">
+        본 메일은 FLOXN 시스템에서 자동 발송되었습니다.
+      </p>
+    </div>
+  `;
+
+  const textContent = `
+현장출동보고서 송부
+
+안녕하세요,
+
+아래 접수건에 대한 현장출동보고서를 송부드립니다.
+
+- 사고번호: ${accidentNo}
+- 담당자: 심사자 ${assessor} / 조사자 ${investigator}
+- 피보험자: ${insuredName || '-'}
+- 접수번호: ${caseNumber}
+- 발송일: ${dateStr}
+
+▶ PDF 다운로드 링크 (7일간 유효):
+${pdfUrl}
+
+감사합니다.
+FLOXN
+  `;
+
+  return sendEmailWithAttachment({
+    to,
+    subject,
+    text: textContent,
+    html: htmlContent,
+    attachments: [],
+  });
+}

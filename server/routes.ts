@@ -13,7 +13,7 @@ import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from 
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
 import { generatePdfWithPdfLib, generatePdfWithSizeLimitPdfLib } from "./pdf-lib-service";
 import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
-import { sendFieldReportEmail, sendEmailWithAttachment } from "./hiworks-email";
+import { sendFieldReportEmail, sendFieldReportEmailWithLink, sendEmailWithAttachment } from "./hiworks-email";
 import { generateEvidencePdfs, logAttachmentSummary } from "./evidence-pdf-service";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
@@ -7199,16 +7199,16 @@ ${documentLinksSection}
 감사합니다.
 FLOXN 드림`;
 
-      // 이메일 전송 (Hiworks SMTP를 사용해 PDF 첨부)
+      // 이메일 전송 (PDF 다운로드 링크 방식 - 첨부파일 크기 제한 회피)
       const sendResults: { email: string; success: boolean; error?: string }[] = [];
       
       for (const recipientEmail of emails) {
         try {
-          const result = await sendFieldReportEmail(
+          const result = await sendFieldReportEmailWithLink(
             recipientEmail,
             caseData.caseNumber || caseData.insuranceAccidentNo || 'UNKNOWN',
             caseData.insuredName || caseData.clientName || '',
-            pdfBuffer,
+            pdfUrl,
             {
               insuranceAccidentNo: caseData.insuranceAccidentNo || undefined,
               policyNumber: caseData.policyNumber || undefined,
@@ -7219,7 +7219,7 @@ FLOXN 드림`;
           
           if (result.success) {
             sendResults.push({ email: recipientEmail, success: true });
-            console.log(`[Email] Field Report PDF attached and sent to ${recipientEmail} by ${user.username}`);
+            console.log(`[Email] Field Report link sent to ${recipientEmail} by ${user.username}`);
           } else {
             sendResults.push({ 
               email: recipientEmail, 
