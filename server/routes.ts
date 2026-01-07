@@ -6519,21 +6519,25 @@ FLOXN`;
         // Fetch documents from ALL related cases (same insuranceAccidentNo base: -0, -1, -2)
         let allDocuments: any[] = [];
         
+        // Build caseId -> caseNumber mapping
+        const caseNumberMap: Record<string, string> = {
+          [caseId]: caseData.caseNumber || ''
+        };
+        
         // Get base accident number for finding related cases
         const baseAccidentNo = caseData.insuranceAccidentNo?.replace(/-\d+$/, '') || '';
         
         if (baseAccidentNo) {
           // Find all related cases with same base accident number
           const allCases = await storage.getAllCases();
-          const relatedCaseIds = allCases
-            .filter(c => c.insuranceAccidentNo?.startsWith(baseAccidentNo))
-            .map(c => c.id);
+          const relatedCases = allCases.filter(c => c.insuranceAccidentNo?.startsWith(baseAccidentNo));
           
-          console.log(`[Invoice Email] Found ${relatedCaseIds.length} related cases for base accident: ${baseAccidentNo}`);
+          console.log(`[Invoice Email] Found ${relatedCases.length} related cases for base accident: ${baseAccidentNo}`);
           
-          // Fetch documents from all related cases
-          for (const relatedCaseId of relatedCaseIds) {
-            const caseDocs = await storage.getDocumentsByCaseId(relatedCaseId);
+          // Fetch documents from all related cases and build caseNumberMap
+          for (const relatedCase of relatedCases) {
+            caseNumberMap[relatedCase.id] = relatedCase.caseNumber || '';
+            const caseDocs = await storage.getDocumentsByCaseId(relatedCase.id);
             allDocuments = allDocuments.concat(caseDocs);
           }
           
@@ -6548,7 +6552,8 @@ FLOXN`;
           allDocuments,
           selectedDocumentIds,
           caseData.caseNumber || '',
-          caseData.insuranceAccidentNo || ''
+          caseData.insuranceAccidentNo || '',
+          caseNumberMap
         );
         
         console.log(`[Invoice Email] Generated ${evidencePdfs.length} evidence PDF files`);

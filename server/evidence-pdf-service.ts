@@ -16,6 +16,7 @@ interface DocumentData {
   fileType: string;
   fileData: string;
   category?: string;
+  caseId?: string;
 }
 
 interface EvidencePdfResult {
@@ -32,6 +33,7 @@ interface ProcessedImage {
   height: number;
   fileName: string;
   category: string;
+  caseNumber?: string;
   error?: string;
 }
 
@@ -209,7 +211,9 @@ async function createEvidencePdfForTab(
       borderWidth: 0.5,
     });
     
-    const headerText = `[${insuranceAccidentNo || caseNumber}] ${tabName} - ${img.category || '기타'}`;
+    // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
+    const displayCaseNumber = img.caseNumber || insuranceAccidentNo || caseNumber;
+    const headerText = `[${displayCaseNumber}] ${tabName} - ${img.category || '기타'}`;
     try {
       page.drawText(headerText, {
         x: MARGIN + 10,
@@ -364,7 +368,9 @@ async function createEvidencePdfForTab(
           borderWidth: 0.5,
         });
         
-        const headerText = `[${insuranceAccidentNo || caseNumber}] ${tabName} - ${img.category || '기타'}`;
+        // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
+    const displayCaseNumber = img.caseNumber || insuranceAccidentNo || caseNumber;
+    const headerText = `[${displayCaseNumber}] ${tabName} - ${img.category || '기타'}`;
         try {
           newPage.drawText(headerText, {
             x: MARGIN + 10,
@@ -417,7 +423,8 @@ export async function generateEvidencePdfs(
   documents: DocumentData[],
   selectedDocumentIds: string[],
   caseNumber: string,
-  insuranceAccidentNo: string
+  insuranceAccidentNo: string,
+  caseNumberMap?: Record<string, string>
 ): Promise<EvidencePdfResult[]> {
   console.log(`[Evidence PDF] Starting generation for ${selectedDocumentIds.length} selected documents`);
   
@@ -464,6 +471,8 @@ export async function generateEvidencePdfs(
         
         const processed = await compressImage(fileBuffer, doc.fileName);
         processed.category = doc.category || '';
+        // Set caseNumber from the document's own case
+        processed.caseNumber = (caseNumberMap && doc.caseId) ? caseNumberMap[doc.caseId] : undefined;
         processedImages.push(processed);
       } catch (err) {
         console.error(`[Evidence PDF] Failed to process ${doc.fileName}:`, err);
@@ -473,6 +482,7 @@ export async function generateEvidencePdfs(
           height: 0,
           fileName: doc.fileName,
           category: doc.category || '',
+          caseNumber: (caseNumberMap && doc.caseId) ? caseNumberMap[doc.caseId] : undefined,
           error: err instanceof Error ? err.message : 'Unknown error',
         });
       }
