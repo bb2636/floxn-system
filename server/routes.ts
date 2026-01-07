@@ -6111,17 +6111,19 @@ FLOXN 드림`;
         const mainDocs = await storage.getDocumentsByCaseId(caseId);
         
         // Get related cases (same insuranceAccidentNo)
-        const relatedCases = await storage.getRelatedCases(caseId);
-        const relatedCaseIds = relatedCases.map((c: any) => c.id).filter((id: string) => id !== caseId);
-        
-        // Fetch documents from all related cases
         let allDocuments = [...mainDocs];
-        for (const relatedCaseId of relatedCaseIds) {
-          const relatedDocs = await storage.getDocumentsByCaseId(relatedCaseId);
-          allDocuments = allDocuments.concat(relatedDocs);
+        if (caseData.insuranceAccidentNo) {
+          const relatedCases = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
+          const relatedCaseIds = relatedCases.map((c: any) => c.id);
+          
+          // Fetch documents from all related cases
+          for (const relatedCaseId of relatedCaseIds) {
+            const relatedDocs = await storage.getDocumentsByCaseId(relatedCaseId);
+            allDocuments = allDocuments.concat(relatedDocs);
+          }
+          console.log(`[Invoice PDF] Total documents from ${1 + relatedCaseIds.length} cases: ${allDocuments.length}`);
         }
         
-        console.log(`[Invoice PDF] Total documents from ${1 + relatedCaseIds.length} cases: ${allDocuments.length}`);
         const selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
         console.log(`[Invoice PDF] Selected documents found: ${selectedDocs.length}`);
         
