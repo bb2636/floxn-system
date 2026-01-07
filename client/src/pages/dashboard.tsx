@@ -2217,10 +2217,11 @@ export default function Dashboard() {
                             }}
                           >
                             {formatCaseNumber(caseItem.caseNumber)} · {(() => {
-                              // -0은 피보험자 주소, -1/-2는 피해자 주소 사용
+                              // -0은 피보험자 주소, -1/-2/-3 등은 피해자 주소 사용
                               const suffix = caseItem.caseNumber?.split('-').pop();
-                              if (suffix === '1' || suffix === '2') {
-                                return [caseItem.victimAddress, caseItem.victimAddressDetail].filter(Boolean).join(' ') || '위치 미정';
+                              if (suffix && suffix !== '0') {
+                                // 피해세대복구 건: victimAddress 우선, 없으면 insuredAddress 사용
+                                return [caseItem.victimAddress || caseItem.insuredAddress, caseItem.victimAddressDetail || caseItem.insuredAddressDetail].filter(Boolean).join(' ') || '위치 미정';
                               }
                               return [caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(' ') || '위치 미정';
                             })()}
