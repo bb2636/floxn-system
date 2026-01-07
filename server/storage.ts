@@ -5177,6 +5177,7 @@ export class DbStorage implements IStorage {
         accidentAreas: data.accidentAreas,
         leakMarkers: data.leakMarkers,
         createdBy: data.createdBy,
+        canvasImage: data.canvasImage || null, // PDF 출력용 캔버스 스냅샷
       })
       .returning();
     return created[0];

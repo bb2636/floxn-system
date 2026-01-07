@@ -955,24 +955,33 @@ async function renderDrawingPage(
   
   // Try to embed drawing image if available
   // 우선순위: canvasImage (전체 캔버스 스냅샷) > uploadedImages (개별 이미지)
-  console.log('[pdf-lib] 도면 데이터:', drawingData ? JSON.stringify({
-    id: drawingData.id,
-    caseId: drawingData.caseId,
-    hasCanvasImage: !!drawingData.canvasImage,
-    uploadedImagesCount: Array.isArray(drawingData.uploadedImages) ? drawingData.uploadedImages.length : 'not array',
-    rectanglesCount: Array.isArray(drawingData.rectangles) ? drawingData.rectangles.length : 'not array',
-  }) : 'null');
+  console.log('[pdf-lib] ===== 도면 섹션 생성 시작 =====');
+  console.log('[pdf-lib] 도면 데이터 존재 여부:', !!drawingData);
+  if (drawingData) {
+    console.log('[pdf-lib] 도면 상세:', JSON.stringify({
+      id: drawingData.id,
+      caseId: drawingData.caseId,
+      hasCanvasImage: !!(drawingData as any).canvasImage,
+      canvasImageLength: (drawingData as any).canvasImage?.length || 0,
+      uploadedImagesCount: Array.isArray(drawingData.uploadedImages) ? drawingData.uploadedImages.length : 'not array',
+      rectanglesCount: Array.isArray(drawingData.rectangles) ? drawingData.rectangles.length : 'not array',
+    }));
+  }
+  
+  // 안전하게 canvasImage 접근 (DB 컬럼이 없을 수 있음)
+  const canvasImage = drawingData ? (drawingData as any).canvasImage : null;
   
   // 캔버스 이미지가 있으면 우선 사용 (전체 도면 스냅샷)
-  if (drawingData && drawingData.canvasImage) {
+  if (drawingData && canvasImage) {
+    console.log('[pdf-lib] 분기: canvasImage 사용 (캔버스 스냅샷)');
     try {
       let imageData: Buffer;
       
-      if (drawingData.canvasImage.startsWith('data:image/')) {
-        const base64Data = drawingData.canvasImage.split(',')[1];
+      if (canvasImage.startsWith('data:image/')) {
+        const base64Data = canvasImage.split(',')[1];
         imageData = Buffer.from(base64Data, 'base64');
       } else {
-        imageData = Buffer.from(drawingData.canvasImage, 'base64');
+        imageData = Buffer.from(canvasImage, 'base64');
       }
       
       // PNG 이미지 (html2canvas는 PNG로 출력)
@@ -1014,6 +1023,7 @@ async function renderDrawingPage(
     }
   } else if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
     // canvasImage가 없으면 기존 방식으로 첫 번째 업로드 이미지 사용
+    console.log('[pdf-lib] 분기: uploadedImages 사용 (첫 번째 업로드 이미지)');
     try {
       const mainImage = drawingData.uploadedImages[0];
       if (mainImage.src) {
@@ -1075,6 +1085,7 @@ async function renderDrawingPage(
     }
   } else {
     // No drawing data - show placeholder
+    console.log('[pdf-lib] 분기: 도면 없음 (등록된 도면이 없습니다 표시)');
     drawText(page, {
       x: MARGIN + drawingAreaWidth / 2 - 60,
       y: y - drawingAreaHeight / 2,
@@ -1084,6 +1095,7 @@ async function renderDrawingPage(
       color: { r: 0.6, g: 0.6, b: 0.6 },
     });
   }
+  console.log('[pdf-lib] ===== 도면 섹션 생성 완료 =====');
   
   // Footer
   const footerY = MARGIN + 15;
