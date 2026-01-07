@@ -1643,24 +1643,29 @@ async function renderEstimatePage(
   
   if (laborCostItems.length > 0) {
     laborCostItems.forEach((row) => {
-      const repairArea = Number(row.repairArea) || Number(row.area) || 0;
-      const unitPrice = Number(row.unitPrice) || Number(row.appliedRate) || 0;
-      const quantity = Number(row.quantity) || Number(row.workers) || 1;
-      const amount = Number(row.amount) || (unitPrice * quantity);
-      const expense = Number(row.expense) || 0;
+      // LaborCostRow 필드명: category(공종), workName(공사명), detailItem(세부항목/노임항목)
+      // damageArea(피해면적), standardPrice(기준가), pricePerSqm(기준가m²)
+      // quantity(수량), amount(금액), includeInEstimate(경비여부), request(요청/비고)
+      const damageArea = Number(row.damageArea) || Number(row.repairArea) || Number(row.area) || 0;
+      const unitPrice = Number(row.standardPrice) || Number(row.pricePerSqm) || Number(row.unitPrice) || 0;
+      const quantity = Number(row.quantity) || 1;
+      const amount = Number(row.amount) || 0;
+      const expense = row.includeInEstimate ? amount : 0;
       laborTotal += amount;
-      laborExpenseTotal += expense;
+      if (row.includeInEstimate) {
+        laborExpenseTotal += amount;
+      }
       
       laborRows.push([
-        { text: row.workType || row.category || '-', width: 55, align: 'center' },
+        { text: row.category || row.workType || '-', width: 55, align: 'center' },
         { text: row.workName || '-', width: 60, align: 'left' },
-        { text: row.laborItem || row.jobType || '-', width: 60, align: 'left' },
-        { text: repairArea > 0 ? repairArea.toFixed(2) : '-', width: 55, align: 'right' },
-        { text: formatNumber(unitPrice), width: 65, align: 'right' },
+        { text: row.detailItem || row.laborItem || '-', width: 60, align: 'left' },
+        { text: damageArea > 0 ? damageArea.toFixed(2) : '-', width: 55, align: 'right' },
+        { text: unitPrice > 0 ? formatNumber(unitPrice) : '-', width: 65, align: 'right' },
         { text: String(quantity), width: 45, align: 'center' },
         { text: formatNumber(amount), width: 70, align: 'right' },
         { text: expense > 0 ? formatNumber(expense) : '-', width: 50, align: 'right' },
-        { text: row.note || '-', width: 55, align: 'left' },
+        { text: row.request || row.note || '-', width: 55, align: 'left' },
       ]);
     });
   } else {
@@ -1738,20 +1743,22 @@ async function renderEstimatePage(
   
   if (materialCostItems.length > 0) {
     materialCostItems.forEach((row) => {
-      const qty = Number(row.quantity) || 1;
-      const unitPrice = Number(row.unitPrice) || 0;
-      const amount = Number(row.amount) || (qty * unitPrice);
+      // MaterialRow 필드명: 공종, 공사명, 자재항목, 자재, 규격, 단위, 단가, 기준단가
+      // 수량m2, 수량EA, 수량, 합계, 금액, 비고
+      const qty = Number(row['수량']) || Number(row['수량m2']) || Number(row.quantity) || 1;
+      const unitPrice = Number(row['단가']) || Number(row['기준단가']) || Number(row.unitPrice) || 0;
+      const amount = Number(row['합계']) || Number(row['금액']) || Number(row.amount) || (qty * unitPrice);
       materialTotal += amount;
       
       materialRows.push([
-        { text: row.workType || row.category || '-', width: 55, align: 'center' },
-        { text: row.workName || '-', width: 70, align: 'left' },
-        { text: row.materialItem || row.materialName || '-', width: 90, align: 'left' },
-        { text: formatNumber(unitPrice), width: 70, align: 'right' },
+        { text: row['공종'] || row.workType || row.category || '-', width: 55, align: 'center' },
+        { text: row['공사명'] || row.workName || '-', width: 70, align: 'left' },
+        { text: row['자재항목'] || row['자재'] || row.materialItem || row.materialName || '-', width: 90, align: 'left' },
+        { text: unitPrice > 0 ? formatNumber(unitPrice) : '-', width: 70, align: 'right' },
         { text: String(qty), width: 50, align: 'center' },
-        { text: row.unit || '-', width: 40, align: 'center' },
+        { text: row['단위'] || row.unit || '-', width: 40, align: 'center' },
         { text: formatNumber(amount), width: 80, align: 'right' },
-        { text: row.note || '-', width: 60, align: 'left' },
+        { text: row['비고'] || row.note || '-', width: 60, align: 'left' },
       ]);
     });
   } else {
