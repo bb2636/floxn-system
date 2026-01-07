@@ -63,6 +63,7 @@ interface Case {
   victimName: string | null;
   victimContact: string | null;
   victimAddress: string | null;
+  victimAddressDetail: string | null;
   additionalVictims: string | null;
   specialRequests: string | null;
   processingTypes: string | null;
@@ -2690,21 +2691,27 @@ export default function FieldReport() {
                 {(() => {
                   const victims = [];
                   
-                  // 기본 피해자
+                  // 기본 피해자 (주소 + 상세주소 결합)
                   if (caseData.victimName) {
+                    const fullAddress = [caseData.victimAddress, caseData.victimAddressDetail]
+                      .filter(Boolean).join(' ');
                     victims.push({
                       name: caseData.victimName,
                       contact: caseData.victimContact || "",
-                      address: caseData.victimAddress || "",
+                      address: fullAddress || "",
                     });
                   }
                   
-                  // 추가 피해자
+                  // 추가 피해자 (주소 + 상세주소 결합)
                   if (caseData.additionalVictims && caseData.additionalVictims.trim()) {
                     try {
                       const additional = JSON.parse(caseData.additionalVictims);
                       if (Array.isArray(additional)) {
-                        victims.push(...additional);
+                        victims.push(...additional.map((v: any) => ({
+                          name: v.name || "",
+                          contact: v.contact || "",
+                          address: [v.address, v.addressDetail].filter(Boolean).join(' ') || "",
+                        })));
                       }
                     } catch (e) {
                       console.error("Error parsing additional victims:", e);
