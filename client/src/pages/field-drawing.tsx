@@ -244,6 +244,37 @@ export default function FieldDrawing() {
         throw new Error("선택된 케이스가 없습니다");
       }
       
+      // 캔버스를 이미지로 캡처 (PDF용)
+      let canvasImage: string | null = null;
+      if (canvasRef.current) {
+        try {
+          // UI 요소들을 일시적으로 숨김
+          const toolbar = document.querySelector('[data-ui="toolbar"]') as HTMLElement;
+          const saveButtons = document.querySelector('[data-ui="save-buttons"]') as HTMLElement;
+          const controls = document.querySelectorAll('[data-ui="control-panel"]');
+          const elementsToHide = [toolbar, saveButtons, ...Array.from(controls)].filter(Boolean);
+          
+          elementsToHide.forEach(el => {
+            if (el instanceof HTMLElement) el.style.display = 'none';
+          });
+          
+          const canvas = await html2canvas(canvasRef.current, {
+            backgroundColor: '#ffffff',
+            scale: 2, // 고해상도
+            logging: false,
+          });
+          
+          canvasImage = canvas.toDataURL('image/png');
+          
+          // UI 요소들 다시 표시
+          elementsToHide.forEach(el => {
+            if (el instanceof HTMLElement) el.style.display = '';
+          });
+        } catch (err) {
+          console.error('캔버스 이미지 생성 실패:', err);
+        }
+      }
+      
       const response = await apiRequest("POST", "/api/drawings", {
         drawingId: savedDrawing?.id, // Include drawing ID for updates if exists
         caseId: selectedCase.id,
@@ -251,6 +282,7 @@ export default function FieldDrawing() {
         rectangles,
         accidentAreas,
         leakMarkers,
+        canvasImage, // PDF 출력용 캔버스 스냅샷
       });
       
       if (!response.ok) {

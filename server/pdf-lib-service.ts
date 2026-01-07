@@ -979,16 +979,67 @@ async function renderDrawingPage(
   });
   
   // Try to embed drawing image if available
+  // 우선순위: canvasImage (전체 캔버스 스냅샷) > uploadedImages (개별 이미지)
   console.log('[pdf-lib] 도면 데이터:', drawingData ? JSON.stringify({
     id: drawingData.id,
     caseId: drawingData.caseId,
+    hasCanvasImage: !!drawingData.canvasImage,
     uploadedImagesCount: Array.isArray(drawingData.uploadedImages) ? drawingData.uploadedImages.length : 'not array',
     rectanglesCount: Array.isArray(drawingData.rectangles) ? drawingData.rectangles.length : 'not array',
   }) : 'null');
   
-  if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
+  // 캔버스 이미지가 있으면 우선 사용 (전체 도면 스냅샷)
+  if (drawingData && drawingData.canvasImage) {
     try {
-      // Use the first uploaded image as the main drawing
+      let imageData: Buffer;
+      
+      if (drawingData.canvasImage.startsWith('data:image/')) {
+        const base64Data = drawingData.canvasImage.split(',')[1];
+        imageData = Buffer.from(base64Data, 'base64');
+      } else {
+        imageData = Buffer.from(drawingData.canvasImage, 'base64');
+      }
+      
+      // PNG 이미지 (html2canvas는 PNG로 출력)
+      const embeddedImage = await pdfDoc.embedPng(imageData);
+      
+      const imgDims = embeddedImage.scale(1);
+      const maxWidth = drawingAreaWidth - 20;
+      const maxHeight = drawingAreaHeight - 20;
+      
+      const scaleX = maxWidth / imgDims.width;
+      const scaleY = maxHeight / imgDims.height;
+      const scale = Math.min(scaleX, scaleY, 1);
+      
+      const drawWidth = imgDims.width * scale;
+      const drawHeight = imgDims.height * scale;
+      
+      const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
+      const drawY = (y - drawingAreaHeight) + (drawingAreaHeight - drawHeight) / 2;
+      
+      page.drawImage(embeddedImage, {
+        x: drawX,
+        y: drawY,
+        width: drawWidth,
+        height: drawHeight,
+      });
+      
+      console.log('[pdf-lib] 캔버스 도면 이미지 삽입 완료');
+    } catch (err) {
+      console.error('[pdf-lib] 캔버스 도면 이미지 삽입 실패:', err);
+      // 실패 시 placeholder 표시
+      drawText(page, {
+        x: MARGIN + drawingAreaWidth / 2 - 50,
+        y: y - drawingAreaHeight / 2,
+        text: '도면 이미지 로드 실패',
+        font: fonts.regular,
+        size: 12,
+        color: { r: 0.6, g: 0.6, b: 0.6 },
+      });
+    }
+  } else if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
+    // canvasImage가 없으면 기존 방식으로 첫 번째 업로드 이미지 사용
+    try {
       const mainImage = drawingData.uploadedImages[0];
       if (mainImage.src) {
         let imageData: Buffer;
@@ -1034,11 +1085,10 @@ async function renderDrawingPage(
           height: drawHeight,
         });
         
-        console.log('[pdf-lib] 도면 이미지 삽입 완료');
+        console.log('[pdf-lib] 도면 이미지 삽입 완료 (업로드 이미지)');
       }
     } catch (err) {
       console.error('[pdf-lib] 도면 이미지 삽입 실패:', err);
-      // Draw placeholder text
       drawText(page, {
         x: MARGIN + drawingAreaWidth / 2 - 50,
         y: y - drawingAreaHeight / 2,

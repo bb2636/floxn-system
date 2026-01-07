@@ -3197,6 +3197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           rectangles: validatedData.rectangles,
           accidentAreas: validatedData.accidentAreas,
           leakMarkers: validatedData.leakMarkers,
+          canvasImage: validatedData.canvasImage,
           // caseId is immutable - don't update it
         };
         drawing = await storage.updateDrawing(drawingId, updateData);
@@ -3211,6 +3212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             rectangles: validatedData.rectangles,
             accidentAreas: validatedData.accidentAreas,
             leakMarkers: validatedData.leakMarkers,
+            canvasImage: validatedData.canvasImage,
           };
           drawing = await storage.updateDrawing(existing.id, updateData);
         } else {

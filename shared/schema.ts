@@ -575,6 +575,7 @@ export const drawings = pgTable("drawings", {
     x: number;
     y: number;
   }[]>().notNull().default(sql`'[]'`),
+  canvasImage: text("canvas_image"), // Base64 encoded canvas snapshot for PDF export
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
