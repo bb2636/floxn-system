@@ -779,32 +779,7 @@ async function renderFieldReportPage(
   
   y -= 15;
   
-  // Section 3: 현장 특이사항 (separate from VOC)
-  y = drawSectionHeader('현장 특이사항', y);
-  
-  const siteNotesText = caseData.siteNotes || caseData.specialNotes || '-';
-  
-  page.drawRectangle({
-    x: MARGIN,
-    y: y - 45,
-    width: CONTENT_WIDTH,
-    height: 50,
-    borderColor: rgb(0.7, 0.7, 0.7),
-    borderWidth: 0.5,
-  });
-  
-  drawText(page, {
-    x: MARGIN + 8,
-    y: y - 12,
-    text: siteNotesText,
-    font: fonts.regular,
-    size: 9,
-    maxWidth: CONTENT_WIDTH - 16,
-  });
-  
-  y -= 60;
-  
-  // Section 4: 특이사항 및 요청사항 (VOC)
+  // Section 3: 특이사항 및 요청사항 (VOC) - 현장 특이사항 섹션 제거됨
   y = drawSectionHeader('특이사항 및 요청사항 (VOC)', y);
   
   const vocText = caseData.vocNotes || '-';
@@ -1587,7 +1562,7 @@ async function renderEstimatePage(
     .filter(Boolean).join(' ');
   
   const partnerCompany = partnerData?.company || caseData.assignedPartner || '-';
-  const partnerBusinessNo = partnerData?.businessNumber || '-';
+  const partnerBusinessNo = partnerData?.businessRegistrationNumber || '-';
   const partnerRepName = partnerData?.representativeName || partnerData?.name || '-';
   
   const rowHeight = 20;
