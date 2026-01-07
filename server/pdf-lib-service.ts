@@ -1372,7 +1372,7 @@ async function renderRecoveryAreaPage(
       { text: '고객사', width: 60, isHeader: true, align: 'center' },
       { text: caseData.insuranceCompany || '-', width: 100, align: 'left' },
       { text: '고객사 번호', width: 70, isHeader: true, align: 'center' },
-      { text: caseData.insuredPhone || caseData.victimPhone || '-', width: 95, align: 'left' },
+      { text: caseData.clientContact || caseData.insuredContact || '-', width: 95, align: 'left' },
     ],
     [
       { text: '장소', width: 70, isHeader: true, align: 'center' },
