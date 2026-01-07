@@ -119,7 +119,7 @@ function collectAllInvoiceText(data: InvoiceData): string {
     '아래의 계좌로 입금 부탁드립니다.',
     '은행명', '은행', '계좌번호', '예금주', '사업자등록번호', '사업자 등록번호',
     '신한은행', '신한', '㈜플록슨', '플록슨',
-    '140-015-744120', '517-89-03490',
+    '140-015-744120', '517-87-03490',
     // 푸터
     'FLOXN., Inc', 'FLOXN',
     // 비고
@@ -509,7 +509,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     { label: '은행명', value: '신한은행' },
     { label: '계좌번호', value: '140-015-744120' },
     { label: '예금주', value: '주식회사 플록슨' },
-    { label: '사업자등록번호', value: '517-89-03490' },
+    { label: '사업자등록번호', value: '517-87-03490' },
   ];
   
   for (const row of accountData) {
