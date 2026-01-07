@@ -7508,7 +7508,7 @@ Front·Line·Ops·Xpert·Net
           
           const result = await sendEmailWithAttachment({
             to: recipientEmail,
-            subject: `[FLOXN] 현장출동보고서 - ${accidentNo} (${caseData.insuredName || caseData.clientName || ''})`,
+            subject: `[FLOXN] 현장출동보고서 - ${accidentNo}`,
             text: emailText,
             html: emailHtml,
             attachments: attachments,

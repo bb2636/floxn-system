@@ -2216,7 +2216,14 @@ export default function Dashboard() {
                               color: '#0C0C0C',
                             }}
                           >
-                            {formatCaseNumber(caseItem.caseNumber)} · {[caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(' ') || '위치 미정'}
+                            {formatCaseNumber(caseItem.caseNumber)} · {(() => {
+                              // -0은 피보험자 주소, -1/-2는 피해자 주소 사용
+                              const suffix = caseItem.caseNumber?.split('-').pop();
+                              if (suffix === '1' || suffix === '2') {
+                                return [caseItem.victimAddress, caseItem.victimAddressDetail].filter(Boolean).join(' ') || '위치 미정';
+                              }
+                              return [caseItem.insuredAddress, caseItem.insuredAddressDetail].filter(Boolean).join(' ') || '위치 미정';
+                            })()}
                           </span>
                           <div className="flex items-center gap-1">
                             <span
