@@ -24,6 +24,8 @@ const PROCESSING_LEVELS: ImageProcessingConfig[] = [
   { maxDimension: 1400, quality: 50 },
   { maxDimension: 1200, quality: 40 },
   { maxDimension: 1000, quality: 30 },
+  { maxDimension: 800, quality: 25 },
+  { maxDimension: 700, quality: 20 },
 ];
 
 const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.heic', '.heif', '.webp'];
@@ -2039,16 +2041,20 @@ interface PdfGenerationPayload {
     tab: string;
     selectedFileIds: string[];
   };
+  skipEvidence?: boolean; // 본문 PDF에서 증빙 이미지 제외 (이메일 용량 제한용)
 }
 
 export async function generatePdfWithPdfLib(
   payload: PdfGenerationPayload,
   processingLevel: number = 0
 ): Promise<Buffer> {
-  const { caseId, sections, evidence } = payload;
+  const { caseId, sections, evidence, skipEvidence } = payload;
   const processingConfig = PROCESSING_LEVELS[processingLevel] || PROCESSING_LEVELS[0];
   
   console.log(`[pdf-lib] PDF 생성 시작 - 레벨 ${processingLevel}: ${processingConfig.maxDimension}px / ${processingConfig.quality}%`);
+  if (skipEvidence) {
+    console.log('[pdf-lib] skipEvidence=true: 본문 PDF에서 증빙 이미지 제외');
+  }
   
   const [caseData] = await db.select().from(cases).where(eq(cases.id, caseId));
   if (!caseData) {
@@ -2136,7 +2142,8 @@ export async function generatePdfWithPdfLib(
     }
   }
   
-  if (sections.evidence && evidence.selectedFileIds.length > 0) {
+  // skipEvidence가 true면 증빙 섹션 스킵 (이메일 용량 제한용)
+  if (sections.evidence && evidence.selectedFileIds.length > 0 && !skipEvidence) {
     try {
       const selectedDocs = await db.select().from(caseDocuments)
         .where(
@@ -2278,4 +2285,309 @@ export async function generatePdfWithSizeLimitPdfLib(payload: PdfGenerationPaylo
     emptyPdf.addPage();
     return Buffer.from(await emptyPdf.save());
   }
+}
+
+// ========================================================
+// 탭별 증빙 PDF 생성 (이메일 용량 제한용)
+// ========================================================
+
+const TAB_NAMES = ['현장사진', '기본자료', '증빙자료', '청구자료'] as const;
+type TabName = typeof TAB_NAMES[number];
+
+const CATEGORY_TO_TAB: Record<string, TabName> = {
+  '현장출동사진': '현장사진', '현장': '현장사진',
+  '수리중 사진': '현장사진', '수리중': '현장사진',
+  '복구완료 사진': '현장사진', '복구완료': '현장사진',
+  '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
+  '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
+  '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
+  '위임장': '청구자료', '도급계약서': '청구자료',
+  '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
+};
+
+const MAX_EVIDENCE_PDF_SIZE_BYTES = 8 * 1024 * 1024; // 8MB 제한
+
+interface EvidencePdfResult {
+  tabName: string;
+  fileName: string;
+  buffer: Buffer;
+  pageCount: number;
+  imageCount: number;
+}
+
+// 단계적 압축으로 이미지를 PDF에 추가할 버퍼로 변환
+async function compressImageForPdf(
+  imageData: Buffer,
+  targetMaxBytes: number = 500 * 1024 // 기본 500KB 목표
+): Promise<{ buffer: Buffer; format: 'jpeg' | 'png' }> {
+  const levels = [
+    { maxDimension: 1600, quality: 60 },
+    { maxDimension: 1400, quality: 50 },
+    { maxDimension: 1200, quality: 40 },
+    { maxDimension: 1000, quality: 30 },
+    { maxDimension: 800, quality: 25 },
+    { maxDimension: 700, quality: 20 },
+  ];
+  
+  for (const level of levels) {
+    try {
+      const compressed = await sharp(imageData)
+        .resize(level.maxDimension, level.maxDimension, { fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: level.quality })
+        .toBuffer();
+      
+      if (compressed.length <= targetMaxBytes) {
+        return { buffer: compressed, format: 'jpeg' };
+      }
+    } catch (err) {
+      continue;
+    }
+  }
+  
+  // 최저 레벨로도 안되면 마지막 결과 반환
+  try {
+    const lastLevel = levels[levels.length - 1];
+    const compressed = await sharp(imageData)
+      .resize(lastLevel.maxDimension, lastLevel.maxDimension, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: lastLevel.quality })
+      .toBuffer();
+    return { buffer: compressed, format: 'jpeg' };
+  } catch (err) {
+    // 변환 실패 시 원본 반환 시도
+    return { buffer: imageData, format: 'jpeg' };
+  }
+}
+
+// 단일 탭의 증빙 PDF 생성 (8MB 초과 시 분할)
+async function generateSingleTabEvidencePdf(
+  tabName: string,
+  documents: Array<{ id: string; fileName: string; fileType: string; fileData: string; category: string }>,
+  caseData: any,
+  fonts: FontSet,
+  accidentNo: string
+): Promise<EvidencePdfResult[]> {
+  const results: EvidencePdfResult[] = [];
+  
+  if (documents.length === 0) {
+    return results;
+  }
+  
+  console.log(`[pdf-lib] 탭 "${tabName}" 증빙 PDF 생성 시작 - ${documents.length}개 이미지`);
+  
+  let currentPdfDoc = await PDFDocument.create();
+  currentPdfDoc.registerFontkit(fontkit);
+  const currentFonts = await embedFonts(currentPdfDoc);
+  
+  let currentPartIndex = 1;
+  let currentImageCount = 0;
+  let estimatedSize = 0;
+  
+  for (let i = 0; i < documents.length; i++) {
+    const doc = documents[i];
+    
+    try {
+      // Base64 → Buffer
+      let imageData: Buffer;
+      if (doc.fileData.startsWith('data:')) {
+        const base64Data = doc.fileData.split(',')[1];
+        imageData = Buffer.from(base64Data, 'base64');
+      } else {
+        imageData = Buffer.from(doc.fileData, 'base64');
+      }
+      
+      // 이미지 압축
+      const { buffer: compressedBuffer, format } = await compressImageForPdf(imageData);
+      
+      // 현재 PDF 크기 체크 (예상치 - 이미지 + 텍스트 오버헤드)
+      const estimatedImageSize = compressedBuffer.length + 5000; // 5KB 오버헤드
+      
+      // 8MB 초과 예상 시 현재 PDF 저장하고 새 PDF 시작
+      if (estimatedSize + estimatedImageSize > MAX_EVIDENCE_PDF_SIZE_BYTES && currentImageCount > 0) {
+        // 현재 PDF 저장
+        const pdfBytes = await currentPdfDoc.save();
+        const partSuffix = currentPartIndex > 1 ? `_${currentPartIndex}` : '';
+        results.push({
+          tabName,
+          fileName: `Evidence_${tabName}${partSuffix}.pdf`,
+          buffer: Buffer.from(pdfBytes),
+          pageCount: currentPdfDoc.getPageCount(),
+          imageCount: currentImageCount,
+        });
+        
+        console.log(`[pdf-lib] 탭 "${tabName}" 파트 ${currentPartIndex} 완료 - ${currentImageCount}개 이미지, ${Math.round(pdfBytes.length / 1024)}KB`);
+        
+        // 새 PDF 시작
+        currentPdfDoc = await PDFDocument.create();
+        currentPdfDoc.registerFontkit(fontkit);
+        const newFonts = await embedFonts(currentPdfDoc);
+        currentPartIndex++;
+        currentImageCount = 0;
+        estimatedSize = 0;
+      }
+      
+      // 페이지 추가
+      const page = currentPdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+      
+      // 헤더
+      const headerHeight = 25;
+      page.drawRectangle({
+        x: MARGIN,
+        y: A4_HEIGHT - MARGIN - headerHeight,
+        width: CONTENT_WIDTH,
+        height: headerHeight,
+        color: rgb(0.95, 0.95, 0.95),
+      });
+      
+      drawText(page, {
+        x: MARGIN + 10,
+        y: A4_HEIGHT - MARGIN - 17,
+        text: `[${tabName}] ${doc.category || '증빙자료'} - ${doc.fileName}`,
+        font: currentFonts.bold,
+        size: 10,
+        maxWidth: CONTENT_WIDTH - 20,
+      });
+      
+      // 이미지 영역
+      const imageAreaTop = A4_HEIGHT - MARGIN - headerHeight - 15;
+      const imageAreaHeight = imageAreaTop - MARGIN - 30;
+      
+      // 이미지 삽입
+      const embeddedImage = format === 'png' 
+        ? await currentPdfDoc.embedPng(compressedBuffer)
+        : await currentPdfDoc.embedJpg(compressedBuffer);
+      
+      const imgDims = embeddedImage.scale(1);
+      const maxWidth = CONTENT_WIDTH - 20;
+      const maxHeight = imageAreaHeight - 20;
+      
+      const scaleX = maxWidth / imgDims.width;
+      const scaleY = maxHeight / imgDims.height;
+      const scale = Math.min(scaleX, scaleY, 1);
+      
+      const drawWidth = imgDims.width * scale;
+      const drawHeight = imgDims.height * scale;
+      
+      const drawX = MARGIN + (CONTENT_WIDTH - drawWidth) / 2;
+      const drawY = MARGIN + 30 + (imageAreaHeight - drawHeight) / 2;
+      
+      page.drawImage(embeddedImage, {
+        x: drawX,
+        y: drawY,
+        width: drawWidth,
+        height: drawHeight,
+      });
+      
+      // 푸터
+      drawText(page, {
+        x: MARGIN,
+        y: MARGIN + 10,
+        text: `사고접수번호: ${accidentNo} | ${i + 1}/${documents.length}`,
+        font: currentFonts.regular,
+        size: 8,
+        color: { r: 0.5, g: 0.5, b: 0.5 },
+      });
+      
+      currentImageCount++;
+      estimatedSize += estimatedImageSize;
+      
+    } catch (err: any) {
+      console.error(`[pdf-lib] 이미지 처리 실패 (${doc.fileName}):`, err.message);
+    }
+  }
+  
+  // 마지막 PDF 저장
+  if (currentImageCount > 0) {
+    const pdfBytes = await currentPdfDoc.save();
+    const partSuffix = currentPartIndex > 1 ? `_${currentPartIndex}` : '';
+    results.push({
+      tabName,
+      fileName: `Evidence_${tabName}${partSuffix}.pdf`,
+      buffer: Buffer.from(pdfBytes),
+      pageCount: currentPdfDoc.getPageCount(),
+      imageCount: currentImageCount,
+    });
+    
+    console.log(`[pdf-lib] 탭 "${tabName}" 파트 ${currentPartIndex} 완료 - ${currentImageCount}개 이미지, ${Math.round(pdfBytes.length / 1024)}KB`);
+  }
+  
+  return results;
+}
+
+// 탭별 증빙 PDF 생성 메인 함수
+export async function generateEvidencePDFsByTab(
+  caseId: string,
+  selectedFileIds: string[]
+): Promise<EvidencePdfResult[]> {
+  console.log(`[pdf-lib] ===== 탭별 증빙 PDF 생성 시작 =====`);
+  console.log(`[pdf-lib] 케이스: ${caseId}, 선택된 파일: ${selectedFileIds.length}개`);
+  
+  if (selectedFileIds.length === 0) {
+    console.log('[pdf-lib] 선택된 파일 없음');
+    return [];
+  }
+  
+  // 케이스 정보
+  const [caseData] = await db.select().from(cases).where(eq(cases.id, caseId));
+  if (!caseData) {
+    throw new Error('케이스를 찾을 수 없습니다.');
+  }
+  
+  const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || 'UNKNOWN';
+  
+  // 선택된 문서 조회
+  const selectedDocs = await db.select().from(caseDocuments)
+    .where(
+      and(
+        eq(caseDocuments.caseId, caseId),
+        inArray(caseDocuments.id, selectedFileIds)
+      )
+    );
+  
+  // 이미지만 필터링
+  const imageDocs = selectedDocs.filter(doc => doc.fileType?.startsWith('image/'));
+  console.log(`[pdf-lib] 이미지 문서: ${imageDocs.length}개`);
+  
+  // 탭별로 분류
+  const docsByTab: Record<TabName, typeof imageDocs> = {
+    '현장사진': [],
+    '기본자료': [],
+    '증빙자료': [],
+    '청구자료': [],
+  };
+  
+  for (const doc of imageDocs) {
+    const tab = CATEGORY_TO_TAB[doc.category] || '현장사진'; // 기본값
+    docsByTab[tab].push(doc);
+  }
+  
+  // 폰트 로드
+  const fontBytes = loadFontBytes();
+  const tempPdfDoc = await PDFDocument.create();
+  tempPdfDoc.registerFontkit(fontkit);
+  const fonts = await embedFonts(tempPdfDoc);
+  
+  // 각 탭별 PDF 생성
+  const allResults: EvidencePdfResult[] = [];
+  
+  for (const tabName of TAB_NAMES) {
+    const tabDocs = docsByTab[tabName];
+    if (tabDocs.length === 0) continue;
+    
+    const tabResults = await generateSingleTabEvidencePdf(
+      tabName,
+      tabDocs,
+      caseData,
+      fonts,
+      accidentNo
+    );
+    
+    allResults.push(...tabResults);
+  }
+  
+  console.log(`[pdf-lib] ===== 탭별 증빙 PDF 생성 완료: ${allResults.length}개 파일 =====`);
+  for (const result of allResults) {
+    console.log(`[pdf-lib]   - ${result.fileName}: ${Math.round(result.buffer.length / 1024)}KB, ${result.imageCount}개 이미지, ${result.pageCount}페이지`);
+  }
+  
+  return allResults;
 }
