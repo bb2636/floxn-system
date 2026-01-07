@@ -989,12 +989,12 @@ async function renderDrawingPage(
       const embeddedImage = await pdfDoc.embedPng(imageData);
       
       const imgDims = embeddedImage.scale(1);
-      const maxWidth = drawingAreaWidth - 20;
-      const maxHeight = drawingAreaHeight - 20;
+      const maxWidth = drawingAreaWidth - 10;  // 패딩 축소
+      const maxHeight = drawingAreaHeight - 10;  // 패딩 축소
       
       const scaleX = maxWidth / imgDims.width;
       const scaleY = maxHeight / imgDims.height;
-      const scale = Math.min(scaleX, scaleY, 1);
+      const scale = Math.min(scaleX, scaleY);  // 스케일 제한 제거 - 영역에 맞게 확대
       
       const drawWidth = imgDims.width * scale;
       const drawHeight = imgDims.height * scale;
@@ -1051,12 +1051,12 @@ async function renderDrawingPage(
         }
         
         const imgDims = embeddedImage.scale(1);
-        const maxWidth = drawingAreaWidth - 40;
-        const maxHeight = drawingAreaHeight - 40;
+        const maxWidth = drawingAreaWidth - 10;  // 패딩 축소
+        const maxHeight = drawingAreaHeight - 10;  // 패딩 축소
         
         const scaleX = maxWidth / imgDims.width;
         const scaleY = maxHeight / imgDims.height;
-        const scale = Math.min(scaleX, scaleY, 1);
+        const scale = Math.min(scaleX, scaleY);  // 스케일 제한 제거 - 영역에 맞게 확대
         
         const drawWidth = imgDims.width * scale;
         const drawHeight = imgDims.height * scale;
