@@ -6107,8 +6107,23 @@ FLOXN 드림`;
       if (selectedDocumentIds && selectedDocumentIds.length > 0) {
         console.log(`[Invoice PDF] Merging ${selectedDocumentIds.length} documents into PDF`);
         
-        const documents = await storage.getDocumentsByCaseId(caseId);
-        const selectedDocs = documents.filter((doc: any) => selectedDocumentIds.includes(doc.id));
+        // Get documents from main case AND all related cases
+        const mainDocs = await storage.getDocumentsByCaseId(caseId);
+        
+        // Get related cases (same insuranceAccidentNo)
+        const relatedCases = await storage.getRelatedCases(caseId);
+        const relatedCaseIds = relatedCases.map((c: any) => c.id).filter((id: string) => id !== caseId);
+        
+        // Fetch documents from all related cases
+        let allDocuments = [...mainDocs];
+        for (const relatedCaseId of relatedCaseIds) {
+          const relatedDocs = await storage.getDocumentsByCaseId(relatedCaseId);
+          allDocuments = allDocuments.concat(relatedDocs);
+        }
+        
+        console.log(`[Invoice PDF] Total documents from ${1 + relatedCaseIds.length} cases: ${allDocuments.length}`);
+        const selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
+        console.log(`[Invoice PDF] Selected documents found: ${selectedDocs.length}`);
         
         if (selectedDocs.length > 0) {
           const { PDFDocument, rgb } = await import('pdf-lib');
