@@ -242,137 +242,150 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   
-  let y = A4_HEIGHT - MARGIN;
+  // === 1. 타이틀 섹션 ===
+  let y = A4_HEIGHT - 60;
   
-  drawCenteredText(page, 'INVOICE', y, fonts.bold, 28);
-  y -= 15;
+  // INVOICE 제목 (가운데 정렬)
+  drawCenteredText(page, 'INVOICE', y, fonts.bold, 24);
+  y -= 30;
   
+  // 타이틀 아래 수평선
   page.drawLine({
     start: { x: MARGIN, y },
     end: { x: A4_WIDTH - MARGIN, y },
-    thickness: 2,
+    thickness: 1.5,
     color: rgb(0, 0, 0),
   });
   
-  y -= 40;
+  // === 2. 정보 섹션 ===
+  y -= 35;
   
   const leftColX = MARGIN;
-  const rightColX = A4_WIDTH / 2 + 20;
-  const labelWidth = 70;
+  const rightColX = 320;
+  const colonX1 = 95;
+  const valueX1 = 110;
+  const colonX2 = 395;
+  const valueX2 = 410;
   const fontSize = 11;
-  const lineHeight = 20;
+  const lineHeight = 22;
   
-  drawTextLine(page, '수 신', leftColX, y, fonts.bold, fontSize);
-  drawTextLine(page, ':', leftColX + labelWidth, y, fonts.regular, fontSize);
-  drawTextLine(page, data.recipientName || '-', leftColX + labelWidth + 15, y, fonts.regular, fontSize, { r: 0, g: 0.4, b: 0.8 });
+  // 첫 번째 행: 수신 / 수임일자
+  drawTextLine(page, '수 신', leftColX, y, fonts.regular, fontSize);
+  drawTextLine(page, ':', colonX1, y, fonts.regular, fontSize);
+  drawTextLine(page, data.recipientName || '-', valueX1, y, fonts.regular, fontSize, { r: 0.2, g: 0.4, b: 0.7 });
   
-  drawTextLine(page, '수임일자', rightColX, y, fonts.bold, fontSize);
-  drawTextLine(page, ':', rightColX + labelWidth, y, fonts.regular, fontSize);
-  drawTextLine(page, formatDate(data.acceptanceDate), rightColX + labelWidth + 15, y, fonts.regular, fontSize, { r: 0, g: 0.4, b: 0.8 });
+  drawTextLine(page, '수임일자', rightColX, y, fonts.regular, fontSize);
+  drawTextLine(page, ':', colonX2, y, fonts.regular, fontSize);
+  drawTextLine(page, formatDate(data.acceptanceDate), valueX2, y, fonts.regular, fontSize, { r: 0.2, g: 0.4, b: 0.7 });
   
   y -= lineHeight;
   
-  drawTextLine(page, '사고번호', leftColX, y, fonts.bold, fontSize);
-  drawTextLine(page, ':', leftColX + labelWidth, y, fonts.regular, fontSize);
-  drawTextLine(page, data.insuranceAccidentNo || '-', leftColX + labelWidth + 15, y, fonts.regular, fontSize, { r: 0, g: 0.4, b: 0.8 });
+  // 두 번째 행: 사고번호 / 청구일자
+  drawTextLine(page, '사고번호', leftColX, y, fonts.regular, fontSize);
+  drawTextLine(page, ':', colonX1, y, fonts.regular, fontSize);
+  drawTextLine(page, data.insuranceAccidentNo || data.caseNumber || '-', valueX1, y, fonts.regular, fontSize, { r: 0.2, g: 0.4, b: 0.7 });
   
-  drawTextLine(page, '청구일자', rightColX, y, fonts.bold, fontSize);
-  drawTextLine(page, ':', rightColX + labelWidth, y, fonts.regular, fontSize);
-  drawTextLine(page, formatDate(data.submissionDate), rightColX + labelWidth + 15, y, fonts.regular, fontSize, { r: 0, g: 0.4, b: 0.8 });
+  drawTextLine(page, '청구일자', rightColX, y, fonts.regular, fontSize);
+  drawTextLine(page, ':', colonX2, y, fonts.regular, fontSize);
+  drawTextLine(page, formatDate(data.submissionDate), valueX2, y, fonts.regular, fontSize, { r: 0.2, g: 0.4, b: 0.7 });
   
-  y -= 40;
+  // === 3. 테이블 섹션 ===
+  y -= 45;
   
   const tableX = MARGIN;
   const tableWidth = CONTENT_WIDTH;
-  const particularsColWidth = tableWidth * 0.65;
-  const amountColWidth = tableWidth * 0.35;
-  const headerHeight = 30;
-  const cellPadding = 10;
+  const particularsColWidth = tableWidth * 0.70;
+  const amountColWidth = tableWidth * 0.30;
+  const headerHeight = 35;
+  const cellPadding = 12;
   
+  // 테이블 헤더 - PARTICULARS
   page.drawRectangle({
     x: tableX,
     y: y - headerHeight,
     width: particularsColWidth,
     height: headerHeight,
-    color: rgb(0.95, 0.95, 0.95),
+    color: rgb(0.96, 0.96, 0.96),
     borderColor: rgb(0, 0, 0),
-    borderWidth: 1,
+    borderWidth: 0.5,
   });
   
+  // 테이블 헤더 - AMOUNT
   page.drawRectangle({
     x: tableX + particularsColWidth,
     y: y - headerHeight,
     width: amountColWidth,
     height: headerHeight,
-    color: rgb(0.95, 0.95, 0.95),
+    color: rgb(0.96, 0.96, 0.96),
     borderColor: rgb(0, 0, 0),
-    borderWidth: 1,
+    borderWidth: 0.5,
   });
   
-  const headerTextY = y - headerHeight / 2 - 5;
-  const particularsHeaderWidth = measureTextWidth('PARTICULARS', fonts.bold, 12);
-  drawTextLine(page, 'PARTICULARS', tableX + (particularsColWidth - particularsHeaderWidth) / 2, headerTextY, fonts.bold, 12);
+  // 헤더 텍스트
+  const headerTextY = y - headerHeight / 2 - 4;
+  const particularsHeaderWidth = measureTextWidth('PARTICULARS', fonts.bold, 11);
+  drawTextLine(page, 'PARTICULARS', tableX + (particularsColWidth - particularsHeaderWidth) / 2, headerTextY, fonts.bold, 11);
   
-  const amountHeaderWidth = measureTextWidth('AMOUNT', fonts.bold, 12);
-  drawTextLine(page, 'AMOUNT', tableX + particularsColWidth + (amountColWidth - amountHeaderWidth) / 2, headerTextY, fonts.bold, 12);
+  const amountHeaderWidth = measureTextWidth('AMOUNT', fonts.bold, 11);
+  drawTextLine(page, 'AMOUNT', tableX + particularsColWidth + (amountColWidth - amountHeaderWidth) / 2, headerTextY, fonts.bold, 11);
   
   y -= headerHeight;
   
-  const itemLineHeight = 18;
-  const detailLineHeight = 14;
-  let contentHeight = 20;
-  
+  // 내용 행 높이 계산
+  const itemRowHeight = 25;
+  let contentHeight = 0;
   for (const item of data.particulars) {
-    contentHeight += itemLineHeight;
+    contentHeight += itemRowHeight;
     if (item.detail) {
-      contentHeight += detailLineHeight;
+      contentHeight += 18;
     }
-    contentHeight += 8;
   }
+  contentHeight = Math.max(contentHeight + 30, 80);
   
-  contentHeight = Math.max(contentHeight, 100);
-  
+  // 내용 셀 - PARTICULARS
   page.drawRectangle({
     x: tableX,
     y: y - contentHeight,
     width: particularsColWidth,
     height: contentHeight,
     borderColor: rgb(0, 0, 0),
-    borderWidth: 1,
+    borderWidth: 0.5,
   });
   
+  // 내용 셀 - AMOUNT
   page.drawRectangle({
     x: tableX + particularsColWidth,
     y: y - contentHeight,
     width: amountColWidth,
     height: contentHeight,
     borderColor: rgb(0, 0, 0),
-    borderWidth: 1,
+    borderWidth: 0.5,
   });
   
-  let itemY = y - cellPadding - 10;
-  let amountY = y - cellPadding - 10;
+  // 항목 렌더링
+  let itemY = y - cellPadding - 12;
   
   for (const item of data.particulars) {
-    drawTextLine(page, `■ ${item.title}`, tableX + cellPadding, itemY, fonts.bold, 11);
-    drawRightAlignedText(page, formatAmount(item.amount), tableX + tableWidth - cellPadding, amountY, fonts.regular, 11, { r: 0.8, g: 0, b: 0 });
+    // 항목 제목
+    const itemTitle = '\u25A0 ' + item.title;
+    drawTextLine(page, itemTitle, tableX + cellPadding, itemY, fonts.regular, 10);
     
-    itemY -= itemLineHeight;
-    amountY -= itemLineHeight;
+    // 금액 (오른쪽 정렬, 빨간색)
+    drawRightAlignedText(page, formatAmount(item.amount), tableX + tableWidth - cellPadding, itemY, fonts.regular, 11, { r: 0.8, g: 0, b: 0 });
     
+    itemY -= itemRowHeight;
+    
+    // 상세 설명이 있으면 추가
     if (item.detail) {
-      drawTextLine(page, item.detail, tableX + cellPadding + 16, itemY, fonts.regular, 9, { r: 0.4, g: 0.4, b: 0.4 });
-      itemY -= detailLineHeight;
-      amountY -= detailLineHeight;
+      drawTextLine(page, item.detail, tableX + cellPadding + 18, itemY + 8, fonts.regular, 9, { r: 0.5, g: 0.5, b: 0.5 });
+      itemY -= 18;
     }
-    
-    itemY -= 4;
-    amountY -= 4;
   }
   
   y -= contentHeight;
   
-  const totalRowHeight = 30;
+  // TOTAL AMOUNT 행
+  const totalRowHeight = 35;
   
   page.drawRectangle({
     x: tableX,
@@ -381,7 +394,7 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     height: totalRowHeight,
     color: rgb(0.98, 0.98, 0.98),
     borderColor: rgb(0, 0, 0),
-    borderWidth: 1,
+    borderWidth: 0.5,
   });
   
   page.drawRectangle({
@@ -391,47 +404,50 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
     height: totalRowHeight,
     color: rgb(0.98, 0.98, 0.98),
     borderColor: rgb(0, 0, 0),
-    borderWidth: 1,
+    borderWidth: 0.5,
   });
   
-  const totalTextY = y - totalRowHeight / 2 - 5;
-  drawTextLine(page, 'TOTAL AMOUNT', tableX + cellPadding, totalTextY, fonts.bold, 12);
-  drawRightAlignedText(page, formatAmount(data.totalAmount), tableX + tableWidth - cellPadding, totalTextY, fonts.bold, 13, { r: 0.8, g: 0, b: 0 });
+  const totalTextY = y - totalRowHeight / 2 - 4;
+  drawTextLine(page, 'TOTAL AMOUNT', tableX + cellPadding, totalTextY, fonts.bold, 11);
+  drawRightAlignedText(page, formatAmount(data.totalAmount), tableX + tableWidth - cellPadding, totalTextY, fonts.bold, 12, { r: 0.8, g: 0, b: 0 });
   
-  y -= totalRowHeight + 30;
+  // === 4. 계좌 정보 박스 ===
+  y -= totalRowHeight + 35;
   
   const accountBoxWidth = CONTENT_WIDTH;
-  const accountBoxHeight = 120;
   
+  // 헤더 박스
   page.drawRectangle({
     x: tableX,
-    y: y - 25,
+    y: y - 28,
     width: accountBoxWidth,
-    height: 25,
-    color: rgb(0.97, 0.97, 0.97),
+    height: 28,
+    color: rgb(0.96, 0.96, 0.96),
     borderColor: rgb(0, 0, 0),
-    borderWidth: 1,
+    borderWidth: 0.5,
   });
   
   const accountHeaderText = '아래의 계좌로 입금 부탁드립니다.';
-  const accountHeaderWidth = measureTextWidth(accountHeaderText, fonts.bold, 11);
-  drawTextLine(page, accountHeaderText, tableX + (accountBoxWidth - accountHeaderWidth) / 2, y - 17, fonts.bold, 11);
+  const accountHeaderTextWidth = measureTextWidth(accountHeaderText, fonts.bold, 10);
+  drawTextLine(page, accountHeaderText, tableX + (accountBoxWidth - accountHeaderTextWidth) / 2, y - 18, fonts.bold, 10);
   
-  y -= 25;
+  y -= 28;
   
+  // 계좌 정보 본문
+  const accountBodyHeight = 90;
   page.drawRectangle({
     x: tableX,
-    y: y - (accountBoxHeight - 25),
+    y: y - accountBodyHeight,
     width: accountBoxWidth,
-    height: accountBoxHeight - 25,
+    height: accountBodyHeight,
     borderColor: rgb(0, 0, 0),
-    borderWidth: 1,
+    borderWidth: 0.5,
   });
   
-  const accountLabelX = tableX + 80;
-  const accountValueX = tableX + 200;
+  const accountLabelX = tableX + 100;
+  const accountValueX = tableX + accountBoxWidth / 2 + 30;
   const accountLineHeight = 20;
-  let accountY = y - 20;
+  let accountY = y - 22;
   
   const accountData = [
     { label: '은행명', value: '신한은행' },
@@ -441,25 +457,26 @@ export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
   ];
   
   for (const row of accountData) {
-    const labelWidth = measureTextWidth(row.label, fonts.bold, 10);
-    drawTextLine(page, row.label, accountLabelX + (80 - labelWidth) / 2, accountY, fonts.bold, 10);
-    const valueWidth = measureTextWidth(row.value, fonts.regular, 10);
-    drawTextLine(page, row.value, accountValueX + (200 - valueWidth) / 2, accountY, fonts.regular, 10);
+    drawTextLine(page, row.label, accountLabelX, accountY, fonts.bold, 10);
+    drawTextLine(page, row.value, accountValueX, accountY, fonts.regular, 10);
     accountY -= accountLineHeight;
   }
   
-  y -= accountBoxHeight + 30;
+  // === 5. 푸터 ===
+  y -= accountBodyHeight + 35;
   
+  // 푸터 수평선
   page.drawLine({
     start: { x: MARGIN, y },
     end: { x: A4_WIDTH - MARGIN, y },
-    thickness: 2,
+    thickness: 1.5,
     color: rgb(0, 0, 0),
   });
   
   y -= 25;
   
-  drawCenteredText(page, 'FLOXN., Inc', y, fonts.bold, 16);
+  // FLOXN., Inc 로고
+  drawCenteredText(page, 'FLOXN., Inc', y, fonts.bold, 14);
   
   const pdfBytes = await pdfDoc.save();
   const buffer = Buffer.from(pdfBytes);
