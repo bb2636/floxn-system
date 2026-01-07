@@ -82,9 +82,9 @@ async function embedFonts(pdfDoc: PDFDocument): Promise<FontSet> {
   
   const fontBytes = loadFontBytes();
   
-  // subset: true로 사용되는 글자만 임베딩 (16MB → 수백KB로 감소)
-  const regular = await pdfDoc.embedFont(fontBytes.regular, { subset: true });
-  const bold = await pdfDoc.embedFont(fontBytes.bold, { subset: true });
+  // subset: false로 전체 폰트 임베딩 (한글 글자 누락 방지)
+  const regular = await pdfDoc.embedFont(fontBytes.regular, { subset: false });
+  const bold = await pdfDoc.embedFont(fontBytes.bold, { subset: false });
   
   return { regular, bold };
 }
