@@ -76,6 +76,7 @@ interface EmailAttachment {
   filename: string;
   content: Buffer;
   contentType?: string;
+  cid?: string; // Content-ID for inline images (e.g., 'floxn-logo')
 }
 
 interface SendEmailOptions {
@@ -150,6 +151,7 @@ export async function sendEmailWithAttachment(options: SendEmailOptions): Promis
         filename: att.filename,
         content: att.content,
         contentType: att.contentType || 'application/pdf',
+        ...(att.cid ? { cid: att.cid } : {}), // CID for inline images
       })),
     };
 

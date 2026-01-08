@@ -9,6 +9,8 @@ import { sql, inArray } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import https from "https";
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
 import { registerObjectStorageRoutes, objectStorageClient, signObjectURL } from "./replit_integrations/object_storage";
 import { sendNotificationEmail, sendAccountCreationEmail } from "./email";
 import { generatePdfWithPdfLib, generatePdfWithSizeLimitPdfLib, generateEvidencePDFsByTab } from "./pdf-lib-service";
@@ -7430,6 +7432,20 @@ FLOXN 드림`;
 
       const dateStr = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\./g, '-').replace(/ /g, '').replace(/-$/, '');
 
+      // 로고 파일 읽기 (CID 첨부용)
+      let logoBuffer: Buffer | null = null;
+      try {
+        const logoPath = path.join(process.cwd(), 'server', 'assets', 'floxn-logo.png');
+        if (fs.existsSync(logoPath)) {
+          logoBuffer = fs.readFileSync(logoPath);
+          console.log(`[send-field-report-email-v2] Logo loaded: ${logoBuffer.length} bytes`);
+        } else {
+          console.warn(`[send-field-report-email-v2] Logo file not found: ${logoPath}`);
+        }
+      } catch (logoError) {
+        console.warn(`[send-field-report-email-v2] Failed to load logo:`, logoError);
+      }
+
       // HTML 이메일 본문 생성 (표 형식, 링크 없음)
       const emailHtml = `<!DOCTYPE html>
 <html>
@@ -7475,7 +7491,7 @@ FLOXN 드림`;
     <p style="color: #333; margin-bottom: 16px;">감사합니다.</p>
     
     <div style="border-top: 1px solid #e0e0e0; padding-top: 16px; margin-top: 24px;">
-      <img src="data:image/png;base64,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" alt="FLOXN" style="height: 24px; margin-bottom: 8px;">
+      ${logoBuffer ? '<img src="cid:floxn-logo" alt="FLOXN" style="height: 24px; margin-bottom: 8px;">' : '<p style="font-size: 18px; font-weight: bold; color: #333; margin: 0 0 4px 0;">FLOXN</p>'}
       <p style="font-size: 12px; color: #666; margin: 0 0 8px 0;">Front·Line·Ops·Xpert·Net</p>
       <p style="font-size: 12px; color: #666; margin: 0;">주식회사 플록슨(FLOXN Co., Ltd.)</p>
       <p style="font-size: 12px; color: #666; margin: 0;">서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호</p>
@@ -7508,18 +7524,33 @@ Front·Line·Ops·Xpert·Net
 서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호`;
 
       // ========== 이메일 전송 (PDF 직접 첨부) ==========
+      // 최종 첨부파일 배열 생성 (로고 포함)
+      const finalAttachments: Array<{ filename: string; content: Buffer; contentType: string; cid?: string }> = [
+        ...attachments,
+      ];
+      
+      // 로고가 있으면 CID 첨부파일로 추가
+      if (logoBuffer) {
+        finalAttachments.push({
+          filename: 'floxn-logo.png',
+          content: logoBuffer,
+          contentType: 'image/png',
+          cid: 'floxn-logo',
+        });
+      }
+      
       const sendResults: { email: string; success: boolean; error?: string }[] = [];
       
       for (const recipientEmail of emails) {
         try {
-          console.log(`[send-field-report-email-v2] Sending email to ${recipientEmail} with ${attachments.length} attachments`);
+          console.log(`[send-field-report-email-v2] Sending email to ${recipientEmail} with ${finalAttachments.length} attachments`);
           
           const result = await sendEmailWithAttachment({
             to: recipientEmail,
             subject: `[FLOXN] 현장출동보고서 - ${accidentNo}`,
             text: emailText,
             html: emailHtml,
-            attachments: attachments,
+            attachments: finalAttachments,
           });
           
           if (result.success) {
