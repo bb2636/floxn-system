@@ -259,18 +259,20 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
   };
 
   const getFileThumbnail = (doc: CaseDocument) => {
-    if (doc.fileType?.startsWith("image/") && doc.fileData) {
-      const imageSrc = doc.fileData.startsWith("data:") 
-        ? doc.fileData 
-        : `data:${doc.fileType};base64,${doc.fileData}`;
+    // 이미지는 API를 통해 로드 (Object Storage + 레거시 DB 파일 모두 지원)
+    if (doc.fileType?.startsWith("image/")) {
       return (
         <img 
-          src={imageSrc} 
+          src={`/api/documents/${doc.id}/image`}
           alt={doc.fileName}
           style={{
             width: "100%",
             height: "100%",
             objectFit: "cover",
+          }}
+          onError={(e) => {
+            // 이미지 로드 실패 시 아이콘 표시
+            (e.target as HTMLImageElement).style.display = 'none';
           }}
         />
       );
