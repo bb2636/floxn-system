@@ -6777,18 +6777,34 @@ FLOXN`;
             }
           };
           
-          // Separate PDFs and images (no fileData check - will load lazily)
+          // Separate PDFs and images (파일 이름으로도 PDF 확인)
           const pdfDocs: any[] = [];
           const imageDocs: any[] = [];
           
+          const isPdfFile = (mimeType: string, fileName: string): boolean => {
+            if (mimeType === 'application/pdf') return true;
+            if (fileName?.toLowerCase().endsWith('.pdf')) return true;
+            return false;
+          };
+          
+          const isImageFile = (mimeType: string, fileName: string): boolean => {
+            if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) return true;
+            const ext = fileName?.toLowerCase();
+            if (ext?.endsWith('.jpg') || ext?.endsWith('.jpeg') || ext?.endsWith('.png') || ext?.endsWith('.gif')) return true;
+            return false;
+          };
+          
           for (const doc of selectedDocs) {
             const mimeType = doc.fileType || '';
-            if (mimeType === 'application/pdf') {
+            const fileName = doc.fileName || '';
+            if (isPdfFile(mimeType, fileName)) {
               pdfDocs.push(doc);
-            } else if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) {
+            } else if (isImageFile(mimeType, fileName)) {
               imageDocs.push(doc);
             }
           }
+          
+          console.log(`[Invoice PDF] PDF 문서: ${pdfDocs.length}개, 이미지: ${imageDocs.length}개`);
           
           // Add PDF documents first
           for (const doc of pdfDocs) {
