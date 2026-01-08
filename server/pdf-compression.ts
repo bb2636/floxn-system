@@ -15,6 +15,7 @@ interface CompressionResult {
 
 const PDF_SIZE_THRESHOLD = 2 * 1024 * 1024; // 2MB 이상일 때만 압축
 const MAX_PDF_SIZE = 15 * 1024 * 1024; // 15MB 이상은 거부
+const EMAIL_TARGET_SIZE = 7 * 1024 * 1024; // 이메일 첨부용 7MB 타겟 (base64 인코딩 시 ~9.3MB)
 
 export async function compressPdf(inputBuffer: Buffer): Promise<CompressionResult> {
   const originalSize = inputBuffer.length;
@@ -148,4 +149,143 @@ export function isPdfFile(fileType: string | undefined, fileName: string | undef
   if (fileType === 'application/pdf') return true;
   if (fileName?.toLowerCase().endsWith('.pdf')) return true;
   return false;
+}
+
+// 단계적 압축 설정 (ebook → screen)
+const COMPRESSION_PRESETS = [
+  { name: 'ebook', settings: '/ebook', dpi: 150 },
+  { name: 'screen', settings: '/screen', dpi: 72 },
+] as const;
+
+/**
+ * PDF를 목표 크기 이하로 압축하는 함수
+ * 단계적으로 더 강력한 압축을 적용하여 타겟 크기까지 줄임
+ */
+export async function compressPdfToTarget(
+  inputBuffer: Buffer, 
+  targetSizeBytes: number = EMAIL_TARGET_SIZE
+): Promise<CompressionResult> {
+  const originalSize = inputBuffer.length;
+  
+  // 이미 타겟 크기 이하면 압축 불필요
+  if (originalSize <= targetSizeBytes) {
+    console.log(`[pdf-compress-target] 파일 크기 ${(originalSize / 1024 / 1024).toFixed(2)}MB - 타겟 ${(targetSizeBytes / 1024 / 1024).toFixed(1)}MB 이하, 압축 불필요`);
+    return {
+      success: true,
+      compressedBuffer: inputBuffer,
+      originalSize,
+      compressedSize: originalSize,
+      compressionRatio: 100,
+    };
+  }
+  
+  console.log(`[pdf-compress-target] 압축 시작: ${(originalSize / 1024 / 1024).toFixed(2)}MB → 타겟 ${(targetSizeBytes / 1024 / 1024).toFixed(1)}MB`);
+  
+  let currentBuffer = inputBuffer;
+  let currentSize = originalSize;
+  
+  // 단계적으로 더 강력한 압축 적용
+  for (const preset of COMPRESSION_PRESETS) {
+    if (currentSize <= targetSizeBytes) {
+      break; // 이미 목표 달성
+    }
+    
+    console.log(`[pdf-compress-target] ${preset.name} 압축 시도 (${preset.settings}, ${preset.dpi}dpi)`);
+    
+    const tempDir = os.tmpdir();
+    const uniqueId = crypto.randomBytes(8).toString('hex');
+    const inputPath = path.join(tempDir, `input_${uniqueId}.pdf`);
+    const outputPath = path.join(tempDir, `output_${uniqueId}.pdf`);
+    
+    try {
+      fs.writeFileSync(inputPath, currentBuffer);
+      
+      const gsCommand = [
+        'gs',
+        '-sDEVICE=pdfwrite',
+        '-dCompatibilityLevel=1.4',
+        `-dPDFSETTINGS=${preset.settings}`,
+        '-dNOPAUSE',
+        '-dQUIET',
+        '-dBATCH',
+        `-dColorImageResolution=${preset.dpi}`,
+        `-dGrayImageResolution=${preset.dpi}`,
+        `-dMonoImageResolution=${preset.dpi}`,
+        '-dDownsampleColorImages=true',
+        '-dDownsampleGrayImages=true',
+        '-dDownsampleMonoImages=true',
+        `-sOutputFile=${outputPath}`,
+        inputPath,
+      ];
+      
+      await new Promise<void>((resolve, reject) => {
+        const gs = spawn(gsCommand[0], gsCommand.slice(1), {
+          timeout: 120000, // 2분 타임아웃
+        });
+        
+        let stderr = '';
+        gs.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+        
+        gs.on('close', (code) => {
+          if (code === 0) {
+            resolve();
+          } else {
+            reject(new Error(`Ghostscript failed with code ${code}: ${stderr}`));
+          }
+        });
+        
+        gs.on('error', (err) => {
+          reject(err);
+        });
+      });
+      
+      if (fs.existsSync(outputPath)) {
+        const compressedBuffer = fs.readFileSync(outputPath);
+        const compressedSize = compressedBuffer.length;
+        
+        console.log(`[pdf-compress-target] ${preset.name}: ${(currentSize / 1024 / 1024).toFixed(2)}MB → ${(compressedSize / 1024 / 1024).toFixed(2)}MB`);
+        
+        // 압축이 효과가 있으면 결과 사용
+        if (compressedSize < currentSize) {
+          currentBuffer = compressedBuffer;
+          currentSize = compressedSize;
+        }
+      }
+    } catch (error) {
+      console.error(`[pdf-compress-target] ${preset.name} 압축 실패:`, error);
+    } finally {
+      try {
+        if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+        if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+      } catch (cleanupError) {
+        console.warn('[pdf-compress-target] 임시 파일 정리 실패:', cleanupError);
+      }
+    }
+  }
+  
+  const compressionRatio = Math.round((currentSize / originalSize) * 100);
+  console.log(`[pdf-compress-target] 최종 결과: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(currentSize / 1024 / 1024).toFixed(2)}MB (${compressionRatio}%)`);
+  
+  // 타겟 크기를 초과하면 경고
+  if (currentSize > targetSizeBytes) {
+    console.warn(`[pdf-compress-target] 경고: 목표 크기 미달성 (${(currentSize / 1024 / 1024).toFixed(2)}MB > ${(targetSizeBytes / 1024 / 1024).toFixed(1)}MB)`);
+  }
+  
+  return {
+    success: true,
+    compressedBuffer: currentBuffer,
+    originalSize,
+    compressedSize: currentSize,
+    compressionRatio,
+  };
+}
+
+/**
+ * 이메일 첨부용 PDF 압축 (7MB 타겟)
+ */
+export async function compressPdfForEmail(inputBuffer: Buffer): Promise<Buffer> {
+  const result = await compressPdfToTarget(inputBuffer, EMAIL_TARGET_SIZE);
+  return result.compressedBuffer || inputBuffer;
 }
