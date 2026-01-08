@@ -5349,12 +5349,30 @@ export class DbStorage implements IStorage {
   }
 
   async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
+    // Object Storage에 저장된 문서는 fileData 제외 (lazy loading)
+    // storageKey가 있으면 fileData를 빈 문자열로 반환하여 메모리 절약
     const result = await db
-      .select()
+      .select({
+        id: caseDocuments.id,
+        caseId: caseDocuments.caseId,
+        category: caseDocuments.category,
+        fileName: caseDocuments.fileName,
+        fileType: caseDocuments.fileType,
+        fileSize: caseDocuments.fileSize,
+        // storageKey가 있으면 fileData 제외 (null 반환)
+        fileData: sql<string | null>`CASE WHEN ${caseDocuments.storageKey} IS NOT NULL THEN NULL ELSE ${caseDocuments.fileData} END`,
+        storageKey: caseDocuments.storageKey,
+        status: caseDocuments.status,
+        checksum: caseDocuments.checksum,
+        displayOrder: caseDocuments.displayOrder,
+        createdBy: caseDocuments.createdBy,
+        createdAt: caseDocuments.createdAt,
+        parentCategory: caseDocuments.parentCategory,
+      })
       .from(caseDocuments)
       .where(eq(caseDocuments.caseId, caseId))
       .orderBy(desc(caseDocuments.createdAt));
-    return result;
+    return result as CaseDocument[];
   }
 
   async deleteDocument(id: string): Promise<void> {
