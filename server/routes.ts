@@ -7210,9 +7210,24 @@ FLOXN`;
             }
           }
           
-          // 2. Add images
+          // 2. Add images with headers (same as download logic)
           const A4_WIDTH = 595.28;
           const A4_HEIGHT = 841.89;
+          const MARGIN = 30;
+          const HEADER_HEIGHT = 25;
+          const GAP = 10;
+          
+          // Category to tab mapping
+          const categoryToTab: Record<string, string> = {
+            '현장출동사진': '현장사진', '현장': '현장사진',
+            '수리중 사진': '현장사진', '수리중': '현장사진',
+            '복구완료 사진': '현장사진', '복구완료': '현장사진',
+            '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
+            '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
+            '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
+            '위임장': '청구자료', '도급계약서': '청구자료',
+            '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
+          };
           
           for (const doc of imageDocs) {
             try {
@@ -7222,57 +7237,70 @@ FLOXN`;
                 continue;
               }
               
-              let processedBuffer = fileBuffer;
-              const mimeType = doc.fileType || '';
+              // Compress and convert to JPEG for consistency
+              const imageBuffer = await sharp.default(fileBuffer)
+                .resize(800, 1200, { fit: 'inside', withoutEnlargement: true })
+                .jpeg({ quality: 50, mozjpeg: true })
+                .toBuffer();
               
-              // Convert to JPEG if needed
-              if (!mimeType.includes('jpeg') && !mimeType.includes('jpg') && !mimeType.includes('png')) {
-                try {
-                  processedBuffer = await sharp.default(fileBuffer).jpeg({ quality: 85 }).toBuffer();
-                } catch (e) {
-                  console.warn(`[Invoice Email] Failed to convert image: ${doc.fileName}`);
-                  continue;
-                }
-              }
-              
-              // Compress large images
-              const metadata = await sharp.default(processedBuffer).metadata();
-              if (metadata.width && metadata.height && (metadata.width > 2000 || metadata.height > 2000)) {
-                processedBuffer = await sharp.default(processedBuffer)
-                  .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
-                  .jpeg({ quality: 80 })
-                  .toBuffer();
-              }
-              
-              // Embed image
-              let embeddedImage;
-              if (mimeType.includes('png')) {
-                embeddedImage = await mergedPdf.embedPng(processedBuffer);
-              } else {
-                embeddedImage = await mergedPdf.embedJpg(processedBuffer);
-              }
-              
-              // Calculate dimensions to fit image on A4 page with margins
-              const margin = 40;
-              const maxWidth = A4_WIDTH - (margin * 2);
-              const maxHeight = A4_HEIGHT - (margin * 2);
-              
-              let width = embeddedImage.width;
-              let height = embeddedImage.height;
-              
-              const widthRatio = maxWidth / width;
-              const heightRatio = maxHeight / height;
-              const scale = Math.min(widthRatio, heightRatio, 1);
-              
-              width *= scale;
-              height *= scale;
+              // Get case number and tab from document
+              const docCaseNumber = caseNumberMap[doc.caseId] || caseData.caseNumber || '';
+              const tab = categoryToTab[doc.category] || '기타';
+              const headerText = `[${docCaseNumber}] ${tab} - ${doc.category || '기타'}`;
               
               const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-              const x = (A4_WIDTH - width) / 2;
-              const y = (A4_HEIGHT - height) / 2;
               
-              page.drawImage(embeddedImage, { x, y, width, height });
-              console.log(`[Invoice Email] Added image: ${doc.fileName}`);
+              // Draw header background
+              page.drawRectangle({
+                x: MARGIN,
+                y: A4_HEIGHT - MARGIN - HEADER_HEIGHT,
+                width: A4_WIDTH - (MARGIN * 2),
+                height: HEADER_HEIGHT,
+                color: rgb(0.95, 0.95, 0.95),
+                borderColor: rgb(0.8, 0.8, 0.8),
+                borderWidth: 0.5,
+              });
+              
+              // Draw header text
+              page.drawText(headerText, {
+                x: MARGIN + 10,
+                y: A4_HEIGHT - MARGIN - HEADER_HEIGHT + 8,
+                size: 10,
+                font,
+                color: rgb(0.2, 0.2, 0.2),
+              });
+              
+              // Embed and draw image
+              try {
+                const embeddedImage = await mergedPdf.embedJpg(imageBuffer);
+                const imageDims = embeddedImage.scale(1);
+                const maxImageWidth = A4_WIDTH - (MARGIN * 2);
+                const maxImageHeight = A4_HEIGHT - (MARGIN * 2) - HEADER_HEIGHT - GAP;
+                
+                let scale = 1;
+                if (imageDims.width > maxImageWidth) {
+                  scale = maxImageWidth / imageDims.width;
+                }
+                if (imageDims.height * scale > maxImageHeight) {
+                  scale = maxImageHeight / imageDims.height;
+                }
+                
+                const finalWidth = imageDims.width * scale;
+                const finalHeight = imageDims.height * scale;
+                const imageX = MARGIN + (maxImageWidth - finalWidth) / 2;
+                const imageY = MARGIN + (maxImageHeight - finalHeight) / 2;
+                
+                page.drawImage(embeddedImage, {
+                  x: imageX,
+                  y: imageY,
+                  width: finalWidth,
+                  height: finalHeight,
+                });
+                
+                console.log(`[Invoice Email] Added image with header: ${doc.fileName}`);
+              } catch (imgErr) {
+                console.error(`[Invoice Email] Failed to embed image ${doc.fileName}:`, imgErr);
+              }
             } catch (imgError) {
               console.error(`[Invoice Email] Failed to add image ${doc.fileName}:`, imgError);
             }
