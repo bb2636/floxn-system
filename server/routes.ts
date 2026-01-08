@@ -6976,6 +6976,20 @@ FLOXN`;
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
+      // 로고 파일 읽기 (CID 첨부용)
+      let logoBuffer: Buffer | null = null;
+      try {
+        const logoPath = path.join(process.cwd(), 'server', 'assets', 'floxn-logo.png');
+        if (fs.existsSync(logoPath)) {
+          logoBuffer = fs.readFileSync(logoPath);
+          console.log(`[send-invoice-email-v2] Logo loaded: ${logoBuffer.length} bytes`);
+        } else {
+          console.warn(`[send-invoice-email-v2] Logo file not found: ${logoPath}`);
+        }
+      } catch (logoErr) {
+        console.error('[send-invoice-email-v2] Failed to load logo:', logoErr);
+      }
+
       // Build particulars based on amounts (each category gets its own line)
       const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
@@ -7175,7 +7189,7 @@ FLOXN`;
           </p>
           
           <div style="border-top: 1px solid #ddd; padding-top: 16px; margin-top: 24px;">
-            <p style="font-size: 18px; font-weight: bold; color: #333; margin: 0 0 4px 0;">FLOXN</p>
+            ${logoBuffer ? '<img src="cid:floxn-logo" alt="FLOXN" style="height: 24px; margin-bottom: 8px;">' : '<p style="font-size: 18px; font-weight: bold; color: #333; margin: 0 0 4px 0;">FLOXN</p>'}
             <p style="font-size: 12px; color: #666; margin: 0 0 8px 0;">Front·Line·Ops·Xpert·Net</p>
             <p style="font-size: 12px; color: #666; margin: 0;">주식회사 플록슨(FLOXN Co., Ltd.)</p>
             <p style="font-size: 12px; color: #666; margin: 0;">서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호</p>
@@ -7210,8 +7224,8 @@ Front·Line·Ops·Xpert·Net
       const timestamp = Date.now();
       const invoiceFilename = `Invoice.pdf`;
 
-      // Build attachments array: Invoice PDF + Evidence PDFs (per tab)
-      const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [
+      // Build attachments array: Invoice PDF + Evidence PDFs (per tab) + Logo
+      const attachments: Array<{ filename: string; content: Buffer; contentType: string; cid?: string }> = [
         {
           filename: invoiceFilename,
           content: pdfBuffer,
@@ -7225,6 +7239,16 @@ Front·Line·Ops·Xpert·Net
           filename: evidencePdf.filename,
           content: evidencePdf.buffer,
           contentType: 'application/pdf',
+        });
+      }
+
+      // 로고가 있으면 CID 첨부파일로 추가
+      if (logoBuffer) {
+        attachments.push({
+          filename: 'floxn-logo.png',
+          content: logoBuffer,
+          contentType: 'image/png',
+          cid: 'floxn-logo',
         });
       }
 
