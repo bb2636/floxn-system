@@ -3,6 +3,7 @@ import fontkit from '@pdf-lib/fontkit';
 import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
+import { compressPdfForEmail } from './pdf-compression';
 
 const A4_WIDTH = 595.28;
 const A4_HEIGHT = 841.89;
@@ -170,7 +171,15 @@ async function createEvidencePdfForTab(
     if (currentImageCount === 0) return;
     
     const pdfBytes = await currentPdf.save();
-    const buffer = Buffer.from(pdfBytes);
+    let buffer = Buffer.from(pdfBytes);
+    
+    // 이메일 첨부용 압축 적용 (7MB 타겟)
+    const originalSize = buffer.length;
+    if (originalSize > 7 * 1024 * 1024) {
+      console.log(`[Evidence PDF] Compressing PDF: ${Math.round(originalSize / 1024 / 1024 * 100) / 100}MB...`);
+      buffer = await compressPdfForEmail(buffer);
+      console.log(`[Evidence PDF] Compressed: ${Math.round(originalSize / 1024 / 1024 * 100) / 100}MB → ${Math.round(buffer.length / 1024 / 1024 * 100) / 100}MB`);
+    }
     
     // Determine filename: use part number if we need to split or already split
     const filename = forcePartNumber || partNumber > 1 || images.length > 10
