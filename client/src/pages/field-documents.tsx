@@ -566,10 +566,10 @@ export default function FieldDocuments() {
     }
   };
 
-  // 동시 업로드 제한 (3개)
-  const uploadLimit = pLimit(3);
+  // 동시 업로드 제한 (2개 - presign 요청 포함)
+  const uploadLimit = pLimit(2);
 
-  // 단일 파일 업로드 함수 (Object Storage 기반)
+  // 단일 파일 업로드 함수 (2단계 API: presign → PUT → upload-complete)
   const uploadSingleFile = async (uploadingFile: UploadingFile): Promise<void> => {
     const updateProgress = (progress: number, status?: UploadStatus, error?: string, documentId?: string) => {
       setUploadingFiles(prev =>
@@ -581,25 +581,23 @@ export default function FieldDocuments() {
       );
     };
 
-    // 1단계: request-upload 호출
+    // 1단계: presign 호출 (DB 저장 없음, 메타데이터만 전송)
     updateProgress(5, "uploading");
     
-    const requestResponse = await apiRequest("POST", "/api/documents/request-upload", {
+    const presignResponse = await apiRequest("POST", "/api/documents/presign", {
       caseId: selectedCaseId,
-      category: uploadingFile.category,
       fileName: uploadingFile.file.name,
       fileType: uploadingFile.file.type,
       fileSize: uploadingFile.file.size,
-      displayOrder: 0,
     });
 
-    if (!requestResponse.ok) {
-      const errorText = await requestResponse.text();
-      throw new Error(errorText || "업로드 URL 발급 실패");
+    if (!presignResponse.ok) {
+      const errorData = await presignResponse.json().catch(() => ({ error: "presigned URL 발급 실패" }));
+      throw new Error(errorData.error || errorData.details || "presigned URL 발급 실패");
     }
 
-    const { documentId, uploadURL } = await requestResponse.json();
-    updateProgress(15, undefined, undefined, documentId);
+    const { uploadURL, storageKey } = await presignResponse.json();
+    updateProgress(15);
 
     // 2단계: PUT으로 파일 직접 업로드 (XMLHttpRequest로 진행률 추적)
     await new Promise<void>((resolve, reject) => {
@@ -607,7 +605,7 @@ export default function FieldDocuments() {
       
       xhr.upload.addEventListener("progress", (event) => {
         if (event.lengthComputable) {
-          const percentComplete = Math.round((event.loaded / event.total) * 70) + 15;
+          const percentComplete = Math.round((event.loaded / event.total) * 65) + 15;
           updateProgress(percentComplete);
         }
       });
@@ -633,19 +631,26 @@ export default function FieldDocuments() {
       xhr.send(uploadingFile.file);
     });
 
-    updateProgress(90);
+    updateProgress(85);
 
-    // 3단계: complete-upload 호출
-    const completeResponse = await apiRequest("POST", "/api/documents/complete-upload", {
-      documentId,
+    // 3단계: upload-complete 호출 (업로드 확인 후 DB 저장)
+    const completeResponse = await apiRequest("POST", "/api/documents/upload-complete", {
+      caseId: selectedCaseId,
+      category: uploadingFile.category,
+      fileName: uploadingFile.file.name,
+      fileType: uploadingFile.file.type,
+      fileSize: uploadingFile.file.size,
+      storageKey,
+      displayOrder: 0,
     });
 
     if (!completeResponse.ok) {
-      const errorText = await completeResponse.text();
-      throw new Error(errorText || "업로드 완료 검증 실패");
+      const errorData = await completeResponse.json().catch(() => ({ error: "업로드 완료 처리 실패" }));
+      throw new Error(errorData.error || errorData.details || "업로드 완료 처리 실패");
     }
 
-    updateProgress(100, "completed");
+    const { documentId } = await completeResponse.json();
+    updateProgress(100, "completed", undefined, documentId);
   };
 
   // 파일 업로드 재시도 래퍼

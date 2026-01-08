@@ -3680,25 +3680,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== Object Storage 기반 문서 업로드 API =====
 
-  // Request upload URL (presigned URL 발급 + pending 상태 레코드 생성)
+  // Step 1: Presigned URL 발급만 (DB 저장 없음)
+  app.post("/api/documents/presign", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      // 요청 바디 크기 로그
+      const contentLength = req.headers['content-length'];
+      console.log(`[presign] Content-Length: ${contentLength} bytes`);
+      
+      const { caseId, fileName, fileType, fileSize } = req.body;
+      
+      // 파일 바이너리/base64가 포함되지 않았는지 확인
+      if (req.body.fileData || req.body.data || req.body.base64) {
+        console.error("[presign] ERROR: 파일 바이너리/base64가 요청에 포함됨!");
+        return res.status(400).json({ error: "presign 요청에는 파일 데이터를 포함하지 마세요" });
+      }
+      
+      if (!caseId || !fileName || !fileType || !fileSize) {
+        return res.status(400).json({ error: "필수 필드가 누락되었습니다 (caseId, fileName, fileType, fileSize)" });
+      }
+
+      console.log(`[presign] Generating presigned URL for case ${caseId}, file: ${fileName}, size: ${fileSize}`);
+
+      // storageKey 생성: documents/{caseId}/{timestamp}_{uuid}_{fileName}
+      const timestamp = Date.now();
+      const uuid = crypto.randomUUID();
+      const safeFileName = fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, "_");
+      const storageKey = `documents/${caseId}/${timestamp}_${uuid}_${safeFileName}`;
+      
+      // PRIVATE_OBJECT_DIR에서 bucket 정보 추출
+      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+      if (!privateObjectDir) {
+        console.error("[presign] PRIVATE_OBJECT_DIR not set");
+        return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+      }
+
+      // Full path: /{bucket}/.../{storageKey}
+      const fullPath = `${privateObjectDir}/${storageKey}`;
+      const pathParts = fullPath.split("/").filter(p => p);
+      if (pathParts.length < 2) {
+        return res.status(500).json({ error: "잘못된 스토리지 경로입니다" });
+      }
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join("/");
+
+      console.log(`[presign] Bucket: ${bucketName}, Object: ${objectName}`);
+
+      // Presigned URL 발급 (15분 TTL)
+      const uploadURL = await signObjectURL({
+        bucketName,
+        objectName,
+        method: "PUT",
+        ttlSec: 900,
+      });
+
+      console.log(`[presign] Generated presigned URL successfully for storageKey: ${storageKey}`);
+
+      // DB 저장 없이 presigned URL만 반환
+      res.json({
+        uploadURL,
+        storageKey,
+      });
+    } catch (error: any) {
+      console.error("[presign] Error occurred:");
+      console.error("  message:", error.message);
+      console.error("  stack:", error.stack);
+      if (error.code) console.error("  code:", error.code);
+      if (error.statusCode) console.error("  statusCode:", error.statusCode);
+      if (error.response) console.error("  response:", JSON.stringify(error.response));
+      res.status(500).json({ error: "presigned URL 발급 중 오류가 발생했습니다", details: error.message });
+    }
+  });
+
+  // Step 2: 업로드 완료 후 DB에 저장
+  app.post("/api/documents/upload-complete", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId, category, fileName, fileType, fileSize, storageKey, displayOrder, checksum } = req.body;
+      
+      if (!caseId || !category || !fileName || !fileType || !fileSize || !storageKey) {
+        return res.status(400).json({ error: "필수 필드가 누락되었습니다" });
+      }
+
+      console.log(`[upload-complete] Verifying and saving document for case ${caseId}, file: ${fileName}`);
+
+      // Object Storage에서 파일 존재 확인
+      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+      if (!privateObjectDir) {
+        return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+      }
+
+      const fullPath = `${privateObjectDir}/${storageKey}`;
+      const pathParts = fullPath.split("/").filter(p => p);
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join("/");
+
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      const [exists] = await file.exists();
+
+      if (!exists) {
+        console.error(`[upload-complete] File not found in storage: ${storageKey}`);
+        return res.status(400).json({ error: "업로드된 파일을 찾을 수 없습니다. 업로드가 실패했을 수 있습니다." });
+      }
+
+      // DB에 문서 레코드 생성 (status: ready)
+      const document = await storage.createPendingDocument({
+        caseId,
+        category,
+        fileName,
+        fileType,
+        fileSize,
+        storageKey,
+        displayOrder: displayOrder ?? 0,
+        createdBy: req.session.userId!,
+      });
+
+      // status를 ready로 업데이트
+      await storage.updateDocumentStatus(document.id, "ready", checksum);
+
+      console.log(`[upload-complete] Document ${document.id} saved with status ready`);
+
+      res.json({
+        success: true,
+        documentId: document.id,
+        document,
+      });
+    } catch (error: any) {
+      console.error("[upload-complete] Error occurred:");
+      console.error("  message:", error.message);
+      console.error("  stack:", error.stack);
+      if (error.code) console.error("  code:", error.code);
+      res.status(500).json({ error: "문서 저장 중 오류가 발생했습니다", details: error.message });
+    }
+  });
+
+  // Legacy: Request upload URL (하위 호환용)
   app.post("/api/documents/request-upload", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     try {
+      const contentLength = req.headers['content-length'];
+      console.log(`[request-upload] Content-Length: ${contentLength} bytes`);
+      
       const { caseId, category, fileName, fileType, fileSize, displayOrder } = req.body;
       
       if (!caseId || !category || !fileName || !fileType || !fileSize) {
         return res.status(400).json({ error: "필수 필드가 누락되었습니다 (caseId, category, fileName, fileType, fileSize)" });
       }
 
-      console.log(`[request-upload] Starting upload request for case ${caseId}, file: ${fileName}`);
+      console.log(`[request-upload] Starting upload request for case ${caseId}, file: ${fileName}, size: ${fileSize}`);
 
-      // storageKey 생성: documents/{caseId}/{uuid}_{fileName}
+      // storageKey 생성: documents/{caseId}/{timestamp}_{uuid}_{fileName}
+      const timestamp = Date.now();
       const uuid = crypto.randomUUID();
       const safeFileName = fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, "_");
-      const storageKey = `documents/${caseId}/${uuid}_${safeFileName}`;
+      const storageKey = `documents/${caseId}/${timestamp}_${uuid}_${safeFileName}`;
       
       // PRIVATE_OBJECT_DIR에서 bucket 정보 추출
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
@@ -3715,6 +3860,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const bucketName = pathParts[0];
       const objectName = pathParts.slice(1).join("/");
+
+      console.log(`[request-upload] Bucket: ${bucketName}, Object: ${objectName}`);
 
       // Presigned URL 발급 (15분 TTL)
       const uploadURL = await signObjectURL({
@@ -3743,9 +3890,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         uploadURL,
         storageKey,
       });
-    } catch (error) {
-      console.error("[request-upload] Error:", error);
-      res.status(500).json({ error: "업로드 URL 발급 중 오류가 발생했습니다" });
+    } catch (error: any) {
+      console.error("[request-upload] Error occurred:");
+      console.error("  message:", error.message);
+      console.error("  stack:", error.stack);
+      if (error.code) console.error("  code:", error.code);
+      if (error.statusCode) console.error("  statusCode:", error.statusCode);
+      if (error.response) console.error("  response:", JSON.stringify(error.response));
+      res.status(500).json({ error: "업로드 URL 발급 중 오류가 발생했습니다", details: error.message });
     }
   });
 
