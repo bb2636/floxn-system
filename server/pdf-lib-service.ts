@@ -2057,13 +2057,14 @@ interface PdfGenerationPayload {
     selectedFileIds: string[];
   };
   skipEvidence?: boolean; // 본문 PDF에서 증빙 이미지 제외 (이메일 용량 제한용)
+  skipPdfAttachments?: boolean; // PDF 첨부 파일 제외 (이미지만 포함, 이메일 용량 제한용)
 }
 
 export async function generatePdfWithPdfLib(
   payload: PdfGenerationPayload,
   processingLevel: number = 0
 ): Promise<Buffer> {
-  const { caseId, sections, evidence, skipEvidence } = payload;
+  const { caseId, sections, evidence, skipEvidence, skipPdfAttachments } = payload;
   const processingConfig = PROCESSING_LEVELS[processingLevel] || PROCESSING_LEVELS[0];
   
   console.log(`[pdf-lib] PDF 생성 시작 - 레벨 ${processingLevel}: ${processingConfig.maxDimension}px / ${processingConfig.quality}%`);
@@ -2174,6 +2175,9 @@ export async function generatePdfWithPdfLib(
       );
       
       console.log(`[pdf-lib] 선택된 문서: 이미지 ${imageDocs.length}개, PDF ${pdfDocs.length}개`);
+      if (skipPdfAttachments) {
+        console.log('[pdf-lib] skipPdfAttachments=true: PDF 첨부 파일 제외, 이미지만 포함');
+      }
       
       if (imageDocs.length > 0) {
         const { errors } = await renderEvidencePages(pdfDoc, fonts, caseData, imageDocs, processingConfig);
@@ -2183,7 +2187,11 @@ export async function generatePdfWithPdfLib(
         console.log('[pdf-lib] 증빙자료 이미지 페이지 생성 완료');
       }
       
-      for (const pdfDocData of pdfDocs) {
+      // skipPdfAttachments=true 면 PDF 첨부 스킵 (이메일 용량 제한용)
+      if (skipPdfAttachments) {
+        console.log(`[pdf-lib] PDF 첨부 ${pdfDocs.length}개 스킵됨`);
+      }
+      for (const pdfDocData of (skipPdfAttachments ? [] : pdfDocs)) {
         try {
           // Object Storage 또는 fileData에서 PDF 로드
           const pdfBuffer = await getImageBuffer(pdfDocData);
