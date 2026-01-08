@@ -3286,12 +3286,8 @@ export default function FieldReport() {
                       {/* 파일 리스트 */}
                       <div className="flex flex-col" style={{ gap: "12px" }}>
                         {categoryDocs.map((doc) => {
-                          if (!doc.storageKey && !doc.fileData) return null;
-                          const imageSrc = doc.storageKey 
-                            ? `/api/documents/${doc.id}/image`
-                            : doc.fileData?.startsWith('data:') 
-                              ? doc.fileData 
-                              : `data:${doc.fileType || 'image/jpeg'};base64,${doc.fileData}`;
+                          // 모든 이미지는 API를 통해 로드 (Object Storage + 레거시 DB 파일 모두 지원)
+                          const imageSrc = `/api/documents/${doc.id}/image`;
                           const isImage = doc.fileType?.startsWith('image/') || 
                             doc.fileName?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
                           
