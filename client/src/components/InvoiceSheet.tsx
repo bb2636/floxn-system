@@ -483,6 +483,10 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       const fieldDispatchPreventionAmt = parseInt(fieldDispatchPreventionAmount || "0") || 0;
       const fieldDispatchPropertyAmt = parseInt(fieldDispatchPropertyAmount || "0") || 0;
       
+      // Debug: Log selected documents for download
+      console.log('[Invoice Download] Selected document IDs:', selectedDocumentIds);
+      console.log('[Invoice Download] Total selected:', selectedDocumentIds.length);
+      
       const response = await fetch('/api/generate-invoice-pdf', {
         method: 'POST',
         headers: {
@@ -566,6 +570,10 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
       const propertyRepairAmt = parseInt(invoicePropertyRepairAmount || "0") || 0;
       const fieldDispatchPreventionAmt = parseInt(fieldDispatchPreventionAmount || "0") || 0;
       const fieldDispatchPropertyAmt = parseInt(fieldDispatchPropertyAmount || "0") || 0;
+      
+      // Debug: Log selected documents for email
+      console.log('[Invoice Email] Selected document IDs:', selectedDocumentIds);
+      console.log('[Invoice Email] Total selected:', selectedDocumentIds.length);
       
       const response = await fetch('/api/send-invoice-email-v2', {
         method: 'POST',
