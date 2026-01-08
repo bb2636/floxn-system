@@ -8423,14 +8423,14 @@ FLOXN 드림`;
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // ========== 현장출동보고서 PDF 생성 (증빙자료 이미지만 포함, PDF 첨부 제외) ==========
-      console.log(`[send-field-report-email-v2] Generating PDF for case ${caseId} (with evidence images only, skip PDF attachments)`);
+      // ========== 현장출동보고서 PDF 생성 (증빙자료 이미지 및 PDF 모두 포함) ==========
+      console.log(`[send-field-report-email-v2] Generating PDF for case ${caseId} (with all evidence including PDFs)`);
       const mainPdfBuffer = await generatePdfWithSizeLimitPdfLib({
         caseId,
         sections,
         evidence,
-        skipEvidence: false, // 증빙자료 이미지는 포함
-        skipPdfAttachments: true, // 업로드된 PDF 파일은 제외 (용량 제한)
+        skipEvidence: false, // 증빙자료 이미지 포함
+        skipPdfAttachments: false, // 업로드된 PDF 파일도 포함
       });
       console.log(`[send-field-report-email-v2] PDF generated: ${Math.round(mainPdfBuffer.length / 1024)}KB (${(mainPdfBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
 
