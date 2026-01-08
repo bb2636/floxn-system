@@ -1735,7 +1735,9 @@ async function renderEstimatePage(
   
   const laborRows: TableCell[][] = [laborHeader];
   let laborTotal = 0;
-  let laborExpenseTotal = 0;
+  // includeInEstimate === true → 경비가 아닌 항목 (관리비/이윤에 포함)
+  // includeInEstimate === false → 경비 항목 (관리비/이윤에서 제외)
+  let laborNonExpenseTotal = 0; // 경비가 아닌 항목 합계 (관리비/이윤 계산 대상)
   
   if (laborCostItems.length > 0) {
     laborCostItems.forEach((row) => {
@@ -1746,10 +1748,12 @@ async function renderEstimatePage(
       const unitPrice = Number(row.standardPrice) || Number(row.pricePerSqm) || Number(row.unitPrice) || 0;
       const quantity = Number(row.quantity) || 1;
       const amount = Number(row.amount) || 0;
-      const expense = row.includeInEstimate ? amount : 0;
+      // includeInEstimate=false → 경비 항목 (화면에 표시)
+      const expense = !row.includeInEstimate ? amount : 0;
       laborTotal += amount;
+      // includeInEstimate=true → 경비가 아닌 항목 (관리비/이윤 계산에 포함)
       if (row.includeInEstimate) {
-        laborExpenseTotal += amount;
+        laborNonExpenseTotal += amount;
       }
       
       laborRows.push([
@@ -1884,9 +1888,10 @@ async function renderEstimatePage(
   const profitRate = 0.15;
   const vatRate = 0.1;
   
-  // 일반관리비/이윤 계산 기준: 경비 항목 제외 (includeInEstimate === true인 항목 제외)
-  // feeBase = 전체 소계 - 경비 항목 합계
-  const feeBase = subtotal - laborExpenseTotal;
+  // 일반관리비/이윤 계산 기준: 경비가 아닌 항목(includeInEstimate=true) + 자재비
+  // field-report.tsx 계산 로직과 동일:
+  // baseForFees = laborTotalNonExpense + materialTotal
+  const feeBase = laborNonExpenseTotal + materialTotal;
   const adminFee = Math.round(feeBase * adminFeeRate);
   const profit = Math.round(feeBase * profitRate);
   const beforeRounding = subtotal + adminFee + profit;
