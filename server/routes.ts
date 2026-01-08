@@ -3678,6 +3678,243 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== Object Storage 기반 문서 업로드 API =====
+
+  // Request upload URL (presigned URL 발급 + pending 상태 레코드 생성)
+  app.post("/api/documents/request-upload", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { caseId, category, fileName, fileType, fileSize, displayOrder } = req.body;
+      
+      if (!caseId || !category || !fileName || !fileType || !fileSize) {
+        return res.status(400).json({ error: "필수 필드가 누락되었습니다 (caseId, category, fileName, fileType, fileSize)" });
+      }
+
+      console.log(`[request-upload] Starting upload request for case ${caseId}, file: ${fileName}`);
+
+      // storageKey 생성: documents/{caseId}/{uuid}_{fileName}
+      const uuid = crypto.randomUUID();
+      const safeFileName = fileName.replace(/[^a-zA-Z0-9가-힣._-]/g, "_");
+      const storageKey = `documents/${caseId}/${uuid}_${safeFileName}`;
+      
+      // PRIVATE_OBJECT_DIR에서 bucket 정보 추출
+      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+      if (!privateObjectDir) {
+        console.error("[request-upload] PRIVATE_OBJECT_DIR not set");
+        return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+      }
+
+      // Full path: /{bucket}/.../{storageKey}
+      const fullPath = `${privateObjectDir}/${storageKey}`;
+      const pathParts = fullPath.split("/").filter(p => p);
+      if (pathParts.length < 2) {
+        return res.status(500).json({ error: "잘못된 스토리지 경로입니다" });
+      }
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join("/");
+
+      // Presigned URL 발급 (15분 TTL)
+      const uploadURL = await signObjectURL({
+        bucketName,
+        objectName,
+        method: "PUT",
+        ttlSec: 900,
+      });
+
+      // DB에 pending 상태로 문서 레코드 생성
+      const document = await storage.createPendingDocument({
+        caseId,
+        category,
+        fileName,
+        fileType,
+        fileSize,
+        storageKey,
+        displayOrder: displayOrder ?? 0,
+        createdBy: req.session.userId!,
+      });
+
+      console.log(`[request-upload] Created pending document ${document.id} with storageKey: ${storageKey}`);
+
+      res.json({
+        documentId: document.id,
+        uploadURL,
+        storageKey,
+      });
+    } catch (error) {
+      console.error("[request-upload] Error:", error);
+      res.status(500).json({ error: "업로드 URL 발급 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Complete upload (업로드 완료 검증 + status ready로 변경)
+  app.post("/api/documents/complete-upload", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { documentId, checksum } = req.body;
+
+      if (!documentId) {
+        return res.status(400).json({ error: "documentId가 필요합니다" });
+      }
+
+      console.log(`[complete-upload] Completing upload for document ${documentId}`);
+
+      // 문서 조회
+      const document = await storage.getDocument(documentId);
+      if (!document) {
+        return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
+      }
+
+      if (!document.storageKey) {
+        return res.status(400).json({ error: "해당 문서는 Object Storage 업로드가 아닙니다" });
+      }
+
+      // Object Storage에서 파일 존재 확인
+      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+      if (!privateObjectDir) {
+        return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+      }
+
+      const fullPath = `${privateObjectDir}/${document.storageKey}`;
+      const pathParts = fullPath.split("/").filter(p => p);
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join("/");
+
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      const [exists] = await file.exists();
+
+      if (!exists) {
+        console.error(`[complete-upload] File not found in storage: ${document.storageKey}`);
+        // 파일이 없으면 failed 상태로 업데이트
+        await storage.updateDocumentStatus(documentId, "failed");
+        return res.status(400).json({ error: "업로드된 파일을 찾을 수 없습니다" });
+      }
+
+      // status를 ready로 업데이트
+      const updatedDocument = await storage.updateDocumentStatus(documentId, "ready", checksum);
+      
+      console.log(`[complete-upload] Document ${documentId} status updated to ready`);
+
+      res.json({
+        success: true,
+        document: updatedDocument,
+      });
+    } catch (error) {
+      console.error("[complete-upload] Error:", error);
+      res.status(500).json({ error: "업로드 완료 처리 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Fail upload (업로드 실패 처리)
+  app.post("/api/documents/fail-upload", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { documentId } = req.body;
+
+      if (!documentId) {
+        return res.status(400).json({ error: "documentId가 필요합니다" });
+      }
+
+      console.log(`[fail-upload] Marking upload as failed for document ${documentId}`);
+
+      // 문서 조회
+      const document = await storage.getDocument(documentId);
+      if (!document) {
+        return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
+      }
+
+      // status를 failed로 업데이트
+      const updatedDocument = await storage.updateDocumentStatus(documentId, "failed");
+      
+      console.log(`[fail-upload] Document ${documentId} status updated to failed`);
+
+      res.json({
+        success: true,
+        document: updatedDocument,
+      });
+    } catch (error) {
+      console.error("[fail-upload] Error:", error);
+      res.status(500).json({ error: "업로드 실패 처리 중 오류가 발생했습니다" });
+    }
+  });
+
+  // Get download URL (storageKey에서 다운로드 URL 생성)
+  app.get("/api/documents/:id/download-url", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { id } = req.params;
+
+      if (!id || id === "null" || id === "undefined") {
+        return res.status(400).json({ error: "유효하지 않은 문서 ID입니다" });
+      }
+
+      // 문서 조회
+      const document = await storage.getDocument(id);
+      if (!document) {
+        return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
+      }
+
+      // 권한 체크 (관리자/심사사 또는 본인만 접근 가능)
+      const userRole = req.session.userRole;
+      const isPrivilegedRole = userRole === "관리자" || userRole === "심사사";
+      if (!isPrivilegedRole && document.createdBy !== req.session.userId) {
+        return res.status(403).json({ error: "권한이 없습니다" });
+      }
+
+      // Object Storage 문서인지 확인
+      if (!document.storageKey) {
+        return res.status(400).json({ error: "해당 문서는 Object Storage 문서가 아닙니다 (레거시 문서)" });
+      }
+
+      // status가 ready인지 확인
+      if (document.status !== "ready") {
+        return res.status(400).json({ error: `문서가 준비되지 않았습니다 (현재 상태: ${document.status})` });
+      }
+
+      console.log(`[download-url] Generating download URL for document ${id}`);
+
+      // Download URL 생성 (1시간 TTL)
+      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+      if (!privateObjectDir) {
+        return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+      }
+
+      const fullPath = `${privateObjectDir}/${document.storageKey}`;
+      const pathParts = fullPath.split("/").filter(p => p);
+      const bucketName = pathParts[0];
+      const objectName = pathParts.slice(1).join("/");
+
+      const downloadURL = await signObjectURL({
+        bucketName,
+        objectName,
+        method: "GET",
+        ttlSec: 3600,
+      });
+
+      res.json({
+        downloadURL,
+        fileName: document.fileName,
+        fileType: document.fileType,
+        fileSize: document.fileSize,
+      });
+    } catch (error) {
+      console.error("[download-url] Error:", error);
+      res.status(500).json({ error: "다운로드 URL 생성 중 오류가 발생했습니다" });
+    }
+  });
+
   // Cases endpoints
   // Get assigned cases for current user
   app.get("/api/cases/assigned", async (req, res) => {

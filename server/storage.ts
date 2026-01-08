@@ -268,6 +268,22 @@ export interface IStorage {
     id: string,
     category: string,
   ): Promise<CaseDocument | null>;
+  // Object Storage 기반 문서 업로드 메서드
+  createPendingDocument(data: {
+    caseId: string;
+    category: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    storageKey: string;
+    displayOrder?: number;
+    createdBy: string;
+  }): Promise<CaseDocument>;
+  updateDocumentStatus(
+    id: string,
+    status: "pending" | "ready" | "failed",
+    checksum?: string,
+  ): Promise<CaseDocument | null>;
   // Estimate methods
   createEstimateVersion(
     caseId: string,
@@ -2280,6 +2296,54 @@ export class MemStorage implements IStorage {
     const updated: CaseDocument = {
       ...existing,
       category,
+    };
+    this.documents.set(id, updated);
+    return updated;
+  }
+
+  async createPendingDocument(data: {
+    caseId: string;
+    category: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    storageKey: string;
+    displayOrder?: number;
+    createdBy: string;
+  }): Promise<CaseDocument> {
+    const id = randomUUID();
+    const document: CaseDocument = {
+      id,
+      caseId: data.caseId,
+      category: data.category,
+      fileName: data.fileName,
+      fileType: data.fileType,
+      fileSize: data.fileSize,
+      fileData: null,
+      storageKey: data.storageKey,
+      status: "pending",
+      checksum: null,
+      displayOrder: data.displayOrder ?? 0,
+      createdBy: data.createdBy,
+      createdAt: new Date(),
+    };
+    this.documents.set(id, document);
+    return document;
+  }
+
+  async updateDocumentStatus(
+    id: string,
+    status: "pending" | "ready" | "failed",
+    checksum?: string,
+  ): Promise<CaseDocument | null> {
+    const existing = this.documents.get(id);
+    if (!existing) {
+      return null;
+    }
+    const updated: CaseDocument = {
+      ...existing,
+      status,
+      checksum: checksum ?? existing.checksum,
     };
     this.documents.set(id, updated);
     return updated;
@@ -5301,6 +5365,51 @@ export class DbStorage implements IStorage {
     const updated = await db
       .update(caseDocuments)
       .set({ category })
+      .where(eq(caseDocuments.id, id))
+      .returning();
+    return updated[0] || null;
+  }
+
+  async createPendingDocument(data: {
+    caseId: string;
+    category: string;
+    fileName: string;
+    fileType: string;
+    fileSize: number;
+    storageKey: string;
+    displayOrder?: number;
+    createdBy: string;
+  }): Promise<CaseDocument> {
+    const created = await db
+      .insert(caseDocuments)
+      .values({
+        caseId: data.caseId,
+        category: data.category,
+        fileName: data.fileName,
+        fileType: data.fileType,
+        fileSize: data.fileSize,
+        fileData: null,
+        storageKey: data.storageKey,
+        status: "pending",
+        displayOrder: data.displayOrder ?? 0,
+        createdBy: data.createdBy,
+      })
+      .returning();
+    return created[0];
+  }
+
+  async updateDocumentStatus(
+    id: string,
+    status: "pending" | "ready" | "failed",
+    checksum?: string,
+  ): Promise<CaseDocument | null> {
+    const updateData: { status: string; checksum?: string } = { status };
+    if (checksum) {
+      updateData.checksum = checksum;
+    }
+    const updated = await db
+      .update(caseDocuments)
+      .set(updateData)
       .where(eq(caseDocuments.id, id))
       .returning();
     return updated[0] || null;
