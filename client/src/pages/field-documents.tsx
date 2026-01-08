@@ -45,6 +45,87 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
+// 이미지 압축 함수: PNG/JPEG → JPEG, 최대 1600px, quality 35-40
+const compressImage = (file: File): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    // 이미지 파일이 아니면 원본 반환
+    if (!file.type.startsWith('image/') || file.type === 'image/gif') {
+      resolve(file);
+      return;
+    }
+
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    img.onload = () => {
+      try {
+        // 최대 가로폭 1600px로 리사이즈
+        const MAX_WIDTH = 1600;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        if (!ctx) {
+          reject(new Error('Canvas context not available'));
+          return;
+        }
+
+        // 이미지 그리기
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // JPEG로 변환 (quality 0.38 = 약 38%)
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error('이미지 변환 실패'));
+              return;
+            }
+
+            // 파일명에서 확장자 변경 (.png → .jpg)
+            const originalName = file.name;
+            const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '');
+            const newFileName = `${nameWithoutExt}.jpg`;
+
+            const compressedFile = new File([blob], newFileName, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+
+            console.log(`[압축] ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB) → ${newFileName} (${(compressedFile.size / 1024 / 1024).toFixed(2)}MB)`);
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          0.38 // JPEG quality 38%
+        );
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    img.onerror = () => {
+      reject(new Error('이미지 로드 실패'));
+    };
+
+    // 파일을 이미지로 로드
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.readAsDataURL(file);
+  });
+};
+
 // Helper function to download a file from Base64
 const downloadFile = (fileName: string, fileType: string, base64Data: string) => {
   // Create blob from base64
@@ -620,13 +701,25 @@ export default function FieldDocuments() {
     }
   };
 
-  // 파일 선택 핸들러 (Object Storage 기반)
+  // 파일 선택 핸들러 (Object Storage 기반 + 이미지 자동 압축)
   const handleFileSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
     const defaultSubCategory = getCurrentSubFilter();
 
-    const newFiles: UploadingFile[] = Array.from(files).map(file => ({
+    // 1단계: 이미지 압축 변환 (PNG/JPEG → JPEG 1600px, quality 38%)
+    const compressedFiles = await Promise.all(
+      Array.from(files).map(async (file) => {
+        try {
+          return await compressImage(file);
+        } catch (error) {
+          console.error(`[압축 실패] ${file.name}:`, error);
+          return file; // 압축 실패 시 원본 사용
+        }
+      })
+    );
+
+    const newFiles: UploadingFile[] = compressedFiles.map(file => ({
       id: `${Date.now()}-${Math.random()}`,
       file,
       category: defaultSubCategory,
