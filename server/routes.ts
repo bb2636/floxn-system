@@ -6871,10 +6871,12 @@ FLOXN`;
             const mimeType = doc.fileType || '';
             const fileName = doc.fileName || '';
             
-            // Get header text for this document
-            const docCaseNumber = caseNumberMap[doc.caseId] || caseData.caseNumber || '';
-            const tab = categoryToTab[doc.category] || '기타';
-            const headerText = `[${docCaseNumber}] ${tab} - ${doc.category || '기타'}`;
+            // Get header text for this document (보험사사고번호 + 주소)
+            const accidentNo = caseData.insuranceAccidentNo || '';
+            const address = caseData.accidentAddress || '';
+            const addressDetail = caseData.accidentAddressDetail || '';
+            const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
+            const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || '기타'}`;
             
             if (isPdfFile(mimeType, fileName)) {
               // First, flush any pending images before adding PDF
@@ -7335,41 +7337,23 @@ FLOXN`;
             return false;
           };
           
-          // Common constants and category mapping
+          // Common constants
           const A4_WIDTH = 595.28;
           const A4_HEIGHT = 841.89;
           const MARGIN = 30;
-          const HEADER_HEIGHT = 25;
-          const GAP = 10;
-          
-          const categoryToTab: Record<string, string> = {
-            '현장출동사진': '현장사진', '현장': '현장사진',
-            '수리중 사진': '현장사진', '수리중': '현장사진',
-            '복구완료 사진': '현장사진', '복구완료': '현장사진',
-            '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
-            '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
-            '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
-            '위임장': '청구자료', '도급계약서': '청구자료',
-            '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
-          };
+          const HEADER_HEIGHT = 20;
+          const GAP = 8;
           
           // Category order: 사진 > 기본자료 > 증빙자료 > 청구자료
           const categoryOrder: Record<string, number> = {
-            // 사진 (0-9)
             '현장출동사진': 0, '현장': 1, '현장사진': 2,
             '수리중 사진': 3, '수리중': 4,
             '복구완료 사진': 5, '복구완료': 6,
-            // 기본자료 (10-19)
             '보험금 청구서': 10, '보험금청구서': 11,
             '개인정보 동의서(가족용)': 12, '개인정보동의서': 13,
-            // 증빙자료 (20-29)
-            '주민등록등본': 20,
-            '등기부등본': 21,
-            '건축물대장': 22,
+            '주민등록등본': 20, '등기부등본': 21, '건축물대장': 22,
             '기타증빙자료(민원일지 등)': 23, '기타증빙자료': 24,
-            // 청구자료 (30-39)
-            '위임장': 30,
-            '도급계약서': 31,
+            '위임장': 30, '도급계약서': 31,
             '복구완료확인서': 32, '복구완료 확인서': 33,
             '부가세 청구자료': 34, '부가세청구자료': 35,
           };
@@ -7383,17 +7367,71 @@ FLOXN`;
           
           console.log(`[Invoice Email] 문서 ${sortedDocs.length}개 카테고리 순서로 정렬 완료`);
           
+          // Collect images for 2-per-page layout
+          const pendingImages: { doc: any; buffer: Buffer; headerText: string }[] = [];
+          
           // Process all documents in category order
           for (const doc of sortedDocs) {
             const mimeType = doc.fileType || '';
             const fileName = doc.fileName || '';
             
-            // Get header text for this document
-            const docCaseNumber = caseNumberMap[doc.caseId] || caseData.caseNumber || '';
-            const tab = categoryToTab[doc.category] || '기타';
-            const headerText = `[${docCaseNumber}] ${tab} - ${doc.category || '기타'}`;
+            // Get header text for this document (보험사사고번호 + 주소)
+            const accidentNo = caseData.insuranceAccidentNo || '';
+            const address = caseData.accidentAddress || '';
+            const addressDetail = caseData.accidentAddressDetail || '';
+            const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
+            const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || '기타'}`;
             
             if (isPdfFile(mimeType, fileName)) {
+              // First, flush any pending images before adding PDF
+              if (pendingImages.length > 0) {
+                for (let i = 0; i < pendingImages.length; i += 2) {
+                  const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                  const imgHeight = (A4_HEIGHT - MARGIN * 2 - GAP) / 2;
+                  const imgWidth = A4_WIDTH - MARGIN * 2;
+                  
+                  for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
+                    const img = pendingImages[i + j];
+                    const yPos = j === 0 
+                      ? A4_HEIGHT - MARGIN - imgHeight 
+                      : MARGIN;
+                    
+                    page.drawRectangle({
+                      x: MARGIN,
+                      y: yPos + imgHeight - HEADER_HEIGHT,
+                      width: imgWidth,
+                      height: HEADER_HEIGHT,
+                      color: rgb(0.95, 0.95, 0.95),
+                      borderColor: rgb(0.8, 0.8, 0.8),
+                      borderWidth: 0.5,
+                    });
+                    page.drawText(img.headerText, {
+                      x: MARGIN + 8,
+                      y: yPos + imgHeight - HEADER_HEIGHT + 6,
+                      size: 9,
+                      font,
+                      color: rgb(0.2, 0.2, 0.2),
+                    });
+                    
+                    try {
+                      const embeddedImage = await mergedPdf.embedJpg(img.buffer);
+                      const dims = embeddedImage.scale(1);
+                      const availableHeight = imgHeight - HEADER_HEIGHT - GAP;
+                      let scale = Math.min(imgWidth / dims.width, availableHeight / dims.height, 1);
+                      const finalW = dims.width * scale;
+                      const finalH = dims.height * scale;
+                      const imgX = MARGIN + (imgWidth - finalW) / 2;
+                      const imgY = yPos + (availableHeight - finalH) / 2;
+                      
+                      page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
+                    } catch (e) {
+                      console.error(`[Invoice Email] Failed to embed image:`, e);
+                    }
+                  }
+                }
+                pendingImages.length = 0;
+              }
+              
               // PDF document
               try {
                 const fileBuffer = await getFileBuffer(doc);
@@ -7410,7 +7448,6 @@ FLOXN`;
                   mergedPdf.addPage(page);
                   const { width, height } = page.getSize();
                   
-                  // Draw white background for header area
                   page.drawRectangle({
                     x: 0,
                     y: height - MARGIN - HEADER_HEIGHT,
@@ -7418,8 +7455,6 @@ FLOXN`;
                     height: MARGIN + HEADER_HEIGHT,
                     color: rgb(1, 1, 1),
                   });
-                  
-                  // Draw header background
                   page.drawRectangle({
                     x: MARGIN,
                     y: height - MARGIN - HEADER_HEIGHT,
@@ -7429,12 +7464,10 @@ FLOXN`;
                     borderColor: rgb(0.8, 0.8, 0.8),
                     borderWidth: 0.5,
                   });
-                  
-                  // Draw header text
                   page.drawText(headerText, {
-                    x: MARGIN + 10,
-                    y: height - MARGIN - HEADER_HEIGHT + 8,
-                    size: 10,
+                    x: MARGIN + 8,
+                    y: height - MARGIN - HEADER_HEIGHT + 6,
+                    size: 9,
                     font,
                     color: rgb(0.2, 0.2, 0.2),
                   });
@@ -7444,7 +7477,7 @@ FLOXN`;
                 console.error(`[Invoice Email] Failed to add PDF ${doc.fileName}:`, pdfError);
               }
             } else if (isImageFile(mimeType, fileName)) {
-              // Image document
+              // Collect image for 2-per-page layout
               try {
                 const fileBuffer = await getFileBuffer(doc);
                 if (!fileBuffer || fileBuffer.length === 0) {
@@ -7453,64 +7486,65 @@ FLOXN`;
                 }
                 
                 const imageBuffer = await sharp.default(fileBuffer)
-                  .resize(800, 1200, { fit: 'inside', withoutEnlargement: true })
-                  .jpeg({ quality: 50, mozjpeg: true })
+                  .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
+                  .jpeg({ quality: 60, mozjpeg: true })
                   .toBuffer();
                 
-                const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                pendingImages.push({ doc, buffer: imageBuffer, headerText });
+                console.log(`[Invoice Email] Queued image: ${doc.fileName} - ${doc.category}`);
+              } catch (err) {
+                console.error(`[Invoice Email] Failed to process image ${doc.fileName}:`, err);
+              }
+            }
+          }
+          
+          // Flush remaining pending images
+          if (pendingImages.length > 0) {
+            for (let i = 0; i < pendingImages.length; i += 2) {
+              const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+              const imgHeight = (A4_HEIGHT - MARGIN * 2 - GAP) / 2;
+              const imgWidth = A4_WIDTH - MARGIN * 2;
+              
+              for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
+                const img = pendingImages[i + j];
+                const yPos = j === 0 
+                  ? A4_HEIGHT - MARGIN - imgHeight 
+                  : MARGIN;
                 
                 page.drawRectangle({
                   x: MARGIN,
-                  y: A4_HEIGHT - MARGIN - HEADER_HEIGHT,
-                  width: A4_WIDTH - (MARGIN * 2),
+                  y: yPos + imgHeight - HEADER_HEIGHT,
+                  width: imgWidth,
                   height: HEADER_HEIGHT,
                   color: rgb(0.95, 0.95, 0.95),
                   borderColor: rgb(0.8, 0.8, 0.8),
                   borderWidth: 0.5,
                 });
-                
-                page.drawText(headerText, {
-                  x: MARGIN + 10,
-                  y: A4_HEIGHT - MARGIN - HEADER_HEIGHT + 8,
-                  size: 10,
+                page.drawText(img.headerText, {
+                  x: MARGIN + 8,
+                  y: yPos + imgHeight - HEADER_HEIGHT + 6,
+                  size: 9,
                   font,
                   color: rgb(0.2, 0.2, 0.2),
                 });
                 
                 try {
-                  const embeddedImage = await mergedPdf.embedJpg(imageBuffer);
-                  const imageDims = embeddedImage.scale(1);
-                  const maxImageWidth = A4_WIDTH - (MARGIN * 2);
-                  const maxImageHeight = A4_HEIGHT - (MARGIN * 2) - HEADER_HEIGHT - GAP;
+                  const embeddedImage = await mergedPdf.embedJpg(img.buffer);
+                  const dims = embeddedImage.scale(1);
+                  const availableHeight = imgHeight - HEADER_HEIGHT - GAP;
+                  let scale = Math.min(imgWidth / dims.width, availableHeight / dims.height, 1);
+                  const finalW = dims.width * scale;
+                  const finalH = dims.height * scale;
+                  const imgX = MARGIN + (imgWidth - finalW) / 2;
+                  const imgY = yPos + (availableHeight - finalH) / 2;
                   
-                  let scale = 1;
-                  if (imageDims.width > maxImageWidth) {
-                    scale = maxImageWidth / imageDims.width;
-                  }
-                  if (imageDims.height * scale > maxImageHeight) {
-                    scale = maxImageHeight / imageDims.height;
-                  }
-                  
-                  const finalWidth = imageDims.width * scale;
-                  const finalHeight = imageDims.height * scale;
-                  const imageX = MARGIN + (maxImageWidth - finalWidth) / 2;
-                  const imageY = MARGIN + (maxImageHeight - finalHeight) / 2;
-                  
-                  page.drawImage(embeddedImage, {
-                    x: imageX,
-                    y: imageY,
-                    width: finalWidth,
-                    height: finalHeight,
-                  });
-                  
-                  console.log(`[Invoice Email] Added image: ${doc.fileName} - ${doc.category}`);
-                } catch (imgErr) {
-                  console.error(`[Invoice Email] Failed to embed image ${doc.fileName}:`, imgErr);
+                  page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
+                } catch (e) {
+                  console.error(`[Invoice Email] Failed to embed image:`, e);
                 }
-              } catch (imgError) {
-                console.error(`[Invoice Email] Failed to add image ${doc.fileName}:`, imgError);
               }
             }
+            console.log(`[Invoice Email] Added ${pendingImages.length} images (2 per page)`);
           }
           
           console.log(`[Invoice Email] Processed ${sortedDocs.length} documents in category order`);
