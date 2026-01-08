@@ -599,7 +599,12 @@ export const caseDocuments = pgTable("case_documents", {
   fileName: text("file_name").notNull(),
   fileType: text("file_type").notNull(),
   fileSize: integer("file_size").notNull(),
-  fileData: text("file_data").notNull(), // Base64 encoded file data
+  fileData: text("file_data"), // Base64 encoded file data (레거시 호환용, 신규는 NULL)
+  // Object Storage 관련 필드 (신규 업로드용)
+  storageKey: text("storage_key"), // Object Storage 키
+  status: text("status").notNull().default("ready"), // pending | ready | failed
+  checksum: text("checksum"), // MD5 또는 SHA256 체크섬
+  displayOrder: integer("display_order").notNull().default(0), // 표시 순서
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
