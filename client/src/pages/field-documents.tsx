@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, Case, CaseDocument } from "@shared/schema";
-import { Upload, X, Check, Search, Info, Loader2 } from "lucide-react";
+import { Upload, X, Check, Search, Info, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,8 +12,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { FieldSurveyLayout } from "@/components/field-survey-layout";
 import { formatCaseNumber } from "@/lib/utils";
+import pLimit from "p-limit";
+import pRetry from "p-retry";
 
 type DocumentCategory = "전체" | "사진" | "기본자료" | "증빙자료" | "청구자료";
+
+type UploadStatus = "pending" | "uploading" | "completed" | "failed";
 
 interface UploadingFile {
   id: string;
@@ -21,6 +25,9 @@ interface UploadingFile {
   category: string;
   progress: number;
   uploaded: boolean;
+  status: UploadStatus;
+  error?: string;
+  documentId?: string;
 }
 
 // Helper function to convert File to Base64
@@ -152,12 +159,28 @@ export default function FieldDocuments() {
     enabled: !!selectedCaseId,
   });
 
-  // 파일 다운로드
-  const handleDownload = useCallback((doc: CaseDocument) => {
-    if (doc.fileData) {
+  // 파일 다운로드 (Object Storage 또는 레거시)
+  const handleDownload = useCallback(async (doc: CaseDocument) => {
+    if (doc.storageKey && doc.status === "ready") {
+      try {
+        const response = await apiRequest("GET", `/api/documents/${doc.id}/download-url`);
+        if (!response.ok) {
+          throw new Error("다운로드 URL 생성 실패");
+        }
+        const { downloadURL } = await response.json();
+        window.open(downloadURL, "_blank");
+      } catch (error) {
+        console.error("Download error:", error);
+        toast({
+          title: "다운로드 실패",
+          description: "파일을 다운로드할 수 없습니다",
+          variant: "destructive",
+        });
+      }
+    } else if (doc.fileData) {
       downloadFile(doc.fileName, doc.fileType, doc.fileData);
     }
-  }, []);
+  }, [toast]);
 
   // 도면 데이터 조회 (제출 조건 체크용)
   const { data: drawingData, isLoading: isLoadingDrawing } = useQuery({
@@ -462,11 +485,145 @@ export default function FieldDocuments() {
     }
   };
 
-  // 파일 선택 핸들러
+  // 동시 업로드 제한 (3개)
+  const uploadLimit = pLimit(3);
+
+  // 단일 파일 업로드 함수 (Object Storage 기반)
+  const uploadSingleFile = async (uploadingFile: UploadingFile): Promise<void> => {
+    const updateProgress = (progress: number, status?: UploadStatus, error?: string, documentId?: string) => {
+      setUploadingFiles(prev =>
+        prev.map(f =>
+          f.id === uploadingFile.id
+            ? { ...f, progress, ...(status && { status }), ...(error !== undefined && { error }), ...(documentId && { documentId }) }
+            : f
+        )
+      );
+    };
+
+    // 1단계: request-upload 호출
+    updateProgress(5, "uploading");
+    
+    const requestResponse = await apiRequest("POST", "/api/documents/request-upload", {
+      caseId: selectedCaseId,
+      category: uploadingFile.category,
+      fileName: uploadingFile.file.name,
+      fileType: uploadingFile.file.type,
+      fileSize: uploadingFile.file.size,
+      displayOrder: 0,
+    });
+
+    if (!requestResponse.ok) {
+      const errorText = await requestResponse.text();
+      throw new Error(errorText || "업로드 URL 발급 실패");
+    }
+
+    const { documentId, uploadURL } = await requestResponse.json();
+    updateProgress(15, undefined, undefined, documentId);
+
+    // 2단계: PUT으로 파일 직접 업로드 (XMLHttpRequest로 진행률 추적)
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 70) + 15;
+          updateProgress(percentComplete);
+        }
+      });
+
+      xhr.addEventListener("load", () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`업로드 실패: ${xhr.status} ${xhr.statusText}`));
+        }
+      });
+
+      xhr.addEventListener("error", () => {
+        reject(new Error("네트워크 오류로 업로드 실패"));
+      });
+
+      xhr.addEventListener("abort", () => {
+        reject(new Error("업로드가 취소되었습니다"));
+      });
+
+      xhr.open("PUT", uploadURL);
+      xhr.setRequestHeader("Content-Type", uploadingFile.file.type);
+      xhr.send(uploadingFile.file);
+    });
+
+    updateProgress(90);
+
+    // 3단계: complete-upload 호출
+    const completeResponse = await apiRequest("POST", "/api/documents/complete-upload", {
+      documentId,
+    });
+
+    if (!completeResponse.ok) {
+      const errorText = await completeResponse.text();
+      throw new Error(errorText || "업로드 완료 검증 실패");
+    }
+
+    updateProgress(100, "completed");
+  };
+
+  // 파일 업로드 재시도 래퍼
+  const uploadWithRetry = async (uploadingFile: UploadingFile): Promise<void> => {
+    try {
+      await pRetry(
+        async () => {
+          await uploadSingleFile(uploadingFile);
+        },
+        {
+          retries: 3,
+          minTimeout: 1000,
+          maxTimeout: 5000,
+          factor: 2,
+          onFailedAttempt: (error) => {
+            console.log(`[Upload] ${uploadingFile.file.name} 재시도 ${error.attemptNumber}/3: ${error.message}`);
+          },
+        }
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["/api/documents/case", selectedCaseId] });
+      
+      toast({
+        title: "파일이 업로드 되었습니다",
+        description: uploadingFile.file.name,
+        className: "bg-[#008FED] text-white border-0",
+      });
+
+      setTimeout(() => {
+        setUploadingFiles(prev => prev.filter(f => f.id !== uploadingFile.id));
+      }, 1500);
+
+    } catch (error) {
+      console.error("Upload failed after retries:", error);
+      
+      setUploadingFiles(prev =>
+        prev.map(f =>
+          f.id === uploadingFile.id
+            ? { ...f, status: "failed", error: error instanceof Error ? error.message : "업로드 실패" }
+            : f
+        )
+      );
+
+      if (uploadingFile.documentId) {
+        try {
+          await apiRequest("POST", "/api/documents/fail-upload", {
+            documentId: uploadingFile.documentId,
+          });
+        } catch (e) {
+          console.error("Failed to mark document as failed:", e);
+        }
+      }
+    }
+  };
+
+  // 파일 선택 핸들러 (Object Storage 기반)
   const handleFileSelect = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    // 현재 선택된 서브필터를 카테고리로 사용 (전체일 경우 해당 탭의 첫 번째 옵션)
     const defaultSubCategory = getCurrentSubFilter();
 
     const newFiles: UploadingFile[] = Array.from(files).map(file => ({
@@ -475,60 +632,34 @@ export default function FieldDocuments() {
       category: defaultSubCategory,
       progress: 0,
       uploaded: false,
+      status: "pending" as UploadStatus,
     }));
 
     setUploadingFiles(prev => [...prev, ...newFiles]);
 
-    // 파일 업로드
-    for (const uploadingFile of newFiles) {
-      try {
-        // Progress simulation
-        const interval = setInterval(() => {
-          setUploadingFiles(prev =>
-            prev.map(f =>
-              f.id === uploadingFile.id ? { ...f, progress: Math.min(f.progress + 20, 90) } : f
-            )
-          );
-        }, 200);
+    const uploadPromises = newFiles.map(uploadingFile =>
+      uploadLimit(() => uploadWithRetry(uploadingFile))
+    );
 
-        // Convert to Base64
-        const base64Data = await fileToBase64(uploadingFile.file);
+    await Promise.allSettled(uploadPromises);
+  };
 
-        // Upload to server
-        await uploadMutation.mutateAsync({
-          caseId: selectedCaseId,
-          category: uploadingFile.category,
-          parentCategory: selectedCategory,
-          fileName: uploadingFile.file.name,
-          fileType: uploadingFile.file.type,
-          fileSize: uploadingFile.file.size,
-          fileData: base64Data,
-          createdBy: user.id,
-        });
+  // 실패한 파일 재업로드
+  const handleRetryUpload = async (uploadingFile: UploadingFile) => {
+    setUploadingFiles(prev =>
+      prev.map(f =>
+        f.id === uploadingFile.id
+          ? { ...f, progress: 0, status: "pending" as UploadStatus, error: undefined, documentId: undefined }
+          : f
+      )
+    );
+    
+    await uploadWithRetry(uploadingFile);
+  };
 
-        clearInterval(interval);
-
-        // Mark as complete
-        setUploadingFiles(prev =>
-          prev.map(f =>
-            f.id === uploadingFile.id ? { ...f, progress: 100, uploaded: true } : f
-          )
-        );
-
-        // Remove from uploading list after a delay
-        setTimeout(() => {
-          setUploadingFiles(prev => prev.filter(f => f.id !== uploadingFile.id));
-        }, 1000);
-      } catch (error) {
-        console.error("Upload error:", error);
-        setUploadingFiles(prev => prev.filter(f => f.id !== uploadingFile.id));
-        toast({
-          title: "업로드 중 오류가 발생했습니다",
-          description: "",
-          variant: "destructive",
-        });
-      }
-    }
+  // 실패한 파일 목록에서 제거
+  const handleRemoveFailedUpload = (uploadId: string) => {
+    setUploadingFiles(prev => prev.filter(f => f.id !== uploadId));
   };
 
   // 파일 삭제 (중복 호출 방지)
@@ -1477,9 +1608,11 @@ export default function FieldDocuments() {
                   </div>
 
                   {/* Progress bar */}
-                  <Progress value={uploadingFile.progress} className="h-1.5" />
+                  {uploadingFile.status !== "failed" && (
+                    <Progress value={uploadingFile.progress} className="h-1.5" />
+                  )}
 
-                  {uploadingFile.uploaded && (
+                  {uploadingFile.status === "completed" && (
                     <div
                       className="mt-2 flex items-center gap-1"
                       style={{
@@ -1492,6 +1625,61 @@ export default function FieldDocuments() {
                     >
                       <Check className="w-3 h-3" />
                       업로드 완료
+                    </div>
+                  )}
+
+                  {uploadingFile.status === "failed" && (
+                    <div className="mt-2">
+                      <div
+                        className="flex items-center gap-1 mb-2"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          letterSpacing: "-0.02em",
+                          color: "#EF4444",
+                        }}
+                      >
+                        <AlertCircle className="w-3 h-3" />
+                        {uploadingFile.error || "업로드 실패"}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleRetryUpload(uploadingFile)}
+                          className="h-7 text-xs gap-1"
+                          data-testid={`button-retry-upload-${uploadingFile.id}`}
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          재시도
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRemoveFailedUpload(uploadingFile.id)}
+                          className="h-7 text-xs"
+                          data-testid={`button-remove-failed-${uploadingFile.id}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {uploadingFile.status === "uploading" && (
+                    <div
+                      className="mt-2 flex items-center gap-1"
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "12px",
+                        fontWeight: 400,
+                        letterSpacing: "-0.02em",
+                        color: "rgba(12, 12, 12, 0.5)",
+                      }}
+                    >
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      업로드 중... {uploadingFile.progress}%
                     </div>
                   )}
                 </div>
