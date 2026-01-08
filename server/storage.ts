@@ -5349,35 +5349,22 @@ export class DbStorage implements IStorage {
   }
 
   async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
-    // 용량이 큰 PDF만 제외하고 나머지는 fileData 포함
-    // storageKey가 있고 상태가 ready인 Object Storage 파일은 fileData 제외 (lazy loading)
-    // 이미지와 레거시 파일은 fileData 포함
+    // 전체 문서 메타데이터와 fileData를 가져온 후
+    // Object Storage 파일은 fileData를 제거 (lazy loading)
     const result = await db
-      .select({
-        id: caseDocuments.id,
-        caseId: caseDocuments.caseId,
-        category: caseDocuments.category,
-        fileName: caseDocuments.fileName,
-        fileType: caseDocuments.fileType,
-        fileSize: caseDocuments.fileSize,
-        // storageKey가 있고 status가 ready인 경우만 fileData 제외 (PDF 등 큰 파일)
-        // 이미지는 용량이 작으므로 fileData 포함 (legacy 파일 호환성)
-        fileData: sql<string | null>`CASE 
-          WHEN ${caseDocuments.storageKey} IS NOT NULL AND ${caseDocuments.status} = 'ready' AND ${caseDocuments.fileType} LIKE 'application/pdf' THEN NULL 
-          ELSE ${caseDocuments.fileData} 
-        END`,
-        storageKey: caseDocuments.storageKey,
-        status: caseDocuments.status,
-        checksum: caseDocuments.checksum,
-        displayOrder: caseDocuments.displayOrder,
-        createdBy: caseDocuments.createdBy,
-        createdAt: caseDocuments.createdAt,
-        parentCategory: caseDocuments.parentCategory,
-      })
+      .select()
       .from(caseDocuments)
       .where(eq(caseDocuments.caseId, caseId))
       .orderBy(desc(caseDocuments.createdAt));
-    return result as CaseDocument[];
+    
+    // Object Storage에 저장된 파일은 fileData 제거 (메모리 절약)
+    // storageKey가 있고 status가 ready인 경우 프론트엔드에서 API로 불러옴
+    return result.map(doc => {
+      if (doc.storageKey && doc.status === 'ready') {
+        return { ...doc, fileData: null };
+      }
+      return doc;
+    });
   }
 
   async deleteDocument(id: string): Promise<void> {
