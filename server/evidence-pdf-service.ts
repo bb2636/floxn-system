@@ -4,6 +4,7 @@ import sharp from 'sharp';
 import fs from 'fs';
 import path from 'path';
 import { compressPdfForEmail } from './pdf-compression';
+import { ObjectStorageService } from './replit_integrations/object_storage';
 
 const A4_WIDTH = 595.28;
 const A4_HEIGHT = 841.89;
@@ -15,7 +16,8 @@ interface DocumentData {
   id: string;
   fileName: string;
   fileType: string;
-  fileData: string;
+  fileData?: string;
+  storageKey?: string;
   category?: string;
   caseId?: string;
 }
@@ -428,6 +430,53 @@ async function createEvidencePdfForTab(
   return results;
 }
 
+// Helper to get file buffer from Object Storage or fileData
+async function getDocumentBuffer(doc: DocumentData): Promise<Buffer | null> {
+  try {
+    // 1. Object Storage에서 가져오기 (storageKey가 있는 경우)
+    if (doc.storageKey) {
+      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+      if (privateObjectDir) {
+        const fullPath = `${privateObjectDir}/${doc.storageKey}`;
+        const storageService = new ObjectStorageService();
+        const buffer = await storageService.downloadToBuffer(fullPath);
+        console.log(`[Evidence PDF] Downloaded from Object Storage: ${doc.fileName} (${Math.round(buffer.length / 1024)}KB)`);
+        return buffer;
+      }
+    }
+    
+    // 2. fileData에서 가져오기 (레거시)
+    if (doc.fileData) {
+      const base64Data = doc.fileData.includes(',') 
+        ? doc.fileData.split(',')[1] 
+        : doc.fileData;
+      return Buffer.from(base64Data, 'base64');
+    }
+    
+    return null;
+  } catch (err) {
+    console.error(`[Evidence PDF] Failed to get buffer for ${doc.fileName}:`, err);
+    return null;
+  }
+}
+
+// Check if document is a PDF file
+function isPdfDocument(doc: DocumentData): boolean {
+  const mimeType = doc.fileType || '';
+  if (mimeType === 'application/pdf') return true;
+  if (doc.fileName?.toLowerCase().endsWith('.pdf')) return true;
+  return false;
+}
+
+// Check if document is an image file
+function isImageDocument(doc: DocumentData): boolean {
+  const mimeType = doc.fileType || '';
+  if (mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp')) return true;
+  const ext = doc.fileName?.toLowerCase();
+  if (ext?.endsWith('.jpg') || ext?.endsWith('.jpeg') || ext?.endsWith('.png') || ext?.endsWith('.gif')) return true;
+  return false;
+}
+
 export async function generateEvidencePdfs(
   documents: DocumentData[],
   selectedDocumentIds: string[],
@@ -439,6 +488,51 @@ export async function generateEvidencePdfs(
   
   const selectedDocs = documents.filter(doc => selectedDocumentIds.includes(doc.id));
   
+  // Separate PDFs and images
+  const pdfDocs: DocumentData[] = [];
+  const imageDocs: DocumentData[] = [];
+  
+  for (const doc of selectedDocs) {
+    // Check if document has data available (fileData or storageKey)
+    if (!doc.fileData && !doc.storageKey) continue;
+    
+    if (isPdfDocument(doc)) {
+      pdfDocs.push(doc);
+    } else if (isImageDocument(doc)) {
+      imageDocs.push(doc);
+    }
+  }
+  
+  console.log(`[Evidence PDF] Found ${pdfDocs.length} PDF documents, ${imageDocs.length} images`);
+  
+  const allResults: EvidencePdfResult[] = [];
+  
+  // 1. Add PDF documents as separate attachments
+  for (const doc of pdfDocs) {
+    try {
+      const buffer = await getDocumentBuffer(doc);
+      if (buffer && buffer.length > 0) {
+        // Compress if needed
+        let finalBuffer = buffer;
+        if (buffer.length > 7 * 1024 * 1024) {
+          console.log(`[Evidence PDF] Compressing PDF: ${doc.fileName} (${Math.round(buffer.length / 1024 / 1024 * 100) / 100}MB)`);
+          finalBuffer = await compressPdfForEmail(buffer);
+        }
+        
+        allResults.push({
+          filename: doc.fileName,
+          buffer: finalBuffer,
+          tabName: getCategoryToTab(doc.category || ''),
+          imageCount: 0,
+        });
+        console.log(`[Evidence PDF] Added PDF document: ${doc.fileName} (${Math.round(finalBuffer.length / 1024)}KB)`);
+      }
+    } catch (err) {
+      console.error(`[Evidence PDF] Failed to process PDF ${doc.fileName}:`, err);
+    }
+  }
+  
+  // 2. Group images by tab and generate evidence PDFs
   const tabGroups: Record<string, DocumentData[]> = {
     '현장사진': [],
     '기본자료': [],
@@ -447,13 +541,7 @@ export async function generateEvidencePdfs(
     '기타': [],
   };
   
-  for (const doc of selectedDocs) {
-    if (!doc.fileData) continue;
-    
-    const mimeType = doc.fileType || '';
-    if (!mimeType.startsWith('image/')) continue;
-    if (mimeType.includes('heic') || mimeType.includes('webp')) continue;
-    
+  for (const doc of imageDocs) {
     const tabName = getCategoryToTab(doc.category || '');
     if (tabGroups[tabName]) {
       tabGroups[tabName].push(doc);
@@ -461,8 +549,6 @@ export async function generateEvidencePdfs(
       tabGroups['기타'].push(doc);
     }
   }
-  
-  const allResults: EvidencePdfResult[] = [];
   
   for (const [tabName, docs] of Object.entries(tabGroups)) {
     if (docs.length === 0) continue;
@@ -473,14 +559,14 @@ export async function generateEvidencePdfs(
     
     for (const doc of docs) {
       try {
-        const base64Data = doc.fileData.includes(',') 
-          ? doc.fileData.split(',')[1] 
-          : doc.fileData;
-        const fileBuffer = Buffer.from(base64Data, 'base64');
+        const fileBuffer = await getDocumentBuffer(doc);
+        if (!fileBuffer || fileBuffer.length === 0) {
+          console.warn(`[Evidence PDF] No data for image: ${doc.fileName}`);
+          continue;
+        }
         
         const processed = await compressImage(fileBuffer, doc.fileName);
         processed.category = doc.category || '';
-        // Set caseNumber from the document's own case
         processed.caseNumber = (caseNumberMap && doc.caseId) ? caseNumberMap[doc.caseId] : undefined;
         processedImages.push(processed);
       } catch (err) {
@@ -497,14 +583,16 @@ export async function generateEvidencePdfs(
       }
     }
     
-    const tabResults = await createEvidencePdfForTab(
-      tabName,
-      processedImages,
-      caseNumber,
-      insuranceAccidentNo
-    );
-    
-    allResults.push(...tabResults);
+    if (processedImages.length > 0) {
+      const tabResults = await createEvidencePdfForTab(
+        tabName,
+        processedImages,
+        caseNumber,
+        insuranceAccidentNo
+      );
+      
+      allResults.push(...tabResults);
+    }
   }
   
   console.log(`[Evidence PDF] Generation complete. Created ${allResults.length} PDF files`);
