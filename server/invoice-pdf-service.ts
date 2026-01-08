@@ -158,44 +158,32 @@ function collectAllInvoiceText(data: InvoiceData): string {
   return uniqueChars;
 }
 
-async function embedPretendardFontsWithPriming(pdfDoc: PDFDocument, primeText: string): Promise<FontSet> {
+async function embedPretendardFonts(pdfDoc: PDFDocument): Promise<FontSet> {
   pdfDoc.registerFontkit(fontkit);
   
   const { regular, semiBold } = loadPretendardFonts();
   
-  console.log(`[Invoice PDF] ========== 폰트 임베딩 (subset: true + 프라이밍) ==========`);
+  console.log(`[Invoice PDF] ========== 폰트 임베딩 (subset: false - 전체 폰트) ==========`);
   
-  // subset: true로 폰트 임베딩 후 프라이밍으로 필요한 글자 등록
+  // subset: false로 전체 폰트 임베딩 (글자 깨짐 방지)
   let regularFont: PDFFont;
   let semiBoldFont: PDFFont;
   
   try {
-    regularFont = await pdfDoc.embedFont(regular, { subset: true });
-    console.log(`[Invoice PDF] Regular 폰트 임베딩 성공 (subset)`);
+    regularFont = await pdfDoc.embedFont(regular, { subset: false });
+    console.log(`[Invoice PDF] Regular 폰트 임베딩 성공 (전체 폰트)`);
   } catch (error) {
     throw new Error(`Pretendard-Regular.ttf embedFont 실패: ${error}`);
   }
   
   try {
-    semiBoldFont = await pdfDoc.embedFont(semiBold, { subset: true });
-    console.log(`[Invoice PDF] SemiBold 폰트 임베딩 성공 (subset)`);
+    semiBoldFont = await pdfDoc.embedFont(semiBold, { subset: false });
+    console.log(`[Invoice PDF] SemiBold 폰트 임베딩 성공 (전체 폰트)`);
   } catch (error) {
     throw new Error(`Pretendard-SemiBold.ttf embedFont 실패: ${error}`);
   }
   
-  // 폰트 프라이밍: 수집된 모든 글자를 encodeText로 등록
-  // 이렇게 하면 pdf-lib가 해당 글자들을 subset에 포함시킴
-  if (primeText && primeText.length > 0) {
-    try {
-      regularFont.encodeText(primeText);
-      semiBoldFont.encodeText(primeText);
-      console.log(`[Invoice PDF] 폰트 프라이밍 완료: ${primeText.length}개 글자 등록`);
-    } catch (primeError) {
-      console.warn(`[Invoice PDF] 폰트 프라이밍 경고: ${primeError}`);
-    }
-  }
-  
-  console.log(`[Invoice PDF] 폰트 임베딩 완료 (subset: true + 프라이밍)`);
+  console.log(`[Invoice PDF] 폰트 임베딩 완료 (subset: false)`);
   console.log(`[Invoice PDF] =====================================================`);
   
   return { regular: regularFont, bold: semiBoldFont };
@@ -297,16 +285,13 @@ function drawRightAlignedText(
 }
 
 export async function generateInvoicePdf(data: InvoiceData): Promise<Buffer> {
-  console.log('[Invoice PDF] Generating PDF with Pretendard (pdf-lib subset + priming)...');
+  console.log('[Invoice PDF] Generating PDF with Pretendard (전체 폰트 임베딩)...');
   
   // drawText 호출 횟수 카운터 초기화
   resetDrawTextCounter();
   
-  // 사용될 모든 텍스트 수집 (폰트 프라이밍용)
-  const primeText = collectAllInvoiceText(data);
-  
   const pdfDoc = await PDFDocument.create();
-  const fonts = await embedPretendardFontsWithPriming(pdfDoc, primeText);
+  const fonts = await embedPretendardFonts(pdfDoc);
   
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   

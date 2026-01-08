@@ -6833,9 +6833,10 @@ FLOXN`;
                   console.warn(`[Invoice PDF] No data for image: ${doc.fileName}`);
                   continue;
                 }
+                // 이미지 강력 압축 (폰트 보존을 위해 이미지로 용량 절약)
                 const imageBuffer = await sharp.default(fileBuffer)
-                  .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
-                  .jpeg({ quality: 75 })
+                  .resize(800, 1200, { fit: 'inside', withoutEnlargement: true })
+                  .jpeg({ quality: 50, mozjpeg: true })
                   .toBuffer();
                 
                 // Use the caseNumber from the document's own case
