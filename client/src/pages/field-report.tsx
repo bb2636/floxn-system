@@ -1564,9 +1564,12 @@ export default function FieldReport() {
                         display: "flex",
                         flexDirection: "column",
                       }}>
-                        {isImage && doc.fileData ? (
+                        {isImage && (doc.storageKey || doc.fileData) ? (
                           <img
-                            src={`data:${doc.fileType};base64,${doc.fileData}`}
+                            src={doc.storageKey 
+                              ? `/api/documents/${doc.id}/image`
+                              : `data:${doc.fileType};base64,${doc.fileData}`
+                            }
                             alt={doc.fileName || ""}
                             style={{
                               width: "100%",
@@ -3179,21 +3182,38 @@ export default function FieldReport() {
               증빙자료 {documents?.length || 0}
             </h2>
             <button
-              onClick={() => {
+              onClick={async () => {
                 if (documents && documents.length > 0) {
-                  documents.forEach((doc) => {
-                    if (!doc.fileData) return;
-                    const link = document.createElement('a');
-                    const mimeType = doc.fileType || 'image/jpeg';
-                    const dataUrl = doc.fileData.startsWith('data:') 
-                      ? doc.fileData 
-                      : `data:${mimeType};base64,${doc.fileData}`;
-                    link.href = dataUrl;
-                    link.download = doc.fileName;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  });
+                  for (const doc of documents) {
+                    if (doc.storageKey) {
+                      try {
+                        const response = await fetch(`/api/documents/${doc.id}/download-url`);
+                        if (response.ok) {
+                          const data = await response.json();
+                          const link = document.createElement('a');
+                          link.href = data.downloadURL;
+                          link.download = data.fileName || doc.fileName;
+                          link.target = '_blank';
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }
+                      } catch (e) {
+                        console.error('Download error:', e);
+                      }
+                    } else if (doc.fileData) {
+                      const link = document.createElement('a');
+                      const mimeType = doc.fileType || 'image/jpeg';
+                      const dataUrl = doc.fileData.startsWith('data:') 
+                        ? doc.fileData 
+                        : `data:${mimeType};base64,${doc.fileData}`;
+                      link.href = dataUrl;
+                      link.download = doc.fileName;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }
+                  }
                 }
               }}
               className="flex items-center gap-2 px-4 py-3"
@@ -3266,10 +3286,12 @@ export default function FieldReport() {
                       {/* 파일 리스트 */}
                       <div className="flex flex-col" style={{ gap: "12px" }}>
                         {categoryDocs.map((doc) => {
-                          if (!doc.fileData) return null;
-                          const dataUrl = doc.fileData.startsWith('data:') 
-                            ? doc.fileData 
-                            : `data:${doc.fileType || 'image/jpeg'};base64,${doc.fileData}`;
+                          if (!doc.storageKey && !doc.fileData) return null;
+                          const imageSrc = doc.storageKey 
+                            ? `/api/documents/${doc.id}/image`
+                            : doc.fileData?.startsWith('data:') 
+                              ? doc.fileData 
+                              : `data:${doc.fileType || 'image/jpeg'};base64,${doc.fileData}`;
                           const isImage = doc.fileType?.startsWith('image/') || 
                             doc.fileName?.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i);
                           
@@ -3321,7 +3343,7 @@ export default function FieldReport() {
                                 >
                                   {isImage ? (
                                     <img
-                                      src={dataUrl}
+                                      src={imageSrc}
                                       alt={doc.fileName}
                                       style={{
                                         width: "100%",
@@ -3360,13 +3382,31 @@ export default function FieldReport() {
                               
                               {/* 오른쪽: 다운로드 버튼 */}
                               <button
-                                onClick={() => {
-                                  const link = document.createElement('a');
-                                  link.href = dataUrl;
-                                  link.download = doc.fileName;
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  document.body.removeChild(link);
+                                onClick={async () => {
+                                  if (doc.storageKey) {
+                                    try {
+                                      const response = await fetch(`/api/documents/${doc.id}/download-url`);
+                                      if (response.ok) {
+                                        const data = await response.json();
+                                        const link = document.createElement('a');
+                                        link.href = data.downloadURL;
+                                        link.download = data.fileName || doc.fileName;
+                                        link.target = '_blank';
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                      }
+                                    } catch (e) {
+                                      console.error('Download error:', e);
+                                    }
+                                  } else {
+                                    const link = document.createElement('a');
+                                    link.href = imageSrc;
+                                    link.download = doc.fileName;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                  }
                                 }}
                                 style={{
                                   width: "24px",
