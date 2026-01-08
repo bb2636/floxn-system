@@ -2376,7 +2376,15 @@ async function getImageBuffer(doc: { fileData?: string | null; storageKey?: stri
     // 1. Object Storage에서 가져오기 (우선)
     if (doc.storageKey) {
       console.log(`[pdf-lib] Object Storage에서 이미지 로드: ${doc.storageKey}`);
-      const buffer = await objectStorage.downloadToBuffer(doc.storageKey);
+      // PRIVATE_OBJECT_DIR을 앞에 붙여서 전체 경로 생성
+      const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+      if (!privateObjectDir) {
+        console.error('[pdf-lib] PRIVATE_OBJECT_DIR이 설정되지 않음');
+        return null;
+      }
+      const fullPath = `${privateObjectDir}/${doc.storageKey}`;
+      console.log(`[pdf-lib] 전체 경로: ${fullPath}`);
+      const buffer = await objectStorage.downloadToBuffer(fullPath);
       return buffer;
     }
     
