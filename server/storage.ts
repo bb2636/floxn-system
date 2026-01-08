@@ -5349,8 +5349,9 @@ export class DbStorage implements IStorage {
   }
 
   async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
-    // Object Storage에 저장된 문서는 fileData 제외 (lazy loading)
-    // storageKey가 있으면 fileData를 빈 문자열로 반환하여 메모리 절약
+    // 용량이 큰 PDF만 제외하고 나머지는 fileData 포함
+    // storageKey가 있고 상태가 ready인 Object Storage 파일은 fileData 제외 (lazy loading)
+    // 이미지와 레거시 파일은 fileData 포함
     const result = await db
       .select({
         id: caseDocuments.id,
@@ -5359,8 +5360,12 @@ export class DbStorage implements IStorage {
         fileName: caseDocuments.fileName,
         fileType: caseDocuments.fileType,
         fileSize: caseDocuments.fileSize,
-        // storageKey가 있으면 fileData 제외 (null 반환)
-        fileData: sql<string | null>`CASE WHEN ${caseDocuments.storageKey} IS NOT NULL THEN NULL ELSE ${caseDocuments.fileData} END`,
+        // storageKey가 있고 status가 ready인 경우만 fileData 제외 (PDF 등 큰 파일)
+        // 이미지는 용량이 작으므로 fileData 포함 (legacy 파일 호환성)
+        fileData: sql<string | null>`CASE 
+          WHEN ${caseDocuments.storageKey} IS NOT NULL AND ${caseDocuments.status} = 'ready' AND ${caseDocuments.fileType} LIKE 'application/pdf' THEN NULL 
+          ELSE ${caseDocuments.fileData} 
+        END`,
         storageKey: caseDocuments.storageKey,
         status: caseDocuments.status,
         checksum: caseDocuments.checksum,
