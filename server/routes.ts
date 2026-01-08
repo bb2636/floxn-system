@@ -6718,8 +6718,31 @@ FLOXN`;
           console.log(`[Invoice PDF] Total documents from ${1 + relatedCases.length} cases: ${allDocuments.length}`);
         }
         
-        const selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
-        console.log(`[Invoice PDF] Selected documents found: ${selectedDocs.length}`);
+        let selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
+        
+        // Sort documents by category order: 사진 > 기본자료 > 증빙자료 > 청구자료
+        const categoryOrder: Record<string, number> = {
+          // 1. 사진 (현장사진, 수리중, 복구완료)
+          '현장출동사진': 0, '현장': 1, '현장사진': 2,
+          '수리중 사진': 3, '수리중': 4,
+          '복구완료 사진': 5, '복구완료': 6,
+          // 2. 기본자료 (보험금청구서, 개인정보동의서)
+          '보험금 청구서': 10, '보험금청구서': 11,
+          '개인정보 동의서(가족용)': 12, '개인정보동의서': 13,
+          // 3. 증빙자료 (주민등록등본, 등기부등본, 건축물대장, 기타증빙자료)
+          '주민등록등본': 20, '등기부등본': 21, '건축물대장': 22,
+          '기타증빙자료(민원일지 등)': 23, '기타증빙자료': 24,
+          // 4. 청구자료 (위임장, 도급계약서, 복구완료 확인서, 부가세 청구자료)
+          '위임장': 30, '도급계약서': 31,
+          '복구완료확인서': 32, '복구완료 확인서': 33,
+          '부가세 청구자료': 34, '부가세청구자료': 35,
+        };
+        selectedDocs = selectedDocs.sort((a: any, b: any) => {
+          const orderA = categoryOrder[a.category] ?? 99;
+          const orderB = categoryOrder[b.category] ?? 99;
+          return orderA - orderB;
+        });
+        console.log(`[Invoice PDF] Selected documents found: ${selectedDocs.length}, sorted by category`);
         
         if (selectedDocs.length > 0) {
           const { PDFDocument, rgb } = await import('pdf-lib');
@@ -7116,8 +7139,31 @@ FLOXN`;
           console.log(`[Invoice Email] Total documents from ${1 + relatedCases.length} cases: ${allDocuments.length}`);
         }
         
-        const selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
-        console.log(`[Invoice Email] Selected documents found: ${selectedDocs.length}`);
+        let selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
+        
+        // Sort documents by category order: 사진 > 기본자료 > 증빙자료 > 청구자료
+        const categoryOrder: Record<string, number> = {
+          // 1. 사진 (현장사진, 수리중, 복구완료)
+          '현장출동사진': 0, '현장': 1, '현장사진': 2,
+          '수리중 사진': 3, '수리중': 4,
+          '복구완료 사진': 5, '복구완료': 6,
+          // 2. 기본자료 (보험금청구서, 개인정보동의서)
+          '보험금 청구서': 10, '보험금청구서': 11,
+          '개인정보 동의서(가족용)': 12, '개인정보동의서': 13,
+          // 3. 증빙자료 (주민등록등본, 등기부등본, 건축물대장, 기타증빙자료)
+          '주민등록등본': 20, '등기부등본': 21, '건축물대장': 22,
+          '기타증빙자료(민원일지 등)': 23, '기타증빙자료': 24,
+          // 4. 청구자료 (위임장, 도급계약서, 복구완료 확인서, 부가세 청구자료)
+          '위임장': 30, '도급계약서': 31,
+          '복구완료확인서': 32, '복구완료 확인서': 33,
+          '부가세 청구자료': 34, '부가세청구자료': 35,
+        };
+        selectedDocs = selectedDocs.sort((a: any, b: any) => {
+          const orderA = categoryOrder[a.category] ?? 99;
+          const orderB = categoryOrder[b.category] ?? 99;
+          return orderA - orderB;
+        });
+        console.log(`[Invoice Email] Selected documents found: ${selectedDocs.length}, sorted by category`);
         
         if (selectedDocs.length > 0) {
           const { PDFDocument, rgb } = await import('pdf-lib');
@@ -7529,7 +7575,31 @@ Front·Line·Ops·Xpert·Net
         
         // Fetch selected documents
         const allDocuments = await storage.getDocumentsByCaseId(caseId);
-        const selectedDocs = allDocuments.filter((doc: { id: string }) => selectedDocumentIds.includes(doc.id));
+        let selectedDocs = allDocuments.filter((doc: { id: string }) => selectedDocumentIds.includes(doc.id));
+        
+        // Sort documents by category order: 사진 > 기본자료 > 증빙자료 > 청구자료
+        const categoryOrder: Record<string, number> = {
+          // 1. 사진 (현장사진, 수리중, 복구완료)
+          '현장출동사진': 0, '현장': 1, '현장사진': 2,
+          '수리중 사진': 3, '수리중': 4,
+          '복구완료 사진': 5, '복구완료': 6,
+          // 2. 기본자료 (보험금청구서, 개인정보동의서)
+          '보험금 청구서': 10, '보험금청구서': 11,
+          '개인정보 동의서(가족용)': 12, '개인정보동의서': 13,
+          // 3. 증빙자료 (주민등록등본, 등기부등본, 건축물대장, 기타증빙자료)
+          '주민등록등본': 20, '등기부등본': 21, '건축물대장': 22,
+          '기타증빙자료(민원일지 등)': 23, '기타증빙자료': 24,
+          // 4. 청구자료 (위임장, 도급계약서, 복구완료 확인서, 부가세 청구자료)
+          '위임장': 30, '도급계약서': 31,
+          '복구완료확인서': 32, '복구완료 확인서': 33,
+          '부가세 청구자료': 34, '부가세청구자료': 35,
+        };
+        selectedDocs = selectedDocs.sort((a: any, b: any) => {
+          const orderA = categoryOrder[a.category] ?? 99;
+          const orderB = categoryOrder[b.category] ?? 99;
+          return orderA - orderB;
+        });
+        console.log(`[Field Dispatch PDF] Selected documents: ${selectedDocs.length}, sorted by category`);
         
         for (const doc of selectedDocs) {
           try {
