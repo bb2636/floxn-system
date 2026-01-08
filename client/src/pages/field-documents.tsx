@@ -1847,12 +1847,7 @@ export default function FieldDocuments() {
                 >
                   {isImage ? (
                     <img
-                      src={doc.storageKey 
-                        ? `/api/documents/${doc.id}/image` 
-                        : doc.fileData 
-                          ? `data:${doc.fileType};base64,${doc.fileData}` 
-                          : undefined
-                      }
+                      src={`/api/documents/${doc.id}/image`}
                       alt={doc.fileName}
                       className="w-full h-full object-cover"
                       onError={(e) => {

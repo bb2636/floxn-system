@@ -5349,22 +5349,30 @@ export class DbStorage implements IStorage {
   }
 
   async getDocumentsByCaseId(caseId: string): Promise<CaseDocument[]> {
-    // 전체 문서 메타데이터와 fileData를 가져온 후
-    // Object Storage 파일은 fileData를 제거 (lazy loading)
+    // fileData 컬럼을 제외하고 메타데이터만 가져옴 (메모리 효율)
+    // 모든 이미지는 /api/documents/:id/image API를 통해 불러옴
     const result = await db
-      .select()
+      .select({
+        id: caseDocuments.id,
+        caseId: caseDocuments.caseId,
+        category: caseDocuments.category,
+        fileName: caseDocuments.fileName,
+        fileType: caseDocuments.fileType,
+        fileSize: caseDocuments.fileSize,
+        storageKey: caseDocuments.storageKey,
+        status: caseDocuments.status,
+        checksum: caseDocuments.checksum,
+        displayOrder: caseDocuments.displayOrder,
+        createdBy: caseDocuments.createdBy,
+        createdAt: caseDocuments.createdAt,
+        parentCategory: caseDocuments.parentCategory,
+      })
       .from(caseDocuments)
       .where(eq(caseDocuments.caseId, caseId))
       .orderBy(desc(caseDocuments.createdAt));
     
-    // Object Storage에 저장된 파일은 fileData 제거 (메모리 절약)
-    // storageKey가 있고 status가 ready인 경우 프론트엔드에서 API로 불러옴
-    return result.map(doc => {
-      if (doc.storageKey && doc.status === 'ready') {
-        return { ...doc, fileData: null };
-      }
-      return doc;
-    });
+    // fileData는 null로 설정 (프론트엔드에서 API로 불러옴)
+    return result.map(doc => ({ ...doc, fileData: null }));
   }
 
   async deleteDocument(id: string): Promise<void> {
