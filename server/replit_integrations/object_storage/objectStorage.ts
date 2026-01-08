@@ -237,6 +237,32 @@ export class ObjectStorageService {
       requestedPermission: requestedPermission ?? ObjectPermission.READ,
     });
   }
+
+  // Object Storage에서 파일을 Buffer로 다운로드
+  async downloadToBuffer(storageKey: string): Promise<Buffer> {
+    const { bucketName, objectName } = parseObjectPath(storageKey);
+    const bucket = objectStorageClient.bucket(bucketName);
+    const file = bucket.file(objectName);
+
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new ObjectNotFoundError();
+    }
+
+    const [contents] = await file.download();
+    return contents;
+  }
+
+  // Object Storage에서 파일 다운로드용 signed URL 생성
+  async getDownloadURL(storageKey: string, ttlSec: number = 3600): Promise<string> {
+    const { bucketName, objectName } = parseObjectPath(storageKey);
+    return signObjectURL({
+      bucketName,
+      objectName,
+      method: "GET",
+      ttlSec,
+    });
+  }
 }
 
 function parseObjectPath(path: string): {

@@ -6,6 +6,9 @@ import sharp from 'sharp';
 import { db } from './db';
 import { cases, caseDocuments, drawings, estimates, estimateRows, users } from '@shared/schema';
 import { eq, and, inArray, ilike, sql } from 'drizzle-orm';
+import { ObjectStorageService } from './replit_integrations/object_storage/objectStorage';
+
+const objectStorage = new ObjectStorageService();
 
 const A4_WIDTH = 595.28;
 const A4_HEIGHT = 841.89;
@@ -1133,16 +1136,25 @@ async function renderEvidencePages(
     '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
   };
   
-  const imageDocs: Array<{ doc: any; tab: string }> = [];
+  const imageDocs: Array<{ doc: any; tab: string; imageData: string }> = [];
   
   for (const doc of documents) {
     const isImage = doc.fileType?.startsWith('image/');
-    const hasValidData = doc.fileData && doc.fileData.length > 100;
+    const hasStorageKey = doc.storageKey && doc.storageKey.length > 0;
+    const hasFileData = doc.fileData && doc.fileData.length > 100;
     
-    if (isImage && hasValidData) {
+    if (isImage && (hasStorageKey || hasFileData)) {
       const tab = categoryToTab[doc.category] || '기타';
-      imageDocs.push({ doc, tab });
-    } else if (isImage && !hasValidData) {
+      
+      // Object Storage 또는 fileData에서 이미지 로드
+      const imageBuffer = await getImageBuffer(doc);
+      if (imageBuffer) {
+        const base64Data = imageBuffer.toString('base64');
+        imageDocs.push({ doc, tab, imageData: base64Data });
+      } else {
+        errors.push({ fileName: doc.fileName, reason: '이미지 로드 실패' });
+      }
+    } else if (isImage) {
       errors.push({ fileName: doc.fileName, reason: '이미지 데이터 없음' });
     }
   }
@@ -1220,7 +1232,7 @@ async function renderEvidencePages(
     });
     
     const firstResult = await embedImage(
-      pdfDoc, page, firstImage.doc.fileData,
+      pdfDoc, page, firstImage.imageData,
       MARGIN + 5, firstY + footerHeight + 5, imageWidth - 10, imageHeight - 10,
       processingConfig
     );
@@ -1288,7 +1300,7 @@ async function renderEvidencePages(
       });
       
       const secondResult = await embedImage(
-        pdfDoc, page, secondImage.doc.fileData,
+        pdfDoc, page, secondImage.imageData,
         MARGIN + 5, secondY + footerHeight + 5, imageWidth - 10, imageHeight - 10,
         processingConfig
       );
@@ -2173,17 +2185,14 @@ export async function generatePdfWithPdfLib(
       
       for (const pdfDocData of pdfDocs) {
         try {
-          let pdfData: Uint8Array;
-          if (pdfDocData.fileData?.startsWith('data:')) {
-            const base64Data = pdfDocData.fileData.split(',')[1];
-            pdfData = Buffer.from(base64Data, 'base64');
-          } else if (pdfDocData.fileData) {
-            pdfData = Buffer.from(pdfDocData.fileData, 'base64');
-          } else {
+          // Object Storage 또는 fileData에서 PDF 로드
+          const pdfBuffer = await getImageBuffer(pdfDocData);
+          if (!pdfBuffer) {
+            console.warn(`[pdf-lib] PDF 데이터 없음: ${pdfDocData.fileName}`);
             continue;
           }
           
-          const attachedPdf = await PDFDocument.load(pdfData, { ignoreEncryption: true });
+          const attachedPdf = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
           const pages = await pdfDoc.copyPages(attachedPdf, attachedPdf.getPageIndices());
           pages.forEach(page => pdfDoc.addPage(page));
           console.log(`[pdf-lib] PDF 첨부 완료: ${pdfDocData.fileName}`);
@@ -2361,10 +2370,37 @@ async function compressImageForPdf(
   }
 }
 
+// Object Storage 또는 fileData에서 이미지 Buffer 가져오기
+async function getImageBuffer(doc: { fileData?: string | null; storageKey?: string | null }): Promise<Buffer | null> {
+  try {
+    // 1. Object Storage에서 가져오기 (우선)
+    if (doc.storageKey) {
+      console.log(`[pdf-lib] Object Storage에서 이미지 로드: ${doc.storageKey}`);
+      const buffer = await objectStorage.downloadToBuffer(doc.storageKey);
+      return buffer;
+    }
+    
+    // 2. fileData에서 가져오기 (레거시)
+    if (doc.fileData) {
+      if (doc.fileData.startsWith('data:')) {
+        const base64Data = doc.fileData.split(',')[1];
+        return Buffer.from(base64Data, 'base64');
+      } else {
+        return Buffer.from(doc.fileData, 'base64');
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('[pdf-lib] 이미지 로드 실패:', error);
+    return null;
+  }
+}
+
 // 단일 탭의 증빙 PDF 생성 (8MB 초과 시 분할)
 async function generateSingleTabEvidencePdf(
   tabName: string,
-  documents: Array<{ id: string; fileName: string; fileType: string; fileData: string; category: string }>,
+  documents: Array<{ id: string; fileName: string; fileType: string; fileData?: string | null; storageKey?: string | null; category: string }>,
   caseData: any,
   fonts: FontSet,
   accidentNo: string
@@ -2389,13 +2425,11 @@ async function generateSingleTabEvidencePdf(
     const doc = documents[i];
     
     try {
-      // Base64 → Buffer
-      let imageData: Buffer;
-      if (doc.fileData.startsWith('data:')) {
-        const base64Data = doc.fileData.split(',')[1];
-        imageData = Buffer.from(base64Data, 'base64');
-      } else {
-        imageData = Buffer.from(doc.fileData, 'base64');
+      // Object Storage 또는 fileData에서 이미지 로드
+      const imageData = await getImageBuffer(doc);
+      if (!imageData) {
+        console.warn(`[pdf-lib] 이미지 데이터 없음: ${doc.fileName}`);
+        continue;
       }
       
       // 이미지 압축
