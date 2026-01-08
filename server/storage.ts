@@ -5365,7 +5365,6 @@ export class DbStorage implements IStorage {
         displayOrder: caseDocuments.displayOrder,
         createdBy: caseDocuments.createdBy,
         createdAt: caseDocuments.createdAt,
-        parentCategory: caseDocuments.parentCategory,
       })
       .from(caseDocuments)
       .where(eq(caseDocuments.caseId, caseId))
