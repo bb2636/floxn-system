@@ -6745,8 +6745,8 @@ FLOXN`;
                 const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
                 if (privateObjectDir) {
                   const fullPath = `${privateObjectDir}/${doc.storageKey}`;
-                  const { objectStorage } = await import('./replit_integrations/object_storage');
-                  return await objectStorage.downloadToBuffer(fullPath);
+                  const { objectStorageClient } = await import('./replit_integrations/object_storage');
+                  return await objectStorageClient.downloadToBuffer(fullPath);
                 }
               }
               // 2. fileData에서 가져오기 (레거시)
