@@ -9064,11 +9064,10 @@ https://peulrogseun-aqaqaq4561.replit.app
       const payload = pdfDownloadSchema.parse(req.body);
       
       // 용량 제한 PDF 생성 사용 (대용량 첨부파일 케이스 대응)
-      // PDF 첨부파일 제외 (이미지만 포함) - 대용량 케이스에서 생성 시간 단축
       console.log(`[pdf-download] Starting PDF generation for case ${payload.caseId}`);
       const pdfBuffer = await generatePdfWithSizeLimitPdfLib({
         ...payload,
-        skipPdfAttachments: true,
+        skipPdfAttachments: false, // PDF 첨부 파일도 포함
       });
       console.log(`[pdf-download] PDF generated: ${Math.round(pdfBuffer.length / 1024)}KB (${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
       
