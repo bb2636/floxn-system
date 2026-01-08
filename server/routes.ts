@@ -4067,6 +4067,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get image from Object Storage (redirect to signed URL for direct browser access)
+  app.get("/api/documents/:id/image", async (req, res) => {
+    if (!req.session?.userId) {
+      return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
+    }
+
+    try {
+      const { id } = req.params;
+
+      if (!id || id === "null" || id === "undefined") {
+        return res.status(400).json({ error: "유효하지 않은 문서 ID입니다" });
+      }
+
+      const document = await storage.getDocument(id);
+      if (!document) {
+        return res.status(404).json({ error: "문서를 찾을 수 없습니다" });
+      }
+
+      // Object Storage 문서인 경우 signed URL로 리다이렉트
+      if (document.storageKey && document.status === "ready") {
+        const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+        if (!privateObjectDir) {
+          return res.status(500).json({ error: "Object Storage가 설정되지 않았습니다" });
+        }
+
+        const fullPath = `${privateObjectDir}/${document.storageKey}`;
+        const pathParts = fullPath.split("/").filter(p => p);
+        const bucketName = pathParts[0];
+        const objectName = pathParts.slice(1).join("/");
+
+        const signedUrl = await signObjectURL({
+          bucketName,
+          objectName,
+          method: "GET",
+          ttlSec: 3600,
+        });
+
+        return res.redirect(signedUrl);
+      }
+
+      // 레거시 문서 (fileData base64)
+      if (document.fileData) {
+        const buffer = Buffer.from(document.fileData, 'base64');
+        res.set('Content-Type', document.fileType);
+        res.set('Content-Length', buffer.length.toString());
+        res.set('Cache-Control', 'public, max-age=3600');
+        return res.send(buffer);
+      }
+
+      return res.status(404).json({ error: "이미지 데이터를 찾을 수 없습니다" });
+    } catch (error) {
+      console.error("[image] Error:", error);
+      res.status(500).json({ error: "이미지 로드 중 오류가 발생했습니다" });
+    }
+  });
+
   // Cases endpoints
   // Get assigned cases for current user
   app.get("/api/cases/assigned", async (req, res) => {

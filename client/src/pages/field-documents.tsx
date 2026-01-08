@@ -1845,17 +1845,25 @@ export default function FieldDocuments() {
                   onClick={() => handleDownload(doc)}
                   data-testid={`photo-thumbnail-${doc.id}`}
                 >
-                  {isImage && doc.fileData ? (
+                  {isImage ? (
                     <img
-                      src={`data:${doc.fileType};base64,${doc.fileData}`}
+                      src={doc.storageKey 
+                        ? `/api/documents/${doc.id}/image` 
+                        : doc.fileData 
+                          ? `data:${doc.fileType};base64,${doc.fileData}` 
+                          : undefined
+                      }
                       alt={doc.fileName}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                      }}
                     />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Upload className="w-8 h-8" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
-                    </div>
-                  )}
+                  ) : null}
+                  <div className={`w-full h-full flex items-center justify-center ${isImage ? 'hidden' : ''}`}>
+                    <Upload className="w-8 h-8" style={{ color: "rgba(12, 12, 12, 0.3)" }} />
+                  </div>
                   
                   <div 
                     className="absolute bottom-0 left-0 right-0 px-2 py-1"
