@@ -7603,7 +7603,7 @@ FLOXN`;
           <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; width: 140px; font-weight: bold;">사고번호</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="3">${invoiceData.insuranceAccidentNo || '-'}</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${invoiceData.insuranceAccidentNo || '-'}</td>
             </tr>
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">담당자</td>
