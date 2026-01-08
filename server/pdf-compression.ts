@@ -62,6 +62,11 @@ export async function compressPdf(inputBuffer: Buffer): Promise<CompressionResul
       '-dNOPAUSE',
       '-dQUIET',
       '-dBATCH',
+      // 폰트 보존 옵션 - 압축 시 글자 깨짐 방지
+      '-dEmbedAllFonts=true',
+      '-dSubsetFonts=false',
+      '-dCompressFonts=true',
+      // 이미지 압축 옵션
       '-dColorImageResolution=150',
       '-dGrayImageResolution=150',
       '-dMonoImageResolution=150',
@@ -208,6 +213,11 @@ export async function compressPdfToTarget(
         '-dNOPAUSE',
         '-dQUIET',
         '-dBATCH',
+        // 폰트 보존 옵션 - 압축 시 글자 깨짐 방지
+        '-dEmbedAllFonts=true',
+        '-dSubsetFonts=false',
+        '-dCompressFonts=true',
+        // 이미지 압축 옵션
         `-dColorImageResolution=${preset.dpi}`,
         `-dGrayImageResolution=${preset.dpi}`,
         `-dMonoImageResolution=${preset.dpi}`,
