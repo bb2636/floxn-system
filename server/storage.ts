@@ -6765,15 +6765,14 @@ export class DbStorage implements IStorage {
       policyHolderName: sourceCase.policyHolderName,
       policyHolderIdNumber: sourceCase.policyHolderIdNumber,
       policyHolderAddress: sourceCase.policyHolderAddress,
-      // 피보험자 정보
+      // 피보험자 정보 (주소 제외 - 각 케이스별로 개별 관리)
       insuredName: sourceCase.insuredName,
       insuredIdNumber: sourceCase.insuredIdNumber,
       insuredContact: sourceCase.insuredContact,
-      insuredAddress: sourceCase.insuredAddress,
-      insuredAddressDetail: sourceCase.insuredAddressDetail,
+      // insuredAddress, insuredAddressDetail은 동기화에서 제외 - 각 케이스 개별 관리
       sameAsPolicyHolder: sourceCase.sameAsPolicyHolder,
       // 피해자 정보 - 동기화에서 제외 (각 케이스별로 개별 관리)
-      // victimName, victimContact, victimAddress는 각 케이스에서 독립적으로 관리
+      // victimName, victimContact, victimAddress, victimAddressDetail은 각 케이스에서 독립적으로 관리
       // 사고 정보
       accidentType: sourceCase.accidentType,
       accidentCause: sourceCase.accidentCause,

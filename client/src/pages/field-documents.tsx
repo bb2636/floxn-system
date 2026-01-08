@@ -579,8 +579,8 @@ export default function FieldDocuments() {
           minTimeout: 1000,
           maxTimeout: 5000,
           factor: 2,
-          onFailedAttempt: (error) => {
-            console.log(`[Upload] ${uploadingFile.file.name} 재시도 ${error.attemptNumber}/3: ${error.message}`);
+          onFailedAttempt: (error: { attemptNumber: number; retriesLeft: number }) => {
+            console.log(`[Upload] ${uploadingFile.file.name} 재시도 ${error.attemptNumber}/3`);
           },
         }
       );
