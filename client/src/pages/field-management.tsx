@@ -1782,6 +1782,15 @@ export default function FieldManagement() {
                                 claimDate: null,
                               };
                               
+                              // Debug: log victim address values before sending
+                              console.log("🏠 New Victim Payload Debug:");
+                              console.log("  - victimName:", newVictimName);
+                              console.log("  - victimAddress:", newVictimAddress);
+                              console.log("  - victimAddressDetail:", newVictimAddressDetail);
+                              console.log("  - sameAsInsured:", sameAsInsured);
+                              console.log("  - insuredAddress:", selectedCaseData.insuredAddress);
+                              console.log("  - insuredAddressDetail:", selectedCaseData.insuredAddressDetail);
+                              
                               await apiRequest("POST", "/api/cases", newCasePayload);
                               
                               toast({

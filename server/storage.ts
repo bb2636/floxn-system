@@ -1471,6 +1471,7 @@ export class MemStorage implements IStorage {
         victimName: caseData.victimName || null,
         victimContact: caseData.victimContact || null,
         victimAddress: caseData.victimAddress || null,
+        victimAddressDetail: caseData.victimAddressDetail || null,
         additionalVictims: caseData.additionalVictims || null,
         clientPhone: caseData.clientPhone || null,
         clientAddress: caseData.clientAddress || null,
@@ -4356,6 +4357,8 @@ export class DbStorage implements IStorage {
       insuredAddressDetail: caseData.insuredAddressDetail || null,
       victimName: caseData.victimName || null,
       victimContact: caseData.victimContact || null,
+      victimAddress: caseData.victimAddress || null,
+      victimAddressDetail: caseData.victimAddressDetail || null,
       sameAsPolicyHolder:
         caseData.sameAsPolicyHolder != null
           ? String(caseData.sameAsPolicyHolder)

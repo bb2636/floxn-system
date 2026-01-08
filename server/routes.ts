@@ -639,6 +639,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("✅ Validated assignedPartnerContact:", validatedData.assignedPartnerContact);
       console.log("✅ Validated assignedPartner:", validatedData.assignedPartner);
       
+      // Debug: log victim address info for troubleshooting
+      console.log("🏠 Victim Address Debug:");
+      console.log("  - victimName:", validatedData.victimName);
+      console.log("  - victimAddress:", validatedData.victimAddress);
+      console.log("  - victimAddressDetail:", validatedData.victimAddressDetail);
+      console.log("  - insuredAddress:", validatedData.insuredAddress);
+      console.log("  - insuredAddressDetail:", validatedData.insuredAddressDetail);
+      console.log("  - parentCasePrefix:", (req.body as any).parentCasePrefix);
+      
       // 사용자 정보 가져오기 (자동 채우기용)
       const allUsersForAutoPopulate = await storage.getAllUsers();
       
