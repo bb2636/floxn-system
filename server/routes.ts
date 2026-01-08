@@ -9007,7 +9007,10 @@ https://peulrogseun-aqaqaq4561.replit.app
     try {
       const payload = pdfDownloadSchema.parse(req.body);
       
-      const pdfBuffer = await generatePdfWithPdfLib(payload);
+      // 용량 제한 PDF 생성 사용 (대용량 첨부파일 케이스 대응)
+      console.log(`[pdf-download] Starting PDF generation for case ${payload.caseId}`);
+      const pdfBuffer = await generatePdfWithSizeLimitPdfLib(payload);
+      console.log(`[pdf-download] PDF generated: ${Math.round(pdfBuffer.length / 1024)}KB (${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
       
       const caseData = await storage.getCaseById(payload.caseId);
       const filename = caseData?.caseNumber 
