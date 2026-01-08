@@ -7090,54 +7090,205 @@ FLOXN`;
 
       console.log(`[Invoice PDF] PDF generated, size: ${pdfBuffer.length} bytes`);
 
-      // NEW POLICY: Invoice PDF contains ONLY text/tables (no images)
-      // Evidence images are generated as separate PDFs per tab
-      let evidencePdfs: Awaited<ReturnType<typeof generateEvidencePdfs>> = [];
-      
+      // Merge selected documents into Invoice PDF (same as download logic)
       if (selectedDocumentIds && selectedDocumentIds.length > 0) {
-        console.log(`[Invoice Email] Generating separate evidence PDFs for ${selectedDocumentIds.length} documents`);
+        console.log(`[Invoice Email] Merging ${selectedDocumentIds.length} documents into Invoice PDF`);
         
-        // Fetch documents from ALL related cases (same insuranceAccidentNo base: -0, -1, -2)
-        let allDocuments: any[] = [];
+        // Get documents from main case AND all related cases
+        const mainDocs = await storage.getDocumentsByCaseId(caseId);
         
         // Build caseId -> caseNumber mapping
         const caseNumberMap: Record<string, string> = {
           [caseId]: caseData.caseNumber || ''
         };
         
-        // Get base accident number for finding related cases
-        const baseAccidentNo = caseData.insuranceAccidentNo?.replace(/-\d+$/, '') || '';
-        
-        if (baseAccidentNo) {
-          // Find all related cases with same base accident number
-          const allCases = await storage.getAllCases();
-          const relatedCases = allCases.filter(c => c.insuranceAccidentNo?.startsWith(baseAccidentNo));
+        // Get related cases (same insuranceAccidentNo)
+        let allDocuments = [...mainDocs];
+        if (caseData.insuranceAccidentNo) {
+          const relatedCases = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
           
-          console.log(`[Invoice Email] Found ${relatedCases.length} related cases for base accident: ${baseAccidentNo}`);
-          
-          // Fetch documents from all related cases and build caseNumberMap
+          // Fetch documents from all related cases and build mapping
           for (const relatedCase of relatedCases) {
             caseNumberMap[relatedCase.id] = relatedCase.caseNumber || '';
-            const caseDocs = await storage.getDocumentsByCaseId(relatedCase.id);
-            allDocuments = allDocuments.concat(caseDocs);
+            const relatedDocs = await storage.getDocumentsByCaseId(relatedCase.id);
+            allDocuments = allDocuments.concat(relatedDocs);
           }
-          
-          console.log(`[Invoice Email] Total documents from all related cases: ${allDocuments.length}`);
-        } else {
-          // Fallback: just get documents from current case
-          allDocuments = await storage.getDocumentsByCaseId(caseId);
+          console.log(`[Invoice Email] Total documents from ${1 + relatedCases.length} cases: ${allDocuments.length}`);
         }
         
-        // Generate evidence PDFs by tab (with automatic splitting if > 8MB)
-        evidencePdfs = await generateEvidencePdfs(
-          allDocuments,
-          selectedDocumentIds,
-          caseData.caseNumber || '',
-          caseData.insuranceAccidentNo || '',
-          caseNumberMap
-        );
+        const selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
+        console.log(`[Invoice Email] Selected documents found: ${selectedDocs.length}`);
         
-        console.log(`[Invoice Email] Generated ${evidencePdfs.length} evidence PDF files`);
+        if (selectedDocs.length > 0) {
+          const { PDFDocument, rgb } = await import('pdf-lib');
+          const fontkit = (await import('@pdf-lib/fontkit')).default;
+          const sharp = await import('sharp');
+          const fs = await import('fs');
+          const path = await import('path');
+          
+          const mergedPdf = await PDFDocument.load(pdfBuffer);
+          
+          // 한글 폰트 로드
+          mergedPdf.registerFontkit(fontkit);
+          const fontsDir = path.join(process.cwd(), 'server/fonts');
+          const fontPath = path.join(fontsDir, 'NotoSansKR-Regular-static.ttf');
+          const fontBytes = fs.readFileSync(fontPath);
+          const font = await mergedPdf.embedFont(fontBytes);
+          
+          // Helper function to get file buffer from Object Storage or DB
+          const getFileBuffer = async (doc: any): Promise<Buffer | null> => {
+            try {
+              // 1. Object Storage에서 가져오기 (우선)
+              if (doc.storageKey) {
+                const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+                if (privateObjectDir) {
+                  const fullPath = `${privateObjectDir}/${doc.storageKey}`;
+                  const { ObjectStorageService } = await import('./replit_integrations/object_storage');
+                  const storageService = new ObjectStorageService();
+                  return await storageService.downloadToBuffer(fullPath);
+                }
+              }
+              // 2. fileData에서 가져오기 (레거시)
+              if (doc.fileData) {
+                if (doc.fileData.startsWith('data:')) {
+                  const base64Data = doc.fileData.split(',')[1];
+                  return Buffer.from(base64Data, 'base64');
+                } else {
+                  return Buffer.from(doc.fileData, 'base64');
+                }
+              }
+              // 3. DB에서 직접 가져오기 (레거시 파일)
+              if (doc.id) {
+                const fileData = await storage.getDocumentFileData(doc.id);
+                if (fileData) {
+                  if (fileData.startsWith('data:')) {
+                    const base64Data = fileData.split(',')[1];
+                    return Buffer.from(base64Data, 'base64');
+                  } else {
+                    return Buffer.from(fileData, 'base64');
+                  }
+                }
+              }
+              return null;
+            } catch (err) {
+              console.error(`[Invoice Email] Failed to get buffer for ${doc.fileName}:`, err);
+              return null;
+            }
+          };
+          
+          // Separate PDFs and images
+          const pdfDocs = selectedDocs.filter((doc: any) => {
+            const mimeType = doc.fileType || '';
+            return mimeType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf');
+          });
+          const imageDocs = selectedDocs.filter((doc: any) => {
+            const mimeType = doc.fileType || '';
+            return mimeType.startsWith('image/') && !mimeType.includes('heic') && !mimeType.includes('webp');
+          });
+          
+          console.log(`[Invoice Email] PDF 문서: ${pdfDocs.length}개, 이미지: ${imageDocs.length}개`);
+          
+          // 1. Add PDF documents first
+          for (const doc of pdfDocs) {
+            try {
+              const fileBuffer = await getFileBuffer(doc);
+              if (!fileBuffer || fileBuffer.length === 0) {
+                console.warn(`[Invoice Email] No data for PDF: ${doc.fileName}`);
+                continue;
+              }
+              
+              const sourcePdf = await PDFDocument.load(fileBuffer);
+              const pageIndices = sourcePdf.getPageIndices();
+              const copiedPages = await mergedPdf.copyPages(sourcePdf, pageIndices);
+              
+              for (const page of copiedPages) {
+                mergedPdf.addPage(page);
+              }
+              console.log(`[Invoice Email] Added PDF document: ${doc.fileName} (${copiedPages.length} pages)`);
+            } catch (pdfError) {
+              console.error(`[Invoice Email] Failed to add PDF ${doc.fileName}:`, pdfError);
+            }
+          }
+          
+          // 2. Add images
+          const A4_WIDTH = 595.28;
+          const A4_HEIGHT = 841.89;
+          
+          for (const doc of imageDocs) {
+            try {
+              const fileBuffer = await getFileBuffer(doc);
+              if (!fileBuffer || fileBuffer.length === 0) {
+                console.warn(`[Invoice Email] No data for image: ${doc.fileName}`);
+                continue;
+              }
+              
+              let processedBuffer = fileBuffer;
+              const mimeType = doc.fileType || '';
+              
+              // Convert to JPEG if needed
+              if (!mimeType.includes('jpeg') && !mimeType.includes('jpg') && !mimeType.includes('png')) {
+                try {
+                  processedBuffer = await sharp.default(fileBuffer).jpeg({ quality: 85 }).toBuffer();
+                } catch (e) {
+                  console.warn(`[Invoice Email] Failed to convert image: ${doc.fileName}`);
+                  continue;
+                }
+              }
+              
+              // Compress large images
+              const metadata = await sharp.default(processedBuffer).metadata();
+              if (metadata.width && metadata.height && (metadata.width > 2000 || metadata.height > 2000)) {
+                processedBuffer = await sharp.default(processedBuffer)
+                  .resize(2000, 2000, { fit: 'inside', withoutEnlargement: true })
+                  .jpeg({ quality: 80 })
+                  .toBuffer();
+              }
+              
+              // Embed image
+              let embeddedImage;
+              if (mimeType.includes('png')) {
+                embeddedImage = await mergedPdf.embedPng(processedBuffer);
+              } else {
+                embeddedImage = await mergedPdf.embedJpg(processedBuffer);
+              }
+              
+              // Calculate dimensions to fit image on A4 page with margins
+              const margin = 40;
+              const maxWidth = A4_WIDTH - (margin * 2);
+              const maxHeight = A4_HEIGHT - (margin * 2);
+              
+              let width = embeddedImage.width;
+              let height = embeddedImage.height;
+              
+              const widthRatio = maxWidth / width;
+              const heightRatio = maxHeight / height;
+              const scale = Math.min(widthRatio, heightRatio, 1);
+              
+              width *= scale;
+              height *= scale;
+              
+              const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+              const x = (A4_WIDTH - width) / 2;
+              const y = (A4_HEIGHT - height) / 2;
+              
+              page.drawImage(embeddedImage, { x, y, width, height });
+              console.log(`[Invoice Email] Added image: ${doc.fileName}`);
+            } catch (imgError) {
+              console.error(`[Invoice Email] Failed to add image ${doc.fileName}:`, imgError);
+            }
+          }
+          
+          pdfBuffer = Buffer.from(await mergedPdf.save());
+          console.log(`[Invoice Email] Final merged PDF size: ${pdfBuffer.length} bytes`);
+          
+          // Compress if too large (> 9MB)
+          if (pdfBuffer.length > 9 * 1024 * 1024) {
+            console.log(`[Invoice Email] Compressing PDF: ${Math.round(pdfBuffer.length / 1024 / 1024 * 100) / 100}MB...`);
+            const { compressPdfForEmail } = await import('./pdf-compression');
+            pdfBuffer = await compressPdfForEmail(pdfBuffer);
+            console.log(`[Invoice Email] Compressed to: ${Math.round(pdfBuffer.length / 1024 / 1024 * 100) / 100}MB`);
+          }
+        }
       }
 
       // Format amounts
@@ -7250,7 +7401,7 @@ Front·Line·Ops·Xpert·Net
       const timestamp = Date.now();
       const invoiceFilename = `Invoice.pdf`;
 
-      // Build attachments array: Invoice PDF + Evidence PDFs (per tab) + Logo
+      // Build attachments array: Invoice PDF (with merged documents) + Logo
       const attachments: Array<{ filename: string; content: Buffer; contentType: string; cid?: string }> = [
         {
           filename: invoiceFilename,
@@ -7258,15 +7409,6 @@ Front·Line·Ops·Xpert·Net
           contentType: 'application/pdf',
         },
       ];
-
-      // Add evidence PDFs (separated by tab, auto-split if > 8MB)
-      for (const evidencePdf of evidencePdfs) {
-        attachments.push({
-          filename: evidencePdf.filename,
-          content: evidencePdf.buffer,
-          contentType: 'application/pdf',
-        });
-      }
 
       // 로고가 있으면 CID 첨부파일로 추가
       if (logoBuffer) {
@@ -7278,8 +7420,11 @@ Front·Line·Ops·Xpert·Net
         });
       }
 
-      // Log attachment summary before sending (SMTP requirement)
-      logAttachmentSummary(pdfBuffer, evidencePdfs);
+      // Log attachment summary before sending
+      console.log(`\n========== SMTP 첨부 파일 요약 ==========`);
+      console.log(`Invoice.pdf: ${Math.round(pdfBuffer.length / 1024 / 1024 * 1000) / 1000}MB`);
+      console.log(`총 첨부 파일 개수: ${attachments.length}`);
+      console.log(`==========================================\n`);
 
       // Send email with all PDF attachments
       console.log(`[Invoice Email] Sending ${attachments.length} PDF attachments to ${email}`);
