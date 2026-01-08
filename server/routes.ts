@@ -17,6 +17,7 @@ import { generatePdfWithPdfLib, generatePdfWithSizeLimitPdfLib, generateEvidence
 import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
 import { sendFieldReportEmail, sendFieldReportEmailWithLink, sendEmailWithAttachment } from "./hiworks-email";
 import { generateEvidencePdfs, logAttachmentSummary } from "./evidence-pdf-service";
+import { compressPdf, isPdfFile } from "./pdf-compression";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
@@ -3799,13 +3800,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "업로드된 파일을 찾을 수 없습니다. 업로드가 실패했을 수 있습니다." });
       }
 
+      let finalFileSize = fileSize;
+      let compressionInfo: { originalSize: number; compressedSize: number; ratio: number } | null = null;
+
+      // PDF 파일인 경우 압축 처리
+      if (isPdfFile(fileType, fileName)) {
+        console.log(`[upload-complete] PDF 파일 감지, 압축 시작: ${fileName}`);
+        
+        try {
+          // 1. Object Storage에서 PDF 다운로드
+          const [pdfBuffer] = await file.download();
+          console.log(`[upload-complete] PDF 다운로드 완료: ${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB`);
+          
+          // 2. PDF 압축
+          const compressionResult = await compressPdf(pdfBuffer);
+          
+          if (!compressionResult.success) {
+            // 압축 실패 (용량 초과 등)
+            console.error(`[upload-complete] PDF 압축 거부: ${compressionResult.error}`);
+            // 업로드된 파일 삭제
+            await file.delete();
+            return res.status(400).json({ error: compressionResult.error });
+          }
+          
+          // 3. 압축된 파일로 교체 (원본과 다른 경우)
+          if (compressionResult.compressedBuffer && compressionResult.compressedSize !== compressionResult.originalSize) {
+            console.log(`[upload-complete] 압축된 PDF 업로드 중...`);
+            await file.save(compressionResult.compressedBuffer, {
+              contentType: 'application/pdf',
+            });
+            finalFileSize = compressionResult.compressedSize!;
+            compressionInfo = {
+              originalSize: compressionResult.originalSize,
+              compressedSize: compressionResult.compressedSize!,
+              ratio: compressionResult.compressionRatio!,
+            };
+            console.log(`[upload-complete] PDF 압축 완료: ${(compressionResult.originalSize / 1024 / 1024).toFixed(2)}MB → ${(finalFileSize / 1024 / 1024).toFixed(2)}MB (${compressionResult.compressionRatio}%)`);
+          } else {
+            console.log(`[upload-complete] PDF 압축 불필요 또는 효과 없음`);
+          }
+        } catch (compressError) {
+          console.error(`[upload-complete] PDF 압축 중 오류:`, compressError);
+          // 압축 오류 시 원본 파일 그대로 사용 (중단하지 않음)
+        }
+      }
+
       // DB에 문서 레코드 생성 (status: ready)
       const document = await storage.createPendingDocument({
         caseId,
         category,
         fileName,
         fileType,
-        fileSize,
+        fileSize: finalFileSize,
         storageKey,
         displayOrder: displayOrder ?? 0,
         createdBy: req.session.userId!,
@@ -3814,12 +3860,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // status를 ready로 업데이트
       await storage.updateDocumentStatus(document.id, "ready", checksum);
 
-      console.log(`[upload-complete] Document ${document.id} saved with status ready`);
+      console.log(`[upload-complete] Document ${document.id} saved with status ready${compressionInfo ? ` (compressed: ${compressionInfo.ratio}%)` : ''}`);
 
       res.json({
         success: true,
         documentId: document.id,
         document,
+        compression: compressionInfo,
       });
     } catch (error: any) {
       console.error("[upload-complete] Error occurred:");
