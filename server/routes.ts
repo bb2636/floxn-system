@@ -17,7 +17,7 @@ import { generatePdfWithPdfLib, generatePdfWithSizeLimitPdfLib, generateEvidence
 import { generateInvoicePdf, sendInvoiceEmailWithAttachment } from "./invoice-pdf-service";
 import { sendFieldReportEmail, sendFieldReportEmailWithLink, sendEmailWithAttachment } from "./hiworks-email";
 import { generateEvidencePdfs, logAttachmentSummary } from "./evidence-pdf-service";
-import { compressPdf, isPdfFile } from "./pdf-compression";
+import { compressPdf, isPdfFile, compressPdfForEmail } from "./pdf-compression";
 
 // Solapi HMAC-SHA256 인증 헤더 생성
 function createSolapiAuthHeader(apiKey: string, apiSecret: string): string {
@@ -6904,6 +6904,14 @@ FLOXN`;
           pdfBuffer = Buffer.from(await mergedPdf.save());
           console.log(`[Invoice PDF] Final PDF with documents, size: ${pdfBuffer.length} bytes`);
         }
+      }
+
+      // 10MB 이하로 압축 (이메일 첨부 및 다운로드 공통)
+      const originalSize = pdfBuffer.length;
+      if (originalSize > 7 * 1024 * 1024) {
+        console.log(`[Invoice PDF] Compressing PDF: ${(originalSize / 1024 / 1024).toFixed(2)}MB...`);
+        pdfBuffer = await compressPdfForEmail(pdfBuffer);
+        console.log(`[Invoice PDF] Compressed: ${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(pdfBuffer.length / 1024 / 1024).toFixed(2)}MB`);
       }
 
       const fileName = `INVOICE_${caseData.insuranceAccidentNo || caseData.caseNumber || caseId}_${Date.now()}.pdf`;
