@@ -163,27 +163,28 @@ async function embedPretendardFonts(pdfDoc: PDFDocument): Promise<FontSet> {
   
   const { regular, semiBold } = loadPretendardFonts();
   
-  console.log(`[Invoice PDF] ========== 폰트 임베딩 (subset: true - 용량 최적화) ==========`);
+  console.log(`[Invoice PDF] ========== 폰트 임베딩 (subset: false - 전체 폰트) ==========`);
   
-  // subset: true로 사용되는 글자만 임베딩 (6MB → 수백KB로 감소)
+  // subset: false로 전체 폰트 임베드 (글자 깨짐 방지)
+  // pdf-lib의 subset:true는 폰트 프라이밍 없이는 병합 시 글자 깨짐 발생
   let regularFont: PDFFont;
   let semiBoldFont: PDFFont;
   
   try {
-    regularFont = await pdfDoc.embedFont(regular, { subset: true });
-    console.log(`[Invoice PDF] Regular 폰트 임베딩 성공 (subset)`);
+    regularFont = await pdfDoc.embedFont(regular, { subset: false });
+    console.log(`[Invoice PDF] Regular 폰트 임베딩 성공 (전체 폰트)`);
   } catch (error) {
     throw new Error(`Pretendard-Regular.ttf embedFont 실패: ${error}`);
   }
   
   try {
-    semiBoldFont = await pdfDoc.embedFont(semiBold, { subset: true });
-    console.log(`[Invoice PDF] SemiBold 폰트 임베딩 성공 (subset)`);
+    semiBoldFont = await pdfDoc.embedFont(semiBold, { subset: false });
+    console.log(`[Invoice PDF] SemiBold 폰트 임베딩 성공 (전체 폰트)`);
   } catch (error) {
     throw new Error(`Pretendard-SemiBold.ttf embedFont 실패: ${error}`);
   }
   
-  console.log(`[Invoice PDF] 폰트 임베딩 완료 (subset: true)`);
+  console.log(`[Invoice PDF] 폰트 임베딩 완료 (subset: false)`);
   console.log(`[Invoice PDF] =====================================================`);
   
   return { regular: regularFont, bold: semiBoldFont };
