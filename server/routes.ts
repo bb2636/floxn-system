@@ -6737,12 +6737,51 @@ FLOXN`;
           const fontBytes = fs.readFileSync(fontPath);
           const font = await mergedPdf.embedFont(fontBytes);
           
-          // Separate PDFs and images
+          // Helper function to get file buffer from Object Storage or DB
+          const getFileBuffer = async (doc: any): Promise<Buffer | null> => {
+            try {
+              // 1. Object Storage에서 가져오기 (우선)
+              if (doc.storageKey) {
+                const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
+                if (privateObjectDir) {
+                  const fullPath = `${privateObjectDir}/${doc.storageKey}`;
+                  const { objectStorage } = await import('./replit_integrations/object_storage');
+                  return await objectStorage.downloadToBuffer(fullPath);
+                }
+              }
+              // 2. fileData에서 가져오기 (레거시)
+              if (doc.fileData) {
+                if (doc.fileData.startsWith('data:')) {
+                  const base64Data = doc.fileData.split(',')[1];
+                  return Buffer.from(base64Data, 'base64');
+                } else {
+                  return Buffer.from(doc.fileData, 'base64');
+                }
+              }
+              // 3. DB에서 직접 가져오기 (레거시 파일)
+              if (doc.id) {
+                const fileData = await storage.getDocumentFileData(doc.id);
+                if (fileData) {
+                  if (fileData.startsWith('data:')) {
+                    const base64Data = fileData.split(',')[1];
+                    return Buffer.from(base64Data, 'base64');
+                  } else {
+                    return Buffer.from(fileData, 'base64');
+                  }
+                }
+              }
+              return null;
+            } catch (err) {
+              console.error(`[Invoice PDF] Failed to get file buffer for ${doc.fileName}:`, err);
+              return null;
+            }
+          };
+          
+          // Separate PDFs and images (no fileData check - will load lazily)
           const pdfDocs: any[] = [];
           const imageDocs: any[] = [];
           
           for (const doc of selectedDocs) {
-            if (!doc.fileData) continue;
             const mimeType = doc.fileType || '';
             if (mimeType === 'application/pdf') {
               pdfDocs.push(doc);
@@ -6754,10 +6793,11 @@ FLOXN`;
           // Add PDF documents first
           for (const doc of pdfDocs) {
             try {
-              const base64Data = doc.fileData.includes(',') 
-                ? doc.fileData.split(',')[1] 
-                : doc.fileData;
-              const fileBuffer = Buffer.from(base64Data, 'base64');
+              const fileBuffer = await getFileBuffer(doc);
+              if (!fileBuffer) {
+                console.warn(`[Invoice PDF] No data for PDF: ${doc.fileName}`);
+                continue;
+              }
               const attachedPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
               const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
               pages.forEach((page: any) => mergedPdf.addPage(page));
@@ -6788,10 +6828,11 @@ FLOXN`;
             
             for (const doc of imageDocs) {
               try {
-                const base64Data = doc.fileData.includes(',') 
-                  ? doc.fileData.split(',')[1] 
-                  : doc.fileData;
-                const fileBuffer = Buffer.from(base64Data, 'base64');
+                const fileBuffer = await getFileBuffer(doc);
+                if (!fileBuffer) {
+                  console.warn(`[Invoice PDF] No data for image: ${doc.fileName}`);
+                  continue;
+                }
                 const imageBuffer = await sharp.default(fileBuffer)
                   .resize(1200, 1600, { fit: 'inside', withoutEnlargement: true })
                   .jpeg({ quality: 75 })
