@@ -2503,7 +2503,7 @@ async function compressImageForPdf(
 }
 
 // Object Storage 또는 fileData에서 이미지 Buffer 가져오기
-async function getImageBuffer(doc: { fileData?: string | null; storageKey?: string | null }): Promise<Buffer | null> {
+async function getImageBuffer(doc: { id?: string; fileData?: string | null; storageKey?: string | null }): Promise<Buffer | null> {
   try {
     // 1. Object Storage에서 가져오기 (우선)
     if (doc.storageKey) {
@@ -2527,6 +2527,21 @@ async function getImageBuffer(doc: { fileData?: string | null; storageKey?: stri
         return Buffer.from(base64Data, 'base64');
       } else {
         return Buffer.from(doc.fileData, 'base64');
+      }
+    }
+    
+    // 3. fileData가 없으면 DB에서 직접 가져오기 (레거시 파일 지원)
+    if (doc.id) {
+      console.log(`[pdf-lib] DB에서 레거시 이미지 로드: ${doc.id}`);
+      const { storage } = await import('./storage');
+      const fileData = await storage.getDocumentFileData(doc.id);
+      if (fileData) {
+        if (fileData.startsWith('data:')) {
+          const base64Data = fileData.split(',')[1];
+          return Buffer.from(base64Data, 'base64');
+        } else {
+          return Buffer.from(fileData, 'base64');
+        }
       }
     }
     
