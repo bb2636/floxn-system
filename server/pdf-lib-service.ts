@@ -1144,11 +1144,13 @@ async function renderEvidencePages(
     const isPdf = doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf');
     const hasStorageKey = doc.storageKey && doc.storageKey.length > 0;
     const hasFileData = doc.fileData && doc.fileData.length > 100;
+    // 레거시 파일은 storageKey/fileData 없어도 doc.id로 DB에서 로드 가능
+    const canLoadFromDb = !!doc.id;
     
-    if (isImage && (hasStorageKey || hasFileData)) {
+    if (isImage && (hasStorageKey || hasFileData || canLoadFromDb)) {
       const tab = categoryToTab[doc.category] || '기타';
       
-      // Object Storage 또는 fileData에서 이미지 로드
+      // Object Storage 또는 fileData 또는 DB에서 이미지 로드
       const imageBuffer = await getImageBuffer(doc);
       if (imageBuffer) {
         const base64Data = imageBuffer.toString('base64');
@@ -1156,10 +1158,10 @@ async function renderEvidencePages(
       } else {
         errors.push({ fileName: doc.fileName, reason: '이미지 로드 실패' });
       }
-    } else if (isPdf && (hasStorageKey || hasFileData)) {
+    } else if (isPdf && (hasStorageKey || hasFileData || canLoadFromDb)) {
       const tab = categoryToTab[doc.category] || '기타';
       
-      // Object Storage 또는 fileData에서 PDF 로드
+      // Object Storage 또는 fileData 또는 DB에서 PDF 로드
       const pdfBuffer = await getImageBuffer(doc); // 같은 함수로 Buffer 가져오기
       if (pdfBuffer) {
         pdfDocs.push({ doc, tab, buffer: pdfBuffer });
