@@ -1137,9 +1137,11 @@ async function renderEvidencePages(
   };
   
   const imageDocs: Array<{ doc: any; tab: string; imageData: string }> = [];
+  const pdfDocs: Array<{ doc: any; tab: string; buffer: Buffer }> = [];
   
   for (const doc of documents) {
     const isImage = doc.fileType?.startsWith('image/');
+    const isPdf = doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf');
     const hasStorageKey = doc.storageKey && doc.storageKey.length > 0;
     const hasFileData = doc.fileData && doc.fileData.length > 100;
     
@@ -1154,11 +1156,110 @@ async function renderEvidencePages(
       } else {
         errors.push({ fileName: doc.fileName, reason: '이미지 로드 실패' });
       }
+    } else if (isPdf && (hasStorageKey || hasFileData)) {
+      const tab = categoryToTab[doc.category] || '기타';
+      
+      // Object Storage 또는 fileData에서 PDF 로드
+      const pdfBuffer = await getImageBuffer(doc); // 같은 함수로 Buffer 가져오기
+      if (pdfBuffer) {
+        pdfDocs.push({ doc, tab, buffer: pdfBuffer });
+      } else {
+        errors.push({ fileName: doc.fileName, reason: 'PDF 로드 실패' });
+      }
     } else if (isImage) {
       errors.push({ fileName: doc.fileName, reason: '이미지 데이터 없음' });
+    } else if (isPdf) {
+      errors.push({ fileName: doc.fileName, reason: 'PDF 데이터 없음' });
     }
   }
   
+  // PDF 문서 페이지들을 현재 문서에 복사
+  for (const pdfItem of pdfDocs) {
+    try {
+      console.log(`[pdf-lib] PDF 문서 삽입: ${pdfItem.doc.fileName}`);
+      const externalPdf = await PDFDocument.load(pdfItem.buffer, { ignoreEncryption: true });
+      const pageCount = externalPdf.getPageCount();
+      
+      // PDF 문서당 하나의 헤더 페이지만 추가
+      const headerPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+      
+      // 상단 헤더
+      headerPage.drawRectangle({
+        x: MARGIN,
+        y: A4_HEIGHT - MARGIN - 30,
+        width: CONTENT_WIDTH,
+        height: 30,
+        color: rgb(0.2, 0.2, 0.2),
+      });
+      
+      drawText(headerPage, {
+        x: MARGIN + 10,
+        y: A4_HEIGHT - MARGIN - 22,
+        text: `증빙자료 (PDF 문서)`,
+        font: fonts.bold,
+        size: 12,
+        color: { r: 1, g: 1, b: 1 },
+      });
+      
+      const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '';
+      drawText(headerPage, {
+        x: A4_WIDTH - MARGIN - 150,
+        y: A4_HEIGHT - MARGIN - 22,
+        text: `접수번호: ${accidentNo}`,
+        font: fonts.regular,
+        size: 9,
+        color: { r: 1, g: 1, b: 1 },
+      });
+      
+      // 파일 정보 표시
+      drawText(headerPage, {
+        x: MARGIN,
+        y: A4_HEIGHT - MARGIN - 70,
+        text: `분류: ${pdfItem.tab} - ${pdfItem.doc.category || ''}`,
+        font: fonts.regular,
+        size: 10,
+      });
+      
+      drawText(headerPage, {
+        x: MARGIN,
+        y: A4_HEIGHT - MARGIN - 90,
+        text: `파일명: ${pdfItem.doc.fileName || ''}`,
+        font: fonts.regular,
+        size: 10,
+      });
+      
+      drawText(headerPage, {
+        x: MARGIN,
+        y: A4_HEIGHT - MARGIN - 110,
+        text: `총 페이지: ${pageCount}페이지`,
+        font: fonts.regular,
+        size: 10,
+      });
+      
+      // 아래 안내 문구
+      drawText(headerPage, {
+        x: MARGIN,
+        y: A4_HEIGHT - MARGIN - 150,
+        text: '※ 다음 페이지부터 원본 PDF 문서 내용이 표시됩니다.',
+        font: fonts.regular,
+        size: 9,
+      });
+      
+      // 모든 PDF 페이지를 한 번에 복사
+      const pageIndices = Array.from({ length: pageCount }, (_, i) => i);
+      const copiedPages = await pdfDoc.copyPages(externalPdf, pageIndices);
+      for (const copiedPage of copiedPages) {
+        pdfDoc.addPage(copiedPage);
+      }
+      
+      console.log(`[pdf-lib] PDF 문서 삽입 완료: ${pdfItem.doc.fileName} (${pageCount}페이지)`);
+    } catch (pdfError) {
+      console.error(`[pdf-lib] PDF 삽입 오류 (${pdfItem.doc.fileName}):`, pdfError);
+      errors.push({ fileName: pdfItem.doc.fileName, reason: 'PDF 삽입 실패' });
+    }
+  }
+  
+  // 이미지가 없고 PDF만 있는 경우에도 정상 반환
   if (imageDocs.length === 0) {
     return { errors };
   }
