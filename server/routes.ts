@@ -6873,8 +6873,8 @@ FLOXN`;
             
             // Get header text for this document (보험사사고번호 + 주소)
             const accidentNo = caseData.insuranceAccidentNo || '';
-            const address = caseData.accidentAddress || '';
-            const addressDetail = caseData.accidentAddressDetail || '';
+            const address = caseData.victimAddress || caseData.insuredAddress || '';
+            const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
             const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
             const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || '기타'}`;
             
@@ -7377,8 +7377,8 @@ FLOXN`;
             
             // Get header text for this document (보험사사고번호 + 주소)
             const accidentNo = caseData.insuranceAccidentNo || '';
-            const address = caseData.accidentAddress || '';
-            const addressDetail = caseData.accidentAddressDetail || '';
+            const address = caseData.victimAddress || caseData.insuredAddress || '';
+            const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
             const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
             const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || '기타'}`;
             
