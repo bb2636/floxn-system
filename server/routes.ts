@@ -6830,7 +6830,25 @@ FLOXN`;
           
           console.log(`[Invoice PDF] PDF 문서: ${pdfDocs.length}개, 이미지: ${imageDocs.length}개`);
           
-          // Add PDF documents first
+          // Common constants and category mapping
+          const categoryToTab: Record<string, string> = {
+            '현장출동사진': '현장사진', '현장': '현장사진',
+            '수리중 사진': '현장사진', '수리중': '현장사진',
+            '복구완료 사진': '현장사진', '복구완료': '현장사진',
+            '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
+            '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
+            '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
+            '위임장': '청구자료', '도급계약서': '청구자료',
+            '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
+          };
+          
+          const A4_WIDTH = 595.28;
+          const A4_HEIGHT = 841.89;
+          const MARGIN = 30;
+          const HEADER_HEIGHT = 25;
+          const GAP = 10;
+          
+          // Add PDF documents first (with header on each page)
           for (const doc of pdfDocs) {
             try {
               const fileBuffer = await getFileBuffer(doc);
@@ -6840,8 +6858,46 @@ FLOXN`;
               }
               const attachedPdf = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
               const pages = await mergedPdf.copyPages(attachedPdf, attachedPdf.getPageIndices());
-              pages.forEach((page: any) => mergedPdf.addPage(page));
-              console.log(`[Invoice PDF] Added PDF document: ${doc.fileName}`);
+              
+              // Get header text for this document
+              const docCaseNumber = caseNumberMap[doc.caseId] || caseData.caseNumber || '';
+              const tab = categoryToTab[doc.category] || '기타';
+              const headerText = `[${docCaseNumber}] ${tab} - ${doc.category || '기타'}`;
+              
+              for (const page of pages) {
+                mergedPdf.addPage(page);
+                const { width, height } = page.getSize();
+                
+                // Draw white background for header area
+                page.drawRectangle({
+                  x: 0,
+                  y: height - MARGIN - HEADER_HEIGHT,
+                  width: width,
+                  height: MARGIN + HEADER_HEIGHT,
+                  color: rgb(1, 1, 1),
+                });
+                
+                // Draw header background
+                page.drawRectangle({
+                  x: MARGIN,
+                  y: height - MARGIN - HEADER_HEIGHT,
+                  width: width - (MARGIN * 2),
+                  height: HEADER_HEIGHT,
+                  color: rgb(0.95, 0.95, 0.95),
+                  borderColor: rgb(0.8, 0.8, 0.8),
+                  borderWidth: 0.5,
+                });
+                
+                // Draw header text
+                page.drawText(headerText, {
+                  x: MARGIN + 10,
+                  y: height - MARGIN - HEADER_HEIGHT + 8,
+                  size: 10,
+                  font,
+                  color: rgb(0.2, 0.2, 0.2),
+                });
+              }
+              console.log(`[Invoice PDF] Added PDF document with header: ${doc.fileName} (${pages.length} pages)`);
             } catch (docError) {
               console.error(`[Invoice PDF] Failed to add PDF ${doc.fileName}:`, docError);
             }
@@ -6849,22 +6905,6 @@ FLOXN`;
           
           // Add images using pdf-lib (no Puppeteer)
           if (imageDocs.length > 0) {
-            const categoryToTab: Record<string, string> = {
-              '현장출동사진': '현장사진', '현장': '현장사진',
-              '수리중 사진': '현장사진', '수리중': '현장사진',
-              '복구완료 사진': '현장사진', '복구완료': '현장사진',
-              '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
-              '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
-              '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
-              '위임장': '청구자료', '도급계약서': '청구자료',
-              '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
-            };
-            
-            const A4_WIDTH = 595.28;
-            const A4_HEIGHT = 841.89;
-            const MARGIN = 30;
-            const HEADER_HEIGHT = 25;
-            const GAP = 10;
             
             for (const doc of imageDocs) {
               try {
@@ -7234,7 +7274,25 @@ FLOXN`;
           
           console.log(`[Invoice Email] PDF 문서: ${pdfDocs.length}개, 이미지: ${imageDocs.length}개`);
           
-          // 1. Add PDF documents first
+          // Common constants and category mapping
+          const A4_WIDTH = 595.28;
+          const A4_HEIGHT = 841.89;
+          const MARGIN = 30;
+          const HEADER_HEIGHT = 25;
+          const GAP = 10;
+          
+          const categoryToTab: Record<string, string> = {
+            '현장출동사진': '현장사진', '현장': '현장사진',
+            '수리중 사진': '현장사진', '수리중': '현장사진',
+            '복구완료 사진': '현장사진', '복구완료': '현장사진',
+            '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
+            '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
+            '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
+            '위임장': '청구자료', '도급계약서': '청구자료',
+            '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
+          };
+          
+          // 1. Add PDF documents first (with header on each page)
           for (const doc of pdfDocs) {
             try {
               const fileBuffer = await getFileBuffer(doc);
@@ -7247,33 +7305,51 @@ FLOXN`;
               const pageIndices = sourcePdf.getPageIndices();
               const copiedPages = await mergedPdf.copyPages(sourcePdf, pageIndices);
               
+              // Get header text for this document
+              const docCaseNumber = caseNumberMap[doc.caseId] || caseData.caseNumber || '';
+              const tab = categoryToTab[doc.category] || '기타';
+              const headerText = `[${docCaseNumber}] ${tab} - ${doc.category || '기타'}`;
+              
               for (const page of copiedPages) {
                 mergedPdf.addPage(page);
+                const { width, height } = page.getSize();
+                
+                // Draw white background for header area
+                page.drawRectangle({
+                  x: 0,
+                  y: height - MARGIN - HEADER_HEIGHT,
+                  width: width,
+                  height: MARGIN + HEADER_HEIGHT,
+                  color: rgb(1, 1, 1),
+                });
+                
+                // Draw header background
+                page.drawRectangle({
+                  x: MARGIN,
+                  y: height - MARGIN - HEADER_HEIGHT,
+                  width: width - (MARGIN * 2),
+                  height: HEADER_HEIGHT,
+                  color: rgb(0.95, 0.95, 0.95),
+                  borderColor: rgb(0.8, 0.8, 0.8),
+                  borderWidth: 0.5,
+                });
+                
+                // Draw header text
+                page.drawText(headerText, {
+                  x: MARGIN + 10,
+                  y: height - MARGIN - HEADER_HEIGHT + 8,
+                  size: 10,
+                  font,
+                  color: rgb(0.2, 0.2, 0.2),
+                });
               }
-              console.log(`[Invoice Email] Added PDF document: ${doc.fileName} (${copiedPages.length} pages)`);
+              console.log(`[Invoice Email] Added PDF document with header: ${doc.fileName} (${copiedPages.length} pages)`);
             } catch (pdfError) {
               console.error(`[Invoice Email] Failed to add PDF ${doc.fileName}:`, pdfError);
             }
           }
           
-          // 2. Add images with headers (same as download logic)
-          const A4_WIDTH = 595.28;
-          const A4_HEIGHT = 841.89;
-          const MARGIN = 30;
-          const HEADER_HEIGHT = 25;
-          const GAP = 10;
-          
-          // Category to tab mapping
-          const categoryToTab: Record<string, string> = {
-            '현장출동사진': '현장사진', '현장': '현장사진',
-            '수리중 사진': '현장사진', '수리중': '현장사진',
-            '복구완료 사진': '현장사진', '복구완료': '현장사진',
-            '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
-            '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
-            '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
-            '위임장': '청구자료', '도급계약서': '청구자료',
-            '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
-          };
+          // 2. Add images with headers
           
           for (const doc of imageDocs) {
             try {
