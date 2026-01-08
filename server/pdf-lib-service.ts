@@ -1894,6 +1894,24 @@ async function renderEstimatePage(
   const feeBase = laborNonExpenseTotal + materialTotal;
   const adminFee = Math.round(feeBase * adminFeeRate);
   const profit = Math.round(feeBase * profitRate);
+  
+  // 디버그 로그: 일반관리비/이윤 계산 확인
+  console.log('[PDF 견적서] 일반관리비/이윤 계산:', {
+    laborTotal,
+    laborNonExpenseTotal,
+    materialTotal,
+    subtotal,
+    feeBase,
+    adminFee,
+    profit,
+    laborItems: laborCostItems.length,
+    laborItemsSample: laborCostItems.slice(0, 3).map(r => ({
+      category: r.category,
+      amount: r.amount,
+      includeInEstimate: r.includeInEstimate,
+      includeInEstimateType: typeof r.includeInEstimate,
+    })),
+  });
   const beforeRounding = subtotal + adminFee + profit;
   // 만원단위 절사 (10000원 단위) - 용어는 '천원단위 절사'로 표시
   const rounded = Math.floor(beforeRounding / 10000) * 10000;
