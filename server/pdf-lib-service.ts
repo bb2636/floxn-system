@@ -1175,86 +1175,67 @@ async function renderEvidencePages(
     }
   }
   
-  // PDF 문서 페이지들을 현재 문서에 복사
+  // PDF 문서 페이지들을 현재 문서에 복사 (각 페이지에 헤더 추가)
   for (const pdfItem of pdfDocs) {
     try {
       console.log(`[pdf-lib] PDF 문서 삽입: ${pdfItem.doc.fileName}`);
       const externalPdf = await PDFDocument.load(pdfItem.buffer, { ignoreEncryption: true });
       const pageCount = externalPdf.getPageCount();
       
-      // PDF 문서당 하나의 헤더 페이지만 추가
-      const headerPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+      // 주소 생성 (victimAddress 우선, insuredAddress 차선)
+      const pdfAddress = caseData.victimAddress || caseData.insuredAddress || '';
+      const pdfAddressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
+      const pdfFullAddress = pdfAddressDetail ? `${pdfAddress} ${pdfAddressDetail}` : pdfAddress;
       
-      // 상단 헤더
-      headerPage.drawRectangle({
-        x: MARGIN,
-        y: A4_HEIGHT - MARGIN - 30,
-        width: CONTENT_WIDTH,
-        height: 30,
-        color: rgb(0.2, 0.2, 0.2),
-      });
+      // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
+      const pdfAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '';
+      const pdfCategoryDisplay = pdfItem.doc.category 
+        ? `${pdfItem.tab}-${pdfItem.doc.category}` 
+        : pdfItem.tab;
+      const pdfHeaderText = `사고번호 ${pdfAccidentNo} ${pdfFullAddress} ${pdfCategoryDisplay}`;
+      const pdfFontSize = pdfHeaderText.length > 60 ? 8 : (pdfHeaderText.length > 45 ? 9 : 10);
       
-      drawText(headerPage, {
-        x: MARGIN + 10,
-        y: A4_HEIGHT - MARGIN - 22,
-        text: `증빙자료 (PDF 문서)`,
-        font: fonts.bold,
-        size: 12,
-        color: { r: 1, g: 1, b: 1 },
-      });
-      
-      const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '';
-      drawText(headerPage, {
-        x: A4_WIDTH - MARGIN - 150,
-        y: A4_HEIGHT - MARGIN - 22,
-        text: `접수번호: ${accidentNo}`,
-        font: fonts.regular,
-        size: 9,
-        color: { r: 1, g: 1, b: 1 },
-      });
-      
-      // 파일 정보 표시
-      drawText(headerPage, {
-        x: MARGIN,
-        y: A4_HEIGHT - MARGIN - 70,
-        text: `분류: ${pdfItem.tab} - ${pdfItem.doc.category || ''}`,
-        font: fonts.regular,
-        size: 10,
-      });
-      
-      drawText(headerPage, {
-        x: MARGIN,
-        y: A4_HEIGHT - MARGIN - 90,
-        text: `파일명: ${pdfItem.doc.fileName || ''}`,
-        font: fonts.regular,
-        size: 10,
-      });
-      
-      drawText(headerPage, {
-        x: MARGIN,
-        y: A4_HEIGHT - MARGIN - 110,
-        text: `총 페이지: ${pageCount}페이지`,
-        font: fonts.regular,
-        size: 10,
-      });
-      
-      // 아래 안내 문구
-      drawText(headerPage, {
-        x: MARGIN,
-        y: A4_HEIGHT - MARGIN - 150,
-        text: '※ 다음 페이지부터 원본 PDF 문서 내용이 표시됩니다.',
-        font: fonts.regular,
-        size: 9,
-      });
-      
-      // 모든 PDF 페이지를 한 번에 복사
+      // 모든 PDF 페이지를 한 번에 복사하고 각 페이지에 헤더 추가
       const pageIndices = Array.from({ length: pageCount }, (_, i) => i);
       const copiedPages = await pdfDoc.copyPages(externalPdf, pageIndices);
-      for (const copiedPage of copiedPages) {
+      
+      for (let pageIdx = 0; pageIdx < copiedPages.length; pageIdx++) {
+        const copiedPage = copiedPages[pageIdx];
+        const pageSize = copiedPage.getSize();
+        
+        // 상단 헤더 배경 (흰색으로 기존 콘텐츠 가리기)
+        copiedPage.drawRectangle({
+          x: 0,
+          y: pageSize.height - 25,
+          width: pageSize.width,
+          height: 25,
+          color: rgb(0.2, 0.2, 0.2),
+        });
+        
+        // 헤더 텍스트
+        drawText(copiedPage, {
+          x: 10,
+          y: pageSize.height - 18,
+          text: pdfHeaderText,
+          font: fonts.bold,
+          size: pdfFontSize,
+          color: { r: 1, g: 1, b: 1 },
+        });
+        
+        // 페이지 번호 (우측)
+        drawText(copiedPage, {
+          x: pageSize.width - 60,
+          y: pageSize.height - 18,
+          text: `${pageIdx + 1}/${pageCount}`,
+          font: fonts.regular,
+          size: 8,
+          color: { r: 1, g: 1, b: 1 },
+        });
+        
         pdfDoc.addPage(copiedPage);
       }
       
-      console.log(`[pdf-lib] PDF 문서 삽입 완료: ${pdfItem.doc.fileName} (${pageCount}페이지)`);
+      console.log(`[pdf-lib] PDF 문서 삽입 완료: ${pdfItem.doc.fileName} (${pageCount}페이지, 헤더 추가됨)`);
     } catch (pdfError) {
       console.error(`[pdf-lib] PDF 삽입 오류 (${pdfItem.doc.fileName}):`, pdfError);
       errors.push({ fileName: pdfItem.doc.fileName, reason: 'PDF 삽입 실패' });
