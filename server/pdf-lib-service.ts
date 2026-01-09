@@ -917,12 +917,12 @@ async function renderDrawingPage(
     size: 14,
   });
   
-  // 접수번호 on the right
+  // 사고번호(계약번호) on the right
   const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '-';
   drawText(page, {
     x: A4_WIDTH - MARGIN - 150,
     y: y - 25,
-    text: `접수번호: ${accidentNo}`,
+    text: `사고번호(계약번호): ${accidentNo}`,
     font: fonts.regular,
     size: 10,
   });
@@ -1458,7 +1458,7 @@ async function renderRecoveryAreaPage(
   // Info table
   const headerRows: TableCell[][] = [
     [
-      { text: '접수번호', width: 70, isHeader: true, align: 'center' },
+      { text: '사고번호', width: 70, isHeader: true, align: 'center' },
       { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 120, align: 'left' },
       { text: '고객사', width: 60, isHeader: true, align: 'center' },
       { text: caseData.insuranceCompany || '-', width: 100, align: 'left' },
@@ -1682,11 +1682,11 @@ async function renderEstimatePage(
   const partnerRepName = partnerData?.representativeName || partnerData?.name || '-';
   
   const rowHeight = 20;
-  const leftTableWidth = 250; // 현장명/보험사/접수번호 테이블
+  const leftTableWidth = 250; // 현장명/보험사/사고번호 테이블
   const supplierLabelWidth = 30; // 공/급/자 병합 셀
   const rightTableWidth = 235; // 사업자번호/상호명/대표자 테이블
   
-  // 좌측 테이블 (현장명/보험사/접수번호)
+  // 좌측 테이블 (현장명/보험사/사고번호)
   const leftTableRows: TableCell[][] = [
     [
       { text: '현장명(주소)', width: 70, isHeader: true, align: 'center' },
@@ -1697,7 +1697,7 @@ async function renderEstimatePage(
       { text: caseData.insuranceCompany || '-', width: 180, align: 'left' },
     ],
     [
-      { text: '접수번호', width: 70, isHeader: true, align: 'center' },
+      { text: '사고번호', width: 70, isHeader: true, align: 'center' },
       { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 180, align: 'left' },
     ],
   ];
