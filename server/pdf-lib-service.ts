@@ -1273,6 +1273,19 @@ async function renderEvidencePages(
   
   for (let i = 0; i < imageDocs.length; i += 2) {
     const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+    const firstImage = imageDocs[i];
+    
+    // 주소 생성 (victimAddress 우선, insuredAddress 차선)
+    const address = caseData.victimAddress || caseData.insuredAddress || '';
+    const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
+    const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
+    
+    // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
+    const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '';
+    const categoryDisplay = firstImage.doc.category 
+      ? `${firstImage.tab}-${firstImage.doc.category}` 
+      : firstImage.tab;
+    const headerText = `사고번호 ${accidentNo} ${fullAddress} ${categoryDisplay}`;
     
     page.drawRectangle({
       x: MARGIN,
@@ -1282,26 +1295,16 @@ async function renderEvidencePages(
       color: rgb(0.2, 0.2, 0.2),
     });
     
+    // 헤더 텍스트 길이에 따라 폰트 크기 조정
+    const fontSize = headerText.length > 60 ? 8 : (headerText.length > 45 ? 9 : 10);
     drawText(page, {
       x: MARGIN + 10,
       y: A4_HEIGHT - MARGIN - 22,
-      text: '증빙자료',
+      text: headerText,
       font: fonts.bold,
-      size: 12,
+      size: fontSize,
       color: { r: 1, g: 1, b: 1 },
     });
-    
-    const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '';
-    drawText(page, {
-      x: A4_WIDTH - MARGIN - 150,
-      y: A4_HEIGHT - MARGIN - 22,
-      text: `접수번호: ${accidentNo}`,
-      font: fonts.regular,
-      size: 9,
-      color: { r: 1, g: 1, b: 1 },
-    });
-    
-    const firstImage = imageDocs[i];
     const footerHeight = 25;
     const firstY = A4_HEIGHT - MARGIN - 30 - spacing - headerHeight - imageHeight - footerHeight;
     

@@ -151,7 +151,8 @@ async function createEvidencePdfForTab(
   tabName: string,
   images: ProcessedImage[],
   caseNumber: string,
-  insuranceAccidentNo: string
+  insuranceAccidentNo: string,
+  fullAddress: string = ''
 ): Promise<EvidencePdfResult[]> {
   const results: EvidencePdfResult[] = [];
   
@@ -224,12 +225,18 @@ async function createEvidencePdfForTab(
     
     // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
     const displayCaseNumber = img.caseNumber || insuranceAccidentNo || caseNumber;
-    const headerText = `[${displayCaseNumber}] ${tabName} - ${img.category || '기타'}`;
+    // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
+    const categoryDisplay = img.category ? `${tabName}-${img.category}` : tabName;
+    const headerText = fullAddress 
+      ? `사고번호 ${displayCaseNumber} ${fullAddress} ${categoryDisplay}`
+      : `사고번호 ${displayCaseNumber} ${categoryDisplay}`;
     try {
+      // 헤더 텍스트가 길면 작은 폰트 사용
+      const fontSize = headerText.length > 60 ? 8 : 10;
       page.drawText(headerText, {
         x: MARGIN + 10,
         y: A4_HEIGHT - MARGIN - HEADER_HEIGHT + 10,
-        size: 10,
+        size: fontSize,
         font,
         color: rgb(0.2, 0.2, 0.2),
       });
@@ -380,13 +387,18 @@ async function createEvidencePdfForTab(
         });
         
         // Use image-specific caseNumber if available, otherwise fall back to the general caseNumber
-    const displayCaseNumber = img.caseNumber || insuranceAccidentNo || caseNumber;
-    const headerText = `[${displayCaseNumber}] ${tabName} - ${img.category || '기타'}`;
+        const displayCaseNumber2 = img.caseNumber || insuranceAccidentNo || caseNumber;
+        // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
+        const categoryDisplay2 = img.category ? `${tabName}-${img.category}` : tabName;
+        const headerText2 = fullAddress 
+          ? `사고번호 ${displayCaseNumber2} ${fullAddress} ${categoryDisplay2}`
+          : `사고번호 ${displayCaseNumber2} ${categoryDisplay2}`;
         try {
-          newPage.drawText(headerText, {
+          const fontSize2 = headerText2.length > 60 ? 8 : 10;
+          newPage.drawText(headerText2, {
             x: MARGIN + 10,
             y: A4_HEIGHT - MARGIN - HEADER_HEIGHT + 10,
-            size: 10,
+            size: fontSize2,
             font,
             color: rgb(0.2, 0.2, 0.2),
           });
@@ -482,7 +494,8 @@ export async function generateEvidencePdfs(
   selectedDocumentIds: string[],
   caseNumber: string,
   insuranceAccidentNo: string,
-  caseNumberMap?: Record<string, string>
+  caseNumberMap?: Record<string, string>,
+  fullAddress: string = ''
 ): Promise<EvidencePdfResult[]> {
   console.log(`[Evidence PDF] Starting generation for ${selectedDocumentIds.length} selected documents`);
   
@@ -588,7 +601,8 @@ export async function generateEvidencePdfs(
         tabName,
         processedImages,
         caseNumber,
-        insuranceAccidentNo
+        insuranceAccidentNo,
+        fullAddress
       );
       
       allResults.push(...tabResults);
