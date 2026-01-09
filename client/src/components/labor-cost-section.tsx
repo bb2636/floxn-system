@@ -1040,23 +1040,15 @@ export function LaborCostSection({
           // 면적 합산
           existing.damageArea = (existing.damageArea || 0) + (row.damageArea || 0);
           
-          // 합산된 면적으로 금액, 적용단가, 수량 재계산 (일위대가 공식: I = F + H) - DB 요율 사용
+          // 개별 행의 amount를 단순 합산 (I 공식은 비선형이므로 재계산하면 안됨)
+          // I(C₁) + I(C₂) ≠ I(C₁ + C₂) - 각 행의 개별 계산 결과를 합산해야 함
+          existing.mergedAmount = (existing.mergedAmount || 0) + (row.amount || 0);
+          // 수량도 단순 합산
+          existing.mergedQuantity = (existing.mergedQuantity || 0) + (row.quantity || 0);
+          // 적용단가는 합산된 금액/합산된 면적으로 역산
           const C = existing.damageArea;
-          const D = existing.standardWorkQuantity || 0;
-          const E = existing.standardPrice || 0;
-          if (D > 0 && E > 0 && C > 0) {
-            existing.mergedAmount = calculateIWithTiers(C, D, E, laborRateTiers);
-            // 적용단가도 재계산: I / C
-            existing.pricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
-            // 수량도 재계산: C / D (0.1 이상은 소수점 1자리, 미만은 유효숫자 1자리)
-            const rawMergedQty = C / D;
-            existing.mergedQuantity = rawMergedQty >= 0.1 
-              ? Math.round(rawMergedQty * 10) / 10 
-              : parseFloat(rawMergedQty.toPrecision(1));
-          } else {
-            // 일위대가 공식 적용 불가 시: 기존 방식
-            existing.mergedQuantity = (existing.mergedQuantity || existing.quantity) + row.quantity;
-            existing.mergedAmount = Math.round(C * (existing.pricePerSqm || 0));
+          if (C > 0) {
+            existing.pricePerSqm = Math.round((existing.mergedAmount || 0) / C);
           }
         } else {
           // 새 병합 행 생성
