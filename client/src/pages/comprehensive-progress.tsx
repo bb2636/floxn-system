@@ -893,9 +893,7 @@ export default function ComprehensiveProgress() {
           pointerEvents: "none",
         }}
       />
-
       <GlobalHeader />
-
       {/* Main Content */}
       <div
         style={{
@@ -1166,9 +1164,7 @@ export default function ComprehensiveProgress() {
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               견적금액
             </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-              정산금액
-            </div>
+            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>승인금액</div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               경과일수
             </div>
@@ -1499,7 +1495,7 @@ export default function ComprehensiveProgress() {
                   <div>
                     {caseItem.status === "배당대기" ? (
                       // 배당대기 상태 - 임시 저장 건이므로 이어서 작성하기 버튼
-                      <button
+                      (<button
                         onClick={(e) => {
                           e.stopPropagation();
                           localStorage.setItem('editCaseId', caseItem.id);
@@ -1518,12 +1514,11 @@ export default function ComprehensiveProgress() {
                           whiteSpace: "nowrap",
                         }}
                         data-testid={`button-continue-draft-${caseItem.id}`}
-                      >
-                        이어서 작성하기
-                      </button>
+                      >이어서 작성하기
+                                              </button>)
                     ) : (
                       // 접수완료 이후 상태 - 상세보기 버튼 및 청구하기 버튼
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      (<div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1571,7 +1566,7 @@ export default function ComprehensiveProgress() {
                             청구하기
                           </button>
                         )}
-                      </div>
+                      </div>)
                     )}
                   </div>
                 </div>
@@ -1581,7 +1576,6 @@ export default function ComprehensiveProgress() {
           </div>
         </div>
       </div>
-
       {/* 상세보기 Sheet */}
       <Sheet open={selectedCaseId !== null} onOpenChange={(open) => !open && setSelectedCaseId(null)}>
         <SheetContent 
@@ -2459,7 +2453,6 @@ export default function ComprehensiveProgress() {
           })()}
         </SheetContent>
       </Sheet>
-
       {/* 삭제 확인 Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
@@ -2486,7 +2479,6 @@ export default function ComprehensiveProgress() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* 대량 삭제 확인 Dialog */}
       <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
         <AlertDialogContent>
@@ -2511,7 +2503,6 @@ export default function ComprehensiveProgress() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       {/* 진행상황 추가 Dialog (관리자 전용) */}
       <Dialog open={showProgressDialog} onOpenChange={setShowProgressDialog}>
         <DialogContent style={{
@@ -2635,7 +2626,6 @@ export default function ComprehensiveProgress() {
           </div>
         </DialogContent>
       </Dialog>
-
       {/* 접수건 상세보기 Dialog - IntakePage 재사용 */}
       <Dialog 
         open={showReceptionDetailDialog} 
@@ -2727,8 +2717,6 @@ export default function ComprehensiveProgress() {
           )}
         </DialogContent>
       </Dialog>
-
-
       {/* INVOICE 다이얼로그 - 직접복구 케이스용 (손해방지비용 + 대물복구비용) */}
       <InvoiceSheet
         open={showInvoiceDialog}
@@ -2742,7 +2730,6 @@ export default function ComprehensiveProgress() {
             : invoiceCase ? [invoiceCase] : [];
         })()}
       />
-
       {/* 현장출동비용 청구 다이얼로그 - 선견적요청 케이스용 (현장출동비용만) */}
       <FieldDispatchCostSheet
         open={showFieldDispatchInvoiceDialog}
@@ -2756,7 +2743,6 @@ export default function ComprehensiveProgress() {
             : invoiceCase ? [invoiceCase] : [];
         })()}
       />
-
       {/* SMS 알림 발송 다이얼로그 - 추가 정보 입력이 필요한 상태에서만 사용 (접수취소, 결정금액/수수료) */}
       {smsCaseData && (
         <SmsNotificationDialog
@@ -2770,7 +2756,6 @@ export default function ComprehensiveProgress() {
           }}
         />
       )}
-
     </div>
   );
 }
