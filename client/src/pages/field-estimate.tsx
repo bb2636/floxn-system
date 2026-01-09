@@ -2271,17 +2271,24 @@ export default function FieldEstimate() {
         console.log("  repairArea:", latestEstimate.rows[0].repairArea, "타입:", typeof latestEstimate.rows[0].repairArea);
         console.log("========================================");
         
+        // 소수점 첫째자리 형식으로 변환 (예: "2" -> "2.0")
+        const toDecimalFormat = (val: any): string => {
+          const num = parseFloat(val);
+          if (isNaN(num)) return "0.0";
+          return num.toFixed(1);
+        };
+        
         const loadedRows = latestEstimate.rows.map((row: any) => ({
           id: `row-${row.id}`,
           category: row.category || (roomCategories[0] || ""),
           location: row.location || (locations[0] || ""),
           workType: row.workType || "",
           workName: row.workName || (workNames[0] || ""),
-          damageWidth: row.damageWidth?.toString() || "0",
-          damageHeight: row.damageHeight?.toString() || "0",
+          damageWidth: toDecimalFormat(row.damageWidth),
+          damageHeight: toDecimalFormat(row.damageHeight),
           damageArea: row.damageArea ? parseFloat(row.damageArea).toFixed(2) : "0",
-          repairWidth: row.repairWidth?.toString() || "0",
-          repairHeight: row.repairHeight?.toString() || "0",
+          repairWidth: toDecimalFormat(row.repairWidth),
+          repairHeight: toDecimalFormat(row.repairHeight),
           repairArea: row.repairArea ? parseFloat(row.repairArea).toFixed(2) : "0",
           note: row.note || "",
         }));
@@ -2416,6 +2423,13 @@ export default function FieldEstimate() {
     }
   }, [latestEstimate, masterDataList, selectedCaseId]);
 
+  // 소수점 첫째자리 형식으로 변환하는 함수 (예: "2" -> "2.0", "2.5" -> "2.5")
+  const formatDecimal = (value: string): string => {
+    const num = parseFloat(value);
+    if (isNaN(num)) return "0.0";
+    return num.toFixed(1);
+  };
+
   // 빈 행 생성 함수 - 모든 선택 필드는 빈 값으로 시작
   const createBlankRow = (): AreaCalculationRow => ({
     id: `row-${Date.now()}-${Math.random()}`,
@@ -2423,11 +2437,11 @@ export default function FieldEstimate() {
     location: "",
     workType: "",
     workName: "",
-    damageWidth: "0",
-    damageHeight: "0",
+    damageWidth: "0.0",
+    damageHeight: "0.0",
     damageArea: "0",
-    repairWidth: "0",
-    repairHeight: "0",
+    repairWidth: "0.0",
+    repairHeight: "0.0",
     repairArea: "0",
     note: "",
   });
@@ -2670,8 +2684,8 @@ export default function FieldEstimate() {
         if (field === 'workName') {
           if (isLinearWorkName(value)) {
             // 걸레받이/몰딩으로 변경되면 세로를 1m로 고정
-            updated.damageHeight = '1';
-            updated.repairHeight = '1';
+            updated.damageHeight = '1.0';
+            updated.repairHeight = '1.0';
             // 면적 재계산: 가로(m) * 1(m) = 가로 (m²)
             const damageWidth = parseFloat(updated.damageWidth) || 0;
             const repairWidth = parseFloat(updated.repairWidth) || 0;
@@ -2681,8 +2695,8 @@ export default function FieldEstimate() {
             updated.repairArea = parseFloat(repairAreaM2) > 0 ? repairAreaM2 : '0.00';
           } else if (isLinearWorkName(row.workName) && !isLinearWorkName(value)) {
             // 걸레받이/몰딩에서 다른 공사명으로 변경 시 세로를 0으로 리셋
-            updated.damageHeight = '0';
-            updated.repairHeight = '0';
+            updated.damageHeight = '0.0';
+            updated.repairHeight = '0.0';
             // 면적 재계산 (세로가 0이므로 면적도 0)
             updated.damageArea = '0';
             updated.repairArea = '0';
@@ -2710,7 +2724,7 @@ export default function FieldEstimate() {
           
           if (isLinearWorkName(currentWorkName)) {
             // 걸레받이/몰딩: 세로 1m 고정, 면적 = 가로 * 1 (m²)
-            updated.damageHeight = '1';
+            updated.damageHeight = '1.0';
             const areaM2 = (width * 1).toFixed(2);
             updated.damageArea = parseFloat(areaM2) > 0 ? areaM2 : '0.00';
           } else {
@@ -2727,7 +2741,7 @@ export default function FieldEstimate() {
           
           if (isLinearWorkName(currentWorkName)) {
             // 걸레받이/몰딩: 세로 1m 고정, 면적 = 가로 * 1 (m²)
-            updated.repairHeight = '1';
+            updated.repairHeight = '1.0';
             const areaM2 = (width * 1).toFixed(2);
             updated.repairArea = parseFloat(areaM2) > 0 ? areaM2 : '0.00';
           } else {
@@ -4501,16 +4515,16 @@ export default function FieldEstimate() {
                           value={row.damageWidth}
                           onChange={(e) => updateRow(row.id, 'damageWidth', e.target.value)}
                           onFocus={() => {
-                            if (row.damageWidth === '0') {
+                            if (row.damageWidth === '0' || row.damageWidth === '0.0') {
                               updateRow(row.id, 'damageWidth', '');
                             }
                           }}
                           onBlur={(e) => {
-                            if (e.target.value === '') {
-                              updateRow(row.id, 'damageWidth', '0');
-                            }
+                            const val = e.target.value.trim();
+                            updateRow(row.id, 'damageWidth', formatDecimal(val || '0'));
                           }}
                           disabled={isReadOnly}
+                          placeholder="0.0"
                           className="input-focus-blue"
                           style={{
                             width: "100%",
@@ -4531,17 +4545,19 @@ export default function FieldEstimate() {
                           value={row.damageHeight}
                           onChange={(e) => updateRow(row.id, 'damageHeight', e.target.value)}
                           onFocus={() => {
-                            if ((row.damageHeight === '0' || row.damageHeight === '1') && !isLinearWorkName(row.workName)) {
+                            if ((row.damageHeight === '0' || row.damageHeight === '0.0' || row.damageHeight === '1' || row.damageHeight === '1.0') && !isLinearWorkName(row.workName)) {
                               updateRow(row.id, 'damageHeight', '');
                             }
                           }}
                           onBlur={(e) => {
-                            if (e.target.value === '' && !isLinearWorkName(row.workName)) {
-                              updateRow(row.id, 'damageHeight', '0');
+                            if (!isLinearWorkName(row.workName)) {
+                              const val = e.target.value.trim();
+                              updateRow(row.id, 'damageHeight', formatDecimal(val || '0'));
                             }
                           }}
                           disabled={isReadOnly}
                           readOnly={isLinearWorkName(row.workName)}
+                          placeholder="0.0"
                           className="input-focus-blue"
                           style={{
                             width: "100%",
@@ -4580,16 +4596,16 @@ export default function FieldEstimate() {
                           value={row.repairWidth}
                           onChange={(e) => updateRow(row.id, 'repairWidth', e.target.value)}
                           onFocus={() => {
-                            if (row.repairWidth === '0') {
+                            if (row.repairWidth === '0' || row.repairWidth === '0.0') {
                               updateRow(row.id, 'repairWidth', '');
                             }
                           }}
                           onBlur={(e) => {
-                            if (e.target.value === '') {
-                              updateRow(row.id, 'repairWidth', '0');
-                            }
+                            const val = e.target.value.trim();
+                            updateRow(row.id, 'repairWidth', formatDecimal(val || '0'));
                           }}
                           disabled={isReadOnly}
+                          placeholder="0.0"
                           className="input-focus-blue"
                           style={{
                             width: "100%",
@@ -4610,17 +4626,19 @@ export default function FieldEstimate() {
                           value={row.repairHeight}
                           onChange={(e) => updateRow(row.id, 'repairHeight', e.target.value)}
                           onFocus={() => {
-                            if ((row.repairHeight === '0' || row.repairHeight === '1') && !isLinearWorkName(row.workName)) {
+                            if ((row.repairHeight === '0' || row.repairHeight === '0.0' || row.repairHeight === '1' || row.repairHeight === '1.0') && !isLinearWorkName(row.workName)) {
                               updateRow(row.id, 'repairHeight', '');
                             }
                           }}
                           onBlur={(e) => {
-                            if (e.target.value === '' && !isLinearWorkName(row.workName)) {
-                              updateRow(row.id, 'repairHeight', '0');
+                            if (!isLinearWorkName(row.workName)) {
+                              const val = e.target.value.trim();
+                              updateRow(row.id, 'repairHeight', formatDecimal(val || '0'));
                             }
                           }}
                           disabled={isReadOnly}
                           readOnly={isLinearWorkName(row.workName)}
+                          placeholder="0.0"
                           className="input-focus-blue"
                           style={{
                             width: "100%",
