@@ -1247,10 +1247,13 @@ async function renderEvidencePages(
     return { errors };
   }
   
-  const imageHeight = 340;
+  // 레이아웃 조정: 2개 이미지가 한 페이지에 완전히 들어가도록 간격 최적화
+  // A4 높이(841.89) - 상단마진(30) - 하단마진(30) - 페이지헤더(30) = 751.89 사용 가능
+  // (categoryHeader + image + footer) * 2 + spacing < 751.89
+  const imageHeight = 310;
   const imageWidth = CONTENT_WIDTH;
-  const headerHeight = 30;
-  const spacing = 15;
+  const headerHeight = 25;
+  const spacing = 8;
   
   for (let i = 0; i < imageDocs.length; i += 2) {
     const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
@@ -1286,7 +1289,7 @@ async function renderEvidencePages(
       size: fontSize,
       color: { r: 1, g: 1, b: 1 },
     });
-    const footerHeight = 25;
+    const footerHeight = 20;
     const firstY = A4_HEIGHT - MARGIN - 30 - spacing - headerHeight - imageHeight - footerHeight;
     
     // Category header for first image
