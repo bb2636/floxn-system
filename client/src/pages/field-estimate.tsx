@@ -1932,66 +1932,62 @@ export default function FieldEstimate() {
       return null;
     };
     
-    // 1. 복구면적 산출표에서 철거공사가 필요한 모든 행 추출 (sourceRowId 기반)
-    // 각 복구면적 행에 대해 개별 철거공사 행 생성
+    // 1. 복구면적 산출표에서 철거공사가 필요한 모든 행 추출 (일반 노무비와 동일하게 공사명별 합산)
+    // 같은 공사명은 복구면적을 합산하여 1개 entry만 생성
     type RequiredDemolitionEntry = { 
-      sourceRowId: string; 
       matchedWorkName: string; // 표준화된 공사명 (DEMOLITION_WORK_NAMES에서 가져옴)
-      place: string;
-      position: string;
-      repairArea: number;
-      sourceRow: AreaCalculationRow;
+      totalRepairArea: number; // 합산된 복구면적
+      sourceRowIds: string[]; // 관련 복구면적 행 ID들
     };
-    const requiredDemolitionEntries: RequiredDemolitionEntry[] = [];
+    const demolitionEntryMap = new Map<string, RequiredDemolitionEntry>();
     
     rows.forEach(row => {
       if (row.workType && row.workName && row.workType !== '철거공사') {
         const matchedWorkName = matchDemolitionWorkName(row.workName);
         if (matchedWorkName) {
-          // 각 복구면적 행에 대해 개별 entry 추가 (sourceRowId 기반)
-          requiredDemolitionEntries.push({
-            sourceRowId: row.id,
-            matchedWorkName, // 표준화된 공사명 사용
-            place: row.category || '',
-            position: row.location || '',
-            repairArea: Number(row.repairArea) || 0,
-            sourceRow: row,
-          });
+          const repairArea = Number(row.repairArea) || 0;
+          
+          if (demolitionEntryMap.has(matchedWorkName)) {
+            // 기존 entry에 면적 합산
+            const existing = demolitionEntryMap.get(matchedWorkName)!;
+            existing.totalRepairArea += repairArea;
+            existing.sourceRowIds.push(row.id);
+          } else {
+            // 새 entry 생성
+            demolitionEntryMap.set(matchedWorkName, {
+              matchedWorkName,
+              totalRepairArea: repairArea,
+              sourceRowIds: [row.id],
+            });
+          }
         }
       }
     });
     
+    const requiredDemolitionEntries = Array.from(demolitionEntryMap.values());
+    
     // 2. 현재 노무비에서 철거공사 행 분석 (laborCostRows 직접 접근)
-    // 복합키: sourceRowId|matchedWorkName|detailItem
+    // 복합키: matchedWorkName|detailItem (일반 노무비와 동일하게 공사명 기준)
     // 기존 행의 workName도 표준화하여 비교
     type ExistingDemolitionInfo = {
       id: string;
-      sourceRowId: string;
       matchedWorkName: string; // 표준화된 공사명
       detailItem: string;
-      place: string;
       isLinkedFromRecovery: boolean;
     };
-    const existingDemolitionMap = new Map<string, ExistingDemolitionInfo>(); // key: sourceRowId|matchedWorkName|detailItem
+    const existingDemolitionMap = new Map<string, ExistingDemolitionInfo>(); // key: matchedWorkName|detailItem
     const manualDemolitionKeys = new Set<string>(); // 수동 생성 철거공사 행 키 (보호용)
     
     laborCostRows.forEach(row => {
       if (row.category === '철거공사') {
-        // sourceAreaRowId에서 실제 sourceRowId 추출 (demolition- prefix 제거)
-        const actualSourceRowId = row.sourceAreaRowId?.startsWith('demolition-') 
-          ? row.sourceAreaRowId.replace('demolition-', '')
-          : row.sourceAreaRowId || '';
-        
         // workName을 표준화 (기존 저장된 값도 DEMOLITION_WORK_NAMES 기준으로 매칭)
         const matchedWorkName = matchDemolitionWorkName(row.workName || '') || row.workName || '';
-        const key = `${actualSourceRowId}|${matchedWorkName}|${row.detailItem || ''}`;
+        const key = `${matchedWorkName}|${row.detailItem || ''}`;
         
         existingDemolitionMap.set(key, {
           id: row.id,
-          sourceRowId: actualSourceRowId,
           matchedWorkName,
           detailItem: row.detailItem || '',
-          place: row.place || '',
           isLinkedFromRecovery: row.isLinkedFromRecovery || false,
         });
         
@@ -2002,17 +1998,14 @@ export default function FieldEstimate() {
       }
     });
     
-    // 3. 각 복구면적 행에 대해 필요한 철거공사 노임항목 조회
+    // 3. 각 철거공사 entry에 대해 필요한 노임항목 조회 (공사명별 합산된 면적 사용)
     type RequiredDemolitionKey = {
-      key: string; // sourceRowId|matchedWorkName|detailItem
-      sourceRowId: string;
+      key: string; // matchedWorkName|detailItem (일반 노무비와 동일)
       matchedWorkName: string;
       detailItem: string;
-      place: string;
-      position: string;
-      repairArea: number;
+      totalRepairArea: number; // 합산된 복구면적
+      sourceRowIds: string[]; // 관련 복구면적 행 ID들
       catalogItem: IlwidaegaCatalogItem;
-      sourceRow: AreaCalculationRow;
     };
     const requiredDemolitionKeys: RequiredDemolitionKey[] = [];
     
@@ -2026,33 +2019,27 @@ export default function FieldEstimate() {
       if (items.length > 0) {
         items.forEach(item => {
           const detailItem = item.노임항목 || '보통인부';
-          const key = `${entry.sourceRowId}|${entry.matchedWorkName}|${detailItem}`;
+          const key = `${entry.matchedWorkName}|${detailItem}`;
           requiredDemolitionKeys.push({
             key,
-            sourceRowId: entry.sourceRowId,
             matchedWorkName: entry.matchedWorkName,
             detailItem,
-            place: entry.place,
-            position: entry.position,
-            repairArea: entry.repairArea,
+            totalRepairArea: entry.totalRepairArea,
+            sourceRowIds: entry.sourceRowIds,
             catalogItem: item,
-            sourceRow: entry.sourceRow,
           });
         });
       } else {
         // 일위대가DB에 없으면 기본 '보통인부' 사용
         const detailItem = '보통인부';
-        const key = `${entry.sourceRowId}|${entry.matchedWorkName}|${detailItem}`;
+        const key = `${entry.matchedWorkName}|${detailItem}`;
         requiredDemolitionKeys.push({
           key,
-          sourceRowId: entry.sourceRowId,
           matchedWorkName: entry.matchedWorkName,
           detailItem,
-          place: entry.place,
-          position: entry.position,
-          repairArea: entry.repairArea,
+          totalRepairArea: entry.totalRepairArea,
+          sourceRowIds: entry.sourceRowIds,
           catalogItem: { 공종: '철거공사', 공사명: entry.matchedWorkName, 노임항목: '보통인부', 기준작업량: null, 노임단가: null, 일위대가: null },
-          sourceRow: entry.sourceRow,
         });
       }
     });
@@ -2081,12 +2068,9 @@ export default function FieldEstimate() {
     
     laborCostRows.forEach(row => {
       if (row.isLinkedFromRecovery && row.category === '철거공사') {
-        const actualSourceRowId = row.sourceAreaRowId?.startsWith('demolition-') 
-          ? row.sourceAreaRowId.replace('demolition-', '')
-          : row.sourceAreaRowId || '';
-        // 동일한 표준화 로직 사용
+        // 동일한 표준화 로직 사용 (matchedWorkName|detailItem 기준)
         const matchedWorkName = matchDemolitionWorkName(row.workName || '') || row.workName || '';
-        const key = `${actualSourceRowId}|${matchedWorkName}|${row.detailItem || ''}`;
+        const key = `${matchedWorkName}|${row.detailItem || ''}`;
         if (!requiredKeySet.has(key)) {
           orphanedIds.push(row.id);
         }
@@ -2146,15 +2130,15 @@ export default function FieldEstimate() {
           });
         }
         
-        // 7. 누락된 철거공사 행 생성 (각 복구면적 행에 대해 개별 생성)
+        // 7. 누락된 철거공사 행 생성 (일반 노무비와 동일하게 공사명별 1개 행, 합산 면적으로 I 계산)
         const newDemolitionRows: LaborCostRow[] = [];
         
         missingEntries.forEach(entry => {
-          const { sourceRowId, matchedWorkName, detailItem, place, position, repairArea, catalogItem, sourceRow } = entry;
+          const { matchedWorkName, detailItem, totalRepairArea, sourceRowIds, catalogItem } = entry;
           
           const D = catalogItem.기준작업량 || 0;
           const E = catalogItem.노임단가 || 0;
-          const C = repairArea;
+          const C = totalRepairArea; // 합산된 면적 사용
           
           let calculatedAmount = 0;
           let calculatedPricePerSqm = 0;
@@ -2163,8 +2147,8 @@ export default function FieldEstimate() {
             calculatedPricePerSqm = calculateAppliedUnitPriceWithTiers(C, D, E, laborRateTiers);
           }
           
-          // ID 형식: demolition-<sourceRowId>-<detailItem> (각 복구면적 행별 개별 ID)
-          const uniqueId = `demolition-${sourceRowId}-${detailItem.replace(/\s+/g, '')}`;
+          // ID 형식: demolition-<matchedWorkName>-<detailItem> (공사명별 1개)
+          const uniqueId = `demolition-${matchedWorkName}-${detailItem.replace(/\s+/g, '')}`;
           
           // 중복 ID 체크 (이미 존재하면 건너뛰기)
           if (updatedRows.some(r => r.id === uniqueId) || newDemolitionRows.some(r => r.id === uniqueId)) {
@@ -2173,11 +2157,11 @@ export default function FieldEstimate() {
           
           newDemolitionRows.push({
             id: uniqueId,
-            sourceAreaRowId: `demolition-${sourceRowId}`, // 기존 동기화 로직 호환
+            sourceAreaRowId: `demolition-${sourceRowIds.join(',')}`, // 관련된 모든 sourceRowId
             isLinkedFromRecovery: true,
-            sourceWorkType: sourceRow.workType,
-            place: place,
-            position: position,
+            sourceWorkType: '철거공사',
+            place: '',
+            position: '',
             category: '철거공사',
             workName: matchedWorkName, // 표준화된 공사명 사용
             detailWork: '일위대가',
@@ -2197,7 +2181,7 @@ export default function FieldEstimate() {
             amount: calculatedAmount,
           });
           
-          console.log('[철거공사 Reconcile] 생성:', '철거공사', matchedWorkName, detailItem, '(sourceRowId:', sourceRowId, ')');
+          console.log('[철거공사 Reconcile] 생성:', '철거공사', matchedWorkName, detailItem, '면적:', C);
         });
         
         return [...updatedRows, ...newDemolitionRows];
