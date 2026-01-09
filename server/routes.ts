@@ -6720,7 +6720,7 @@ FLOXN`;
         
         let selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
         
-        // Sort documents by category order: 사진 > 기본자료 > 증빙자료 > 청구자료
+        // Sort documents by: 1) case suffix (-0, -1, -2), then 2) category order within each case
         const categoryOrder: Record<string, number> = {
           // 1. 사진 (현장사진, 수리중, 복구완료)
           '현장출동사진': 0, '현장': 1, '현장사진': 2,
@@ -6737,12 +6737,27 @@ FLOXN`;
           '복구완료확인서': 32, '복구완료 확인서': 33,
           '부가세 청구자료': 34, '부가세청구자료': 35,
         };
+        
+        // Helper: Extract case suffix number from case number (e.g., "260106005-0" -> 0, "260106005-1" -> 1)
+        const getCaseSuffix = (caseId: string): number => {
+          const caseNumber = caseNumberMap[caseId] || '';
+          const match = caseNumber.match(/-(\d+)$/);
+          return match ? parseInt(match[1], 10) : 999;
+        };
+        
+        // Sort by: 1) case suffix, 2) category order within each case
         selectedDocs = selectedDocs.sort((a: any, b: any) => {
+          // First: sort by case suffix (-0, -1, -2, etc.)
+          const suffixA = getCaseSuffix(a.caseId);
+          const suffixB = getCaseSuffix(b.caseId);
+          if (suffixA !== suffixB) return suffixA - suffixB;
+          
+          // Second: sort by category order within same case
           const orderA = categoryOrder[a.category] ?? 99;
           const orderB = categoryOrder[b.category] ?? 99;
           return orderA - orderB;
         });
-        console.log(`[Invoice PDF] Selected documents found: ${selectedDocs.length}, sorted by category`);
+        console.log(`[Invoice PDF] Selected documents found: ${selectedDocs.length}, sorted by case suffix then category`);
         
         if (selectedDocs.length > 0) {
           const { PDFDocument, rgb } = await import('pdf-lib');
@@ -6827,35 +6842,11 @@ FLOXN`;
             '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
           };
           
-          // Category order: 사진 > 기본자료 > 증빙자료 > 청구자료
-          const categoryOrder: Record<string, number> = {
-            // 사진 (0-9)
-            '현장출동사진': 0, '현장': 1, '현장사진': 2,
-            '수리중 사진': 3, '수리중': 4,
-            '복구완료 사진': 5, '복구완료': 6,
-            // 기본자료 (10-19)
-            '보험금 청구서': 10, '보험금청구서': 11,
-            '개인정보 동의서(가족용)': 12, '개인정보동의서': 13,
-            // 증빙자료 (20-29)
-            '주민등록등본': 20,
-            '등기부등본': 21,
-            '건축물대장': 22,
-            '기타증빙자료(민원일지 등)': 23, '기타증빙자료': 24,
-            // 청구자료 (30-39)
-            '위임장': 30,
-            '도급계약서': 31,
-            '복구완료확인서': 32, '복구완료 확인서': 33,
-            '부가세 청구자료': 34, '부가세청구자료': 35,
-          };
+          // Documents are already sorted by case suffix then category order
+          // No need to re-sort, just use selectedDocs directly
+          const sortedDocs = selectedDocs;
           
-          // Sort documents by category order (NOT by file type)
-          const sortedDocs = [...selectedDocs].sort((a, b) => {
-            const orderA = categoryOrder[a.category] ?? 99;
-            const orderB = categoryOrder[b.category] ?? 99;
-            return orderA - orderB;
-          });
-          
-          console.log(`[Invoice PDF] 문서 ${sortedDocs.length}개 카테고리 순서로 정렬 완료`);
+          console.log(`[Invoice PDF] 문서 ${sortedDocs.length}개 접수건별/카테고리 순서로 정렬 완료`);
           
           const A4_WIDTH = 595.28;
           const A4_HEIGHT = 841.89;
