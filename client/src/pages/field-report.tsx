@@ -352,6 +352,12 @@ export default function FieldReport() {
     }
   }, [showPdfDialog]);
   
+  // 케이스 변경 시 선택 상태 초기화 (다른 케이스의 문서가 섞이지 않도록)
+  useEffect(() => {
+    setSelectedDocuments(new Set());
+    setDocumentsInitialized(false);
+  }, [selectedCaseId]);
+  
   // 탭별 문서 필터링
   const getFilteredDocuments = useMemo(() => {
     if (!allDocuments) return [];

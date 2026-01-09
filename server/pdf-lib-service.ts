@@ -2274,6 +2274,8 @@ export async function generatePdfWithPdfLib(
   // skipEvidence가 true면 증빙 섹션 스킵 (이메일 용량 제한용)
   if (sections.evidence && evidence.selectedFileIds.length > 0 && !skipEvidence) {
     try {
+      console.log(`[pdf-lib] 증빙자료 조회 - caseId: ${caseId}, selectedFileIds: ${evidence.selectedFileIds.length}개`);
+      
       const selectedDocs = await db.select().from(caseDocuments)
         .where(
           and(
@@ -2282,8 +2284,20 @@ export async function generatePdfWithPdfLib(
           )
         );
       
-      const imageDocs = selectedDocs.filter(doc => doc.fileType?.startsWith('image/'));
-      const pdfDocs = selectedDocs.filter(doc =>
+      // 디버그 로그: 각 문서의 caseId 확인
+      console.log(`[pdf-lib] 조회된 증빙자료 ${selectedDocs.length}개:`);
+      selectedDocs.forEach((doc, idx) => {
+        console.log(`[pdf-lib]   [${idx + 1}] id=${doc.id}, caseId=${doc.caseId}, category=${doc.category}, fileName=${doc.fileName}`);
+      });
+      
+      // 추가 안전장치: caseId가 다른 문서 제외 (이론상 불필요하지만 확실하게 처리)
+      const filteredDocs = selectedDocs.filter(doc => doc.caseId === caseId);
+      if (filteredDocs.length !== selectedDocs.length) {
+        console.warn(`[pdf-lib] 경고: caseId가 다른 문서 ${selectedDocs.length - filteredDocs.length}개 제외됨!`);
+      }
+      
+      const imageDocs = filteredDocs.filter(doc => doc.fileType?.startsWith('image/'));
+      const pdfDocs = filteredDocs.filter(doc =>
         doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf')
       );
       
