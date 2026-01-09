@@ -1421,7 +1421,7 @@ export default function FieldManagement() {
                 </div>
               </div>
 
-              {/* 같은 사고의 케이스들 */}
+              {/* 동일사고번호 공사대상건 */}
               <div>
                 <h3
                   className="mb-4"
@@ -1433,7 +1433,7 @@ export default function FieldManagement() {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  같은 사고의 케이스들 (총 {relatedCases.length}건)
+                  동일사고번호 공사대상건 (총 {relatedCases.length}건)
                 </h3>
                 
                 <div className="space-y-3">
