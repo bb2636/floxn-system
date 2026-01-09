@@ -1840,6 +1840,11 @@ export class MemStorage implements IStorage {
       reviewComment: null,
       reviewedAt: null,
       reviewedBy: null,
+      // 재제출 시 보고서 승인 정보도 초기화 (2차 심사도 다시 진행하도록)
+      reportApprovalDecision: null,
+      reportApprovalComment: null,
+      reportApprovedAt: null,
+      reportApprovedBy: null,
       initialEstimateAmount: initialEstimateAmount,
       initialPreventionEstimateAmount: initialPreventionEstimateAmount,
       initialPropertyEstimateAmount: initialPropertyEstimateAmount,
@@ -4768,6 +4773,11 @@ export class DbStorage implements IStorage {
         reviewComment: null,
         reviewedAt: null,
         reviewedBy: null,
+        // 재제출 시 보고서 승인 정보도 초기화 (2차 심사도 다시 진행하도록)
+        reportApprovalDecision: null,
+        reportApprovalComment: null,
+        reportApprovedAt: null,
+        reportApprovedBy: null,
         ...additionalUpdates,
         updatedAt: currentDate,
       })
