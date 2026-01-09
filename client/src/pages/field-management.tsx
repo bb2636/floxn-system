@@ -1437,7 +1437,18 @@ export default function FieldManagement() {
                 </h3>
                 
                 <div className="space-y-3">
-                  {relatedCases.map((caseItem) => (
+                  {relatedCases.map((caseItem) => {
+                    // 손해방지인건(-0으로 끝나는 케이스) 여부 판별
+                    const isLossPreventionCase = /-0$/.test(caseItem.caseNumber || '');
+                    // 손해방지인건은 피보험자명/연락처 사용, 그 외는 피해자 정보 사용
+                    const displayName = isLossPreventionCase 
+                      ? (caseItem.insuredName || "-")
+                      : (caseItem.victimName || "-");
+                    const displayContact = isLossPreventionCase 
+                      ? (caseItem.insuredContact || "-")
+                      : (caseItem.victimContact || "-");
+                    
+                    return (
                     <div
                       key={caseItem.id}
                       style={{
@@ -1483,7 +1494,7 @@ export default function FieldManagement() {
                             color: "rgba(12, 12, 12, 0.8)",
                           }}
                         >
-                          {caseItem.victimName || "-"}
+                          {displayName}
                         </span>
                         <span
                           style={{
@@ -1493,7 +1504,7 @@ export default function FieldManagement() {
                             color: "rgba(12, 12, 12, 0.6)",
                           }}
                         >
-                          {caseItem.victimContact || "-"}
+                          {displayContact}
                         </span>
                         <span
                           style={{
@@ -1517,8 +1528,8 @@ export default function FieldManagement() {
                         </span>
                       </div>
                       
-                      {/* 피해자 정보 수정 버튼 - 협력사 및 관리자만 표시, 현장출동보고서 제출 전까지만 수정 가능 */}
-                      {!isReadOnly && caseItem.fieldSurveyStatus !== "submitted" && (
+                      {/* 피해자 정보 수정 버튼 - 손해방지인건(-0)은 수정 불가, 협력사 및 관리자만 표시, 현장출동보고서 제출 전까지만 수정 가능 */}
+                      {!isReadOnly && !isLossPreventionCase && caseItem.fieldSurveyStatus !== "submitted" && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -1540,7 +1551,8 @@ export default function FieldManagement() {
                         </Button>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
 
                 {/* 새 피해자 추가 폼 - 현장출동보고서 제출 전까지만 추가 가능 */}
