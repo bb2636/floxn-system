@@ -157,6 +157,7 @@ interface CompletionStatus {
   documents: boolean;
   estimate: boolean;
   isComplete: boolean;
+  missingItems: string[];  // 미입력 항목 목록
 }
 
 interface ReportData {
@@ -997,14 +998,43 @@ export default function FieldReport() {
                   console.log("증빙자료 완료:", completionStatus.documents);
                   console.log("견적 완료:", completionStatus.estimate);
                   console.log("전체 완료 (isComplete):", completionStatus.isComplete);
+                  console.log("미입력 항목:", completionStatus.missingItems);
                   console.log("================================");
+                  
+                  // 미입력 항목 체크 - 최대 2개만 표시
+                  if (!completionStatus.isComplete && completionStatus.missingItems?.length > 0) {
+                    const items = completionStatus.missingItems;
+                    let message = "";
+                    if (items.length === 1) {
+                      message = `'${items[0]}' 미입력(미등록) 되어있습니다.`;
+                    } else if (items.length === 2) {
+                      message = `'${items[0]}, ${items[1]}' 미입력(미등록) 되어있습니다.`;
+                    } else {
+                      message = `'${items[0]}, ${items[1]}' 등 미입력(미등록) 되어있습니다.`;
+                    }
+                    toast({
+                      title: "제출 불가",
+                      description: message,
+                      variant: "destructive",
+                    });
+                    return;
+                  }
                   
                   // 필수 서류 검증
                   const validation = validateRequiredDocuments();
                   if (!validation.valid) {
+                    const docs = validation.missingDocs;
+                    let message = "";
+                    if (docs.length === 1) {
+                      message = `'${docs[0]}' 미등록 되어있습니다.`;
+                    } else if (docs.length === 2) {
+                      message = `'${docs[0]}, ${docs[1]}' 미등록 되어있습니다.`;
+                    } else {
+                      message = `'${docs[0]}, ${docs[1]}' 등 미등록 되어있습니다.`;
+                    }
                     toast({
                       title: "필수 서류 누락",
-                      description: `다음 서류가 누락되었습니다:\n${validation.missingDocs.join(", ")}`,
+                      description: message,
                       variant: "destructive",
                     });
                     return;
@@ -3295,9 +3325,18 @@ export default function FieldReport() {
                     // 청구자료 필수 서류 검증
                     const validation = validateClaimDocuments();
                     if (!validation.valid) {
+                      const docs = validation.missingDocs;
+                      let message = "";
+                      if (docs.length === 1) {
+                        message = `'${docs[0]}' 미등록 되어있습니다.`;
+                      } else if (docs.length === 2) {
+                        message = `'${docs[0]}, ${docs[1]}' 미등록 되어있습니다.`;
+                      } else {
+                        message = `'${docs[0]}, ${docs[1]}' 등 미등록 되어있습니다.`;
+                      }
                       toast({
-                        title: "필수 서류 누락",
-                        description: `다음 서류가 누락되었습니다:\n${validation.missingDocs.join(", ")}`,
+                        title: "청구자료 제출 불가",
+                        description: message,
                         variant: "destructive",
                       });
                       return;

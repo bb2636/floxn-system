@@ -5475,6 +5475,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (doc: any) => doc.category === "등기부등본"
       );
       
+      // 미입력 항목 목록 생성
+      const missingItems: string[] = [];
+      
+      // 현장조사 필수 항목 체크
+      if (!caseData.visitDate) missingItems.push("방문일시");
+      if (!caseData.visitTime && caseData.visitDate) {} // visitDate 없으면 방문일시로 통합
+      if (!caseData.accidentCategory) missingItems.push("사고유형");
+      
+      // 도면 체크
+      if (!drawing) missingItems.push("도면");
+      
+      // 증빙자료 체크 (건축물대장 또는 등기부등본 중 하나 필수)
+      if (!hasBuildingLedger && !hasPropertyRegistry) {
+        missingItems.push("건축물대장 또는 등기부등본");
+      }
+      
+      // 견적서 체크
+      if (isLossPreventionCase) {
+        if (!hasLaborCosts && !hasMaterialCosts) {
+          missingItems.push("노무비 또는 자재비");
+        }
+      } else {
+        if (!hasRecoveryRows) {
+          missingItems.push("복구면적 산출표");
+        }
+      }
+      
       // 각 섹션 완료 여부 체크
       // 손해방지 케이스(-0): 건축물대장 또는 등기부등본 중 하나 필수 (주민등록등본은 선택)
       // 피해세대 복구건(-1,-2 등): 건축물대장 또는 등기부등본 중 하나 필수
@@ -5488,6 +5515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? (hasLaborCosts || hasMaterialCosts)
           : hasRecoveryRows,
         isComplete: false,
+        missingItems,  // 미입력 항목 목록 추가
       };
       
       // 전체 완료 여부 (기타사항은 optional이므로 제외)
