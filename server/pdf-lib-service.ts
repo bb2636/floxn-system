@@ -951,10 +951,10 @@ async function renderDrawingPage(
     size: 9,
   });
   
-  y -= 30;
+  y -= 20;  // 간격 축소하여 도면 영역 확대
   
-  // Drawing area - large box for the drawing image
-  const drawingAreaHeight = A4_HEIGHT - MARGIN * 2 - headerHeight - 80;
+  // Drawing area - large box for the drawing image (도면 영역 최대화)
+  const drawingAreaHeight = A4_HEIGHT - MARGIN * 2 - headerHeight - 50;  // 여백 축소 (80 → 50)
   const drawingAreaWidth = CONTENT_WIDTH;
   
   page.drawRectangle({
