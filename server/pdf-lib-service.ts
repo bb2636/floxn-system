@@ -519,8 +519,8 @@ async function renderCoverPage(
       { text: caseData.insuredName || caseData.victimName || '-', width: 165, align: 'left' },
     ],
     [
-      { text: '출동담당자', width: 100, isHeader: true, align: 'center' },
-      { text: caseData.assignedPartnerManager || partnerData?.name || '-', width: 150, align: 'left' },
+      { text: '피보험자명', width: 100, isHeader: true, align: 'center' },
+      { text: caseData.insuredName || caseData.victimName || '-', width: 150, align: 'left' },
       { text: '협력업체', width: 100, isHeader: true, align: 'center' },
       { text: caseData.assignedPartner || '-', width: 165, align: 'left' },
     ],
