@@ -313,6 +313,9 @@ export default function FieldReport() {
   const [emailAddress, setEmailAddress] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   
+  // 청구자료제출 다이얼로그 상태
+  const [showClaimSubmitDialog, setShowClaimSubmitDialog] = useState(false);
+  
   // 이메일 수신자 선택 상태 (심사사, 조사사 체크박스)
   const [selectedEmailRecipients, setSelectedEmailRecipients] = useState<{
     assessor: boolean;
@@ -736,6 +739,52 @@ export default function FieldReport() {
     },
   });
 
+  // 청구자료제출 mutation (직접복구 → 청구자료제출)
+  const claimSubmitMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(
+        "PATCH",
+        `/api/cases/${selectedCaseId}`,
+        {
+          status: "(직접복구인 경우) 청구자료제출",
+        }
+      );
+    },
+    onSuccess: () => {
+      toast({
+        title: "청구자료 제출 완료",
+        description: "청구자료가 성공적으로 제출되었습니다.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/field-surveys", selectedCaseId, "report"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      setShowClaimSubmitDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "청구자료 제출 실패",
+        description: error.message || "청구자료 제출 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 청구자료 필수 서류 검증 함수
+  const validateClaimDocuments = (): { valid: boolean; missingDocs: string[] } => {
+    const missingDocs: string[] = [];
+    
+    // 청구자료 필수 서류: 위임장, 도급계약서, 복구완료확인서
+    const hasCommissionLetter = allDocuments.some(doc => doc.category === "위임장");
+    if (!hasCommissionLetter) missingDocs.push("위임장");
+    
+    const hasContract = allDocuments.some(doc => doc.category === "도급계약서");
+    if (!hasContract) missingDocs.push("도급계약서");
+    
+    const hasCompletionConfirm = allDocuments.some(doc => doc.category === "복구완료확인서");
+    if (!hasCompletionConfirm) missingDocs.push("복구완료확인서");
+    
+    return { valid: missingDocs.length === 0, missingDocs };
+  };
+
   if (!selectedCaseId) {
     return (
       <div className="p-8">
@@ -1092,6 +1141,56 @@ export default function FieldReport() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* 청구자료제출 확인 다이얼로그 */}
+      <AlertDialog open={showClaimSubmitDialog} onOpenChange={setShowClaimSubmitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "18px",
+                fontWeight: "600",
+              }}
+            >
+              청구자료 제출 확인
+            </AlertDialogTitle>
+            <AlertDialogDescription
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                lineHeight: "1.6",
+              }}
+            >
+              청구자료를 제출하시겠습니까? 제출 후에는 수정이 불가능합니다.{"\n"}
+              그리고, 지금 청구는 보험사 사고번호 기준으로{"\n"}
+              손방 및 대물 각 건의 청구자료제출이 완료된 후 일괄하여 진행됨을 안내 드립니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              data-testid="button-cancel-claim-submit"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-claim-submit"
+              onClick={() => claimSubmitMutation.mutate()}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              확인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* 심사 다이얼로그 */}
       <AlertDialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
         <AlertDialogContent className="max-w-md">
@@ -3187,8 +3286,40 @@ export default function FieldReport() {
             >
               증빙자료 {documents?.length || 0}
             </h2>
-            <button
-              onClick={async () => {
+            <div className="flex items-center gap-3">
+              {/* 청구자료제출 버튼 - 직접복구 상태일 때만 표시 */}
+              {caseData.status === "직접복구" && (
+                <Button
+                  data-testid="button-claim-submit"
+                  onClick={() => {
+                    // 청구자료 필수 서류 검증
+                    const validation = validateClaimDocuments();
+                    if (!validation.valid) {
+                      toast({
+                        title: "필수 서류 누락",
+                        description: `다음 서류가 누락되었습니다:\n${validation.missingDocs.join(", ")}`,
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setShowClaimSubmitDialog(true);
+                  }}
+                  disabled={claimSubmitMutation.isPending}
+                  style={{
+                    background: "#008FED",
+                    color: "#FFFFFF",
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    borderRadius: "10px",
+                    padding: "12px 20px",
+                  }}
+                >
+                  {claimSubmitMutation.isPending ? "제출 중..." : "청구자료제출"}
+                </Button>
+              )}
+              <button
+                onClick={async () => {
                 if (documents && documents.length > 0) {
                   for (const doc of documents) {
                     if (doc.storageKey) {
@@ -3247,6 +3378,7 @@ export default function FieldReport() {
                 전체 다운로드
               </span>
             </button>
+            </div>
           </div>
 
           <div className="flex flex-col px-6" style={{ padding: "0 24px", gap: "16px" }}>
