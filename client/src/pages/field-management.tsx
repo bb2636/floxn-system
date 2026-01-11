@@ -145,6 +145,11 @@ export default function FieldManagement() {
   const [editVictimAddress, setEditVictimAddress] = useState("");
   const [editVictimAddressDetail, setEditVictimAddressDetail] = useState("");
   const [isEditingVictim, setIsEditingVictim] = useState(false);
+  // 다이얼로그 취소 시 복원할 원래 값 저장
+  const [originalVictimName, setOriginalVictimName] = useState("");
+  const [originalVictimContact, setOriginalVictimContact] = useState("");
+  const [originalVictimAddress, setOriginalVictimAddress] = useState("");
+  const [originalVictimAddressDetail, setOriginalVictimAddressDetail] = useState("");
   
   // 피해 복구 방식 및 차액 유형 관련 상태
   const [processingTypes, setProcessingTypes] = useState<Set<string>>(new Set());
@@ -476,11 +481,22 @@ export default function FieldManagement() {
         insuredAddress: selectedCaseDetail.insuredAddress,
         insuredAddressDetail: selectedCaseDetail.insuredAddressDetail,
       });
-      setEditVictimName(selectedCaseDetail.victimName || "");
-      setEditVictimContact(selectedCaseDetail.victimContact || "");
-      // 피해자 주소가 없으면 피보험자 주소를 기본값으로 사용
-      setEditVictimAddress(selectedCaseDetail.victimAddress || selectedCaseDetail.insuredAddress || "");
-      setEditVictimAddressDetail(selectedCaseDetail.victimAddressDetail || selectedCaseDetail.insuredAddressDetail || "");
+      const name = selectedCaseDetail.victimName || "";
+      const contact = selectedCaseDetail.victimContact || "";
+      const address = selectedCaseDetail.victimAddress || selectedCaseDetail.insuredAddress || "";
+      const addressDetail = selectedCaseDetail.victimAddressDetail || selectedCaseDetail.insuredAddressDetail || "";
+      
+      setEditVictimName(name);
+      setEditVictimContact(contact);
+      setEditVictimAddress(address);
+      setEditVictimAddressDetail(addressDetail);
+      
+      // 취소 시 복원할 원래 값 저장
+      setOriginalVictimName(victimName);
+      setOriginalVictimContact(victimContact);
+      setOriginalVictimAddress(victimAddress);
+      setOriginalVictimAddressDetail(victimAddressDetail);
+      
       setEditVictimDialogOpen(true);
     } else {
       // 다른 케이스인 경우 API에서 개별 조회
@@ -2193,7 +2209,13 @@ export default function FieldManagement() {
                 <Input
                   id="edit-victim-name"
                   value={editVictimName}
-                  onChange={(e) => setEditVictimName(e.target.value)}
+                  onChange={(e) => {
+                    setEditVictimName(e.target.value);
+                    // 현재 선택된 케이스를 수정하는 경우, 임시저장에서 사용할 상태도 함께 업데이트
+                    if (editingVictimCase?.id === selectedCase) {
+                      setVictimName(e.target.value);
+                    }
+                  }}
                   placeholder="성함을 입력해주세요"
                   data-testid="input-edit-victim-name"
                   style={{
@@ -2213,7 +2235,13 @@ export default function FieldManagement() {
                 <Input
                   id="edit-victim-contact"
                   value={editVictimContact}
-                  onChange={(e) => setEditVictimContact(e.target.value)}
+                  onChange={(e) => {
+                    setEditVictimContact(e.target.value);
+                    // 현재 선택된 케이스를 수정하는 경우, 임시저장에서 사용할 상태도 함께 업데이트
+                    if (editingVictimCase?.id === selectedCase) {
+                      setVictimContact(e.target.value);
+                    }
+                  }}
                   placeholder="연락처를 입력해주세요"
                   data-testid="input-edit-victim-contact"
                   style={{
@@ -2233,7 +2261,13 @@ export default function FieldManagement() {
                 <Input
                   id="edit-victim-address"
                   value={editVictimAddress}
-                  onChange={(e) => setEditVictimAddress(e.target.value)}
+                  onChange={(e) => {
+                    setEditVictimAddress(e.target.value);
+                    // 현재 선택된 케이스를 수정하는 경우, 임시저장에서 사용할 상태도 함께 업데이트
+                    if (editingVictimCase?.id === selectedCase) {
+                      setVictimAddress(e.target.value);
+                    }
+                  }}
                   placeholder="주소를 입력해주세요"
                   data-testid="input-edit-victim-address"
                   style={{
@@ -2253,7 +2287,13 @@ export default function FieldManagement() {
                 <Input
                   id="edit-victim-address-detail"
                   value={editVictimAddressDetail}
-                  onChange={(e) => setEditVictimAddressDetail(e.target.value)}
+                  onChange={(e) => {
+                    setEditVictimAddressDetail(e.target.value);
+                    // 현재 선택된 케이스를 수정하는 경우, 임시저장에서 사용할 상태도 함께 업데이트
+                    if (editingVictimCase?.id === selectedCase) {
+                      setVictimAddressDetail(e.target.value);
+                    }
+                  }}
                   placeholder="상세주소를 입력해주세요"
                   data-testid="input-edit-victim-address-detail"
                   style={{
@@ -2267,7 +2307,16 @@ export default function FieldManagement() {
             <DialogFooter>
               <Button
                 variant="outline"
-                onClick={() => setEditVictimDialogOpen(false)}
+                onClick={() => {
+                  // 취소 시 원래 값으로 복원 (현재 선택된 케이스인 경우에만)
+                  if (editingVictimCase?.id === selectedCase) {
+                    setVictimName(originalVictimName);
+                    setVictimContact(originalVictimContact);
+                    setVictimAddress(originalVictimAddress);
+                    setVictimAddressDetail(originalVictimAddressDetail);
+                  }
+                  setEditVictimDialogOpen(false);
+                }}
                 data-testid="button-cancel-edit-victim"
                 style={{
                   fontFamily: "Pretendard",
