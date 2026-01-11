@@ -257,15 +257,23 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
       });
       
       const font = cell.isHeader ? fonts.bold : fonts.regular;
-      const textY = currentY - rowHeight / 2 - fontSize / 3;
       const padding = 4;
+      const maxTextWidth = cell.width - padding * 2;
+      
+      // 텍스트가 셀 너비를 초과할 경우 폰트 크기 자동 축소
+      let actualFontSize = fontSize;
+      let textWidth = measureTextWidth(cell.text || '', font, actualFontSize);
+      while (textWidth > maxTextWidth && actualFontSize > 5) {
+        actualFontSize -= 0.5;
+        textWidth = measureTextWidth(cell.text || '', font, actualFontSize);
+      }
+      
+      const textY = currentY - rowHeight / 2 - actualFontSize / 3;
       
       let textX = cellX + padding;
       if (cell.align === 'center') {
-        const textWidth = measureTextWidth(cell.text, font, fontSize);
         textX = cellX + (cell.width - textWidth) / 2;
       } else if (cell.align === 'right') {
-        const textWidth = measureTextWidth(cell.text, font, fontSize);
         textX = cellX + cell.width - textWidth - padding;
       }
       
@@ -273,7 +281,7 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
         page.drawText(cell.text || '', {
           x: textX,
           y: textY,
-          size: fontSize,
+          size: actualFontSize,
           font,
           color: rgb(0, 0, 0),
         });
@@ -2211,6 +2219,14 @@ export async function generatePdfWithPdfLib(
     
     if (partners.length > 0) {
       partnerData = partners.find(p => p.role === '협력사') || partners[0];
+      console.log(`[pdf-lib] partnerData 조회 결과:`, {
+        company: partnerData?.company,
+        businessRegistrationNumber: partnerData?.businessRegistrationNumber,
+        representativeName: partnerData?.representativeName,
+        name: partnerData?.name,
+      });
+    } else {
+      console.log(`[pdf-lib] partnerData 조회 실패 - 협력사 정보 없음 (assignedPartner: ${caseData.assignedPartner})`);
     }
   }
   
