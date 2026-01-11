@@ -1298,28 +1298,11 @@ async function renderEvidencePages(
       color: { r: 1, g: 1, b: 1 },
     });
     const footerHeight = 20;
-    const firstY = A4_HEIGHT - MARGIN - 30 - spacing - headerHeight - imageHeight - footerHeight;
+    // 카테고리 헤더 제거 - 페이지 상단 헤더만 유지
+    // 레이아웃 조정: 카테고리 헤더 높이(headerHeight) 제거
+    const firstY = A4_HEIGHT - MARGIN - 30 - spacing - imageHeight - footerHeight;
     
-    // Category header for first image
-    page.drawRectangle({
-      x: MARGIN,
-      y: firstY + imageHeight + footerHeight,
-      width: CONTENT_WIDTH,
-      height: headerHeight,
-      color: rgb(0.96, 0.96, 0.96),
-      borderColor: rgb(0.8, 0.8, 0.8),
-      borderWidth: 0.5,
-    });
-    
-    drawText(page, {
-      x: MARGIN + 10,
-      y: firstY + imageHeight + footerHeight + 8,
-      text: `${firstImage.tab} - ${firstImage.doc.category || ''}`,
-      font: fonts.regular,
-      size: 9,
-    });
-    
-    // Image area for first image
+    // Image area for first image (카테고리 헤더 없이 바로 이미지 영역)
     page.drawRectangle({
       x: MARGIN,
       y: firstY + footerHeight,
@@ -1366,28 +1349,10 @@ async function renderEvidencePages(
     
     if (imageDocs[i + 1]) {
       const secondImage = imageDocs[i + 1];
-      const secondY = firstY - spacing - headerHeight - imageHeight - footerHeight;
+      // 카테고리 헤더 제거 - headerHeight 제외
+      const secondY = firstY - spacing - imageHeight - footerHeight;
       
-      // Category header for second image
-      page.drawRectangle({
-        x: MARGIN,
-        y: secondY + imageHeight + footerHeight,
-        width: CONTENT_WIDTH,
-        height: headerHeight,
-        color: rgb(0.96, 0.96, 0.96),
-        borderColor: rgb(0.8, 0.8, 0.8),
-        borderWidth: 0.5,
-      });
-      
-      drawText(page, {
-        x: MARGIN + 10,
-        y: secondY + imageHeight + footerHeight + 8,
-        text: `${secondImage.tab} - ${secondImage.doc.category || ''}`,
-        font: fonts.regular,
-        size: 9,
-      });
-      
-      // Image area for second image
+      // Image area for second image (카테고리 헤더 없이 바로 이미지 영역)
       page.drawRectangle({
         x: MARGIN,
         y: secondY + footerHeight,
