@@ -1024,10 +1024,25 @@ async function renderDrawingPage(
       
       const scaleX = maxWidth / imgDims.width;
       const scaleY = maxHeight / imgDims.height;
-      const scale = Math.min(scaleX, scaleY);  // 스케일 제한 제거 - 영역에 맞게 확대
+      // 영역에 맞게 최대한 확대하되, 2배까지만 확대 (원본이 너무 작을 경우 대비)
+      const baseScale = Math.min(scaleX, scaleY);
+      const scale = Math.min(baseScale, 2.0);  // 최대 2배까지 확대
       
-      const drawWidth = imgDims.width * scale;
-      const drawHeight = imgDims.height * scale;
+      // 도면 크기를 영역의 90% 이상 채우도록 보장
+      let drawWidth = imgDims.width * scale;
+      let drawHeight = imgDims.height * scale;
+      
+      // 영역 대비 너무 작으면 추가 확대 (영역의 80% 이상 채우도록)
+      const minAreaRatio = 0.8;
+      const currentWidthRatio = drawWidth / maxWidth;
+      const currentHeightRatio = drawHeight / maxHeight;
+      const currentMaxRatio = Math.max(currentWidthRatio, currentHeightRatio);
+      
+      if (currentMaxRatio < minAreaRatio) {
+        const additionalScale = minAreaRatio / currentMaxRatio;
+        drawWidth *= additionalScale;
+        drawHeight *= additionalScale;
+      }
       
       const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
       const drawY = (y - drawingAreaHeight) + (drawingAreaHeight - drawHeight) / 2;
@@ -1039,7 +1054,7 @@ async function renderDrawingPage(
         height: drawHeight,
       });
       
-      console.log('[pdf-lib] 캔버스 도면 이미지 삽입 완료');
+      console.log('[pdf-lib] 캔버스 도면 이미지 삽입 완료 (확대됨)');
     } catch (err) {
       console.error('[pdf-lib] 캔버스 도면 이미지 삽입 실패:', err);
       // 실패 시 placeholder 표시
@@ -1086,10 +1101,25 @@ async function renderDrawingPage(
         
         const scaleX = maxWidth / imgDims.width;
         const scaleY = maxHeight / imgDims.height;
-        const scale = Math.min(scaleX, scaleY);  // 스케일 제한 제거 - 영역에 맞게 확대
+        // 영역에 맞게 최대한 확대하되, 2배까지만 확대 (원본이 너무 작을 경우 대비)
+        const baseScale = Math.min(scaleX, scaleY);
+        const scale = Math.min(baseScale, 2.0);  // 최대 2배까지 확대
         
-        const drawWidth = imgDims.width * scale;
-        const drawHeight = imgDims.height * scale;
+        // 도면 크기를 영역의 80% 이상 채우도록 보장
+        let drawWidth = imgDims.width * scale;
+        let drawHeight = imgDims.height * scale;
+        
+        // 영역 대비 너무 작으면 추가 확대 (영역의 80% 이상 채우도록)
+        const minAreaRatio = 0.8;
+        const currentWidthRatio = drawWidth / maxWidth;
+        const currentHeightRatio = drawHeight / maxHeight;
+        const currentMaxRatio = Math.max(currentWidthRatio, currentHeightRatio);
+        
+        if (currentMaxRatio < minAreaRatio) {
+          const additionalScale = minAreaRatio / currentMaxRatio;
+          drawWidth *= additionalScale;
+          drawHeight *= additionalScale;
+        }
         
         const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
         const drawY = (y - drawingAreaHeight) + (drawingAreaHeight - drawHeight) / 2;
@@ -1101,7 +1131,7 @@ async function renderDrawingPage(
           height: drawHeight,
         });
         
-        console.log('[pdf-lib] 도면 이미지 삽입 완료 (업로드 이미지)');
+        console.log('[pdf-lib] 도면 이미지 삽입 완료 (업로드 이미지, 확대됨)');
       }
     } catch (err) {
       console.error('[pdf-lib] 도면 이미지 삽입 실패:', err);
