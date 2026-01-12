@@ -6,6 +6,16 @@ import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -161,6 +171,7 @@ export default function FieldDocuments() {
   const [isDragging, setIsDragging] = useState(false);
   const [caseSearchModalOpen, setCaseSearchModalOpen] = useState(false);
   const [caseSearchQuery, setCaseSearchQuery] = useState("");
+  const [showClaimSubmitDialog, setShowClaimSubmitDialog] = useState(false);
 
   const { data: user } = useQuery<User>({
     queryKey: ["/api/user"],
@@ -221,6 +232,9 @@ export default function FieldDocuments() {
     "정산완료"
   ];
   const isClaimDocumentEnabled = claimDocumentStatuses.includes(selectedCase?.status || "");
+  
+  // 직접복구 상태 확인 (청구자료 버튼 표시 조건)
+  const isDirectRecoveryStatus = selectedCase?.status === "직접복구";
 
   // 케이스 선택 핸들러
   const handleCaseSelect = (caseId: string) => {
@@ -927,6 +941,49 @@ export default function FieldDocuments() {
     });
   };
 
+  // 청구자료 제출 버튼 클릭 핸들러
+  const handleClaimSubmitClick = () => {
+    // 필수 서류 검증
+    const validation = validateClaimDocuments();
+    if (!validation.valid) {
+      toast({
+        title: "필수 서류 누락",
+        description: `다음 서류가 누락되었습니다:\n${validation.missingDocs.join(", ")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    // 누락 없으면 확인 다이얼로그 표시
+    setShowClaimSubmitDialog(true);
+  };
+
+  // 청구자료 제출 mutation
+  const claimSubmitMutation = useMutation({
+    mutationFn: async () => {
+      // 케이스 상태를 "청구자료제출"로 변경
+      await apiRequest("PATCH", `/api/cases/${selectedCaseId}`, {
+        status: "(직접복구인 경우) 청구자료제출"
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/cases/${selectedCaseId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      toast({
+        title: "청구자료가 제출되었습니다",
+        description: "제출이 완료되었습니다.",
+        className: "bg-[#008FED] text-white border-0",
+      });
+      setShowClaimSubmitDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "제출 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="flex-1 overflow-y-auto p-8">
       {/* 헤더 */}
@@ -943,24 +1000,48 @@ export default function FieldDocuments() {
           증빙자료 등록
         </h1>
         
-        {/* 저장 버튼 */}
-        <button
-          type="button"
-          onClick={handleSave}
-          className="px-8 py-3 rounded-lg hover-elevate active-elevate-2"
-          style={{
-            background: "#008FED",
-            color: "white",
-            fontFamily: "Pretendard",
-            fontSize: "16px",
-            fontWeight: 600,
-            letterSpacing: "-0.02em",
-            border: "none",
-          }}
-          data-testid="button-save"
-        >
-          저장
-        </button>
+        {/* 버튼 그룹 */}
+        <div className="flex items-center gap-3">
+          {/* 저장 버튼 */}
+          <button
+            type="button"
+            onClick={handleSave}
+            className="px-8 py-3 rounded-lg hover-elevate active-elevate-2"
+            style={{
+              background: "#008FED",
+              color: "white",
+              fontFamily: "Pretendard",
+              fontSize: "16px",
+              fontWeight: 600,
+              letterSpacing: "-0.02em",
+              border: "none",
+            }}
+            data-testid="button-save"
+          >
+            저장
+          </button>
+          
+          {/* 청구자료 버튼 - 직접복구 상태일 때만 표시 */}
+          {isDirectRecoveryStatus && (
+            <button
+              type="button"
+              onClick={handleClaimSubmitClick}
+              className="px-8 py-3 rounded-lg hover-elevate active-elevate-2"
+              style={{
+                background: "#10B981",
+                color: "white",
+                fontFamily: "Pretendard",
+                fontSize: "16px",
+                fontWeight: 600,
+                letterSpacing: "-0.02em",
+                border: "none",
+              }}
+              data-testid="button-claim-submit"
+            >
+              청구자료
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 작성중인 건 */}
@@ -2065,6 +2146,55 @@ export default function FieldDocuments() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* 청구자료 제출 확인 다이얼로그 */}
+      <AlertDialog open={showClaimSubmitDialog} onOpenChange={setShowClaimSubmitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "18px",
+                fontWeight: "600",
+              }}
+            >
+              청구자료 제출확인
+            </AlertDialogTitle>
+            <AlertDialogDescription
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+                lineHeight: "1.8",
+                whiteSpace: "pre-line",
+              }}
+            >
+              청구자료를 제출하시겠습니까? 제출 후에는 수정이 불가능 합니다.{"\n\n"}
+              그리고, 지급청구는 보험사 사고번호 기준으로 손방 및 대물 각 건의 청구자료제출이 완료된 후 일괄하여 진행됨을 안내드립니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              data-testid="button-cancel-claim-submit"
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="button-confirm-claim-submit"
+              onClick={() => claimSubmitMutation.mutate()}
+              style={{
+                fontFamily: "Pretendard",
+                fontSize: "14px",
+              }}
+            >
+              제출
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
