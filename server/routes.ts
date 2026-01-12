@@ -6727,9 +6727,16 @@ FLOXN`;
         // Get documents from main case AND all related cases
         const mainDocs = await storage.getDocumentsByCaseId(caseId);
         
-        // Build caseId -> caseNumber mapping
+        // Build caseId -> caseNumber and caseId -> address mappings
         const caseNumberMap: Record<string, string> = {
           [caseId]: caseData.caseNumber || ''
+        };
+        const caseAddressMap: Record<string, string> = {
+          [caseId]: (() => {
+            const address = caseData.victimAddress || caseData.insuredAddress || '';
+            const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
+            return addressDetail ? `${address} ${addressDetail}` : address;
+          })()
         };
         
         // Get related cases (same insuranceAccidentNo)
@@ -6740,6 +6747,11 @@ FLOXN`;
           // Fetch documents from all related cases and build mapping
           for (const relatedCase of relatedCases) {
             caseNumberMap[relatedCase.id] = relatedCase.caseNumber || '';
+            // Build address for related case
+            const rcAddress = relatedCase.victimAddress || relatedCase.insuredAddress || '';
+            const rcAddressDetail = relatedCase.victimAddressDetail || relatedCase.insuredAddressDetail || '';
+            caseAddressMap[relatedCase.id] = rcAddressDetail ? `${rcAddress} ${rcAddressDetail}` : rcAddress;
+            
             const relatedDocs = await storage.getDocumentsByCaseId(relatedCase.id);
             allDocuments = allDocuments.concat(relatedDocs);
           }
@@ -6885,16 +6897,15 @@ FLOXN`;
           // Collect images for 2-per-page layout
           const pendingImages: { doc: any; buffer: Buffer; headerText: string }[] = [];
           
-          // Process all documents in category order
+          // Process all documents in case suffix / category order
           for (const doc of sortedDocs) {
             const mimeType = doc.fileType || '';
             const fileName = doc.fileName || '';
             
-            // Get header text for this document (보험사사고번호 + 주소)
+            // Get header text for this document (보험사사고번호 + 해당 케이스의 주소)
             const accidentNo = caseData.insuranceAccidentNo || '';
-            const address = caseData.victimAddress || caseData.insuredAddress || '';
-            const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
-            const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
+            // Use the address from the case this document belongs to
+            const fullAddress = caseAddressMap[doc.caseId] || '';
             const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || '기타'}`;
             
             if (isPdfFile(mimeType, fileName)) {
@@ -7240,9 +7251,16 @@ FLOXN`;
         // Get documents from main case AND all related cases
         const mainDocs = await storage.getDocumentsByCaseId(caseId);
         
-        // Build caseId -> caseNumber mapping
+        // Build caseId -> caseNumber and caseId -> address mappings
         const caseNumberMap: Record<string, string> = {
           [caseId]: caseData.caseNumber || ''
+        };
+        const caseAddressMap: Record<string, string> = {
+          [caseId]: (() => {
+            const address = caseData.victimAddress || caseData.insuredAddress || '';
+            const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
+            return addressDetail ? `${address} ${addressDetail}` : address;
+          })()
         };
         
         // Get related cases (same insuranceAccidentNo)
@@ -7253,6 +7271,11 @@ FLOXN`;
           // Fetch documents from all related cases and build mapping
           for (const relatedCase of relatedCases) {
             caseNumberMap[relatedCase.id] = relatedCase.caseNumber || '';
+            // Build address for related case
+            const rcAddress = relatedCase.victimAddress || relatedCase.insuredAddress || '';
+            const rcAddressDetail = relatedCase.victimAddressDetail || relatedCase.insuredAddressDetail || '';
+            caseAddressMap[relatedCase.id] = rcAddressDetail ? `${rcAddress} ${rcAddressDetail}` : rcAddress;
+            
             const relatedDocs = await storage.getDocumentsByCaseId(relatedCase.id);
             allDocuments = allDocuments.concat(relatedDocs);
           }
@@ -7261,7 +7284,7 @@ FLOXN`;
         
         let selectedDocs = allDocuments.filter((doc: any) => selectedDocumentIds.includes(doc.id));
         
-        // Sort documents by category order: 사진 > 기본자료 > 증빙자료 > 청구자료
+        // Sort documents by: 1) case suffix (-0, -1, -2), then 2) category order within each case
         const categoryOrder: Record<string, number> = {
           // 1. 사진 (현장사진, 수리중, 복구완료)
           '현장출동사진': 0, '현장': 1, '현장사진': 2,
@@ -7278,12 +7301,27 @@ FLOXN`;
           '복구완료확인서': 32, '복구완료 확인서': 33,
           '부가세 청구자료': 34, '부가세청구자료': 35,
         };
+        
+        // Helper: Extract case suffix number from case number (e.g., "260106005-0" -> 0, "260106005-1" -> 1)
+        const getCaseSuffix = (docCaseId: string): number => {
+          const caseNumber = caseNumberMap[docCaseId] || '';
+          const match = caseNumber.match(/-(\d+)$/);
+          return match ? parseInt(match[1], 10) : 999;
+        };
+        
+        // Sort by: 1) case suffix, 2) category order within each case
         selectedDocs = selectedDocs.sort((a: any, b: any) => {
+          // First: sort by case suffix (-0, -1, -2, etc.)
+          const suffixA = getCaseSuffix(a.caseId);
+          const suffixB = getCaseSuffix(b.caseId);
+          if (suffixA !== suffixB) return suffixA - suffixB;
+          
+          // Second: sort by category order within same case
           const orderA = categoryOrder[a.category] ?? 99;
           const orderB = categoryOrder[b.category] ?? 99;
           return orderA - orderB;
         });
-        console.log(`[Invoice Email] Selected documents found: ${selectedDocs.length}, sorted by category`);
+        console.log(`[Invoice Email] Selected documents found: ${selectedDocs.length}, sorted by case suffix then category`);
         
         if (selectedDocs.length > 0) {
           const { PDFDocument, rgb } = await import('pdf-lib');
@@ -7363,42 +7401,23 @@ FLOXN`;
           const HEADER_HEIGHT = 20;
           const GAP = 8;
           
-          // Category order: 사진 > 기본자료 > 증빙자료 > 청구자료
-          const categoryOrder: Record<string, number> = {
-            '현장출동사진': 0, '현장': 1, '현장사진': 2,
-            '수리중 사진': 3, '수리중': 4,
-            '복구완료 사진': 5, '복구완료': 6,
-            '보험금 청구서': 10, '보험금청구서': 11,
-            '개인정보 동의서(가족용)': 12, '개인정보동의서': 13,
-            '주민등록등본': 20, '등기부등본': 21, '건축물대장': 22,
-            '기타증빙자료(민원일지 등)': 23, '기타증빙자료': 24,
-            '위임장': 30, '도급계약서': 31,
-            '복구완료확인서': 32, '복구완료 확인서': 33,
-            '부가세 청구자료': 34, '부가세청구자료': 35,
-          };
+          // selectedDocs is already sorted by case suffix then category, use directly
+          const sortedDocs = selectedDocs;
           
-          // Sort documents by category order (NOT by file type)
-          const sortedDocs = [...selectedDocs].sort((a: any, b: any) => {
-            const orderA = categoryOrder[a.category] ?? 99;
-            const orderB = categoryOrder[b.category] ?? 99;
-            return orderA - orderB;
-          });
-          
-          console.log(`[Invoice Email] 문서 ${sortedDocs.length}개 카테고리 순서로 정렬 완료`);
+          console.log(`[Invoice Email] 문서 ${sortedDocs.length}개 케이스별/카테고리 순서로 정렬됨`);
           
           // Collect images for 2-per-page layout
           const pendingImages: { doc: any; buffer: Buffer; headerText: string }[] = [];
           
-          // Process all documents in category order
+          // Process all documents in case suffix / category order
           for (const doc of sortedDocs) {
             const mimeType = doc.fileType || '';
             const fileName = doc.fileName || '';
             
-            // Get header text for this document (보험사사고번호 + 주소)
+            // Get header text for this document (보험사사고번호 + 해당 케이스의 주소)
             const accidentNo = caseData.insuranceAccidentNo || '';
-            const address = caseData.victimAddress || caseData.insuredAddress || '';
-            const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
-            const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
+            // Use the address from the case this document belongs to
+            const fullAddress = caseAddressMap[doc.caseId] || '';
             const headerText = `[${accidentNo}] ${fullAddress} - ${doc.category || '기타'}`;
             
             if (isPdfFile(mimeType, fileName)) {
