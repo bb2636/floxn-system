@@ -1232,6 +1232,9 @@ async function renderEvidencePages(
   }
   
   // PDF 문서 페이지들을 현재 문서에 복사 (각 페이지에 헤더 추가)
+  // embedPage 방식으로 변경: 페이지 크기를 늘려서 상단에 헤더 공간 확보
+  const PDF_HEADER_HEIGHT = 30;
+  
   for (const pdfItem of pdfDocs) {
     try {
       console.log(`[pdf-lib] PDF 문서 삽입: ${pdfItem.doc.fileName}`);
@@ -1251,44 +1254,68 @@ async function renderEvidencePages(
       const pdfHeaderText = `사고번호 ${pdfAccidentNo} ${pdfFullAddress} ${pdfCategoryDisplay}`;
       const pdfFontSize = pdfHeaderText.length > 60 ? 8 : (pdfHeaderText.length > 45 ? 9 : 10);
       
-      // 모든 PDF 페이지를 한 번에 복사하고 각 페이지에 헤더 추가
-      const pageIndices = Array.from({ length: pageCount }, (_, i) => i);
-      const copiedPages = await pdfDoc.copyPages(externalPdf, pageIndices);
-      
-      for (let pageIdx = 0; pageIdx < copiedPages.length; pageIdx++) {
-        const copiedPage = copiedPages[pageIdx];
-        const pageSize = copiedPage.getSize();
+      // 각 페이지를 embedPage로 처리하여 헤더 공간 확보
+      for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
+        const srcPage = externalPdf.getPage(pageIdx);
+        const { width, height } = srcPage.getSize();
         
-        // 상단 헤더 배경 (흰색으로 기존 콘텐츠 가리기)
-        copiedPage.drawRectangle({
+        // 새 페이지 생성 (원본 + 헤더 높이)
+        const newPage = pdfDoc.addPage([width, height + PDF_HEADER_HEIGHT]);
+        
+        // 원본 페이지 임베드
+        const embeddedPage = await pdfDoc.embedPage(srcPage);
+        
+        // 원본 페이지를 헤더 아래에 배치
+        newPage.drawPage(embeddedPage, {
           x: 0,
-          y: pageSize.height - 25,
-          width: pageSize.width,
-          height: 25,
+          y: 0,
+          width: width,
+          height: height,
+        });
+        
+        // 헤더 배경 (어두운 회색)
+        newPage.drawRectangle({
+          x: 0,
+          y: height,
+          width: width,
+          height: PDF_HEADER_HEIGHT,
           color: rgb(0.2, 0.2, 0.2),
         });
         
-        // 헤더 텍스트
-        drawText(copiedPage, {
-          x: 10,
-          y: pageSize.height - 18,
-          text: pdfHeaderText,
-          font: fonts.bold,
-          size: pdfFontSize,
-          color: { r: 1, g: 1, b: 1 },
+        // 헤더 구분선
+        newPage.drawLine({
+          start: { x: 0, y: height },
+          end: { x: width, y: height },
+          thickness: 0.5,
+          color: rgb(0.4, 0.4, 0.4),
         });
+        
+        // 헤더 텍스트 (흰색)
+        const textY = height + (PDF_HEADER_HEIGHT - pdfFontSize) / 2;
+        try {
+          newPage.drawText(pdfHeaderText, {
+            x: 10,
+            y: textY,
+            size: pdfFontSize,
+            font: fonts.bold,
+            color: rgb(1, 1, 1),
+          });
+        } catch (textErr) {
+          console.warn(`[pdf-lib] PDF 헤더 텍스트 그리기 실패: ${pdfItem.doc.fileName} 페이지 ${pageIdx + 1}`);
+        }
         
         // 페이지 번호 (우측)
-        drawText(copiedPage, {
-          x: pageSize.width - 60,
-          y: pageSize.height - 18,
-          text: `${pageIdx + 1}/${pageCount}`,
-          font: fonts.regular,
-          size: 8,
-          color: { r: 1, g: 1, b: 1 },
-        });
-        
-        pdfDoc.addPage(copiedPage);
+        try {
+          newPage.drawText(`${pageIdx + 1}/${pageCount}`, {
+            x: width - 50,
+            y: textY,
+            size: 8,
+            font: fonts.regular,
+            color: rgb(1, 1, 1),
+          });
+        } catch (numErr) {
+          // 무시
+        }
       }
       
       console.log(`[pdf-lib] PDF 문서 삽입 완료: ${pdfItem.doc.fileName} (${pageCount}페이지, 헤더 추가됨)`);
