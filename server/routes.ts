@@ -6857,10 +6857,10 @@ FLOXN`;
           
           const mergedPdf = await PDFDocument.load(pdfBuffer);
           
-          // 한글 폰트 로드
+          // 한글 폰트 로드 (Pretendard 사용 - 글자 간격 문제 해결)
           mergedPdf.registerFontkit(fontkit);
           const fontsDir = path.join(process.cwd(), 'server/fonts');
-          const fontPath = path.join(fontsDir, 'NotoSansKR-Regular-static.ttf');
+          const fontPath = path.join(fontsDir, 'Pretendard-Regular.ttf');
           const fontBytes = fs.readFileSync(fontPath);
           const font = await mergedPdf.embedFont(fontBytes, { subset: false });
           
@@ -7384,10 +7384,10 @@ FLOXN`;
           
           const mergedPdf = await PDFDocument.load(pdfBuffer);
           
-          // 한글 폰트 로드
+          // 한글 폰트 로드 (Pretendard 사용 - 글자 간격 문제 해결)
           mergedPdf.registerFontkit(fontkit);
           const fontsDir = path.join(process.cwd(), 'server/fonts');
-          const fontPath = path.join(fontsDir, 'NotoSansKR-Regular-static.ttf');
+          const fontPath = path.join(fontsDir, 'Pretendard-Regular.ttf');
           const fontBytes = fs.readFileSync(fontPath);
           const font = await mergedPdf.embedFont(fontBytes, { subset: false });
           
