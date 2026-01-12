@@ -1738,23 +1738,23 @@ async function renderEstimatePage(
   const partnerRepName = partnerData?.representativeName || partnerData?.name || '-';
   
   const rowHeight = 20;
-  const leftTableWidth = 250; // 현장명/보험사/사고번호 테이블
-  const supplierLabelWidth = 30; // 공/급/자 병합 셀
-  const rightTableWidth = 235; // 사업자번호/상호명/대표자 테이블
+  const leftTableWidth = 320; // 현장명/보험사/사고번호 테이블 (넓힘)
+  const supplierLabelWidth = 25; // 공/급/자 병합 셀 (줄임)
+  const rightTableWidth = 170; // 사업자번호/상호명/대표자 테이블 (줄임)
   
   // 좌측 테이블 (현장명/보험사/사고번호)
   const leftTableRows: TableCell[][] = [
     [
       { text: '현장명(주소)', width: 70, isHeader: true, align: 'center' },
-      { text: fullAddress || '-', width: 180, align: 'left' },
+      { text: fullAddress || '-', width: 250, align: 'left' },
     ],
     [
       { text: '보험사', width: 70, isHeader: true, align: 'center' },
-      { text: caseData.insuranceCompany || '-', width: 180, align: 'left' },
+      { text: caseData.insuranceCompany || '-', width: 250, align: 'left' },
     ],
     [
       { text: '사고번호', width: 70, isHeader: true, align: 'center' },
-      { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 180, align: 'left' },
+      { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 250, align: 'left' },
     ],
   ];
   
@@ -1807,16 +1807,16 @@ async function renderEstimatePage(
   // 우측 테이블 (사업자번호/상호명/대표자)
   const rightTableRows: TableCell[][] = [
     [
-      { text: '사업자번호', width: 70, isHeader: true, align: 'center' },
-      { text: partnerBusinessNo, width: 165, align: 'left' },
+      { text: '사업자번호', width: 55, isHeader: true, align: 'center' },
+      { text: partnerBusinessNo, width: 115, align: 'left' },
     ],
     [
-      { text: '상호명', width: 70, isHeader: true, align: 'center' },
-      { text: partnerCompany, width: 165, align: 'left' },
+      { text: '상호명', width: 55, isHeader: true, align: 'center' },
+      { text: partnerCompany, width: 115, align: 'left' },
     ],
     [
-      { text: '대표자', width: 70, isHeader: true, align: 'center' },
-      { text: partnerRepName, width: 165, align: 'left' },
+      { text: '대표자', width: 55, isHeader: true, align: 'center' },
+      { text: partnerRepName, width: 115, align: 'left' },
     ],
   ];
   
