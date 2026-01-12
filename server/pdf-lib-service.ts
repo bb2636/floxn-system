@@ -1510,8 +1510,8 @@ async function renderRecoveryAreaPage(
       { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 120, align: 'left' },
       { text: '보험사', width: 60, isHeader: true, align: 'center' },
       { text: caseData.insuranceCompany || '-', width: 100, align: 'left' },
-      { text: '보험사 번호', width: 70, isHeader: true, align: 'center' },
-      { text: caseData.clientContact || caseData.insuredContact || '-', width: 95, align: 'left' },
+      { text: '플록슨접수번호', width: 70, isHeader: true, align: 'center' },
+      { text: caseData.caseNumber || '-', width: 95, align: 'left' },
     ],
     [
       { text: '장소', width: 70, isHeader: true, align: 'center' },
