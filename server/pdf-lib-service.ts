@@ -1018,8 +1018,24 @@ async function renderDrawingPage(
         imageData = Buffer.from(canvasImage, 'base64');
       }
       
+      // 이미지를 3배 확대 (사용자 요청)
+      const SCALE_FACTOR = 3;
+      const originalMeta = await sharp(imageData).metadata();
+      const enlargedWidth = (originalMeta.width || 800) * SCALE_FACTOR;
+      const enlargedHeight = (originalMeta.height || 600) * SCALE_FACTOR;
+      
+      console.log(`[pdf-lib] 도면 이미지 확대: ${originalMeta.width}x${originalMeta.height} -> ${enlargedWidth}x${enlargedHeight}`);
+      
+      const enlargedImageData = await sharp(imageData)
+        .resize(enlargedWidth, enlargedHeight, { 
+          fit: 'fill',
+          kernel: 'lanczos3'  // 고품질 리사이즈
+        })
+        .png()
+        .toBuffer();
+      
       // PNG 이미지 (html2canvas는 PNG로 출력)
-      const embeddedImage = await pdfDoc.embedPng(imageData);
+      const embeddedImage = await pdfDoc.embedPng(enlargedImageData);
       
       const imgDims = embeddedImage.scale(1);
       const maxWidth = drawingAreaWidth - 5;  // 패딩 더 축소
@@ -1027,15 +1043,13 @@ async function renderDrawingPage(
       
       const scaleX = maxWidth / imgDims.width;
       const scaleY = maxHeight / imgDims.height;
-      // 영역에 맞게 최대한 확대하되, 5배까지 확대 (원본이 너무 작을 경우 대비)
-      const baseScale = Math.min(scaleX, scaleY);
-      const scale = Math.min(baseScale, 5.0);  // 최대 5배까지 확대
+      // 영역에 맞게 축소 (이미지가 3배 커졌으므로 영역에 맞춤)
+      const scale = Math.min(scaleX, scaleY);
       
-      // 도면 크기를 영역의 95% 이상 채우도록 보장
       let drawWidth = imgDims.width * scale;
       let drawHeight = imgDims.height * scale;
       
-      // 영역 대비 너무 작으면 추가 확대 (영역의 95% 이상 채우도록)
+      // PDF 영역을 최대한 채우도록 (95% 이상)
       const minAreaRatio = 0.95;
       const currentWidthRatio = drawWidth / maxWidth;
       const currentHeightRatio = drawHeight / maxHeight;
@@ -1057,7 +1071,7 @@ async function renderDrawingPage(
         height: drawHeight,
       });
       
-      console.log('[pdf-lib] 캔버스 도면 이미지 삽입 완료 (확대됨)');
+      console.log(`[pdf-lib] 캔버스 도면 이미지 삽입 완료 (${SCALE_FACTOR}배 확대, 최종 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)})`);
     } catch (err) {
       console.error('[pdf-lib] 캔버스 도면 이미지 삽입 실패:', err);
       // 실패 시 placeholder 표시
