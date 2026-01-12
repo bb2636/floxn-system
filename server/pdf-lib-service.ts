@@ -1508,9 +1508,9 @@ async function renderRecoveryAreaPage(
     [
       { text: '사고번호', width: 70, isHeader: true, align: 'center' },
       { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 120, align: 'left' },
-      { text: '고객사', width: 60, isHeader: true, align: 'center' },
+      { text: '보험사', width: 60, isHeader: true, align: 'center' },
       { text: caseData.insuranceCompany || '-', width: 100, align: 'left' },
-      { text: '고객사 번호', width: 70, isHeader: true, align: 'center' },
+      { text: '보험사 번호', width: 70, isHeader: true, align: 'center' },
       { text: caseData.clientContact || caseData.insuredContact || '-', width: 95, align: 'left' },
     ],
     [
