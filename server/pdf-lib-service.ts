@@ -1497,8 +1497,16 @@ async function renderRecoveryAreaPage(
   
   y -= 45;
   
-  const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
-    .filter(Boolean).join(' ');
+  // 케이스 번호에서 suffix 추출 (-0: 손해비용방지, -1/-2/-3: 피해세대 복구)
+  const caseNumber = caseData.caseNumber || '';
+  const suffixMatch = caseNumber.match(/-(\d+)$/);
+  const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
+  
+  // -0인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
+  const fullAddress = suffix === 0
+    ? [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(' ')
+    : [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(' ') 
+      || [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(' ');
   
   const now = new Date();
   const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
