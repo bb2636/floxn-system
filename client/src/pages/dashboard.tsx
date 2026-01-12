@@ -162,30 +162,50 @@ export default function Dashboard() {
     }
   }, [filteredCasesByPeriod, activeTab]);
 
-  // Aggregate cases by assigned user
+  // Aggregate cases by assigned user or partner
   const staffSummary = useMemo(() => {
     if (!filteredCasesByTab || !user) return [];
 
     const userCaseCounts = new Map<string, { name: string; position: string; count: number; userId: string }>();
 
-    filteredCasesByTab.forEach(c => {
-      const assignedToId = c.assignedTo || 'unassigned';
-
-      const existing = userCaseCounts.get(assignedToId);
-      if (existing) {
-        existing.count++;
-      } else {
-        // Find user info from allUsers list
-        const assignedUser = allUsers.find(u => u.id === assignedToId);
+    // 협력사인 경우: 담당 협력사(assignedPartner)로 그룹화
+    if (user.role === '협력사') {
+      filteredCasesByTab.forEach(c => {
+        const partnerName = c.assignedPartner || '미배정';
         
-        userCaseCounts.set(assignedToId, {
-          name: assignedUser ? assignedUser.name : '미배정',
-          position: assignedUser ? (assignedUser.role || '-') : '-',
-          count: 1,
-          userId: assignedToId,
-        });
-      }
-    });
+        const existing = userCaseCounts.get(partnerName);
+        if (existing) {
+          existing.count++;
+        } else {
+          userCaseCounts.set(partnerName, {
+            name: partnerName,
+            position: '협력사',
+            count: 1,
+            userId: partnerName,
+          });
+        }
+      });
+    } else {
+      // 관리자 등: 담당자(assignedTo)로 그룹화
+      filteredCasesByTab.forEach(c => {
+        const assignedToId = c.assignedTo || 'unassigned';
+
+        const existing = userCaseCounts.get(assignedToId);
+        if (existing) {
+          existing.count++;
+        } else {
+          // Find user info from allUsers list
+          const assignedUser = allUsers.find(u => u.id === assignedToId);
+          
+          userCaseCounts.set(assignedToId, {
+            name: assignedUser ? assignedUser.name : '미배정',
+            position: assignedUser ? (assignedUser.role || '-') : '-',
+            count: 1,
+            userId: assignedToId,
+          });
+        }
+      });
+    }
 
     return Array.from(userCaseCounts.values()).sort((a, b) => b.count - a.count);
   }, [filteredCasesByTab, user, allUsers]);
