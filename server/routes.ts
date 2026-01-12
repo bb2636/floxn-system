@@ -6943,8 +6943,126 @@ FLOXN`;
           const HEADER_HEIGHT = 20;
           const GAP = 8;
           
-          // Collect images for 2-per-page layout
+          // 2장/페이지 카테고리 목록 (현장사진, 수리중, 복구완료)
+          const twoPerPageCategories = ['현장사진', '수리중', '복구완료', '현장출동사진', '수리중 사진', '복구완료 사진'];
+          const isTwoPerPageCategory = (category: string): boolean => {
+            if (!category) return false;
+            return twoPerPageCategories.some(c => category.includes(c) || c.includes(category));
+          };
+          
+          // Collect images for layout (2-per-page for some categories, 1-per-page for others)
           const pendingImages: { doc: any; buffer: Buffer; headerText: string }[] = [];
+          
+          // Helper function to flush pending images with category-based layout
+          const flushPendingImages = async () => {
+            if (pendingImages.length === 0) return;
+            
+            const PAGE_HEADER_HEIGHT = 30;
+            const imgWidth = A4_WIDTH - MARGIN * 2;
+            
+            let i = 0;
+            while (i < pendingImages.length) {
+              const currentImg = pendingImages[i];
+              const category = currentImg.doc.category || '';
+              const isTwoPerPage = isTwoPerPageCategory(category);
+              
+              if (isTwoPerPage) {
+                // 2장/페이지 레이아웃
+                const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                
+                // 헤더 그리기
+                page.drawRectangle({
+                  x: MARGIN,
+                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
+                  width: imgWidth,
+                  height: PAGE_HEADER_HEIGHT,
+                  color: rgb(0.2, 0.2, 0.2),
+                });
+                page.drawText(currentImg.headerText, {
+                  x: MARGIN + 10,
+                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
+                  size: 9,
+                  font,
+                  color: rgb(1, 1, 1),
+                });
+                
+                // 이미지 영역 계산 (헤더 제외)
+                const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+                const imgHeight = (availableHeight - GAP) / 2;
+                
+                // 최대 2장까지 배치
+                for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
+                  const img = pendingImages[i + j];
+                  // 다음 이미지가 다른 카테고리면 건너뛰기
+                  if (j > 0 && !isTwoPerPageCategory(img.doc.category || '')) break;
+                  
+                  const yPos = j === 0 
+                    ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
+                    : MARGIN;
+                  
+                  try {
+                    const embeddedImage = await mergedPdf.embedJpg(img.buffer);
+                    const dims = embeddedImage.scale(1);
+                    let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
+                    const finalW = dims.width * scale;
+                    const finalH = dims.height * scale;
+                    const imgX = MARGIN + (imgWidth - finalW) / 2;
+                    const imgY = yPos + (imgHeight - finalH) / 2;
+                    
+                    page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
+                  } catch (e) {
+                    console.error(`[Invoice PDF] Failed to embed image:`, e);
+                  }
+                }
+                
+                // 같은 카테고리 이미지 개수 확인하여 스킵
+                const nextIdx = i + 1 < pendingImages.length && isTwoPerPageCategory(pendingImages[i + 1]?.doc?.category || '') ? 2 : 1;
+                i += nextIdx;
+              } else {
+                // 1장/페이지 레이아웃
+                const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                
+                // 헤더 그리기
+                page.drawRectangle({
+                  x: MARGIN,
+                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
+                  width: imgWidth,
+                  height: PAGE_HEADER_HEIGHT,
+                  color: rgb(0.2, 0.2, 0.2),
+                });
+                page.drawText(currentImg.headerText, {
+                  x: MARGIN + 10,
+                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
+                  size: 9,
+                  font,
+                  color: rgb(1, 1, 1),
+                });
+                
+                // 전체 페이지 이미지 영역
+                const imgHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+                const yPos = MARGIN;
+                
+                try {
+                  const embeddedImage = await mergedPdf.embedJpg(currentImg.buffer);
+                  const dims = embeddedImage.scale(1);
+                  let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
+                  const finalW = dims.width * scale;
+                  const finalH = dims.height * scale;
+                  const imgX = MARGIN + (imgWidth - finalW) / 2;
+                  const imgY = yPos + (imgHeight - finalH) / 2;
+                  
+                  page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
+                } catch (e) {
+                  console.error(`[Invoice PDF] Failed to embed image:`, e);
+                }
+                
+                i += 1;
+              }
+            }
+            
+            console.log(`[Invoice PDF] Added ${pendingImages.length} images (category-based layout)`);
+            pendingImages.length = 0;
+          };
           
           // Process all documents in case suffix / category order
           for (const doc of sortedDocs) {
@@ -6959,55 +7077,7 @@ FLOXN`;
             
             if (isPdfFile(mimeType, fileName)) {
               // First, flush any pending images before adding PDF
-              if (pendingImages.length > 0) {
-                const PAGE_HEADER_HEIGHT = 30;
-                for (let i = 0; i < pendingImages.length; i += 2) {
-                  const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-                  const imgWidth = A4_WIDTH - MARGIN * 2;
-                  // 페이지 상단 헤더 1개 (첫 번째 이미지 기준)
-                  const firstImg = pendingImages[i];
-                  page.drawRectangle({
-                    x: MARGIN,
-                    y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
-                    width: imgWidth,
-                    height: PAGE_HEADER_HEIGHT,
-                    color: rgb(0.2, 0.2, 0.2),
-                  });
-                  page.drawText(firstImg.headerText, {
-                    x: MARGIN + 10,
-                    y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
-                    size: 9,
-                    font,
-                    color: rgb(1, 1, 1),
-                  });
-                  
-                  // 이미지 영역 계산 (헤더 제외)
-                  const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
-                  const imgHeight = (availableHeight - GAP) / 2;
-                  
-                  for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
-                    const img = pendingImages[i + j];
-                    const yPos = j === 0 
-                      ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
-                      : MARGIN;
-                    
-                    try {
-                      const embeddedImage = await mergedPdf.embedJpg(img.buffer);
-                      const dims = embeddedImage.scale(1);
-                      let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
-                      const finalW = dims.width * scale;
-                      const finalH = dims.height * scale;
-                      const imgX = MARGIN + (imgWidth - finalW) / 2;
-                      const imgY = yPos + (imgHeight - finalH) / 2;
-                      
-                      page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
-                    } catch (e) {
-                      console.error(`[Invoice PDF] Failed to embed image:`, e);
-                    }
-                  }
-                }
-                pendingImages.length = 0;
-              }
+              await flushPendingImages();
               
               // PDF document
               try {
@@ -7073,55 +7143,7 @@ FLOXN`;
           }
           
           // Flush remaining pending images
-          if (pendingImages.length > 0) {
-            const PAGE_HEADER_HEIGHT = 30;
-            for (let i = 0; i < pendingImages.length; i += 2) {
-              const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-              const imgWidth = A4_WIDTH - MARGIN * 2;
-              // 페이지 상단 헤더 1개 (첫 번째 이미지 기준)
-              const firstImg = pendingImages[i];
-              page.drawRectangle({
-                x: MARGIN,
-                y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
-                width: imgWidth,
-                height: PAGE_HEADER_HEIGHT,
-                color: rgb(0.2, 0.2, 0.2),
-              });
-              page.drawText(firstImg.headerText, {
-                x: MARGIN + 10,
-                y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
-                size: 9,
-                font,
-                color: rgb(1, 1, 1),
-              });
-              
-              // 이미지 영역 계산 (헤더 제외)
-              const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
-              const imgHeight = (availableHeight - GAP) / 2;
-              
-              for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
-                const img = pendingImages[i + j];
-                const yPos = j === 0 
-                  ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
-                  : MARGIN;
-                
-                try {
-                  const embeddedImage = await mergedPdf.embedJpg(img.buffer);
-                  const dims = embeddedImage.scale(1);
-                  let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
-                  const finalW = dims.width * scale;
-                  const finalH = dims.height * scale;
-                  const imgX = MARGIN + (imgWidth - finalW) / 2;
-                  const imgY = yPos + (imgHeight - finalH) / 2;
-                  
-                  page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
-                } catch (e) {
-                  console.error(`[Invoice PDF] Failed to embed image:`, e);
-                }
-              }
-            }
-            console.log(`[Invoice PDF] Added ${pendingImages.length} images (2 per page)`);
-          }
+          await flushPendingImages();
           
           console.log(`[Invoice PDF] Processed ${sortedDocs.length} documents in category order`);
           
@@ -7458,8 +7480,126 @@ FLOXN`;
           
           console.log(`[Invoice Email] 문서 ${sortedDocs.length}개 케이스별/카테고리 순서로 정렬됨`);
           
-          // Collect images for 2-per-page layout
+          // 2장/페이지 카테고리 목록 (현장사진, 수리중, 복구완료)
+          const twoPerPageCategories = ['현장사진', '수리중', '복구완료', '현장출동사진', '수리중 사진', '복구완료 사진'];
+          const isTwoPerPageCategory = (category: string): boolean => {
+            if (!category) return false;
+            return twoPerPageCategories.some(c => category.includes(c) || c.includes(category));
+          };
+          
+          // Collect images for layout (2-per-page for some categories, 1-per-page for others)
           const pendingImages: { doc: any; buffer: Buffer; headerText: string }[] = [];
+          
+          // Helper function to flush pending images with category-based layout
+          const flushPendingImages = async () => {
+            if (pendingImages.length === 0) return;
+            
+            const PAGE_HEADER_HEIGHT = 30;
+            const imgWidth = A4_WIDTH - MARGIN * 2;
+            
+            let i = 0;
+            while (i < pendingImages.length) {
+              const currentImg = pendingImages[i];
+              const category = currentImg.doc.category || '';
+              const isTwoPerPage = isTwoPerPageCategory(category);
+              
+              if (isTwoPerPage) {
+                // 2장/페이지 레이아웃
+                const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                
+                // 헤더 그리기
+                page.drawRectangle({
+                  x: MARGIN,
+                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
+                  width: imgWidth,
+                  height: PAGE_HEADER_HEIGHT,
+                  color: rgb(0.2, 0.2, 0.2),
+                });
+                page.drawText(currentImg.headerText, {
+                  x: MARGIN + 10,
+                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
+                  size: 9,
+                  font,
+                  color: rgb(1, 1, 1),
+                });
+                
+                // 이미지 영역 계산 (헤더 제외)
+                const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+                const imgHeight = (availableHeight - GAP) / 2;
+                
+                // 최대 2장까지 배치
+                for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
+                  const img = pendingImages[i + j];
+                  // 다음 이미지가 다른 카테고리면 건너뛰기
+                  if (j > 0 && !isTwoPerPageCategory(img.doc.category || '')) break;
+                  
+                  const yPos = j === 0 
+                    ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
+                    : MARGIN;
+                  
+                  try {
+                    const embeddedImage = await mergedPdf.embedJpg(img.buffer);
+                    const dims = embeddedImage.scale(1);
+                    let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
+                    const finalW = dims.width * scale;
+                    const finalH = dims.height * scale;
+                    const imgX = MARGIN + (imgWidth - finalW) / 2;
+                    const imgY = yPos + (imgHeight - finalH) / 2;
+                    
+                    page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
+                  } catch (e) {
+                    console.error(`[Invoice Email] Failed to embed image:`, e);
+                  }
+                }
+                
+                // 같은 카테고리 이미지 개수 확인하여 스킵
+                const nextIdx = i + 1 < pendingImages.length && isTwoPerPageCategory(pendingImages[i + 1]?.doc?.category || '') ? 2 : 1;
+                i += nextIdx;
+              } else {
+                // 1장/페이지 레이아웃
+                const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
+                
+                // 헤더 그리기
+                page.drawRectangle({
+                  x: MARGIN,
+                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
+                  width: imgWidth,
+                  height: PAGE_HEADER_HEIGHT,
+                  color: rgb(0.2, 0.2, 0.2),
+                });
+                page.drawText(currentImg.headerText, {
+                  x: MARGIN + 10,
+                  y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
+                  size: 9,
+                  font,
+                  color: rgb(1, 1, 1),
+                });
+                
+                // 전체 페이지 이미지 영역
+                const imgHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+                const yPos = MARGIN;
+                
+                try {
+                  const embeddedImage = await mergedPdf.embedJpg(currentImg.buffer);
+                  const dims = embeddedImage.scale(1);
+                  let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
+                  const finalW = dims.width * scale;
+                  const finalH = dims.height * scale;
+                  const imgX = MARGIN + (imgWidth - finalW) / 2;
+                  const imgY = yPos + (imgHeight - finalH) / 2;
+                  
+                  page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
+                } catch (e) {
+                  console.error(`[Invoice Email] Failed to embed image:`, e);
+                }
+                
+                i += 1;
+              }
+            }
+            
+            console.log(`[Invoice Email] Added ${pendingImages.length} images (category-based layout)`);
+            pendingImages.length = 0;
+          };
           
           // Process all documents in case suffix / category order
           for (const doc of sortedDocs) {
@@ -7474,55 +7614,7 @@ FLOXN`;
             
             if (isPdfFile(mimeType, fileName)) {
               // First, flush any pending images before adding PDF
-              if (pendingImages.length > 0) {
-                const PAGE_HEADER_HEIGHT = 30;
-                for (let i = 0; i < pendingImages.length; i += 2) {
-                  const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-                  const imgWidth = A4_WIDTH - MARGIN * 2;
-                  // 페이지 상단 헤더 1개 (첫 번째 이미지 기준)
-                  const firstImg = pendingImages[i];
-                  page.drawRectangle({
-                    x: MARGIN,
-                    y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
-                    width: imgWidth,
-                    height: PAGE_HEADER_HEIGHT,
-                    color: rgb(0.2, 0.2, 0.2),
-                  });
-                  page.drawText(firstImg.headerText, {
-                    x: MARGIN + 10,
-                    y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
-                    size: 9,
-                    font,
-                    color: rgb(1, 1, 1),
-                  });
-                  
-                  // 이미지 영역 계산 (헤더 제외)
-                  const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
-                  const imgHeight = (availableHeight - GAP) / 2;
-                  
-                  for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
-                    const img = pendingImages[i + j];
-                    const yPos = j === 0 
-                      ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
-                      : MARGIN;
-                    
-                    try {
-                      const embeddedImage = await mergedPdf.embedJpg(img.buffer);
-                      const dims = embeddedImage.scale(1);
-                      let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
-                      const finalW = dims.width * scale;
-                      const finalH = dims.height * scale;
-                      const imgX = MARGIN + (imgWidth - finalW) / 2;
-                      const imgY = yPos + (imgHeight - finalH) / 2;
-                      
-                      page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
-                    } catch (e) {
-                      console.error(`[Invoice Email] Failed to embed image:`, e);
-                    }
-                  }
-                }
-                pendingImages.length = 0;
-              }
+              await flushPendingImages();
               
               // PDF document
               try {
@@ -7591,55 +7683,7 @@ FLOXN`;
           }
           
           // Flush remaining pending images
-          if (pendingImages.length > 0) {
-            const PAGE_HEADER_HEIGHT = 30;
-            for (let i = 0; i < pendingImages.length; i += 2) {
-              const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-              const imgWidth = A4_WIDTH - MARGIN * 2;
-              // 페이지 상단 헤더 1개 (첫 번째 이미지 기준)
-              const firstImg = pendingImages[i];
-              page.drawRectangle({
-                x: MARGIN,
-                y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
-                width: imgWidth,
-                height: PAGE_HEADER_HEIGHT,
-                color: rgb(0.2, 0.2, 0.2),
-              });
-              page.drawText(firstImg.headerText, {
-                x: MARGIN + 10,
-                y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
-                size: 9,
-                font,
-                color: rgb(1, 1, 1),
-              });
-              
-              // 이미지 영역 계산 (헤더 제외)
-              const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
-              const imgHeight = (availableHeight - GAP) / 2;
-              
-              for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
-                const img = pendingImages[i + j];
-                const yPos = j === 0 
-                  ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
-                  : MARGIN;
-                
-                try {
-                  const embeddedImage = await mergedPdf.embedJpg(img.buffer);
-                  const dims = embeddedImage.scale(1);
-                  let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
-                  const finalW = dims.width * scale;
-                  const finalH = dims.height * scale;
-                  const imgX = MARGIN + (imgWidth - finalW) / 2;
-                  const imgY = yPos + (imgHeight - finalH) / 2;
-                  
-                  page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
-                } catch (e) {
-                  console.error(`[Invoice Email] Failed to embed image:`, e);
-                }
-              }
-            }
-            console.log(`[Invoice Email] Added ${pendingImages.length} images (2 per page)`);
-          }
+          await flushPendingImages();
           
           console.log(`[Invoice Email] Processed ${sortedDocs.length} documents in category order`);
           
