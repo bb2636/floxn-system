@@ -133,6 +133,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   verifyPassword(username: string, password: string): Promise<User | null>;
   updatePassword(username: string, newPassword: string): Promise<User | null>;
+  reactivateAccount(username: string): Promise<User | null>;
   updateUser(userId: string, userData: Partial<Omit<User, 'id' | 'username' | 'password' | 'company' | 'createdAt' | 'status'>>): Promise<User | null>;
   deleteAccount(username: string): Promise<User | null>;
   getNextCaseSequence(
@@ -1263,6 +1264,20 @@ export class MemStorage implements IStorage {
     };
     this.users.set(user.id, updatedUser);
     return updatedUser;
+  }
+
+  async reactivateAccount(username: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
+    if (!user) {
+      return null;
+    }
+
+    const reactivatedUser: User = {
+      ...user,
+      status: "active",
+    };
+    this.users.set(user.id, reactivatedUser);
+    return reactivatedUser;
   }
 
   async updateUser(userId: string, userData: Partial<Omit<User, 'id' | 'username' | 'password' | 'company' | 'createdAt' | 'status'>>): Promise<User | null> {
@@ -4109,6 +4124,18 @@ export class DbStorage implements IStorage {
       .where(eq(users.username, username))
       .returning();
 
+    return result[0] || null;
+  }
+
+  async reactivateAccount(username: string): Promise<User | null> {
+    // Reactivate a deleted account by setting status back to "active"
+    const result = await db
+      .update(users)
+      .set({ status: "active" })
+      .where(eq(users.username, username))
+      .returning();
+
+    console.log(`[REACTIVATE ACCOUNT] ${username}:`, result[0] ? 'SUCCESS' : 'NOT FOUND');
     return result[0] || null;
   }
 

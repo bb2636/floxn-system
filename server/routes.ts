@@ -203,31 +203,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ authenticated: false });
   });
 
-  // Force reset admin passwords endpoint (temporary fix for production)
+  // Force reset admin passwords and reactivate accounts endpoint (temporary fix for production)
   app.post("/api/reset-admin-passwords", async (req, res) => {
     try {
       const isProduction = process.env.REPLIT_DEPLOYMENT === '1';
       const dbUrl = isProduction ? process.env.PROD_DATABASE_URL : process.env.DEV_DATABASE_URL;
       const dbHost = dbUrl ? dbUrl.match(/@([^/]+)\//)?.[1] : 'unknown';
       
-      console.log("[RESET ADMIN] Starting password reset", { isProduction, dbHost });
+      console.log("[RESET ADMIN] Starting password reset and reactivation", { isProduction, dbHost });
       
       const adminUsernames = ["admin01", "admin02", "admin03", "admin04", "admin05"];
       const results = [];
       
       for (const username of adminUsernames) {
         try {
+          // First reactivate the account (set status to active)
+          const reactivated = await storage.reactivateAccount(username);
+          console.log(`[RESET ADMIN] ${username} reactivation: ${reactivated ? 'SUCCESS' : 'USER NOT FOUND'}`);
+          
+          // Then reset password
           const updated = await storage.updatePassword(username, "1234");
-          results.push({ username, success: !!updated, error: null });
-          console.log(`[RESET ADMIN] ${username}: ${updated ? 'SUCCESS' : 'USER NOT FOUND'}`);
+          results.push({ 
+            username, 
+            success: !!updated, 
+            reactivated: !!reactivated,
+            error: null 
+          });
+          console.log(`[RESET ADMIN] ${username} password: ${updated ? 'SUCCESS' : 'USER NOT FOUND'}`);
         } catch (err: any) {
-          results.push({ username, success: false, error: err.message });
+          results.push({ username, success: false, reactivated: false, error: err.message });
           console.error(`[RESET ADMIN] ${username} ERROR:`, err.message);
         }
       }
       
       res.json({ 
-        message: "Admin passwords reset complete",
+        message: "Admin passwords reset and accounts reactivated",
         isProduction,
         dbHost,
         results 
