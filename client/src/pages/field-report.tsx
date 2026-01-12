@@ -1006,14 +1006,14 @@ export default function FieldReport() {
                     const items = completionStatus.missingItems;
                     let message = "";
                     if (items.length === 1) {
-                      message = `'${items[0]}' 미입력(미등록) 되어있습니다.`;
+                      message = `${items[0]} 미입력 되어있습니다.`;
                     } else if (items.length === 2) {
-                      message = `'${items[0]}, ${items[1]}' 미입력(미등록) 되어있습니다.`;
+                      message = `${items[0]}, ${items[1]} 미입력 되어있습니다.`;
                     } else {
-                      message = `'${items[0]}, ${items[1]}' 등 미입력(미등록) 되어있습니다.`;
+                      message = `${items[0]}, ${items[1]} 등 미입력 되어있습니다.`;
                     }
                     toast({
-                      title: "제출 불가",
+                      title: "누락된 서류 안내",
                       description: message,
                       variant: "destructive",
                     });
@@ -1026,14 +1026,14 @@ export default function FieldReport() {
                     const docs = validation.missingDocs;
                     let message = "";
                     if (docs.length === 1) {
-                      message = `'${docs[0]}' 미등록 되어있습니다.`;
+                      message = `${docs[0]} 미입력 되어있습니다.`;
                     } else if (docs.length === 2) {
-                      message = `'${docs[0]}, ${docs[1]}' 미등록 되어있습니다.`;
+                      message = `${docs[0]}, ${docs[1]} 미입력 되어있습니다.`;
                     } else {
-                      message = `'${docs[0]}, ${docs[1]}' 등 미등록 되어있습니다.`;
+                      message = `${docs[0]}, ${docs[1]} 등 미입력 되어있습니다.`;
                     }
                     toast({
-                      title: "필수 서류 누락",
+                      title: "누락된 서류 안내",
                       description: message,
                       variant: "destructive",
                     });
@@ -1042,7 +1042,7 @@ export default function FieldReport() {
                   
                   setShowSubmitDialog(true);
                 }}
-                disabled={submitReportMutation.isPending || !completionStatus.isComplete || isPartnerReadOnly}
+                disabled={submitReportMutation.isPending || isPartnerReadOnly}
                 style={{
                   fontFamily: "Pretendard",
                   fontSize: "14px",
