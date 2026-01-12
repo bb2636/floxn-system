@@ -507,8 +507,17 @@ async function renderCoverPage(
   const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
     .filter(Boolean).join(' ');
   
-  const dispatchDateTime = [caseData.visitDate, caseData.visitTime]
-    .filter(Boolean).join(' ');
+  // 날짜/시간 형식에서 불필요한 공백 제거 (예: "2026- 01- 15 13: 07" -> "2026-01-15 13:07")
+  const formatDateTimeStr = (str: string): string => {
+    return str
+      .replace(/- /g, '-')
+      .replace(/: /g, ':')
+      .replace(/\s+/g, ' ')
+      .trim();
+  };
+  
+  const dispatchDateTime = formatDateTimeStr([caseData.visitDate, caseData.visitTime]
+    .filter(Boolean).join(' '));
   
   // Main info table
   const tableRows: TableCell[][] = [
@@ -703,11 +712,20 @@ async function renderFieldReportPage(
   const insuredFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
     .filter(Boolean).join(' ');
   
-  const visitDateTime = [caseData.visitDate, caseData.visitTime]
-    .filter(Boolean).join(' ');
+  // 날짜/시간 형식에서 불필요한 공백 제거 (예: "2026- 01- 15 13: 07" -> "2026-01-15 13:07")
+  const formatDateTime = (str: string): string => {
+    return str
+      .replace(/- /g, '-')  // "- " -> "-"
+      .replace(/: /g, ':')  // ": " -> ":"
+      .replace(/\s+/g, ' ') // 연속 공백 제거
+      .trim();
+  };
   
-  const accidentDateTime = [caseData.accidentDate, caseData.accidentTime]
-    .filter(Boolean).join(' ');
+  const visitDateTime = formatDateTime([caseData.visitDate, caseData.visitTime]
+    .filter(Boolean).join(' '));
+  
+  const accidentDateTime = formatDateTime([caseData.accidentDate, caseData.accidentTime]
+    .filter(Boolean).join(' '));
   
   // Helper function to draw section header with grey background
   const drawSectionHeader = (title: string, currentY: number): number => {
