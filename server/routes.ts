@@ -6862,7 +6862,7 @@ FLOXN`;
           const fontsDir = path.join(process.cwd(), 'server/fonts');
           const fontPath = path.join(fontsDir, 'NotoSansKR-Regular-static.ttf');
           const fontBytes = fs.readFileSync(fontPath);
-          const font = await mergedPdf.embedFont(fontBytes);
+          const font = await mergedPdf.embedFont(fontBytes, { subset: false });
           
           // Helper function to get file buffer from Object Storage or DB
           const getFileBuffer = async (doc: any): Promise<Buffer | null> => {
@@ -6960,44 +6960,45 @@ FLOXN`;
             if (isPdfFile(mimeType, fileName)) {
               // First, flush any pending images before adding PDF
               if (pendingImages.length > 0) {
+                const PAGE_HEADER_HEIGHT = 30;
                 for (let i = 0; i < pendingImages.length; i += 2) {
                   const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-                  const imgHeight = (A4_HEIGHT - MARGIN * 2 - GAP) / 2;
                   const imgWidth = A4_WIDTH - MARGIN * 2;
+                  // 페이지 상단 헤더 1개 (첫 번째 이미지 기준)
+                  const firstImg = pendingImages[i];
+                  page.drawRectangle({
+                    x: MARGIN,
+                    y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
+                    width: imgWidth,
+                    height: PAGE_HEADER_HEIGHT,
+                    color: rgb(0.2, 0.2, 0.2),
+                  });
+                  page.drawText(firstImg.headerText, {
+                    x: MARGIN + 10,
+                    y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
+                    size: 9,
+                    font,
+                    color: rgb(1, 1, 1),
+                  });
+                  
+                  // 이미지 영역 계산 (헤더 제외)
+                  const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+                  const imgHeight = (availableHeight - GAP) / 2;
                   
                   for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
                     const img = pendingImages[i + j];
                     const yPos = j === 0 
-                      ? A4_HEIGHT - MARGIN - imgHeight 
+                      ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
                       : MARGIN;
-                    
-                    // Draw header for this image
-                    page.drawRectangle({
-                      x: MARGIN,
-                      y: yPos + imgHeight - HEADER_HEIGHT,
-                      width: imgWidth,
-                      height: HEADER_HEIGHT,
-                      color: rgb(0.95, 0.95, 0.95),
-                      borderColor: rgb(0.8, 0.8, 0.8),
-                      borderWidth: 0.5,
-                    });
-                    page.drawText(img.headerText, {
-                      x: MARGIN + 8,
-                      y: yPos + imgHeight - HEADER_HEIGHT + 6,
-                      size: 9,
-                      font,
-                      color: rgb(0.2, 0.2, 0.2),
-                    });
                     
                     try {
                       const embeddedImage = await mergedPdf.embedJpg(img.buffer);
                       const dims = embeddedImage.scale(1);
-                      const availableHeight = imgHeight - HEADER_HEIGHT - GAP;
-                      let scale = Math.min(imgWidth / dims.width, availableHeight / dims.height, 1);
+                      let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
                       const finalW = dims.width * scale;
                       const finalH = dims.height * scale;
                       const imgX = MARGIN + (imgWidth - finalW) / 2;
-                      const imgY = yPos + (availableHeight - finalH) / 2;
+                      const imgY = yPos + (imgHeight - finalH) / 2;
                       
                       page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
                     } catch (e) {
@@ -7073,43 +7074,45 @@ FLOXN`;
           
           // Flush remaining pending images
           if (pendingImages.length > 0) {
+            const PAGE_HEADER_HEIGHT = 30;
             for (let i = 0; i < pendingImages.length; i += 2) {
               const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-              const imgHeight = (A4_HEIGHT - MARGIN * 2 - GAP) / 2;
               const imgWidth = A4_WIDTH - MARGIN * 2;
+              // 페이지 상단 헤더 1개 (첫 번째 이미지 기준)
+              const firstImg = pendingImages[i];
+              page.drawRectangle({
+                x: MARGIN,
+                y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
+                width: imgWidth,
+                height: PAGE_HEADER_HEIGHT,
+                color: rgb(0.2, 0.2, 0.2),
+              });
+              page.drawText(firstImg.headerText, {
+                x: MARGIN + 10,
+                y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
+                size: 9,
+                font,
+                color: rgb(1, 1, 1),
+              });
+              
+              // 이미지 영역 계산 (헤더 제외)
+              const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+              const imgHeight = (availableHeight - GAP) / 2;
               
               for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
                 const img = pendingImages[i + j];
                 const yPos = j === 0 
-                  ? A4_HEIGHT - MARGIN - imgHeight 
+                  ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
                   : MARGIN;
-                
-                page.drawRectangle({
-                  x: MARGIN,
-                  y: yPos + imgHeight - HEADER_HEIGHT,
-                  width: imgWidth,
-                  height: HEADER_HEIGHT,
-                  color: rgb(0.95, 0.95, 0.95),
-                  borderColor: rgb(0.8, 0.8, 0.8),
-                  borderWidth: 0.5,
-                });
-                page.drawText(img.headerText, {
-                  x: MARGIN + 8,
-                  y: yPos + imgHeight - HEADER_HEIGHT + 6,
-                  size: 9,
-                  font,
-                  color: rgb(0.2, 0.2, 0.2),
-                });
                 
                 try {
                   const embeddedImage = await mergedPdf.embedJpg(img.buffer);
                   const dims = embeddedImage.scale(1);
-                  const availableHeight = imgHeight - HEADER_HEIGHT - GAP;
-                  let scale = Math.min(imgWidth / dims.width, availableHeight / dims.height, 1);
+                  let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
                   const finalW = dims.width * scale;
                   const finalH = dims.height * scale;
                   const imgX = MARGIN + (imgWidth - finalW) / 2;
-                  const imgY = yPos + (availableHeight - finalH) / 2;
+                  const imgY = yPos + (imgHeight - finalH) / 2;
                   
                   page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
                 } catch (e) {
@@ -7386,7 +7389,7 @@ FLOXN`;
           const fontsDir = path.join(process.cwd(), 'server/fonts');
           const fontPath = path.join(fontsDir, 'NotoSansKR-Regular-static.ttf');
           const fontBytes = fs.readFileSync(fontPath);
-          const font = await mergedPdf.embedFont(fontBytes);
+          const font = await mergedPdf.embedFont(fontBytes, { subset: false });
           
           // Helper function to get file buffer from Object Storage or DB
           const getFileBuffer = async (doc: any): Promise<Buffer | null> => {
@@ -7472,43 +7475,45 @@ FLOXN`;
             if (isPdfFile(mimeType, fileName)) {
               // First, flush any pending images before adding PDF
               if (pendingImages.length > 0) {
+                const PAGE_HEADER_HEIGHT = 30;
                 for (let i = 0; i < pendingImages.length; i += 2) {
                   const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-                  const imgHeight = (A4_HEIGHT - MARGIN * 2 - GAP) / 2;
                   const imgWidth = A4_WIDTH - MARGIN * 2;
+                  // 페이지 상단 헤더 1개 (첫 번째 이미지 기준)
+                  const firstImg = pendingImages[i];
+                  page.drawRectangle({
+                    x: MARGIN,
+                    y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
+                    width: imgWidth,
+                    height: PAGE_HEADER_HEIGHT,
+                    color: rgb(0.2, 0.2, 0.2),
+                  });
+                  page.drawText(firstImg.headerText, {
+                    x: MARGIN + 10,
+                    y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
+                    size: 9,
+                    font,
+                    color: rgb(1, 1, 1),
+                  });
+                  
+                  // 이미지 영역 계산 (헤더 제외)
+                  const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+                  const imgHeight = (availableHeight - GAP) / 2;
                   
                   for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
                     const img = pendingImages[i + j];
                     const yPos = j === 0 
-                      ? A4_HEIGHT - MARGIN - imgHeight 
+                      ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
                       : MARGIN;
-                    
-                    page.drawRectangle({
-                      x: MARGIN,
-                      y: yPos + imgHeight - HEADER_HEIGHT,
-                      width: imgWidth,
-                      height: HEADER_HEIGHT,
-                      color: rgb(0.95, 0.95, 0.95),
-                      borderColor: rgb(0.8, 0.8, 0.8),
-                      borderWidth: 0.5,
-                    });
-                    page.drawText(img.headerText, {
-                      x: MARGIN + 8,
-                      y: yPos + imgHeight - HEADER_HEIGHT + 6,
-                      size: 9,
-                      font,
-                      color: rgb(0.2, 0.2, 0.2),
-                    });
                     
                     try {
                       const embeddedImage = await mergedPdf.embedJpg(img.buffer);
                       const dims = embeddedImage.scale(1);
-                      const availableHeight = imgHeight - HEADER_HEIGHT - GAP;
-                      let scale = Math.min(imgWidth / dims.width, availableHeight / dims.height, 1);
+                      let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
                       const finalW = dims.width * scale;
                       const finalH = dims.height * scale;
                       const imgX = MARGIN + (imgWidth - finalW) / 2;
-                      const imgY = yPos + (availableHeight - finalH) / 2;
+                      const imgY = yPos + (imgHeight - finalH) / 2;
                       
                       page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
                     } catch (e) {
@@ -7587,43 +7592,45 @@ FLOXN`;
           
           // Flush remaining pending images
           if (pendingImages.length > 0) {
+            const PAGE_HEADER_HEIGHT = 30;
             for (let i = 0; i < pendingImages.length; i += 2) {
               const page = mergedPdf.addPage([A4_WIDTH, A4_HEIGHT]);
-              const imgHeight = (A4_HEIGHT - MARGIN * 2 - GAP) / 2;
               const imgWidth = A4_WIDTH - MARGIN * 2;
+              // 페이지 상단 헤더 1개 (첫 번째 이미지 기준)
+              const firstImg = pendingImages[i];
+              page.drawRectangle({
+                x: MARGIN,
+                y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT,
+                width: imgWidth,
+                height: PAGE_HEADER_HEIGHT,
+                color: rgb(0.2, 0.2, 0.2),
+              });
+              page.drawText(firstImg.headerText, {
+                x: MARGIN + 10,
+                y: A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT + 10,
+                size: 9,
+                font,
+                color: rgb(1, 1, 1),
+              });
+              
+              // 이미지 영역 계산 (헤더 제외)
+              const availableHeight = A4_HEIGHT - MARGIN * 2 - PAGE_HEADER_HEIGHT - GAP;
+              const imgHeight = (availableHeight - GAP) / 2;
               
               for (let j = 0; j < 2 && i + j < pendingImages.length; j++) {
                 const img = pendingImages[i + j];
                 const yPos = j === 0 
-                  ? A4_HEIGHT - MARGIN - imgHeight 
+                  ? A4_HEIGHT - MARGIN - PAGE_HEADER_HEIGHT - GAP - imgHeight 
                   : MARGIN;
-                
-                page.drawRectangle({
-                  x: MARGIN,
-                  y: yPos + imgHeight - HEADER_HEIGHT,
-                  width: imgWidth,
-                  height: HEADER_HEIGHT,
-                  color: rgb(0.95, 0.95, 0.95),
-                  borderColor: rgb(0.8, 0.8, 0.8),
-                  borderWidth: 0.5,
-                });
-                page.drawText(img.headerText, {
-                  x: MARGIN + 8,
-                  y: yPos + imgHeight - HEADER_HEIGHT + 6,
-                  size: 9,
-                  font,
-                  color: rgb(0.2, 0.2, 0.2),
-                });
                 
                 try {
                   const embeddedImage = await mergedPdf.embedJpg(img.buffer);
                   const dims = embeddedImage.scale(1);
-                  const availableHeight = imgHeight - HEADER_HEIGHT - GAP;
-                  let scale = Math.min(imgWidth / dims.width, availableHeight / dims.height, 1);
+                  let scale = Math.min(imgWidth / dims.width, imgHeight / dims.height, 1);
                   const finalW = dims.width * scale;
                   const finalH = dims.height * scale;
                   const imgX = MARGIN + (imgWidth - finalW) / 2;
-                  const imgY = yPos + (availableHeight - finalH) / 2;
+                  const imgY = yPos + (imgHeight - finalH) / 2;
                   
                   page.drawImage(embeddedImage, { x: imgX, y: imgY, width: finalW, height: finalH });
                 } catch (e) {
