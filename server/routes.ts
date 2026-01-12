@@ -9306,6 +9306,9 @@ https://peulrogseun-aqaqaq4561.replit.app
           ? `${stage}` 
           : stage;
         subject = `${stageDisplayName} 알림`;
+        // 피해자 주소가 있으면 피해자 주소 사용, 없으면 피보험자 주소 사용
+        const addressMain = caseData.victimAddress || caseData.insuredAddress;
+        const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail;
         messageText = `<${stageDisplayName} 알림>
 
 접수번호 : ${caseData.caseNumber || "-"}
@@ -9313,7 +9316,7 @@ https://peulrogseun-aqaqaq4561.replit.app
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}
-사고장소 : ${[caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(" ") || "-"}
+사고장소 : ${[addressMain, addressDetail].filter(Boolean).join(" ") || "-"}
 진행사항 : ${stageDisplayName}`;
       }
 
