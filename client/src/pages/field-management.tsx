@@ -1577,8 +1577,8 @@ export default function FieldManagement() {
                         </span>
                       </div>
                       
-                      {/* 피해자 정보 수정 버튼 - 손해방지인건(-0)은 수정 불가, 협력사 및 관리자만 표시, 현장출동보고서 제출 전까지만 수정 가능 */}
-                      {!isReadOnly && !isLossPreventionCase && caseItem.fieldSurveyStatus !== "submitted" && (
+                      {/* 피해자 정보 수정 버튼 - 손해방지인건(-0)은 수정 불가, 협력사 및 관리자만 표시, 현장출동보고서 제출 전 또는 반려 시 수정 가능 */}
+                      {!isReadOnly && !isLossPreventionCase && (caseItem.fieldSurveyStatus !== "submitted" || caseItem.status === "반려") && (
                         <Button
                           variant="ghost"
                           size="icon"
