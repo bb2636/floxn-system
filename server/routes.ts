@@ -2598,6 +2598,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         victimName, 
         victimContact, 
         victimAddress, 
+        victimAddressDetail,
         additionalVictims,
         ...syncData 
       } = fieldData;
