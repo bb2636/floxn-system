@@ -429,6 +429,33 @@ export default function FieldDocuments() {
     },
   });
 
+  // 청구자료 제출 mutation
+  const claimSubmitMutation = useMutation({
+    mutationFn: async () => {
+      // 케이스 상태를 "청구자료제출"로 변경
+      await apiRequest("PATCH", `/api/cases/${selectedCaseId}`, {
+        status: "(직접복구인 경우) 청구자료제출"
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/cases/${selectedCaseId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
+      toast({
+        title: "청구자료가 제출되었습니다",
+        description: "제출이 완료되었습니다.",
+        className: "bg-[#008FED] text-white border-0",
+      });
+      setShowClaimSubmitDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "제출 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   if (!user) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#F5F7FA]">
@@ -956,33 +983,6 @@ export default function FieldDocuments() {
     // 누락 없으면 확인 다이얼로그 표시
     setShowClaimSubmitDialog(true);
   };
-
-  // 청구자료 제출 mutation
-  const claimSubmitMutation = useMutation({
-    mutationFn: async () => {
-      // 케이스 상태를 "청구자료제출"로 변경
-      await apiRequest("PATCH", `/api/cases/${selectedCaseId}`, {
-        status: "(직접복구인 경우) 청구자료제출"
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/cases/${selectedCaseId}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-      toast({
-        title: "청구자료가 제출되었습니다",
-        description: "제출이 완료되었습니다.",
-        className: "bg-[#008FED] text-white border-0",
-      });
-      setShowClaimSubmitDialog(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "제출 실패",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   return (
     <div className="flex-1 overflow-y-auto p-8">
