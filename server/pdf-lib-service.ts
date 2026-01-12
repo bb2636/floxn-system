@@ -742,8 +742,8 @@ async function renderFieldReportPage(
       { text: caseData.assignedPartnerManager || partnerData?.name || '-', width: 167, align: 'left' },
     ],
     [
-      { text: '출동 담당지', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.dispatchLocation || '-', width: 168, align: 'left' },
+      { text: '피보험자명', width: 90, isHeader: true, align: 'center' },
+      { text: caseData.insuredName || '-', width: 168, align: 'left' },
       { text: '협력업체', width: 90, isHeader: true, align: 'center' },
       { text: caseData.assignedPartner || '-', width: 167, align: 'left' },
     ],
