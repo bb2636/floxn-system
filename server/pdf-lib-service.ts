@@ -1018,63 +1018,43 @@ async function renderDrawingPage(
         imageData = Buffer.from(canvasImage, 'base64');
       }
       
-      // 1단계: 빈 공간(흰색) 제거 - 도면 내용만 추출
+      // 도면 이미지를 PDF 영역에 꽉 채우도록 강제 스케일업
       console.log(`[pdf-lib] 도면 이미지 처리 시작...`);
       
       const originalMeta = await sharp(imageData).metadata();
       console.log(`[pdf-lib] 원본 크기: ${originalMeta.width}x${originalMeta.height}`);
       
-      // trim으로 빈 공간 제거 (threshold: 흰색 유사 픽셀 허용 범위)
-      const trimmedImageData = await sharp(imageData)
-        .trim({ threshold: 10 })  // 흰색에 가까운 픽셀 제거
-        .png()
-        .toBuffer();
-      
-      const trimmedMeta = await sharp(trimmedImageData).metadata();
-      console.log(`[pdf-lib] trim 후 크기: ${trimmedMeta.width}x${trimmedMeta.height}`);
-      
-      // 2단계: trim된 이미지 확대 (도면 내용이 더 크게 보이도록)
-      const SCALE_FACTOR = 2;  // 2배 확대 (trim으로 내용이 커졌으므로)
-      const enlargedWidth = (trimmedMeta.width || 400) * SCALE_FACTOR;
-      const enlargedHeight = (trimmedMeta.height || 300) * SCALE_FACTOR;
-      
-      console.log(`[pdf-lib] 도면 이미지 확대: ${trimmedMeta.width}x${trimmedMeta.height} -> ${enlargedWidth}x${enlargedHeight}`);
-      
-      const enlargedImageData = await sharp(trimmedImageData)
-        .resize(enlargedWidth, enlargedHeight, { 
-          fit: 'fill',
-          kernel: 'lanczos3'  // 고품질 리사이즈
-        })
-        .png()
-        .toBuffer();
-      
       // PNG 이미지 (html2canvas는 PNG로 출력)
-      const embeddedImage = await pdfDoc.embedPng(enlargedImageData);
+      const embeddedImage = await pdfDoc.embedPng(imageData);
+      
+      // PDF 영역을 완전히 채우도록 강제 스케일 (사용자 요청: 3배 확대 효과)
+      // 세로 방향 기준으로 영역 전체를 채움 (가로로 넘쳐도 잘리게)
+      const maxWidth = drawingAreaWidth;
+      const maxHeight = drawingAreaHeight;
       
       const imgDims = embeddedImage.scale(1);
-      const maxWidth = drawingAreaWidth - 5;  // 패딩 더 축소
-      const maxHeight = drawingAreaHeight - 5;  // 패딩 더 축소
+      const imgAspect = imgDims.width / imgDims.height;
+      const areaAspect = maxWidth / maxHeight;
       
-      const scaleX = maxWidth / imgDims.width;
-      const scaleY = maxHeight / imgDims.height;
-      // 영역에 맞게 축소 (이미지가 3배 커졌으므로 영역에 맞춤)
-      const scale = Math.min(scaleX, scaleY);
+      let drawWidth: number;
+      let drawHeight: number;
       
-      let drawWidth = imgDims.width * scale;
-      let drawHeight = imgDims.height * scale;
-      
-      // PDF 영역을 최대한 채우도록 (95% 이상)
-      const minAreaRatio = 0.95;
-      const currentWidthRatio = drawWidth / maxWidth;
-      const currentHeightRatio = drawHeight / maxHeight;
-      const currentMaxRatio = Math.max(currentWidthRatio, currentHeightRatio);
-      
-      if (currentMaxRatio < minAreaRatio) {
-        const additionalScale = minAreaRatio / currentMaxRatio;
-        drawWidth *= additionalScale;
-        drawHeight *= additionalScale;
+      // 세로를 영역 전체에 맞추고 가로는 비율대로 (가로가 넘쳐도 됨)
+      // 또는 가로를 영역에 맞추되, 더 큰 스케일 적용
+      if (imgAspect > areaAspect) {
+        // 이미지가 더 넓음 - 세로를 영역에 맞추고 가로는 넘침
+        drawHeight = maxHeight;
+        drawWidth = drawHeight * imgAspect;
+      } else {
+        // 이미지가 더 높음 - 가로를 영역에 맞추고 세로는 넘침
+        drawWidth = maxWidth;
+        drawHeight = drawWidth / imgAspect;
       }
       
+      console.log(`[pdf-lib] PDF 영역: ${maxWidth}x${maxHeight}, 이미지 aspect: ${imgAspect.toFixed(2)}`);
+      console.log(`[pdf-lib] 도면 표시 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)}`);
+      
+      // 중앙 정렬 (넘치는 부분은 잘림)
       const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
       const drawY = (y - drawingAreaHeight) + (drawingAreaHeight - drawHeight) / 2;
       
@@ -1085,7 +1065,7 @@ async function renderDrawingPage(
         height: drawHeight,
       });
       
-      console.log(`[pdf-lib] 캔버스 도면 이미지 삽입 완료 (${SCALE_FACTOR}배 확대, 최종 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)})`);
+      console.log(`[pdf-lib] 캔버스 도면 이미지 삽입 완료 (영역 채움, 최종 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)})`);
     } catch (err) {
       console.error('[pdf-lib] 캔버스 도면 이미지 삽입 실패:', err);
       // 실패 시 placeholder 표시
