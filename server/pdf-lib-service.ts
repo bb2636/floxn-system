@@ -1019,21 +1019,21 @@ async function renderDrawingPage(
       const embeddedImage = await pdfDoc.embedPng(imageData);
       
       const imgDims = embeddedImage.scale(1);
-      const maxWidth = drawingAreaWidth - 10;  // 패딩 축소
-      const maxHeight = drawingAreaHeight - 10;  // 패딩 축소
+      const maxWidth = drawingAreaWidth - 5;  // 패딩 더 축소
+      const maxHeight = drawingAreaHeight - 5;  // 패딩 더 축소
       
       const scaleX = maxWidth / imgDims.width;
       const scaleY = maxHeight / imgDims.height;
-      // 영역에 맞게 최대한 확대하되, 2배까지만 확대 (원본이 너무 작을 경우 대비)
+      // 영역에 맞게 최대한 확대하되, 5배까지 확대 (원본이 너무 작을 경우 대비)
       const baseScale = Math.min(scaleX, scaleY);
-      const scale = Math.min(baseScale, 2.0);  // 최대 2배까지 확대
+      const scale = Math.min(baseScale, 5.0);  // 최대 5배까지 확대
       
-      // 도면 크기를 영역의 90% 이상 채우도록 보장
+      // 도면 크기를 영역의 95% 이상 채우도록 보장
       let drawWidth = imgDims.width * scale;
       let drawHeight = imgDims.height * scale;
       
-      // 영역 대비 너무 작으면 추가 확대 (영역의 80% 이상 채우도록)
-      const minAreaRatio = 0.8;
+      // 영역 대비 너무 작으면 추가 확대 (영역의 95% 이상 채우도록)
+      const minAreaRatio = 0.95;
       const currentWidthRatio = drawWidth / maxWidth;
       const currentHeightRatio = drawHeight / maxHeight;
       const currentMaxRatio = Math.max(currentWidthRatio, currentHeightRatio);
@@ -1096,21 +1096,21 @@ async function renderDrawingPage(
         }
         
         const imgDims = embeddedImage.scale(1);
-        const maxWidth = drawingAreaWidth - 10;  // 패딩 축소
-        const maxHeight = drawingAreaHeight - 10;  // 패딩 축소
+        const maxWidth = drawingAreaWidth - 5;  // 패딩 더 축소
+        const maxHeight = drawingAreaHeight - 5;  // 패딩 더 축소
         
         const scaleX = maxWidth / imgDims.width;
         const scaleY = maxHeight / imgDims.height;
-        // 영역에 맞게 최대한 확대하되, 2배까지만 확대 (원본이 너무 작을 경우 대비)
+        // 영역에 맞게 최대한 확대하되, 5배까지 확대 (원본이 너무 작을 경우 대비)
         const baseScale = Math.min(scaleX, scaleY);
-        const scale = Math.min(baseScale, 2.0);  // 최대 2배까지 확대
+        const scale = Math.min(baseScale, 5.0);  // 최대 5배까지 확대
         
-        // 도면 크기를 영역의 80% 이상 채우도록 보장
+        // 도면 크기를 영역의 95% 이상 채우도록 보장
         let drawWidth = imgDims.width * scale;
         let drawHeight = imgDims.height * scale;
         
-        // 영역 대비 너무 작으면 추가 확대 (영역의 80% 이상 채우도록)
-        const minAreaRatio = 0.8;
+        // 영역 대비 너무 작으면 추가 확대 (영역의 95% 이상 채우도록)
+        const minAreaRatio = 0.95;
         const currentWidthRatio = drawWidth / maxWidth;
         const currentHeightRatio = drawHeight / maxHeight;
         const currentMaxRatio = Math.max(currentWidthRatio, currentHeightRatio);
