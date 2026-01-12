@@ -24,9 +24,20 @@ declare module 'express-session' {
 
 const MemoryStore = createMemoryStore(session);
 
+// Determine production mode - check both NODE_ENV and REPLIT_DEPLOYMENT
+const isProduction = process.env.NODE_ENV === 'production' || process.env.REPLIT_DEPLOYMENT === '1';
+
+console.log("[SESSION CONFIG]", {
+  nodeEnv: process.env.NODE_ENV,
+  replitDeployment: process.env.REPLIT_DEPLOYMENT,
+  isProduction,
+  cookieSecure: isProduction,
+});
+
 // Trust proxy for production (Replit uses reverse proxy)
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
   app.set('trust proxy', 1);
+  console.log("[SESSION] Trust proxy enabled for production");
 }
 
 app.use(session({
@@ -37,7 +48,7 @@ app.use(session({
     checkPeriod: 86400000,
   }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction,
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
     sameSite: 'lax',

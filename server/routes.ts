@@ -78,6 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("[LOGIN ATTEMPT]", {
         username: validatedData.username,
         isProduction: process.env.REPLIT_DEPLOYMENT === '1',
+        nodeEnv: process.env.NODE_ENV,
         dbUrl: process.env.REPLIT_DEPLOYMENT === '1' ? 'PROD_DATABASE' : 'DEV_DATABASE'
       });
       
@@ -98,10 +99,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.userRole = user.role;
         req.session.rememberMe = validatedData.rememberMe;
         
-        console.log("[LOGIN] Setting session:", {
+        console.log("[LOGIN SUCCESS]", {
           userId: user.id,
           userRole: user.role,
           username: user.username,
+          sessionId: req.sessionID,
+          cookieSecure: req.session.cookie.secure,
+          cookieSameSite: req.session.cookie.sameSite,
         });
         
         if (validatedData.rememberMe) {
@@ -109,6 +113,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } else {
           req.session.cookie.maxAge = 24 * 60 * 60 * 1000;
         }
+        
+        // Force session save and then respond
+        req.session.save((err) => {
+          if (err) {
+            console.error("[LOGIN] Session save error:", err);
+            return res.status(500).json({ error: "세션 저장 중 오류가 발생했습니다" });
+          }
+          console.log("[LOGIN] Session saved successfully, sessionId:", req.sessionID);
+          const { password, ...userWithoutPassword } = user;
+          res.json(userWithoutPassword);
+        });
+        return;
       }
 
       const { password, ...userWithoutPassword } = user;
@@ -140,15 +156,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get current user endpoint
   app.get("/api/user", async (req, res) => {
+    console.log("[API/USER] Request received", {
+      sessionId: req.sessionID,
+      hasSession: !!req.session,
+      userId: req.session?.userId,
+      userRole: req.session?.userRole,
+      cookieHeader: req.headers.cookie ? 'present' : 'missing',
+      nodeEnv: process.env.NODE_ENV,
+      isProduction: process.env.REPLIT_DEPLOYMENT === '1',
+    });
+    
     if (!req.session?.userId) {
+      console.log("[API/USER] Auth failed - no userId in session", {
+        sessionExists: !!req.session,
+        sessionKeys: req.session ? Object.keys(req.session) : [],
+      });
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
     }
 
     const user = await storage.getUser(req.session.userId);
     if (!user) {
+      console.log("[API/USER] User not found in DB", { userId: req.session.userId });
       return res.status(404).json({ error: "사용자를 찾을 수 없습니다" });
     }
 
+    console.log("[API/USER] Success", { 
+      username: user.username, 
+      role: user.role,
+      isActive: user.isActive,
+      deletedAt: user.deletedAt,
+    });
+    
     const { password, ...userWithoutPassword } = user;
     res.json(userWithoutPassword);
   });
