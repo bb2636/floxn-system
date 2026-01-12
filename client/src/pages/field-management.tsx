@@ -887,6 +887,39 @@ export default function FieldManagement() {
                 </div>
               </div>
 
+              {/* 특이사항 및 요청사항 */}
+              {selectedCaseData?.specialRequests && (
+                <div style={{ marginTop: "16px" }}>
+                  <Label 
+                    className="mb-2"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: 500,
+                      color: "#686A6E",
+                    }}
+                  >
+                    특이사항 및 요청사항
+                  </Label>
+                  <div
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      color: "rgba(12, 12, 12, 0.6)",
+                      background: "rgba(12, 12, 12, 0.04)",
+                      borderRadius: "8px",
+                      padding: "12px 16px",
+                      minHeight: "60px",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                    data-testid="text-special-requests"
+                  >
+                    {selectedCaseData.specialRequests}
+                  </div>
+                </div>
+              )}
+
               {/* 접수정보 소제목 */}
               <div
                 style={{
