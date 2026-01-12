@@ -1018,15 +1018,29 @@ async function renderDrawingPage(
         imageData = Buffer.from(canvasImage, 'base64');
       }
       
-      // 이미지를 3배 확대 (사용자 요청)
-      const SCALE_FACTOR = 3;
+      // 1단계: 빈 공간(흰색) 제거 - 도면 내용만 추출
+      console.log(`[pdf-lib] 도면 이미지 처리 시작...`);
+      
       const originalMeta = await sharp(imageData).metadata();
-      const enlargedWidth = (originalMeta.width || 800) * SCALE_FACTOR;
-      const enlargedHeight = (originalMeta.height || 600) * SCALE_FACTOR;
+      console.log(`[pdf-lib] 원본 크기: ${originalMeta.width}x${originalMeta.height}`);
       
-      console.log(`[pdf-lib] 도면 이미지 확대: ${originalMeta.width}x${originalMeta.height} -> ${enlargedWidth}x${enlargedHeight}`);
+      // trim으로 빈 공간 제거 (threshold: 흰색 유사 픽셀 허용 범위)
+      const trimmedImageData = await sharp(imageData)
+        .trim({ threshold: 10 })  // 흰색에 가까운 픽셀 제거
+        .png()
+        .toBuffer();
       
-      const enlargedImageData = await sharp(imageData)
+      const trimmedMeta = await sharp(trimmedImageData).metadata();
+      console.log(`[pdf-lib] trim 후 크기: ${trimmedMeta.width}x${trimmedMeta.height}`);
+      
+      // 2단계: trim된 이미지 확대 (도면 내용이 더 크게 보이도록)
+      const SCALE_FACTOR = 2;  // 2배 확대 (trim으로 내용이 커졌으므로)
+      const enlargedWidth = (trimmedMeta.width || 400) * SCALE_FACTOR;
+      const enlargedHeight = (trimmedMeta.height || 300) * SCALE_FACTOR;
+      
+      console.log(`[pdf-lib] 도면 이미지 확대: ${trimmedMeta.width}x${trimmedMeta.height} -> ${enlargedWidth}x${enlargedHeight}`);
+      
+      const enlargedImageData = await sharp(trimmedImageData)
         .resize(enlargedWidth, enlargedHeight, { 
           fit: 'fill',
           kernel: 'lanczos3'  // 고품질 리사이즈
