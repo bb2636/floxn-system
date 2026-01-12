@@ -168,20 +168,20 @@ export default function Dashboard() {
 
     const userCaseCounts = new Map<string, { name: string; position: string; count: number; userId: string }>();
 
-    // 협력사인 경우: 담당 협력사(assignedPartner)로 그룹화
+    // 협력사인 경우: 협력사 담당자(assignedPartnerManager)로 그룹화
     if (user.role === '협력사') {
       filteredCasesByTab.forEach(c => {
-        const partnerName = c.assignedPartner || '미배정';
+        const managerName = c.assignedPartnerManager || '미배정';
         
-        const existing = userCaseCounts.get(partnerName);
+        const existing = userCaseCounts.get(managerName);
         if (existing) {
           existing.count++;
         } else {
-          userCaseCounts.set(partnerName, {
-            name: partnerName,
+          userCaseCounts.set(managerName, {
+            name: managerName,
             position: '협력사',
             count: 1,
-            userId: partnerName,
+            userId: managerName,
           });
         }
       });
