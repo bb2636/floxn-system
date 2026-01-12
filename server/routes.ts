@@ -6732,41 +6732,35 @@ FLOXN`;
         const addressLabel = relatedCase.victimAddressDetail || relatedCase.victimAddress || 
                             relatedCase.insuredAddressDetail || relatedCase.insuredAddress || '-';
         
-        // 해당 케이스에 저장된 인보이스 금액 가져오기
+        // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 견적금액 순서로 확인)
         let caseDamagePreventionAmt = parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
         let casePropertyRepairAmt = parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
+        const caseEstimateAmt = parseInt(relatedCase.estimateAmount || "0") || 0;
         
-        // 메인 케이스(-0)인 경우: 클라이언트에서 전달한 금액 사용 (저장된 금액보다 우선)
-        if (caseSuffix === 0 || isMainCase) {
-          // 클라이언트에서 전달한 금액이 있으면 사용
-          if (damagePreventionAmount && damagePreventionAmount > 0) {
-            caseDamagePreventionAmt = damagePreventionAmount;
+        console.log(`[Invoice PDF] Case ${relatedCase.caseNumber}: suffix=${caseSuffix}, damageAmt=${caseDamagePreventionAmt}, propertyAmt=${casePropertyRepairAmt}, estimateAmt=${caseEstimateAmt}, address=${addressLabel}`);
+        
+        // 손방건(-0)인 경우: 손해방지비용
+        if (caseSuffix === 0) {
+          // 인보이스 금액 > 견적금액 순서로 확인
+          if (caseDamagePreventionAmt === 0 && caseEstimateAmt > 0) {
+            caseDamagePreventionAmt = caseEstimateAmt;
           }
-          // 손방건(-0)에서는 손해방지비용만 표시
           if (caseDamagePreventionAmt > 0) {
             particulars.push({
               title: `[${addressLabel}] - 손해방지비용`,
               amount: caseDamagePreventionAmt,
             });
             calculatedTotal += caseDamagePreventionAmt;
-            console.log(`[Invoice PDF] Added 손해방지비용 (main): ${addressLabel} = ${caseDamagePreventionAmt}`);
+            console.log(`[Invoice PDF] Added 손해방지비용: ${addressLabel} = ${caseDamagePreventionAmt}`);
           }
         }
         
-        // 대물건(-1, -2, ...)의 경우: 저장된 금액 또는 클라이언트 전달 금액 사용
-        if (caseSuffix > 0 || (!isMainCase && allRelatedCases.length > 1)) {
-          // 저장된 금액이 없고 클라이언트에서 전달한 금액이 있으면 분배
-          if (casePropertyRepairAmt === 0 && propertyRepairAmount && propertyRepairAmount > 0) {
-            // 대물건이 여러 개면 첫 번째 대물건에만 전체 금액 할당 (또는 저장된 값 사용)
-            const otherCasesWithAmount = allRelatedCases.filter((c: any) => {
-              const suffix = getCaseSuffix(c.caseNumber || '');
-              return suffix > 0 && parseInt(c.invoicePropertyRepairAmount || "0") > 0;
-            });
-            if (otherCasesWithAmount.length === 0 && i === allRelatedCases.findIndex((c: any) => getCaseSuffix(c.caseNumber || '') > 0)) {
-              casePropertyRepairAmt = propertyRepairAmount;
-            }
+        // 대물건(-1, -2, ...)인 경우: 대물복구비용
+        if (caseSuffix > 0) {
+          // 인보이스 금액 > 견적금액 순서로 확인
+          if (casePropertyRepairAmt === 0 && caseEstimateAmt > 0) {
+            casePropertyRepairAmt = caseEstimateAmt;
           }
-          
           if (casePropertyRepairAmt > 0) {
             particulars.push({
               title: `[${addressLabel}] - 대물복구비용`,
@@ -6778,13 +6772,12 @@ FLOXN`;
         }
       }
       
-      // 단일 케이스인 경우 (관련 케이스가 없는 경우) - 기존 로직 유지
-      if (allRelatedCases.length === 1) {
+      // 아무 금액도 추가되지 않은 경우 - 클라이언트에서 전달한 금액 사용
+      if (particulars.length === 0) {
         const mainAddressLabel = caseData.victimAddressDetail || caseData.victimAddress || 
                                 caseData.insuredAddressDetail || caseData.insuredAddress || '-';
         
-        // 손해방지비용이 아직 추가되지 않았고 금액이 있으면 추가
-        if (damagePreventionAmount && damagePreventionAmount > 0 && !particulars.some(p => p.title.includes('손해방지비용'))) {
+        if (damagePreventionAmount && damagePreventionAmount > 0) {
           particulars.push({
             title: `[${mainAddressLabel}] - 손해방지비용`,
             amount: damagePreventionAmount,
@@ -6792,8 +6785,7 @@ FLOXN`;
           calculatedTotal += damagePreventionAmount;
         }
         
-        // 대물복구비용 추가
-        if (propertyRepairAmount && propertyRepairAmount > 0 && !particulars.some(p => p.title.includes('대물복구비용'))) {
+        if (propertyRepairAmount && propertyRepairAmount > 0) {
           particulars.push({
             title: `[${mainAddressLabel}] - 대물복구비용`,
             amount: propertyRepairAmount,
