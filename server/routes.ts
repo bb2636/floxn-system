@@ -6718,37 +6718,87 @@ FLOXN`;
       allRelatedCases.sort((a, b) => getCaseSuffix(a.caseNumber || '') - getCaseSuffix(b.caseNumber || ''));
       
       console.log(`[Invoice PDF] Building particulars for ${allRelatedCases.length} related cases`);
+      console.log(`[Invoice PDF] Client amounts - damagePreventionAmount: ${damagePreventionAmount}, propertyRepairAmount: ${propertyRepairAmount}`);
       
       // 각 케이스별로 개별 항목 생성
       let calculatedTotal = 0;
       
-      for (const relatedCase of allRelatedCases) {
+      for (let i = 0; i < allRelatedCases.length; i++) {
+        const relatedCase = allRelatedCases[i];
+        const isMainCase = relatedCase.id === caseId;
+        const caseSuffix = getCaseSuffix(relatedCase.caseNumber || '');
+        
         // 상세주소 가져오기 (상세주소 우선, 없으면 기본주소)
         const addressLabel = relatedCase.victimAddressDetail || relatedCase.victimAddress || 
                             relatedCase.insuredAddressDetail || relatedCase.insuredAddress || '-';
         
-        // 해당 케이스에 저장된 인보이스 금액 사용
-        const caseDamagePreventionAmt = parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
-        const casePropertyRepairAmt = parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
+        // 해당 케이스에 저장된 인보이스 금액 가져오기
+        let caseDamagePreventionAmt = parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
+        let casePropertyRepairAmt = parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
         
-        // 손해방지비용 (손방건 -0)
-        if (caseDamagePreventionAmt > 0) {
-          particulars.push({
-            title: `[${addressLabel}] - 손해방지비용`,
-            amount: caseDamagePreventionAmt,
-          });
-          calculatedTotal += caseDamagePreventionAmt;
-          console.log(`[Invoice PDF] Added 손해방지비용: ${addressLabel} = ${caseDamagePreventionAmt}`);
+        // 메인 케이스(-0)인 경우: 클라이언트에서 전달한 금액 사용 (저장된 금액보다 우선)
+        if (caseSuffix === 0 || isMainCase) {
+          // 클라이언트에서 전달한 금액이 있으면 사용
+          if (damagePreventionAmount && damagePreventionAmount > 0) {
+            caseDamagePreventionAmt = damagePreventionAmount;
+          }
+          // 손방건(-0)에서는 손해방지비용만 표시
+          if (caseDamagePreventionAmt > 0) {
+            particulars.push({
+              title: `[${addressLabel}] - 손해방지비용`,
+              amount: caseDamagePreventionAmt,
+            });
+            calculatedTotal += caseDamagePreventionAmt;
+            console.log(`[Invoice PDF] Added 손해방지비용 (main): ${addressLabel} = ${caseDamagePreventionAmt}`);
+          }
         }
         
-        // 대물복구비용 (대물건 -1, -2, ...)
-        if (casePropertyRepairAmt > 0) {
+        // 대물건(-1, -2, ...)의 경우: 저장된 금액 또는 클라이언트 전달 금액 사용
+        if (caseSuffix > 0 || (!isMainCase && allRelatedCases.length > 1)) {
+          // 저장된 금액이 없고 클라이언트에서 전달한 금액이 있으면 분배
+          if (casePropertyRepairAmt === 0 && propertyRepairAmount && propertyRepairAmount > 0) {
+            // 대물건이 여러 개면 첫 번째 대물건에만 전체 금액 할당 (또는 저장된 값 사용)
+            const otherCasesWithAmount = allRelatedCases.filter((c: any) => {
+              const suffix = getCaseSuffix(c.caseNumber || '');
+              return suffix > 0 && parseInt(c.invoicePropertyRepairAmount || "0") > 0;
+            });
+            if (otherCasesWithAmount.length === 0 && i === allRelatedCases.findIndex((c: any) => getCaseSuffix(c.caseNumber || '') > 0)) {
+              casePropertyRepairAmt = propertyRepairAmount;
+            }
+          }
+          
+          if (casePropertyRepairAmt > 0) {
+            particulars.push({
+              title: `[${addressLabel}] - 대물복구비용`,
+              amount: casePropertyRepairAmt,
+            });
+            calculatedTotal += casePropertyRepairAmt;
+            console.log(`[Invoice PDF] Added 대물복구비용: ${addressLabel} = ${casePropertyRepairAmt}`);
+          }
+        }
+      }
+      
+      // 단일 케이스인 경우 (관련 케이스가 없는 경우) - 기존 로직 유지
+      if (allRelatedCases.length === 1) {
+        const mainAddressLabel = caseData.victimAddressDetail || caseData.victimAddress || 
+                                caseData.insuredAddressDetail || caseData.insuredAddress || '-';
+        
+        // 손해방지비용이 아직 추가되지 않았고 금액이 있으면 추가
+        if (damagePreventionAmount && damagePreventionAmount > 0 && !particulars.some(p => p.title.includes('손해방지비용'))) {
           particulars.push({
-            title: `[${addressLabel}] - 대물복구비용`,
-            amount: casePropertyRepairAmt,
+            title: `[${mainAddressLabel}] - 손해방지비용`,
+            amount: damagePreventionAmount,
           });
-          calculatedTotal += casePropertyRepairAmt;
-          console.log(`[Invoice PDF] Added 대물복구비용: ${addressLabel} = ${casePropertyRepairAmt}`);
+          calculatedTotal += damagePreventionAmount;
+        }
+        
+        // 대물복구비용 추가
+        if (propertyRepairAmount && propertyRepairAmount > 0 && !particulars.some(p => p.title.includes('대물복구비용'))) {
+          particulars.push({
+            title: `[${mainAddressLabel}] - 대물복구비용`,
+            amount: propertyRepairAmount,
+          });
+          calculatedTotal += propertyRepairAmount;
         }
       }
       
