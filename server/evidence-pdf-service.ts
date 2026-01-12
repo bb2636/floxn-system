@@ -480,6 +480,100 @@ function isPdfDocument(doc: DocumentData): boolean {
   return false;
 }
 
+// Add header to each page of a PDF document
+async function addHeaderToPdf(
+  pdfBuffer: Buffer,
+  insuranceAccidentNo: string,
+  fullAddress: string,
+  fileName: string
+): Promise<Buffer> {
+  try {
+    const fontBytes = loadFontBytes();
+    const srcDoc = await PDFDocument.load(pdfBuffer);
+    const newDoc = await PDFDocument.create();
+    newDoc.registerFontkit(fontkit);
+    const font = await newDoc.embedFont(fontBytes, { subset: false });
+    
+    const pages = srcDoc.getPages();
+    console.log(`[Evidence PDF] Adding headers to PDF: ${fileName} (${pages.length} pages)`);
+    
+    for (let i = 0; i < pages.length; i++) {
+      const srcPage = pages[i];
+      const { width, height } = srcPage.getSize();
+      
+      // Create new page with extra height for header
+      const newPage = newDoc.addPage([width, height + HEADER_HEIGHT]);
+      
+      // Embed the source page
+      const embeddedPage = await newDoc.embedPage(srcPage);
+      
+      // Draw the original page content below the header
+      newPage.drawPage(embeddedPage, {
+        x: 0,
+        y: 0,
+        width: width,
+        height: height,
+      });
+      
+      // Draw white background for header area
+      newPage.drawRectangle({
+        x: 0,
+        y: height,
+        width: width,
+        height: HEADER_HEIGHT,
+        color: rgb(1, 1, 1),
+      });
+      
+      // Draw header line
+      newPage.drawLine({
+        start: { x: 0, y: height },
+        end: { x: width, y: height },
+        thickness: 0.5,
+        color: rgb(0.8, 0.8, 0.8),
+      });
+      
+      // Build header text
+      const headerParts: string[] = [];
+      if (insuranceAccidentNo) headerParts.push(`사고번호: ${insuranceAccidentNo}`);
+      if (fullAddress) headerParts.push(`주소: ${fullAddress}`);
+      const headerText = headerParts.join('  |  ') || fileName;
+      
+      // Draw header text
+      try {
+        const fontSize = 9;
+        const textWidth = font.widthOfTextAtSize(headerText, fontSize);
+        const maxTextWidth = width - 20;
+        
+        // Truncate if too long
+        let displayText = headerText;
+        if (textWidth > maxTextWidth) {
+          const ratio = maxTextWidth / textWidth;
+          const charCount = Math.floor(headerText.length * ratio) - 3;
+          displayText = headerText.substring(0, charCount) + '...';
+        }
+        
+        newPage.drawText(displayText, {
+          x: 10,
+          y: height + (HEADER_HEIGHT - fontSize) / 2,
+          size: fontSize,
+          font: font,
+          color: rgb(0.2, 0.2, 0.2),
+        });
+      } catch (textErr) {
+        console.warn(`[Evidence PDF] Failed to draw header text on page ${i + 1}`);
+      }
+    }
+    
+    const pdfBytes = await newDoc.save();
+    console.log(`[Evidence PDF] Headers added to PDF: ${fileName}`);
+    return Buffer.from(pdfBytes);
+  } catch (err) {
+    console.error(`[Evidence PDF] Failed to add headers to PDF ${fileName}:`, err);
+    // Return original buffer if header addition fails
+    return pdfBuffer;
+  }
+}
+
 // Check if document is an image file
 function isImageDocument(doc: DocumentData): boolean {
   const mimeType = doc.fileType || '';
@@ -520,16 +614,19 @@ export async function generateEvidencePdfs(
   
   const allResults: EvidencePdfResult[] = [];
   
-  // 1. Add PDF documents as separate attachments
+  // 1. Add PDF documents as separate attachments with headers
   for (const doc of pdfDocs) {
     try {
       const buffer = await getDocumentBuffer(doc);
       if (buffer && buffer.length > 0) {
+        // Add header to each page of the PDF
+        let processedBuffer = await addHeaderToPdf(buffer, insuranceAccidentNo, fullAddress, doc.fileName);
+        
         // Compress if needed
-        let finalBuffer = buffer;
-        if (buffer.length > 7 * 1024 * 1024) {
-          console.log(`[Evidence PDF] Compressing PDF: ${doc.fileName} (${Math.round(buffer.length / 1024 / 1024 * 100) / 100}MB)`);
-          finalBuffer = await compressPdfForEmail(buffer);
+        let finalBuffer = processedBuffer;
+        if (processedBuffer.length > 7 * 1024 * 1024) {
+          console.log(`[Evidence PDF] Compressing PDF: ${doc.fileName} (${Math.round(processedBuffer.length / 1024 / 1024 * 100) / 100}MB)`);
+          finalBuffer = await compressPdfForEmail(processedBuffer);
         }
         
         allResults.push({
@@ -538,7 +635,7 @@ export async function generateEvidencePdfs(
           tabName: getCategoryToTab(doc.category || ''),
           imageCount: 0,
         });
-        console.log(`[Evidence PDF] Added PDF document: ${doc.fileName} (${Math.round(finalBuffer.length / 1024)}KB)`);
+        console.log(`[Evidence PDF] Added PDF document with header: ${doc.fileName} (${Math.round(finalBuffer.length / 1024)}KB)`);
       }
     } catch (err) {
       console.error(`[Evidence PDF] Failed to process PDF ${doc.fileName}:`, err);
