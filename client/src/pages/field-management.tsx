@@ -1658,7 +1658,6 @@ export default function FieldManagement() {
                               ...intakeFieldStyle,
                               flex: 1,
                             }}
-                            disabled={sameAsInsured}
                             data-testid="input-new-victim-address-detail"
                           />
                           <div className="flex items-center gap-2">
@@ -1668,8 +1667,9 @@ export default function FieldManagement() {
                               onCheckedChange={(checked) => {
                                 setSameAsInsured(checked === true);
                                 if (checked === true) {
+                                  // 기본 주소만 연동, 상세주소는 연동하지 않음
                                   setNewVictimAddress(selectedCaseData?.insuredAddress || "");
-                                  setNewVictimAddressDetail(selectedCaseData?.insuredAddressDetail || "");
+                                  // 상세주소는 빈 값 유지 (사용자가 직접 입력)
                                 } else {
                                   setNewVictimAddress("");
                                   setNewVictimAddressDetail("");
