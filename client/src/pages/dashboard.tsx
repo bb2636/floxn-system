@@ -242,8 +242,7 @@ export default function Dashboard() {
         const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
         const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
         return dateB - dateA; // Most recent first
-      })
-      .slice(0, 4); // Show only 4 most recent tasks
+      }); // Show all tasks (no limit)
   }, [allCases, user]);
 
   // Get status color based on case status
