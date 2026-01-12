@@ -6699,57 +6699,93 @@ FLOXN`;
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
-      // Build particulars based on amounts
+      // Build particulars - 관련 케이스들을 조회해서 각각의 금액과 상세주소를 개별 항목으로 표시
       const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
-      // 상세주소 우선, 없으면 전체주소, 그것도 없으면 '-'
-      const addressLabel = caseData.victimAddressDetail || caseData.victimAddress || caseData.insuredAddressDetail || caseData.insuredAddress || '-';
-
-      if (damagePreventionAmount && damagePreventionAmount > 0) {
-        particulars.push({
-          title: `[${addressLabel}] - 손해방지비용`,
-          amount: damagePreventionAmount,
-        });
+      
+      // 관련 케이스들 조회 (동일한 insuranceAccidentNo)
+      let allRelatedCases: any[] = [caseData];
+      if (caseData.insuranceAccidentNo) {
+        const relatedCases = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
+        allRelatedCases = [caseData, ...relatedCases];
       }
-
-      if (propertyRepairAmount && propertyRepairAmount > 0) {
-        particulars.push({
-          title: `[${addressLabel}] - 대물복구비용`,
-          amount: propertyRepairAmount,
-        });
+      
+      // 케이스 번호 suffix로 정렬 (-0, -1, -2, ...)
+      const getCaseSuffix = (caseNumber: string): number => {
+        const match = caseNumber?.match(/-(\d+)$/);
+        return match ? parseInt(match[1], 10) : 999;
+      };
+      allRelatedCases.sort((a, b) => getCaseSuffix(a.caseNumber || '') - getCaseSuffix(b.caseNumber || ''));
+      
+      console.log(`[Invoice PDF] Building particulars for ${allRelatedCases.length} related cases`);
+      
+      // 각 케이스별로 개별 항목 생성
+      let calculatedTotal = 0;
+      
+      for (const relatedCase of allRelatedCases) {
+        // 상세주소 가져오기 (상세주소 우선, 없으면 기본주소)
+        const addressLabel = relatedCase.victimAddressDetail || relatedCase.victimAddress || 
+                            relatedCase.insuredAddressDetail || relatedCase.insuredAddress || '-';
+        
+        // 해당 케이스에 저장된 인보이스 금액 사용
+        const caseDamagePreventionAmt = parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
+        const casePropertyRepairAmt = parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
+        
+        // 손해방지비용 (손방건 -0)
+        if (caseDamagePreventionAmt > 0) {
+          particulars.push({
+            title: `[${addressLabel}] - 손해방지비용`,
+            amount: caseDamagePreventionAmt,
+          });
+          calculatedTotal += caseDamagePreventionAmt;
+          console.log(`[Invoice PDF] Added 손해방지비용: ${addressLabel} = ${caseDamagePreventionAmt}`);
+        }
+        
+        // 대물복구비용 (대물건 -1, -2, ...)
+        if (casePropertyRepairAmt > 0) {
+          particulars.push({
+            title: `[${addressLabel}] - 대물복구비용`,
+            amount: casePropertyRepairAmt,
+          });
+          calculatedTotal += casePropertyRepairAmt;
+          console.log(`[Invoice PDF] Added 대물복구비용: ${addressLabel} = ${casePropertyRepairAmt}`);
+        }
       }
-
+      
+      // 현장출동비용은 메인 케이스에서만 가져옴 (클라이언트에서 전달된 값 사용)
+      const mainAddressLabel = caseData.victimAddressDetail || caseData.victimAddress || 
+                              caseData.insuredAddressDetail || caseData.insuredAddress || '-';
+      
       if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
         particulars.push({
-          title: `[${addressLabel}] - 현장출동비용 (손해방지)`,
+          title: `[${mainAddressLabel}] - 현장출동비용 (손해방지)`,
           amount: fieldDispatchPreventionAmount,
         });
+        calculatedTotal += fieldDispatchPreventionAmount;
       }
 
       if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
         particulars.push({
-          title: `[${addressLabel}] - 현장출동비용 (대물)`,
+          title: `[${mainAddressLabel}] - 현장출동비용 (대물)`,
           amount: fieldDispatchPropertyAmount,
         });
+        calculatedTotal += fieldDispatchPropertyAmount;
       }
 
       if (particulars.length === 0) {
         particulars.push({
-          title: `[${addressLabel}]`,
+          title: `[${mainAddressLabel}]`,
           detail: '청구 내역 없음',
           amount: 0,
         });
       }
 
+      // 총액: 클라이언트에서 전달된 값이 있으면 사용, 없으면 계산된 값 사용
       let totalAmount: number;
       if (clientTotalAmount !== undefined) {
         totalAmount = clientTotalAmount;
       } else {
-        // 절사 없이 합계 계산
-        totalAmount = (damagePreventionAmount || 0) + 
-          (propertyRepairAmount || 0) + 
-          (fieldDispatchPreventionAmount || 0) + 
-          (fieldDispatchPropertyAmount || 0);
+        totalAmount = calculatedTotal;
       }
 
       const invoiceData = {
