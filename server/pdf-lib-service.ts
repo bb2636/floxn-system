@@ -519,13 +519,16 @@ async function renderCoverPage(
   const dispatchDateTime = formatDateTimeStr([caseData.visitDate, caseData.visitTime]
     .filter(Boolean).join(' '));
   
+  // 출동담당자: accompaniedPerson이 없으면 assignedPartnerManager(협력사 담당자) 사용
+  const dispatchManager = caseData.accompaniedPerson || caseData.assignedPartnerManager || '-';
+  
   // Main info table
   const tableRows: TableCell[][] = [
     [
       { text: '사고접수번호', width: 100, isHeader: true, align: 'center' },
       { text: caseData.insuranceAccidentNo || '-', width: 150, align: 'left' },
       { text: '출동담당자', width: 100, isHeader: true, align: 'center' },
-      { text: caseData.accompaniedPerson || '-', width: 165, align: 'left' },
+      { text: dispatchManager, width: 165, align: 'left' },
     ],
     [
       { text: '피보험자명', width: 100, isHeader: true, align: 'center' },
