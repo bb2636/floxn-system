@@ -973,9 +973,18 @@ export default function FieldDocuments() {
     // 필수 서류 검증
     const validation = validateClaimDocuments();
     if (!validation.valid) {
+      // 누락된 항목이 2개 이상이면 앞 2개만 표시 + "등"
+      const missingDocs = validation.missingDocs;
+      let displayText: string;
+      if (missingDocs.length <= 2) {
+        displayText = missingDocs.join(", ");
+      } else {
+        displayText = `${missingDocs[0]}, ${missingDocs[1]} 등`;
+      }
+      
       toast({
-        title: "필수 서류 누락",
-        description: `다음 서류가 누락되었습니다:\n${validation.missingDocs.join(", ")}`,
+        title: "미등록 항목 안내",
+        description: `${displayText} 미입력(미등록) 되어있습니다.`,
         variant: "destructive",
       });
       return;
