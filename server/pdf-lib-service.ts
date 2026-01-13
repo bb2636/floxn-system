@@ -1502,7 +1502,7 @@ async function renderEvidencePages(
     // 헤더 텍스트 길이에 따라 폰트 크기 조정
     const fontSize =
       leftHeaderText.length > 50 ? 8 : leftHeaderText.length > 35 ? 9 : 10;
-    
+
     // 좌측 텍스트 (30px 좌측 여백)
     drawText(page, {
       x: MARGIN + 30,
@@ -1512,10 +1512,13 @@ async function renderEvidencePages(
       size: fontSize,
       color: { r: 1, g: 1, b: 1 },
     });
-    
+
     // 우측 텍스트 (30px 우측 여백, 우측 정렬)
     if (rightHeaderText) {
-      const rightTextWidth = fonts.bold.widthOfTextAtSize(rightHeaderText, fontSize);
+      const rightTextWidth = fonts.bold.widthOfTextAtSize(
+        rightHeaderText,
+        fontSize,
+      );
       drawText(page, {
         x: A4_WIDTH - MARGIN - 30 - rightTextWidth,
         y: A4_HEIGHT - MARGIN - 22,
@@ -2382,7 +2385,7 @@ async function renderEstimatePage(
       { text: "천원단위 절사", width: 150, isHeader: true, align: "center" },
       {
         text: roundingDiff > 0 ? `-${formatNumber(roundingDiff)}` : "0",
-        width: 200,
+        width: 110,
         align: "right",
       },
     ],
@@ -2407,12 +2410,12 @@ async function renderEstimatePage(
 
   // 단위 표시 (테이블 위에 우측 정렬)
   drawText(page, {
-    x: A4_WIDTH - MARGIN - 260,
+    x: A4_WIDTH - MARGIN - 250,
     y: y + 5,
     text: "단위: 원",
     font: fonts.regular,
     size: 7,
-    maxWidth: 260,
+    maxWidth: 250,
     align: "right",
   });
 
