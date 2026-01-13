@@ -1112,19 +1112,6 @@ export default function FieldReport() {
           {!isUserLoading && isPartner && (
             <>
               <Button
-                data-testid="button-save-notes"
-                variant="outline"
-                onClick={() => saveNotesMutation.mutate(additionalNotes)}
-                disabled={saveNotesMutation.isPending || isPartnerReadOnly}
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                {saveNotesMutation.isPending ? "저장 중..." : "저장"}
-              </Button>
-              <Button
                 data-testid="button-submit-report"
                 onClick={() => {
                   console.log("=== 제출 조건 체크 (보고서 제출) ===");
