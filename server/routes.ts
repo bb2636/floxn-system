@@ -6742,17 +6742,20 @@ FLOXN`;
         const addressLabel = relatedCase.victimAddressDetail || relatedCase.victimAddress || 
                             relatedCase.insuredAddressDetail || relatedCase.insuredAddress || '-';
         
-        // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 견적금액 순서로 확인)
+        // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 승인금액 > 견적금액 순서로 확인)
         let caseDamagePreventionAmt = parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
         let casePropertyRepairAmt = parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
+        const caseApprovedAmt = parseInt(relatedCase.approvedAmount || "0") || 0;
         const caseEstimateAmt = parseInt(relatedCase.estimateAmount || "0") || 0;
         
-        console.log(`[Invoice PDF] Case ${relatedCase.caseNumber}: suffix=${caseSuffix}, damageAmt=${caseDamagePreventionAmt}, propertyAmt=${casePropertyRepairAmt}, estimateAmt=${caseEstimateAmt}, address=${addressLabel}`);
+        console.log(`[Invoice PDF] Case ${relatedCase.caseNumber}: suffix=${caseSuffix}, damageAmt=${caseDamagePreventionAmt}, propertyAmt=${casePropertyRepairAmt}, approvedAmt=${caseApprovedAmt}, estimateAmt=${caseEstimateAmt}, address=${addressLabel}`);
         
         // 손방건(-0)인 경우: 손해방지비용
         if (caseSuffix === 0) {
-          // 인보이스 금액 > 견적금액 순서로 확인
-          if (caseDamagePreventionAmt === 0 && caseEstimateAmt > 0) {
+          // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
+          if (caseDamagePreventionAmt === 0 && caseApprovedAmt > 0) {
+            caseDamagePreventionAmt = caseApprovedAmt;
+          } else if (caseDamagePreventionAmt === 0 && caseEstimateAmt > 0) {
             caseDamagePreventionAmt = caseEstimateAmt;
           }
           if (caseDamagePreventionAmt > 0) {
@@ -6767,8 +6770,10 @@ FLOXN`;
         
         // 대물건(-1, -2, ...)인 경우: 대물복구비용
         if (caseSuffix > 0) {
-          // 인보이스 금액 > 견적금액 순서로 확인
-          if (casePropertyRepairAmt === 0 && caseEstimateAmt > 0) {
+          // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
+          if (casePropertyRepairAmt === 0 && caseApprovedAmt > 0) {
+            casePropertyRepairAmt = caseApprovedAmt;
+          } else if (casePropertyRepairAmt === 0 && caseEstimateAmt > 0) {
             casePropertyRepairAmt = caseEstimateAmt;
           }
           if (casePropertyRepairAmt > 0) {
@@ -7361,14 +7366,18 @@ FLOXN`;
         const caseAddressLabel = relatedCase.victimAddressDetail || relatedCase.victimAddress || 
                             relatedCase.insuredAddressDetail || relatedCase.insuredAddress || '-';
         
-        // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 견적금액 순서로 확인)
+        // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 승인금액 > 견적금액 순서로 확인)
         let caseDamagePreventionAmt = parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
         let casePropertyRepairAmt = parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
+        const caseApprovedAmt = parseInt(relatedCase.approvedAmount || "0") || 0;
         const caseEstimateAmt = parseInt(relatedCase.estimateAmount || "0") || 0;
         
         // 손방건(-0)인 경우: 손해방지비용
         if (caseSuffix === 0) {
-          if (caseDamagePreventionAmt === 0 && caseEstimateAmt > 0) {
+          // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
+          if (caseDamagePreventionAmt === 0 && caseApprovedAmt > 0) {
+            caseDamagePreventionAmt = caseApprovedAmt;
+          } else if (caseDamagePreventionAmt === 0 && caseEstimateAmt > 0) {
             caseDamagePreventionAmt = caseEstimateAmt;
           }
           if (caseDamagePreventionAmt > 0) {
@@ -7382,7 +7391,10 @@ FLOXN`;
         
         // 대물건(-1, -2, ...)인 경우: 대물복구비용
         if (caseSuffix > 0) {
-          if (casePropertyRepairAmt === 0 && caseEstimateAmt > 0) {
+          // 인보이스 금액 > 승인금액 > 견적금액 순서로 확인
+          if (casePropertyRepairAmt === 0 && caseApprovedAmt > 0) {
+            casePropertyRepairAmt = caseApprovedAmt;
+          } else if (casePropertyRepairAmt === 0 && caseEstimateAmt > 0) {
             casePropertyRepairAmt = caseEstimateAmt;
           }
           if (casePropertyRepairAmt > 0) {
