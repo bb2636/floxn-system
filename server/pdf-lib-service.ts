@@ -1377,7 +1377,9 @@ async function renderEvidencePages(
 
   // PDF 문서 페이지들을 현재 문서에 복사 (각 페이지에 헤더 추가)
   // embedPage 방식으로 변경: 페이지 크기를 늘려서 상단에 헤더 공간 확보
-  const PDF_HEADER_HEIGHT = 45;
+  const PDF_HEADER_HEIGHT = 35;
+  const HEADER_CONTENT_GAP = 15; // 헤더와 원본 PDF 콘텐츠 사이 여백
+  const TOTAL_HEADER_SPACE = PDF_HEADER_HEIGHT + HEADER_CONTENT_GAP;
 
   for (const pdfItem of pdfDocs) {
     try {
@@ -1411,13 +1413,13 @@ async function renderEvidencePages(
         const srcPage = externalPdf.getPage(pageIdx);
         const { width, height } = srcPage.getSize();
 
-        // 새 페이지 생성 (원본 + 헤더 높이)
-        const newPage = pdfDoc.addPage([width, height + PDF_HEADER_HEIGHT]);
+        // 새 페이지 생성 (원본 + 헤더 높이 + 여백)
+        const newPage = pdfDoc.addPage([width, height + TOTAL_HEADER_SPACE]);
 
         // 원본 페이지 임베드
         const embeddedPage = await pdfDoc.embedPage(srcPage);
 
-        // 원본 페이지를 헤더 아래에 배치
+        // 원본 페이지를 여백만큼 아래로 배치 (헤더와 확실히 분리)
         newPage.drawPage(embeddedPage, {
           x: 0,
           y: 0,
@@ -1425,25 +1427,26 @@ async function renderEvidencePages(
           height: height,
         });
 
-        // 헤더 배경 (어두운 회색)
+        // 헤더 배경 (어두운 회색) - 원본 페이지 상단 + 여백 위에 배치
+        const headerBaseY = height + HEADER_CONTENT_GAP;
         newPage.drawRectangle({
           x: 0,
-          y: height,
+          y: headerBaseY,
           width: width,
           height: PDF_HEADER_HEIGHT,
           color: rgb(0.2, 0.2, 0.2),
         });
 
-        // 헤더 구분선
+        // 헤더와 콘텐츠 사이 구분선
         newPage.drawLine({
-          start: { x: 0, y: height },
-          end: { x: width, y: height },
-          thickness: 0.5,
-          color: rgb(0.4, 0.4, 0.4),
+          start: { x: 0, y: headerBaseY },
+          end: { x: width, y: headerBaseY },
+          thickness: 1,
+          color: rgb(0.3, 0.3, 0.3),
         });
 
         // 헤더 텍스트 (흰색)
-        const textY = height + (PDF_HEADER_HEIGHT - pdfFontSize) / 2;
+        const textY = headerBaseY + (PDF_HEADER_HEIGHT - pdfFontSize) / 2;
         try {
           newPage.drawText(pdfHeaderText, {
             x: 10,
