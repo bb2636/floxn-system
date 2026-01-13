@@ -5684,15 +5684,37 @@ export default function FieldReport() {
           >
             <div
               style={{
-                fontFamily: "Pretendard",
-                fontSize: "20px",
-                fontWeight: "700",
-                lineHeight: "30px",
-                color: "#0C0C0C",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
                 marginBottom: "24px",
               }}
             >
-              기타사항
+              <div
+                style={{
+                  fontFamily: "Pretendard",
+                  fontSize: "20px",
+                  fontWeight: "700",
+                  lineHeight: "30px",
+                  color: "#0C0C0C",
+                }}
+              >
+                기타사항
+              </div>
+              {!isPartnerReadOnly && (
+                <Button
+                  data-testid="button-save-notes-header"
+                  onClick={() => saveNotesMutation.mutate(additionalNotes)}
+                  disabled={saveNotesMutation.isPending || isPartnerReadOnly}
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                  }}
+                >
+                  {saveNotesMutation.isPending ? "저장 중..." : "저장"}
+                </Button>
+              )}
             </div>
 
             <Card>
@@ -5746,43 +5768,8 @@ export default function FieldReport() {
                     {additionalNotes.length}/800
                   </div>
                 </div>
-
-                <div className="flex justify-end">
-                  <Button
-                    data-testid="button-save-notes"
-                    onClick={() => saveNotesMutation.mutate(additionalNotes)}
-                    disabled={saveNotesMutation.isPending || isPartnerReadOnly}
-                    style={{
-                      fontFamily: "Pretendard",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                    }}
-                  >
-                    {saveNotesMutation.isPending ? "저장 중..." : "저장"}
-                  </Button>
-                </div>
               </CardContent>
             </Card>
-
-            <Button
-              style={{
-                position: "absolute",
-                right: "-56px",              // 카드 바깥으로 살짝 빼기
-                top: "50%",
-                transform: "translateY(-50%)",
-                backgroundColor: "#2563EB",  // 파란색
-                color: "#FFFFFF",
-                fontFamily: "Pretendard",
-                fontSize: "14px",
-                fontWeight: "600",
-                padding: "12px 16px",
-                borderRadius: "8px",
-              }}
-              onClick={() => saveNotesMutation.mutate(additionalNotes)}
-              disabled={saveNotesMutation.isPending || isPartnerReadOnly}
-            >
-              확인
-            </Button>
           </TabsContent>
         </div>
       </Tabs>
