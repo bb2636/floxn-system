@@ -1750,9 +1750,10 @@ async function renderRecoveryAreaPage(
 
   // 표 전체 너비 계산: 55 + 70 + 70 + 130 + 130 + 60 = 515
   const tableWidth = 515;
+  const rightPadding = 4;
   const unitTextWidth = fonts.regular.widthOfTextAtSize("단위: ㎡", 9);
   drawText(page, {
-    x: MARGIN + tableWidth - unitTextWidth,
+    x: MARGIN + tableWidth - unitTextWidth - rightPadding,
     y,
     text: "단위: ㎡",
     font: fonts.regular,
@@ -2466,6 +2467,9 @@ async function renderEstimatePage(
   const roundingDiff = beforeRounding - rounded;
   const vat = Math.round(rounded * vatRate);
   const grandTotal = rounded + vat;
+
+  
+  
 
   const totalRows: TableCell[][] = [
     [
