@@ -186,8 +186,11 @@ function wrapText(
 
 // 모든 특수기호 뒤 공백 제거 함수 (전역)
 function normalizeText(text: string): string {
-  // 모든 특수기호 뒤 공백 제거: - : / \ ( [ { < > } ] ) @ # $ % ^ & * + = | ~ ` ! ? , . ; ' "
-  return text.replace(/([^\w\s가-힣ㄱ-ㅎㅏ-ㅣ])\s+/g, "$1");
+  // 특수기호 뒤 공백 제거 - 명시적 특수문자 목록 사용
+  // 하이픈, 콜론, 슬래시, 괄호류, 따옴표류, 기타 특수문자
+  return text
+    .replace(/([-–—:;/\\()[\]{}<>@#$%^&*+=|~`!?,.'"「」『』【】〔〕《》〈〉•·…])\s+/g, "$1")
+    .replace(/\s+([-–—:;/\\()[\]{}<>])/g, "$1");  // 일부 특수문자 앞 공백도 제거
 }
 
 function drawText(page: PDFPage, options: DrawTextOptions): number {
