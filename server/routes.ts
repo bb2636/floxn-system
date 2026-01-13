@@ -6730,6 +6730,10 @@ FLOXN`;
       console.log(`[Invoice PDF] Building particulars for ${allRelatedCases.length} related cases`);
       console.log(`[Invoice PDF] Client amounts - damagePreventionAmount: ${damagePreventionAmount}, propertyRepairAmount: ${propertyRepairAmount}`);
       
+      // 선견적요청 건이 하나라도 있는지 확인 (있으면 출동비 청구 불가)
+      const hasPreEstimateRequest = allRelatedCases.some(c => c.recoveryType === '선견적요청');
+      console.log(`[Invoice PDF] hasPreEstimateRequest: ${hasPreEstimateRequest}`);
+      
       // 각 케이스별로 개별 항목 생성
       let calculatedTotal = 0;
       
@@ -6737,6 +6741,12 @@ FLOXN`;
         const relatedCase = allRelatedCases[i];
         const isMainCase = relatedCase.id === caseId;
         const caseSuffix = getCaseSuffix(relatedCase.caseNumber || '');
+        
+        // 선견적요청 건은 인보이스에서 제외 (금액 합산 안됨)
+        if (relatedCase.recoveryType === '선견적요청') {
+          console.log(`[Invoice PDF] Skipping 선견적요청 case: ${relatedCase.caseNumber}`);
+          continue;
+        }
         
         // 상세주소 가져오기 (상세주소 우선, 없으면 기본주소)
         const addressLabel = relatedCase.victimAddressDetail || relatedCase.victimAddress || 
@@ -7357,10 +7367,20 @@ FLOXN`;
       // 케이스 suffix 순으로 정렬
       allCases.sort((a, b) => getCaseSuffix(a.caseNumber || '') - getCaseSuffix(b.caseNumber || ''));
       
+      // 선견적요청 건이 하나라도 있는지 확인 (있으면 출동비 청구 불가)
+      const hasPreEstimateRequest = allCases.some(c => c.recoveryType === '선견적요청');
+      console.log(`[send-invoice-email-v2] hasPreEstimateRequest: ${hasPreEstimateRequest}`);
+      
       let calculatedTotal = 0;
       
       for (const relatedCase of allCases) {
         const caseSuffix = getCaseSuffix(relatedCase.caseNumber || '');
+        
+        // 선견적요청 건은 인보이스에서 제외 (금액 합산 안됨)
+        if (relatedCase.recoveryType === '선견적요청') {
+          console.log(`[send-invoice-email-v2] Skipping 선견적요청 case: ${relatedCase.caseNumber}`);
+          continue;
+        }
         
         // 상세주소 가져오기 (상세주소 우선, 없으면 기본주소)
         const caseAddressLabel = relatedCase.victimAddressDetail || relatedCase.victimAddress || 
