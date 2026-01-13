@@ -9608,7 +9608,7 @@ https://peulrogseun-aqaqaq4561.replit.app
     }
   });
 
-  // POST /api/submit-claim-documents - 청구자료 제출 (동일 사고번호 직접복구 케이스 일괄 상태 변경 + SMS 발송)
+  // POST /api/submit-claim-documents - 청구자료 제출 (해당 케이스 1건만 상태 변경 + 모든 관련 케이스가 제출 완료 시 SMS 발송)
   app.post("/api/submit-claim-documents", async (req, res) => {
     if (!req.session?.userId) {
       return res.status(401).json({ error: "인증되지 않은 사용자입니다" });
@@ -9626,47 +9626,54 @@ https://peulrogseun-aqaqaq4561.replit.app
         return res.status(404).json({ error: "케이스를 찾을 수 없습니다" });
       }
 
+      // 현재 케이스가 직접복구 상태인지 확인
+      if (currentCase.status !== "직접복구") {
+        return res.status(400).json({ error: "직접복구 상태인 케이스만 청구자료를 제출할 수 있습니다" });
+      }
+
       const accidentNo = currentCase.insuranceAccidentNo;
       if (!accidentNo) {
         return res.status(400).json({ error: "사고번호가 없습니다" });
       }
 
-      // 동일 사고번호를 가진 모든 케이스 조회
+      // 1. 해당 케이스 1건만 청구자료제출 상태로 변경
+      const updatedCase = await storage.updateCase(caseId, {
+        status: "(직접복구인 경우) 청구자료제출",
+      });
+
+      if (!updatedCase) {
+        return res.status(500).json({ error: "케이스 상태 변경에 실패했습니다" });
+      }
+
+      console.log(`[submit-claim-documents] Updated case ${caseId} to 청구자료제출`);
+
+      // 2. 동일 사고번호의 모든 직접복구/청구자료제출 케이스 조회
       const allCases = await storage.getAllCases();
-      const directRecoveryCases = allCases.filter(
-        (c) => c.insuranceAccidentNo === accidentNo && c.status === "직접복구"
+      const relatedCases = allCases.filter(
+        (c) => c.insuranceAccidentNo === accidentNo && 
+               (c.status === "직접복구" || c.status === "(직접복구인 경우) 청구자료제출")
       );
 
-      if (directRecoveryCases.length === 0) {
-        return res.status(400).json({ error: "직접복구 상태인 케이스가 없습니다" });
-      }
+      // 3. 모든 관련 케이스가 청구자료제출 상태인지 확인
+      const allSubmitted = relatedCases.every(c => c.status === "(직접복구인 경우) 청구자료제출");
+      let smsSent = false;
 
-      // 모든 직접복구 케이스의 상태를 청구자료제출로 변경
-      const updatedCases = [];
-      for (const c of directRecoveryCases) {
-        const updated = await storage.updateCase(c.id, {
-          status: "(직접복구인 경우) 청구자료제출",
-        });
-        if (updated) {
-          updatedCases.push(updated);
-        }
-      }
+      if (allSubmitted && relatedCases.length > 0) {
+        console.log(`[submit-claim-documents] All ${relatedCases.length} cases submitted, sending SMS`);
+        
+        // 플록슨 담당자에게 SMS 발송
+        const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
+        const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
+        const SOLAPI_SENDER_NUMBER = process.env.SOLAPI_SENDER_NUMBER;
 
-      console.log(`[submit-claim-documents] Updated ${updatedCases.length} cases to 청구자료제출`);
+        if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER_NUMBER) {
+          // 대표 케이스 정보 (첫 번째 케이스 사용)
+          const representativeCase = relatedCases[0];
+          const addressMain = representativeCase.victimAddress || representativeCase.insuredAddress;
+          const addressDetail = representativeCase.victimAddressDetail || representativeCase.insuredAddressDetail;
+          const fullAddress = [addressMain, addressDetail].filter(Boolean).join(" ");
 
-      // 플록슨 담당자에게 SMS 발송
-      const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
-      const SOLAPI_API_SECRET = process.env.SOLAPI_API_SECRET;
-      const SOLAPI_SENDER_NUMBER = process.env.SOLAPI_SENDER_NUMBER;
-
-      if (SOLAPI_API_KEY && SOLAPI_API_SECRET && SOLAPI_SENDER_NUMBER) {
-        // 대표 케이스 정보 (첫 번째 케이스 사용)
-        const representativeCase = updatedCases[0] || currentCase;
-        const addressMain = representativeCase.victimAddress || representativeCase.insuredAddress;
-        const addressDetail = representativeCase.victimAddressDetail || representativeCase.insuredAddressDetail;
-        const fullAddress = [addressMain, addressDetail].filter(Boolean).join(" ");
-
-        const messageText = `<청구자료제출 알림>
+          const messageText = `<청구자료제출 알림>
 
 접수번호 : ${representativeCase.caseNumber || "-"}
 보험사 : ${representativeCase.insuranceCompany || "-"}
@@ -9674,50 +9681,59 @@ https://peulrogseun-aqaqaq4561.replit.app
 사고번호 : ${representativeCase.insuranceAccidentNo || "-"}
 피보험자 : ${representativeCase.insuredName || "-"}
 사고장소 : ${fullAddress || "-"}
-진행사항 : 청구자료제출`;
+진행사항 : 청구자료제출 (${relatedCases.length}건 완료)`;
 
-        // 플록슨 담당자 번호 조회 (managerId를 통해 사용자 정보에서 조회)
-        let floxnManagerPhone: string | null = null;
-        if (representativeCase.managerId) {
-          const manager = await storage.getUserById(representativeCase.managerId);
-          floxnManagerPhone = manager?.phone || null;
-        }
-        
-        if (floxnManagerPhone) {
-          try {
-            const authHeader = createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET);
-            const smsBody = JSON.stringify({
-              message: {
-                to: floxnManagerPhone.replace(/-/g, ""),
-                from: SOLAPI_SENDER_NUMBER.replace(/-/g, ""),
-                text: messageText,
-                type: "LMS",
-              },
-            });
-
-            await solapiHttpsRequest({
-              method: "POST",
-              path: "/messages/v4/send",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: authHeader,
-                "Content-Length": Buffer.byteLength(smsBody, "utf8"),
-              },
-              body: smsBody,
-            });
-            console.log(`[submit-claim-documents] SMS sent to Floxn manager: ${floxnManagerPhone}`);
-          } catch (smsError) {
-            console.error("[submit-claim-documents] SMS send error:", smsError);
+          // 플록슨 담당자 번호 조회 (managerId를 통해 사용자 정보에서 조회)
+          let floxnManagerPhone: string | null = null;
+          if (representativeCase.managerId) {
+            const manager = await storage.getUserById(representativeCase.managerId);
+            floxnManagerPhone = manager?.phone || null;
           }
-        } else {
-          console.log("[submit-claim-documents] No Floxn manager phone number found");
+          
+          if (floxnManagerPhone) {
+            try {
+              const authHeader = createSolapiAuthHeader(SOLAPI_API_KEY, SOLAPI_API_SECRET);
+              const smsBody = JSON.stringify({
+                message: {
+                  to: floxnManagerPhone.replace(/-/g, ""),
+                  from: SOLAPI_SENDER_NUMBER.replace(/-/g, ""),
+                  text: messageText,
+                  type: "LMS",
+                },
+              });
+
+              await solapiHttpsRequest({
+                method: "POST",
+                path: "/messages/v4/send",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: authHeader,
+                  "Content-Length": Buffer.byteLength(smsBody, "utf8"),
+                },
+                body: smsBody,
+              });
+              console.log(`[submit-claim-documents] SMS sent to Floxn manager: ${floxnManagerPhone}`);
+              smsSent = true;
+            } catch (smsError) {
+              console.error("[submit-claim-documents] SMS send error:", smsError);
+            }
+          } else {
+            console.log("[submit-claim-documents] No Floxn manager phone number found");
+          }
         }
+      } else {
+        const remaining = relatedCases.filter(c => c.status === "직접복구").length;
+        console.log(`[submit-claim-documents] ${remaining} cases remaining to submit`);
       }
 
       res.json({
         success: true,
-        message: `${updatedCases.length}건의 케이스가 청구자료제출 상태로 변경되었습니다`,
-        updatedCount: updatedCases.length,
+        message: allSubmitted 
+          ? `청구자료가 제출되었습니다. (${relatedCases.length}건 모두 완료${smsSent ? ", SMS 발송 완료" : ""})` 
+          : `청구자료가 제출되었습니다. (${relatedCases.filter(c => c.status === "직접복구").length}건 남음)`,
+        updatedCount: 1,
+        allSubmitted,
+        smsSent,
       });
     } catch (error: any) {
       console.error("[submit-claim-documents] Error:", error);
