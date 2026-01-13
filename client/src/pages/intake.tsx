@@ -1060,21 +1060,22 @@ export default function Intake({ isModal = false, onClose, onSuccess, initialCas
             ? allUsers?.find(u => u.id === submittedData.managerId)?.name || user?.name || "-"
             : user?.name || "-";
           
+          // API 응답의 케이스 데이터를 우선 사용 (DB에 저장된 실제 데이터)
           const smsPayload = {
             to: partnerContact,
             caseNumber: caseNumber,
-            insuranceCompany: submittedData.insuranceCompany || "-",
+            insuranceCompany: firstCase.insuranceCompany || submittedData.insuranceCompany || "-",
             managerName: managerName,
-            insurancePolicyNo: submittedData.insurancePolicyNo || "-",
-            insuranceAccidentNo: submittedData.insuranceAccidentNo || "-",
-            insuredName: submittedData.insuredName || "-",
-            insuredContact: submittedData.insuredContact || "-",
-            victimName: submittedData.victimName || "-",
-            victimContact: submittedData.victimContact || "-",
-            investigatorTeamName: submittedData.investigatorTeamName || "-",
-            investigatorContact: submittedData.investigatorContact || "-",
-            accidentLocation: submittedData.insuredAddress || "-",
-            accidentLocationDetail: submittedData.insuredAddressDetail || "",
+            insurancePolicyNo: firstCase.insurancePolicyNo || submittedData.insurancePolicyNo || "-",
+            insuranceAccidentNo: firstCase.insuranceAccidentNo || submittedData.insuranceAccidentNo || "-",
+            insuredName: firstCase.insuredName || submittedData.insuredName || "-",
+            insuredContact: firstCase.insuredContact || submittedData.insuredContact || "-",
+            victimName: firstCase.victimName || submittedData.victimName || "-",
+            victimContact: firstCase.victimContact || submittedData.victimContact || "-",
+            investigatorTeamName: firstCase.investigatorTeamName || submittedData.investigatorTeamName || "-",
+            investigatorContact: firstCase.investigatorContact || submittedData.investigatorContact || "-",
+            accidentLocation: firstCase.insuredAddress || submittedData.insuredAddress || "-",
+            accidentLocationDetail: firstCase.insuredAddressDetail || submittedData.insuredAddressDetail || "",
             requestScope: requestScope,
           };
           
