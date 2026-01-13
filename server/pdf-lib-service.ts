@@ -300,7 +300,8 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
 
       const font = cell.isHeader ? fonts.bold : fonts.regular;
       const padding = 4;
-      const maxTextWidth = cell.width - padding * 2;
+      const rightPadding = cell.align === "right" ? 8 : padding; // 오른쪽 정렬 시 여백 더 확보
+      const maxTextWidth = cell.width - padding - rightPadding;
 
       // 텍스트가 셀 너비를 초과할 경우 폰트 크기 자동 축소
       let actualFontSize = fontSize;
@@ -316,7 +317,7 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
       if (cell.align === "center") {
         textX = cellX + (cell.width - textWidth) / 2;
       } else if (cell.align === "right") {
-        textX = cellX + cell.width - textWidth - padding;
+        textX = cellX + cell.width - textWidth - rightPadding;
       }
 
       try {
