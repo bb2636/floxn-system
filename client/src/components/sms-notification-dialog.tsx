@@ -169,7 +169,7 @@ export function SmsNotificationDialog({
     if (stage === "접수완료") {
       const hasInvestigator = caseData.investigatorTeamName || caseData.investigatorContact;
       const investigatorLine = hasInvestigator 
-        ? `\n조사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}` 
+        ? `\n심사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}` 
         : "";
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
