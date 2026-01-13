@@ -1736,8 +1736,10 @@ async function renderEstimatePage(
   y -= 40;
   
   // ===== 상단 정보 테이블 =====
-  const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
-    .filter(Boolean).join(' ');
+  // 해당건의 주소 사용 (victimAddress 우선, 없으면 insuredAddress)
+  const addressMain = caseData.victimAddress || caseData.insuredAddress || '';
+  const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
+  const fullAddress = [addressMain, addressDetail].filter(Boolean).join(' ');
   
   const partnerCompany = partnerData?.company || caseData.assignedPartner || '-';
   const partnerBusinessNo = partnerData?.businessRegistrationNumber || '-';
