@@ -2508,7 +2508,7 @@ async function renderEstimatePage(
     [
       { text: "천원단위 절사", width: 150, isHeader: true, align: "center" },
       {
-        text: roundingDiff > 0 ? formatNumber(-roundingDiff) : "-",
+        text: roundingDiff > 0 ? formatNumber(-roundingDiff) : "0",
         width: 120,
         align: "right",
       },
