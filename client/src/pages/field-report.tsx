@@ -2920,8 +2920,8 @@ export default function FieldReport() {
                 {activeTab === "견적서" && "견적서"}
                 {activeTab === "기타사항/원인" && "기타사항/원인"}
               </h2>
-              {/* 기타사항 탭에서 협력사용 저장 버튼 */}
-              {activeTab === "기타사항/원인" && !isAdmin && !isPartnerReadOnly && (
+              {/* 협력사용 저장 버튼 - 모든 탭에서 표시 (증빙자료 제외, 증빙자료는 자체 헤더 사용) */}
+              {!isAdmin && !isPartnerReadOnly && (
                 <Button
                   data-testid="button-save-notes-header"
                   onClick={() => saveNotesMutation.mutate(additionalNotes)}
@@ -3903,6 +3903,23 @@ export default function FieldReport() {
                 증빙자료 {documents?.length || 0}
               </h2>
               <div className="flex items-center gap-3">
+                {/* 협력사용 저장 버튼 */}
+                {!isAdmin && !isPartnerReadOnly && (
+                  <Button
+                    data-testid="button-save-notes-documents"
+                    onClick={() => saveNotesMutation.mutate(additionalNotes)}
+                    disabled={saveNotesMutation.isPending}
+                    className="px-6 py-3"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      minWidth: "100px",
+                    }}
+                  >
+                    {saveNotesMutation.isPending ? "저장 중..." : "저장"}
+                  </Button>
+                )}
                 {/* 청구자료제출 버튼 - 직접복구 상태일 때만 표시 */}
                 {caseData.status === "직접복구" && (
                   <Button
