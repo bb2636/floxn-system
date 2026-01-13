@@ -1,19 +1,26 @@
-import { PDFDocument, PDFPage, PDFFont, rgb, StandardFonts } from 'pdf-lib';
-import fontkit from '@pdf-lib/fontkit';
-import fs from 'fs';
-import path from 'path';
-import sharp from 'sharp';
-import { db } from './db';
-import { cases, caseDocuments, drawings, estimates, estimateRows, users } from '@shared/schema';
-import { eq, and, inArray, ilike, sql } from 'drizzle-orm';
-import { ObjectStorageService } from './replit_integrations/object_storage/objectStorage';
+import { PDFDocument, PDFPage, PDFFont, rgb, StandardFonts } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
+import fs from "fs";
+import path from "path";
+import sharp from "sharp";
+import { db } from "./db";
+import {
+  cases,
+  caseDocuments,
+  drawings,
+  estimates,
+  estimateRows,
+  users,
+} from "@shared/schema";
+import { eq, and, inArray, ilike, sql } from "drizzle-orm";
+import { ObjectStorageService } from "./replit_integrations/object_storage/objectStorage";
 
 const objectStorage = new ObjectStorageService();
 
 const A4_WIDTH = 595.28;
 const A4_HEIGHT = 841.89;
 const MARGIN = 40;
-const CONTENT_WIDTH = A4_WIDTH - (MARGIN * 2);
+const CONTENT_WIDTH = A4_WIDTH - MARGIN * 2;
 
 const MAX_PDF_SIZE_BYTES = 10 * 1024 * 1024;
 
@@ -31,8 +38,17 @@ const PROCESSING_LEVELS: ImageProcessingConfig[] = [
   { maxDimension: 700, quality: 20 },
 ];
 
-const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.heic', '.heif', '.webp'];
-const UNSUPPORTED_EXTENSIONS = ['.mov', '.mp4', '.avi', '.tiff', '.raw'];
+const SUPPORTED_IMAGE_EXTENSIONS = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".gif",
+  ".bmp",
+  ".heic",
+  ".heif",
+  ".webp",
+];
+const UNSUPPORTED_EXTENSIONS = [".mov", ".mp4", ".avi", ".tiff", ".raw"];
 
 interface FontSet {
   regular: PDFFont;
@@ -43,56 +59,60 @@ let cachedFonts: { regular: Buffer; bold: Buffer } | null = null;
 
 function loadFontBytes(): { regular: Buffer; bold: Buffer } {
   if (cachedFonts) return cachedFonts;
-  
-  const fontsDir = path.join(process.cwd(), 'server/fonts');
-  
+
+  const fontsDir = path.join(process.cwd(), "server/fonts");
+
   // Use Pretendard (2.6MB - much smaller than NotoSansKR 16MB)
-  const regularTtf = path.join(fontsDir, 'Pretendard-Regular.ttf');
-  const boldTtf = path.join(fontsDir, 'Pretendard-SemiBold.ttf');
-  
+  const regularTtf = path.join(fontsDir, "Pretendard-Regular.ttf");
+  const boldTtf = path.join(fontsDir, "Pretendard-SemiBold.ttf");
+
   let regular: Buffer | null = null;
   let bold: Buffer | null = null;
-  
+
   try {
     if (fs.existsSync(regularTtf)) {
       regular = fs.readFileSync(regularTtf);
-      console.log(`[pdf-lib] Pretendard-Regular.ttf 로드 완료 (${Math.round(regular.length / 1024 / 1024 * 10) / 10}MB)`);
+      console.log(
+        `[pdf-lib] Pretendard-Regular.ttf 로드 완료 (${Math.round((regular.length / 1024 / 1024) * 10) / 10}MB)`,
+      );
     }
   } catch (err) {
-    console.error('[pdf-lib] Pretendard-Regular.ttf 로드 실패:', err);
+    console.error("[pdf-lib] Pretendard-Regular.ttf 로드 실패:", err);
   }
-  
+
   try {
     if (fs.existsSync(boldTtf)) {
       bold = fs.readFileSync(boldTtf);
       console.log(`[pdf-lib] Pretendard-SemiBold.ttf 로드 완료`);
     }
   } catch (err) {
-    console.error('[pdf-lib] Pretendard-SemiBold.ttf 로드 실패:', err);
+    console.error("[pdf-lib] Pretendard-SemiBold.ttf 로드 실패:", err);
   }
-  
+
   if (!regular || !bold) {
-    throw new Error('한글 폰트를 로드할 수 없습니다. server/fonts 디렉토리에 Pretendard-Regular.ttf 파일이 있는지 확인하세요.');
+    throw new Error(
+      "한글 폰트를 로드할 수 없습니다. server/fonts 디렉토리에 Pretendard-Regular.ttf 파일이 있는지 확인하세요.",
+    );
   }
-  
+
   cachedFonts = { regular, bold };
   return cachedFonts;
 }
 
 async function embedFonts(pdfDoc: PDFDocument): Promise<FontSet> {
   pdfDoc.registerFontkit(fontkit);
-  
+
   const fontBytes = loadFontBytes();
-  
+
   // subset: false로 전체 폰트 임베딩 (한글 글자 누락 방지)
   const regular = await pdfDoc.embedFont(fontBytes.regular, { subset: false });
   const bold = await pdfDoc.embedFont(fontBytes.bold, { subset: false });
-  
+
   return { regular, bold };
 }
 
 function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return '';
+  if (!dateStr) return "";
   try {
     const date = new Date(dateStr);
     return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
@@ -102,8 +122,8 @@ function formatDate(dateStr: string | null | undefined): string {
 }
 
 function formatNumber(num: number | null | undefined): string {
-  if (num === null || num === undefined) return '0';
-  return num.toLocaleString('ko-KR');
+  if (num === null || num === undefined) return "0";
+  return num.toLocaleString("ko-KR");
 }
 
 interface DrawTextOptions {
@@ -115,7 +135,7 @@ interface DrawTextOptions {
   color?: { r: number; g: number; b: number };
   maxWidth?: number;
   lineHeight?: number;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
 }
 
 function measureTextWidth(text: string, font: PDFFont, size: number): number {
@@ -126,23 +146,28 @@ function measureTextWidth(text: string, font: PDFFont, size: number): number {
   }
 }
 
-function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
+function wrapText(
+  text: string,
+  font: PDFFont,
+  size: number,
+  maxWidth: number,
+): string[] {
   const lines: string[] = [];
-  const paragraphs = text.split('\n');
-  
+  const paragraphs = text.split("\n");
+
   for (const paragraph of paragraphs) {
     if (!paragraph.trim()) {
-      lines.push('');
+      lines.push("");
       continue;
     }
-    
-    let currentLine = '';
-    const chars = paragraph.split('');
-    
+
+    let currentLine = "";
+    const chars = paragraph.split("");
+
     for (const char of chars) {
       const testLine = currentLine + char;
       const width = measureTextWidth(testLine, font, size);
-      
+
       if (width > maxWidth && currentLine) {
         lines.push(currentLine);
         currentLine = char;
@@ -150,41 +175,51 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
         currentLine = testLine;
       }
     }
-    
+
     if (currentLine) {
       lines.push(currentLine);
     }
   }
-  
+
   return lines;
 }
 
 function drawText(page: PDFPage, options: DrawTextOptions): number {
-  const { x, y, text, font, size = 10, color = { r: 0, g: 0, b: 0 }, maxWidth, lineHeight = 1.4, align = 'left' } = options;
-  
+  const {
+    x,
+    y,
+    text,
+    font,
+    size = 10,
+    color = { r: 0, g: 0, b: 0 },
+    maxWidth,
+    lineHeight = 1.4,
+    align = "left",
+  } = options;
+
   if (!text) return y;
-  
+
   let lines: string[];
   if (maxWidth) {
     lines = wrapText(text, font, size, maxWidth);
   } else {
-    lines = text.split('\n');
+    lines = text.split("\n");
   }
-  
+
   let currentY = y;
   const actualLineHeight = size * lineHeight;
-  
+
   for (const line of lines) {
     let drawX = x;
-    
-    if (align === 'center' && maxWidth) {
+
+    if (align === "center" && maxWidth) {
       const textWidth = measureTextWidth(line, font, size);
       drawX = x + (maxWidth - textWidth) / 2;
-    } else if (align === 'right' && maxWidth) {
+    } else if (align === "right" && maxWidth) {
       const textWidth = measureTextWidth(line, font, size);
       drawX = x + maxWidth - textWidth;
     }
-    
+
     try {
       page.drawText(line, {
         x: drawX,
@@ -194,19 +229,21 @@ function drawText(page: PDFPage, options: DrawTextOptions): number {
         color: rgb(color.r, color.g, color.b),
       });
     } catch (e) {
-      console.warn(`[pdf-lib] Failed to draw text: "${line.substring(0, 20)}..."`);
+      console.warn(
+        `[pdf-lib] Failed to draw text: "${line.substring(0, 20)}..."`,
+      );
     }
-    
+
     currentY -= actualLineHeight;
   }
-  
+
   return currentY;
 }
 
 interface TableCell {
   text: string;
   width: number;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   isHeader?: boolean;
   rowSpan?: number;
   colSpan?: number;
@@ -225,17 +262,22 @@ interface DrawTableOptions {
 
 function drawTable(page: PDFPage, options: DrawTableOptions): number {
   const {
-    x, y, rows, fonts, fontSize = 9,
+    x,
+    y,
+    rows,
+    fonts,
+    fontSize = 9,
     headerBgColor = { r: 0.94, g: 0.94, b: 0.94 },
-    rowHeight = 22, borderWidth = 0.5
+    rowHeight = 22,
+    borderWidth = 0.5,
   } = options;
-  
+
   let currentY = y;
-  
+
   for (const row of rows) {
     let cellX = x;
-    const isHeaderRow = row.some(cell => cell.isHeader);
-    
+    const isHeaderRow = row.some((cell) => cell.isHeader);
+
     for (const cell of row) {
       if (cell.isHeader) {
         page.drawRectangle({
@@ -246,7 +288,7 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
           color: rgb(headerBgColor.r, headerBgColor.g, headerBgColor.b),
         });
       }
-      
+
       page.drawRectangle({
         x: cellX,
         y: currentY - rowHeight,
@@ -255,30 +297,30 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
         borderColor: rgb(0.3, 0.3, 0.3),
         borderWidth,
       });
-      
+
       const font = cell.isHeader ? fonts.bold : fonts.regular;
       const padding = 4;
       const maxTextWidth = cell.width - padding * 2;
-      
+
       // 텍스트가 셀 너비를 초과할 경우 폰트 크기 자동 축소
       let actualFontSize = fontSize;
-      let textWidth = measureTextWidth(cell.text || '', font, actualFontSize);
+      let textWidth = measureTextWidth(cell.text || "", font, actualFontSize);
       while (textWidth > maxTextWidth && actualFontSize > 5) {
         actualFontSize -= 0.5;
-        textWidth = measureTextWidth(cell.text || '', font, actualFontSize);
+        textWidth = measureTextWidth(cell.text || "", font, actualFontSize);
       }
-      
+
       const textY = currentY - rowHeight / 2 - actualFontSize / 3;
-      
+
       let textX = cellX + padding;
-      if (cell.align === 'center') {
+      if (cell.align === "center") {
         textX = cellX + (cell.width - textWidth) / 2;
-      } else if (cell.align === 'right') {
+      } else if (cell.align === "right") {
         textX = cellX + cell.width - textWidth - padding;
       }
-      
+
       try {
-        page.drawText(cell.text || '', {
+        page.drawText(cell.text || "", {
           x: textX,
           y: textY,
           size: actualFontSize,
@@ -286,52 +328,54 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
           color: rgb(0, 0, 0),
         });
       } catch (e) {
-        console.warn(`[pdf-lib] Table cell text failed: "${cell.text?.substring(0, 10)}..."`);
+        console.warn(
+          `[pdf-lib] Table cell text failed: "${cell.text?.substring(0, 10)}..."`,
+        );
       }
-      
+
       cellX += cell.width;
     }
-    
+
     currentY -= rowHeight;
   }
-  
+
   return currentY;
 }
 
 async function normalizeImage(
   base64Data: string,
-  config: ImageProcessingConfig = PROCESSING_LEVELS[0]
+  config: ImageProcessingConfig = PROCESSING_LEVELS[0],
 ): Promise<{ success: boolean; data?: Buffer; error?: string }> {
   const { maxDimension, quality } = config;
-  
+
   try {
     let imageBuffer: Buffer;
-    
-    if (base64Data.startsWith('data:')) {
+
+    if (base64Data.startsWith("data:")) {
       const matches = base64Data.match(/^data:[^;]+;base64,(.+)$/);
       if (matches) {
-        imageBuffer = Buffer.from(matches[1], 'base64');
+        imageBuffer = Buffer.from(matches[1], "base64");
       } else {
-        return { success: false, error: '잘못된 이미지 데이터 형식' };
+        return { success: false, error: "잘못된 이미지 데이터 형식" };
       }
     } else {
-      imageBuffer = Buffer.from(base64Data, 'base64');
+      imageBuffer = Buffer.from(base64Data, "base64");
     }
-    
+
     const image = sharp(imageBuffer, { failOnError: false });
-    
+
     const processedImage = image.resize(maxDimension, maxDimension, {
-      fit: 'inside',
-      withoutEnlargement: true
+      fit: "inside",
+      withoutEnlargement: true,
     });
-    
+
     const compressedBuffer = await processedImage
       .jpeg({ quality, mozjpeg: true, force: true })
       .toBuffer();
-    
+
     return { success: true, data: compressedBuffer };
   } catch (error: any) {
-    return { success: false, error: error.message || '이미지 처리 오류' };
+    return { success: false, error: error.message || "이미지 처리 오류" };
   }
 }
 
@@ -343,15 +387,15 @@ async function embedImage(
   y: number,
   maxWidth: number,
   maxHeight: number,
-  config: ImageProcessingConfig
+  config: ImageProcessingConfig,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const normalized = await normalizeImage(imageData, config);
-    
+
     if (!normalized.success || !normalized.data) {
-      return { success: false, error: normalized.error || '이미지 처리 실패' };
+      return { success: false, error: normalized.error || "이미지 처리 실패" };
     }
-    
+
     let embeddedImage;
     try {
       embeddedImage = await pdfDoc.embedJpg(normalized.data);
@@ -359,35 +403,35 @@ async function embedImage(
       try {
         embeddedImage = await pdfDoc.embedPng(normalized.data);
       } catch {
-        return { success: false, error: '이미지 포맷 처리 불가' };
+        return { success: false, error: "이미지 포맷 처리 불가" };
       }
     }
-    
+
     const imgWidth = embeddedImage.width;
     const imgHeight = embeddedImage.height;
     const aspectRatio = imgWidth / imgHeight;
-    
+
     let drawWidth = maxWidth;
     let drawHeight = drawWidth / aspectRatio;
-    
+
     if (drawHeight > maxHeight) {
       drawHeight = maxHeight;
       drawWidth = drawHeight * aspectRatio;
     }
-    
+
     const drawX = x + (maxWidth - drawWidth) / 2;
     const drawY = y + (maxHeight - drawHeight) / 2;
-    
+
     page.drawImage(embeddedImage, {
       x: drawX,
       y: drawY,
       width: drawWidth,
       height: drawHeight,
     });
-    
+
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message || '이미지 임베딩 실패' };
+    return { success: false, error: error.message || "이미지 임베딩 실패" };
   }
 }
 
@@ -399,7 +443,7 @@ function drawErrorSection(
   width: number,
   height: number,
   title: string,
-  message: string
+  message: string,
 ): void {
   page.drawRectangle({
     x,
@@ -410,19 +454,19 @@ function drawErrorSection(
     borderColor: rgb(0.8, 0.2, 0.2),
     borderWidth: 1,
   });
-  
+
   const centerX = x + width / 2;
   const centerY = y + height / 2;
-  
+
   drawText(page, {
     x: centerX - 30,
     y: centerY + 20,
-    text: '⚠ 오류',
+    text: "⚠ 오류",
     font: fonts.bold,
     size: 14,
     color: { r: 0.6, g: 0.1, b: 0.1 },
   });
-  
+
   drawText(page, {
     x: x + 10,
     y: centerY - 10,
@@ -430,9 +474,9 @@ function drawErrorSection(
     font: fonts.bold,
     size: 10,
     maxWidth: width - 20,
-    align: 'center',
+    align: "center",
   });
-  
+
   drawText(page, {
     x: x + 10,
     y: centerY - 30,
@@ -441,7 +485,7 @@ function drawErrorSection(
     size: 9,
     color: { r: 0.4, g: 0.4, b: 0.4 },
     maxWidth: width - 20,
-    align: 'center',
+    align: "center",
   });
 }
 
@@ -449,34 +493,34 @@ async function renderCoverPage(
   pdfDoc: PDFDocument,
   fonts: FontSet,
   caseData: any,
-  partnerData: any
+  partnerData: any,
 ): Promise<void> {
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
-  
+
   // Title: 현장출동확인서
   drawText(page, {
     x: MARGIN,
     y: y - 30,
-    text: '현장출동확인서',
+    text: "현장출동확인서",
     font: fonts.bold,
     size: 24,
     maxWidth: CONTENT_WIDTH,
-    align: 'center',
+    align: "center",
   });
-  
+
   y -= 90;
-  
+
   // 수 신 line with underline
-  const recipientName = caseData.insuranceCompany || '-';
+  const recipientName = caseData.insuranceCompany || "-";
   drawText(page, {
     x: MARGIN,
     y,
-    text: '수 신',
+    text: "수 신",
     font: fonts.bold,
     size: 12,
   });
-  
+
   drawText(page, {
     x: MARGIN + 60,
     y,
@@ -484,7 +528,7 @@ async function renderCoverPage(
     font: fonts.regular,
     size: 12,
   });
-  
+
   // Underline under recipient name
   const recipientWidth = recipientName.length * 8;
   page.drawLine({
@@ -493,59 +537,66 @@ async function renderCoverPage(
     thickness: 0.5,
     color: rgb(0.3, 0.3, 0.3),
   });
-  
+
   drawText(page, {
     x: A4_WIDTH - MARGIN - 30,
     y,
-    text: '귀하',
+    text: "귀하",
     font: fonts.regular,
     size: 12,
   });
-  
+
   y -= 40;
-  
+
   const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
-    .filter(Boolean).join(' ');
-  
+    .filter(Boolean)
+    .join(" ");
+
   // 날짜/시간 형식에서 불필요한 공백 제거 (예: "2026- 01- 15 13: 07" -> "2026-01-15 13:07")
   const formatDateTimeStr = (str: string): string => {
     return str
-      .replace(/- /g, '-')
-      .replace(/: /g, ':')
-      .replace(/\s+/g, ' ')
+      .replace(/- /g, "-")
+      .replace(/: /g, ":")
+      .replace(/\s+/g, " ")
       .trim();
   };
-  
-  const dispatchDateTime = formatDateTimeStr([caseData.visitDate, caseData.visitTime]
-    .filter(Boolean).join(' '));
-  
+
+  const dispatchDateTime = formatDateTimeStr(
+    [caseData.visitDate, caseData.visitTime].filter(Boolean).join(" "),
+  );
+
   // 출동담당자: accompaniedPerson이 없으면 assignedPartnerManager(협력사 담당자) 사용
-  const dispatchManager = caseData.accompaniedPerson || caseData.assignedPartnerManager || '-';
-  
+  const dispatchManager =
+    caseData.accompaniedPerson || caseData.assignedPartnerManager || "-";
+
   // Main info table
   const tableRows: TableCell[][] = [
     [
-      { text: '사고접수번호', width: 100, isHeader: true, align: 'center' },
-      { text: caseData.insuranceAccidentNo || '-', width: 150, align: 'left' },
-      { text: '출동담당자', width: 100, isHeader: true, align: 'center' },
-      { text: dispatchManager, width: 165, align: 'left' },
+      { text: "사고접수번호", width: 100, isHeader: true, align: "center" },
+      { text: caseData.insuranceAccidentNo || "-", width: 150, align: "left" },
+      { text: "출동담당자", width: 100, isHeader: true, align: "center" },
+      { text: dispatchManager, width: 165, align: "left" },
     ],
     [
-      { text: '피보험자명', width: 100, isHeader: true, align: 'center' },
-      { text: caseData.insuredName || caseData.victimName || '-', width: 150, align: 'left' },
-      { text: '협력업체', width: 100, isHeader: true, align: 'center' },
-      { text: caseData.assignedPartner || '-', width: 165, align: 'left' },
+      { text: "피보험자명", width: 100, isHeader: true, align: "center" },
+      {
+        text: caseData.insuredName || caseData.victimName || "-",
+        width: 150,
+        align: "left",
+      },
+      { text: "협력업체", width: 100, isHeader: true, align: "center" },
+      { text: caseData.assignedPartner || "-", width: 165, align: "left" },
     ],
     [
-      { text: '주소', width: 100, isHeader: true, align: 'center' },
-      { text: fullAddress || '-', width: 415, align: 'left' },
+      { text: "주소", width: 100, isHeader: true, align: "center" },
+      { text: fullAddress || "-", width: 415, align: "left" },
     ],
     [
-      { text: '출동일시', width: 100, isHeader: true, align: 'center' },
-      { text: dispatchDateTime || '-', width: 415, align: 'left' },
+      { text: "출동일시", width: 100, isHeader: true, align: "center" },
+      { text: dispatchDateTime || "-", width: 415, align: "left" },
     ],
   ];
-  
+
   y = drawTable(page, {
     x: MARGIN,
     y,
@@ -554,43 +605,43 @@ async function renderCoverPage(
     fontSize: 10,
     rowHeight: 28,
   });
-  
+
   y -= 40;
-  
+
   // Body text - two lines
   drawText(page, {
     x: MARGIN,
     y,
-    text: '상기 건에 대하여 현장 출동 조사를 실시하였으며,',
+    text: "상기 건에 대하여 현장 출동 조사를 실시하였으며,",
     font: fonts.regular,
     size: 11,
   });
-  
+
   y -= 22;
-  
+
   drawText(page, {
     x: MARGIN,
     y,
-    text: '조사 결과를 별첨 보고서와 같이 제출합니다.',
+    text: "조사 결과를 별첨 보고서와 같이 제출합니다.",
     font: fonts.regular,
     size: 11,
   });
-  
+
   y -= 50;
-  
+
   // Confirmation text (bold, centered)
   drawText(page, {
     x: MARGIN,
     y,
-    text: '위 내용이 사실과 다름없음을 확인합니다.',
+    text: "위 내용이 사실과 다름없음을 확인합니다.",
     font: fonts.bold,
     size: 12,
     maxWidth: CONTENT_WIDTH,
-    align: 'center',
+    align: "center",
   });
-  
+
   y -= 50;
-  
+
   // Date (centered)
   const now = new Date();
   const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
@@ -601,82 +652,82 @@ async function renderCoverPage(
     font: fonts.regular,
     size: 13,
     maxWidth: CONTENT_WIDTH,
-    align: 'center',
+    align: "center",
   });
-  
+
   y -= 70;
-  
+
   // Company info (right-aligned label: value format)
   const infoX = A4_WIDTH / 2 + 30;
   const labelWidth = 70;
   const valueX = infoX + labelWidth + 20;
-  
+
   drawText(page, {
     x: infoX,
     y,
-    text: '회 사 명 :',
+    text: "회 사 명 :",
     font: fonts.bold,
     size: 11,
   });
   drawText(page, {
     x: valueX,
     y,
-    text: caseData.assignedPartner || '-',
+    text: caseData.assignedPartner || "-",
     font: fonts.regular,
     size: 11,
   });
-  
+
   y -= 25;
-  
+
   drawText(page, {
     x: infoX,
     y,
-    text: '담 당 자 :',
+    text: "담 당 자 :",
     font: fonts.bold,
     size: 11,
   });
   drawText(page, {
     x: valueX,
     y,
-    text: caseData.assignedPartnerManager || partnerData?.name || '-',
+    text: caseData.assignedPartnerManager || partnerData?.name || "-",
     font: fonts.regular,
     size: 11,
   });
-  
+
   y -= 25;
-  
+
   drawText(page, {
     x: infoX,
     y,
-    text: '연 락 처 :',
+    text: "연 락 처 :",
     font: fonts.bold,
     size: 11,
   });
   drawText(page, {
     x: valueX,
     y,
-    text: caseData.assignedPartnerContact || partnerData?.phone || '-',
+    text: caseData.assignedPartnerContact || partnerData?.phone || "-",
     font: fonts.regular,
     size: 11,
   });
-  
+
   // FLOXN logo at bottom center (using image file)
   const logoY = MARGIN + 20;
   const centerX = A4_WIDTH / 2;
-  
+
   try {
-    const logoPath = path.join(process.cwd(), 'server/assets/floxn-logo.png');
+    const logoPath = path.join(process.cwd(), "server/assets/floxn-logo.png");
     if (fs.existsSync(logoPath)) {
       const logoData = fs.readFileSync(logoPath);
       const logoImage = await pdfDoc.embedPng(logoData);
       const logoDims = logoImage.scale(1);
-      
+
       // Scale logo to fit nicely (max width ~120px)
       const maxLogoWidth = 120;
       const logoScale = Math.min(maxLogoWidth / logoDims.width, 1);
       const drawLogoWidth = logoDims.width * logoScale;
       const drawLogoHeight = logoDims.height * logoScale;
-      
+
       page.drawImage(logoImage, {
         x: centerX - drawLogoWidth / 2,
         y: logoY,
@@ -685,7 +736,7 @@ async function renderCoverPage(
       });
     }
   } catch (err) {
-    console.error('[pdf-lib] 로고 이미지 로드 실패:', err);
+    console.error("[pdf-lib] 로고 이미지 로드 실패:", err);
   }
 }
 
@@ -694,42 +745,48 @@ async function renderFieldReportPage(
   fonts: FontSet,
   caseData: any,
   partnerData: any,
-  repairItems: any[]
+  repairItems: any[],
 ): Promise<void> {
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
-  
+
   // Title: 출동확인서 (centered)
   drawText(page, {
     x: MARGIN,
     y: y - 25,
-    text: '출동확인서',
+    text: "출동확인서",
     font: fonts.bold,
     size: 20,
     maxWidth: CONTENT_WIDTH,
-    align: 'center',
+    align: "center",
   });
-  
+
   y -= 55;
-  
-  const insuredFullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
-    .filter(Boolean).join(' ');
-  
+
+  const insuredFullAddress = [
+    caseData.insuredAddress,
+    caseData.insuredAddressDetail,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   // 날짜/시간 형식에서 불필요한 공백 제거 (예: "2026- 01- 15 13: 07" -> "2026-01-15 13:07")
   const formatDateTime = (str: string): string => {
     return str
-      .replace(/- /g, '-')  // "- " -> "-"
-      .replace(/: /g, ':')  // ": " -> ":"
-      .replace(/\s+/g, ' ') // 연속 공백 제거
+      .replace(/- /g, "-") // "- " -> "-"
+      .replace(/: /g, ":") // ": " -> ":"
+      .replace(/\s+/g, " ") // 연속 공백 제거
       .trim();
   };
-  
-  const visitDateTime = formatDateTime([caseData.visitDate, caseData.visitTime]
-    .filter(Boolean).join(' '));
-  
-  const accidentDateTime = formatDateTime([caseData.accidentDate, caseData.accidentTime]
-    .filter(Boolean).join(' '));
-  
+
+  const visitDateTime = formatDateTime(
+    [caseData.visitDate, caseData.visitTime].filter(Boolean).join(" "),
+  );
+
+  const accidentDateTime = formatDateTime(
+    [caseData.accidentDate, caseData.accidentTime].filter(Boolean).join(" "),
+  );
+
   // Helper function to draw section header with grey background
   const drawSectionHeader = (title: string, currentY: number): number => {
     const headerHeight = 22;
@@ -740,7 +797,7 @@ async function renderFieldReportPage(
       height: headerHeight,
       color: rgb(0.85, 0.85, 0.85),
     });
-    
+
     drawText(page, {
       x: MARGIN + 8,
       y: currentY - 15,
@@ -748,32 +805,36 @@ async function renderFieldReportPage(
       font: fonts.bold,
       size: 10,
     });
-    
+
     return currentY - headerHeight - 5;
   };
-  
+
   // Section 1: 현장정보
-  y = drawSectionHeader('현장정보', y);
-  
+  y = drawSectionHeader("현장정보", y);
+
   const fieldInfoRows: TableCell[][] = [
     [
-      { text: '방문일시', width: 90, isHeader: true, align: 'center' },
-      { text: visitDateTime || '-', width: 168, align: 'left' },
-      { text: '출동 담당자', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.assignedPartnerManager || partnerData?.name || '-', width: 167, align: 'left' },
+      { text: "방문일시", width: 90, isHeader: true, align: "center" },
+      { text: visitDateTime || "-", width: 168, align: "left" },
+      { text: "출동 담당자", width: 90, isHeader: true, align: "center" },
+      {
+        text: caseData.assignedPartnerManager || partnerData?.name || "-",
+        width: 167,
+        align: "left",
+      },
     ],
     [
-      { text: '피보험자명', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.insuredName || '-', width: 168, align: 'left' },
-      { text: '협력업체', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.assignedPartner || '-', width: 167, align: 'left' },
+      { text: "피보험자명", width: 90, isHeader: true, align: "center" },
+      { text: caseData.insuredName || "-", width: 168, align: "left" },
+      { text: "협력업체", width: 90, isHeader: true, align: "center" },
+      { text: caseData.assignedPartner || "-", width: 167, align: "left" },
     ],
     [
-      { text: '피보험자 주소', width: 90, isHeader: true, align: 'center' },
-      { text: insuredFullAddress || '-', width: 425, align: 'left' },
+      { text: "피보험자 주소", width: 90, isHeader: true, align: "center" },
+      { text: insuredFullAddress || "-", width: 425, align: "left" },
     ],
   ];
-  
+
   y = drawTable(page, {
     x: MARGIN,
     y,
@@ -782,25 +843,29 @@ async function renderFieldReportPage(
     fontSize: 9,
     rowHeight: 24,
   });
-  
+
   y -= 15;
-  
+
   // Section 2: 사고 원인(+수리항목)
-  y = drawSectionHeader('사고 원인(+수리항목)', y);
-  
+  y = drawSectionHeader("사고 원인(+수리항목)", y);
+
   const accidentInfoRows: TableCell[][] = [
     [
-      { text: '사고 발생일시', width: 90, isHeader: true, align: 'center' },
-      { text: accidentDateTime || '-', width: 168, align: 'left' },
-      { text: '누수유형', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.leakType || caseData.accidentCategory || '-', width: 167, align: 'left' },
+      { text: "사고 발생일시", width: 90, isHeader: true, align: "center" },
+      { text: accidentDateTime || "-", width: 168, align: "left" },
+      { text: "누수유형", width: 90, isHeader: true, align: "center" },
+      {
+        text: caseData.leakType || caseData.accidentCategory || "-",
+        width: 167,
+        align: "left",
+      },
     ],
     [
-      { text: '사고원인', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.accidentCause || '-', width: 425, align: 'left' },
+      { text: "사고원인", width: 90, isHeader: true, align: "center" },
+      { text: caseData.accidentCause || "-", width: 425, align: "left" },
     ],
   ];
-  
+
   y = drawTable(page, {
     x: MARGIN,
     y,
@@ -809,15 +874,15 @@ async function renderFieldReportPage(
     fontSize: 9,
     rowHeight: 24,
   });
-  
+
   y -= 15;
-  
+
   // Section 3: 특이사항 및 요청사항 (VOC) - 현장 특이사항 섹션 제거됨
-  y = drawSectionHeader('특이사항 및 요청사항 (VOC)', y);
-  
+  y = drawSectionHeader("특이사항 및 요청사항 (VOC)", y);
+
   // VOC는 vocContent 필드 사용 (specialNotes는 폴백)
-  const vocText = caseData.vocContent || caseData.specialNotes || '-';
-  
+  const vocText = caseData.vocContent || caseData.specialNotes || "-";
+
   page.drawRectangle({
     x: MARGIN,
     y: y - 45,
@@ -826,7 +891,7 @@ async function renderFieldReportPage(
     borderColor: rgb(0.7, 0.7, 0.7),
     borderWidth: 0.5,
   });
-  
+
   drawText(page, {
     x: MARGIN + 8,
     y: y - 12,
@@ -835,54 +900,69 @@ async function renderFieldReportPage(
     size: 9,
     maxWidth: CONTENT_WIDTH - 16,
   });
-  
+
   y -= 60;
-  
+
   // Section 5: 피해 복구방식 및 처리 유형
-  y = drawSectionHeader('피해 복구방식 및 처리 유형', y);
-  
-  const victimFullAddress = [caseData.victimAddress, caseData.victimAddressDetail]
-    .filter(Boolean).join(' ') || insuredFullAddress;
-  
+  y = drawSectionHeader("피해 복구방식 및 처리 유형", y);
+
+  const victimFullAddress =
+    [caseData.victimAddress, caseData.victimAddressDetail]
+      .filter(Boolean)
+      .join(" ") || insuredFullAddress;
+
   // 처리유형 파싱 (JSON 배열)
-  let processingTypesStr = '-';
+  let processingTypesStr = "-";
   try {
     if (caseData.processingTypes) {
-      const types = typeof caseData.processingTypes === 'string' 
-        ? JSON.parse(caseData.processingTypes) 
-        : caseData.processingTypes;
+      const types =
+        typeof caseData.processingTypes === "string"
+          ? JSON.parse(caseData.processingTypes)
+          : caseData.processingTypes;
       if (Array.isArray(types) && types.length > 0) {
-        processingTypesStr = types.join(', ');
+        processingTypesStr = types.join(", ");
         if (caseData.processingTypeOther) {
           processingTypesStr += ` (${caseData.processingTypeOther})`;
         }
       }
     }
   } catch (e) {
-    processingTypesStr = caseData.processingTypes?.toString() || '-';
+    processingTypesStr = caseData.processingTypes?.toString() || "-";
   }
-  
+
   const recoveryInfoRows: TableCell[][] = [
     [
-      { text: '피해자명', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.victimName || '-', width: 168, align: 'left' },
-      { text: '피해자 연락처', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.victimContact || caseData.victimPhone || '-', width: 167, align: 'left' },
+      { text: "피해자명", width: 90, isHeader: true, align: "center" },
+      { text: caseData.victimName || "-", width: 168, align: "left" },
+      { text: "피해자 연락처", width: 90, isHeader: true, align: "center" },
+      {
+        text: caseData.victimContact || caseData.victimPhone || "-",
+        width: 167,
+        align: "left",
+      },
     ],
     [
-      { text: '피해주소', width: 90, isHeader: true, align: 'center' },
-      { text: victimFullAddress || '-', width: 425, align: 'left' },
+      { text: "피해주소", width: 90, isHeader: true, align: "center" },
+      { text: victimFullAddress || "-", width: 425, align: "left" },
     ],
     [
-      { text: '처리유형', width: 90, isHeader: true, align: 'center' },
-      { text: processingTypesStr, width: 425, align: 'left' },
+      { text: "처리유형", width: 90, isHeader: true, align: "center" },
+      { text: processingTypesStr, width: 425, align: "left" },
     ],
     [
-      { text: '복구방식', width: 90, isHeader: true, align: 'center' },
-      { text: caseData.recoveryMethodType || caseData.restorationMethod || caseData.recoveryMethod || '-', width: 425, align: 'left' },
+      { text: "복구방식", width: 90, isHeader: true, align: "center" },
+      {
+        text:
+          caseData.recoveryMethodType ||
+          caseData.restorationMethod ||
+          caseData.recoveryMethod ||
+          "-",
+        width: 425,
+        align: "left",
+      },
     ],
   ];
-  
+
   y = drawTable(page, {
     x: MARGIN,
     y,
@@ -891,12 +971,12 @@ async function renderFieldReportPage(
     fontSize: 9,
     rowHeight: 24,
   });
-  
+
   // Footer: 작성일 and 작성자
   const footerY = MARGIN + 20;
   const now = new Date();
   const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
-  
+
   drawText(page, {
     x: MARGIN,
     y: footerY,
@@ -904,10 +984,11 @@ async function renderFieldReportPage(
     font: fonts.regular,
     size: 9,
   });
-  
-  const partnerName = caseData.assignedPartner || '-';
-  const managerName = caseData.assignedPartnerManager || partnerData?.name || '-';
-  
+
+  const partnerName = caseData.assignedPartner || "-";
+  const managerName =
+    caseData.assignedPartnerManager || partnerData?.name || "-";
+
   drawText(page, {
     x: A4_WIDTH - MARGIN - 180,
     y: footerY,
@@ -921,11 +1002,11 @@ async function renderDrawingPage(
   pdfDoc: PDFDocument,
   fonts: FontSet,
   caseData: any,
-  drawingData: any
+  drawingData: any,
 ): Promise<void> {
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
-  
+
   // Header: 현장 피해상황 도면 with gray background
   const headerHeight = 35;
   page.drawRectangle({
@@ -937,38 +1018,41 @@ async function renderDrawingPage(
     borderColor: rgb(0.7, 0.7, 0.7),
     borderWidth: 0.5,
   });
-  
+
   drawText(page, {
     x: MARGIN + 15,
     y: y - 25,
-    text: '현장 피해상황 도면',
+    text: "현장 피해상황 도면",
     font: fonts.bold,
     size: 14,
   });
-  
+
   // 사고번호(계약번호) on the right - 헤더박스 내에 맞도록 폰트 크기 조정
-  const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '-';
+  const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "-";
   const accidentNoText = `사고번호(계약번호): ${accidentNo}`;
   // 텍스트 길이에 따라 폰트 크기 조정 (헤더 영역 안에 들어가도록)
-  const accidentNoFontSize = accidentNoText.length > 25 ? 8 : (accidentNoText.length > 20 ? 9 : 10);
+  const accidentNoFontSize =
+    accidentNoText.length > 25 ? 8 : accidentNoText.length > 20 ? 9 : 10;
   drawText(page, {
-    x: A4_WIDTH - MARGIN - 180,  // 더 왼쪽으로 이동
+    x: A4_WIDTH - MARGIN - 180, // 더 왼쪽으로 이동
     y: y - 25,
     text: accidentNoText,
     font: fonts.regular,
     size: accidentNoFontSize,
   });
-  
+
   y -= headerHeight + 15;
-  
+
   // Info line: 보험사, 피보험자, 주소 (해당건의 주소 사용)
-  const insuranceCompany = caseData.insuranceCompany || '-';
-  const insuredName = caseData.insuredName || caseData.victimName || '-';
+  const insuranceCompany = caseData.insuranceCompany || "-";
+  const insuredName = caseData.insuredName || caseData.victimName || "-";
   // 해당건의 주소 사용 (victimAddress + victimAddressDetail 우선, 없으면 insured 주소)
-  const victimAddr = caseData.victimAddress || caseData.insuredAddress || '';
-  const victimAddrDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
-  const fullAddress = [victimAddr, victimAddrDetail].filter(Boolean).join(' ') || '-';
-  
+  const victimAddr = caseData.victimAddress || caseData.insuredAddress || "";
+  const victimAddrDetail =
+    caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
+  const fullAddress =
+    [victimAddr, victimAddrDetail].filter(Boolean).join(" ") || "-";
+
   drawText(page, {
     x: MARGIN,
     y,
@@ -976,13 +1060,13 @@ async function renderDrawingPage(
     font: fonts.regular,
     size: 9,
   });
-  
-  y -= 20;  // 간격 축소하여 도면 영역 확대
-  
+
+  y -= 20; // 간격 축소하여 도면 영역 확대
+
   // Drawing area - large box for the drawing image (도면 영역 최대화)
-  const drawingAreaHeight = A4_HEIGHT - MARGIN * 2 - headerHeight - 50;  // 여백 축소 (80 → 50)
+  const drawingAreaHeight = A4_HEIGHT - MARGIN * 2 - headerHeight - 50; // 여백 축소 (80 → 50)
   const drawingAreaWidth = CONTENT_WIDTH;
-  
+
   page.drawRectangle({
     x: MARGIN,
     y: y - drawingAreaHeight,
@@ -991,107 +1075,127 @@ async function renderDrawingPage(
     borderColor: rgb(0.7, 0.7, 0.7),
     borderWidth: 0.5,
   });
-  
+
   // Try to embed drawing image if available
   // 우선순위: canvasImage (전체 캔버스 스냅샷) > uploadedImages (개별 이미지)
-  console.log('[pdf-lib] ===== 도면 섹션 생성 시작 =====');
-  console.log('[pdf-lib] 도면 데이터 존재 여부:', !!drawingData);
+  console.log("[pdf-lib] ===== 도면 섹션 생성 시작 =====");
+  console.log("[pdf-lib] 도면 데이터 존재 여부:", !!drawingData);
   if (drawingData) {
-    console.log('[pdf-lib] 도면 상세:', JSON.stringify({
-      id: drawingData.id,
-      caseId: drawingData.caseId,
-      hasCanvasImage: !!(drawingData as any).canvasImage,
-      canvasImageLength: (drawingData as any).canvasImage?.length || 0,
-      uploadedImagesCount: Array.isArray(drawingData.uploadedImages) ? drawingData.uploadedImages.length : 'not array',
-      rectanglesCount: Array.isArray(drawingData.rectangles) ? drawingData.rectangles.length : 'not array',
-    }));
+    console.log(
+      "[pdf-lib] 도면 상세:",
+      JSON.stringify({
+        id: drawingData.id,
+        caseId: drawingData.caseId,
+        hasCanvasImage: !!(drawingData as any).canvasImage,
+        canvasImageLength: (drawingData as any).canvasImage?.length || 0,
+        uploadedImagesCount: Array.isArray(drawingData.uploadedImages)
+          ? drawingData.uploadedImages.length
+          : "not array",
+        rectanglesCount: Array.isArray(drawingData.rectangles)
+          ? drawingData.rectangles.length
+          : "not array",
+      }),
+    );
   }
-  
+
   // 안전하게 canvasImage 접근 (DB 컬럼이 없을 수 있음)
   const canvasImage = drawingData ? (drawingData as any).canvasImage : null;
-  
+
   // 캔버스 이미지가 있으면 우선 사용 (전체 도면 스냅샷)
   if (drawingData && canvasImage) {
-    console.log('[pdf-lib] 분기: canvasImage 사용 (캔버스 스냅샷)');
+    console.log("[pdf-lib] 분기: canvasImage 사용 (캔버스 스냅샷)");
     try {
       let imageData: Buffer;
-      
-      if (canvasImage.startsWith('data:image/')) {
-        const base64Data = canvasImage.split(',')[1];
-        imageData = Buffer.from(base64Data, 'base64');
+
+      if (canvasImage.startsWith("data:image/")) {
+        const base64Data = canvasImage.split(",")[1];
+        imageData = Buffer.from(base64Data, "base64");
       } else {
-        imageData = Buffer.from(canvasImage, 'base64');
+        imageData = Buffer.from(canvasImage, "base64");
       }
-      
+
       // 도면 이미지를 PDF 영역에 꽉 채우도록 강제 스케일업
       console.log(`[pdf-lib] 도면 이미지 처리 시작...`);
-      
+
       const originalMeta = await sharp(imageData).metadata();
-      console.log(`[pdf-lib] 원본 크기: ${originalMeta.width}x${originalMeta.height}`);
-      
+      console.log(
+        `[pdf-lib] 원본 크기: ${originalMeta.width}x${originalMeta.height}`,
+      );
+
       // PNG 이미지 (html2canvas는 PNG로 출력)
       const embeddedImage = await pdfDoc.embedPng(imageData);
-      
+
       // 도면 영역 안에 맞도록 스케일링 (프레임을 벗어나지 않도록)
-      const maxWidth = drawingAreaWidth - 10;  // 여백 5px씩
+      const maxWidth = drawingAreaWidth - 10; // 여백 5px씩
       const maxHeight = drawingAreaHeight - 10;
-      
+
       const imgDims = embeddedImage.scale(1);
-      
+
       // 가로/세로 비율을 유지하면서 영역 안에 맞춤
       const scaleX = maxWidth / imgDims.width;
       const scaleY = maxHeight / imgDims.height;
-      const scale = Math.min(scaleX, scaleY);  // 영역을 벗어나지 않도록 작은 값 사용
-      
+      const scale = Math.min(scaleX, scaleY); // 영역을 벗어나지 않도록 작은 값 사용
+
       let drawWidth = imgDims.width * scale;
       let drawHeight = imgDims.height * scale;
-      
-      console.log(`[pdf-lib] PDF 영역: ${maxWidth}x${maxHeight}, 원본 이미지: ${imgDims.width}x${imgDims.height}`);
-      console.log(`[pdf-lib] 도면 표시 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)}, scale: ${scale.toFixed(3)}`);
-      
+
+      console.log(
+        `[pdf-lib] PDF 영역: ${maxWidth}x${maxHeight}, 원본 이미지: ${imgDims.width}x${imgDims.height}`,
+      );
+      console.log(
+        `[pdf-lib] 도면 표시 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)}, scale: ${scale.toFixed(3)}`,
+      );
+
       // 중앙 정렬 (넘치는 부분은 잘림)
       const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
-      const drawY = (y - drawingAreaHeight) + (drawingAreaHeight - drawHeight) / 2;
-      
+      const drawY =
+        y - drawingAreaHeight + (drawingAreaHeight - drawHeight) / 2;
+
       page.drawImage(embeddedImage, {
         x: drawX,
         y: drawY,
         width: drawWidth,
         height: drawHeight,
       });
-      
-      console.log(`[pdf-lib] 캔버스 도면 이미지 삽입 완료 (영역 채움, 최종 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)})`);
+
+      console.log(
+        `[pdf-lib] 캔버스 도면 이미지 삽입 완료 (영역 채움, 최종 크기: ${Math.round(drawWidth)}x${Math.round(drawHeight)})`,
+      );
     } catch (err) {
-      console.error('[pdf-lib] 캔버스 도면 이미지 삽입 실패:', err);
+      console.error("[pdf-lib] 캔버스 도면 이미지 삽입 실패:", err);
       // 실패 시 placeholder 표시
       drawText(page, {
         x: MARGIN + drawingAreaWidth / 2 - 50,
         y: y - drawingAreaHeight / 2,
-        text: '도면 이미지 로드 실패',
+        text: "도면 이미지 로드 실패",
         font: fonts.regular,
         size: 12,
         color: { r: 0.6, g: 0.6, b: 0.6 },
       });
     }
-  } else if (drawingData && drawingData.uploadedImages && drawingData.uploadedImages.length > 0) {
+  } else if (
+    drawingData &&
+    drawingData.uploadedImages &&
+    drawingData.uploadedImages.length > 0
+  ) {
     // canvasImage가 없으면 기존 방식으로 첫 번째 업로드 이미지 사용
-    console.log('[pdf-lib] 분기: uploadedImages 사용 (첫 번째 업로드 이미지)');
+    console.log("[pdf-lib] 분기: uploadedImages 사용 (첫 번째 업로드 이미지)");
     try {
       const mainImage = drawingData.uploadedImages[0];
       if (mainImage.src) {
         let imageData: Buffer;
-        
-        if (mainImage.src.startsWith('data:image/')) {
-          const base64Data = mainImage.src.split(',')[1];
-          imageData = Buffer.from(base64Data, 'base64');
+
+        if (mainImage.src.startsWith("data:image/")) {
+          const base64Data = mainImage.src.split(",")[1];
+          imageData = Buffer.from(base64Data, "base64");
         } else {
-          imageData = Buffer.from(mainImage.src, 'base64');
+          imageData = Buffer.from(mainImage.src, "base64");
         }
-        
+
         // Determine image type and embed
         let embeddedImage;
         const srcLower = mainImage.src.toLowerCase();
-        if (srcLower.includes('image/png') || srcLower.includes('.png')) {
+        if (srcLower.includes("image/png") || srcLower.includes(".png")) {
           embeddedImage = await pdfDoc.embedPng(imageData);
         } else {
           // Convert to JPEG using sharp if needed
@@ -1100,51 +1204,52 @@ async function renderDrawingPage(
             .toBuffer();
           embeddedImage = await pdfDoc.embedJpg(processedBuffer);
         }
-        
+
         const imgDims = embeddedImage.scale(1);
-        const maxWidth = drawingAreaWidth - 5;  // 패딩 더 축소
-        const maxHeight = drawingAreaHeight - 5;  // 패딩 더 축소
-        
+        const maxWidth = drawingAreaWidth - 5; // 패딩 더 축소
+        const maxHeight = drawingAreaHeight - 5; // 패딩 더 축소
+
         const scaleX = maxWidth / imgDims.width;
         const scaleY = maxHeight / imgDims.height;
         // 영역에 맞게 최대한 확대하되, 5배까지 확대 (원본이 너무 작을 경우 대비)
         const baseScale = Math.min(scaleX, scaleY);
-        const scale = Math.min(baseScale, 5.0);  // 최대 5배까지 확대
-        
+        const scale = Math.min(baseScale, 5.0); // 최대 5배까지 확대
+
         // 도면 크기를 영역의 95% 이상 채우도록 보장
         let drawWidth = imgDims.width * scale;
         let drawHeight = imgDims.height * scale;
-        
+
         // 영역 대비 너무 작으면 추가 확대 (영역의 95% 이상 채우도록)
         const minAreaRatio = 0.95;
         const currentWidthRatio = drawWidth / maxWidth;
         const currentHeightRatio = drawHeight / maxHeight;
         const currentMaxRatio = Math.max(currentWidthRatio, currentHeightRatio);
-        
+
         if (currentMaxRatio < minAreaRatio) {
           const additionalScale = minAreaRatio / currentMaxRatio;
           drawWidth *= additionalScale;
           drawHeight *= additionalScale;
         }
-        
+
         const drawX = MARGIN + (drawingAreaWidth - drawWidth) / 2;
-        const drawY = (y - drawingAreaHeight) + (drawingAreaHeight - drawHeight) / 2;
-        
+        const drawY =
+          y - drawingAreaHeight + (drawingAreaHeight - drawHeight) / 2;
+
         page.drawImage(embeddedImage, {
           x: drawX,
           y: drawY,
           width: drawWidth,
           height: drawHeight,
         });
-        
-        console.log('[pdf-lib] 도면 이미지 삽입 완료 (업로드 이미지, 확대됨)');
+
+        console.log("[pdf-lib] 도면 이미지 삽입 완료 (업로드 이미지, 확대됨)");
       }
     } catch (err) {
-      console.error('[pdf-lib] 도면 이미지 삽입 실패:', err);
+      console.error("[pdf-lib] 도면 이미지 삽입 실패:", err);
       drawText(page, {
         x: MARGIN + drawingAreaWidth / 2 - 50,
         y: y - drawingAreaHeight / 2,
-        text: '도면 이미지 로드 실패',
+        text: "도면 이미지 로드 실패",
         font: fonts.regular,
         size: 12,
         color: { r: 0.6, g: 0.6, b: 0.6 },
@@ -1152,23 +1257,23 @@ async function renderDrawingPage(
     }
   } else {
     // No drawing data - show placeholder
-    console.log('[pdf-lib] 분기: 도면 없음 (등록된 도면이 없습니다 표시)');
+    console.log("[pdf-lib] 분기: 도면 없음 (등록된 도면이 없습니다 표시)");
     drawText(page, {
       x: MARGIN + drawingAreaWidth / 2 - 60,
       y: y - drawingAreaHeight / 2,
-      text: '등록된 도면이 없습니다',
+      text: "등록된 도면이 없습니다",
       font: fonts.regular,
       size: 12,
       color: { r: 0.6, g: 0.6, b: 0.6 },
     });
   }
-  console.log('[pdf-lib] ===== 도면 섹션 생성 완료 =====');
-  
+  console.log("[pdf-lib] ===== 도면 섹션 생성 완료 =====");
+
   // Footer
   const footerY = MARGIN + 15;
   const now = new Date();
   const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
-  
+
   drawText(page, {
     x: MARGIN,
     y: footerY,
@@ -1183,94 +1288,113 @@ async function renderEvidencePages(
   fonts: FontSet,
   caseData: any,
   documents: any[],
-  processingConfig: ImageProcessingConfig
+  processingConfig: ImageProcessingConfig,
 ): Promise<{ errors: Array<{ fileName: string; reason: string }> }> {
   const errors: Array<{ fileName: string; reason: string }> = [];
-  
+
   const categoryToTab: Record<string, string> = {
-    '현장출동사진': '현장사진', '현장': '현장사진',
-    '수리중 사진': '현장사진', '수리중': '현장사진',
-    '복구완료 사진': '현장사진', '복구완료': '현장사진',
-    '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
-    '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
-    '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
-    '위임장': '청구자료', '도급계약서': '청구자료',
-    '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
+    현장출동사진: "현장사진",
+    현장: "현장사진",
+    "수리중 사진": "현장사진",
+    수리중: "현장사진",
+    "복구완료 사진": "현장사진",
+    복구완료: "현장사진",
+    "보험금 청구서": "기본자료",
+    "개인정보 동의서(가족용)": "기본자료",
+    주민등록등본: "증빙자료",
+    등기부등본: "증빙자료",
+    건축물대장: "증빙자료",
+    "기타증빙자료(민원일지 등)": "증빙자료",
+    위임장: "청구자료",
+    도급계약서: "청구자료",
+    복구완료확인서: "청구자료",
+    "부가세 청구자료": "청구자료",
+    청구: "청구자료",
   };
-  
+
   const imageDocs: Array<{ doc: any; tab: string; imageData: string }> = [];
   const pdfDocs: Array<{ doc: any; tab: string; buffer: Buffer }> = [];
-  
+
   for (const doc of documents) {
-    const isImage = doc.fileType?.startsWith('image/');
-    const isPdf = doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf');
+    const isImage = doc.fileType?.startsWith("image/");
+    const isPdf =
+      doc.fileType === "application/pdf" ||
+      doc.fileName?.toLowerCase().endsWith(".pdf");
     const hasStorageKey = doc.storageKey && doc.storageKey.length > 0;
     const hasFileData = doc.fileData && doc.fileData.length > 100;
     // 레거시 파일은 storageKey/fileData 없어도 doc.id로 DB에서 로드 가능
     const canLoadFromDb = !!doc.id;
-    
+
     if (isImage && (hasStorageKey || hasFileData || canLoadFromDb)) {
-      const tab = categoryToTab[doc.category] || '기타';
-      
+      const tab = categoryToTab[doc.category] || "기타";
+
       // Object Storage 또는 fileData 또는 DB에서 이미지 로드
       const imageBuffer = await getImageBuffer(doc);
       if (imageBuffer) {
-        const base64Data = imageBuffer.toString('base64');
+        const base64Data = imageBuffer.toString("base64");
         imageDocs.push({ doc, tab, imageData: base64Data });
       } else {
-        errors.push({ fileName: doc.fileName, reason: '이미지 로드 실패' });
+        errors.push({ fileName: doc.fileName, reason: "이미지 로드 실패" });
       }
     } else if (isPdf && (hasStorageKey || hasFileData || canLoadFromDb)) {
-      const tab = categoryToTab[doc.category] || '기타';
-      
+      const tab = categoryToTab[doc.category] || "기타";
+
       // Object Storage 또는 fileData 또는 DB에서 PDF 로드
       const pdfBuffer = await getImageBuffer(doc); // 같은 함수로 Buffer 가져오기
       if (pdfBuffer) {
         pdfDocs.push({ doc, tab, buffer: pdfBuffer });
       } else {
-        errors.push({ fileName: doc.fileName, reason: 'PDF 로드 실패' });
+        errors.push({ fileName: doc.fileName, reason: "PDF 로드 실패" });
       }
     } else if (isImage) {
-      errors.push({ fileName: doc.fileName, reason: '이미지 데이터 없음' });
+      errors.push({ fileName: doc.fileName, reason: "이미지 데이터 없음" });
     } else if (isPdf) {
-      errors.push({ fileName: doc.fileName, reason: 'PDF 데이터 없음' });
+      errors.push({ fileName: doc.fileName, reason: "PDF 데이터 없음" });
     }
   }
-  
+
   // PDF 문서 페이지들을 현재 문서에 복사 (각 페이지에 헤더 추가)
   // embedPage 방식으로 변경: 페이지 크기를 늘려서 상단에 헤더 공간 확보
   const PDF_HEADER_HEIGHT = 30;
-  
+
   for (const pdfItem of pdfDocs) {
     try {
       console.log(`[pdf-lib] PDF 문서 삽입: ${pdfItem.doc.fileName}`);
-      const externalPdf = await PDFDocument.load(pdfItem.buffer, { ignoreEncryption: true });
+      const externalPdf = await PDFDocument.load(pdfItem.buffer, {
+        ignoreEncryption: true,
+      });
       const pageCount = externalPdf.getPageCount();
-      
+
       // 주소 생성 (victimAddress 우선, insuredAddress 차선)
-      const pdfAddress = caseData.victimAddress || caseData.insuredAddress || '';
-      const pdfAddressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
-      const pdfFullAddress = pdfAddressDetail ? `${pdfAddress} ${pdfAddressDetail}` : pdfAddress;
-      
+      const pdfAddress =
+        caseData.victimAddress || caseData.insuredAddress || "";
+      const pdfAddressDetail =
+        caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
+      const pdfFullAddress = pdfAddressDetail
+        ? `${pdfAddress} ${pdfAddressDetail}`
+        : pdfAddress;
+
       // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
-      const pdfAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '';
-      const pdfCategoryDisplay = pdfItem.doc.category 
-        ? `${pdfItem.tab}-${pdfItem.doc.category}` 
+      const pdfAccidentNo =
+        caseData.insuranceAccidentNo || caseData.caseNumber || "";
+      const pdfCategoryDisplay = pdfItem.doc.category
+        ? `${pdfItem.tab}-${pdfItem.doc.category}`
         : pdfItem.tab;
       const pdfHeaderText = `사고번호 ${pdfAccidentNo} ${pdfFullAddress} ${pdfCategoryDisplay}`;
-      const pdfFontSize = pdfHeaderText.length > 60 ? 8 : (pdfHeaderText.length > 45 ? 9 : 10);
-      
+      const pdfFontSize =
+        pdfHeaderText.length > 60 ? 8 : pdfHeaderText.length > 45 ? 9 : 10;
+
       // 각 페이지를 embedPage로 처리하여 헤더 공간 확보
       for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
         const srcPage = externalPdf.getPage(pageIdx);
         const { width, height } = srcPage.getSize();
-        
+
         // 새 페이지 생성 (원본 + 헤더 높이)
         const newPage = pdfDoc.addPage([width, height + PDF_HEADER_HEIGHT]);
-        
+
         // 원본 페이지 임베드
         const embeddedPage = await pdfDoc.embedPage(srcPage);
-        
+
         // 원본 페이지를 헤더 아래에 배치
         newPage.drawPage(embeddedPage, {
           x: 0,
@@ -1278,7 +1402,7 @@ async function renderEvidencePages(
           width: width,
           height: height,
         });
-        
+
         // 헤더 배경 (어두운 회색)
         newPage.drawRectangle({
           x: 0,
@@ -1287,7 +1411,7 @@ async function renderEvidencePages(
           height: PDF_HEADER_HEIGHT,
           color: rgb(0.2, 0.2, 0.2),
         });
-        
+
         // 헤더 구분선
         newPage.drawLine({
           start: { x: 0, y: height },
@@ -1295,7 +1419,7 @@ async function renderEvidencePages(
           thickness: 0.5,
           color: rgb(0.4, 0.4, 0.4),
         });
-        
+
         // 헤더 텍스트 (흰색)
         const textY = height + (PDF_HEADER_HEIGHT - pdfFontSize) / 2;
         try {
@@ -1307,9 +1431,11 @@ async function renderEvidencePages(
             color: rgb(1, 1, 1),
           });
         } catch (textErr) {
-          console.warn(`[pdf-lib] PDF 헤더 텍스트 그리기 실패: ${pdfItem.doc.fileName} 페이지 ${pageIdx + 1}`);
+          console.warn(
+            `[pdf-lib] PDF 헤더 텍스트 그리기 실패: ${pdfItem.doc.fileName} 페이지 ${pageIdx + 1}`,
+          );
         }
-        
+
         // 페이지 번호 (우측)
         try {
           newPage.drawText(`${pageIdx + 1}/${pageCount}`, {
@@ -1323,19 +1449,24 @@ async function renderEvidencePages(
           // 무시
         }
       }
-      
-      console.log(`[pdf-lib] PDF 문서 삽입 완료: ${pdfItem.doc.fileName} (${pageCount}페이지, 헤더 추가됨)`);
+
+      console.log(
+        `[pdf-lib] PDF 문서 삽입 완료: ${pdfItem.doc.fileName} (${pageCount}페이지, 헤더 추가됨)`,
+      );
     } catch (pdfError) {
-      console.error(`[pdf-lib] PDF 삽입 오류 (${pdfItem.doc.fileName}):`, pdfError);
-      errors.push({ fileName: pdfItem.doc.fileName, reason: 'PDF 삽입 실패' });
+      console.error(
+        `[pdf-lib] PDF 삽입 오류 (${pdfItem.doc.fileName}):`,
+        pdfError,
+      );
+      errors.push({ fileName: pdfItem.doc.fileName, reason: "PDF 삽입 실패" });
     }
   }
-  
+
   // 이미지가 없고 PDF만 있는 경우에도 정상 반환
   if (imageDocs.length === 0) {
     return { errors };
   }
-  
+
   // 레이아웃 조정: 2개 이미지가 한 페이지에 완전히 들어가도록 간격 최적화
   // A4 높이(841.89) - 상단마진(30) - 하단마진(30) - 페이지헤더(30) = 751.89 사용 가능
   // (categoryHeader + image + footer) * 2 + spacing < 751.89
@@ -1343,23 +1474,25 @@ async function renderEvidencePages(
   const imageWidth = CONTENT_WIDTH;
   const headerHeight = 25;
   const spacing = 8;
-  
+
   for (let i = 0; i < imageDocs.length; i += 2) {
     const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
     const firstImage = imageDocs[i];
-    
+
     // 주소 생성 (victimAddress 우선, insuredAddress 차선)
-    const address = caseData.victimAddress || caseData.insuredAddress || '';
-    const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
+    const address = caseData.victimAddress || caseData.insuredAddress || "";
+    const addressDetail =
+      caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
     const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
-    
+
     // 헤더 형식: "사고번호 {보험사고번호} {주소} {카테고리}-{세부카테고리}"
-    const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '';
-    const categoryDisplay = firstImage.doc.category 
-      ? `${firstImage.tab}-${firstImage.doc.category}` 
+    const accidentNo =
+      caseData.insuranceAccidentNo || caseData.caseNumber || "";
+    const categoryDisplay = firstImage.doc.category
+      ? `${firstImage.tab}-${firstImage.doc.category}`
       : firstImage.tab;
     const headerText = `사고번호 ${accidentNo} ${fullAddress} ${categoryDisplay}`;
-    
+
     page.drawRectangle({
       x: MARGIN,
       y: A4_HEIGHT - MARGIN - 30,
@@ -1367,9 +1500,10 @@ async function renderEvidencePages(
       height: 30,
       color: rgb(0.2, 0.2, 0.2),
     });
-    
+
     // 헤더 텍스트 길이에 따라 폰트 크기 조정
-    const fontSize = headerText.length > 60 ? 8 : (headerText.length > 45 ? 9 : 10);
+    const fontSize =
+      headerText.length > 60 ? 8 : headerText.length > 45 ? 9 : 10;
     drawText(page, {
       x: MARGIN + 10,
       y: A4_HEIGHT - MARGIN - 22,
@@ -1381,8 +1515,9 @@ async function renderEvidencePages(
     const footerHeight = 20;
     // 카테고리 헤더 제거 - 페이지 상단 헤더만 유지
     // 레이아웃 조정: 카테고리 헤더 높이(headerHeight) 제거
-    const firstY = A4_HEIGHT - MARGIN - 30 - spacing - imageHeight - footerHeight;
-    
+    const firstY =
+      A4_HEIGHT - MARGIN - 30 - spacing - imageHeight - footerHeight;
+
     // Image area for first image (카테고리 헤더 없이 바로 이미지 영역)
     page.drawRectangle({
       x: MARGIN,
@@ -1392,33 +1527,53 @@ async function renderEvidencePages(
       borderColor: rgb(0.8, 0.8, 0.8),
       borderWidth: 0.5,
     });
-    
+
     const firstResult = await embedImage(
-      pdfDoc, page, firstImage.imageData,
-      MARGIN + 5, firstY + footerHeight + 5, imageWidth - 10, imageHeight - 10,
-      processingConfig
+      pdfDoc,
+      page,
+      firstImage.imageData,
+      MARGIN + 5,
+      firstY + footerHeight + 5,
+      imageWidth - 10,
+      imageHeight - 10,
+      processingConfig,
     );
-    
+
     if (!firstResult.success) {
-      drawErrorSection(page, fonts, MARGIN + 5, firstY + footerHeight + 5, imageWidth - 10, imageHeight - 10,
-        firstImage.doc.fileName, firstResult.error || '첨부 실패');
-      errors.push({ fileName: firstImage.doc.fileName, reason: firstResult.error || '첨부 실패' });
+      drawErrorSection(
+        page,
+        fonts,
+        MARGIN + 5,
+        firstY + footerHeight + 5,
+        imageWidth - 10,
+        imageHeight - 10,
+        firstImage.doc.fileName,
+        firstResult.error || "첨부 실패",
+      );
+      errors.push({
+        fileName: firstImage.doc.fileName,
+        reason: firstResult.error || "첨부 실패",
+      });
     }
-    
+
     // Footer with filename and upload date for first image
-    const firstUploadDate = firstImage.doc.createdAt 
-      ? new Date(firstImage.doc.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric' })
-      : '-';
-    
+    const firstUploadDate = firstImage.doc.createdAt
+      ? new Date(firstImage.doc.createdAt).toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+        })
+      : "-";
+
     drawText(page, {
       x: MARGIN + 5,
       y: firstY + 8,
-      text: firstImage.doc.fileName || '',
+      text: firstImage.doc.fileName || "",
       font: fonts.regular,
       size: 8,
       color: { r: 0.3, g: 0.3, b: 0.3 },
     });
-    
+
     drawText(page, {
       x: A4_WIDTH - MARGIN - 100,
       y: firstY + 8,
@@ -1427,12 +1582,12 @@ async function renderEvidencePages(
       size: 8,
       color: { r: 0.3, g: 0.3, b: 0.3 },
     });
-    
+
     if (imageDocs[i + 1]) {
       const secondImage = imageDocs[i + 1];
       // 카테고리 헤더 제거 - headerHeight 제외
       const secondY = firstY - spacing - imageHeight - footerHeight;
-      
+
       // Image area for second image (카테고리 헤더 없이 바로 이미지 영역)
       page.drawRectangle({
         x: MARGIN,
@@ -1442,33 +1597,53 @@ async function renderEvidencePages(
         borderColor: rgb(0.8, 0.8, 0.8),
         borderWidth: 0.5,
       });
-      
+
       const secondResult = await embedImage(
-        pdfDoc, page, secondImage.imageData,
-        MARGIN + 5, secondY + footerHeight + 5, imageWidth - 10, imageHeight - 10,
-        processingConfig
+        pdfDoc,
+        page,
+        secondImage.imageData,
+        MARGIN + 5,
+        secondY + footerHeight + 5,
+        imageWidth - 10,
+        imageHeight - 10,
+        processingConfig,
       );
-      
+
       if (!secondResult.success) {
-        drawErrorSection(page, fonts, MARGIN + 5, secondY + footerHeight + 5, imageWidth - 10, imageHeight - 10,
-          secondImage.doc.fileName, secondResult.error || '첨부 실패');
-        errors.push({ fileName: secondImage.doc.fileName, reason: secondResult.error || '첨부 실패' });
+        drawErrorSection(
+          page,
+          fonts,
+          MARGIN + 5,
+          secondY + footerHeight + 5,
+          imageWidth - 10,
+          imageHeight - 10,
+          secondImage.doc.fileName,
+          secondResult.error || "첨부 실패",
+        );
+        errors.push({
+          fileName: secondImage.doc.fileName,
+          reason: secondResult.error || "첨부 실패",
+        });
       }
-      
+
       // Footer with filename and upload date for second image
-      const secondUploadDate = secondImage.doc.createdAt 
-        ? new Date(secondImage.doc.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric' })
-        : '-';
-      
+      const secondUploadDate = secondImage.doc.createdAt
+        ? new Date(secondImage.doc.createdAt).toLocaleDateString("ko-KR", {
+            year: "numeric",
+            month: "numeric",
+            day: "numeric",
+          })
+        : "-";
+
       drawText(page, {
         x: MARGIN + 5,
         y: secondY + 8,
-        text: secondImage.doc.fileName || '',
+        text: secondImage.doc.fileName || "",
         font: fonts.regular,
         size: 8,
         color: { r: 0.3, g: 0.3, b: 0.3 },
       });
-      
+
       drawText(page, {
         x: A4_WIDTH - MARGIN - 100,
         y: secondY + 8,
@@ -1479,7 +1654,7 @@ async function renderEvidencePages(
       });
     }
   }
-  
+
   return { errors };
 }
 
@@ -1487,54 +1662,65 @@ async function renderRecoveryAreaPage(
   pdfDoc: PDFDocument,
   fonts: FontSet,
   caseData: any,
-  estimateRowsData: any[]
+  estimateRowsData: any[],
 ): Promise<void> {
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
-  
+
   // Title (no Excel icon)
   drawText(page, {
     x: MARGIN,
     y: y - 18,
-    text: '현장 피해/복구 면적 산출표',
+    text: "현장 피해/복구 면적 산출표",
     font: fonts.bold,
     size: 16,
   });
-  
+
   y -= 45;
-  
+
   // 케이스 번호에서 suffix 추출 (-0: 손해비용방지, -1/-2/-3: 피해세대 복구)
-  const caseNumber = caseData.caseNumber || '';
+  const caseNumber = caseData.caseNumber || "";
   const suffixMatch = caseNumber.match(/-(\d+)$/);
   const suffix = suffixMatch ? parseInt(suffixMatch[1], 10) : 0;
-  
+
   // -0인 경우 피보험자 주소, -1 이상인 경우 피해자 주소 사용
-  const fullAddress = suffix === 0
-    ? [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(' ')
-    : [caseData.victimAddress, caseData.victimAddressDetail].filter(Boolean).join(' ') 
-      || [caseData.insuredAddress, caseData.insuredAddressDetail].filter(Boolean).join(' ');
-  
+  const fullAddress =
+    suffix === 0
+      ? [caseData.insuredAddress, caseData.insuredAddressDetail]
+          .filter(Boolean)
+          .join(" ")
+      : [caseData.victimAddress, caseData.victimAddressDetail]
+          .filter(Boolean)
+          .join(" ") ||
+        [caseData.insuredAddress, caseData.insuredAddressDetail]
+          .filter(Boolean)
+          .join(" ");
+
   const now = new Date();
   const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
-  
+
   // Info table
   const headerRows: TableCell[][] = [
     [
-      { text: '사고번호', width: 70, isHeader: true, align: 'center' },
-      { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 120, align: 'left' },
-      { text: '보험사', width: 60, isHeader: true, align: 'center' },
-      { text: caseData.insuranceCompany || '-', width: 100, align: 'left' },
-      { text: '플록슨접수번호', width: 70, isHeader: true, align: 'center' },
-      { text: caseData.caseNumber || '-', width: 95, align: 'left' },
+      { text: "사고번호", width: 70, isHeader: true, align: "center" },
+      {
+        text: caseData.insuranceAccidentNo || caseData.caseNumber || "-",
+        width: 120,
+        align: "left",
+      },
+      { text: "보험사", width: 60, isHeader: true, align: "center" },
+      { text: caseData.insuranceCompany || "-", width: 100, align: "left" },
+      { text: "플록슨접수번호", width: 70, isHeader: true, align: "center" },
+      { text: caseData.caseNumber || "-", width: 95, align: "left" },
     ],
     [
-      { text: '장소', width: 70, isHeader: true, align: 'center' },
-      { text: fullAddress || '-', width: 280, align: 'left' },
-      { text: '작성일자', width: 70, isHeader: true, align: 'center' },
-      { text: dateStr, width: 95, align: 'left' },
+      { text: "장소", width: 70, isHeader: true, align: "center" },
+      { text: fullAddress || "-", width: 280, align: "left" },
+      { text: "작성일자", width: 70, isHeader: true, align: "center" },
+      { text: dateStr, width: 95, align: "left" },
     ],
   ];
-  
+
   y = drawTable(page, {
     x: MARGIN,
     y,
@@ -1543,42 +1729,42 @@ async function renderRecoveryAreaPage(
     fontSize: 9,
     rowHeight: 24,
   });
-  
+
   y -= 20;
-  
+
   drawText(page, {
     x: A4_WIDTH - MARGIN - 60,
     y,
-    text: '단위: ㎡',
+    text: "단위: ㎡",
     font: fonts.regular,
     size: 9,
   });
-  
+
   y -= 15;
-  
+
   // Two-row header for area table
   const headerRow1: TableCell[] = [
-    { text: '구분', width: 55, isHeader: true, align: 'center' },
-    { text: '공사내용', width: 70, isHeader: true, align: 'center' },
-    { text: '공사분류', width: 70, isHeader: true, align: 'center' },
-    { text: '피해면적', width: 130, isHeader: true, align: 'center' },
-    { text: '복구면적', width: 130, isHeader: true, align: 'center' },
-    { text: '비고', width: 60, isHeader: true, align: 'center' },
+    { text: "구분", width: 55, isHeader: true, align: "center" },
+    { text: "공사내용", width: 70, isHeader: true, align: "center" },
+    { text: "공사분류", width: 70, isHeader: true, align: "center" },
+    { text: "피해면적", width: 130, isHeader: true, align: "center" },
+    { text: "복구면적", width: 130, isHeader: true, align: "center" },
+    { text: "비고", width: 60, isHeader: true, align: "center" },
   ];
-  
+
   const headerRow2: TableCell[] = [
-    { text: '', width: 55, isHeader: true, align: 'center' },
-    { text: '', width: 70, isHeader: true, align: 'center' },
-    { text: '', width: 70, isHeader: true, align: 'center' },
-    { text: '면적', width: 43, isHeader: true, align: 'center' },
-    { text: '가로', width: 43, isHeader: true, align: 'center' },
-    { text: '세로', width: 44, isHeader: true, align: 'center' },
-    { text: '면적', width: 43, isHeader: true, align: 'center' },
-    { text: '가로', width: 43, isHeader: true, align: 'center' },
-    { text: '세로', width: 44, isHeader: true, align: 'center' },
-    { text: '', width: 60, isHeader: true, align: 'center' },
+    { text: "", width: 55, isHeader: true, align: "center" },
+    { text: "", width: 70, isHeader: true, align: "center" },
+    { text: "", width: 70, isHeader: true, align: "center" },
+    { text: "면적", width: 43, isHeader: true, align: "center" },
+    { text: "가로", width: 43, isHeader: true, align: "center" },
+    { text: "세로", width: 44, isHeader: true, align: "center" },
+    { text: "면적", width: 43, isHeader: true, align: "center" },
+    { text: "가로", width: 43, isHeader: true, align: "center" },
+    { text: "세로", width: 44, isHeader: true, align: "center" },
+    { text: "", width: 60, isHeader: true, align: "center" },
   ];
-  
+
   // Draw first header row
   y = drawTable(page, {
     x: MARGIN,
@@ -1588,7 +1774,7 @@ async function renderRecoveryAreaPage(
     fontSize: 8,
     rowHeight: 20,
   });
-  
+
   // Draw second header row
   y = drawTable(page, {
     x: MARGIN,
@@ -1598,30 +1784,30 @@ async function renderRecoveryAreaPage(
     fontSize: 8,
     rowHeight: 20,
   });
-  
+
   // Group rows by category (location)
   const groupedRows: Record<string, any[]> = {};
   if (estimateRowsData && estimateRowsData.length > 0) {
     for (const row of estimateRowsData) {
-      const category = row.category || '기타';
+      const category = row.category || "기타";
       if (!groupedRows[category]) {
         groupedRows[category] = [];
       }
       groupedRows[category].push(row);
     }
   }
-  
+
   // Draw data rows grouped by category with merged cells
   const categories = Object.keys(groupedRows);
   const dataRowHeight = 22;
   const categoryColWidth = 55;
-  
+
   if (categories.length > 0) {
     for (const category of categories) {
       const rows = groupedRows[category];
       const groupHeight = rows.length * dataRowHeight;
       const groupStartY = y;
-      
+
       // Draw merged category cell (spans all rows in this group)
       page.drawRectangle({
         x: MARGIN,
@@ -1638,7 +1824,7 @@ async function renderRecoveryAreaPage(
         borderColor: rgb(0.3, 0.3, 0.3),
         borderWidth: 0.5,
       });
-      
+
       // Draw category text centered vertically in merged cell
       const categoryTextWidth = measureTextWidth(category, fonts.regular, 8);
       page.drawText(category, {
@@ -1648,31 +1834,43 @@ async function renderRecoveryAreaPage(
         font: fonts.regular,
         color: rgb(0, 0, 0),
       });
-      
+
       // Draw individual rows (excluding category column)
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
-        const damageW = row.damageWidth ? Number(row.damageWidth).toFixed(1) : '0.0';
-        const damageH = row.damageHeight ? Number(row.damageHeight).toFixed(1) : '0.0';
-        const damageAreaM2 = row.damageArea ? Number(row.damageArea).toFixed(1) : '0.0';
-        
-        const repairW = row.repairWidth ? Number(row.repairWidth).toFixed(1) : '0.0';
-        const repairH = row.repairHeight ? Number(row.repairHeight).toFixed(1) : '0.0';
-        const repairAreaM2 = row.repairArea ? Number(row.repairArea).toFixed(1) : '0.0';
-        
+        const damageW = row.damageWidth
+          ? Number(row.damageWidth).toFixed(1)
+          : "0.0";
+        const damageH = row.damageHeight
+          ? Number(row.damageHeight).toFixed(1)
+          : "0.0";
+        const damageAreaM2 = row.damageArea
+          ? Number(row.damageArea).toFixed(1)
+          : "0.0";
+
+        const repairW = row.repairWidth
+          ? Number(row.repairWidth).toFixed(1)
+          : "0.0";
+        const repairH = row.repairHeight
+          ? Number(row.repairHeight).toFixed(1)
+          : "0.0";
+        const repairAreaM2 = row.repairArea
+          ? Number(row.repairArea).toFixed(1)
+          : "0.0";
+
         // Row without category column (starts after category column)
         const dataRow: TableCell[] = [
-          { text: row.location || '-', width: 70, align: 'center' },
-          { text: row.workName || '-', width: 70, align: 'center' },
-          { text: damageAreaM2, width: 43, align: 'center' },
-          { text: damageW, width: 43, align: 'center' },
-          { text: damageH, width: 44, align: 'center' },
-          { text: repairAreaM2, width: 43, align: 'center' },
-          { text: repairW, width: 43, align: 'center' },
-          { text: repairH, width: 44, align: 'center' },
-          { text: row.note || '-', width: 60, align: 'center' },
+          { text: row.location || "-", width: 70, align: "center" },
+          { text: row.workName || "-", width: 70, align: "center" },
+          { text: damageAreaM2, width: 43, align: "center" },
+          { text: damageW, width: 43, align: "center" },
+          { text: damageH, width: 44, align: "center" },
+          { text: repairAreaM2, width: 43, align: "center" },
+          { text: repairW, width: 43, align: "center" },
+          { text: repairH, width: 44, align: "center" },
+          { text: row.note || "-", width: 60, align: "center" },
         ];
-        
+
         drawTable(page, {
           x: MARGIN + categoryColWidth,
           y: groupStartY - i * dataRowHeight,
@@ -1682,14 +1880,18 @@ async function renderRecoveryAreaPage(
           rowHeight: dataRowHeight,
         });
       }
-      
+
       y = groupStartY - groupHeight;
     }
   } else {
     const emptyRow: TableCell[] = [
-      { text: '등록된 복구면적 데이터가 없습니다.', width: 515, align: 'center' },
+      {
+        text: "등록된 복구면적 데이터가 없습니다.",
+        width: 515,
+        align: "center",
+      },
     ];
-    
+
     drawTable(page, {
       x: MARGIN,
       y,
@@ -1699,7 +1901,7 @@ async function renderRecoveryAreaPage(
       rowHeight: 22,
     });
   }
-  
+
   // Footer
   const footerY = MARGIN + 20;
   drawText(page, {
@@ -1717,55 +1919,62 @@ async function renderEstimatePage(
   caseData: any,
   estimateData: any,
   estimateRowsData: any[],
-  partnerData: any
+  partnerData: any,
 ): Promise<void> {
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
   let y = A4_HEIGHT - MARGIN;
-  
+
   // ===== 견적서 타이틀 =====
   drawText(page, {
     x: MARGIN,
     y: y - 10,
-    text: '견 적 서',
+    text: "견 적 서",
     font: fonts.bold,
     size: 18,
     maxWidth: CONTENT_WIDTH,
-    align: 'center',
+    align: "center",
   });
-  
+
   y -= 40;
-  
+
   // ===== 상단 정보 테이블 =====
   // 해당건의 주소 사용 (victimAddress 우선, 없으면 insuredAddress)
-  const addressMain = caseData.victimAddress || caseData.insuredAddress || '';
-  const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
-  const fullAddress = [addressMain, addressDetail].filter(Boolean).join(' ');
-  
-  const partnerCompany = partnerData?.company || caseData.assignedPartner || '-';
-  const partnerBusinessNo = partnerData?.businessRegistrationNumber || '-';
-  const partnerRepName = partnerData?.representativeName || partnerData?.name || '-';
-  
+  const addressMain = caseData.victimAddress || caseData.insuredAddress || "";
+  const addressDetail =
+    caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
+  const fullAddress = [addressMain, addressDetail].filter(Boolean).join(" ");
+
+  const partnerCompany =
+    partnerData?.company || caseData.assignedPartner || "-";
+  const partnerBusinessNo = partnerData?.businessRegistrationNumber || "-";
+  const partnerRepName =
+    partnerData?.representativeName || partnerData?.name || "-";
+
   const rowHeight = 20;
   const leftTableWidth = 320; // 현장명/보험사/사고번호 테이블 (넓힘)
   const supplierLabelWidth = 25; // 공/급/자 병합 셀 (줄임)
   const rightTableWidth = 170; // 사업자번호/상호명/대표자 테이블 (줄임)
-  
+
   // 좌측 테이블 (현장명/보험사/사고번호)
   const leftTableRows: TableCell[][] = [
     [
-      { text: '현장명(주소)', width: 70, isHeader: true, align: 'center' },
-      { text: fullAddress || '-', width: 250, align: 'left' },
+      { text: "현장명(주소)", width: 70, isHeader: true, align: "center" },
+      { text: fullAddress || "-", width: 250, align: "left" },
     ],
     [
-      { text: '보험사', width: 70, isHeader: true, align: 'center' },
-      { text: caseData.insuranceCompany || '-', width: 250, align: 'left' },
+      { text: "보험사", width: 70, isHeader: true, align: "center" },
+      { text: caseData.insuranceCompany || "-", width: 250, align: "left" },
     ],
     [
-      { text: '사고번호', width: 70, isHeader: true, align: 'center' },
-      { text: caseData.insuranceAccidentNo || caseData.caseNumber || '-', width: 250, align: 'left' },
+      { text: "사고번호", width: 70, isHeader: true, align: "center" },
+      {
+        text: caseData.insuranceAccidentNo || caseData.caseNumber || "-",
+        width: 250,
+        align: "left",
+      },
     ],
   ];
-  
+
   drawTable(page, {
     x: MARGIN,
     y,
@@ -1774,11 +1983,11 @@ async function renderEstimatePage(
     fontSize: 9,
     rowHeight,
   });
-  
+
   // 공급자 병합 셀 (3행 세로 병합)
   const supplierX = MARGIN + leftTableWidth;
   const supplierHeight = rowHeight * 3;
-  
+
   // 공급자 셀 배경
   page.drawRectangle({
     x: supplierX,
@@ -1787,7 +1996,7 @@ async function renderEstimatePage(
     height: supplierHeight,
     color: rgb(0.94, 0.94, 0.94),
   });
-  
+
   // 공급자 셀 테두리
   page.drawRectangle({
     x: supplierX,
@@ -1797,9 +2006,9 @@ async function renderEstimatePage(
     borderColor: rgb(0.3, 0.3, 0.3),
     borderWidth: 0.5,
   });
-  
+
   // 공/급/자 텍스트 (세로 중앙에 배치)
-  const supplierLabels = ['공', '급', '자'];
+  const supplierLabels = ["공", "급", "자"];
   supplierLabels.forEach((label, idx) => {
     const labelY = y - (idx + 0.5) * rowHeight;
     const labelWidth = measureTextWidth(label, fonts.bold, 9);
@@ -1811,23 +2020,23 @@ async function renderEstimatePage(
       color: rgb(0, 0, 0),
     });
   });
-  
+
   // 우측 테이블 (사업자번호/상호명/대표자)
   const rightTableRows: TableCell[][] = [
     [
-      { text: '사업자번호', width: 55, isHeader: true, align: 'center' },
-      { text: partnerBusinessNo, width: 115, align: 'left' },
+      { text: "사업자번호", width: 55, isHeader: true, align: "center" },
+      { text: partnerBusinessNo, width: 115, align: "left" },
     ],
     [
-      { text: '상호명', width: 55, isHeader: true, align: 'center' },
-      { text: partnerCompany, width: 115, align: 'left' },
+      { text: "상호명", width: 55, isHeader: true, align: "center" },
+      { text: partnerCompany, width: 115, align: "left" },
     ],
     [
-      { text: '대표자', width: 55, isHeader: true, align: 'center' },
-      { text: partnerRepName, width: 115, align: 'left' },
+      { text: "대표자", width: 55, isHeader: true, align: "center" },
+      { text: partnerRepName, width: 115, align: "left" },
     ],
   ];
-  
+
   drawTable(page, {
     x: supplierX + supplierLabelWidth,
     y,
@@ -1836,11 +2045,11 @@ async function renderEstimatePage(
     fontSize: 9,
     rowHeight,
   });
-  
+
   y -= supplierHeight;
-  
+
   y -= 10;
-  
+
   // ===== 노무비 테이블 =====
   page.drawRectangle({
     x: MARGIN,
@@ -1849,23 +2058,24 @@ async function renderEstimatePage(
     height: 15,
     color: rgb(0.95, 0.9, 0.7),
   });
-  
+
   drawText(page, {
     x: MARGIN + 5,
     y: y - 12,
-    text: '노무비',
+    text: "노무비",
     font: fonts.bold,
     size: 9,
   });
-  
+
   y -= 20;
-  
+
   let laborCostItems: any[] = [];
   if (estimateData?.laborCostData) {
     try {
-      const rawLaborData = typeof estimateData.laborCostData === 'string'
-        ? JSON.parse(estimateData.laborCostData)
-        : estimateData.laborCostData;
+      const rawLaborData =
+        typeof estimateData.laborCostData === "string"
+          ? JSON.parse(estimateData.laborCostData)
+          : estimateData.laborCostData;
       if (Array.isArray(rawLaborData)) {
         laborCostItems = rawLaborData;
       } else if (rawLaborData.rows && Array.isArray(rawLaborData.rows)) {
@@ -1873,33 +2083,41 @@ async function renderEstimatePage(
       }
     } catch {}
   }
-  
+
   // Golden Master 노무비 컬럼: 공종 | 공사명 | 노임항목 | 복구면적 | 적용단가 | 수량(인) | 합계 | 경비 | 비고
   const laborHeader: TableCell[] = [
-    { text: '공종', width: 55, isHeader: true, align: 'center' },
-    { text: '공사명', width: 60, isHeader: true, align: 'center' },
-    { text: '노임항목', width: 60, isHeader: true, align: 'center' },
-    { text: '복구면적', width: 55, isHeader: true, align: 'center' },
-    { text: '적용단가', width: 65, isHeader: true, align: 'center' },
-    { text: '수량(인)', width: 45, isHeader: true, align: 'center' },
-    { text: '합계', width: 70, isHeader: true, align: 'center' },
-    { text: '경비', width: 50, isHeader: true, align: 'center' },
-    { text: '비고', width: 55, isHeader: true, align: 'center' },
+    { text: "공종", width: 55, isHeader: true, align: "center" },
+    { text: "공사명", width: 60, isHeader: true, align: "center" },
+    { text: "노임항목", width: 60, isHeader: true, align: "center" },
+    { text: "복구면적(m²)", width: 55, isHeader: true, align: "center" },
+    { text: "적용단가(원)", width: 65, isHeader: true, align: "center" },
+    { text: "수량(인)", width: 45, isHeader: true, align: "center" },
+    { text: "합계(원)", width: 70, isHeader: true, align: "center" },
+    { text: "경비(원)", width: 50, isHeader: true, align: "center" },
+    { text: "비고", width: 55, isHeader: true, align: "center" },
   ];
-  
+
   const laborRows: TableCell[][] = [laborHeader];
   let laborTotal = 0;
   // includeInEstimate === true → 경비가 아닌 항목 (관리비/이윤에 포함)
   // includeInEstimate === false → 경비 항목 (관리비/이윤에서 제외)
   let laborNonExpenseTotal = 0; // 경비가 아닌 항목 합계 (관리비/이윤 계산 대상)
-  
+
   if (laborCostItems.length > 0) {
     laborCostItems.forEach((row) => {
       // LaborCostRow 필드명: category(공종), workName(공사명), detailItem(세부항목/노임항목)
       // damageArea(피해면적), standardPrice(기준가), pricePerSqm(기준가m²)
       // quantity(수량), amount(금액), includeInEstimate(경비여부), request(요청/비고)
-      const damageArea = Number(row.damageArea) || Number(row.repairArea) || Number(row.area) || 0;
-      const unitPrice = Number(row.standardPrice) || Number(row.pricePerSqm) || Number(row.unitPrice) || 0;
+      const damageArea =
+        Number(row.damageArea) ||
+        Number(row.repairArea) ||
+        Number(row.area) ||
+        0;
+      const unitPrice =
+        Number(row.standardPrice) ||
+        Number(row.pricePerSqm) ||
+        Number(row.unitPrice) ||
+        0;
       const quantity = Number(row.quantity) || 1;
       const amount = Number(row.amount) || 0;
       // includeInEstimate=false → 경비 항목 (화면에 표시)
@@ -1909,31 +2127,51 @@ async function renderEstimatePage(
       if (row.includeInEstimate) {
         laborNonExpenseTotal += amount;
       }
-      
+
       laborRows.push([
-        { text: row.category || row.workType || '-', width: 55, align: 'center' },
-        { text: row.workName || '-', width: 60, align: 'left' },
-        { text: row.detailItem || row.laborItem || '-', width: 60, align: 'left' },
-        { text: damageArea > 0 ? damageArea.toFixed(2) : '-', width: 55, align: 'right' },
-        { text: unitPrice > 0 ? formatNumber(unitPrice) : '-', width: 65, align: 'right' },
-        { text: String(quantity), width: 45, align: 'center' },
-        { text: formatNumber(amount), width: 70, align: 'right' },
-        { text: expense > 0 ? formatNumber(expense) : '-', width: 50, align: 'right' },
-        { text: row.request || row.note || '-', width: 55, align: 'left' },
+        {
+          text: row.category || row.workType || "-",
+          width: 55,
+          align: "center",
+        },
+        { text: row.workName || "-", width: 60, align: "left" },
+        {
+          text: row.detailItem || row.laborItem || "-",
+          width: 60,
+          align: "left",
+        },
+        {
+          text: damageArea > 0 ? damageArea.toFixed(2) : "-",
+          width: 55,
+          align: "right",
+        },
+        {
+          text: unitPrice > 0 ? formatNumber(unitPrice) : "-",
+          width: 65,
+          align: "right",
+        },
+        { text: String(quantity), width: 45, align: "center" },
+        { text: formatNumber(amount), width: 70, align: "right" },
+        {
+          text: expense > 0 ? formatNumber(expense) : "-",
+          width: 50,
+          align: "right",
+        },
+        { text: row.request || row.note || "-", width: 55, align: "left" },
       ]);
     });
   } else {
     laborRows.push([
-      { text: '등록된 노무비 데이터가 없습니다.', width: 515, align: 'center' },
+      { text: "등록된 노무비 데이터가 없습니다.", width: 515, align: "center" },
     ]);
   }
-  
+
   // 노무비 소계 행 (전체 너비에 맞춤: 55+60+60+55+65+45+70+50+55 = 515)
   laborRows.push([
-    { text: '노무비 소계', width: 400, isHeader: true, align: 'center' },
-    { text: formatNumber(laborTotal), width: 115, align: 'right' },
+    { text: "노무비 소계", width: 400, isHeader: true, align: "center" },
+    { text: formatNumber(laborTotal), width: 115, align: "right" },
   ]);
-  
+
   y = drawTable(page, {
     x: MARGIN,
     y,
@@ -1942,9 +2180,9 @@ async function renderEstimatePage(
     fontSize: 7,
     rowHeight: 16,
   });
-  
+
   y -= 15;
-  
+
   // ===== 자재비 테이블 =====
   page.drawRectangle({
     x: MARGIN,
@@ -1953,23 +2191,24 @@ async function renderEstimatePage(
     height: 15,
     color: rgb(0.95, 0.9, 0.7),
   });
-  
+
   drawText(page, {
     x: MARGIN + 5,
     y: y - 12,
-    text: '자재비',
+    text: "자재비",
     font: fonts.bold,
     size: 9,
   });
-  
+
   y -= 20;
-  
+
   let materialCostItems: any[] = [];
   if (estimateData?.materialCostData) {
     try {
-      const rawMaterialData = typeof estimateData.materialCostData === 'string'
-        ? JSON.parse(estimateData.materialCostData)
-        : estimateData.materialCostData;
+      const rawMaterialData =
+        typeof estimateData.materialCostData === "string"
+          ? JSON.parse(estimateData.materialCostData)
+          : estimateData.materialCostData;
       if (Array.isArray(rawMaterialData)) {
         materialCostItems = rawMaterialData;
       } else if (rawMaterialData.rows && Array.isArray(rawMaterialData.rows)) {
@@ -1977,54 +2216,87 @@ async function renderEstimatePage(
       }
     } catch {}
   }
-  
+
   // Golden Master 자재비 컬럼: 공종 | 공사명 | 자재항목 | 단가 | 수량 | 단위 | 합계 | 비고
   const materialHeader: TableCell[] = [
-    { text: '공종', width: 55, isHeader: true, align: 'center' },
-    { text: '공사명', width: 70, isHeader: true, align: 'center' },
-    { text: '자재항목', width: 90, isHeader: true, align: 'center' },
-    { text: '단가', width: 70, isHeader: true, align: 'center' },
-    { text: '수량', width: 50, isHeader: true, align: 'center' },
-    { text: '단위', width: 40, isHeader: true, align: 'center' },
-    { text: '합계', width: 80, isHeader: true, align: 'center' },
-    { text: '비고', width: 60, isHeader: true, align: 'center' },
+    { text: "공종", width: 55, isHeader: true, align: "center" },
+    { text: "공사명", width: 70, isHeader: true, align: "center" },
+    { text: "자재항목", width: 90, isHeader: true, align: "center" },
+    { text: "단가(원)", width: 70, isHeader: true, align: "center" },
+    { text: "수량", width: 50, isHeader: true, align: "center" },
+    { text: "단위", width: 40, isHeader: true, align: "center" },
+    { text: "합계(원)", width: 80, isHeader: true, align: "center" },
+    { text: "비고", width: 60, isHeader: true, align: "center" },
   ];
-  
+
   const materialRows: TableCell[][] = [materialHeader];
   let materialTotal = 0;
-  
+
   if (materialCostItems.length > 0) {
     materialCostItems.forEach((row) => {
       // MaterialRow 필드명: 공종, 공사명, 자재항목, 자재, 규격, 단위, 단가, 기준단가
       // 수량m2, 수량EA, 수량, 합계, 금액, 비고
-      const qty = Number(row['수량']) || Number(row['수량m2']) || Number(row.quantity) || 1;
-      const unitPrice = Number(row['단가']) || Number(row['기준단가']) || Number(row.unitPrice) || 0;
-      const amount = Number(row['합계']) || Number(row['금액']) || Number(row.amount) || (qty * unitPrice);
+      const qty =
+        Number(row["수량"]) ||
+        Number(row["수량m2"]) ||
+        Number(row.quantity) ||
+        1;
+      const unitPrice =
+        Number(row["단가"]) ||
+        Number(row["기준단가"]) ||
+        Number(row.unitPrice) ||
+        0;
+      const amount =
+        Number(row["합계"]) ||
+        Number(row["금액"]) ||
+        Number(row.amount) ||
+        qty * unitPrice;
       materialTotal += amount;
-      
+
       materialRows.push([
-        { text: row['공종'] || row.workType || row.category || '-', width: 55, align: 'center' },
-        { text: row['공사명'] || row.workName || '-', width: 70, align: 'left' },
-        { text: row['자재항목'] || row['자재'] || row.materialItem || row.materialName || '-', width: 90, align: 'left' },
-        { text: unitPrice > 0 ? formatNumber(unitPrice) : '-', width: 70, align: 'right' },
-        { text: String(qty), width: 50, align: 'center' },
-        { text: row['단위'] || row.unit || '-', width: 40, align: 'center' },
-        { text: formatNumber(amount), width: 80, align: 'right' },
-        { text: row['비고'] || row.note || '-', width: 60, align: 'left' },
+        {
+          text: row["공종"] || row.workType || row.category || "-",
+          width: 55,
+          align: "center",
+        },
+        {
+          text: row["공사명"] || row.workName || "-",
+          width: 70,
+          align: "left",
+        },
+        {
+          text:
+            row["자재항목"] ||
+            row["자재"] ||
+            row.materialItem ||
+            row.materialName ||
+            "-",
+          width: 90,
+          align: "left",
+        },
+        {
+          text: unitPrice > 0 ? formatNumber(unitPrice) : "-",
+          width: 70,
+          align: "right",
+        },
+        { text: String(qty), width: 50, align: "center" },
+        { text: row["단위"] || row.unit || "-", width: 40, align: "center" },
+        { text: formatNumber(amount), width: 80, align: "right" },
+        { text: row["비고"] || row.note || "-", width: 60, align: "left" },
       ]);
     });
   } else {
     materialRows.push([
-      { text: '등록된 자재비 데이터가 없습니다.', width: 515, align: 'center' },
+      { text: "등록된 자재비 데이터가 없습니다.", width: 515, align: "center" },
     ]);
   }
-  
+
   // 자재비 소계 행 (전체 너비에 맞춤: 55+70+90+70+50+40+80+60 = 515)
   materialRows.push([
-    { text: '자재비 소계', width: 400, isHeader: true, align: 'center' },
-    { text: formatNumber(materialTotal), width: 115, align: 'right' },
+    { text: "자재비 소계", width: 400, isHeader: true, align: "center" },
+    { text: formatNumber(materialTotal), width: 115, align: "right" },
   ]);
-  
+
   y = drawTable(page, {
     x: MARGIN,
     y,
@@ -2033,24 +2305,24 @@ async function renderEstimatePage(
     fontSize: 7,
     rowHeight: 16,
   });
-  
+
   y -= 20;
-  
+
   // ===== 합계/정산 구간 (Golden Master 양식) =====
   const subtotal = laborTotal + materialTotal;
   const adminFeeRate = 0.06;
   const profitRate = 0.15;
   const vatRate = 0.1;
-  
+
   // 일반관리비/이윤 계산 기준: 경비가 아닌 항목(includeInEstimate=true) + 자재비
   // field-report.tsx 계산 로직과 동일:
   // baseForFees = laborTotalNonExpense + materialTotal
   const feeBase = laborNonExpenseTotal + materialTotal;
   const adminFee = Math.round(feeBase * adminFeeRate);
   const profit = Math.round(feeBase * profitRate);
-  
+
   // 디버그 로그: 일반관리비/이윤 계산 확인
-  console.log('[PDF 견적서] 일반관리비/이윤 계산:', {
+  console.log("[PDF 견적서] 일반관리비/이윤 계산:", {
     laborTotal,
     laborNonExpenseTotal,
     materialTotal,
@@ -2059,7 +2331,7 @@ async function renderEstimatePage(
     adminFee,
     profit,
     laborItems: laborCostItems.length,
-    laborItemsSample: laborCostItems.slice(0, 3).map(r => ({
+    laborItemsSample: laborCostItems.slice(0, 3).map((r) => ({
       category: r.category,
       amount: r.amount,
       includeInEstimate: r.includeInEstimate,
@@ -2072,46 +2344,66 @@ async function renderEstimatePage(
   const roundingDiff = beforeRounding - rounded;
   const vat = Math.round(rounded * vatRate);
   const grandTotal = rounded + vat;
-  
+
   const totalRows: TableCell[][] = [
     [
-      { text: '노무비 합계', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(laborTotal), width: 110, align: 'right' },
+      { text: "노무비 합계", width: 150, isHeader: true, align: "center" },
+      { text: formatNumber(laborTotal), width: 110, align: "right" },
     ],
     [
-      { text: '자재비 합계', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(materialTotal), width: 110, align: 'right' },
+      { text: "자재비 합계", width: 150, isHeader: true, align: "center" },
+      { text: formatNumber(materialTotal), width: 110, align: "right" },
     ],
     [
-      { text: '소계', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(subtotal), width: 110, align: 'right' },
+      { text: "소계", width: 150, isHeader: true, align: "center" },
+      { text: formatNumber(subtotal), width: 110, align: "right" },
     ],
     [
-      { text: '일반관리비 (6%)', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(adminFee), width: 110, align: 'right' },
+      { text: "일반관리비 (6%)", width: 150, isHeader: true, align: "center" },
+      { text: formatNumber(adminFee), width: 110, align: "right" },
     ],
     [
-      { text: '이윤 (15%)', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(profit), width: 110, align: 'right' },
+      { text: "이윤 (15%)", width: 150, isHeader: true, align: "center" },
+      { text: formatNumber(profit), width: 110, align: "right" },
     ],
     [
-      { text: '천원단위 절사', width: 150, isHeader: true, align: 'center' },
-      { text: roundingDiff > 0 ? `-${formatNumber(roundingDiff)}` : '0', width: 110, align: 'right' },
+      { text: "천원단위 절사", width: 150, isHeader: true, align: "center" },
+      {
+        text: roundingDiff > 0 ? `-${formatNumber(roundingDiff)}` : "0",
+        width: 200,
+        align: "right",
+      },
     ],
     [
-      { text: '합계', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(rounded), width: 110, align: 'right' },
+      { text: "합계", width: 150, isHeader: true, align: "center" },
+      { text: formatNumber(rounded), width: 110, align: "right" },
     ],
     [
-      { text: '부가세 (10%) - 포함', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(vat), width: 110, align: 'right' },
+      {
+        text: "부가세 (10%) - 포함",
+        width: 150,
+        isHeader: true,
+        align: "center",
+      },
+      { text: formatNumber(vat), width: 110, align: "right" },
     ],
     [
-      { text: '총 합계', width: 150, isHeader: true, align: 'center' },
-      { text: formatNumber(grandTotal), width: 110, align: 'right' },
+      { text: "총 합계", width: 150, isHeader: true, align: "center" },
+      { text: formatNumber(grandTotal), width: 110, align: "right" },
     ],
   ];
-  
+
+  // 단위 표시 (테이블 위에 우측 정렬)
+  drawText(page, {
+    x: A4_WIDTH - MARGIN - 260,
+    y: y + 5,
+    text: "단위: 원",
+    font: fonts.regular,
+    size: 7,
+    maxWidth: 260,
+    align: "right",
+  });
+
   drawTable(page, {
     x: A4_WIDTH - MARGIN - 260,
     y,
@@ -2120,23 +2412,23 @@ async function renderEstimatePage(
     fontSize: 9,
     rowHeight: 18,
   });
-  
+
   // ===== 하단 문구 및 작성일 =====
   const footerY = MARGIN + 30;
-  
+
   const today = new Date();
   const dateStr = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;
-  
+
   // 안내문구 (합계표 아래, 작성일 위 - 초록색 박스 위치)
   drawText(page, {
     x: MARGIN + 50,
     y: footerY + 35,
-    text: '상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.',
+    text: "상기 견적은 시공 전 예상금액이며, 현장 상황 및 실제 시공범위에 따라 일부 변동될 수 있습니다.",
     font: fonts.regular,
     size: 8,
     color: { r: 0.8, g: 0.2, b: 0.2 },
   });
-  
+
   // 작성일 (안내문구 아래)
   drawText(page, {
     x: MARGIN,
@@ -2145,7 +2437,7 @@ async function renderEstimatePage(
     font: fonts.regular,
     size: 9,
   });
-  
+
   // 회사명 (오른쪽)
   drawText(page, {
     x: A4_WIDTH - MARGIN - 80,
@@ -2160,32 +2452,32 @@ function renderErrorPage(
   pdfDoc: PDFDocument,
   fonts: FontSet,
   sectionName: string,
-  errorMessage: string
+  errorMessage: string,
 ): void {
   const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
-  
+
   page.drawRectangle({
     x: MARGIN,
     y: MARGIN,
     width: CONTENT_WIDTH,
-    height: A4_HEIGHT - (MARGIN * 2),
+    height: A4_HEIGHT - MARGIN * 2,
     color: rgb(0.99, 0.96, 0.96),
     borderColor: rgb(0.8, 0.3, 0.3),
     borderWidth: 2,
   });
-  
+
   const centerX = A4_WIDTH / 2;
   const centerY = A4_HEIGHT / 2;
-  
+
   drawText(page, {
     x: centerX - 60,
     y: centerY + 60,
-    text: '⚠ 섹션 생성 오류',
+    text: "⚠ 섹션 생성 오류",
     font: fonts.bold,
     size: 18,
     color: { r: 0.6, g: 0.1, b: 0.1 },
   });
-  
+
   drawText(page, {
     x: MARGIN + 30,
     y: centerY + 20,
@@ -2193,9 +2485,9 @@ function renderErrorPage(
     font: fonts.bold,
     size: 14,
     maxWidth: CONTENT_WIDTH - 60,
-    align: 'center',
+    align: "center",
   });
-  
+
   drawText(page, {
     x: MARGIN + 30,
     y: centerY - 20,
@@ -2204,18 +2496,18 @@ function renderErrorPage(
     size: 11,
     color: { r: 0.4, g: 0.4, b: 0.4 },
     maxWidth: CONTENT_WIDTH - 60,
-    align: 'center',
+    align: "center",
   });
-  
+
   drawText(page, {
     x: MARGIN + 30,
     y: centerY - 80,
-    text: '이 섹션의 생성에 실패하여 안내 페이지로 대체되었습니다.',
+    text: "이 섹션의 생성에 실패하여 안내 페이지로 대체되었습니다.",
     font: fonts.regular,
     size: 10,
     color: { r: 0.5, g: 0.5, b: 0.5 },
     maxWidth: CONTENT_WIDTH - 60,
-    align: 'center',
+    align: "center",
   });
 }
 
@@ -2239,42 +2531,49 @@ interface PdfGenerationPayload {
 
 export async function generatePdfWithPdfLib(
   payload: PdfGenerationPayload,
-  processingLevel: number = 0
+  processingLevel: number = 0,
 ): Promise<Buffer> {
-  const { caseId, sections, evidence, skipEvidence, skipPdfAttachments } = payload;
-  const processingConfig = PROCESSING_LEVELS[processingLevel] || PROCESSING_LEVELS[0];
-  
-  console.log(`[pdf-lib] PDF 생성 시작 - 레벨 ${processingLevel}: ${processingConfig.maxDimension}px / ${processingConfig.quality}%`);
+  const { caseId, sections, evidence, skipEvidence, skipPdfAttachments } =
+    payload;
+  const processingConfig =
+    PROCESSING_LEVELS[processingLevel] || PROCESSING_LEVELS[0];
+
+  console.log(
+    `[pdf-lib] PDF 생성 시작 - 레벨 ${processingLevel}: ${processingConfig.maxDimension}px / ${processingConfig.quality}%`,
+  );
   if (skipEvidence) {
-    console.log('[pdf-lib] skipEvidence=true: 본문 PDF에서 증빙 이미지 제외');
+    console.log("[pdf-lib] skipEvidence=true: 본문 PDF에서 증빙 이미지 제외");
   }
-  
+
   const [caseData] = await db.select().from(cases).where(eq(cases.id, caseId));
   if (!caseData) {
-    throw new Error('케이스를 찾을 수 없습니다.');
+    throw new Error("케이스를 찾을 수 없습니다.");
   }
-  
+
   let partnerData: any = null;
   if (caseData.assignedPartner) {
     const trimmedPartnerName = caseData.assignedPartner.trim();
-    let partners = await db.select().from(users).where(
-      sql`TRIM(${users.company}) = ${trimmedPartnerName}`
-    );
-    
+    let partners = await db
+      .select()
+      .from(users)
+      .where(sql`TRIM(${users.company}) = ${trimmedPartnerName}`);
+
     if (partners.length === 0) {
-      partners = await db.select().from(users).where(
-        ilike(users.company, `%${trimmedPartnerName}%`)
-      );
+      partners = await db
+        .select()
+        .from(users)
+        .where(ilike(users.company, `%${trimmedPartnerName}%`));
     }
-    
+
     if (partners.length === 0 && caseData.assignedPartnerManager) {
-      partners = await db.select().from(users).where(
-        eq(users.name, caseData.assignedPartnerManager.trim())
-      );
+      partners = await db
+        .select()
+        .from(users)
+        .where(eq(users.name, caseData.assignedPartnerManager.trim()));
     }
-    
+
     if (partners.length > 0) {
-      partnerData = partners.find(p => p.role === '협력사') || partners[0];
+      partnerData = partners.find((p) => p.role === "협력사") || partners[0];
       console.log(`[pdf-lib] partnerData 조회 결과:`, {
         company: partnerData?.company,
         businessRegistrationNumber: partnerData?.businessRegistrationNumber,
@@ -2282,115 +2581,158 @@ export async function generatePdfWithPdfLib(
         name: partnerData?.name,
       });
     } else {
-      console.log(`[pdf-lib] partnerData 조회 실패 - 협력사 정보 없음 (assignedPartner: ${caseData.assignedPartner})`);
+      console.log(
+        `[pdf-lib] partnerData 조회 실패 - 협력사 정보 없음 (assignedPartner: ${caseData.assignedPartner})`,
+      );
     }
   }
-  
+
   const pdfDoc = await PDFDocument.create();
   let fonts: FontSet;
-  
+
   try {
     fonts = await embedFonts(pdfDoc);
   } catch (fontError: any) {
-    console.error('[pdf-lib] 폰트 로드 실패:', fontError.message);
+    console.error("[pdf-lib] 폰트 로드 실패:", fontError.message);
     const fallbackFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
     fonts = { regular: fallbackFont, bold: fallbackFont };
   }
-  
+
   if (sections.cover) {
     try {
       await renderCoverPage(pdfDoc, fonts, caseData, partnerData);
-      console.log('[pdf-lib] 표지 페이지 생성 완료');
+      console.log("[pdf-lib] 표지 페이지 생성 완료");
     } catch (err: any) {
-      console.error('[pdf-lib] 표지 페이지 생성 실패:', err.message);
-      renderErrorPage(pdfDoc, fonts, '현장출동확인서 (표지)', err.message);
+      console.error("[pdf-lib] 표지 페이지 생성 실패:", err.message);
+      renderErrorPage(pdfDoc, fonts, "현장출동확인서 (표지)", err.message);
     }
   }
-  
+
   if (sections.fieldReport) {
     try {
       let repairItems: any[] = [];
-      const estimateList = await db.select().from(estimates)
+      const estimateList = await db
+        .select()
+        .from(estimates)
         .where(eq(estimates.caseId, caseId))
         .orderBy(estimates.version);
-      
+
       if (estimateList.length > 0) {
         const latestEstimate = estimateList[estimateList.length - 1];
-        repairItems = await db.select().from(estimateRows)
+        repairItems = await db
+          .select()
+          .from(estimateRows)
           .where(eq(estimateRows.estimateId, latestEstimate.id))
           .orderBy(estimateRows.rowOrder);
       }
-      
-      await renderFieldReportPage(pdfDoc, fonts, caseData, partnerData, repairItems);
-      console.log('[pdf-lib] 출동확인서 페이지 생성 완료');
+
+      await renderFieldReportPage(
+        pdfDoc,
+        fonts,
+        caseData,
+        partnerData,
+        repairItems,
+      );
+      console.log("[pdf-lib] 출동확인서 페이지 생성 완료");
     } catch (err: any) {
-      console.error('[pdf-lib] 출동확인서 페이지 생성 실패:', err.message);
-      renderErrorPage(pdfDoc, fonts, '출동확인서', err.message);
+      console.error("[pdf-lib] 출동확인서 페이지 생성 실패:", err.message);
+      renderErrorPage(pdfDoc, fonts, "출동확인서", err.message);
     }
   }
-  
+
   if (sections.drawing) {
     try {
       // Get drawing data for this case
-      const [drawingData] = await db.select().from(drawings)
+      const [drawingData] = await db
+        .select()
+        .from(drawings)
         .where(eq(drawings.caseId, caseId));
-      
+
       await renderDrawingPage(pdfDoc, fonts, caseData, drawingData);
-      console.log('[pdf-lib] 도면 페이지 생성 완료');
+      console.log("[pdf-lib] 도면 페이지 생성 완료");
     } catch (err: any) {
-      console.error('[pdf-lib] 도면 페이지 생성 실패:', err.message);
-      renderErrorPage(pdfDoc, fonts, '현장 피해상황 도면', err.message);
+      console.error("[pdf-lib] 도면 페이지 생성 실패:", err.message);
+      renderErrorPage(pdfDoc, fonts, "현장 피해상황 도면", err.message);
     }
   }
-  
+
   // skipEvidence가 true면 증빙 섹션 스킵 (이메일 용량 제한용)
-  if (sections.evidence && evidence.selectedFileIds.length > 0 && !skipEvidence) {
+  if (
+    sections.evidence &&
+    evidence.selectedFileIds.length > 0 &&
+    !skipEvidence
+  ) {
     try {
-      console.log(`[pdf-lib] 증빙자료 조회 - caseId: ${caseId}, selectedFileIds: ${evidence.selectedFileIds.length}개`);
-      
-      const selectedDocs = await db.select().from(caseDocuments)
+      console.log(
+        `[pdf-lib] 증빙자료 조회 - caseId: ${caseId}, selectedFileIds: ${evidence.selectedFileIds.length}개`,
+      );
+
+      const selectedDocs = await db
+        .select()
+        .from(caseDocuments)
         .where(
           and(
             eq(caseDocuments.caseId, caseId),
-            inArray(caseDocuments.id, evidence.selectedFileIds)
-          )
+            inArray(caseDocuments.id, evidence.selectedFileIds),
+          ),
         );
-      
+
       // 디버그 로그: 각 문서의 caseId 확인
       console.log(`[pdf-lib] 조회된 증빙자료 ${selectedDocs.length}개:`);
       selectedDocs.forEach((doc, idx) => {
-        console.log(`[pdf-lib]   [${idx + 1}] id=${doc.id}, caseId=${doc.caseId}, category=${doc.category}, fileName=${doc.fileName}`);
+        console.log(
+          `[pdf-lib]   [${idx + 1}] id=${doc.id}, caseId=${doc.caseId}, category=${doc.category}, fileName=${doc.fileName}`,
+        );
       });
-      
+
       // 추가 안전장치: caseId가 다른 문서 제외 (이론상 불필요하지만 확실하게 처리)
-      const filteredDocs = selectedDocs.filter(doc => doc.caseId === caseId);
+      const filteredDocs = selectedDocs.filter((doc) => doc.caseId === caseId);
       if (filteredDocs.length !== selectedDocs.length) {
-        console.warn(`[pdf-lib] 경고: caseId가 다른 문서 ${selectedDocs.length - filteredDocs.length}개 제외됨!`);
+        console.warn(
+          `[pdf-lib] 경고: caseId가 다른 문서 ${selectedDocs.length - filteredDocs.length}개 제외됨!`,
+        );
       }
-      
-      const imageDocs = filteredDocs.filter(doc => doc.fileType?.startsWith('image/'));
-      const pdfDocs = filteredDocs.filter(doc =>
-        doc.fileType === 'application/pdf' || doc.fileName?.toLowerCase().endsWith('.pdf')
+
+      const imageDocs = filteredDocs.filter((doc) =>
+        doc.fileType?.startsWith("image/"),
       );
-      
-      console.log(`[pdf-lib] 선택된 문서: 이미지 ${imageDocs.length}개, PDF ${pdfDocs.length}개`);
+      const pdfDocs = filteredDocs.filter(
+        (doc) =>
+          doc.fileType === "application/pdf" ||
+          doc.fileName?.toLowerCase().endsWith(".pdf"),
+      );
+
+      console.log(
+        `[pdf-lib] 선택된 문서: 이미지 ${imageDocs.length}개, PDF ${pdfDocs.length}개`,
+      );
       if (skipPdfAttachments) {
-        console.log('[pdf-lib] skipPdfAttachments=true: PDF 첨부 파일 제외, 이미지만 포함');
+        console.log(
+          "[pdf-lib] skipPdfAttachments=true: PDF 첨부 파일 제외, 이미지만 포함",
+        );
       }
-      
+
       if (imageDocs.length > 0) {
-        const { errors } = await renderEvidencePages(pdfDoc, fonts, caseData, imageDocs, processingConfig);
+        const { errors } = await renderEvidencePages(
+          pdfDoc,
+          fonts,
+          caseData,
+          imageDocs,
+          processingConfig,
+        );
         if (errors.length > 0) {
-          console.log(`[pdf-lib] 증빙자료 처리 중 오류 ${errors.length}개:`, errors);
+          console.log(
+            `[pdf-lib] 증빙자료 처리 중 오류 ${errors.length}개:`,
+            errors,
+          );
         }
-        console.log('[pdf-lib] 증빙자료 이미지 페이지 생성 완료');
+        console.log("[pdf-lib] 증빙자료 이미지 페이지 생성 완료");
       }
-      
+
       // skipPdfAttachments=true 면 PDF 첨부 스킵 (이메일 용량 제한용)
       if (skipPdfAttachments) {
         console.log(`[pdf-lib] PDF 첨부 ${pdfDocs.length}개 스킵됨`);
       }
-      for (const pdfDocData of (skipPdfAttachments ? [] : pdfDocs)) {
+      for (const pdfDocData of skipPdfAttachments ? [] : pdfDocs) {
         try {
           // Object Storage 또는 fileData에서 PDF 로드
           const pdfBuffer = await getImageBuffer(pdfDocData);
@@ -2398,90 +2740,121 @@ export async function generatePdfWithPdfLib(
             console.warn(`[pdf-lib] PDF 데이터 없음: ${pdfDocData.fileName}`);
             continue;
           }
-          
-          const attachedPdf = await PDFDocument.load(pdfBuffer, { ignoreEncryption: true });
-          const pages = await pdfDoc.copyPages(attachedPdf, attachedPdf.getPageIndices());
-          pages.forEach(page => pdfDoc.addPage(page));
+
+          const attachedPdf = await PDFDocument.load(pdfBuffer, {
+            ignoreEncryption: true,
+          });
+          const pages = await pdfDoc.copyPages(
+            attachedPdf,
+            attachedPdf.getPageIndices(),
+          );
+          pages.forEach((page) => pdfDoc.addPage(page));
           console.log(`[pdf-lib] PDF 첨부 완료: ${pdfDocData.fileName}`);
         } catch (pdfErr: any) {
-          console.error(`[pdf-lib] PDF 첨부 실패 (${pdfDocData.fileName}):`, pdfErr.message);
+          console.error(
+            `[pdf-lib] PDF 첨부 실패 (${pdfDocData.fileName}):`,
+            pdfErr.message,
+          );
         }
       }
     } catch (err: any) {
-      console.error('[pdf-lib] 증빙자료 섹션 생성 실패:', err.message);
-      renderErrorPage(pdfDoc, fonts, '증빙자료', err.message);
+      console.error("[pdf-lib] 증빙자료 섹션 생성 실패:", err.message);
+      renderErrorPage(pdfDoc, fonts, "증빙자료", err.message);
     }
   }
-  
+
   if (sections.estimate) {
     try {
-      const estimateList = await db.select().from(estimates)
+      const estimateList = await db
+        .select()
+        .from(estimates)
         .where(eq(estimates.caseId, caseId))
         .orderBy(estimates.version);
-      
+
       let estimateData: any = null;
       let estimateRowsData: any[] = [];
-      
+
       if (estimateList.length > 0) {
         estimateData = estimateList[estimateList.length - 1];
-        estimateRowsData = await db.select().from(estimateRows)
+        estimateRowsData = await db
+          .select()
+          .from(estimateRows)
           .where(eq(estimateRows.estimateId, estimateData.id))
           .orderBy(estimateRows.rowOrder);
       }
-      
+
       if (estimateRowsData.length > 0) {
         await renderRecoveryAreaPage(pdfDoc, fonts, caseData, estimateRowsData);
-        console.log('[pdf-lib] 복구면적 산출표 페이지 생성 완료');
+        console.log("[pdf-lib] 복구면적 산출표 페이지 생성 완료");
       }
-      
-      await renderEstimatePage(pdfDoc, fonts, caseData, estimateData, estimateRowsData, partnerData);
-      console.log('[pdf-lib] 견적서 페이지 생성 완료');
+
+      await renderEstimatePage(
+        pdfDoc,
+        fonts,
+        caseData,
+        estimateData,
+        estimateRowsData,
+        partnerData,
+      );
+      console.log("[pdf-lib] 견적서 페이지 생성 완료");
     } catch (err: any) {
-      console.error('[pdf-lib] 견적서 섹션 생성 실패:', err.message);
-      renderErrorPage(pdfDoc, fonts, '견적서', err.message);
+      console.error("[pdf-lib] 견적서 섹션 생성 실패:", err.message);
+      renderErrorPage(pdfDoc, fonts, "견적서", err.message);
     }
   }
-  
+
   if (pdfDoc.getPageCount() === 0) {
     const emptyPage = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
     drawText(emptyPage, {
       x: MARGIN,
       y: A4_HEIGHT / 2,
-      text: '생성된 콘텐츠가 없습니다.',
+      text: "생성된 콘텐츠가 없습니다.",
       font: fonts.regular,
       size: 14,
       maxWidth: CONTENT_WIDTH,
-      align: 'center',
+      align: "center",
     });
   }
-  
+
   const pdfBytes = await pdfDoc.save();
-  console.log(`[pdf-lib] PDF 생성 완료 - 크기: ${Math.round(pdfBytes.length / 1024)}KB, 페이지: ${pdfDoc.getPageCount()}`);
-  
+  console.log(
+    `[pdf-lib] PDF 생성 완료 - 크기: ${Math.round(pdfBytes.length / 1024)}KB, 페이지: ${pdfDoc.getPageCount()}`,
+  );
+
   return Buffer.from(pdfBytes);
 }
 
-export async function generatePdfWithSizeLimitPdfLib(payload: PdfGenerationPayload): Promise<Buffer> {
+export async function generatePdfWithSizeLimitPdfLib(
+  payload: PdfGenerationPayload,
+): Promise<Buffer> {
   const totalLevels = PROCESSING_LEVELS.length;
-  
+
   for (let level = 0; level < totalLevels; level++) {
     const config = PROCESSING_LEVELS[level];
-    console.log(`[pdf-lib] 레벨 ${level + 1}/${totalLevels}: ${config.maxDimension}px / ${config.quality}%로 PDF 생성 시도`);
-    
+    console.log(
+      `[pdf-lib] 레벨 ${level + 1}/${totalLevels}: ${config.maxDimension}px / ${config.quality}%로 PDF 생성 시도`,
+    );
+
     try {
       const pdfBuffer = await generatePdfWithPdfLib(payload, level);
       const sizeInMB = pdfBuffer.length / (1024 * 1024);
-      
-      console.log(`[pdf-lib] PDF 크기: ${sizeInMB.toFixed(2)}MB (제한: ${MAX_PDF_SIZE_BYTES / (1024 * 1024)}MB)`);
-      
+
+      console.log(
+        `[pdf-lib] PDF 크기: ${sizeInMB.toFixed(2)}MB (제한: ${MAX_PDF_SIZE_BYTES / (1024 * 1024)}MB)`,
+      );
+
       if (pdfBuffer.length <= MAX_PDF_SIZE_BYTES) {
-        console.log(`[pdf-lib] 레벨 ${level + 1} 성공 - 크기: ${sizeInMB.toFixed(2)}MB`);
+        console.log(
+          `[pdf-lib] 레벨 ${level + 1} 성공 - 크기: ${sizeInMB.toFixed(2)}MB`,
+        );
         return pdfBuffer;
       }
-      
+
       if (level < totalLevels - 1) {
         const nextConfig = PROCESSING_LEVELS[level + 1];
-        console.log(`[pdf-lib] PDF 크기 초과 - 레벨 ${level + 2} (${nextConfig.maxDimension}px/${nextConfig.quality}%)로 재시도`);
+        console.log(
+          `[pdf-lib] PDF 크기 초과 - 레벨 ${level + 2} (${nextConfig.maxDimension}px/${nextConfig.quality}%)로 재시도`,
+        );
       }
     } catch (err: any) {
       console.error(`[pdf-lib] 레벨 ${level + 1} 생성 실패:`, err.message);
@@ -2491,11 +2864,13 @@ export async function generatePdfWithSizeLimitPdfLib(payload: PdfGenerationPaylo
       }
     }
   }
-  
+
   const lastLevel = totalLevels - 1;
   const lastConfig = PROCESSING_LEVELS[lastLevel];
-  console.warn(`[pdf-lib] 최저 레벨 (${lastConfig.maxDimension}px/${lastConfig.quality}%)로도 10MB 초과 - 마지막 결과 반환`);
-  
+  console.warn(
+    `[pdf-lib] 최저 레벨 (${lastConfig.maxDimension}px/${lastConfig.quality}%)로도 10MB 초과 - 마지막 결과 반환`,
+  );
+
   try {
     return await generatePdfWithPdfLib(payload, lastLevel);
   } catch (err: any) {
@@ -2510,18 +2885,27 @@ export async function generatePdfWithSizeLimitPdfLib(payload: PdfGenerationPaylo
 // 탭별 증빙 PDF 생성 (이메일 용량 제한용)
 // ========================================================
 
-const TAB_NAMES = ['현장사진', '기본자료', '증빙자료', '청구자료'] as const;
-type TabName = typeof TAB_NAMES[number];
+const TAB_NAMES = ["현장사진", "기본자료", "증빙자료", "청구자료"] as const;
+type TabName = (typeof TAB_NAMES)[number];
 
 const CATEGORY_TO_TAB: Record<string, TabName> = {
-  '현장출동사진': '현장사진', '현장': '현장사진',
-  '수리중 사진': '현장사진', '수리중': '현장사진',
-  '복구완료 사진': '현장사진', '복구완료': '현장사진',
-  '보험금 청구서': '기본자료', '개인정보 동의서(가족용)': '기본자료',
-  '주민등록등본': '증빙자료', '등기부등본': '증빙자료',
-  '건축물대장': '증빙자료', '기타증빙자료(민원일지 등)': '증빙자료',
-  '위임장': '청구자료', '도급계약서': '청구자료',
-  '복구완료확인서': '청구자료', '부가세 청구자료': '청구자료', '청구': '청구자료',
+  현장출동사진: "현장사진",
+  현장: "현장사진",
+  "수리중 사진": "현장사진",
+  수리중: "현장사진",
+  "복구완료 사진": "현장사진",
+  복구완료: "현장사진",
+  "보험금 청구서": "기본자료",
+  "개인정보 동의서(가족용)": "기본자료",
+  주민등록등본: "증빙자료",
+  등기부등본: "증빙자료",
+  건축물대장: "증빙자료",
+  "기타증빙자료(민원일지 등)": "증빙자료",
+  위임장: "청구자료",
+  도급계약서: "청구자료",
+  복구완료확인서: "청구자료",
+  "부가세 청구자료": "청구자료",
+  청구: "청구자료",
 };
 
 const MAX_EVIDENCE_PDF_SIZE_BYTES = 8 * 1024 * 1024; // 8MB 제한
@@ -2537,8 +2921,8 @@ interface EvidencePdfResult {
 // 단계적 압축으로 이미지를 PDF에 추가할 버퍼로 변환
 async function compressImageForPdf(
   imageData: Buffer,
-  targetMaxBytes: number = 500 * 1024 // 기본 500KB 목표
-): Promise<{ buffer: Buffer; format: 'jpeg' | 'png' }> {
+  targetMaxBytes: number = 500 * 1024, // 기본 500KB 목표
+): Promise<{ buffer: Buffer; format: "jpeg" | "png" }> {
   const levels = [
     { maxDimension: 1600, quality: 60 },
     { maxDimension: 1400, quality: 50 },
@@ -2547,46 +2931,58 @@ async function compressImageForPdf(
     { maxDimension: 800, quality: 25 },
     { maxDimension: 700, quality: 20 },
   ];
-  
+
   for (const level of levels) {
     try {
       const compressed = await sharp(imageData)
-        .resize(level.maxDimension, level.maxDimension, { fit: 'inside', withoutEnlargement: true })
+        .resize(level.maxDimension, level.maxDimension, {
+          fit: "inside",
+          withoutEnlargement: true,
+        })
         .jpeg({ quality: level.quality })
         .toBuffer();
-      
+
       if (compressed.length <= targetMaxBytes) {
-        return { buffer: compressed, format: 'jpeg' };
+        return { buffer: compressed, format: "jpeg" };
       }
     } catch (err) {
       continue;
     }
   }
-  
+
   // 최저 레벨로도 안되면 마지막 결과 반환
   try {
     const lastLevel = levels[levels.length - 1];
     const compressed = await sharp(imageData)
-      .resize(lastLevel.maxDimension, lastLevel.maxDimension, { fit: 'inside', withoutEnlargement: true })
+      .resize(lastLevel.maxDimension, lastLevel.maxDimension, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
       .jpeg({ quality: lastLevel.quality })
       .toBuffer();
-    return { buffer: compressed, format: 'jpeg' };
+    return { buffer: compressed, format: "jpeg" };
   } catch (err) {
     // 변환 실패 시 원본 반환 시도
-    return { buffer: imageData, format: 'jpeg' };
+    return { buffer: imageData, format: "jpeg" };
   }
 }
 
 // Object Storage 또는 fileData에서 이미지 Buffer 가져오기
-async function getImageBuffer(doc: { id?: string; fileData?: string | null; storageKey?: string | null }): Promise<Buffer | null> {
+async function getImageBuffer(doc: {
+  id?: string;
+  fileData?: string | null;
+  storageKey?: string | null;
+}): Promise<Buffer | null> {
   try {
     // 1. Object Storage에서 가져오기 (우선)
     if (doc.storageKey) {
-      console.log(`[pdf-lib] Object Storage에서 이미지 로드: ${doc.storageKey}`);
+      console.log(
+        `[pdf-lib] Object Storage에서 이미지 로드: ${doc.storageKey}`,
+      );
       // PRIVATE_OBJECT_DIR을 앞에 붙여서 전체 경로 생성
       const privateObjectDir = process.env.PRIVATE_OBJECT_DIR;
       if (!privateObjectDir) {
-        console.error('[pdf-lib] PRIVATE_OBJECT_DIR이 설정되지 않음');
+        console.error("[pdf-lib] PRIVATE_OBJECT_DIR이 설정되지 않음");
         return null;
       }
       const fullPath = `${privateObjectDir}/${doc.storageKey}`;
@@ -2594,35 +2990,35 @@ async function getImageBuffer(doc: { id?: string; fileData?: string | null; stor
       const buffer = await objectStorage.downloadToBuffer(fullPath);
       return buffer;
     }
-    
+
     // 2. fileData에서 가져오기 (레거시)
     if (doc.fileData) {
-      if (doc.fileData.startsWith('data:')) {
-        const base64Data = doc.fileData.split(',')[1];
-        return Buffer.from(base64Data, 'base64');
+      if (doc.fileData.startsWith("data:")) {
+        const base64Data = doc.fileData.split(",")[1];
+        return Buffer.from(base64Data, "base64");
       } else {
-        return Buffer.from(doc.fileData, 'base64');
+        return Buffer.from(doc.fileData, "base64");
       }
     }
-    
+
     // 3. fileData가 없으면 DB에서 직접 가져오기 (레거시 파일 지원)
     if (doc.id) {
       console.log(`[pdf-lib] DB에서 레거시 이미지 로드: ${doc.id}`);
-      const { storage } = await import('./storage');
+      const { storage } = await import("./storage");
       const fileData = await storage.getDocumentFileData(doc.id);
       if (fileData) {
-        if (fileData.startsWith('data:')) {
-          const base64Data = fileData.split(',')[1];
-          return Buffer.from(base64Data, 'base64');
+        if (fileData.startsWith("data:")) {
+          const base64Data = fileData.split(",")[1];
+          return Buffer.from(base64Data, "base64");
         } else {
-          return Buffer.from(fileData, 'base64');
+          return Buffer.from(fileData, "base64");
         }
       }
     }
-    
+
     return null;
   } catch (error) {
-    console.error('[pdf-lib] 이미지 로드 실패:', error);
+    console.error("[pdf-lib] 이미지 로드 실패:", error);
     return null;
   }
 }
@@ -2630,30 +3026,39 @@ async function getImageBuffer(doc: { id?: string; fileData?: string | null; stor
 // 단일 탭의 증빙 PDF 생성 (8MB 초과 시 분할)
 async function generateSingleTabEvidencePdf(
   tabName: string,
-  documents: Array<{ id: string; fileName: string; fileType: string; fileData?: string | null; storageKey?: string | null; category: string }>,
+  documents: Array<{
+    id: string;
+    fileName: string;
+    fileType: string;
+    fileData?: string | null;
+    storageKey?: string | null;
+    category: string;
+  }>,
   caseData: any,
   fonts: FontSet,
-  accidentNo: string
+  accidentNo: string,
 ): Promise<EvidencePdfResult[]> {
   const results: EvidencePdfResult[] = [];
-  
+
   if (documents.length === 0) {
     return results;
   }
-  
-  console.log(`[pdf-lib] 탭 "${tabName}" 증빙 PDF 생성 시작 - ${documents.length}개 이미지`);
-  
+
+  console.log(
+    `[pdf-lib] 탭 "${tabName}" 증빙 PDF 생성 시작 - ${documents.length}개 이미지`,
+  );
+
   let currentPdfDoc = await PDFDocument.create();
   currentPdfDoc.registerFontkit(fontkit);
   let currentFonts = await embedFonts(currentPdfDoc);
-  
+
   let currentPartIndex = 1;
   let currentImageCount = 0;
   let estimatedSize = 0;
-  
+
   for (let i = 0; i < documents.length; i++) {
     const doc = documents[i];
-    
+
     try {
       // Object Storage 또는 fileData에서 이미지 로드
       const imageData = await getImageBuffer(doc);
@@ -2661,18 +3066,22 @@ async function generateSingleTabEvidencePdf(
         console.warn(`[pdf-lib] 이미지 데이터 없음: ${doc.fileName}`);
         continue;
       }
-      
+
       // 이미지 압축
-      const { buffer: compressedBuffer, format } = await compressImageForPdf(imageData);
-      
+      const { buffer: compressedBuffer, format } =
+        await compressImageForPdf(imageData);
+
       // 현재 PDF 크기 체크 (예상치 - 이미지 + 텍스트 오버헤드)
       const estimatedImageSize = compressedBuffer.length + 5000; // 5KB 오버헤드
-      
+
       // 8MB 초과 예상 시 현재 PDF 저장하고 새 PDF 시작
-      if (estimatedSize + estimatedImageSize > MAX_EVIDENCE_PDF_SIZE_BYTES && currentImageCount > 0) {
+      if (
+        estimatedSize + estimatedImageSize > MAX_EVIDENCE_PDF_SIZE_BYTES &&
+        currentImageCount > 0
+      ) {
         // 현재 PDF 저장
         const pdfBytes = await currentPdfDoc.save();
-        const partSuffix = currentPartIndex > 1 ? `_${currentPartIndex}` : '';
+        const partSuffix = currentPartIndex > 1 ? `_${currentPartIndex}` : "";
         results.push({
           tabName,
           fileName: `Evidence_${tabName}${partSuffix}.pdf`,
@@ -2680,9 +3089,11 @@ async function generateSingleTabEvidencePdf(
           pageCount: currentPdfDoc.getPageCount(),
           imageCount: currentImageCount,
         });
-        
-        console.log(`[pdf-lib] 탭 "${tabName}" 파트 ${currentPartIndex} 완료 - ${currentImageCount}개 이미지, ${Math.round(pdfBytes.length / 1024)}KB`);
-        
+
+        console.log(
+          `[pdf-lib] 탭 "${tabName}" 파트 ${currentPartIndex} 완료 - ${currentImageCount}개 이미지, ${Math.round(pdfBytes.length / 1024)}KB`,
+        );
+
         // 새 PDF 시작 (폰트도 새 문서에 재할당)
         currentPdfDoc = await PDFDocument.create();
         currentPdfDoc.registerFontkit(fontkit);
@@ -2691,10 +3102,10 @@ async function generateSingleTabEvidencePdf(
         currentImageCount = 0;
         estimatedSize = 0;
       }
-      
+
       // 페이지 추가
       const page = currentPdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
-      
+
       // 헤더
       const headerHeight = 25;
       page.drawRectangle({
@@ -2704,46 +3115,47 @@ async function generateSingleTabEvidencePdf(
         height: headerHeight,
         color: rgb(0.95, 0.95, 0.95),
       });
-      
+
       drawText(page, {
         x: MARGIN + 10,
         y: A4_HEIGHT - MARGIN - 17,
-        text: `[${tabName}] ${doc.category || '증빙자료'} - ${doc.fileName}`,
+        text: `[${tabName}] ${doc.category || "증빙자료"} - ${doc.fileName}`,
         font: currentFonts.bold,
         size: 10,
         maxWidth: CONTENT_WIDTH - 20,
       });
-      
+
       // 이미지 영역
       const imageAreaTop = A4_HEIGHT - MARGIN - headerHeight - 15;
       const imageAreaHeight = imageAreaTop - MARGIN - 30;
-      
+
       // 이미지 삽입
-      const embeddedImage = format === 'png' 
-        ? await currentPdfDoc.embedPng(compressedBuffer)
-        : await currentPdfDoc.embedJpg(compressedBuffer);
-      
+      const embeddedImage =
+        format === "png"
+          ? await currentPdfDoc.embedPng(compressedBuffer)
+          : await currentPdfDoc.embedJpg(compressedBuffer);
+
       const imgDims = embeddedImage.scale(1);
       const maxWidth = CONTENT_WIDTH - 20;
       const maxHeight = imageAreaHeight - 20;
-      
+
       const scaleX = maxWidth / imgDims.width;
       const scaleY = maxHeight / imgDims.height;
       const scale = Math.min(scaleX, scaleY, 1);
-      
+
       const drawWidth = imgDims.width * scale;
       const drawHeight = imgDims.height * scale;
-      
+
       const drawX = MARGIN + (CONTENT_WIDTH - drawWidth) / 2;
       const drawY = MARGIN + 30 + (imageAreaHeight - drawHeight) / 2;
-      
+
       page.drawImage(embeddedImage, {
         x: drawX,
         y: drawY,
         width: drawWidth,
         height: drawHeight,
       });
-      
+
       // 푸터
       drawText(page, {
         x: MARGIN,
@@ -2753,19 +3165,21 @@ async function generateSingleTabEvidencePdf(
         size: 8,
         color: { r: 0.5, g: 0.5, b: 0.5 },
       });
-      
+
       currentImageCount++;
       estimatedSize += estimatedImageSize;
-      
     } catch (err: any) {
-      console.error(`[pdf-lib] 이미지 처리 실패 (${doc.fileName}):`, err.message);
+      console.error(
+        `[pdf-lib] 이미지 처리 실패 (${doc.fileName}):`,
+        err.message,
+      );
     }
   }
-  
+
   // 마지막 PDF 저장
   if (currentImageCount > 0) {
     const pdfBytes = await currentPdfDoc.save();
-    const partSuffix = currentPartIndex > 1 ? `_${currentPartIndex}` : '';
+    const partSuffix = currentPartIndex > 1 ? `_${currentPartIndex}` : "";
     results.push({
       tabName,
       fileName: `Evidence_${tabName}${partSuffix}.pdf`,
@@ -2773,88 +3187,101 @@ async function generateSingleTabEvidencePdf(
       pageCount: currentPdfDoc.getPageCount(),
       imageCount: currentImageCount,
     });
-    
-    console.log(`[pdf-lib] 탭 "${tabName}" 파트 ${currentPartIndex} 완료 - ${currentImageCount}개 이미지, ${Math.round(pdfBytes.length / 1024)}KB`);
+
+    console.log(
+      `[pdf-lib] 탭 "${tabName}" 파트 ${currentPartIndex} 완료 - ${currentImageCount}개 이미지, ${Math.round(pdfBytes.length / 1024)}KB`,
+    );
   }
-  
+
   return results;
 }
 
 // 탭별 증빙 PDF 생성 메인 함수
 export async function generateEvidencePDFsByTab(
   caseId: string,
-  selectedFileIds: string[]
+  selectedFileIds: string[],
 ): Promise<EvidencePdfResult[]> {
   console.log(`[pdf-lib] ===== 탭별 증빙 PDF 생성 시작 =====`);
-  console.log(`[pdf-lib] 케이스: ${caseId}, 선택된 파일: ${selectedFileIds.length}개`);
-  
+  console.log(
+    `[pdf-lib] 케이스: ${caseId}, 선택된 파일: ${selectedFileIds.length}개`,
+  );
+
   if (selectedFileIds.length === 0) {
-    console.log('[pdf-lib] 선택된 파일 없음');
+    console.log("[pdf-lib] 선택된 파일 없음");
     return [];
   }
-  
+
   // 케이스 정보
   const [caseData] = await db.select().from(cases).where(eq(cases.id, caseId));
   if (!caseData) {
-    throw new Error('케이스를 찾을 수 없습니다.');
+    throw new Error("케이스를 찾을 수 없습니다.");
   }
-  
-  const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || 'UNKNOWN';
-  
+
+  const accidentNo =
+    caseData.insuranceAccidentNo || caseData.caseNumber || "UNKNOWN";
+
   // 선택된 문서 조회
-  const selectedDocs = await db.select().from(caseDocuments)
+  const selectedDocs = await db
+    .select()
+    .from(caseDocuments)
     .where(
       and(
         eq(caseDocuments.caseId, caseId),
-        inArray(caseDocuments.id, selectedFileIds)
-      )
+        inArray(caseDocuments.id, selectedFileIds),
+      ),
     );
-  
+
   // 이미지만 필터링
-  const imageDocs = selectedDocs.filter(doc => doc.fileType?.startsWith('image/'));
+  const imageDocs = selectedDocs.filter((doc) =>
+    doc.fileType?.startsWith("image/"),
+  );
   console.log(`[pdf-lib] 이미지 문서: ${imageDocs.length}개`);
-  
+
   // 탭별로 분류
   const docsByTab: Record<TabName, typeof imageDocs> = {
-    '현장사진': [],
-    '기본자료': [],
-    '증빙자료': [],
-    '청구자료': [],
+    현장사진: [],
+    기본자료: [],
+    증빙자료: [],
+    청구자료: [],
   };
-  
+
   for (const doc of imageDocs) {
-    const tab = CATEGORY_TO_TAB[doc.category] || '현장사진'; // 기본값
+    const tab = CATEGORY_TO_TAB[doc.category] || "현장사진"; // 기본값
     docsByTab[tab].push(doc);
   }
-  
+
   // 폰트 로드
   const fontBytes = loadFontBytes();
   const tempPdfDoc = await PDFDocument.create();
   tempPdfDoc.registerFontkit(fontkit);
   const fonts = await embedFonts(tempPdfDoc);
-  
+
   // 각 탭별 PDF 생성
   const allResults: EvidencePdfResult[] = [];
-  
+
   for (const tabName of TAB_NAMES) {
     const tabDocs = docsByTab[tabName];
     if (tabDocs.length === 0) continue;
-    
+
     const tabResults = await generateSingleTabEvidencePdf(
       tabName,
       tabDocs,
       caseData,
       fonts,
-      accidentNo
+      accidentNo,
     );
-    
+
     allResults.push(...tabResults);
   }
-  
-  console.log(`[pdf-lib] ===== 탭별 증빙 PDF 생성 완료: ${allResults.length}개 파일 =====`);
+
+  console.log(
+    `[pdf-lib] ===== 탭별 증빙 PDF 생성 완료: ${allResults.length}개 파일 =====`,
+  );
   for (const result of allResults) {
-    console.log(`[pdf-lib]   - ${result.fileName}: ${Math.round(result.buffer.length / 1024)}KB, ${result.imageCount}개 이미지, ${result.pageCount}페이지`);
+    console.log(
+      `[pdf-lib]   - ${result.fileName}: ${Math.round(result.buffer.length / 1024)}KB, ${result.imageCount}개 이미지, ${result.pageCount}페이지`,
+    );
   }
-  
+
   return allResults;
 }
