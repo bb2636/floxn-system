@@ -386,14 +386,26 @@ export default function ComprehensiveProgress() {
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
       
       // SMS 자동 발송 (Dialog 없이 바로 발송) - 추가 정보가 필요없는 상태에 사용
-      const sendSmsAutomatically = async (caseData: CaseWithLatestProgress, stage: NotificationStage) => {
+      const sendSmsAutomatically = async (caseData: CaseWithLatestProgress, stage: NotificationStage, previousStatus?: string) => {
         try {
           const recipients = STAGE_RECIPIENT_DEFAULTS[stage];
-          await apiRequest("POST", "/api/send-stage-notification", {
+          const payload: {
+            caseId: string;
+            stage: NotificationStage;
+            recipients: typeof recipients;
+            previousStatus?: string;
+          } = {
             caseId: caseData.id,
             stage,
             recipients,
-          });
+          };
+          
+          // 반려 시 이전 상태 전달
+          if (stage === "반려" && previousStatus) {
+            payload.previousStatus = previousStatus;
+          }
+          
+          await apiRequest("POST", "/api/send-stage-notification", payload);
           toast({
             title: "문자 발송 완료",
             description: `${stage} 알림이 자동 발송되었습니다.`,
@@ -455,7 +467,9 @@ export default function ComprehensiveProgress() {
             setSmsStage(stage);
             setSmsDialogOpen(true);
           } else {
-            sendSmsAutomatically(updatedCaseData, stage);
+            // 반려 시 이전 상태(변경 전 상태)를 전달
+            const prevStatus = stage === "반려" ? context?.targetCase?.status : undefined;
+            sendSmsAutomatically(updatedCaseData, stage, prevStatus);
           }
         }
       }

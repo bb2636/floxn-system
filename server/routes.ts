@@ -9355,6 +9355,8 @@ https://peulrogseun-aqaqaq4561.replit.app
     recoveryAmount: z.number().optional(),
     feeRate: z.number().optional(),
     paymentAmount: z.number().optional(),
+    // 반려 시 이전 진행상태 (반려 단계에서만 사용)
+    previousStatus: z.string().optional(),
   });
 
   app.post("/api/send-stage-notification", async (req, res) => {
@@ -9375,7 +9377,7 @@ https://peulrogseun-aqaqaq4561.replit.app
 
     try {
       const validatedData = stageNotificationSchema.parse(req.body);
-      const { caseId, stage, recipients, additionalMessage, cancelReason, recoveryAmount, feeRate, paymentAmount } = validatedData;
+      const { caseId, stage, recipients, additionalMessage, cancelReason, recoveryAmount, feeRate, paymentAmount, previousStatus } = validatedData;
 
       // 솔라피 API 키 확인
       const SOLAPI_API_KEY = process.env.SOLAPI_API_KEY;
@@ -9502,6 +9504,21 @@ https://peulrogseun-aqaqaq4561.replit.app
 복구금액 : ${recoveryAmount?.toLocaleString() || "-"}원
 수수료 : 최종금액의 ${feeRate || "-"}%
 지급금액 : ${paymentAmount?.toLocaleString() || "-"}원`;
+      } else if (stage === "반려") {
+        subject = "반려 알림";
+        const addressMain = caseData.victimAddress || caseData.insuredAddress;
+        const addressDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail;
+        // 반려 직전 상태 표시 (예: "검토중에서 반려", "현장정보제출에서 반려")
+        const rejectionStatus = previousStatus ? `${previousStatus}에서 반려` : "반려";
+        messageText = `<반려 알림>
+
+반려 : ${caseData.caseNumber || "-"}
+보험사 : ${caseData.insuranceCompany || "-"}
+증권번호 : ${caseData.insurancePolicyNo || "-"}
+사고번호 : ${caseData.insuranceAccidentNo || "-"}
+피보험자 : ${caseData.insuredName || "-"}
+사고장소 : ${[addressMain, addressDetail].filter(Boolean).join(" ") || "-"}
+진행상태 : ${rejectionStatus}`;
       } else {
         // 현장정보입력~청구 등 단계별 항목 알림
         const stageDisplayName = stage === "직접복구" || stage === "미복구" 
