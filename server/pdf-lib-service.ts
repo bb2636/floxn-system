@@ -184,9 +184,10 @@ function wrapText(
   return lines;
 }
 
-// 특수기호 뒤 공백 제거 함수 (전역)
+// 모든 특수기호 뒤 공백 제거 함수 (전역)
 function normalizeText(text: string): string {
-  return text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
+  // 모든 특수기호 뒤 공백 제거: - : / \ ( [ { < > } ] ) @ # $ % ^ & * + = | ~ ` ! ? , . ; ' "
+  return text.replace(/([^\w\s가-힣ㄱ-ㅎㅏ-ㅣ])\s+/g, "$1");
 }
 
 function drawText(page: PDFPage, options: DrawTextOptions): number {
