@@ -1050,8 +1050,10 @@ async function renderDrawingPage(
   });
 
   // 사고번호(계약번호) on the right - 헤더박스 내에 맞도록 폰트 크기 조정
-  const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "-";
-  const accidentNoText = `사고번호(계약번호): ${accidentNo}`;
+  // 특수기호 뒤 공백 제거
+  const rawAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "-";
+  const accidentNo = rawAccidentNo.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
+  const accidentNoText = `사고번호(계약번호):${accidentNo}`;
   // 텍스트 길이에 따라 폰트 크기 조정 (헤더 영역 안에 들어가도록)
   const accidentNoFontSize =
     accidentNoText.length > 25 ? 8 : accidentNoText.length > 20 ? 9 : 10;
@@ -1764,11 +1766,14 @@ async function renderRecoveryAreaPage(
   const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일`;
 
   // Info table
+  // 특수기호 뒤 공백 제거 함수
+  const removeSymbolSpaces = (text: string) => 
+    text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
   const headerRows: TableCell[][] = [
     [
       { text: "사고번호", width: 70, isHeader: true, align: "center" },
       {
-        text: caseData.insuranceAccidentNo || caseData.caseNumber || "-",
+        text: removeSymbolSpaces(caseData.insuranceAccidentNo || caseData.caseNumber || "-"),
         width: 120,
         align: "left",
       },
@@ -2142,6 +2147,9 @@ async function renderEstimatePage(
   const rightTableWidth = 170; // 사업자번호/상호명/대표자 테이블 (줄임)
 
   // 좌측 테이블 (현장명/보험사/사고번호)
+  // 특수기호 뒤 공백 제거 함수
+  const removeAccidentSpaces = (text: string) => 
+    text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
   const leftTableRows: TableCell[][] = [
     [
       { text: "현장명(주소)", width: 70, isHeader: true, align: "center" },
@@ -2154,7 +2162,7 @@ async function renderEstimatePage(
     [
       { text: "사고번호", width: 70, isHeader: true, align: "center" },
       {
-        text: caseData.insuranceAccidentNo || caseData.caseNumber || "-",
+        text: removeAccidentSpaces(caseData.insuranceAccidentNo || caseData.caseNumber || "-"),
         width: 250,
         align: "left",
       },
