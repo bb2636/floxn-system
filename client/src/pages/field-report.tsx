@@ -440,6 +440,7 @@ export default function FieldReport() {
   // SMS 알림 다이얼로그 상태
   const [smsDialogOpen, setSmsDialogOpen] = useState(false);
   const [smsStage, setSmsStage] = useState<"현장정보입력" | "반려" | "현장정보제출" | "승인반려">("현장정보입력");
+  const [smsPreviousStatus, setSmsPreviousStatus] = useState<string | undefined>(undefined);
 
   // 필수 서류 검증 함수 (현장출동보고서 제출 전)
   const validateRequiredDocuments = (): { valid: boolean; missingDocs: string[] } => {
@@ -692,6 +693,8 @@ export default function FieldReport() {
       
       // 비승인(반려) 시 SMS 알림 다이얼로그 표시
       if (reviewDecision === "비승인") {
+        // 반려 전 상태 저장 (현재 상태)
+        setSmsPreviousStatus(caseData?.status || "현장정보입력");
         setSmsStage("반려");
         setSmsDialogOpen(true);
       }
@@ -731,6 +734,8 @@ export default function FieldReport() {
       
       // 비승인(승인반려) 시 SMS 알림 다이얼로그 표시
       if (approvalDecision === "비승인") {
+        // 반려 전 상태 저장 (현재 상태)
+        setSmsPreviousStatus(caseData?.status || "현장정보제출");
         setSmsStage("승인반려");
         setSmsDialogOpen(true);
       }
@@ -4300,7 +4305,11 @@ export default function FieldReport() {
           onOpenChange={setSmsDialogOpen}
           caseData={reportData.case as unknown as SchemaCase}
           stage={smsStage}
-          onSuccess={() => setSmsDialogOpen(false)}
+          previousStatus={smsPreviousStatus}
+          onSuccess={() => {
+            setSmsDialogOpen(false);
+            setSmsPreviousStatus(undefined);
+          }}
         />
       )}
     </div>
