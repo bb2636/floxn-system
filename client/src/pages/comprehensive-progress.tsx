@@ -1130,8 +1130,8 @@ export default function ComprehensiveProgress() {
               style={{
                 display: "grid",
                 gridTemplateColumns: user?.role === "협력사" 
-                  ? "40px 110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px"
-                  : "40px 110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px",
+                  ? "40px 110px 130px 110px 90px 100px 100px 100px 80px 120px 120px 60px 100px 100px"
+                  : "40px 110px 130px 110px 90px 100px 100px 100px 80px 120px 120px 60px 100px",
                 padding: "14px 20px",
                 background: "rgba(12, 12, 12, 0.04)",
                 borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
@@ -1170,13 +1170,10 @@ export default function ComprehensiveProgress() {
               피보험자
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-              당사 담당자
+              담당자
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
               협력사
-            </div>
-            <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>
-              견적금액
             </div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>승인금액</div>
             <div style={{ fontFamily: "Pretendard", fontWeight: 600, fontSize: "13px", color: "rgba(12, 12, 12, 0.6)" }}>경과일</div>
@@ -1296,8 +1293,8 @@ export default function ComprehensiveProgress() {
                   style={{
                     display: "grid",
                     gridTemplateColumns: user?.role === "협력사"
-                      ? "40px 110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px 100px"
-                      : "40px 110px 130px 110px 90px 100px 100px 100px 100px 80px 120px 120px 60px 100px",
+                      ? "40px 110px 130px 110px 90px 100px 100px 100px 80px 120px 120px 60px 100px 100px"
+                      : "40px 110px 130px 110px 90px 100px 100px 100px 80px 120px 120px 60px 100px",
                     padding: "14px 20px",
                     borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                     gap: "8px",
@@ -1345,9 +1342,6 @@ export default function ComprehensiveProgress() {
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     {caseItem.assignedPartner || "-"}
-                  </div>
-                  <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
-                    {formatAmount(caseItem.initialEstimateAmount)}
                   </div>
                   <div style={{ fontFamily: "Pretendard", fontSize: "13px", color: "rgba(12, 12, 12, 0.8)" }}>
                     {formatAmount(caseItem.approvedAmount)}
