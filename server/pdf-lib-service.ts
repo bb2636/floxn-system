@@ -1515,11 +1515,14 @@ async function renderEvidencePages(
       caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
     const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
 
-    // 헤더 형식: 좌측 "사고번호 {보험사고번호} {주소} {카테고리}-" / 우측 "{세부카테고리}"
+    // 헤더 형식: "사고번호 {보험사고번호}    {주소}    {카테고리}-{세부카테고리}"
     const accidentNo =
       caseData.insuranceAccidentNo || caseData.caseNumber || "";
-    const leftHeaderText = `사고번호 ${accidentNo} ${fullAddress} ${firstImage.tab}-`;
-    const rightHeaderText = firstImage.doc.category || "";
+    const categoryText = firstImage.doc.category 
+      ? `${firstImage.tab}-${firstImage.doc.category}` 
+      : firstImage.tab;
+    const leftHeaderText = `사고번호 ${accidentNo}    ${fullAddress}    ${categoryText}`;
+    const rightHeaderText = "";
 
     page.drawRectangle({
       x: MARGIN,
