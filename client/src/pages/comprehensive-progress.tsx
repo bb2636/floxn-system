@@ -1884,7 +1884,7 @@ export default function ComprehensiveProgress() {
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.9)",
                             }}>
-                              {selectedCase.insuranceCompany || "-"}
+                              {selectedCase.assessorId || "-"}
                             </div>
                           </div>
 
