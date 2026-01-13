@@ -1380,7 +1380,7 @@ async function renderEvidencePages(
       const pdfCategoryDisplay = pdfItem.doc.category
         ? `${pdfItem.tab}-${pdfItem.doc.category}`
         : pdfItem.tab;
-      const pdfHeaderText = `사고번호 ${pdfAccidentNo} ${pdfFullAddress} ${pdfCategoryDisplay}`;
+      const pdfHeaderText = `사고번호 ${pdfAccidentNo}  |  ${pdfFullAddress}  |  ${pdfCategoryDisplay}`;
       const pdfFontSize =
         pdfHeaderText.length > 60 ? 8 : pdfHeaderText.length > 45 ? 9 : 10;
 
