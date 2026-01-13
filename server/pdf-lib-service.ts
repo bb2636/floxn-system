@@ -606,10 +606,12 @@ async function renderCoverPage(
     caseData.accompaniedPerson || caseData.assignedPartnerManager || "-";
 
   // Main info table
+  // 특수기호 뒤 공백 제거
+  const cleanAccidentNo = (caseData.insuranceAccidentNo || "-").replace(/-\s+/g, "-").replace(/:\s+/g, ":");
   const tableRows: TableCell[][] = [
     [
       { text: "사고접수번호", width: 100, isHeader: true, align: "center" },
-      { text: caseData.insuranceAccidentNo || "-", width: 150, align: "left" },
+      { text: cleanAccidentNo, width: 150, align: "left" },
       { text: "출동담당자", width: 100, isHeader: true, align: "center" },
       { text: dispatchManager, width: 165, align: "left" },
     ],
@@ -1002,7 +1004,7 @@ async function renderFieldReportPage(
   drawText(page, {
     x: MARGIN,
     y: footerY,
-    text: `작성일: ${dateStr}`,
+    text: `작성일:${dateStr}`,
     font: fonts.regular,
     size: 9,
   });
@@ -1014,7 +1016,7 @@ async function renderFieldReportPage(
   drawText(page, {
     x: A4_WIDTH - MARGIN - 180,
     y: footerY,
-    text: `작성자: ${managerName} (${partnerName})`,
+    text: `작성자:${managerName} (${partnerName})`,
     font: fonts.regular,
     size: 9,
   });
@@ -1080,7 +1082,7 @@ async function renderDrawingPage(
   drawText(page, {
     x: MARGIN,
     y,
-    text: `보험사: ${insuranceCompany}     피보험자: ${insuredName}     주소: ${fullAddress}`,
+    text: `보험사:${insuranceCompany}     피보험자:${insuredName}     주소:${fullAddress}`,
     font: fonts.regular,
     size: 9,
   });
@@ -1301,7 +1303,7 @@ async function renderDrawingPage(
   drawText(page, {
     x: MARGIN,
     y: footerY,
-    text: `작성일: ${dateStr} | 사고접수번호: ${accidentNo}`,
+    text: `작성일:${dateStr} | 사고접수번호:${accidentNo}`,
     font: fonts.regular,
     size: 9,
   });
@@ -1643,7 +1645,7 @@ async function renderEvidencePages(
     drawText(page, {
       x: A4_WIDTH - MARGIN - 100,
       y: firstY + 8,
-      text: `업로드: ${firstUploadDate}`,
+      text: `업로드:${firstUploadDate}`,
       font: fonts.regular,
       size: 8,
       color: { r: 0.3, g: 0.3, b: 0.3 },
@@ -1713,7 +1715,7 @@ async function renderEvidencePages(
       drawText(page, {
         x: A4_WIDTH - MARGIN - 100,
         y: secondY + 8,
-        text: `업로드: ${secondUploadDate}`,
+        text: `업로드:${secondUploadDate}`,
         font: fonts.regular,
         size: 8,
         color: { r: 0.3, g: 0.3, b: 0.3 },
@@ -1780,7 +1782,7 @@ async function renderRecoveryAreaPage(
       { text: "보험사", width: 60, isHeader: true, align: "center" },
       { text: caseData.insuranceCompany || "-", width: 100, align: "left" },
       { text: "플록슨접수번호", width: 70, isHeader: true, align: "center" },
-      { text: caseData.caseNumber || "-", width: 95, align: "left" },
+      { text: removeSymbolSpaces(caseData.caseNumber || "-"), width: 95, align: "left" },
     ],
     [
       { text: "장소", width: 70, isHeader: true, align: "center" },
@@ -2099,7 +2101,7 @@ async function renderRecoveryAreaPage(
   drawText(page, {
     x: A4_WIDTH - MARGIN - 120,
     y: footerY,
-    text: `작성일: ${dateStr}`,
+    text: `작성일:${dateStr}`,
     font: fonts.regular,
     size: 9,
   });
@@ -2627,7 +2629,7 @@ async function renderEstimatePage(
   drawText(page, {
     x: MARGIN,
     y: footerY + 10,
-    text: `작성일: ${dateStr}`,
+    text: `작성일:${dateStr}`,
     font: fonts.regular,
     size: 9,
   });
@@ -2675,7 +2677,7 @@ function renderErrorPage(
   drawText(page, {
     x: MARGIN + 30,
     y: centerY + 20,
-    text: `섹션: ${sectionName}`,
+    text: `섹션:${sectionName}`,
     font: fonts.bold,
     size: 14,
     maxWidth: CONTENT_WIDTH - 60,
@@ -3351,10 +3353,12 @@ async function generateSingleTabEvidencePdf(
       });
 
       // 푸터
+      // 특수기호 뒤 공백 제거
+      const cleanedAccidentNo = accidentNo.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
       drawText(page, {
         x: MARGIN,
         y: MARGIN + 10,
-        text: `사고접수번호: ${accidentNo} | ${i + 1}/${documents.length}`,
+        text: `사고접수번호:${cleanedAccidentNo} | ${i + 1}/${documents.length}`,
         font: currentFonts.regular,
         size: 8,
         color: { r: 0.5, g: 0.5, b: 0.5 },
