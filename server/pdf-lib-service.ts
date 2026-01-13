@@ -300,8 +300,7 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
 
       const font = cell.isHeader ? fonts.bold : fonts.regular;
       const padding = 4;
-      const rightPadding = cell.align === "right" ? 8 : padding; // 오른쪽 정렬 시 여백 더 확보
-      const maxTextWidth = cell.width - padding - rightPadding;
+      const maxTextWidth = cell.width - padding * 2;
 
       // 텍스트가 셀 너비를 초과할 경우 폰트 크기 자동 축소
       let actualFontSize = fontSize;
@@ -317,7 +316,7 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
       if (cell.align === "center") {
         textX = cellX + (cell.width - textWidth) / 2;
       } else if (cell.align === "right") {
-        textX = cellX + cell.width - textWidth - rightPadding;
+        textX = cellX + cell.width - textWidth - padding;
       }
 
       try {
@@ -1781,7 +1780,11 @@ async function renderRecoveryAreaPage(
   const mergedCells = [
     { text: "구분", width: colWidths.gubun, x: MARGIN },
     { text: "공사내용", width: colWidths.content, x: MARGIN + colWidths.gubun },
-    { text: "공사분류", width: colWidths.category, x: MARGIN + colWidths.gubun + colWidths.content },
+    {
+      text: "공사분류",
+      width: colWidths.category,
+      x: MARGIN + colWidths.gubun + colWidths.content,
+    },
   ];
 
   for (const cell of mergedCells) {
@@ -1814,7 +1817,13 @@ async function renderRecoveryAreaPage(
   }
 
   // 비고 병합 셀 그리기 (2행 병합)
-  const noteX = MARGIN + colWidths.gubun + colWidths.content + colWidths.category + colWidths.damage + colWidths.recovery;
+  const noteX =
+    MARGIN +
+    colWidths.gubun +
+    colWidths.content +
+    colWidths.category +
+    colWidths.damage +
+    colWidths.recovery;
   page.drawRectangle({
     x: noteX,
     y: y - totalHeaderHeight,
@@ -1840,10 +1849,15 @@ async function renderRecoveryAreaPage(
   });
 
   // 피해면적/복구면적 상단 헤더 (1행)
-  const damageX = MARGIN + colWidths.gubun + colWidths.content + colWidths.category;
+  const damageX =
+    MARGIN + colWidths.gubun + colWidths.content + colWidths.category;
   const areaHeaders = [
     { text: "피해면적", width: colWidths.damage, x: damageX },
-    { text: "복구면적", width: colWidths.recovery, x: damageX + colWidths.damage },
+    {
+      text: "복구면적",
+      width: colWidths.recovery,
+      x: damageX + colWidths.damage,
+    },
   ];
 
   for (const cell of areaHeaders) {
@@ -2469,9 +2483,6 @@ async function renderEstimatePage(
   const vat = Math.round(rounded * vatRate);
   const grandTotal = rounded + vat;
 
-  
-  
-
   const totalRows: TableCell[][] = [
     [
       { text: "노무비 합계", width: 150, isHeader: true, align: "center" },
@@ -2497,7 +2508,7 @@ async function renderEstimatePage(
       { text: "천원단위 절사", width: 150, isHeader: true, align: "center" },
       {
         text: roundingDiff > 0 ? formatNumber(-roundingDiff) : "-",
-        width: 120,
+        width: 20000,
         align: "right",
       },
     ],
