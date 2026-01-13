@@ -1674,7 +1674,6 @@ export default function ComprehensiveProgress() {
                     </button>
                   ))}
                 </div>
-
                 <ScrollArea className="h-[calc(100vh-220px)]">
                   <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "16px 20px 20px 20px" }}>
                     
@@ -1734,9 +1733,7 @@ export default function ComprehensiveProgress() {
                               fontWeight: 500,
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.6)",
-                            }}>
-                              당사 담당자
-                            </div>
+                            }}>담당자</div>
                             <div style={{
                               fontFamily: "Pretendard",
                               fontWeight: 400,
@@ -1761,9 +1758,7 @@ export default function ComprehensiveProgress() {
                               fontWeight: 500,
                               fontSize: "14px",
                               color: "rgba(12, 12, 12, 0.6)",
-                            }}>
-                              관리사
-                            </div>
+                            }}>협력사</div>
                             <div style={{
                               fontFamily: "Pretendard",
                               fontWeight: 400,
@@ -1852,98 +1847,6 @@ export default function ComprehensiveProgress() {
                               color: "rgba(12, 12, 12, 0.9)",
                             }}>
                               {formatAmount(selectedCase.approvedAmount)}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 구분선 */}
-                        <div style={{
-                          width: "100%",
-                          height: "1px",
-                          background: "rgba(12, 12, 12, 0.1)",
-                          margin: "8px 0",
-                        }}></div>
-
-                        {/* 증권/분쟁 섹션 */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: "0px" }}>
-                          {/* 증권번호 */}
-                          <div style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                            padding: "10px 0px",
-                            gap: "16px",
-                          }}>
-                            <div style={{
-                              width: "100px",
-                              fontFamily: "Pretendard",
-                              fontWeight: 500,
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.6)",
-                            }}>
-                              증권번호
-                            </div>
-                            <div style={{
-                              fontFamily: "Pretendard",
-                              fontWeight: 400,
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.9)",
-                            }}>
-                              {selectedCase.insurancePolicyNo || "-"}
-                            </div>
-                          </div>
-
-                          {/* 기감금액 */}
-                          <div style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                            padding: "10px 0px",
-                            gap: "16px",
-                          }}>
-                            <div style={{
-                              width: "100px",
-                              fontFamily: "Pretendard",
-                              fontWeight: 500,
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.6)",
-                            }}>
-                              기감금액
-                            </div>
-                            <div style={{
-                              fontFamily: "Pretendard",
-                              fontWeight: 400,
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.9)",
-                            }}>
-                              -
-                            </div>
-                          </div>
-
-                          {/* Ded */}
-                          <div style={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                            padding: "10px 0px",
-                            gap: "16px",
-                          }}>
-                            <div style={{
-                              width: "100px",
-                              fontFamily: "Pretendard",
-                              fontWeight: 500,
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.6)",
-                            }}>
-                              Ded
-                            </div>
-                            <div style={{
-                              fontFamily: "Pretendard",
-                              fontWeight: 400,
-                              fontSize: "14px",
-                              color: "rgba(12, 12, 12, 0.9)",
-                            }}>
-                              -
                             </div>
                           </div>
                         </div>
