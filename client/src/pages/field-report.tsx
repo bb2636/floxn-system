@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatCaseNumber } from "@/lib/utils";
 import {
   AlertDialog,
@@ -22,7 +23,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import type {
   Drawing,
   CaseDocument as SchemaDocument,
@@ -316,6 +317,17 @@ export default function FieldReport() {
     queryKey: ["/api/documents/case", selectedCaseId],
     enabled: !!selectedCaseId,
   });
+
+  // 관련 접수건 조회 (심사하기용)
+  const { data: relatedCasesData } = useQuery<{
+    relatedCases: Array<{ caseId: string; caseNumber: string }>;
+  }>({
+    queryKey: ["/api/cases", selectedCaseId, "related-drawings"],
+    enabled: !!selectedCaseId,
+  });
+
+  // 관련 접수건 심사하기 팝오버 상태
+  const [isRelatedCasesPopoverOpen, setIsRelatedCasesPopoverOpen] = useState(false);
 
   // 기타사항 상태
   const [additionalNotes, setAdditionalNotes] = useState("");
@@ -1181,6 +1193,86 @@ export default function FieldReport() {
               </Button>
             </>
           )}
+
+          {/* 관련 접수건 심사하기 버튼 */}
+          {!isUserLoading &&
+            isAdmin &&
+            relatedCasesData?.relatedCases &&
+            relatedCasesData.relatedCases.length > 0 && (
+              <Popover open={isRelatedCasesPopoverOpen} onOpenChange={setIsRelatedCasesPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    data-testid="button-related-cases-review"
+                    style={{
+                      fontFamily: "Pretendard",
+                      fontSize: "14px",
+                      fontWeight: "500",
+                    }}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-1" />
+                    관련 접수건 심사하기
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-64 p-0"
+                  align="end"
+                  style={{
+                    background: "white",
+                    border: "1px solid rgba(0, 0, 0, 0.1)",
+                    borderRadius: "12px",
+                    boxShadow: "0 8px 24px rgba(0, 0, 0, 0.12)",
+                  }}
+                >
+                  <div className="p-3 border-b" style={{ borderColor: "rgba(0, 0, 0, 0.06)" }}>
+                    <p
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#0C0C0C",
+                      }}
+                    >
+                      관련 접수건 심사하기
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "Pretendard",
+                        fontSize: "11px",
+                        color: "rgba(12, 12, 12, 0.5)",
+                        marginTop: "4px",
+                      }}
+                    >
+                      관련 접수건의 보고서를 확인합니다
+                    </p>
+                  </div>
+                  <div className="p-2 max-h-48 overflow-y-auto">
+                    {relatedCasesData.relatedCases.map((relatedCase) => (
+                      <button
+                        key={relatedCase.caseId}
+                        onClick={() => {
+                          // 해당 접수건으로 이동
+                          localStorage.setItem("selectedFieldSurveyCaseId", relatedCase.caseId);
+                          setIsRelatedCasesPopoverOpen(false);
+                          window.location.reload();
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-lg hover-elevate active-elevate-2 transition-all"
+                        style={{
+                          fontFamily: "Pretendard",
+                          fontSize: "13px",
+                          color: "#0C0C0C",
+                        }}
+                        data-testid={`button-review-${relatedCase.caseNumber}`}
+                      >
+                        <span style={{ fontWeight: 500 }}>
+                          {formatCaseNumber(relatedCase.caseNumber)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
 
           {/* 심사 버튼: 항상 표시, reviewDecision에 따라 텍스트/스타일 변경 */}
           {!isUserLoading &&
