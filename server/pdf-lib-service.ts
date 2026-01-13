@@ -306,15 +306,20 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
       // 텍스트가 셀 너비를 초과할 경우 폰트 크기 자동 축소
       let actualFontSize = fontSize;
       const cellText = cell.text || "";
-      
+
       // 음수 처리: 마이너스 기호와 숫자를 분리해서 정렬
-      const isNegative = cell.align === "right" && cellText.startsWith("-") && cellText.length > 1;
+      const isNegative =
+        cell.align === "right" &&
+        cellText.startsWith("-") &&
+        cellText.length > 1;
       const displayText = isNegative ? cellText.substring(1) : cellText;
       const minusSign = isNegative ? "-" : "";
-      
+
       let textWidth = measureTextWidth(displayText, font, actualFontSize);
-      const minusWidth = isNegative ? measureTextWidth(minusSign, font, actualFontSize) : 0;
-      
+      const minusWidth = isNegative
+        ? measureTextWidth(minusSign, font, actualFontSize)
+        : 0;
+
       while (textWidth + minusWidth > maxTextWidth && actualFontSize > 5) {
         actualFontSize -= 0.5;
         textWidth = measureTextWidth(displayText, font, actualFontSize);
@@ -963,20 +968,6 @@ async function renderFieldReportPage(
 
   const recoveryInfoRows: TableCell[][] = [
     [
-      { text: "피해자명", width: 90, isHeader: true, align: "center" },
-      { text: caseData.victimName || "-", width: 168, align: "left" },
-      { text: "피해자 연락처", width: 90, isHeader: true, align: "center" },
-      {
-        text: caseData.victimContact || caseData.victimPhone || "-",
-        width: 167,
-        align: "left",
-      },
-    ],
-    [
-      { text: "피해주소", width: 90, isHeader: true, align: "center" },
-      { text: victimFullAddress || "-", width: 425, align: "left" },
-    ],
-    [
       { text: "처리유형", width: 90, isHeader: true, align: "center" },
       { text: processingTypesStr, width: 425, align: "left" },
     ],
@@ -1386,7 +1377,7 @@ async function renderEvidencePages(
 
   // PDF 문서 페이지들을 현재 문서에 복사 (각 페이지에 헤더 추가)
   // embedPage 방식으로 변경: 페이지 크기를 늘려서 상단에 헤더 공간 확보
-  const PDF_HEADER_HEIGHT = 30;
+  const PDF_HEADER_HEIGHT = 45;
 
   for (const pdfItem of pdfDocs) {
     try {
