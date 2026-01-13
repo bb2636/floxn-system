@@ -1075,7 +1075,7 @@ export default function SettlementsInquiry() {
                     borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
-                    minWidth: "120px",
+                    minWidth: "150px",
                   }}
                 >
                   접수번호
@@ -1571,8 +1571,8 @@ export default function SettlementsInquiry() {
                       color: "rgba(12, 12, 12, 0.8)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
-                      width: "120px",
-                      maxWidth: "120px",
+                      width: "150px",
+                      maxWidth: "150px",
                     }}
                   >
                     <div
