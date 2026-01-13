@@ -6825,7 +6825,7 @@ FLOXN`;
       
       if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
         particulars.push({
-          title: `[${mainAddressLabel}] - 현장출동비용 (손해방지)`,
+          title: `[${mainAddressLabel}] - 현장출동비용`,
           amount: fieldDispatchPreventionAmount,
         });
         calculatedTotal += fieldDispatchPreventionAmount;
@@ -6833,7 +6833,7 @@ FLOXN`;
 
       if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
         particulars.push({
-          title: `[${mainAddressLabel}] - 현장출동비용 (대물)`,
+          title: `[${mainAddressLabel}] - 현장출동비용`,
           amount: fieldDispatchPropertyAmount,
         });
         calculatedTotal += fieldDispatchPropertyAmount;
@@ -7448,14 +7448,14 @@ FLOXN`;
 
         if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
           particulars.push({
-            title: `[${mainAddressLabel}] - 현장출동비용 (손해방지)`,
+            title: `[${mainAddressLabel}] - 현장출동비용`,
             amount: fieldDispatchPreventionAmount,
           });
         }
 
         if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
           particulars.push({
-            title: `[${mainAddressLabel}] - 현장출동비용 (대물)`,
+            title: `[${mainAddressLabel}] - 현장출동비용`,
             amount: fieldDispatchPropertyAmount,
           });
         }
@@ -7896,10 +7896,10 @@ FLOXN`;
         amountLines.push(`- 대물복구비용: ${formatAmount(propertyRepairAmount)}원`);
       }
       if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
-        amountLines.push(`- 현장출동비용 (손해방지): ${formatAmount(fieldDispatchPreventionAmount)}원`);
+        amountLines.push(`- 현장출동비용: ${formatAmount(fieldDispatchPreventionAmount)}원`);
       }
       if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
-        amountLines.push(`- 현장출동비용 (대물): ${formatAmount(fieldDispatchPropertyAmount)}원`);
+        amountLines.push(`- 현장출동비용: ${formatAmount(fieldDispatchPropertyAmount)}원`);
       }
       amountLines.push(`- 합계: ${formatAmount(totalAmount)}원`);
 
