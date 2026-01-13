@@ -7332,44 +7332,107 @@ FLOXN`;
         console.error('[send-invoice-email-v2] Failed to load logo:', logoErr);
       }
 
-      // Build particulars based on amounts (each category gets its own line)
+      // Build particulars based on amounts - 관련 케이스들 조회하여 각 케이스별 주소 사용
       const particulars: Array<{ title: string; detail?: string; amount: number }> = [];
       const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber;
-      // 상세주소 우선, 없으면 전체주소, 그것도 없으면 '-'
-      const addressLabel = caseData.victimAddressDetail || caseData.victimAddress || caseData.insuredAddressDetail || caseData.insuredAddress || '-';
+      
+      // 관련 케이스들 조회하여 각 케이스별 금액/주소 사용 (다운로드 로직과 동일)
+      const allCases = [caseData];
+      if (caseData.insuranceAccidentNo) {
+        const relatedCasesForParticulars = await storage.getCasesByAccidentNo(caseData.insuranceAccidentNo, caseId);
+        allCases.push(...relatedCasesForParticulars);
+      }
+      
+      // 케이스 suffix 추출 함수
+      const getCaseSuffix = (caseNumber: string): number => {
+        const match = caseNumber.match(/-(\d+)$/);
+        return match ? parseInt(match[1], 10) : 999;
+      };
+      
+      // 케이스 suffix 순으로 정렬
+      allCases.sort((a, b) => getCaseSuffix(a.caseNumber || '') - getCaseSuffix(b.caseNumber || ''));
+      
+      let calculatedTotal = 0;
+      
+      for (const relatedCase of allCases) {
+        const caseSuffix = getCaseSuffix(relatedCase.caseNumber || '');
+        
+        // 상세주소 가져오기 (상세주소 우선, 없으면 기본주소)
+        const caseAddressLabel = relatedCase.victimAddressDetail || relatedCase.victimAddress || 
+                            relatedCase.insuredAddressDetail || relatedCase.insuredAddress || '-';
+        
+        // 해당 케이스에 저장된 금액 가져오기 (인보이스 금액 > 견적금액 순서로 확인)
+        let caseDamagePreventionAmt = parseInt(relatedCase.invoiceDamagePreventionAmount || "0") || 0;
+        let casePropertyRepairAmt = parseInt(relatedCase.invoicePropertyRepairAmount || "0") || 0;
+        const caseEstimateAmt = parseInt(relatedCase.estimateAmount || "0") || 0;
+        
+        // 손방건(-0)인 경우: 손해방지비용
+        if (caseSuffix === 0) {
+          if (caseDamagePreventionAmt === 0 && caseEstimateAmt > 0) {
+            caseDamagePreventionAmt = caseEstimateAmt;
+          }
+          if (caseDamagePreventionAmt > 0) {
+            particulars.push({
+              title: `[${caseAddressLabel}] - 손해방지비용`,
+              amount: caseDamagePreventionAmt,
+            });
+            calculatedTotal += caseDamagePreventionAmt;
+          }
+        }
+        
+        // 대물건(-1, -2, ...)인 경우: 대물복구비용
+        if (caseSuffix > 0) {
+          if (casePropertyRepairAmt === 0 && caseEstimateAmt > 0) {
+            casePropertyRepairAmt = caseEstimateAmt;
+          }
+          if (casePropertyRepairAmt > 0) {
+            particulars.push({
+              title: `[${caseAddressLabel}] - 대물복구비용`,
+              amount: casePropertyRepairAmt,
+            });
+            calculatedTotal += casePropertyRepairAmt;
+          }
+        }
+      }
+      
+      // 아무 금액도 추가되지 않은 경우 - 클라이언트에서 전달한 금액 사용
+      const mainAddressLabel = caseData.victimAddressDetail || caseData.victimAddress || 
+                              caseData.insuredAddressDetail || caseData.insuredAddress || '-';
+      
+      if (particulars.length === 0) {
+        if (damagePreventionAmount && damagePreventionAmount > 0) {
+          particulars.push({
+            title: `[${mainAddressLabel}] - 손해방지비용`,
+            amount: damagePreventionAmount,
+          });
+        }
+        
+        if (propertyRepairAmount && propertyRepairAmount > 0) {
+          particulars.push({
+            title: `[${mainAddressLabel}] - 대물복구비용`,
+            amount: propertyRepairAmount,
+          });
+        }
 
-      if (damagePreventionAmount && damagePreventionAmount > 0) {
-        particulars.push({
-          title: `[${addressLabel}] - 손해방지비용`,
-          amount: damagePreventionAmount,
-        });
+        if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
+          particulars.push({
+            title: `[${mainAddressLabel}] - 현장출동비용 (손해방지)`,
+            amount: fieldDispatchPreventionAmount,
+          });
+        }
+
+        if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
+          particulars.push({
+            title: `[${mainAddressLabel}] - 현장출동비용 (대물)`,
+            amount: fieldDispatchPropertyAmount,
+          });
+        }
       }
 
-      if (propertyRepairAmount && propertyRepairAmount > 0) {
-        particulars.push({
-          title: `[${addressLabel}] - 대물복구비용`,
-          amount: propertyRepairAmount,
-        });
-      }
-
-      if (fieldDispatchPreventionAmount && fieldDispatchPreventionAmount > 0) {
-        particulars.push({
-          title: `[${addressLabel}] - 현장출동비용 (손해방지)`,
-          amount: fieldDispatchPreventionAmount,
-        });
-      }
-
-      if (fieldDispatchPropertyAmount && fieldDispatchPropertyAmount > 0) {
-        particulars.push({
-          title: `[${addressLabel}] - 현장출동비용 (대물)`,
-          amount: fieldDispatchPropertyAmount,
-        });
-      }
-
-      // If no particulars, add a default entry
+      // If still no particulars, add a default entry
       if (particulars.length === 0) {
         particulars.push({
-          title: `[${addressLabel}]`,
+          title: `[${mainAddressLabel}]`,
           detail: '청구 내역 없음',
           amount: 0,
         });
