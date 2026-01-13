@@ -1938,10 +1938,9 @@ async function renderEstimatePage(
   y -= 40;
 
   // ===== 상단 정보 테이블 =====
-  // 해당건의 주소 사용 (victimAddress 우선, 없으면 insuredAddress)
-  const addressMain = caseData.victimAddress || caseData.insuredAddress || "";
-  const addressDetail =
-    caseData.victimAddressDetail || caseData.insuredAddressDetail || "";
+  // 피해세대 주소 사용 (피보험자/원인세대 주소 제외)
+  const addressMain = caseData.victimAddress || "";
+  const addressDetail = caseData.victimAddressDetail || "";
   const fullAddress = [addressMain, addressDetail].filter(Boolean).join(" ");
 
   const partnerCompany =
