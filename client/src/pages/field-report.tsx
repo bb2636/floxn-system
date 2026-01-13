@@ -2933,6 +2933,23 @@ export default function FieldReport() {
                 {activeTab === "견적서" && "견적서"}
                 {activeTab === "기타사항/원인" && "기타사항/원인"}
               </h2>
+              {/* 기타사항 탭에서 협력사용 저장 버튼 */}
+              {activeTab === "기타사항/원인" && !isAdmin && !isPartnerReadOnly && (
+                <Button
+                  data-testid="button-save-notes-header"
+                  onClick={() => saveNotesMutation.mutate(additionalNotes)}
+                  disabled={saveNotesMutation.isPending}
+                  className="px-6 py-3"
+                  style={{
+                    fontFamily: "Pretendard",
+                    fontSize: "16px",
+                    fontWeight: "600",
+                    minWidth: "100px",
+                  }}
+                >
+                  {saveNotesMutation.isPending ? "저장 중..." : "저장"}
+                </Button>
+              )}
               {/* 관리자만 다운로드/이메일 버튼 표시 */}
               {isAdmin && (
                 <div className="flex items-center gap-3">
@@ -5684,37 +5701,15 @@ export default function FieldReport() {
           >
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                fontFamily: "Pretendard",
+                fontSize: "20px",
+                fontWeight: "700",
+                lineHeight: "30px",
+                color: "#0C0C0C",
                 marginBottom: "24px",
               }}
             >
-              <div
-                style={{
-                  fontFamily: "Pretendard",
-                  fontSize: "20px",
-                  fontWeight: "700",
-                  lineHeight: "30px",
-                  color: "#0C0C0C",
-                }}
-              >
-                기타사항
-              </div>
-              {!isPartnerReadOnly && (
-                <Button
-                  data-testid="button-save-notes-header"
-                  onClick={() => saveNotesMutation.mutate(additionalNotes)}
-                  disabled={saveNotesMutation.isPending || isPartnerReadOnly}
-                  style={{
-                    fontFamily: "Pretendard",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                  }}
-                >
-                  {saveNotesMutation.isPending ? "저장 중..." : "저장"}
-                </Button>
-              )}
+              기타사항
             </div>
 
             <Card>
