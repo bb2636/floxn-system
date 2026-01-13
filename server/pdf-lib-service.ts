@@ -2470,35 +2470,35 @@ async function renderEstimatePage(
   const totalRows: TableCell[][] = [
     [
       { text: "노무비 합계", width: 150, isHeader: true, align: "center" },
-      { text: formatNumber(laborTotal), width: 110, align: "right" },
+      { text: formatNumber(laborTotal), width: 120, align: "right" },
     ],
     [
       { text: "자재비 합계", width: 150, isHeader: true, align: "center" },
-      { text: formatNumber(materialTotal), width: 110, align: "right" },
+      { text: formatNumber(materialTotal), width: 120, align: "right" },
     ],
     [
       { text: "소계", width: 150, isHeader: true, align: "center" },
-      { text: formatNumber(subtotal), width: 110, align: "right" },
+      { text: formatNumber(subtotal), width: 120, align: "right" },
     ],
     [
       { text: "일반관리비 (6%)", width: 150, isHeader: true, align: "center" },
-      { text: formatNumber(adminFee), width: 110, align: "right" },
+      { text: formatNumber(adminFee), width: 120, align: "right" },
     ],
     [
       { text: "이윤 (15%)", width: 150, isHeader: true, align: "center" },
-      { text: formatNumber(profit), width: 110, align: "right" },
+      { text: formatNumber(profit), width: 120, align: "right" },
     ],
     [
       { text: "천원단위 절사", width: 150, isHeader: true, align: "center" },
       {
         text: roundingDiff > 0 ? formatNumber(-roundingDiff) : "-",
-        width: 110,
+        width: 120,
         align: "right",
       },
     ],
     [
       { text: "합계", width: 150, isHeader: true, align: "center" },
-      { text: formatNumber(rounded), width: 110, align: "right" },
+      { text: formatNumber(rounded), width: 120, align: "right" },
     ],
     [
       {
@@ -2507,27 +2507,27 @@ async function renderEstimatePage(
         isHeader: true,
         align: "center",
       },
-      { text: formatNumber(vat), width: 110, align: "right" },
+      { text: formatNumber(vat), width: 120, align: "right" },
     ],
     [
       { text: "총 합계", width: 150, isHeader: true, align: "center" },
-      { text: formatNumber(grandTotal), width: 110, align: "right" },
+      { text: formatNumber(grandTotal), width: 120, align: "right" },
     ],
   ];
 
   // 단위 표시 (테이블 위에 우측 정렬)
   drawText(page, {
-    x: A4_WIDTH - MARGIN - 250,
+    x: A4_WIDTH - MARGIN - 270,
     y: y + 5,
     text: "단위: 원",
     font: fonts.regular,
     size: 7,
-    maxWidth: 250,
+    maxWidth: 270,
     align: "right",
   });
 
   drawTable(page, {
-    x: A4_WIDTH - MARGIN - 260,
+    x: A4_WIDTH - MARGIN - 270,
     y,
     rows: totalRows,
     fonts,
