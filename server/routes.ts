@@ -7875,9 +7875,16 @@ FLOXN`;
       const emailSubjectId = invoiceData.insuranceAccidentNo || caseData.insurancePolicyNo || invoiceData.caseNumber || dateStr;
       const emailSubject = `[FLOXN] INVOICE - ${emailSubjectId}`;
       
+      // 파일명을 이메일 제목과 동일하게 (특수문자 제거)
+      const safeFilenameId = emailSubjectId.replace(/[<>:"/\\|?*]/g, '_');
+      const invoiceFilename = `FLOXN INVOICE - ${safeFilenameId}.pdf`;
+      
       // Get assessor and investigator names from case data fields
       const assessorName = caseData.assessorTeam || '-';
       const investigatorName = caseData.investigatorTeamName || '-';
+      
+      // 동일 사고번호의 모든 접수번호 수집
+      const allCaseNumbers = allCases.map(c => c.caseNumber).filter(Boolean).join(', ') || '-';
       
       const htmlContent = `
         <div style="font-family: 'Malgun Gothic', 'Noto Sans KR', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -7909,7 +7916,7 @@ FLOXN`;
             </tr>
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">접수번호</td>
-              <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${caseData.caseNumber || '-'}</td>
+              <td style="padding: 10px 15px; border: 1px solid #ddd;" colspan="4">${allCaseNumbers}</td>
             </tr>
             <tr>
               <td style="background: #f5f5f5; padding: 10px 15px; border: 1px solid #ddd; font-weight: bold;">발송일</td>
@@ -7944,7 +7951,7 @@ INVOICE를 첨부하여 전달드립니다.
 청구금액:
 ${amountLines.join('\n')}
 
-- 접수번호: ${caseData.caseNumber || '-'}
+- 접수번호: ${allCaseNumbers}
 - 발송일: ${dateStr}
 
 첨부된 PDF 파일을 확인해 주시기 바랍니다.
@@ -7956,10 +7963,6 @@ FLOXN
 Front·Line·Ops·Xpert·Net
 주식회사 플록슨(FLOXN Co., Ltd.)
 서울특별시 영등포구 당산로 133, 서림빌딩 3층 302호`;
-
-      // Generate filename for the Invoice PDF attachment
-      const timestamp = Date.now();
-      const invoiceFilename = `Invoice.pdf`;
 
       // Build attachments array: Invoice PDF (with merged documents) + Logo
       const attachments: Array<{ filename: string; content: Buffer; contentType: string; cid?: string }> = [
@@ -7982,7 +7985,7 @@ Front·Line·Ops·Xpert·Net
 
       // Log attachment summary before sending
       console.log(`\n========== SMTP 첨부 파일 요약 ==========`);
-      console.log(`Invoice.pdf: ${Math.round(pdfBuffer.length / 1024 / 1024 * 1000) / 1000}MB`);
+      console.log(`${invoiceFilename}: ${Math.round(pdfBuffer.length / 1024 / 1024 * 1000) / 1000}MB`);
       console.log(`총 첨부 파일 개수: ${attachments.length}`);
       console.log(`==========================================\n`);
 
