@@ -1518,11 +1518,16 @@ async function renderEvidencePages(
     // 헤더 형식: 좌측 "사고번호 {번호}" / 중앙 "{주소}" / 우측 "{카테고리}-{세부카테고리}"
     const accidentNo =
       caseData.insuranceAccidentNo || caseData.caseNumber || "";
-    const leftText = `사고번호 ${accidentNo}`;
-    const centerText = fullAddress;
-    const rightText = firstImage.doc.category 
-      ? `${firstImage.tab}-${firstImage.doc.category}` 
-      : firstImage.tab;
+    // 특수기호 뒤 공백 제거 함수
+    const removeSpaceAfterSymbols = (text: string) => 
+      text.replace(/([:\-])\s+/g, "$1");
+    const leftText = removeSpaceAfterSymbols(`사고번호 ${accidentNo}`);
+    const centerText = removeSpaceAfterSymbols(fullAddress);
+    const rightText = removeSpaceAfterSymbols(
+      firstImage.doc.category 
+        ? `${firstImage.tab}-${firstImage.doc.category}` 
+        : firstImage.tab
+    );
 
     page.drawRectangle({
       x: MARGIN,
