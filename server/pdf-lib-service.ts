@@ -946,28 +946,33 @@ async function renderDrawingPage(
     size: 14,
   });
   
-  // 사고번호(계약번호) on the right
+  // 사고번호(계약번호) on the right - 헤더박스 내에 맞도록 폰트 크기 조정
   const accidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || '-';
+  const accidentNoText = `사고번호(계약번호): ${accidentNo}`;
+  // 텍스트 길이에 따라 폰트 크기 조정 (헤더 영역 안에 들어가도록)
+  const accidentNoFontSize = accidentNoText.length > 25 ? 8 : (accidentNoText.length > 20 ? 9 : 10);
   drawText(page, {
-    x: A4_WIDTH - MARGIN - 150,
+    x: A4_WIDTH - MARGIN - 180,  // 더 왼쪽으로 이동
     y: y - 25,
-    text: `사고번호(계약번호): ${accidentNo}`,
+    text: accidentNoText,
     font: fonts.regular,
-    size: 10,
+    size: accidentNoFontSize,
   });
   
   y -= headerHeight + 15;
   
-  // Info line: 고객사, 피보험자, 주소
+  // Info line: 보험사, 피보험자, 주소 (해당건의 주소 사용)
   const insuranceCompany = caseData.insuranceCompany || '-';
   const insuredName = caseData.insuredName || caseData.victimName || '-';
-  const fullAddress = [caseData.insuredAddress, caseData.insuredAddressDetail]
-    .filter(Boolean).join(' ') || '-';
+  // 해당건의 주소 사용 (victimAddress + victimAddressDetail 우선, 없으면 insured 주소)
+  const victimAddr = caseData.victimAddress || caseData.insuredAddress || '';
+  const victimAddrDetail = caseData.victimAddressDetail || caseData.insuredAddressDetail || '';
+  const fullAddress = [victimAddr, victimAddrDetail].filter(Boolean).join(' ') || '-';
   
   drawText(page, {
     x: MARGIN,
     y,
-    text: `고객사: ${insuranceCompany}     피보험자: ${insuredName}     주소: ${fullAddress}`,
+    text: `보험사: ${insuranceCompany}     피보험자: ${insuredName}     주소: ${fullAddress}`,
     font: fonts.regular,
     size: 9,
   });
