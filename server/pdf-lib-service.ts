@@ -1398,20 +1398,22 @@ async function renderEvidencePages(
         ? `${pdfAddress} ${pdfAddressDetail}`
         : pdfAddress;
 
-      // 헤더 형식: "사고번호:  {보험사고번호}    {주소}    {카테고리}-  {세부카테고리}"
-      const pdfAccidentNo =
-        caseData.insuranceAccidentNo || caseData.caseNumber || "";
-      const pdfCategoryDisplay = pdfItem.doc.category
-        ? `${pdfItem.tab}-  ${pdfItem.doc.category}`
-        : pdfItem.tab;
-      const pdfHeaderText = `사고번호:  ${pdfAccidentNo}    ${pdfFullAddress}    ${pdfCategoryDisplay}`;
-
-      const normalizedHeaderText = pdfHeaderText
-        .replace(/:\s+/g, ":")
-        .replace(/-\s+/g, "-");
+      // 헤더 형식: "사고번호 {보험사고번호}    {주소}    {카테고리}-{세부카테고리}"
+      // 특수기호 뒤 공백 제거 함수
+      const removeSpaces = (text: string) => 
+        text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
+      const pdfAccidentNo = removeSpaces(
+        caseData.insuranceAccidentNo || caseData.caseNumber || ""
+      );
+      const pdfCategoryDisplay = removeSpaces(
+        pdfItem.doc.category
+          ? `${pdfItem.tab}-${pdfItem.doc.category}`
+          : pdfItem.tab
+      );
+      const normalizedHeaderText = `사고번호 ${pdfAccidentNo}    ${removeSpaces(pdfFullAddress)}    ${pdfCategoryDisplay}`;
 
       const pdfFontSize =
-        pdfHeaderText.length > 60 ? 8 : pdfHeaderText.length > 45 ? 9 : 10;
+        normalizedHeaderText.length > 60 ? 8 : normalizedHeaderText.length > 45 ? 9 : 10;
 
       // 각 페이지를 embedPage로 처리하여 헤더 공간 확보
       for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
@@ -1516,12 +1518,13 @@ async function renderEvidencePages(
     const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
 
     // 헤더 형식: 좌측 "사고번호 {번호}" / 중앙 "{주소}" / 우측 "{카테고리}-{세부카테고리}"
-    const accidentNo =
-      caseData.insuranceAccidentNo || caseData.caseNumber || "";
     // 특수기호 뒤 공백 제거 함수
     const removeSpaceAfterSymbols = (text: string) => 
-      text.replace(/([:\-])\s+/g, "$1");
-    const leftText = removeSpaceAfterSymbols(`사고번호 ${accidentNo}`);
+      text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
+    const accidentNo = removeSpaceAfterSymbols(
+      caseData.insuranceAccidentNo || caseData.caseNumber || ""
+    );
+    const leftText = `사고번호 ${accidentNo}`;
     const centerText = removeSpaceAfterSymbols(fullAddress);
     const rightText = removeSpaceAfterSymbols(
       firstImage.doc.category 
