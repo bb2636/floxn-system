@@ -2522,7 +2522,7 @@ async function renderEstimatePage(
     text: "단위: 원",
     font: fonts.regular,
     size: 7,
-    maxWidth: 270,
+    maxWidth: 266,
     align: "right",
   });
 
