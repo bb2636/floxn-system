@@ -1405,6 +1405,11 @@ async function renderEvidencePages(
         ? `${pdfItem.tab}-  ${pdfItem.doc.category}`
         : pdfItem.tab;
       const pdfHeaderText = `사고번호:  ${pdfAccidentNo}    ${pdfFullAddress}    ${pdfCategoryDisplay}`;
+
+      const normalizedHeaderText = pdfHeaderText
+        .replace(/:\s+/g, ":")
+        .replace(/-\s+/g, "-");
+
       const pdfFontSize =
         pdfHeaderText.length > 60 ? 8 : pdfHeaderText.length > 45 ? 9 : 10;
 
@@ -1448,7 +1453,7 @@ async function renderEvidencePages(
         // 헤더 텍스트 (흰색)
         const textY = headerBaseY + (PDF_HEADER_HEIGHT - pdfFontSize) / 2;
         try {
-          newPage.drawText(pdfHeaderText, {
+          newPage.drawText(normalizedHeaderText, {
             x: 10,
             y: textY,
             size: pdfFontSize,
