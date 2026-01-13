@@ -305,32 +305,62 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
 
       // 텍스트가 셀 너비를 초과할 경우 폰트 크기 자동 축소
       let actualFontSize = fontSize;
-      let textWidth = measureTextWidth(cell.text || "", font, actualFontSize);
-      while (textWidth > maxTextWidth && actualFontSize > 5) {
+      const cellText = cell.text || "";
+      
+      // 음수 처리: 마이너스 기호와 숫자를 분리해서 정렬
+      const isNegative = cell.align === "right" && cellText.startsWith("-") && cellText.length > 1;
+      const displayText = isNegative ? cellText.substring(1) : cellText;
+      const minusSign = isNegative ? "-" : "";
+      
+      let textWidth = measureTextWidth(displayText, font, actualFontSize);
+      const minusWidth = isNegative ? measureTextWidth(minusSign, font, actualFontSize) : 0;
+      
+      while (textWidth + minusWidth > maxTextWidth && actualFontSize > 5) {
         actualFontSize -= 0.5;
-        textWidth = measureTextWidth(cell.text || "", font, actualFontSize);
+        textWidth = measureTextWidth(displayText, font, actualFontSize);
       }
 
       const textY = currentY - rowHeight / 2 - actualFontSize / 3;
 
       let textX = cellX + padding;
       if (cell.align === "center") {
-        textX = cellX + (cell.width - textWidth) / 2;
+        const fullWidth = measureTextWidth(cellText, font, actualFontSize);
+        textX = cellX + (cell.width - fullWidth) / 2;
       } else if (cell.align === "right") {
+        // 숫자 부분만 오른쪽 정렬
         textX = cellX + cell.width - textWidth - rightPadding;
       }
 
       try {
-        page.drawText(cell.text || "", {
-          x: textX,
-          y: textY,
-          size: actualFontSize,
-          font,
-          color: rgb(0, 0, 0),
-        });
+        if (isNegative) {
+          // 마이너스 기호를 숫자 왼쪽에 고정 간격으로 배치
+          const minusX = textX - minusWidth - 2;
+          page.drawText(minusSign, {
+            x: minusX,
+            y: textY,
+            size: actualFontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+          page.drawText(displayText, {
+            x: textX,
+            y: textY,
+            size: actualFontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+        } else {
+          page.drawText(cellText, {
+            x: textX,
+            y: textY,
+            size: actualFontSize,
+            font,
+            color: rgb(0, 0, 0),
+          });
+        }
       } catch (e) {
         console.warn(
-          `[pdf-lib] Table cell text failed: "${cell.text?.substring(0, 10)}..."`,
+          `[pdf-lib] Table cell text failed: "${cellText.substring(0, 10)}..."`,
         );
       }
 
