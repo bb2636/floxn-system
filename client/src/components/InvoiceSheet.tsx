@@ -1209,7 +1209,7 @@ export function InvoiceSheet({ open, onOpenChange, caseData, relatedCases = [] }
                 {/* 사업자등록번호 */}
                 <div style={infoRowStyle}>
                   <span style={labelStyle}>사업자등록번호</span>
-                  <span style={valueStyle}>517-89-03490</span>
+                  <span style={valueStyle}>517-87-03490</span>
                 </div>
               </div>
             </div>
