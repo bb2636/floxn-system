@@ -1571,14 +1571,11 @@ export default function SettlementsInquiry() {
                       color: "rgba(12, 12, 12, 0.8)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
-                      width: "150px",
-                      maxWidth: "150px",
+                      minWidth: "150px",
                     }}
                   >
                     <div
                       style={{
-                        maxHeight: "48px",
-                        overflowY: "auto",
                         display: "flex",
                         flexDirection: "column",
                         gap: "2px",
