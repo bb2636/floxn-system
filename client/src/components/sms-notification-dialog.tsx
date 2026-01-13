@@ -167,14 +167,17 @@ export function SmsNotificationDialog({
 
   const getMessagePreview = () => {
     if (stage === "접수완료") {
+      const hasInvestigator = caseData.investigatorTeamName || caseData.investigatorContact;
+      const investigatorLine = hasInvestigator 
+        ? `\n조사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}` 
+        : "";
       return `접수번호 : ${caseData.caseNumber || "-"}
 보험사 : ${caseData.insuranceCompany || "-"}
 담당자 : -
 증권번호 : ${caseData.insurancePolicyNo || "-"}
 사고번호 : ${caseData.insuranceAccidentNo || "-"}
 피보험자 : ${caseData.insuredName || "-"}  연락처 ${caseData.insuredContact || "-"}
-피해자 : ${caseData.victimName || "-"}  연락처 ${caseData.victimContact || "-"}
-조사자 : ${caseData.investigatorTeamName || "-"}  연락처 ${caseData.investigatorContact || "-"}
+피해자 : ${caseData.victimName || "-"}  연락처 ${caseData.victimContact || "-"}${investigatorLine}
 사고장소 : ${caseData.insuredAddress || "-"}
 의뢰범위 : ${getRequestScope()}`;
     } else if (stage === "접수취소") {
