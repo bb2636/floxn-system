@@ -10043,9 +10043,15 @@ https://peulrogseun-aqaqaq4561.replit.app
       for (const c of groupCases) {
         if (!c.caseNumber || !approvedStatuses.includes(c.status || "")) continue;
         
+        // 선견적요청 건은 인보이스 금액에서 제외 (현장출동비용으로 별도 청구)
+        if (c.recoveryType === "선견적요청") {
+          console.log(`[invoice-amounts] 선견적요청 건 제외: ${c.caseNumber}`);
+          continue;
+        }
+        
         const suffix = c.caseNumber.split("-")[1];
-        // 인보이스에는 승인금액(approvedAmount)을 사용, 없으면 estimateAmount 사용
-        const amount = parseInt(c.approvedAmount || c.estimateAmount || "0") || 0;
+        // 인보이스에는 invoiceAmount > approvedAmount > estimateAmount 순으로 사용
+        const amount = parseInt(c.invoiceAmount || c.approvedAmount || c.estimateAmount || "0") || 0;
         
         if (suffix === "0") {
           // Damage prevention case (-0)
