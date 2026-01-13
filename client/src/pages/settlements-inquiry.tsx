@@ -1113,7 +1113,7 @@ export default function SettlementsInquiry() {
                 <th
                   rowSpan={2}
                   style={{
-                    padding: "16px",
+                    padding: "16px 8px",
                     fontFamily: "Pretendard",
                     fontSize: "14px",
                     fontWeight: 600,
@@ -1121,7 +1121,7 @@ export default function SettlementsInquiry() {
                     borderBottom: "1px solid rgba(12, 12, 12, 0.08)",
                     borderRight: "1px solid rgba(12, 12, 12, 0.08)",
                     textAlign: "center",
-                    minWidth: "100px",
+                    minWidth: "50px",
                   }}
                 >
                   공사유무
@@ -1615,12 +1615,13 @@ export default function SettlementsInquiry() {
                   </td>
                   <td
                     style={{
-                      padding: "14px 16px",
+                      padding: "14px 8px",
                       fontFamily: "Pretendard",
                       fontSize: "14px",
                       color: "rgba(12, 12, 12, 0.8)",
                       borderRight: "1px solid rgba(12, 12, 12, 0.05)",
                       textAlign: "center",
+                      minWidth: "50px",
                     }}
                   >
                     {row.constructionStatus}
