@@ -184,6 +184,11 @@ function wrapText(
   return lines;
 }
 
+// 특수기호 뒤 공백 제거 함수 (전역)
+function normalizeText(text: string): string {
+  return text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
+}
+
 function drawText(page: PDFPage, options: DrawTextOptions): number {
   const {
     x,
@@ -198,12 +203,15 @@ function drawText(page: PDFPage, options: DrawTextOptions): number {
   } = options;
 
   if (!text) return y;
+  
+  // 모든 텍스트에서 특수기호 뒤 공백 제거
+  const normalizedText = normalizeText(text);
 
   let lines: string[];
   if (maxWidth) {
-    lines = wrapText(text, font, size, maxWidth);
+    lines = wrapText(normalizedText, font, size, maxWidth);
   } else {
-    lines = text.split("\n");
+    lines = normalizedText.split("\n");
   }
 
   let currentY = y;
@@ -305,7 +313,8 @@ function drawTable(page: PDFPage, options: DrawTableOptions): number {
 
       // 텍스트가 셀 너비를 초과할 경우 폰트 크기 자동 축소
       let actualFontSize = fontSize;
-      const cellText = cell.text || "";
+      // 특수기호 뒤 공백 제거
+      const cellText = normalizeText(cell.text || "");
 
       // 음수 처리: 마이너스 기호와 숫자를 분리해서 정렬
       const isNegative =
@@ -1403,19 +1412,13 @@ async function renderEvidencePages(
         : pdfAddress;
 
       // 헤더 형식: "사고번호 {보험사고번호}    {주소}    {카테고리}-{세부카테고리}"
-      // 특수기호 뒤 공백 제거 함수
-      const removeSpaces = (text: string) => 
-        text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
-      const rawPdfAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "";
-      const pdfAccidentNo = removeSpaces(rawPdfAccidentNo);
-      console.log(`[pdf-lib] PDF 헤더 사고번호 정규화: "${rawPdfAccidentNo}" -> "${pdfAccidentNo}"`);
-      const pdfCategoryDisplay = removeSpaces(
+      const pdfAccidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
+      const pdfCategoryDisplay = normalizeText(
         pdfItem.doc.category
           ? `${pdfItem.tab}-${pdfItem.doc.category}`
           : pdfItem.tab
       );
-      const normalizedHeaderText = `사고번호 ${pdfAccidentNo}    ${removeSpaces(pdfFullAddress)}    ${pdfCategoryDisplay}`;
-      console.log(`[pdf-lib] PDF 헤더 최종: "${normalizedHeaderText}"`);
+      const normalizedHeaderText = `사고번호 ${pdfAccidentNo}    ${normalizeText(pdfFullAddress)}    ${pdfCategoryDisplay}`;
 
       const pdfFontSize =
         normalizedHeaderText.length > 60 ? 8 : normalizedHeaderText.length > 45 ? 9 : 10;
@@ -1523,15 +1526,10 @@ async function renderEvidencePages(
     const fullAddress = addressDetail ? `${address} ${addressDetail}` : address;
 
     // 헤더 형식: 좌측 "사고번호 {번호}" / 중앙 "{주소}" / 우측 "{카테고리}-{세부카테고리}"
-    // 특수기호 뒤 공백 제거 함수
-    const removeSpaceAfterSymbols = (text: string) => 
-      text.replace(/-\s+/g, "-").replace(/:\s+/g, ":");
-    const rawAccidentNo = caseData.insuranceAccidentNo || caseData.caseNumber || "";
-    const accidentNo = removeSpaceAfterSymbols(rawAccidentNo);
-    console.log(`[pdf-lib] 이미지 헤더 사고번호 정규화: "${rawAccidentNo}" -> "${accidentNo}"`);
+    const accidentNo = normalizeText(caseData.insuranceAccidentNo || caseData.caseNumber || "");
     const leftText = `사고번호 ${accidentNo}`;
-    const centerText = removeSpaceAfterSymbols(fullAddress);
-    const rightText = removeSpaceAfterSymbols(
+    const centerText = normalizeText(fullAddress);
+    const rightText = normalizeText(
       firstImage.doc.category 
         ? `${firstImage.tab}-${firstImage.doc.category}` 
         : firstImage.tab
@@ -2021,8 +2019,9 @@ async function renderRecoveryAreaPage(
       });
 
       // Draw category text centered vertically in merged cell
-      const categoryTextWidth = measureTextWidth(category, fonts.regular, 8);
-      page.drawText(category, {
+      const normalizedCategory = normalizeText(category);
+      const categoryTextWidth = measureTextWidth(normalizedCategory, fonts.regular, 8);
+      page.drawText(normalizedCategory, {
         x: MARGIN + (categoryColWidth - categoryTextWidth) / 2,
         y: groupStartY - groupHeight / 2 - 3,
         size: 8,
